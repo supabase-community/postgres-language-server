@@ -1,6 +1,8 @@
 use pgls_text_edit::TextEdit as PglsTextEdit;
 use pgls_workspace::features::format::{PullFileFormattingParams, PullFormattingResult};
-use tower_lsp::lsp_types::{DocumentFormattingParams, DocumentRangeFormattingParams, TextEdit};
+use tower_lsp_server::ls_types::{
+    DocumentFormattingParams, DocumentRangeFormattingParams, TextEdit,
+};
 
 use crate::{
     adapters::{PositionEncoding, from_lsp, line_index::LineIndex, to_lsp},

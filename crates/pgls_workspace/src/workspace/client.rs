@@ -51,7 +51,7 @@ where
         };
 
         // TODO: The current implementation of the JSON-RPC protocol in
-        // tower_lsp doesn't allow any request to be sent before a call to
+        // tower_lsp_server doesn't allow any request to be sent before a call to
         // initialize, this is something we could be able to lift by using our
         // own RPC protocol implementation
         let value: InitializeResult = client.request(

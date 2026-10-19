@@ -1,8 +1,8 @@
 use crate::session::Session;
 use pgls_configuration::PartialConfiguration;
 use serde::Deserialize;
-use tower_lsp::jsonrpc::{Error, Result as LspResult};
-use tower_lsp::lsp_types::DidChangeConfigurationParams;
+use tower_lsp_server::jsonrpc::{Error, Result as LspResult};
+use tower_lsp_server::ls_types::DidChangeConfigurationParams;
 
 /// Deliberately not `Debug`: the payload carries whatever the client overrides, including database
 /// credentials, and `PartialDatabaseConfiguration` renders its password verbatim.
@@ -25,7 +25,7 @@ pub(crate) async fn set_configuration_overrides(
     let status = session.set_client_overrides(params.overrides).await;
     if status.is_error() {
         return Err(Error {
-            code: tower_lsp::jsonrpc::ErrorCode::InternalError,
+            code: tower_lsp_server::jsonrpc::ErrorCode::InternalError,
             message: "Configuration overrides could not be applied; check the server log".into(),
             data: None,
         });

@@ -1,7 +1,7 @@
 //! The crate contains a set of converters to translate between `lsp-types` and `text_size` (and vice versa) types.
 
 use pgls_text_size::TextSize;
-use tower_lsp::lsp_types::{ClientCapabilities, Position, PositionEncodingKind, Url};
+use tower_lsp_server::ls_types::{ClientCapabilities, Position, PositionEncodingKind, Uri};
 
 use crate::session::Session;
 
@@ -29,7 +29,7 @@ pub fn negotiated_encoding(capabilities: &ClientCapabilities) -> PositionEncodin
 
 pub fn get_cursor_position(
     session: &Session,
-    url: &Url,
+    url: &Uri,
     position: Position,
 ) -> anyhow::Result<TextSize> {
     let client_capabilities = session
@@ -117,7 +117,7 @@ mod tests {
     use crate::adapters::to_lsp::position;
     use crate::adapters::{LineCol, PositionEncoding, WideEncoding};
     use pgls_text_size::TextSize;
-    use tower_lsp::lsp_types::Position;
+    use tower_lsp_server::ls_types::Position;
 
     macro_rules! check_conversion {
         ($line_index:ident : $position:expr_2021 => $text_size:expr_2021 ) => {

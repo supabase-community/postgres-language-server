@@ -28,7 +28,7 @@ serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 strum                    = { workspace = true }
 tokio                    = { workspace = true, features = ["rt", "io-std", "sync"] }
-tower-lsp                = { version = "0.20.0" }
+tower-lsp-server         = { version = "0.23.0" }
 tracing                  = { workspace = true, features = ["attributes"] }
 
 [dev-dependencies]
@@ -37,7 +37,7 @@ sqlx            = { workspace = true }
 tempfile        = "3.15.0"
 test-log        = { workspace = true }
 tokio           = { workspace = true, features = ["macros"] }
-tower           = { version = "0.4.13", features = ["timeout"] }
+tower           = { version = "0.5.3", features = ["timeout", "util"] }
 
 [lib]
 doctest = false

@@ -28,10 +28,10 @@ use std::time::Duration;
 use tokio::sync::Notify;
 use tokio::sync::OnceCell;
 use tokio::task::AbortHandle;
-use tower_lsp::lsp_types::Url;
-use tower_lsp::lsp_types::{self, ClientCapabilities};
-use tower_lsp::lsp_types::{MessageType, Registration};
-use tower_lsp::lsp_types::{Unregistration, WorkspaceFolder};
+use tower_lsp_server::ls_types::Uri;
+use tower_lsp_server::ls_types::{self, ClientCapabilities};
+use tower_lsp_server::ls_types::{MessageType, Registration};
+use tower_lsp_server::ls_types::{Unregistration, WorkspaceFolder};
 use tracing::{debug, error, info};
 
 /// Debounce delay for `textDocument/didChange` diagnostics.
@@ -61,7 +61,7 @@ pub(crate) struct Session {
     pub(crate) key: SessionKey,
 
     /// The LSP client for this session.
-    pub(crate) client: tower_lsp::Client,
+    pub(crate) client: tower_lsp_server::Client,
 
     /// The parameters provided by the client in the "initialize" request
     initialize_params: OnceCell<InitializeParams>,
@@ -83,7 +83,7 @@ pub(crate) struct Session {
     /// File system to read files inside the workspace
     pub(crate) fs: DynRef<'static, dyn FileSystem>,
 
-    documents: RwLock<FxHashMap<lsp_types::Url, Document>>,
+    documents: RwLock<FxHashMap<ls_types::Uri, Document>>,
 
     pub(crate) cancellation: Arc<Notify>,
 
@@ -124,16 +124,16 @@ pub(crate) struct Session {
     /// When `did_change` fires, any in-flight handle for the URL is aborted
     /// before a new task is spawned. This ensures that only one analysis run
     /// fires at the end of a rapid-fire burst rather than one per keystroke.
-    diagnostic_debounce: Arc<Mutex<FxHashMap<lsp_types::Url, AbortHandle>>>,
+    diagnostic_debounce: Arc<Mutex<FxHashMap<ls_types::Uri, AbortHandle>>>,
 }
 
 /// The parameters provided by the client in the "initialize" request
 struct InitializeParams {
-    /// The capabilities provided by the client as part of [`lsp_types::InitializeParams`]
-    client_capabilities: lsp_types::ClientCapabilities,
+    /// The capabilities provided by the client as part of [`ls_types::InitializeParams`]
+    client_capabilities: ls_types::ClientCapabilities,
     #[allow(dead_code)]
     client_information: Option<ClientInformation>,
-    root_uri: Option<Url>,
+    root_uri: Option<Uri>,
     #[allow(unused)]
     workspace_folders: Option<Vec<WorkspaceFolder>>,
 }
@@ -201,7 +201,7 @@ impl CapabilitySet {
 impl Session {
     pub(crate) fn new(
         key: SessionKey,
-        client: tower_lsp::Client,
+        client: tower_lsp_server::Client,
         workspace: Arc<dyn Workspace>,
         cancellation: Arc<Notify>,
         fs: DynRef<'static, dyn FileSystem>,
@@ -239,9 +239,9 @@ impl Session {
     /// Initialize this session instance with the incoming initialization parameters from the client
     pub(crate) fn initialize(
         &self,
-        client_capabilities: lsp_types::ClientCapabilities,
+        client_capabilities: ls_types::ClientCapabilities,
         client_information: Option<ClientInformation>,
-        root_uri: Option<Url>,
+        root_uri: Option<Uri>,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
     ) {
         let result = self.initialize_params.set(InitializeParams {
@@ -316,8 +316,8 @@ impl Session {
     /// Computes diagnostics for the file matching the provided url and publishes
     /// them to the client. Called from [`handlers::text_document`] when a file's
     /// contents changes.
-    #[tracing::instrument(level = "trace", skip_all, fields(url = display(&url), diagnostic_count), err)]
-    pub(crate) async fn update_diagnostics(&self, url: lsp_types::Url) -> Result<(), LspError> {
+    #[tracing::instrument(level = "trace", skip_all, fields(url = display(url.as_str()), diagnostic_count), err)]
+    pub(crate) async fn update_diagnostics(&self, url: ls_types::Uri) -> Result<(), LspError> {
         let pgls_path = self.file_path(&url)?;
         let doc = self.document(&url)?;
         let captured_version = doc.version;
@@ -330,7 +330,7 @@ impl Session {
 
         let categories = RuleCategoriesBuilder::default().all();
 
-        let diagnostics: Vec<lsp_types::Diagnostic> = {
+        let diagnostics: Vec<ls_types::Diagnostic> = {
             let result = self.workspace.pull_file_diagnostics(
                 features::diagnostics::PullFileDiagnosticsParams {
                     path: pgls_path.clone(),
@@ -368,7 +368,8 @@ impl Session {
         };
         if is_stale_diagnostics(captured_version, current_version) {
             debug!(
-                "discarding stale diagnostics for {url}: computed for version {captured_version}, current is {current_version}"
+                "discarding stale diagnostics for {}: computed for version {captured_version}, current is {current_version}",
+                url.as_str()
             );
             return Ok(());
         }
@@ -387,7 +388,7 @@ impl Session {
     /// [`DIAGNOSTIC_DEBOUNCE`] before calling [`Self::update_diagnostics`].
     /// This prevents a rapid-fire `textDocument/didChange` burst from queuing
     /// one analysis run per keystroke.
-    pub(crate) fn schedule_diagnostics(self: &Arc<Self>, url: lsp_types::Url) {
+    pub(crate) fn schedule_diagnostics(self: &Arc<Self>, url: ls_types::Uri) {
         // Cancel any pending task for this URL.
         if let Some(handle) = self.diagnostic_debounce.lock().unwrap().remove(&url) {
             handle.abort();
@@ -418,7 +419,7 @@ impl Session {
     ///
     /// Called from `did_close` to ensure no diagnostics are published after
     /// the document has been closed.
-    pub(crate) fn cancel_pending_diagnostics(&self, url: &lsp_types::Url) {
+    pub(crate) fn cancel_pending_diagnostics(&self, url: &ls_types::Uri) {
         if let Some(handle) = self.diagnostic_debounce.lock().unwrap().remove(url) {
             handle.abort();
         }
@@ -441,10 +442,10 @@ impl Session {
         }
     }
 
-    /// Get a [`Document`] matching the provided [`lsp_types::Url`]
+    /// Get a [`Document`] matching the provided [`ls_types::Uri`]
     ///
     /// If document does not exist, result is [WorkspaceError::NotFound]
-    pub(crate) fn document(&self, url: &lsp_types::Url) -> Result<Document, Error> {
+    pub(crate) fn document(&self, url: &ls_types::Uri) -> Result<Document, Error> {
         self.documents
             .read()
             .unwrap()
@@ -453,26 +454,26 @@ impl Session {
             .ok_or_else(|| WorkspaceError::not_found().with_file_path(url.to_string()))
     }
 
-    /// Set the [`Document`] for the provided [`lsp_types::Url`]
+    /// Set the [`Document`] for the provided [`ls_types::Uri`]
     ///
     /// Used by [`handlers::text_document] to synchronize documents with the client.
-    pub(crate) fn insert_document(&self, url: lsp_types::Url, document: Document) {
+    pub(crate) fn insert_document(&self, url: ls_types::Uri, document: Document) {
         self.documents.write().unwrap().insert(url, document);
     }
 
-    /// Remove the [`Document`] matching the provided [`lsp_types::Url`]
-    pub(crate) fn remove_document(&self, url: &lsp_types::Url) {
+    /// Remove the [`Document`] matching the provided [`ls_types::Uri`]
+    pub(crate) fn remove_document(&self, url: &ls_types::Uri) {
         self.documents.write().unwrap().remove(url);
     }
 
-    pub(crate) fn file_path(&self, url: &lsp_types::Url) -> Result<PgLSPath> {
+    pub(crate) fn file_path(&self, url: &ls_types::Uri) -> Result<PgLSPath> {
         let path_to_file = match url.to_file_path() {
-            Err(_) => {
+            None => {
                 // If we can't create a path, it's probably because the file doesn't exist.
                 // It can be a newly created file that it's not on disk
-                PathBuf::from(url.path())
+                PathBuf::from(url.path().as_str())
             }
-            Ok(path) => path,
+            Some(path) => path.into_owned(),
         };
 
         Ok(PgLSPath::new(path_to_file))
@@ -501,8 +502,8 @@ impl Session {
 
         let root_uri = initialize_params.root_uri.as_ref()?;
         match root_uri.to_file_path() {
-            Ok(base_path) => Some(base_path),
-            Err(()) => {
+            Some(base_path) => Some(base_path.into_owned()),
+            None => {
                 error!(
                     "The Workspace root URI {root_uri:?} could not be parsed as a filesystem path"
                 );
@@ -537,15 +538,15 @@ impl Session {
                 );
                 let base_path = folder.uri.to_file_path();
                 match base_path {
-                    Ok(base_path) => {
+                    Some(base_path) => {
                         let status = self
                             .load_pgls_configuration_file(ConfigurationPathHint::FromWorkspace(
-                                base_path,
+                                base_path.into_owned(),
                             ))
                             .await;
                         self.set_configuration_status(status);
                     }
-                    Err(_) => {
+                    None => {
                         error!(
                             "The Workspace root URI {:?} could not be parsed as a filesystem path",
                             folder.uri

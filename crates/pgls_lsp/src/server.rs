@@ -19,9 +19,9 @@ use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::Notify;
 use tokio::task::spawn_blocking;
-use tower_lsp::jsonrpc::Result as LspResult;
-use tower_lsp::{ClientSocket, lsp_types::*};
-use tower_lsp::{LanguageServer, LspService, Server};
+use tower_lsp_server::jsonrpc::Result as LspResult;
+use tower_lsp_server::{ClientSocket, ls_types::*};
+use tower_lsp_server::{LanguageServer, LspService, Server};
 use tracing::{Instrument, error, info};
 
 pub struct LSPServer {
@@ -95,14 +95,13 @@ impl LSPServer {
     }
 }
 
-#[tower_lsp::async_trait]
 impl LanguageServer for LSPServer {
     #[allow(deprecated)]
     #[tracing::instrument(
         level = "info",
         skip_all,
         fields(
-            root_uri = params.root_uri.as_ref().map(display),
+            root_uri = params.root_uri.as_ref().map(|uri| display(uri.as_str())),
             capabilities = debug(&params.capabilities),
             client_info = params.client_info.as_ref().map(debug),
             workspace_folders = params.workspace_folders.as_ref().map(debug),
@@ -131,6 +130,7 @@ impl LanguageServer for LSPServer {
                 name: String::from(env!("CARGO_PKG_NAME")),
                 version: Some(pgls_configuration::VERSION.to_string()),
             }),
+            offset_encoding: None,
         };
 
         Ok(init)
@@ -175,7 +175,7 @@ impl LanguageServer for LSPServer {
             .map(|change| change.uri.to_file_path());
         for file_path in file_paths {
             match file_path {
-                Ok(file_path) => {
+                Some(file_path) => {
                     let base_path = self.session.base_path();
                     if let Some(base_path) = base_path {
                         let possible_config_json = file_path.strip_prefix(&base_path);
@@ -192,7 +192,7 @@ impl LanguageServer for LSPServer {
                         }
                     }
                 }
-                Err(_) => {
+                None => {
                     error!(
                         "The Workspace root URI {file_path:?} could not be parsed as a filesystem path"
                     );
@@ -559,7 +559,7 @@ mod tests {
     use pgls_workspace::workspace::{IsPathIgnoredParams, OpenFileParams};
     use std::future::ready;
     use std::path::Path;
-    use tower_lsp::lsp_types::Url;
+    use tower_lsp_server::ls_types::Uri;
 
     /// A session backed by a real working directory, so that reloading the configuration keeps
     /// updating the settings of the *same* project. [`pgls_fs::MemoryFileSystem`] has no working
@@ -664,7 +664,7 @@ mod tests {
             })
             .expect("open_file");
         session.insert_document(
-            Url::from_file_path(&document).expect("a file url"),
+            Uri::from_file_path(&document).expect("a file url"),
             Document::new(0, "select 1;"),
         );
 

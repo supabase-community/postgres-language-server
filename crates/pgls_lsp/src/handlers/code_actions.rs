@@ -1,6 +1,6 @@
 use crate::{adapters::get_cursor_position, session::Session};
 use anyhow::{Result, anyhow};
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::{
     self, CodeAction, CodeActionDisabled, CodeActionOrCommand, Command, ExecuteCommandParams,
     MessageType,
 };
@@ -12,8 +12,8 @@ use pgls_workspace::features::code_actions::{
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn get_actions(
     session: &Session,
-    params: lsp_types::CodeActionParams,
-) -> Result<lsp_types::CodeActionResponse> {
+    params: ls_types::CodeActionParams,
+) -> Result<ls_types::CodeActionResponse> {
     let url = params.text_document.uri;
     let path = session.file_path(&url)?;
 
@@ -37,7 +37,7 @@ pub fn get_actions(
                 match command.category {
                     CommandActionCategory::ExecuteStatement(stmt_id) => Some(CodeAction {
                         title: title.clone(),
-                        kind: Some(lsp_types::CodeActionKind::EMPTY),
+                        kind: Some(ls_types::CodeActionKind::EMPTY),
                         command: Some({
                             Command {
                                 title: title.clone(),
@@ -55,7 +55,7 @@ pub fn get_actions(
                     }),
                     CommandActionCategory::InvalidateSchemaCache => Some(CodeAction {
                         title: title.clone(),
-                        kind: Some(lsp_types::CodeActionKind::EMPTY),
+                        kind: Some(ls_types::CodeActionKind::EMPTY),
                         command: Some({
                             Command {
                                 title: title.clone(),
@@ -100,7 +100,7 @@ pub async fn execute_command(
             let statement_id = serde_json::from_value::<pgls_workspace::workspace::StatementId>(
                 params.arguments[0].clone(),
             )?;
-            let doc_url: lsp_types::Url = serde_json::from_value(params.arguments[1].clone())?;
+            let doc_url: ls_types::Uri = serde_json::from_value(params.arguments[1].clone())?;
 
             let path = session.file_path(&doc_url)?;
 
