@@ -1,7 +1,6 @@
--- sectionMarkers: dbmate
--- migrate:up transaction:false
+-- section: up transaction:false
 ALTER TYPE status ADD VALUE 'archived';
 
--- migrate:down
+-- section: down
 -- expect_lint/avoidAlterEnumAddValue
 ALTER TYPE status ADD VALUE 'deleted';

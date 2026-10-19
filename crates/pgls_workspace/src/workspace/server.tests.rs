@@ -148,11 +148,17 @@ fn test_suppresses_multiline_alter_table_drop_column() {
     );
 }
 
-fn migration_section_diagnostics(lint_down: Option<bool>) -> Vec<String> {
+/// The categories of the diagnostics of a migration file, sorted. Suppression errors have no
+/// category.
+fn migration_diagnostics(
+    section_markers: SectionMarkers,
+    lint_down: Option<bool>,
+    content: &str,
+) -> Vec<String> {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Dbmate),
+            section_markers: Some(section_markers),
             lint_down,
             ..Default::default()
         }),
@@ -160,17 +166,7 @@ fn migration_section_diagnostics(lint_down: Option<bool>) -> Vec<String> {
     });
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgLSPath::new("20250301120000_drop_name.sql");
-    let content = r#"-- migrate:up
-ALTER TABLE users DROP COLUMN name;
-
--- migrate:down
--- pgls-ignore banDropColumn
-ALTER TABLE users DROP COLUMN email;
-DROP TABLE users;
-seect 1;
-"#;
-
+    let path = PgLSPath::new("20250301120000_migration.sql");
     workspace
         .open_file(OpenFileParams {
             path: path.clone(),
@@ -193,19 +189,38 @@ seect 1;
     let mut categories: Vec<String> = diagnostics
         .iter()
         .map(|d| d.category().map_or("", |c| c.name()).to_string())
-        // Suppression errors have no category.
-        .filter(|category| {
-            category.starts_with("lint/banDrop") || category == "syntax" || category.is_empty()
-        })
         .collect();
     categories.sort();
     categories
 }
 
+const DBMATE_DROP_NAME: &str = r#"-- migrate:up
+ALTER TABLE users DROP COLUMN name;
+
+-- migrate:down
+-- pgls-ignore banDropColumn
+ALTER TABLE users DROP COLUMN email;
+DROP TABLE users;
+seect 1;
+"#;
+
+fn drops_and_errors(categories: Vec<String>) -> Vec<String> {
+    categories
+        .into_iter()
+        .filter(|category| {
+            category.starts_with("lint/banDrop") || category == "syntax" || category.is_empty()
+        })
+        .collect()
+}
+
 #[test]
 fn lints_down_sections_by_default() {
     assert_eq!(
-        migration_section_diagnostics(None),
+        drops_and_errors(migration_diagnostics(
+            SectionMarkers::Dbmate,
+            None,
+            DBMATE_DROP_NAME
+        )),
         ["lint/banDropColumn", "lint/banDropTable", "syntax"]
     );
 }
@@ -214,8 +229,40 @@ fn lints_down_sections_by_default() {
 fn skips_down_sections_without_lint_down() {
     // The syntax error is still reported, and the suppression isn't reported as unused.
     assert_eq!(
-        migration_section_diagnostics(Some(false)),
+        drops_and_errors(migration_diagnostics(
+            SectionMarkers::Dbmate,
+            Some(false),
+            DBMATE_DROP_NAME
+        )),
         ["lint/banDropColumn", "syntax"]
+    );
+}
+
+#[test]
+fn goose_sections_run_without_transaction() {
+    let content = r#"-- +goose Up
+CREATE INDEX CONCURRENTLY IF NOT EXISTS users_email_idx ON users (email);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS users_name_idx ON users (name);
+
+-- +goose Down
+DROP INDEX CONCURRENTLY IF EXISTS users_email_idx;
+DROP INDEX CONCURRENTLY IF EXISTS users_name_idx;
+"#;
+    let in_transaction = |categories: Vec<String>| {
+        categories
+            .iter()
+            .filter(|category| *category == "lint/banConcurrentIndexCreationInTransaction")
+            .count()
+    };
+
+    assert_eq!(
+        in_transaction(migration_diagnostics(SectionMarkers::Goose, None, content)),
+        2
+    );
+    let content = format!("-- +goose NO TRANSACTION\n{content}");
+    assert_eq!(
+        in_transaction(migration_diagnostics(SectionMarkers::Goose, None, &content)),
+        0
     );
 }
 

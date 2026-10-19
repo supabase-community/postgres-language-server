@@ -4,36 +4,34 @@ expression: snapshot
 ---
 # Input
 ```
--- sectionMarkers: dbmate
--- Without a transaction from dbmate, explicit transactions are fine.
--- migrate:up transaction:false
+-- The migration tool runs each section in a transaction, which an explicit transaction would end.
+-- section: up
+-- expect_lint/transactionNesting
 BEGIN;
 ALTER TABLE users ADD COLUMN name text;
-COMMIT;
-CREATE INDEX CONCURRENTLY users_name_idx ON users (name);
-BEGIN;
 -- expect_lint/transactionNesting
-BEGIN;
 COMMIT;
 
--- migrate:down transaction:false
-DROP INDEX CONCURRENTLY users_name_idx;
--- expect_lint/transactionNesting
-COMMIT;
+-- section: down
+ALTER TABLE users DROP COLUMN name;
 
 ```
 
 # Diagnostics
 lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Nested transaction detected.
+  × Transaction already managed by migration tool.
   
-  i Starting a transaction when already in a transaction can cause issues.
+  i Migration tools manage transactions automatically. Remove explicit transaction control.
+  
+  i Put migration statements in separate files to have them be in separate transactions.
   
 
 
 lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × No transaction to end.
+  × Attempting to end transaction managed by migration tool.
   
-  i The migration runs without a transaction, and no transaction was started.
+  i Migration tools manage transactions automatically. Remove explicit transaction control.
+  
+  i Put migration statements in separate files to have them be in separate transactions.

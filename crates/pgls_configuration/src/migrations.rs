@@ -69,16 +69,6 @@ impl FromStr for SectionMarkers {
     }
 }
 
-impl From<SectionMarkers> for pgls_analyser::SectionMarkers {
-    fn from(markers: SectionMarkers) -> Self {
-        match markers {
-            SectionMarkers::None => Self::None,
-            SectionMarkers::Dbmate => Self::Dbmate,
-            SectionMarkers::Goose => Self::Goose,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

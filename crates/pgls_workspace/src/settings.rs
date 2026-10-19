@@ -22,7 +22,7 @@ use pgls_configuration::{
         CastStyle, ClauseBodyStyle, CommaStyle, FormatConfiguration, IndentStyle, KeywordCase,
         Layout, LogicalOperatorPlacement,
     },
-    migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
+    migrations::{MigrationsConfiguration, PartialMigrationsConfiguration, SectionMarkers},
     pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
     splinter::SplinterConfiguration,
@@ -882,7 +882,7 @@ pub struct FilesSettings {
 pub struct MigrationSettings {
     pub path: Option<PathBuf>,
     pub after: Option<u64>,
-    pub section_markers: pgls_analyser::SectionMarkers,
+    pub section_markers: SectionMarkers,
     pub lint_down: bool,
 }
 
@@ -891,7 +891,7 @@ impl Default for MigrationSettings {
         Self {
             path: None,
             after: None,
-            section_markers: pgls_analyser::SectionMarkers::None,
+            section_markers: SectionMarkers::None,
             lint_down: true,
         }
     }
@@ -902,7 +902,7 @@ impl From<PartialMigrationsConfiguration> for MigrationSettings {
         Self {
             path: value.migrations_dir.map(PathBuf::from),
             after: value.after,
-            section_markers: value.section_markers.unwrap_or_default().into(),
+            section_markers: value.section_markers.unwrap_or_default(),
             lint_down: value.lint_down.unwrap_or(true),
         }
     }
@@ -917,7 +917,7 @@ fn to_migration_settings(
         path: working_directory
             .map(|working_directory| working_directory.join(conf.migrations_dir)),
         after: Some(conf.after),
-        section_markers: conf.section_markers.into(),
+        section_markers: conf.section_markers,
         lint_down: conf.lint_down,
     }
 }

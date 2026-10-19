@@ -1,8 +1,7 @@
--- sectionMarkers: goose
--- +goose Up
+-- section: up
 ALTER TABLE authors ADD COLUMN email text;
 -- expect_lint/runningStatementWhileHoldingAccessExclusive
 UPDATE authors SET email = '';
 
--- +goose Down
+-- section: down
 ALTER TABLE authors DROP COLUMN email;

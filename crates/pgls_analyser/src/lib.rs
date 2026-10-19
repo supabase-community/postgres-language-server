@@ -24,7 +24,7 @@ pub use linter_registry::{
     LinterRegistryRuleParams, LinterRuleRegistry, LinterRuleRegistryBuilder,
 };
 pub use linter_rule::{LinterDiagnostic, LinterRule};
-pub use migration::{Direction, MigrationSection, SectionMarkers, migration_sections};
+pub use migration::{Direction, MigrationSection};
 
 // For convenience in macros and rule files - keep these shorter names
 pub use LinterDiagnostic as RuleDiagnostic;

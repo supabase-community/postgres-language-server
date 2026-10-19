@@ -4,35 +4,35 @@ expression: snapshot
 ---
 # Input
 ```
--- sectionMarkers: goose
--- goose runs each section in a transaction, which an explicit transaction would end.
--- +goose Up
--- expect_lint/transactionNesting
+-- Without a transaction from the migration tool, explicit transactions are fine.
+-- section: up transaction:false
 BEGIN;
 ALTER TABLE users ADD COLUMN name text;
+COMMIT;
+CREATE INDEX CONCURRENTLY users_name_idx ON users (name);
+BEGIN;
 -- expect_lint/transactionNesting
+BEGIN;
 COMMIT;
 
--- +goose Down
-ALTER TABLE users DROP COLUMN name;
+-- section: down transaction:false
+DROP INDEX CONCURRENTLY users_name_idx;
+-- expect_lint/transactionNesting
+COMMIT;
 
 ```
 
 # Diagnostics
 lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Transaction already managed by migration tool.
+  × Nested transaction detected.
   
-  i Migration tools manage transactions automatically. Remove explicit transaction control.
-  
-  i Put migration statements in separate files to have them be in separate transactions.
+  i Starting a transaction when already in a transaction can cause issues.
   
 
 
 lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Attempting to end transaction managed by migration tool.
+  × No transaction to end.
   
-  i Migration tools manage transactions automatically. Remove explicit transaction control.
-  
-  i Put migration statements in separate files to have them be in separate transactions.
+  i The migration runs without a transaction, and no transaction was started.

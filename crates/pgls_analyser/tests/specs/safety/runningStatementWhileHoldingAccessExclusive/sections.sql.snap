@@ -1,16 +1,23 @@
--- sectionMarkers: dbmate
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
 -- expect_no_diagnostics
 -- The lock of the up section isn't held in the down section.
--- migrate:up
+-- section: up
 ALTER TABLE authors ADD COLUMN email text;
 
--- migrate:down
+-- section: down
 UPDATE authors SET name = 'x';
 
 -- Without a transaction, each statement releases its locks.
--- migrate:up transaction:false
+-- section: up transaction:false
 ALTER TABLE books ADD COLUMN isbn text;
 UPDATE books SET isbn = '';
 
--- migrate:down
+-- section: down
 ALTER TABLE books DROP COLUMN isbn;
+
+```

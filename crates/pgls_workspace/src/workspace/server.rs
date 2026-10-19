@@ -24,10 +24,7 @@ use pg_query::convert_to_positional_params_with_metadata;
 use pgls_analyse::AnalysisFilter;
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
-use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, Direction, FileKind, LinterOptions,
-    migration_sections,
-};
+use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, Direction, FileKind, LinterOptions};
 use pgls_catalog::{Catalog, CatalogBase, Session};
 
 use pgls_catalog::Snapshot;
@@ -881,7 +878,10 @@ impl Workspace for WorkspaceServer {
             .migrations
             .as_ref()
             .map_or_else(Vec::new, |migrations| {
-                migration_sections(doc.get_document_content(), migrations.section_markers)
+                migration::migration_sections(
+                    doc.get_document_content(),
+                    migrations.section_markers,
+                )
             });
         let skipped_sections: Vec<TextRange> = sections
             .iter()

@@ -1,6 +1,5 @@
--- sectionMarkers: dbmate
--- Without a transaction from dbmate, explicit transactions are fine.
--- migrate:up transaction:false
+-- Without a transaction from the migration tool, explicit transactions are fine.
+-- section: up transaction:false
 BEGIN;
 ALTER TABLE users ADD COLUMN name text;
 COMMIT;
@@ -10,7 +9,7 @@ BEGIN;
 BEGIN;
 COMMIT;
 
--- migrate:down transaction:false
+-- section: down transaction:false
 DROP INDEX CONCURRENTLY users_name_idx;
 -- expect_lint/transactionNesting
 COMMIT;
