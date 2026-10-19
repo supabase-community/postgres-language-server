@@ -140,6 +140,22 @@ individual fields. The URI takes precedence over any other connection fields.
 ```
 
 
+## Sharing settings with `extends`
+
+`extends` lists other configuration files whose settings apply to this one, for example to share the linter setup between several projects of a monorepo:
+
+```json
+{
+  "$schema": "https://pg-language-server.com/latest/schema.json",
+  "extends": ["../postgres-language-server.base.jsonc"],
+  "db": {
+    "database": "billing"
+  }
+}
+```
+
+Paths that start with `.` or end in `.jsonc` are resolved relative to the configuration file. The files are applied from left to right, so a later file overrides an earlier one, and the settings of the configuration file itself take precedence over all of them.
+
 ## Specifying files to process
 
 You can control the files/folders to process using different strategies, either CLI, configuration and VCS.

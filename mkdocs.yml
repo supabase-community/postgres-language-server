@@ -52,6 +52,7 @@ nav:
       - Suppressions: guides/suppressions.md
       - Integrate with VCS: guides/vcs_integration.md
       - Continuous Integration: guides/continuous_integration.md
+      - Use in the browser: guides/browser.md
       - Upgrading to 0.27: guides/upgrading_to_0_27.md
   - Reference:
       - CLI Commands: reference/cli.md

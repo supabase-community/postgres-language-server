@@ -31,7 +31,7 @@ Use blank lines between complete statements instead.
 ## Features
 
 - Postgres-compatible parsing: Uses the same parser as Postgres itself for accurate syntax validation
-- Named Parameter Support: We convert `:param` and `@param` to positional parameters (`$1`, `$2`) so the Postgres parser understands them and the LSP works with ORMs and other tooling  
+- Named Parameter Support: We convert named parameters to positional parameters (`$1`, `$2`) so the Postgres parser understands them and the LSP works with ORMs, psql variables and other tooling. Supported styles are `$name`, `:name`, `:'name'`, `:"name"` and `@name`  
 - `PL/pgSQL`: In addition to SQL, also validates `PL/pgSQL` function bodies for basic syntax errors  
 
 ## Error Information

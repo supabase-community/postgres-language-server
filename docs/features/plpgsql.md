@@ -1,8 +1,8 @@
 # PL/pgSQL Support
 
-The Postgres Language Server partially supports `PL/pgSQL`. By default, use `libpg_query` to parse the function body and show any syntax error. This is a great way to quickly reduce the feedback loop when developing. Unfortunately, the reported errors do not contain any location information and we always report an error on the entire function body.
+The Postgres Language Server partially supports `PL/pgSQL`. Out of the box, the language server parses the function body with `libpg_query` and reports any syntax error, without needing a database. This shortens the feedback loop while you write the function, but `libpg_query` does not report where in the body the error is, so the error covers the entire function body.
 
-To get more sophisticated and fine-grained errors, we strongly recommend to enable the [`plpgsql_check`](https://github.com/okbob/plpgsql_check) extension in your development database.
+To get syntax errors at the offending token, and many more checks, we strongly recommend to enable the [`plpgsql_check`](https://github.com/okbob/plpgsql_check) extension in your development database.
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS plpgsql_check;
@@ -17,7 +17,7 @@ For any `CREATE FUNCTION` statement with the language `PL/pgSQL`, the following 
 3. For trigger functions, the analysis runs against each table that has triggers using this function, providing context-specific validation
 4. Errors are mapped back to source locations with token-level precision
 
-When `plpgsql_check` checks a function, it also reports its syntax errors at the offending token, so the language server no longer reports the `libpg_query` syntax error on the entire function body. The `libpg_query` error is still reported when `plpgsql_check` cannot check the function, e.g. when the function cannot be created in the database, or when no trigger uses a trigger function.
+When `plpgsql_check` checks a function, it also reports its syntax errors at the offending token (only an error at the very end of the body still covers the whole body), so the language server no longer reports the `libpg_query` syntax error on the entire function body. The `libpg_query` error is still reported when `plpgsql_check` cannot check the function: when there is no database connection, the extension is not installed or the integration is disabled, the function cannot be created in the database, or no trigger uses a trigger function.
 
 The integration provides more detailed and actionable feedback compared to basic syntax checking, including:
 
