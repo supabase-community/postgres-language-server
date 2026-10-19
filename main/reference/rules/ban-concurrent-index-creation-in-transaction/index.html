@@ -1208,6 +1208,8 @@
 <p>Concurrent index creation is not allowed within a transaction.</p>
 <p><code>CREATE INDEX CONCURRENTLY</code> cannot be used within a transaction block. This will cause an error in Postgres.</p>
 <p>Migration tools usually run each migration in a transaction, so using <code>CREATE INDEX CONCURRENTLY</code> will fail in such tools.</p>
+<p>With <code>migrations.sectionMarkers</code>, the rule knows whether the migration runs in a transaction:
+dbmate's <code>-- migrate:up transaction:false</code> and goose's <code>-- +goose NO TRANSACTION</code> disable it.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="ss">"field_name_idx"</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="ss">"table_name"</span><span class="w"> </span><span class="p">(</span><span class="ss">"field_name"</span><span class="p">);</span>

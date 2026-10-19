@@ -1244,6 +1244,9 @@ or errors in database migrations.</p>
 
 <span class="w">  </span>i<span class="w"> </span>Put<span class="w"> </span>migration<span class="w"> </span>statements<span class="w"> </span><span class="k">in</span><span class="w"> </span>separate<span class="w"> </span>files<span class="w"> </span>to<span class="w"> </span>have<span class="w"> </span>them<span class="w"> </span>be<span class="w"> </span><span class="k">in</span><span class="w"> </span>separate<span class="w"> </span>transactions.
 </code></pre></div>
+<p>In migration sections that run without a transaction, like dbmate's
+<code>-- migrate:up transaction:false</code>, explicit transactions are fine. The rule only reports
+a <code>BEGIN</code> inside a transaction, and a <code>COMMIT</code> or <code>ROLLBACK</code> outside of one.</p>
 <h2 id="how-to-configure">How to configure<a class="headerlink" href="#how-to-configure" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"linter"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>

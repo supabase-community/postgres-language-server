@@ -657,6 +657,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking Migrations
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -672,6 +689,37 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#up-and-down-migrations-in-one-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Up and down migrations in one file
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1113,6 +1161,11 @@
                       
                     
                     
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
                   
                   <div class="md-sidebar__inner">
                     
@@ -1124,6 +1177,25 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#up-and-down-migrations-in-one-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Up and down migrations in one file
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1171,6 +1243,57 @@
 </ul>
 </div>
 <p>For pre-commit hooks and when working locally, use <code>--staged</code> to only lint files that have been staged. In CI environments, you most likely want to use <code>--changed</code> to only lint files that have been changed compared to your <code>vcs.default_branch</code> configuration. If <code>default_branch</code> is not set in your <code>postgres-language-server.jsonc</code>, use <code>--since=REF</code> to specify the base branch to compare against.</p>
+<h2 id="up-and-down-migrations-in-one-file">Up and down migrations in one file<a class="headerlink" href="#up-and-down-migrations-in-one-file" title="Permanent link">&para;</a></h2>
+<p>Some migration tools put the up and the down migration in the same file, separated by marker comments, and run each section on its own. Set <code>sectionMarkers</code> to the tool you use, so that each section is checked as a migration of its own:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"migrations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"migrationsDir"</span><span class="p">:</span><span class="w"> </span><span class="s2">"db/migrations"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"sectionMarkers"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dbmate"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>sectionMarkers</code></th>
+<th>Markers</th>
+<th>Without a transaction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"dbmate"</code></td>
+<td><code>-- migrate:up</code>, <code>-- migrate:down</code></td>
+<td><code>-- migrate:up transaction:false</code> (per section)</td>
+</tr>
+<tr>
+<td><code>"goose"</code></td>
+<td><code>-- +goose Up</code>, <code>-- +goose Down</code></td>
+<td><code>-- +goose NO TRANSACTION</code> (whole file)</td>
+</tr>
+<tr>
+<td><code>"none"</code> (default)</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>With section markers:</p>
+<ul>
+<li>The transaction, lock, and session state starts fresh in each section. A lock taken or a <code>lock_timeout</code> set in the up section doesn't carry over to the down section.</li>
+<li>Sections run in a transaction, like the tools run them, unless the markers disable it. <code>banConcurrentIndexCreationInTransaction</code> flags <code>CREATE INDEX CONCURRENTLY</code> in every section that runs in a transaction, even when it's the only statement. In a section without a transaction, explicit <code>BEGIN</code> and <code>COMMIT</code> are fine for <code>transactionNesting</code>, and each statement outside of them commits on its own, so its locks are released.</li>
+<li>A down section sees the objects of the up sections before it, because it only runs after them. Its own changes don't carry over to the sections after it. For example, <code>drop table posts</code> in the down section knows <code>posts</code> from the up section.</li>
+<li>Statements before the first marker are checked like a file without markers.</li>
+<li>goose's <code>-- +goose StatementBegin</code> and <code>-- +goose StatementEnd</code> need no setup: statements, including function bodies, are split by their SQL syntax.</li>
+</ul>
+<p>Down sections are checked by default, since they run when you roll back. To only check the up sections, set <code>lintDown</code> to <code>false</code>. Syntax errors in down sections are still reported.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"migrations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"sectionMarkers"</span><span class="p">:</span><span class="w"> </span><span class="s2">"goose"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lintDown"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 
 
 

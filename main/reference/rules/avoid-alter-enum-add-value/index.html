@@ -1220,6 +1220,8 @@
 <p>In Postgres versions before 12, <code>ALTER TYPE ... ADD VALUE</code> cannot be executed inside a
 transaction block at all. On Postgres 12+, the operation is fast (metadata-only), but the
 new enum value cannot be used in the same transaction until it is committed.</p>
+<p>The rule is silent in migration sections that run without a transaction, like dbmate's
+<code>-- migrate:up transaction:false</code>.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">alter</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="n">my_enum</span><span class="w"> </span><span class="k">add</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="s1">'new_value'</span><span class="p">;</span>

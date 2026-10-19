@@ -1587,11 +1587,29 @@
           "format": "uint64",
           "minimum": 0.0
         },
+        "lintDown": {
+          "description": "If `false`, the down sections of migration files are not linted. Default: `true`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "migrationsDir": {
           "description": "The directory where the migration files are stored",
           "type": [
             "string",
             "null"
+          ]
+        },
+        "sectionMarkers": {
+          "description": "The comments that split a migration file into up and down sections, which are analysed as migrations of their own: \"dbmate\" (`-- migrate:up`, `-- migrate:down`), \"goose\" (`-- +goose Up`, `-- +goose Down`) or \"none\". Default: \"none\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SectionMarkers"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       },
@@ -2585,6 +2603,32 @@
         }
       },
       "additionalProperties": false
+    },
+    "SectionMarkers": {
+      "description": "The marker comments of a migration tool.",
+      "oneOf": [
+        {
+          "description": "The whole file is one migration (default).",
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        },
+        {
+          "description": "`-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section without a transaction.",
+          "type": "string",
+          "enum": [
+            "dbmate"
+          ]
+        },
+        {
+          "description": "`-- +goose Up` and `-- +goose Down` of goose. `-- +goose NO TRANSACTION` runs the file without a transaction.",
+          "type": "string",
+          "enum": [
+            "goose"
+          ]
+        }
+      ]
     },
     "Security": {
       "description": "A list of rules that belong to this group",

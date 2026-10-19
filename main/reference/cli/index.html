@@ -1246,6 +1246,10 @@
   The directory where the migration files are stored
 - <strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash; 
   Ignore any migrations before this timestamp
+- <strong><code>--section-markers</code></strong>=<em><code>ARG</code></em> &mdash; 
+  The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (<code>-- migrate:up</code>, <code>-- migrate:down</code>), "goose" (<code>-- +goose Up</code>, <code>-- +goose Down</code>) or "none". Default: "none".
+- <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
+  If <code>false</code>, the down sections of migration files are not linted. Default: <code>true</code>.
 - <strong><code>--line-width</code></strong>=<em><code>ARG</code></em> &mdash; 
   Maximum line width before breaking. Default: 100.
 - <strong><code>--indent-size</code></strong>=<em><code>ARG</code></em> &mdash; 
@@ -1349,6 +1353,10 @@
   The directory where the migration files are stored
 - <strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash; 
   Ignore any migrations before this timestamp
+- <strong><code>--section-markers</code></strong>=<em><code>ARG</code></em> &mdash; 
+  The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (<code>-- migrate:up</code>, <code>-- migrate:down</code>), "goose" (<code>-- +goose Up</code>, <code>-- +goose Down</code>) or "none". Default: "none".
+- <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
+  If <code>false</code>, the down sections of migration files are not linted. Default: <code>true</code>.
 - <strong><code>--line-width</code></strong>=<em><code>ARG</code></em> &mdash; 
   Maximum line width before breaking. Default: 100.
 - <strong><code>--indent-size</code></strong>=<em><code>ARG</code></em> &mdash; 
@@ -1465,6 +1473,10 @@
   The directory where the migration files are stored
 - <strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash; 
   Ignore any migrations before this timestamp
+- <strong><code>--section-markers</code></strong>=<em><code>ARG</code></em> &mdash; 
+  The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (<code>-- migrate:up</code>, <code>-- migrate:down</code>), "goose" (<code>-- +goose Up</code>, <code>-- +goose Down</code>) or "none". Default: "none".
+- <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
+  If <code>false</code>, the down sections of migration files are not linted. Default: <code>true</code>.
 - <strong><code>--line-width</code></strong>=<em><code>ARG</code></em> &mdash; 
   Maximum line width before breaking. Default: 100.
 - <strong><code>--indent-size</code></strong>=<em><code>ARG</code></em> &mdash; 
