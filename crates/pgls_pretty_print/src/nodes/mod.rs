@@ -612,6 +612,16 @@ pub(super) fn emit_parenthesized_condition(
     kind: GroupKind,
     condition: &Node,
 ) {
+    emit_parenthesized_condition_with(e, kind, condition, emit_node_enum);
+}
+
+/// Like `emit_parenthesized_condition`, with `emit` emitting the condition itself.
+pub(super) fn emit_parenthesized_condition_with(
+    e: &mut EventEmitter,
+    kind: GroupKind,
+    condition: &Node,
+    emit: impl FnOnce(&NodeEnum, &mut EventEmitter),
+) {
     use crate::TokenKind;
     use crate::emitter::LineType;
 
@@ -619,7 +629,7 @@ pub(super) fn emit_parenthesized_condition(
     e.token(TokenKind::L_PAREN);
     e.indent_start();
     e.line(LineType::Soft);
-    emit_node(condition, e);
+    emit_node_with(condition, e, emit);
     e.indent_end();
     e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);

@@ -751,14 +751,14 @@ create table nv_child_2011 ()
 inherits (nv_parent);
 
 alter table nv_child_2010
-  add check (d
-  between cast('2010-01-01' as date)
-  and cast('2010-12-31' as date)) not valid;
+  add check (
+    d between cast('2010-01-01' as date) and cast('2010-12-31' as date)
+  ) not valid;
 
 alter table nv_child_2011
-  add check (d
-  between cast('2011-01-01' as date)
-  and cast('2011-12-31' as date)) not valid;
+  add check (
+    d between cast('2011-01-01' as date) and cast('2011-12-31' as date)
+  ) not valid;
 
 select * from nv_parent where d between '2011-08-01' and '2011-08-31';
 
@@ -792,9 +792,9 @@ where
   d between cast('2009-08-01' as date) and cast('2009-08-31' as date);
 
 alter table nv_parent
-  add check (d
-  between cast('2001-01-01' as date)
-  and cast('2099-12-31' as date)) not valid;
+  add check (
+    d between cast('2001-01-01' as date) and cast('2099-12-31' as date)
+  ) not valid;
 
 create temporary table pktable (ptest1 int primary key);
 

@@ -146,10 +146,12 @@ create table sys_col_check_tbl (
   state text,
   is_capital bool,
   altitude int,
-  check (not (
-    is_capital and
-    cast(cast(tableoid as regclass) as text) = 'sys_col_check_tbl'
-  ))
+  check (
+    not (
+      is_capital and
+      cast(cast(tableoid as regclass) as text) = 'sys_col_check_tbl'
+    )
+  )
 );
 
 insert into sys_col_check_tbl values ('Seattle', 'Washington', false, 100);

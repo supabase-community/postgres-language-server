@@ -1,10 +1,10 @@
 use pgls_query::{
-    NodeEnum,
+    Node, NodeEnum,
     protobuf::{ConstrType, Constraint},
 };
 
-use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
+use crate::{Layout, TokenKind};
 
 use super::node_list::emit_parenthesized_list;
 use super::string::emit_identifier_maybe_quoted;
@@ -134,9 +134,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
 
             if let Some(ref raw_expr) = n.raw_expr {
                 e.space();
-                e.token(TokenKind::L_PAREN);
-                super::emit_node(raw_expr, e);
-                e.token(TokenKind::R_PAREN);
+                emit_check_condition(e, raw_expr);
             }
 
             if n.is_no_inherit {
@@ -447,6 +445,26 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
         e.indent_end();
     }
     e.group_end();
+}
+
+/// Emits the parenthesized condition of a CHECK constraint.
+///
+/// Expanded layout breaks between clauses, and a constraint is not one: its condition stays on one
+/// line when it fits. Once it breaks, expanded layout still puts each operand of its AND or OR chain
+/// on its own line, so the chain breaks with the parentheses rather than on its own.
+fn emit_check_condition(e: &mut EventEmitter, condition: &Node) {
+    let expanded = matches!(e.config().layout, Layout::Expanded);
+
+    e.with_layout(Layout::Fit, |e| {
+        super::emit_parenthesized_condition_with(e, GroupKind::Constraint, condition, |node, e| {
+            match node {
+                NodeEnum::BoolExpr(n) if expanded => {
+                    super::bool_expr::emit_bool_expr_in_enclosing_group(e, n);
+                }
+                _ => super::emit_node_enum(node, e),
+            }
+        });
+    });
 }
 
 /// Starts a continuation line of a constraint, which is indented once whatever their number.

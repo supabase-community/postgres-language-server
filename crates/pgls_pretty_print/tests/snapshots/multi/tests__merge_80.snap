@@ -1434,15 +1434,19 @@ create table measurement (
 with (autovacuum_enabled = off);
 
 create table measurement_y2006m02 (
-  check (logdate >= cast('2006-02-01' as date) and
-  logdate < cast('2006-03-01' as date))
+  check (
+    logdate >= cast('2006-02-01' as date) and
+    logdate < cast('2006-03-01' as date)
+  )
 )
 inherits (measurement)
 with (autovacuum_enabled = off);
 
 create table measurement_y2006m03 (
-  check (logdate >= cast('2006-03-01' as date) and
-  logdate < cast('2006-04-01' as date))
+  check (
+    logdate >= cast('2006-03-01' as date) and
+    logdate < cast('2006-04-01' as date)
+  )
 )
 inherits (measurement)
 with (autovacuum_enabled = off);
@@ -1453,8 +1457,10 @@ create table measurement_y2007m01 (
   logdate date not null,
   city_id int not null,
   unitsales int
-    check (logdate >= cast('2007-01-01' as date) and
-    logdate < cast('2007-02-01' as date))
+    check (
+      logdate >= cast('2007-01-01' as date) and
+      logdate < cast('2007-02-01' as date)
+    )
 )
 with (autovacuum_enabled = off);
 

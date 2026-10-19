@@ -711,25 +711,32 @@ create table test_jsonb_constraints (
     default json_query(cast('[1,2]' as jsonb), '$[*]'
     with unconditional wrapper)
     constraint test_jsonb_constraint1 check (js is json)
-    constraint test_jsonb_constraint2 check (json_exists(cast(js
-    as jsonb), '$.a'
-    passing i + 5 as int,
-    cast(i as text) as "TXT",
-    array[1, 2, 3] as arr))
-    constraint test_jsonb_constraint3 check (json_value(cast(js as jsonb), '$.a'
-    returning int
-    default '12' on empty
-    error on error) >
-    i)
-    constraint test_jsonb_constraint4 check (json_query(cast(js as jsonb), '$.a'
-    with conditional wrapper
-    empty object on error) =
-    cast('[10]' as jsonb))
-    constraint test_jsonb_constraint5 check (json_query(cast(js as jsonb), '$.a'
-    returning char(5)
-    omit quotes
-    empty array on empty) >
-    'a' collate "C")
+    constraint test_jsonb_constraint2 check (
+      json_exists(cast(js as jsonb), '$.a'
+      passing i + 5 as int,
+      cast(i as text) as "TXT",
+      array[1, 2, 3] as arr)
+    )
+    constraint test_jsonb_constraint3 check (
+      json_value(cast(js as jsonb), '$.a'
+      returning int
+      default '12' on empty
+      error on error) >
+      i
+    )
+    constraint test_jsonb_constraint4 check (
+      json_query(cast(js as jsonb), '$.a'
+      with conditional wrapper
+      empty object on error) =
+      cast('[10]' as jsonb)
+    )
+    constraint test_jsonb_constraint5 check (
+      json_query(cast(js as jsonb), '$.a'
+      returning char(5)
+      omit quotes
+      empty array on empty) >
+      'a' collate "C"
+    )
 );
 
 select

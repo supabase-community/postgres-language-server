@@ -1,0 +1,23 @@
+create table public.t (
+  can_view boolean not null default false,
+  can_edit boolean not null default false,
+  constraint t_at_least_one_permission check (can_view or can_edit)
+);
+
+alter table public.t add constraint t_check check (can_view or can_edit);
+
+create table public.accounts (
+  id bigint primary key,
+  kind text not null check (kind in ('personal', 'business', 'organization', 'internal', 'partner', 'reseller')),
+  email text,
+  phone text,
+  deleted_at timestamptz,
+  constraint accounts_contact_present check (email is not null or phone is not null or deleted_at is not null or kind = 'internal'),
+  constraint accounts_business_contact check ((kind = 'business' and email is not null) or (kind <> 'business' and phone is not null)) no inherit
+);
+
+alter table public.accounts add constraint accounts_email_lowercase check (email is null or email = lower(email) and length(email) <= 320) not valid;
+
+create domain public.email_address as text check (value ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' and length(value) <= 320 and value = lower(value));
+
+alter domain public.email_address add constraint email_address_not_blank check (value <> '' and value is not null and length(value) > 3) not valid;
