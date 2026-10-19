@@ -2121,3 +2121,61 @@ async fn test_hover_shows_resolved_references(test_db: PgPool) {
     let blocks = hover("label as ambiguous");
     assert_eq!(blocks.len(), 2, "{blocks:?}");
 }
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Dbmate),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("20250301120000_migration.sql");
+    let content = "-- migrate:up\n\
+        create function up_point(x int, y int) returns int language sql as 'select x + y';\n\
+        -- migrate:down\n\
+        create function down_point(a int, b int) returns int language sql as 'select a + b';\n\
+        select up_point(1, 2), down_point(3, 4);\n\
+        -- migrate:up\n\
+        select up_point(5, 6), down_point(7, 8);\n";
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let hints = workspace
+        .pull_inlay_hints(PullInlayHintsParams {
+            path: path.clone(),
+            range: TextRange::new(0.into(), u32::try_from(content.len()).unwrap().into()),
+        })
+        .expect("Unable to pull inlay hints")
+        .hints;
+
+    // The down section sees the up section before it, and its own changes don't carry into the
+    // next up section.
+    let labels: Vec<_> = hints
+        .iter()
+        .map(|hint| {
+            let offset = usize::from(hint.offset);
+            format!("{}{}", hint.label, &content[offset..offset + 1])
+        })
+        .collect();
+    assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
+}

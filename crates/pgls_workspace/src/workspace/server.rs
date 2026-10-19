@@ -29,10 +29,10 @@ use pgls_analyse::{
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, RuleFix,
+    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix,
 };
 use pgls_catalog::resolve::{Reference, ResolveParams, resolve};
-use pgls_catalog::{Catalog, CatalogBase, Session};
+use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
 use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
@@ -324,15 +324,7 @@ impl WorkspaceServer {
          * Each section is analysed as a migration of its own, and the down sections are only
          * checked with `lintDown`. Syntax errors are reported everywhere.
          */
-        let sections = settings
-            .migrations
-            .as_ref()
-            .map_or_else(Vec::new, |migrations| {
-                migration::migration_sections(
-                    doc.get_document_content(),
-                    migrations.section_markers,
-                )
-            });
+        let sections = document_sections(settings, doc);
         let skipped_sections: Vec<TextRange> = sections
             .iter()
             .filter(|section| {
@@ -471,8 +463,9 @@ impl WorkspaceServer {
 
     /// Walks the statements of `doc` that start before `end` like the analyser does: the catalog
     /// and the session follow the statements, so that each statement sees the objects created
-    /// earlier in the file. `visit` gets every parsed statement with the catalog and the session
-    /// as they are before it.
+    /// earlier in the file. Each migration section gets a session of its own, and the changes of
+    /// a down section don't carry into the next section. `visit` gets every parsed statement with
+    /// the catalog and the session as they are before it.
     fn walk_statements(
         &self,
         doc: &Document,
@@ -480,19 +473,54 @@ impl WorkspaceServer {
         end: TextSize,
         mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
     ) {
-        let search_path = self
+        let (search_path, sections) = self
             .workspaces()
             .settings()
-            .map(|settings| settings.typecheck.search_path.clone())
+            .map(|settings| {
+                (
+                    settings.typecheck.search_path.clone(),
+                    document_sections(settings, doc),
+                )
+            })
             .unwrap_or_default();
+        let search_path = snapshot.expand_search_path(&search_path);
+        let new_session = |section: Option<&MigrationSection>| {
+            Session::new(search_path.clone()).with_transaction_mode(
+                section.map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
+            )
+        };
 
         let mut catalog = Catalog::new(Some(self.catalog_base(snapshot)));
-        let mut session = Session::new(snapshot.expand_search_path(&search_path));
+        let mut session = new_session(None);
+        let mut section: Option<&MigrationSection> = None;
+        // The catalog after the up sections so far, while walking a down section.
+        let mut up_catalog: Option<Catalog> = None;
         for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
-            if let Some(unparsable) = unparsable {
-                if unparsable.range.start() >= end {
-                    break;
+            let Some(start) = stmt.as_ref().map(|stmt| stmt.range.start()).or_else(|| {
+                unparsable
+                    .as_ref()
+                    .map(|unparsable| unparsable.range.start())
+            }) else {
+                continue;
+            };
+            if start >= end {
+                break;
+            }
+            let current = sections
+                .iter()
+                .find(|section| section.range.contains(start));
+            if current != section {
+                if let Some(up_catalog) = up_catalog.take() {
+                    catalog = up_catalog;
                 }
+                if current.is_some_and(|section| section.direction == Direction::Down) {
+                    up_catalog = Some(catalog.clone());
+                }
+                session = new_session(current);
+                section = current;
+            }
+
+            if let Some(unparsable) = unparsable {
                 if pgls_analyser::may_change_catalog(&unparsable.sql) {
                     catalog.taint();
                 }
@@ -501,9 +529,6 @@ impl WorkspaceServer {
             let Some(stmt) = stmt else {
                 continue;
             };
-            if stmt.range.start() >= end {
-                break;
-            }
             // The names of statements with identifier parameters like `:name` are placeholders.
             if stmt.has_identifier_parameters {
                 if !pgls_analyser::is_plain_query(&stmt.root) {
@@ -1828,6 +1853,16 @@ impl Workspace for WorkspaceServer {
         hints.sort_by_key(|hint| hint.offset);
         Ok(PullInlayHintsResult { hints })
     }
+}
+
+/// The migration sections of `doc`, like the up and down migrations of dbmate and goose.
+fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSection> {
+    settings
+        .migrations
+        .as_ref()
+        .map_or_else(Vec::new, |migrations| {
+            migration::migration_sections(doc.get_document_content(), migrations.section_markers)
+        })
 }
 
 /// Returns `true` if `path` is a directory or
