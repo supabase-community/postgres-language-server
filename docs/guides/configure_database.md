@@ -30,8 +30,9 @@ Configure database connection details in your `postgres-language-server.jsonc` f
     "database": "your_database_name",
     // Connection timeout in seconds (default: 10)
     "connTimeoutSecs": 10,
-    // Schemas where code action statement execution is allowed (default: [])
-    "allowStatementExecutionsAgainst": ["public", "testing"],
+    // Glob patterns matched against `host/database`; code actions may execute
+    // statements only when one of them matches (default: [], never)
+    "allowStatementExecutionsAgainst": ["localhost/*", "127.0.0.1/*"],
     // Completely disable database features (default: false)
     "disableConnection": false
   }
@@ -99,15 +100,18 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO postgres_language_server;
 ```
 
 ### Statement Execution Control
-You can control which schemas allow code action statement execution (executing statements under the cursor):
+Code actions that execute the statement under the cursor are disabled by default. To enable them, list glob patterns in `allowStatementExecutionsAgainst`. Each pattern is matched against `host/database` of the connection (taken from the connection string when one is set), and statements can only be executed when one of them matches:
 
 ```json
 {
   "db": {
-    "allowStatementExecutionsAgainst": ["public", "testing"]
+    // any database on the local machine
+    "allowStatementExecutionsAgainst": ["localhost/*", "127.0.0.1/*"]
   }
 }
 ```
+
+The patterns do not refer to schemas. To allow a single database only, name it, e.g. `"localhost/my_dev_db"`.
 
 ## Disabling Database Features
 

@@ -26,6 +26,20 @@ Postgres Language Server is available as a [Homebrew formula](https://formulae.b
 brew install postgres-language-server
 ```
 
+### Nix
+
+The CLI is packaged in [nixpkgs](https://search.nixos.org/packages?query=postgres-language-server) as `postgres-language-server`:
+
+```sh
+# Install into your profile
+nix profile install nixpkgs#postgres-language-server
+
+# Or try it without installing
+nix run nixpkgs#postgres-language-server -- --version
+```
+
+In a NixOS, home-manager or `devShell` configuration, add `pkgs.postgres-language-server` to the list of packages. The nixpkgs version can lag behind the latest GitHub release.
+
 ### Using a published binary
 
 To install postgres-language-server, grab the executable for your platform from the latest CLI release on GitHub and give it execution permission.
