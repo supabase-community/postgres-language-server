@@ -102,11 +102,11 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
     if let Some(ref constructor) = n.constructor
         && let Some(ref output) = constructor.output
     {
-        let mut has_content = has_arg;
-        if has_content {
+        if has_arg {
             e.line(crate::emitter::LineType::SoftOrSpace);
         }
-        super::json_value_expr::emit_json_output(e, output, &mut has_content);
+        // The line above already separates RETURNING from the arguments.
+        super::json_value_expr::emit_json_output(e, output, &mut false);
     }
 
     e.token(TokenKind::R_PAREN);

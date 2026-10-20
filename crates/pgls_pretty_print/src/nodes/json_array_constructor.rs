@@ -126,9 +126,11 @@ pub(super) fn emit_json_array_agg(e: &mut EventEmitter, n: &JsonArrayAgg) {
     if let Some(ref constructor) = n.constructor
         && let Some(ref output) = constructor.output
     {
-        let mut has_content = n.arg.is_some();
-        e.line(crate::emitter::LineType::SoftOrSpace);
-        emit_json_output(e, output, &mut has_content);
+        if n.arg.is_some() {
+            e.line(crate::emitter::LineType::SoftOrSpace);
+        }
+        // The line above already separates RETURNING from the arguments.
+        emit_json_output(e, output, &mut false);
     }
 
     e.token(TokenKind::R_PAREN);

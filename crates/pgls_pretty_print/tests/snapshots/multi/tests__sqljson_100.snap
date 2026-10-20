@@ -322,13 +322,13 @@ select json_array(select * from (values (1, 2)) as foo (i, j));
 
 select
   json_arrayagg(i absent on null) is null,
-  json_arrayagg(i absent on null  returning jsonb) is null
+  json_arrayagg(i absent on null returning jsonb) is null
 from
   generate_series(1, 0) as i;
 
 select
   json_arrayagg(i absent on null),
-  json_arrayagg(i absent on null  returning jsonb)
+  json_arrayagg(i absent on null returning jsonb)
 from
   generate_series(1, 5) as i;
 
@@ -343,27 +343,27 @@ from
 
 select
   json_arrayagg(null absent on null),
-  json_arrayagg(null absent on null  returning jsonb)
+  json_arrayagg(null absent on null returning jsonb)
 from
   generate_series(1, 5);
 
 select
   json_arrayagg(null null on null),
-  json_arrayagg(null null on null  returning jsonb)
+  json_arrayagg(null null on null returning jsonb)
 from
   generate_series(1, 5);
 
 select
   json_arrayagg(bar absent on null) as no_options,
-  json_arrayagg(bar absent on null  returning jsonb) as returning_jsonb,
+  json_arrayagg(bar absent on null returning jsonb) as returning_jsonb,
   json_arrayagg(bar absent on null) as absent_on_null,
-  json_arrayagg(bar absent on null  returning jsonb) as absentonnull_returning_jsonb,
+  json_arrayagg(bar absent on null returning jsonb) as absentonnull_returning_jsonb,
   json_arrayagg(bar null on null) as null_on_null,
-  json_arrayagg(bar null on null  returning jsonb) as nullonnull_returning_jsonb,
+  json_arrayagg(bar null on null returning jsonb) as nullonnull_returning_jsonb,
   json_arrayagg(foo absent on null) as row_no_options,
-  json_arrayagg(foo absent on null  returning jsonb) as row_returning_jsonb,
+  json_arrayagg(foo absent on null returning jsonb) as row_returning_jsonb,
   json_arrayagg(foo order by bar absent on null) filter (where bar > 2) as row_filtered_agg,
-  json_arrayagg(foo order by bar absent on null  returning jsonb) filter (where bar > 2)
+  json_arrayagg(foo order by bar absent on null returning jsonb) filter (where bar > 2)
   as row_filtered_agg_returning_jsonb
 from
   (values (null), (3), (1), (null), (null), (5), (2), (4), (null)) as foo (bar);
@@ -376,17 +376,17 @@ from
 
 select
   json_objectagg('key' : 1 null on null) is null,
-  json_objectagg('key' : 1 null on null  returning jsonb) is null
+  json_objectagg('key' : 1 null on null returning jsonb) is null
 where
   false;
 
 select json_objectagg(null : 1 null on null);
 
-select json_objectagg(null : 1 null on null  returning jsonb);
+select json_objectagg(null : 1 null on null returning jsonb);
 
 select
   json_objectagg(i : i null on null),
-  json_objectagg(i : i null on null  returning jsonb)
+  json_objectagg(i : i null on null returning jsonb)
 from
   generate_series(1, 5) as i;
 
@@ -394,9 +394,9 @@ select
   json_objectagg(k : v null on null),
   json_objectagg(k : v null on null),
   json_objectagg(k : v absent on null),
-  json_objectagg(k : v null on null  returning jsonb),
-  json_objectagg(k : v null on null  returning jsonb),
-  json_objectagg(k : v absent on null  returning jsonb)
+  json_objectagg(k : v null on null returning jsonb),
+  json_objectagg(k : v null on null returning jsonb),
+  json_objectagg(k : v absent on null returning jsonb)
 from
   (values (1, 1), (1, null), (2, null), (3, 3)) as foo (k, v);
 
@@ -416,17 +416,17 @@ from
   (values (1, 1), (0, null), (3, null), (2, 2), (4, null)) as foo (k, v);
 
 select
-  json_objectagg(k : v null on null with unique keys  returning jsonb)
+  json_objectagg(k : v null on null with unique keys returning jsonb)
 from
   (values (1, 1), (1, null), (2, 2)) as foo (k, v);
 
 select
-  json_objectagg(k : v absent on null with unique keys  returning jsonb)
+  json_objectagg(k : v absent on null with unique keys returning jsonb)
 from
   (values (1, 1), (1, null), (2, 2)) as foo (k, v);
 
 select
-  json_objectagg(k : v absent on null with unique keys  returning jsonb)
+  json_objectagg(k : v absent on null with unique keys returning jsonb)
 from
   (values (1, 1), (0, null), (4, null), (5, null), (6, null), (2, 2)) as foo (k, v);
 
