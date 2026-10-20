@@ -123,9 +123,8 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
 
             // RETURNING clause
             if let Some(ref output) = n.output {
-                let mut has_content = true;
                 e.line(LineType::SoftOrSpace);
-                super::json_value_expr::emit_json_output(e, output, &mut has_content);
+                super::json_value_expr::emit_json_output(e, output, &mut false);
             }
 
             // Wrapper handling (WITHOUT WRAPPER, WITH WRAPPER, etc.)
@@ -230,9 +229,8 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
 
             // RETURNING clause
             if let Some(ref output) = n.output {
-                let mut has_content = true;
                 e.line(LineType::SoftOrSpace);
-                super::json_value_expr::emit_json_output(e, output, &mut has_content);
+                super::json_value_expr::emit_json_output(e, output, &mut false);
             }
 
             // ON EMPTY clause

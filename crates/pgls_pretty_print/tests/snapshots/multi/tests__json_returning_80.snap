@@ -2,7 +2,7 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/json_returning.sql
 ---
-select json_value(cast('123' as jsonb), '$'  returning int);
+select json_value(cast('123' as jsonb), '$' returning int);
 
 select
   json_value(cast('{"a": {"b": "a rather long string value"}}'
@@ -11,7 +11,7 @@ select
   default 'fallback' on empty
   error on error);
 
-select json_query(cast('[1, 2]' as jsonb), '$'  returning text);
+select json_query(cast('[1, 2]' as jsonb), '$' returning text);
 
 select
   json_query(cast('{"a": [1, 2, 3, 4, 5, 6, 7, 8]}' as jsonb), '$.a'
@@ -20,17 +20,17 @@ select
   keep quotes);
 
 select
-  json_arrayagg(i absent on null  returning jsonb)
+  json_arrayagg(i absent on null returning jsonb)
 from
   generate_series(1, 3) as i;
 
 select
-  json_arrayagg(i absent on null  returning jsonb)
+  json_arrayagg(i absent on null returning jsonb)
 from
   generate_series(1, 3) as i;
 
 select
-  json_objectagg(k : v null on null with unique keys  returning jsonb)
+  json_objectagg(k : v null on null with unique keys returning jsonb)
 from
   (values ('a', 1)) as t (k, v);
 

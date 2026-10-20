@@ -64,68 +64,66 @@ select json_value(cast(null as jsonb), '$');
 
 select json_value(cast('null' as jsonb), '$');
 
-select json_value(cast('null' as jsonb), '$'  returning int);
+select json_value(cast('null' as jsonb), '$' returning int);
 
 select json_value(cast('true' as jsonb), '$');
 
-select json_value(cast('true' as jsonb), '$'  returning bool);
+select json_value(cast('true' as jsonb), '$' returning bool);
 
 select json_value(cast('123' as jsonb), '$');
 
-select json_value(cast('123' as jsonb), '$'  returning int) + 234;
+select json_value(cast('123' as jsonb), '$' returning int) + 234;
 
-select json_value(cast('123' as jsonb), '$'  returning text);
+select json_value(cast('123' as jsonb), '$' returning text);
 
-select json_value(cast('123' as jsonb), '$'  returning bytea error on error);
+select json_value(cast('123' as jsonb), '$' returning bytea error on error);
 
 select json_value(cast('1.23' as jsonb), '$');
 
-select json_value(cast('1.23' as jsonb), '$'  returning int);
+select json_value(cast('1.23' as jsonb), '$' returning int);
 
-select json_value(cast('"1.23"' as jsonb), '$'  returning numeric);
+select json_value(cast('"1.23"' as jsonb), '$' returning numeric);
 
-select json_value(cast('"1.23"' as jsonb), '$'  returning int error on error);
+select json_value(cast('"1.23"' as jsonb), '$' returning int error on error);
 
 select json_value(cast('"aaa"' as jsonb), '$');
 
-select json_value(cast('"aaa"' as jsonb), '$'  returning text);
+select json_value(cast('"aaa"' as jsonb), '$' returning text);
 
-select json_value(cast('"aaa"' as jsonb), '$'  returning char(5));
+select json_value(cast('"aaa"' as jsonb), '$' returning char(5));
 
-select
-  json_value(cast('"aaa"' as jsonb), '$'  returning char(2) error on error);
+select json_value(cast('"aaa"' as jsonb), '$' returning char(2) error on error);
 
-select json_value(cast('"aaa"' as jsonb), '$'  returning char(2));
+select json_value(cast('"aaa"' as jsonb), '$' returning char(2));
 
-select
-  json_value(cast('"aaa"' as jsonb), '$'  returning char(3) error on error);
+select json_value(cast('"aaa"' as jsonb), '$' returning char(3) error on error);
 
-select json_value(cast('"aaa"' as jsonb), '$'  returning json);
+select json_value(cast('"aaa"' as jsonb), '$' returning json);
 
-select json_value(cast('"aaa"' as jsonb), '$'  returning jsonb);
+select json_value(cast('"aaa"' as jsonb), '$' returning jsonb);
 
-select json_value(cast('"aaa"' as jsonb), '$'  returning json error on error);
+select json_value(cast('"aaa"' as jsonb), '$' returning json error on error);
 
-select json_value(cast('"aaa"' as jsonb), '$'  returning jsonb error on error);
+select json_value(cast('"aaa"' as jsonb), '$' returning jsonb error on error);
 
-select json_value(cast('"\"aaa\""' as jsonb), '$'  returning json);
+select json_value(cast('"\"aaa\""' as jsonb), '$' returning json);
 
-select json_value(cast('"\"aaa\""' as jsonb), '$'  returning jsonb);
+select json_value(cast('"\"aaa\""' as jsonb), '$' returning jsonb);
 
-select json_value(cast('"aaa"' as jsonb), '$'  returning int);
+select json_value(cast('"aaa"' as jsonb), '$' returning int);
 
-select json_value(cast('"aaa"' as jsonb), '$'  returning int error on error);
+select json_value(cast('"aaa"' as jsonb), '$' returning int error on error);
 
 select
-  json_value(cast('"aaa"' as jsonb), '$'  returning int default 111 on error);
+  json_value(cast('"aaa"' as jsonb), '$' returning int default 111 on error);
 
-select json_value(cast('"123"' as jsonb), '$'  returning int) + 234;
+select json_value(cast('"123"' as jsonb), '$' returning int) + 234;
 
-select json_value(cast('"2017-02-20"' as jsonb), '$'  returning date) + 9;
+select json_value(cast('"2017-02-20"' as jsonb), '$' returning date) + 9;
 
 create domain sqljsonb_int_not_null as int not null;
 
-select json_value(cast('null' as jsonb), '$'  returning sqljsonb_int_not_null);
+select json_value(cast('null' as jsonb), '$' returning sqljsonb_int_not_null);
 
 select
   json_value(cast('null' as jsonb), '$'
@@ -161,7 +159,7 @@ create type rainbow as enum (
 
 create domain rgb as rainbow check (value in ('red', 'green', 'blue'));
 
-select json_value(cast('"purple"' as jsonb), 'lax $[*]'  returning rgb);
+select json_value(cast('"purple"' as jsonb), 'lax $[*]' returning rgb);
 
 select
   json_value(cast('"purple"' as jsonb), 'lax $[*]'
@@ -207,7 +205,7 @@ select json_value(cast('[1,2]' as jsonb), '$[*]' error on error);
 
 select json_value(cast('[1,2]' as jsonb), '$[*]' default '0' on error);
 
-select json_value(cast('[" "]' as jsonb), '$[*]'  returning int error on error);
+select json_value(cast('[" "]' as jsonb), '$[*]' returning int error on error);
 
 select
   json_value(cast('[" "]' as jsonb), '$[*]'
@@ -219,9 +217,9 @@ select
   returning int
   default 2 + 3 on error);
 
-select json_value(cast('["1"]' as jsonb), '$[*]'  returning int format json);
+select json_value(cast('["1"]' as jsonb), '$[*]' returning int format json);
 
-select json_value(cast('["1"]' as jsonb), '$[*]'  returning record);
+select json_value(cast('["1"]' as jsonb), '$[*]' returning record);
 
 select
   x,
@@ -293,9 +291,9 @@ select
   passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
   returning jsonb);
 
-select json_value('{"a": 1.234}', '$.a'  returning int error on error);
+select json_value('{"a": 1.234}', '$.a' returning int error on error);
 
-select json_value('{"a": "1.234"}', '$.a'  returning int error on error);
+select json_value('{"a": "1.234"}', '$.a' returning int error on error);
 
 select json_value(cast(null as jsonb), '$');
 
@@ -338,15 +336,15 @@ from
   )
   as foo (js);
 
-select json_query(cast('"aaa"' as jsonb), '$'  returning text);
+select json_query(cast('"aaa"' as jsonb), '$' returning text);
 
-select json_query(cast('"aaa"' as jsonb), '$'  returning text keep quotes);
+select json_query(cast('"aaa"' as jsonb), '$' returning text keep quotes);
 
-select json_query(cast('"aaa"' as jsonb), '$'  returning text keep quotes);
+select json_query(cast('"aaa"' as jsonb), '$' returning text keep quotes);
 
-select json_query(cast('"aaa"' as jsonb), '$'  returning text omit quotes);
+select json_query(cast('"aaa"' as jsonb), '$' returning text omit quotes);
 
-select json_query(cast('"aaa"' as jsonb), '$'  returning text omit quotes);
+select json_query(cast('"aaa"' as jsonb), '$' returning text omit quotes);
 
 select json_query(cast('"aaa"' as jsonb), '$' omit quotes error on error);
 
@@ -362,10 +360,9 @@ select
   omit quotes
   error on error);
 
-select
-  json_query(cast('"aaa"' as jsonb), '$'  returning char(3) error on error);
+select json_query(cast('"aaa"' as jsonb), '$' returning char(3) error on error);
 
-select json_query(cast('"aaa"' as jsonb), '$'  returning char(3));
+select json_query(cast('"aaa"' as jsonb), '$' returning char(3));
 
 select
   json_query(cast('"aaa"' as jsonb), '$'
@@ -490,23 +487,23 @@ select json_query(cast('[1,2]' as jsonb), '$[*]' error on error);
 
 select json_query(cast('[1,2]' as jsonb), '$[*]' default '"empty"' on error);
 
-select json_query(cast('[1,2]' as jsonb), '$'  returning json);
+select json_query(cast('[1,2]' as jsonb), '$' returning json);
 
-select json_query(cast('[1,2]' as jsonb), '$'  returning json format json);
+select json_query(cast('[1,2]' as jsonb), '$' returning json format json);
 
-select json_query(cast('[1,2]' as jsonb), '$'  returning jsonb);
+select json_query(cast('[1,2]' as jsonb), '$' returning jsonb);
 
-select json_query(cast('[1,2]' as jsonb), '$'  returning jsonb format json);
+select json_query(cast('[1,2]' as jsonb), '$' returning jsonb format json);
 
-select json_query(cast('[1,2]' as jsonb), '$'  returning text);
+select json_query(cast('[1,2]' as jsonb), '$' returning text);
 
-select json_query(cast('[1,2]' as jsonb), '$'  returning char(10));
+select json_query(cast('[1,2]' as jsonb), '$' returning char(10));
 
-select json_query(cast('[1,2]' as jsonb), '$'  returning text format json);
+select json_query(cast('[1,2]' as jsonb), '$' returning text format json);
 
-select json_query(cast('[1,2]' as jsonb), '$'  returning bytea);
+select json_query(cast('[1,2]' as jsonb), '$' returning bytea);
 
-select json_query(cast('[1,2]' as jsonb), '$'  returning bytea format json);
+select json_query(cast('[1,2]' as jsonb), '$' returning bytea format json);
 
 select
   json_query(cast('[1,2]' as jsonb), '$[*]'
@@ -538,21 +535,21 @@ select
   returning bigint[]
   empty object on error);
 
-select json_query(cast('"123.1"' as jsonb), '$'  returning int2 error on error);
+select json_query(cast('"123.1"' as jsonb), '$' returning int2 error on error);
 
-select json_query(cast('"123.1"' as jsonb), '$'  returning int4 error on error);
+select json_query(cast('"123.1"' as jsonb), '$' returning int4 error on error);
 
-select json_query(cast('"123.1"' as jsonb), '$'  returning int8 error on error);
+select json_query(cast('"123.1"' as jsonb), '$' returning int8 error on error);
 
-select json_query(cast('"123.1"' as jsonb), '$'  returning bool error on error);
-
-select
-  json_query(cast('"123.1"' as jsonb), '$'  returning numeric error on error);
-
-select json_query(cast('"123.1"' as jsonb), '$'  returning real error on error);
+select json_query(cast('"123.1"' as jsonb), '$' returning bool error on error);
 
 select
-  json_query(cast('"123.1"' as jsonb), '$'  returning float8 error on error);
+  json_query(cast('"123.1"' as jsonb), '$' returning numeric error on error);
+
+select json_query(cast('"123.1"' as jsonb), '$' returning real error on error);
+
+select
+  json_query(cast('"123.1"' as jsonb), '$' returning float8 error on error);
 
 select
   json_query(cast('"123.1"' as jsonb), '$'
@@ -679,10 +676,10 @@ from
   );
 
 select
-  json_query(cast('{"a": 1}' as jsonb), '$.a'  returning sqljsonb_int_not_null);
+  json_query(cast('{"a": 1}' as jsonb), '$.a' returning sqljsonb_int_not_null);
 
 select
-  json_query(cast('{"a": 1}' as jsonb), '$.b'  returning sqljsonb_int_not_null);
+  json_query(cast('{"a": 1}' as jsonb), '$.b' returning sqljsonb_int_not_null);
 
 select
   json_query(cast('{"a": 1}' as jsonb), '$.b'
@@ -944,22 +941,22 @@ END;
 $$;
 
 select
-  json_query(js, '$'  returning int default ret_setint() on error)
+  json_query(js, '$' returning int default ret_setint() on error)
 from
   test_jsonb_mutability;
 
 select
-  json_query(js, '$'  returning int default b + 1 on error)
+  json_query(js, '$' returning int default b + 1 on error)
 from
   test_jsonb_mutability;
 
 select
-  json_query(js, '$'  returning int default sum(1) over () on error)
+  json_query(js, '$' returning int default sum(1) over () on error)
 from
   test_jsonb_mutability;
 
 select
-  json_query(js, '$'  returning int default (select 1) on error)
+  json_query(js, '$' returning int default (select 1) on error)
 from
   test_jsonb_mutability;
 
@@ -1050,7 +1047,7 @@ select json_query(null format json, '$');
 
 create temporary table jsonpaths (path) as select '$';
 
-select json_value('"aaa"', path  returning json) from jsonpaths;
+select json_value('"aaa"', path returning json) from jsonpaths;
 
 select json_query(cast('null' as jsonb), '$xyz' passing 1 as xy);
 
@@ -1133,10 +1130,10 @@ select
   returning queryfuncs_d_varbit3
   default '01' on error);
 
-select json_value(cast('"111"' as jsonb), '$'  returning bit(2) error on error);
+select json_value(cast('"111"' as jsonb), '$' returning bit(2) error on error);
 
 select
-  json_value(cast('1234' as jsonb), '$'  returning bit(3) default 1 on error);
+  json_value(cast('1234' as jsonb), '$' returning bit(3) default 1 on error);
 
 select
   json_value(cast('1234' as jsonb), '$'
