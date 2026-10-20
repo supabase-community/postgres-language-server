@@ -62,6 +62,8 @@ To check without a database, disable the connection with `--disable-db` or `"dis
 
 The language server keeps working without the database when the connection fails, and retries it in the background.
 
+An invalid `connectionString` (or `DATABASE_URL`), such as one with a non-numeric port, disables the database connection instead of stopping the language server, which shows a warning. `postgres-language-server check` reports it as a `database/connection` error, like a failed connection.
+
 ## Setting the connection from the editor
 
 An editor extension can set the connection for a running language server session with the LSP request `pgls/set_configuration_overrides`, which takes any configuration and applies it on top of the configuration file:

@@ -48,8 +48,8 @@ use tower_lsp_server::ls_types::{
     ClientCapabilities, DidChangeConfigurationParams, DidChangeTextDocumentParams,
     DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     FileChangeType, FileEvent, InitializeResult, InitializedParams, PublishDiagnosticsParams,
-    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
-    VersionedTextDocumentIdentifier,
+    ShowMessageParams, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
+    Uri, VersionedTextDocumentIdentifier,
 };
 use tower_lsp_server::{jsonrpc::Request, ls_types::InitializeParams};
 
@@ -383,6 +383,7 @@ const CHANNEL_BUFFER_SIZE: usize = 8;
 #[derive(Debug, PartialEq, Eq)]
 enum ServerNotification {
     PublishDiagnostics(PublishDiagnosticsParams),
+    ShowMessage(ShowMessageParams),
 }
 
 /// Basic handler for requests and notifications coming from the server for tests
@@ -403,6 +404,15 @@ where
             let diagnostics = from_value(params.clone()).expect("invalid params");
             let notification = ServerNotification::PublishDiagnostics(diagnostics);
             match notify.send(notification).await {
+                Ok(_) => continue,
+                Err(_) => break,
+            }
+        }
+
+        if req.method() == "window/showMessage" {
+            let params = req.params().expect("invalid request");
+            let message = from_value(params.clone()).expect("invalid params");
+            match notify.send(ServerNotification::ShowMessage(message)).await {
                 Ok(_) => continue,
                 Err(_) => break,
             }
@@ -580,11 +590,14 @@ async fn wait_for_diagnostics(
 ) -> Result<PublishDiagnosticsParams> {
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            let Some(ServerNotification::PublishDiagnostics(params)) = receiver.next().await else {
-                bail!("the server closed the connection");
-            };
-            if params.version == Some(version) {
-                return Ok(params);
+            match receiver.next().await {
+                Some(ServerNotification::PublishDiagnostics(params))
+                    if params.version == Some(version) =>
+                {
+                    return Ok(params);
+                }
+                Some(_) => {}
+                None => bail!("the server closed the connection"),
             }
         }
     })
@@ -664,6 +677,7 @@ async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool
                         return true;
                     }
                 }
+                Some(ServerNotification::ShowMessage(_)) => {}
                 None => return false,
             }
         }
@@ -1216,6 +1230,90 @@ async fn test_issue_271(test_db: PgPool) -> Result<()> {
         .await?;
 
     assert!(res.is_some());
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// An invalid connection string disables the database features with a warning instead of crashing
+/// the server, on every configuration transition.
+#[tokio::test]
+async fn invalid_connection_string_warns_instead_of_crashing() -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        "{}".to_string(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.open_document("select 1 from;").await?;
+    drain_notifications(&mut receiver);
+
+    async fn wait_for_warning(receiver: &mut Receiver<ServerNotification>) -> Option<String> {
+        tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                match receiver.next().await {
+                    Some(ServerNotification::ShowMessage(params))
+                        if params.typ == lsp::MessageType::WARNING =>
+                    {
+                        return Some(params.message);
+                    }
+                    Some(_) => {}
+                    None => return None,
+                }
+            }
+        })
+        .await
+        .ok()
+        .flatten()
+    }
+
+    server
+        .set_configuration_overrides(json!({
+            "overrides": {
+                "db": { "connectionString": "postgres://postgres:hunter2@localhost:not-a-port/postgres" }
+            }
+        }))
+        .await?;
+
+    let warning = wait_for_warning(&mut receiver)
+        .await
+        .expect("expected a warning about the connection string");
+    assert_eq!(
+        warning,
+        "Invalid `db.connectionString`: invalid port number. Expected a URL like `postgres://user:password@host:5432/database`. Database features are disabled."
+    );
+
+    // A reload with the invalid connection string warns again, and the server keeps working.
+    server.change_watched_configuration_file().await?;
+    assert!(wait_for_warning(&mut receiver).await.is_some());
+
+    server.replace_document(1, "select 1 from;").await?;
+    let diagnostics = wait_for_diagnostics(&mut receiver, 1).await?;
+    assert!(
+        diagnostics
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.message.contains("syntax error")),
+        "{diagnostics:?}"
+    );
 
     server.shutdown().await?;
     reader.abort();

@@ -1301,6 +1301,12 @@ impl Workspace for WorkspaceServer {
             return Ok(CheckDatabaseConnectionResult::default());
         };
 
+        if let Some(error) = &settings.db.connection_string_error {
+            return Ok(CheckDatabaseConnectionResult {
+                error: Some(error.clone()),
+            });
+        }
+
         let result = self
             .connection
             .try_with_pool(&settings.db, |pool| self.snapshot.load(pool).map(|_| ()));

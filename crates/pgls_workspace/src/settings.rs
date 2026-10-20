@@ -746,6 +746,8 @@ pub struct DatabaseSettings {
     pub allow_statement_executions: bool,
     /// The patterns of `db.allowStatementExecutionsAgainst` that are not valid globs.
     pub invalid_statement_execution_patterns: Vec<String>,
+    /// Why `db.connectionString` is invalid. The connection is disabled then.
+    pub connection_string_error: Option<String>,
 }
 
 impl DatabaseSettings {
@@ -795,6 +797,7 @@ impl std::fmt::Debug for DatabaseSettings {
                 "invalid_statement_execution_patterns",
                 &self.invalid_statement_execution_patterns,
             )
+            .field("connection_string_error", &self.connection_string_error)
             .finish()
     }
 }
@@ -812,6 +815,7 @@ impl Default for DatabaseSettings {
             conn_timeout_secs: Duration::from_secs(10),
             allow_statement_executions: true,
             invalid_statement_execution_patterns: Vec::new(),
+            connection_string_error: None,
         }
     }
 }
@@ -829,12 +833,7 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
             }
         });
 
-        // "host" OR "connectionString" is the minimum required setting for database features
-        // to be enabled.
-        let disable_connection = value.disable_connection.is_some_and(|disabled| disabled);
-        let enable_connection =
-            (connection_string.is_some() || value.host.as_ref().is_some()) && !disable_connection;
-
+        let has_host = value.host.is_some();
         #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut database = value.database.unwrap_or(d.database);
         #[cfg_attr(not(feature = "db"), allow(unused_mut))]
@@ -844,20 +843,37 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
         #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut username = value.username.unwrap_or(d.username);
 
-        // Parse connection string to extract host/port/username/database (DB mode only)
+        let disable_connection = value.disable_connection.is_some_and(|disabled| disabled);
+
+        // Parse connection string to extract host/port/username/database (DB mode only). An
+        // invalid one disables the connection instead of failing the whole configuration.
+        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
+        let mut connection_string_error: Option<String> = None;
         #[cfg(feature = "db")]
         if let Some(uri) = connection_string.as_ref() {
-            let opts = PgConnectOptions::from_str(uri)
-                .unwrap_or_else(|err| panic!("Invalid db.connectionString provided: {err}"));
-
-            // we only extract the values we need for statement execution checks and connection key
-            host = opts.get_host().to_string();
-            port = opts.get_port();
-            username = opts.get_username().to_string();
-            if let Some(db) = opts.get_database() {
-                database = db.to_string();
+            match parse_connection_string(uri) {
+                Ok(opts) => {
+                    // we only extract the values we need for statement execution checks and connection key
+                    host = opts.get_host().to_string();
+                    port = opts.get_port();
+                    username = opts.get_username().to_string();
+                    if let Some(db) = opts.get_database() {
+                        database = db.to_string();
+                    }
+                }
+                Err(error) if !disable_connection => {
+                    warn!("{error} The database connection is disabled.");
+                    connection_string_error = Some(error);
+                }
+                Err(_) => {}
             }
         }
+
+        // "host" OR "connectionString" is the minimum required setting for database features
+        // to be enabled.
+        let enable_connection = (connection_string.is_some() || has_host)
+            && !disable_connection
+            && connection_string_error.is_none();
 
         // An invalid pattern is ignored rather than failing the whole configuration; the reason a
         // statement cannot be executed names it.
@@ -898,8 +914,39 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
 
             allow_statement_executions,
             invalid_statement_execution_patterns,
+            connection_string_error,
         }
     }
+}
+
+/// Parses `db.connectionString`. The error says why it is invalid without repeating it, as it may
+/// contain a password.
+#[cfg(feature = "db")]
+fn parse_connection_string(uri: &str) -> Result<PgConnectOptions, String> {
+    PgConnectOptions::from_str(uri).map_err(|err| {
+        let reason = match err {
+            sqlx::Error::Configuration(source) => source.to_string(),
+            err => err.to_string(),
+        };
+        format!(
+            "Invalid `db.connectionString`: {reason}. Expected a URL like `postgres://user:password@host:5432/database`."
+        )
+    })
+}
+
+/// Why the `db.connectionString` of `configuration` is invalid, if it is. The database connection
+/// is disabled while it is.
+pub fn connection_string_error(configuration: &PartialDatabaseConfiguration) -> Option<String> {
+    if configuration.disable_connection == Some(true) {
+        return None;
+    }
+    #[cfg(feature = "db")]
+    if let Some(uri) = configuration.connection_string.as_deref().map(str::trim)
+        && !uri.is_empty()
+    {
+        return parse_connection_string(uri).err();
+    }
+    None
 }
 
 /// Filesystem settings for the entire workspace
@@ -1102,5 +1149,46 @@ mod tests {
         let config = DatabaseSettings::from(partial_config);
 
         assert!(!config.allow_statement_executions)
+    }
+
+    #[cfg(feature = "db")]
+    #[test]
+    fn invalid_connection_string_disables_the_connection() {
+        let partial_config = PartialDatabaseConfiguration {
+            connection_string: Some(
+                "postgres://postgres:hunter2@localhost:not-a-port/test-db".to_string(),
+            ),
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![String::from(
+                "*/*",
+            )])),
+            ..Default::default()
+        };
+
+        let error = super::connection_string_error(&partial_config);
+        let config = DatabaseSettings::from(partial_config);
+
+        assert!(!config.enable_connection);
+        assert_eq!(config.connection_string_error, error);
+        assert_eq!(
+            error.as_deref(),
+            Some(
+                "Invalid `db.connectionString`: invalid port number. Expected a URL like `postgres://user:password@host:5432/database`."
+            )
+        );
+    }
+
+    #[cfg(feature = "db")]
+    #[test]
+    fn disabled_connection_ignores_invalid_connection_string() {
+        let partial_config = PartialDatabaseConfiguration {
+            connection_string: Some("host=localhost".to_string()),
+            disable_connection: Some(true),
+            ..Default::default()
+        };
+
+        assert_eq!(super::connection_string_error(&partial_config), None);
+        let config = DatabaseSettings::from(partial_config);
+        assert!(!config.enable_connection);
+        assert_eq!(config.connection_string_error, None);
     }
 }

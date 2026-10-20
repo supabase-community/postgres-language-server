@@ -1,0 +1,19 @@
+---
+source: crates/pgls_cli/tests/assert_check.rs
+expression: output
+---
+status: failure
+stdout:
+Checked 1 file in <duration>. No fixes applied.
+Found 1 error.
+stderr:
+database/connection ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Invalid `db.connectionString`: invalid port number. Expected a URL like `postgres://user:password@host:5432/database`.
+  
+  i The checks that need the database were skipped. Fix the connection settings, or pass --disable-db or set db.disableConnection to check without a database.
+  
+
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.

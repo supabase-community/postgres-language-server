@@ -663,6 +663,21 @@ impl Session {
                             return ConfigurationStatus::Error;
                         }
 
+                        // An invalid connection string only disables the database features,
+                        // so the user would not notice it otherwise.
+                        if let Some(error) = configuration
+                            .db
+                            .as_ref()
+                            .and_then(pgls_workspace::settings::connection_string_error)
+                        {
+                            self.client
+                                .show_message(
+                                    MessageType::WARNING,
+                                    format!("{error} Database features are disabled."),
+                                )
+                                .await;
+                        }
+
                         let result = self.workspace.update_settings(UpdateSettingsParams {
                             workspace_directory: self.fs.working_directory(),
                             configuration,
