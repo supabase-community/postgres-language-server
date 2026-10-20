@@ -1,0 +1,24 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/alter_domain_layout.sql
+---
+alter domain public.email_address
+add constraint email_address_not_blank check (
+  value <> '' and value is not null and length(value) > 3
+) not valid;
+
+alter domain public.a_rather_long_domain_name_for_testing
+drop constraint if exists a_rather_long_constraint_name cascade;
+
+alter domain public.a_rather_long_domain_name_for_testing
+validate constraint a_rather_long_constraint_name;
+
+alter domain public.a_rather_long_domain_name_for_testing set default 'a rather long default value';
+
+alter domain public.a_rather_long_domain_name_for_testing_purposes_only drop default;
+
+alter domain public.a_rather_long_domain_name_for_testing_purposes_only set not null;
+
+alter domain public.a_rather_long_domain_name_for_testing_purposes_only drop not null;
+
+alter domain public.short_domain drop not null;
