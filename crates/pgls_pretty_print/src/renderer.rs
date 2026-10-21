@@ -49,6 +49,7 @@ pub struct Renderer<W: Write> {
     writer: W,
     current_line_length: usize,
     indent_level: usize,
+    alignment_offsets: Vec<usize>,
     at_line_start: bool,
     after_line_comment: bool,
 }
@@ -60,6 +61,7 @@ impl<W: Write> Renderer<W> {
             writer,
             current_line_length: 0,
             indent_level: 0,
+            alignment_offsets: Vec::new(),
             at_line_start: true,
             after_line_comment: false,
         }
@@ -108,6 +110,14 @@ impl<W: Write> Renderer<W> {
                     self.indent_level = self.indent_level.saturating_sub(1);
                     i += 1;
                 }
+                LayoutEvent::AlignStart => {
+                    self.start_alignment();
+                    i += 1;
+                }
+                LayoutEvent::AlignEnd => {
+                    self.alignment_offsets.pop();
+                    i += 1;
+                }
             }
         }
         Ok(())
@@ -146,7 +156,9 @@ impl<W: Write> Renderer<W> {
                 LayoutEvent::GroupStart { .. }
                 | LayoutEvent::GroupEnd
                 | LayoutEvent::IndentStart
-                | LayoutEvent::IndentEnd => {}
+                | LayoutEvent::IndentEnd
+                | LayoutEvent::AlignStart
+                | LayoutEvent::AlignEnd => {}
                 LayoutEvent::Line(_) | LayoutEvent::Comment { .. } => return width,
             }
         }
@@ -159,10 +171,22 @@ impl<W: Write> Renderer<W> {
     /// made right after a break must account for the pending indentation themselves.
     fn effective_line_length(&self) -> usize {
         if self.at_line_start {
-            self.indent_level * self.config.indent_size
+            self.indentation_width()
         } else {
             self.current_line_length
         }
+    }
+
+    fn indentation_width(&self) -> usize {
+        self.indent_level * self.config.indent_size
+            + self.alignment_offsets.last().copied().unwrap_or(0)
+    }
+
+    fn start_alignment(&mut self) {
+        let offset = self
+            .effective_line_length()
+            .saturating_sub(self.indent_level * self.config.indent_size);
+        self.alignment_offsets.push(offset);
     }
 
     fn render_events_with_breaks(
@@ -226,6 +250,14 @@ impl<W: Write> Renderer<W> {
                     self.indent_level = self.indent_level.saturating_sub(1);
                     i += 1;
                 }
+                LayoutEvent::AlignStart => {
+                    self.start_alignment();
+                    i += 1;
+                }
+                LayoutEvent::AlignEnd => {
+                    self.alignment_offsets.pop();
+                    i += 1;
+                }
             }
         }
         Ok(())
@@ -269,7 +301,9 @@ impl<W: Write> Renderer<W> {
                 | LayoutEvent::GroupStart { .. }
                 | LayoutEvent::GroupEnd
                 | LayoutEvent::IndentStart
-                | LayoutEvent::IndentEnd => {}
+                | LayoutEvent::IndentEnd
+                | LayoutEvent::AlignStart
+                | LayoutEvent::AlignEnd => {}
             }
 
             if !first_line_fits {
@@ -349,7 +383,10 @@ impl<W: Write> Renderer<W> {
                 LayoutEvent::GroupStart { .. } => depth += 1,
                 LayoutEvent::GroupEnd if depth == 0 => return Some((length, false)),
                 LayoutEvent::GroupEnd => depth -= 1,
-                LayoutEvent::IndentStart | LayoutEvent::IndentEnd => {}
+                LayoutEvent::IndentStart
+                | LayoutEvent::IndentEnd
+                | LayoutEvent::AlignStart
+                | LayoutEvent::AlignEnd => {}
             }
         }
 
@@ -411,13 +448,14 @@ impl<W: Write> Renderer<W> {
     fn write_indentation(&mut self) -> Result<(), std::fmt::Error> {
         let indent_str = match self.config.indent_style {
             IndentStyle::Spaces => {
-                let spaces = " ".repeat(self.indent_level * self.config.indent_size);
+                let spaces = " ".repeat(self.indentation_width());
                 self.current_line_length += spaces.len();
                 spaces
             }
             IndentStyle::Tabs => {
-                let tabs = "\t".repeat(self.indent_level);
-                self.current_line_length += self.indent_level * self.config.indent_size; // Approximate
+                let tabs = "\t".repeat(self.indent_level)
+                    + &" ".repeat(self.alignment_offsets.last().copied().unwrap_or(0));
+                self.current_line_length += self.indentation_width();
                 tabs
             }
         };

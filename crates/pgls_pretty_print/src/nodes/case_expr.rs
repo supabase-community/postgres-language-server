@@ -8,6 +8,10 @@ use crate::{
 pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
     e.group_start(GroupKind::CaseExpr);
 
+    let expanded = matches!(e.config().layout, crate::Layout::Expanded);
+    if expanded {
+        e.align_start();
+    }
     e.token(TokenKind::CASE_KW);
 
     // Optional test expression (for simple CASE)
@@ -20,18 +24,8 @@ pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
     e.indent_start();
 
     // WHEN clauses
-    let expanded = matches!(e.config().layout, crate::Layout::Expanded);
-
-    for (index, when_clause) in n.args.iter().enumerate() {
-        if expanded && index == 0 {
-            // `CASE WHEN` is the visual header of a searched CASE. Keeping it together gives the
-            // following condition/THEN/ELSE breaks a stable indentation anchor.
-            e.space();
-        } else if expanded {
-            super::emit_layout_break(e);
-        } else {
-            e.line(crate::emitter::LineType::SoftOrSpace);
-        }
+    for when_clause in &n.args {
+        super::emit_layout_break(e);
         super::emit_node(when_clause, e);
     }
 
@@ -47,5 +41,8 @@ pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
     super::emit_layout_break(e);
     e.token(TokenKind::END_KW);
 
+    if expanded {
+        e.align_end();
+    }
     e.group_end();
 }

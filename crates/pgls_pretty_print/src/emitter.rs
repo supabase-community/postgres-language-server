@@ -35,6 +35,9 @@ pub enum LayoutEvent {
     GroupEnd,
     IndentStart,
     IndentEnd,
+    /// Align continuation lines with the current column until `AlignEnd`.
+    AlignStart,
+    AlignEnd,
 }
 
 /// Collects layout events for the renderer.
@@ -283,5 +286,13 @@ impl EventEmitter {
 
     pub fn indent_end(&mut self) {
         self.events.push(LayoutEvent::IndentEnd);
+    }
+
+    pub fn align_start(&mut self) {
+        self.events.push(LayoutEvent::AlignStart);
+    }
+
+    pub fn align_end(&mut self) {
+        self.events.push(LayoutEvent::AlignEnd);
     }
 }

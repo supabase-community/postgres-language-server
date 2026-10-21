@@ -103,7 +103,8 @@ fn trailing_comment_keeps_the_case_condition_together() {
          THEN 'CURRENT EXPENSES'\n\
          WHEN ecrictbimmsynd.codtyprept IS NOT NULL THEN 'REPAIR TO DO' END;",
         "SELECT\n\
-         \tCASE WHEN ecrictbimmsynd.codtyprept = 'B0'\n\
+         \tCASE\n\
+         \t\tWHEN ecrictbimmsynd.codtyprept = 'B0'\n\
          \t\tAND planctb_tab.codplanctb < 700000 -- test\n\
          \t\t\tTHEN 'CURRENT EXPENSES'\n\
          \t\tWHEN ecrictbimmsynd.codtyprept IS NOT NULL\n\
@@ -125,7 +126,8 @@ fn standalone_comment_stays_before_the_conjunction_it_documents() {
             ),
             &format!(
                 "SELECT\n\
-                 \tCASE WHEN ecrictbimmsynd.codnatopr = 'SLD'\n\
+                 \tCASE\n\
+                 \t\tWHEN ecrictbimmsynd.codnatopr = 'SLD'\n\
                  \t\t\tTHEN 'SLD'\n\
                  \t\tWHEN ecrictbimmsynd.codtyprept = 'B0'\n\
                  \t\t-- 700000 is a big number\n\
