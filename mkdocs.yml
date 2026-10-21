@@ -48,6 +48,7 @@ nav:
   - Guides:
       - Use in your IDE: guides/ide_setup.md
       - Checking Migrations: guides/checking_migrations.md
+      - Formatting Declarative Schemas: guides/formatting_declarative_schemas.md
       - Configure database connection: guides/configure_database.md
       - Suppressions: guides/suppressions.md
       - Integrate with VCS: guides/vcs_integration.md
