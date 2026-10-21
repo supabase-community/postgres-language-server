@@ -623,6 +623,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#formatting-generated-sql" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Formatting generated SQL
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -825,6 +836,33 @@
     
   
   Checking Migrations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/formatting_declarative_schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Formatting Declarative Schemas
 
     
   </span>
@@ -1379,6 +1417,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#formatting-generated-sql" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Formatting generated SQL
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1551,6 +1600,11 @@
 <td>Put the terminating semicolon on its own line when the statement spans several lines</td>
 </tr>
 <tr>
+<td><code>skipFnBodies</code></td>
+<td><code>false</code></td>
+<td>Keep <code>language sql</code> function bodies as written instead of formatting them</td>
+</tr>
+<tr>
 <td><code>functionArgumentGroups</code></td>
 <td><code>{}</code> (plus built-in defaults, see below)</td>
 <td>Function names mapped to the number of adjacent arguments that should stay together when wrapping</td>
@@ -1642,6 +1696,8 @@ postgres-language-server<span class="w"> </span>format<span class="w"> </span>mi
 <span class="c1"># select a, b from t;</span>
 </code></pre></div>
 <p>The file doesn't need to exist. Its path is used to apply the project configuration (for example, a path matching <code>files.ignore</code> is printed back unchanged) and to label diagnostics. If a statement cannot be formatted, it is printed unchanged, its diagnostics are written to stderr, and the command exits with a non-zero code. When the formatter is disabled, the input is printed unchanged. <code>--stdin-file-path</code> cannot be combined with file paths, <code>--write</code>, <code>--staged</code> or <code>--changed</code>.</p>
+<h3 id="formatting-generated-sql">Formatting generated SQL<a class="headerlink" href="#formatting-generated-sql" title="Permanent link">&para;</a></h3>
+<p>To format the SQL that a tool like the Supabase CLI generates, run <code>format --write</code> after each generation. See <a href="../../guides/formatting_declarative_schemas/">Formatting Declarative Schemas</a>.</p>
 <h2 id="editor-integration">Editor Integration<a class="headerlink" href="#editor-integration" title="Permanent link">&para;</a></h2>
 <p>The formatter integrates with your editor via the Language Server Protocol. Use your editor's format document command (typically bound to a keyboard shortcut) to format SQL files.</p>
 <h2 id="javascript-api">JavaScript API<a class="headerlink" href="#javascript-api" title="Permanent link">&para;</a></h2>

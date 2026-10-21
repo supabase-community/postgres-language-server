@@ -43,6 +43,9 @@
         <loc>https://pg-language-server.com/main/guides/continuous_integration/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/guides/formatting_declarative_schemas/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/guides/ide_setup/</loc>
       </url>
       <url>
