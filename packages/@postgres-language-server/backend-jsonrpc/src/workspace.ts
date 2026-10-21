@@ -76,17 +76,32 @@ export type Category =
   | "lint/avoidCreateTrigger"
   | "lint/avoidEnableDisableTrigger"
   | "lint/avoidWideLockWindow"
+  | "lint/banAlterDomainWithAddConstraint"
+  | "lint/banAlterIdentity"
   | "lint/banCharField"
   | "lint/banConcurrentIndexCreationInTransaction"
+  | "lint/banCreateDomainWithConstraint"
   | "lint/banDeleteWithoutWhere"
   | "lint/banDropColumn"
+  | "lint/banDropConstraint"
   | "lint/banDropDatabase"
+  | "lint/banDropDefault"
+  | "lint/banDropDomain"
+  | "lint/banDropExtension"
+  | "lint/banDropFunction"
+  | "lint/banDropGeneratedExpression"
   | "lint/banDropNotNull"
   | "lint/banDropSchema"
+  | "lint/banDropSequence"
   | "lint/banDropTable"
   | "lint/banDropTrigger"
+  | "lint/banDropType"
+  | "lint/banDropView"
+  | "lint/banDuplicateColumnAssignments"
+  | "lint/banSetSchema"
   | "lint/banTruncate"
   | "lint/banTruncateCascade"
+  | "lint/banUncommittedTransaction"
   | "lint/banUpdateWithoutWhere"
   | "lint/banVacuumFull"
   | "lint/changingColumnType"
@@ -95,6 +110,7 @@ export type Category =
   | "lint/disallowUniqueConstraint"
   | "lint/functionArgumentMismatch"
   | "lint/functionReturnTypeMismatch"
+  | "lint/identifierTooLong"
   | "lint/insertColumnMismatch"
   | "lint/invalidCast"
   | "lint/invalidDropTypeSignature"
@@ -109,15 +125,18 @@ export type Category =
   | "lint/preferTextField"
   | "lint/preferTimestamptz"
   | "lint/renamingColumn"
+  | "lint/renamingObject"
   | "lint/renamingTable"
   | "lint/requireConcurrentDetachPartition"
   | "lint/requireConcurrentIndexCreation"
   | "lint/requireConcurrentIndexDeletion"
   | "lint/requireConcurrentRefreshMatview"
   | "lint/requireConcurrentReindex"
+  | "lint/requireEnumValueOrdering"
   | "lint/requireIdleInTransactionTimeout"
   | "lint/requireSeparateConstraintValidation"
   | "lint/requireStatementTimeout"
+  | "lint/requireTableSchema"
   | "lint/runningStatementWhileHoldingAccessExclusive"
   | "lint/transactionNesting"
   | "lint/unknownColumn"
@@ -796,6 +815,14 @@ export interface LinterRules {
    */
   avoidWideLockWindow?: RuleConfiguration_for_Null;
   /**
+   * Adding a constraint to a domain has poor support for online migrations.
+   */
+  banAlterDomainWithAddConstraint?: RuleConfiguration_for_Null;
+  /**
+   * Changing the identity of a column may break inserts from existing clients.
+   */
+  banAlterIdentity?: RuleConfiguration_for_Null;
+  /**
    * Using CHAR(n) or CHARACTER(n) types is discouraged.
    */
   banCharField?: RuleConfiguration_for_Null;
@@ -803,6 +830,10 @@ export interface LinterRules {
    * Concurrent index creation is not allowed within a transaction.
    */
   banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
+  /**
+   * Domains with constraints have poor support for online migrations.
+   */
+  banCreateDomainWithConstraint?: RuleConfiguration_for_Null;
   /**
    * A DELETE statement without a WHERE clause will remove all rows from the table.
    */
@@ -812,9 +843,33 @@ export interface LinterRules {
    */
   banDropColumn?: RuleConfiguration_for_Null;
   /**
+   * Dropping a constraint may break existing clients.
+   */
+  banDropConstraint?: RuleConfiguration_for_Null;
+  /**
    * Dropping a database may break existing clients (and everything else, really).
    */
   banDropDatabase?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a column or domain default may break existing clients.
+   */
+  banDropDefault?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a domain may break existing clients.
+   */
+  banDropDomain?: RuleConfiguration_for_Null;
+  /**
+   * Dropping an extension may break existing clients.
+   */
+  banDropExtension?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a function, procedure, routine, or aggregate may break existing clients.
+   */
+  banDropFunction?: RuleConfiguration_for_Null;
+  /**
+   * Dropping the expression of a generated column may break existing clients.
+   */
+  banDropGeneratedExpression?: RuleConfiguration_for_Null;
   /**
    * Dropping a NOT NULL constraint may break existing clients.
    */
@@ -824,6 +879,10 @@ export interface LinterRules {
    */
   banDropSchema?: RuleConfiguration_for_Null;
   /**
+   * Dropping a sequence may break existing clients.
+   */
+  banDropSequence?: RuleConfiguration_for_Null;
+  /**
    * Dropping a table may break existing clients.
    */
   banDropTable?: RuleConfiguration_for_Null;
@@ -832,6 +891,22 @@ export interface LinterRules {
    */
   banDropTrigger?: RuleConfiguration_for_Null;
   /**
+   * Dropping a type, cast, operator, operator class, or operator family may break existing clients.
+   */
+  banDropType?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a view or materialized view may break existing clients.
+   */
+  banDropView?: RuleConfiguration_for_Null;
+  /**
+   * A column is assigned or declared more than once.
+   */
+  banDuplicateColumnAssignments?: RuleConfiguration_for_Null;
+  /**
+   * Moving an object to another schema may break existing clients.
+   */
+  banSetSchema?: RuleConfiguration_for_Null;
+  /**
    * Truncating a table removes all rows and can cause data loss in production.
    */
   banTruncate?: RuleConfiguration_for_Null;
@@ -839,6 +914,10 @@ export interface LinterRules {
    * Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.
    */
   banTruncateCascade?: RuleConfiguration_for_Null;
+  /**
+   * A transaction is started but never committed or rolled back.
+   */
+  banUncommittedTransaction?: RuleConfiguration_for_Null;
   /**
    * An UPDATE statement without a WHERE clause will modify all rows in the table.
    */
@@ -871,6 +950,10 @@ export interface LinterRules {
    * The final statement of a SQL function doesn't return what the function is declared to return.
    */
   functionReturnTypeMismatch?: RuleConfiguration_for_Null;
+  /**
+   * Identifiers longer than 63 bytes are silently truncated.
+   */
+  identifierTooLong?: RuleConfiguration_for_Null;
   /**
    * An INSERT has a different number of target columns than values.
    */
@@ -932,6 +1015,10 @@ export interface LinterRules {
    */
   renamingColumn?: RuleConfiguration_for_Null;
   /**
+   * Renaming an object or an enum value may break existing clients.
+   */
+  renamingObject?: RuleConfiguration_for_Null;
+  /**
    * Renaming tables may break existing queries and application code.
    */
   renamingTable?: RuleConfiguration_for_Null;
@@ -956,6 +1043,10 @@ export interface LinterRules {
    */
   requireConcurrentReindex?: RuleConfiguration_for_Null;
   /**
+   * ALTER TYPE ... ADD VALUE without BEFORE or AFTER appends the value to the end of the enum.
+   */
+  requireEnumValueOrdering?: RuleConfiguration_for_Null;
+  /**
    * Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.
    */
   requireIdleInTransactionTimeout?: RuleConfiguration_for_Null;
@@ -967,6 +1058,10 @@ export interface LinterRules {
    * Dangerous lock statements should be preceded by SET statement_timeout.
    */
   requireStatementTimeout?: RuleConfiguration_for_Null;
+  /**
+   * Table names in DDL should be schema-qualified.
+   */
+  requireTableSchema?: RuleConfiguration_for_Null;
   /**
    * Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.
    */

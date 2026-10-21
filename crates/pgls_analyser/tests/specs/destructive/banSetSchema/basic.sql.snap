@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banSetSchema
+alter table users set schema auth;
+
+```
+
+# Diagnostics
+lint/banSetSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Moving a table to another schema may break existing clients.
+  
+  i Clients that use the old schema-qualified name fail, and rolling back the application does not move it back.
+  
+  i Update clients to use the new schema-qualified name before moving the object.

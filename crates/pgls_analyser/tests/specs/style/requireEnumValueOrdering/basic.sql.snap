@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireEnumValueOrdering
+alter type order_status add value 'in_review';
+
+```
+
+# Diagnostics
+lint/requireEnumValueOrdering ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Enum value in_review is appended to the end of the enum.
+  
+  i Queries that compare enum values depend on their order.
+  
+  i Add BEFORE or AFTER to specify the position of the new value.

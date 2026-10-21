@@ -1,0 +1,31 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropDefault
+alter domain status drop default;
+-- expect_lint/banDropDefault
+alter view active_users alter column created_at drop default;
+
+```
+
+# Diagnostics
+lint/banDropDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a default may break existing clients.
+  
+  i Inserts that omit the column fail if it is NOT NULL, and write NULL otherwise.
+  
+  i Update your application code to provide a value, then drop the default in a later migration.
+  
+
+
+lint/banDropDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a default may break existing clients.
+  
+  i Inserts that omit the column fail if it is NOT NULL, and write NULL otherwise.
+  
+  i Update your application code to provide a value, then drop the default in a later migration.

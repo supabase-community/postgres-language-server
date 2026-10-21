@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropDomain
+drop domain email;
+
+```
+
+# Diagnostics
+lint/banDropDomain ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a domain may break existing clients.
+  
+  i Casts and parameters that name the domain fail once it is gone.
+  
+  i Move clients to a replacement type, then drop the domain in a later migration.

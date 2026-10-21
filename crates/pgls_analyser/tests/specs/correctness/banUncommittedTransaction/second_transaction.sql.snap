@@ -1,0 +1,23 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+begin;
+create table users (id bigint);
+commit;
+-- expect_lint/banUncommittedTransaction
+start transaction;
+create table posts (id bigint);
+
+```
+
+# Diagnostics
+lint/banUncommittedTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Transaction is never committed or rolled back.
+  
+  i Postgres rolls back the open transaction when the session ends, so its changes are not applied.
+  
+  i Add a COMMIT or ROLLBACK statement to complete the transaction.
