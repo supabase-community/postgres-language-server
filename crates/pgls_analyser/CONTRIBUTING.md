@@ -315,7 +315,7 @@ After implementing your rule, you must create snapshot tests in the `tests/specs
 
 Each test file should:
 1. Start with a comment describing what the test is checking
-2. Include either `-- expect_lint/<group>/<ruleName>` or `-- expect_no_diagnostics` on the first line
+2. Include one `-- expect_lint/<ruleName>` line per expected diagnostic, or `-- expect_no_diagnostics`. Only the number of diagnostics per rule is checked.
 3. Contain valid SQL that should either trigger or not trigger your rule
 
 **Example test structure for `addSerialColumn` rule:**
@@ -334,7 +334,7 @@ tests/specs/safety/addSerialColumn/
 
 **Invalid test example (should trigger diagnostic):**
 ```sql
--- expect_lint/safety/addSerialColumn
+-- expect_lint/addSerialColumn
 -- Test adding serial column to existing table
 ALTER TABLE prices ADD COLUMN id serial;
 ```
