@@ -50,6 +50,39 @@ pub(super) fn reference_end(sql: &str, start: usize) -> Option<usize> {
     Some(cursor)
 }
 
+/// The end of `*`, or of a qualified `t.*` or `"s"."t".*`, starting at `start`.
+pub(super) fn star_end(sql: &str, start: usize) -> Option<usize> {
+    let bytes = sql.as_bytes();
+    let mut cursor = start;
+    loop {
+        match *bytes.get(cursor)? {
+            b'*' => return Some(cursor + 1),
+            b'.' => cursor += 1,
+            byte if byte.is_ascii_whitespace() => cursor += 1,
+            b'"' => {
+                cursor += 1;
+                loop {
+                    if *bytes.get(cursor)? == b'"' {
+                        cursor += 1;
+                        if bytes.get(cursor) != Some(&b'"') {
+                            break;
+                        }
+                    }
+                    cursor += 1;
+                }
+            }
+            byte if byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || byte >= 0x80 => {
+                while bytes.get(cursor).is_some_and(|byte| {
+                    byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || *byte >= 0x80
+                }) {
+                    cursor += 1;
+                }
+            }
+            _ => return None,
+        }
+    }
+}
+
 pub(super) fn token_end(sql: &str, start: usize) -> Option<usize> {
     let bytes = sql.as_bytes();
     let mut cursor = start;
@@ -156,7 +189,7 @@ pub(super) fn operator_end(sql: &str, start: usize) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::{cast_end, operator_end, reference_end};
+    use super::{cast_end, operator_end, reference_end, star_end};
 
     fn text(sql: &str, start: usize, end: Option<usize>) -> &str {
         &sql[start..end.expect("span")]
@@ -186,5 +219,18 @@ mod tests {
         assert_eq!(text(sql, start, cast_end(sql, start)), "CAST(x AS bad)");
         let start = sql.find("date '").unwrap();
         assert_eq!(text(sql, start, cast_end(sql, start)), "date 'today'");
+    }
+
+    #[test]
+    fn star_spans_cover_the_qualifier() {
+        let sql = r#"select *, t.*, "My ""T""" . *, s.t.* from t"#;
+        let start = sql.find('*').unwrap();
+        assert_eq!(text(sql, start, star_end(sql, start)), "*");
+        let start = sql.find("t.*").unwrap();
+        assert_eq!(text(sql, start, star_end(sql, start)), "t.*");
+        let start = sql.find("\"My").unwrap();
+        assert_eq!(text(sql, start, star_end(sql, start)), r#""My ""T""" . *"#);
+        let start = sql.find("s.t").unwrap();
+        assert_eq!(text(sql, start, star_end(sql, start)), "s.t.*");
     }
 }

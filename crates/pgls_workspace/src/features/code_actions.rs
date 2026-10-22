@@ -39,7 +39,8 @@ pub enum CodeActionKind {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct EditAction {
     /// The category of the diagnostic the action fixes or suppresses, e.g. `lint/banDropTable`.
-    pub rule: String,
+    /// `None` for refactors.
+    pub rule: Option<String>,
     pub category: ActionCategory,
     pub applicability: Applicability,
     /// Non-overlapping edits of the file, ordered by their position.

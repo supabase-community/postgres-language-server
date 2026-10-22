@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use pgls_analyse::{Applicability, RuleCategories};
+use pgls_analyse::{ActionCategory, Applicability, RefactorKind, RuleCategories};
 use pgls_configuration::{Merge, StringSet};
 use pgls_configuration::{
     PartialConfiguration, PartialFormatConfiguration, PartialTypecheckConfiguration,
@@ -2120,6 +2120,114 @@ async fn test_hover_shows_resolved_references(test_db: PgPool) {
     // Without a unique reference, hover falls back to the columns with the hovered name.
     let blocks = hover("label as ambiguous");
     assert_eq!(blocks.len(), 2, "{blocks:?}");
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_code_actions_expand_star(test_db: PgPool) {
+    test_db
+        .execute(r#"create table star_items (id int, "Label" text);"#)
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create table star_tags (id int, item_id int, \"select\" text);\n\
+        select * from star_items i join star_tags t on t.item_id = i.id;\n\
+        select t.* from star_tags t where id > 0;\n\
+        create function all_items() returns setof star_items language sql\n\
+        as 'select * from star_items';\n";
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let expand_actions = |needle: &str| {
+        let offset = content.find(needle).expect("needle in content");
+        workspace
+            .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                path: path.clone(),
+                cursor_position: u32::try_from(offset).unwrap().into(),
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull code actions")
+            .actions
+            .into_iter()
+            .filter_map(|action| match action.kind {
+                CodeActionKind::Edit(edit) if edit.rule.is_none() => Some((action.title, edit)),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+    };
+    let range_of = |needle: &str| {
+        let start = content.find(needle).expect("needle in content");
+        TextRange::at(
+            u32::try_from(start).unwrap().into(),
+            u32::try_from(needle.len()).unwrap().into(),
+        )
+    };
+
+    // The columns of a table of the database and of one created in the file, qualified since
+    // there are two FROM items.
+    let actions = expand_actions("* from star_items");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    let (title, edit) = &actions[0];
+    assert_eq!(title, "Expand `*` into its columns");
+    assert_eq!(
+        edit.category,
+        ActionCategory::Refactor(RefactorKind::Rewrite)
+    );
+    assert_eq!(
+        edit.edits,
+        vec![TextEdit {
+            range: range_of("*"),
+            new_text: r#"i.id, i."Label", t.id, t.item_id, t."select""#.into(),
+        }]
+    );
+
+    // `t.*`, with the cursor on its qualifier.
+    let actions = expand_actions("t.* from");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    assert_eq!(actions[0].0, "Expand `t.*` into its columns");
+    assert_eq!(
+        actions[0].1.edits,
+        vec![TextEdit {
+            range: range_of("t.*"),
+            new_text: r#"t.id, t.item_id, t."select""#.into(),
+        }]
+    );
+
+    // In the body of a SQL function.
+    let actions = expand_actions("* from star_items'");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    assert_eq!(
+        actions[0].1.edits,
+        vec![TextEdit {
+            range: TextRange::at(range_of("* from star_items'").start(), 1.into()),
+            new_text: r#"id, "Label""#.into(),
+        }]
+    );
+
+    // Nothing to expand elsewhere.
+    assert!(expand_actions("where id").is_empty());
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

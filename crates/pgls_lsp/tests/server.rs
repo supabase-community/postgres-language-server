@@ -1572,6 +1572,114 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute("create table star_users (id int, name text);")
+        .await?;
+
+    let database = test_db
+        .connect_options()
+        .get_database()
+        .unwrap()
+        .to_string();
+    let host = test_db.connect_options().get_host().to_string();
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(database),
+            host: Some(host),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    let doc_content = "select * from star_users;";
+    let doc_url = url!("test.sql");
+    server
+        .open_named_document(doc_content.to_string(), doc_url.clone(), "sql")
+        .await?;
+
+    let code_actions_response = server
+        .request::<CodeActionParams, CodeActionResponse>(
+            "textDocument/codeAction",
+            "_code_action",
+            CodeActionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: doc_url.clone(),
+                },
+                range: Range {
+                    start: Position::new(0, 7),
+                    end: Position::new(0, 7),
+                },
+                context: CodeActionContext::default(),
+                partial_result_params: PartialResultParams::default(),
+                work_done_progress_params: WorkDoneProgressParams::default(),
+            },
+        )
+        .await?
+        .unwrap();
+
+    let action = code_actions_response
+        .into_iter()
+        .find_map(|action| match action {
+            lsp::CodeActionOrCommand::CodeAction(action)
+                if action.title == "Expand `*` into its columns" =>
+            {
+                Some(action)
+            }
+            _ => None,
+        })
+        .expect("expected the expand star action");
+    assert_eq!(
+        action.kind,
+        Some(lsp::CodeActionKind::from("refactor.rewrite.pgls"))
+    );
+    assert_eq!(action.is_preferred, None);
+    let edits = &action.edit.as_ref().unwrap().changes.as_ref().unwrap()[&doc_url];
+    assert_eq!(edits.len(), 1);
+    assert_eq!(edits[0].new_text, "id, name");
+    assert_eq!(
+        edits[0].range,
+        Range {
+            start: Position::new(0, 7),
+            end: Position::new(0, 8),
+        }
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
