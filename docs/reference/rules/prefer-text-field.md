@@ -1,6 +1,6 @@
 # preferTextField
 
-**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Group** [`style`](../rules.md#style) · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/preferTextField`
 
 **Sources**: inspired by [`squawk/prefer-text-field`](https://squawkhq.com/docs/prefer-text-field)

@@ -14,6 +14,7 @@ use crate::{
     features::{
         code_actions::{
             CodeActionsParams, CodeActionsResult, ExecuteStatementParams, ExecuteStatementResult,
+            FixFileParams, FixFileResult,
         },
         completions::{CompletionsResult, GetCompletionsParams},
         diagnostics::{
@@ -133,6 +134,10 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         &self,
         params: CodeActionsParams,
     ) -> Result<CodeActionsResult, WorkspaceError>;
+
+    /// Applies the fixes of the lint rules to a file and returns its new content. The file in
+    /// the workspace is not changed.
+    fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError>;
 
     fn get_completions(
         &self,

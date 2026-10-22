@@ -1,6 +1,6 @@
 # requireConcurrentIndexDeletion
 
-**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Safe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/requireConcurrentIndexDeletion`
 
 **Sources**: inspired by [`squawk/require-concurrent-index-deletion`](https://squawkhq.com/docs/require-concurrent-index-deletion)

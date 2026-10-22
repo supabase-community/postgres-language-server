@@ -1,7 +1,8 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
-use pgls_analyse::{RuleSource, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
+use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::protobuf::Token;
 
 declare_lint_rule! {
     /// Prefer statements with guards for robustness in migrations.
@@ -52,6 +53,7 @@ declare_lint_rule! {
         version: "0.15.0",
         name: "preferRobustStmts",
         severity: Severity::Warning,
+        fix_kind: FixKind::Unsafe,
         recommended: false,
         applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Squawk("prefer-robust-stmts")],
@@ -93,7 +95,13 @@ impl LinterRule for PreferRobustStmts {
                             .detail(
                                 None,
                                 "Add IF NOT EXISTS to make the migration re-runnable if it fails.",
-                            ),
+                            )
+                            // `IF NOT EXISTS` requires an index name.
+                            .maybe_fix(if stmt.idxname.is_empty() {
+                                None
+                            } else {
+                                insert_after(ctx, Token::Concurrently, "IF NOT EXISTS")
+                            }),
                         );
                     }
                 }
@@ -111,7 +119,12 @@ impl LinterRule for PreferRobustStmts {
                         .detail(
                             None,
                             "Add IF EXISTS to make the migration re-runnable if it fails.",
-                        ),
+                        )
+                        .maybe_fix(insert_after(
+                            ctx,
+                            Token::Concurrently,
+                            "IF EXISTS",
+                        )),
                     );
                 }
                 if stmt.remove_type() == pgls_query::protobuf::ObjectType::ObjectTable
@@ -128,7 +141,8 @@ impl LinterRule for PreferRobustStmts {
                         .detail(
                             None,
                             "Add IF EXISTS to make the migration re-runnable if it fails.",
-                        ),
+                        )
+                        .maybe_fix(insert_after(ctx, Token::Table, "IF EXISTS")),
                     );
                 }
             }
@@ -144,7 +158,8 @@ impl LinterRule for PreferRobustStmts {
                         .detail(
                             None,
                             "Add IF NOT EXISTS to make the migration re-runnable if it fails.",
-                        ),
+                        )
+                        .maybe_fix(insert_after(ctx, Token::Table, "IF NOT EXISTS")),
                     );
             }
             _ => {}
@@ -152,4 +167,16 @@ impl LinterRule for PreferRobustStmts {
 
         diagnostics
     }
+}
+
+/// Inserts `IF [NOT] EXISTS` after the first `keyword` of the statement. It is unsafe because the
+/// statement then silently does nothing if the object already exists, or doesn't exist.
+fn insert_after(
+    ctx: &LinterRuleContext<PreferRobustStmts>,
+    keyword: Token,
+    text: &str,
+) -> Option<RuleFix> {
+    let tokens = ctx.tokens()?;
+    let index = tokens.find(keyword)?;
+    Some(tokens.insert_after(index, &format!("Add {text}"), text))
 }

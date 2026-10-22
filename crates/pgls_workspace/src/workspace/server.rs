@@ -21,17 +21,26 @@ use document::{
 use futures::{StreamExt, TryStreamExt, stream};
 #[cfg(feature = "db")]
 use pg_query::convert_to_positional_params_with_metadata;
-use pgls_analyse::AnalysisFilter;
+use pgls_analyse::{
+    ActionCategory, AnalysisFilter, Applicability, RuleCategories, RuleCategoriesBuilder,
+    RuleFilter, SUPPRESSION_ACTION_CATEGORY,
+};
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
-use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, Direction, FileKind, LinterOptions};
+use pgls_analyser::{
+    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
+    LinterDiagnostic, LinterOptions, RuleFix,
+};
 use pgls_catalog::{Catalog, CatalogBase, Session};
+use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
+use pgls_configuration::RuleSelector;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
+use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -47,7 +56,8 @@ use crate::{
     features::{
         code_actions::{
             CodeAction, CodeActionKind, CodeActionsParams, CodeActionsResult, CommandAction,
-            CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
+            CommandActionCategory, EditAction, ExecuteStatementParams, ExecuteStatementResult,
+            FixFileMode, FixFileParams, FixFileResult, TextEdit,
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{
@@ -247,6 +257,214 @@ impl WorkspaceServer {
             Some(_) => FileKind::Other,
             None => FileKind::Unknown,
         }
+    }
+
+    /// Runs the lint and typecheck rules on a document. Returns the analysis, the syntax errors
+    /// of the statements, the disabled rules, and the migration sections that are not linted.
+    fn analyse_document(
+        &self,
+        settings: &Settings,
+        path: &PgLSPath,
+        doc: &Document,
+        categories: RuleCategories,
+        only: &[RuleSelector],
+        skip: &[RuleSelector],
+    ) -> (
+        AnalysisResult,
+        Vec<SyntaxDiagnostic>,
+        Vec<RuleFilter<'static>>,
+        Vec<TextRange>,
+    ) {
+        #[cfg(feature = "db")]
+        let snapshot = self
+            .connection
+            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+            .and_then(Result::ok);
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = self.snapshot.get();
+
+        /*
+         * Static analysis: the lint rules, and the typecheck rules when a database schema is
+         * available. The catalog starts from the database schema and follows the DDL of the
+         * file.
+         */
+        let typecheck = settings.typecheck.enabled && snapshot.is_some();
+        let search_path = match snapshot.as_deref() {
+            Some(snapshot) => snapshot.expand_search_path(&settings.typecheck.search_path),
+            None => settings.typecheck.search_path.clone(),
+        };
+        let catalog_base = snapshot
+            .as_ref()
+            .map(|snapshot| self.catalog_base(snapshot));
+
+        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
+            .with_linter_rules(only, skip)
+            .finish();
+
+        let options = LinterOptions {
+            rules: to_analyser_rules(settings),
+        };
+
+        let filter = AnalysisFilter {
+            categories,
+            enabled_rules: Some(enabled_rules.as_slice()),
+            disabled_rules: &disabled_rules,
+        };
+
+        let analyser = Analyser::new(AnalyserConfig {
+            options: &options,
+            filter,
+        });
+
+        /*
+         * Migration tools like dbmate and goose put the up and the down migration in one file.
+         * Each section is analysed as a migration of its own, and the down sections are only
+         * checked with `lintDown`. Syntax errors are reported everywhere.
+         */
+        let sections = settings
+            .migrations
+            .as_ref()
+            .map_or_else(Vec::new, |migrations| {
+                migration::migration_sections(
+                    doc.get_document_content(),
+                    migrations.section_markers,
+                )
+            });
+        let skipped_sections: Vec<TextRange> = sections
+            .iter()
+            .filter(|section| {
+                section.direction == Direction::Down
+                    && settings
+                        .migrations
+                        .as_ref()
+                        .is_some_and(|migrations| !migrations.lint_down)
+            })
+            .map(|section| section.range)
+            .collect();
+        let is_skipped = |range: TextRange| {
+            skipped_sections
+                .iter()
+                .any(|section| section.contains(range.start()))
+        };
+
+        let mut analysable_stmts = vec![];
+        let mut syntax_diagnostics = vec![];
+        let mut unparsable = vec![];
+        for (stmt, diagnostic, unparsable_stmt) in doc.iter(AnalyserDiagnosticsMapper) {
+            analysable_stmts.extend(stmt.filter(|stmt| !is_skipped(stmt.range)));
+            syntax_diagnostics.extend(diagnostic);
+            unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
+        }
+
+        let analysis = analyser.analyse(AnalyserParams {
+            stmts: analysable_stmts,
+            unparsable,
+            catalog_base,
+            search_path,
+            file_kind: self.file_kind(settings, path.as_path()),
+            sections,
+            typecheck,
+        });
+
+        (
+            analysis,
+            syntax_diagnostics,
+            disabled_rules,
+            skipped_sections,
+        )
+    }
+
+    /// The fixes of the lint diagnostics at the cursor, and an action to suppress each of them.
+    fn lint_code_actions(
+        &self,
+        settings: &Settings,
+        params: &CodeActionsParams,
+        doc: &Document,
+    ) -> Vec<CodeAction> {
+        let content = doc.get_document_content();
+        let mut actions = Vec::new();
+        for diagnostic in
+            self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
+        {
+            let Some(span) = diagnostic.location().span else {
+                continue;
+            };
+            if !span.contains_inclusive(params.cursor_position) {
+                continue;
+            }
+            let category = diagnostic.get_category_name();
+            let rule = category.strip_prefix("lint/").unwrap_or(category);
+
+            if let Some(fix) = diagnostic.get_fix() {
+                actions.push(CodeAction {
+                    title: fix.message.clone(),
+                    kind: CodeActionKind::Edit(EditAction {
+                        rule: category.to_string(),
+                        category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
+                        applicability: fix.applicability,
+                        edits: fix
+                            .edits
+                            .iter()
+                            .map(|edit| TextEdit {
+                                range: edit.range,
+                                new_text: edit.replacement.clone(),
+                            })
+                            .collect(),
+                    }),
+                    disabled_reason: None,
+                });
+            }
+
+            // The comment goes on its own line above the line where the diagnostic starts,
+            // with the same indentation.
+            let line_start = content[..usize::from(span.start())]
+                .rfind('\n')
+                .map_or(0, |newline| newline + 1);
+            let indentation: String = content[line_start..]
+                .chars()
+                .take_while(|c| *c == ' ' || *c == '\t')
+                .collect();
+            actions.push(CodeAction {
+                title: format!("Suppress rule {rule} for this statement"),
+                kind: CodeActionKind::Edit(EditAction {
+                    rule: category.to_string(),
+                    category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
+                    applicability: Applicability::MaybeIncorrect,
+                    edits: vec![TextEdit {
+                        range: TextRange::empty(TextSize::try_from(line_start).unwrap()),
+                        new_text: format!("{indentation}-- pgls-ignore {rule}\n"),
+                    }],
+                }),
+                disabled_reason: None,
+            });
+        }
+        actions
+    }
+
+    /// The lint diagnostics of a document that are not suppressed.
+    fn lint_diagnostics(
+        &self,
+        settings: &Settings,
+        path: &PgLSPath,
+        doc: &Document,
+        only: &[RuleSelector],
+        skip: &[RuleSelector],
+    ) -> Vec<LinterDiagnostic> {
+        let (analysis, _, _, _) = self.analyse_document(
+            settings,
+            path,
+            doc,
+            RuleCategoriesBuilder::default().all().build(),
+            only,
+            skip,
+        );
+        let suppressions = doc.suppressions();
+        analysis
+            .diagnostics
+            .into_iter()
+            .filter(|diagnostic| !suppressions.is_suppressed(diagnostic))
+            .collect()
     }
 
     /// The indexed database snapshot, built once per snapshot.
@@ -680,6 +898,12 @@ impl Workspace for WorkspaceServer {
             })
             .collect();
 
+        if let Some(settings) = settings {
+            let mut lint_actions = self.lint_code_actions(settings, &params, parser);
+            lint_actions.append(&mut actions);
+            actions = lint_actions;
+        }
+
         #[cfg(feature = "db")]
         let invalidate_disabled_reason = match settings {
             Some(settings)
@@ -706,6 +930,77 @@ impl Workspace for WorkspaceServer {
         });
 
         Ok(CodeActionsResult { actions })
+    }
+
+    #[ignored_path(path=&params.path)]
+    fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError> {
+        /// Fixes can enable other fixes, e.g. `CONCURRENTLY` enables `IF NOT EXISTS`, and fixes
+        /// that overlap are applied one after the other.
+        const MAX_PASSES: usize = 10;
+
+        let documents = self.documents.read().unwrap();
+        let doc = documents
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+        let mut code = doc.get_document_content().to_string();
+
+        let settings = self.workspaces();
+        let Some(settings) = settings.settings() else {
+            return Ok(FixFileResult {
+                code,
+                fixes_applied: 0,
+                skipped_suggested_fixes: 0,
+            });
+        };
+
+        let mut fixes_applied = 0;
+        let mut skipped_suggested_fixes = 0;
+        for _ in 0..MAX_PASSES {
+            let doc = Document::new(code.clone(), 0);
+            let diagnostics =
+                self.lint_diagnostics(settings, &params.path, &doc, &params.only, &params.skip);
+
+            skipped_suggested_fixes = 0;
+            let mut fixes: Vec<&RuleFix> = Vec::new();
+            for fix in diagnostics.iter().filter_map(LinterDiagnostic::get_fix) {
+                if fix.applicability == Applicability::Always
+                    || params.fix_file_mode == FixFileMode::SafeAndUnsafeFixes
+                {
+                    fixes.push(fix);
+                } else {
+                    skipped_suggested_fixes += 1;
+                }
+            }
+            fixes.sort_by_key(|fix| fix.range().map(TextRange::start));
+
+            // Applies the fixes that don't touch the text of an earlier fix in this pass.
+            let mut combined = RuleFix::new("");
+            let mut applied = 0;
+            for fix in fixes {
+                let Some(range) = fix.range() else {
+                    continue;
+                };
+                if combined
+                    .range()
+                    .is_some_and(|previous| range.start() <= previous.end())
+                {
+                    continue;
+                }
+                combined.edits.extend(fix.edits.iter().cloned());
+                applied += 1;
+            }
+            if applied == 0 {
+                break;
+            }
+            code = combined.apply(&code);
+            fixes_applied += applied;
+        }
+
+        Ok(FixFileResult {
+            code,
+            fixes_applied,
+            skipped_suggested_fixes,
+        })
     }
 
     #[cfg(feature = "db")]
@@ -827,97 +1122,20 @@ impl Workspace for WorkspaceServer {
         let mut diagnostics: Vec<SDiagnostic> = doc.document_diagnostics().to_vec();
         let path = params.path.as_path().display().to_string();
 
-        #[cfg(feature = "db")]
-        let snapshot = self
-            .connection
-            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
-            .and_then(Result::ok);
-
-        #[cfg(not(feature = "db"))]
-        let snapshot = self.snapshot.get();
-
-        /*
-         * Static analysis: the lint rules, and the typecheck rules when a database schema is
-         * available. The catalog starts from the database schema and follows the DDL of the
-         * file.
-         */
-        let typecheck = settings.typecheck.enabled && snapshot.is_some();
-        let search_path = match snapshot.as_deref() {
-            Some(snapshot) => snapshot.expand_search_path(&settings.typecheck.search_path),
-            None => settings.typecheck.search_path.clone(),
-        };
-        let catalog_base = snapshot
-            .as_ref()
-            .map(|snapshot| self.catalog_base(snapshot));
-
-        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
-            .with_linter_rules(&params.only, &params.skip)
-            .finish();
-
-        let options = LinterOptions {
-            rules: to_analyser_rules(settings),
-        };
-
-        let filter = AnalysisFilter {
-            categories: params.categories,
-            enabled_rules: Some(enabled_rules.as_slice()),
-            disabled_rules: &disabled_rules,
-        };
-
-        let analyser = Analyser::new(AnalyserConfig {
-            options: &options,
-            filter,
-        });
-
-        /*
-         * Migration tools like dbmate and goose put the up and the down migration in one file.
-         * Each section is analysed as a migration of its own, and the down sections are only
-         * checked with `lintDown`. Syntax errors are reported everywhere.
-         */
-        let sections = settings
-            .migrations
-            .as_ref()
-            .map_or_else(Vec::new, |migrations| {
-                migration::migration_sections(
-                    doc.get_document_content(),
-                    migrations.section_markers,
-                )
-            });
-        let skipped_sections: Vec<TextRange> = sections
-            .iter()
-            .filter(|section| {
-                section.direction == Direction::Down
-                    && settings
-                        .migrations
-                        .as_ref()
-                        .is_some_and(|migrations| !migrations.lint_down)
-            })
-            .map(|section| section.range)
-            .collect();
+        let (analysis, syntax_diagnostics, disabled_rules, skipped_sections) = self
+            .analyse_document(
+                settings,
+                &params.path,
+                doc,
+                params.categories,
+                &params.only,
+                &params.skip,
+            );
         let is_skipped = |range: TextRange| {
             skipped_sections
                 .iter()
                 .any(|section| section.contains(range.start()))
         };
-
-        let mut analysable_stmts = vec![];
-        let mut syntax_diagnostics = vec![];
-        let mut unparsable = vec![];
-        for (stmt, diagnostic, unparsable_stmt) in doc.iter(AnalyserDiagnosticsMapper) {
-            analysable_stmts.extend(stmt.filter(|stmt| !is_skipped(stmt.range)));
-            syntax_diagnostics.extend(diagnostic);
-            unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
-        }
-
-        let analysis = analyser.analyse(AnalyserParams {
-            stmts: analysable_stmts,
-            unparsable,
-            catalog_base,
-            search_path,
-            file_kind: self.file_kind(settings, params.path.as_path()),
-            sections,
-            typecheck,
-        });
 
         /*
          * Checks against the database: statements that reference only objects that exist

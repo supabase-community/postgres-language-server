@@ -1,6 +1,6 @@
 # requireConcurrentRefreshMatview
 
-**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.25.0`  
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Unsafe fix** · **Since** `0.25.0`  
 **Diagnostic** `lint/requireConcurrentRefreshMatview`
 
 **Sources**: inspired by [`pgfence/refresh-matview-blocking`](https://github.com/flvmnt/pgfence)

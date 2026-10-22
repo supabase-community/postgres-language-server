@@ -1,6 +1,6 @@
 # constraintMissingNotValid
 
-**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/constraintMissingNotValid`
 
 **Sources**: inspired by [`squawk/constraint-missing-not-valid`](https://squawkhq.com/docs/constraint-missing-not-valid)

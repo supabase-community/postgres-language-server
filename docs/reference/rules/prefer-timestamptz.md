@@ -1,6 +1,6 @@
 # preferTimestamptz
 
-**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Group** [`style`](../rules.md#style) · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/preferTimestamptz`
 
 **Sources**: inspired by [`squawk/prefer-timestamptz`](https://squawkhq.com/docs/prefer-timestamptz)

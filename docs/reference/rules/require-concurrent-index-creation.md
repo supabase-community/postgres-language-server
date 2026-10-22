@@ -1,6 +1,6 @@
 # requireConcurrentIndexCreation
 
-**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Safe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/requireConcurrentIndexCreation`
 
 **Sources**: inspired by [`squawk/require-concurrent-index-creation`](https://squawkhq.com/docs/require-concurrent-index-creation)

@@ -100,7 +100,18 @@ impl RegistryLinterRule {
                 params.statement,
             );
 
-            R::run(&ctx)
+            let mut diagnostics = R::run(&ctx);
+            for fix in diagnostics.iter_mut().filter_map(|d| d.fix.as_mut()) {
+                debug_assert!(
+                    R::METADATA.fix_kind.applicability().is_some(),
+                    "rule {} reports fixes but doesn't declare a fix_kind",
+                    R::METADATA.name
+                );
+                if let Some(applicability) = R::METADATA.fix_kind.applicability() {
+                    fix.applicability = applicability;
+                }
+            }
+            diagnostics
         }
 
         Self {
