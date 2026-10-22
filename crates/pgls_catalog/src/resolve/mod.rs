@@ -204,6 +204,36 @@ pub enum Reference {
         span: Option<TextRange>,
         relation: crate::RelationInfo,
     },
+    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`.
+    Type {
+        /// The location of the type name in the statement.
+        location: i32,
+        /// The span of the (possibly qualified) type name, without modifiers like `(10)` or `[]`.
+        /// For multi-word types like `double precision`, only the first word.
+        span: Option<TextRange>,
+        type_info: crate::TypeInfo,
+    },
+    /// A parameter of the SQL function whose body is resolved, by name (`id`, `fn.id`) or by
+    /// number (`$1`).
+    Parameter {
+        /// The location of the parameter reference in the statement.
+        location: i32,
+        /// The span of the whole parameter reference, including the function name qualifier.
+        span: Option<TextRange>,
+        /// The index of the parameter in [`FunctionContext::params`].
+        index: usize,
+    },
+    /// A string literal that is coerced to an enum type, like `'happy'` in `mood = 'happy'`.
+    /// Only recorded where the enum type is certain: casts, operators whose other operand is the
+    /// enum, function parameters of the enum type, and values assigned to enum columns in INSERT
+    /// and UPDATE.
+    EnumLiteral {
+        /// The location of the literal in the statement.
+        location: i32,
+        /// The span of the literal, including its quotes.
+        span: Option<TextRange>,
+        type_info: crate::TypeInfo,
+    },
 }
 
 impl Reference {
@@ -211,7 +241,10 @@ impl Reference {
         match self {
             Self::Function { location, .. }
             | Self::Column { location, .. }
-            | Self::Relation { location, .. } => *location,
+            | Self::Relation { location, .. }
+            | Self::Type { location, .. }
+            | Self::Parameter { location, .. }
+            | Self::EnumLiteral { location, .. } => *location,
         }
     }
 
@@ -219,7 +252,10 @@ impl Reference {
         match self {
             Self::Function { span, .. }
             | Self::Column { span, .. }
-            | Self::Relation { span, .. } => *span,
+            | Self::Relation { span, .. }
+            | Self::Type { span, .. }
+            | Self::Parameter { span, .. }
+            | Self::EnumLiteral { span, .. } => *span,
         }
     }
 }

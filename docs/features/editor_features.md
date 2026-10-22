@@ -43,3 +43,19 @@ The language server caches schema information on startup.
 Function calls show the names of the parameters their positional arguments are passed to, as in `make_point(x: 1, y: 2)`. Hints are only shown when the call resolves to exactly one function, including functions created earlier in the same file. Named arguments (`f(a => 1)`), unnamed parameters, and arguments that already carry the parameter's name (`f(t.x)` for the parameter `x`) get no hint. Of the elements passed to a `VARIADIC` parameter, only the first is labelled.
 
 Inlay hints require a database connection. Enable them in your editor, e.g. with `editor.inlayHints.enabled` in VS Code.
+
+## Semantic Highlighting
+
+The language server provides semantic tokens for the names that resolve to exactly one database object, so your editor can color them by what they refer to rather than by how they look:
+
+- **Schemas** (`namespace`), like `public` in `public.users`
+- **Tables, views, and other relations** (`class`)
+- **Columns** (`property`)
+- **Functions** (`function`), the overload that the call resolves to
+- **Types** (`type`), like `int8` in `x::int8`
+- **Parameters** (`parameter`) of a SQL function, in its body, by name or as `$1`
+- **Enum values** (`enumMember`): string literals that are coerced to an enum type, like `'active'` in `status = 'active'`, `'active'::status`, or `insert into t (status) values ('active')`
+
+Objects in `pg_catalog` and `information_schema` carry the `defaultLibrary` modifier. Names follow Postgres' name resolution, including objects created earlier in the same file and statements in the bodies of SQL functions. Names that match no object or several get no token and keep the highlighting of your editor's grammar.
+
+Semantic highlighting requires a database connection. In VS Code, it is controlled by `editor.semanticHighlighting.enabled`.

@@ -24,6 +24,7 @@ use crate::{
         format::{PullFileFormattingParams, PullFormattingResult},
         inlay_hints::{PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
+        semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult},
     },
 };
 
@@ -153,6 +154,13 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         &self,
         params: PullInlayHintsParams,
     ) -> Result<PullInlayHintsResult, WorkspaceError>;
+
+    /// The semantic tokens of the names that resolve to exactly one object, like tables,
+    /// columns, and functions, in the statements that overlap a range or the whole file.
+    fn pull_semantic_tokens(
+        &self,
+        params: PullSemanticTokensParams,
+    ) -> Result<PullSemanticTokensResult, WorkspaceError>;
 
     /// Register a possible workspace project folder. Returns the key of said project. Use this key when you want to switch to different projects.
     fn register_project_folder(
