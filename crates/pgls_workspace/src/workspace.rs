@@ -22,6 +22,7 @@ use crate::{
             PullDatabaseDiagnosticsParams, PullDiagnosticsResult, PullFileDiagnosticsParams,
         },
         format::{PullFileFormattingParams, PullFormattingResult},
+        inlay_hints::{PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
     },
 };
@@ -145,6 +146,13 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
     ) -> Result<CompletionsResult, WorkspaceError>;
 
     fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError>;
+
+    /// The inlay hints of the statements that overlap a range, like the names of the
+    /// parameters that function arguments are passed to.
+    fn pull_inlay_hints(
+        &self,
+        params: PullInlayHintsParams,
+    ) -> Result<PullInlayHintsResult, WorkspaceError>;
 
     /// Register a possible workspace project folder. Returns the key of said project. Use this key when you want to switch to different projects.
     fn register_project_folder(

@@ -153,6 +153,7 @@ fn resolve_after(setup: &str, sql: &str, function: Option<&FunctionContext>) -> 
         search_path: &search_path,
         function,
         sql: Some(sql),
+        collect_references: false,
     })
 }
 

@@ -376,7 +376,7 @@ mod incomplete_candidates_tests {
             name: None,
         }];
         assert!(matches!(
-            select_function(&catalog, None, "f", &args, &[]),
+            select_function(&catalog, None, "f", &args, false, &[]),
             Selection::Unknown
         ));
         assert!(matches!(

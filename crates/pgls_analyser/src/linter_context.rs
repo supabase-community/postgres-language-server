@@ -169,6 +169,7 @@ impl<'a> StatementContext<'a> {
                     search_path: file_context.session().search_path(),
                     function: self.function,
                     sql: self.sql,
+                    collect_references: false,
                 }))
             })
             .as_ref()
