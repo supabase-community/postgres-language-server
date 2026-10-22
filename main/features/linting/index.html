@@ -513,6 +513,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#autofix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Autofix
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1310,6 +1321,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#autofix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Autofix
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1372,6 +1394,18 @@ postgres-language-server<span class="w"> </span>check<span class="w"> </span>mig
 </code></pre></div>
 <p>Which rules run is set in the configuration file, see above.</p>
 <p>See the <a href="../../reference/cli/">CLI Reference</a> for more options, and check the guide on <a href="../../guides/checking_migrations/">linting migrations</a>.</p>
+<h2 id="autofix">Autofix<a class="headerlink" href="#autofix" title="Permanent link">&para;</a></h2>
+<p>Some rules can fix the issues they report. The fixes come in two kinds:</p>
+<ul>
+<li><strong>Safe</strong> fixes only do what the rule asks for, e.g. add <code>CONCURRENTLY</code> to <code>CREATE INDEX</code>. They are left out where Postgres would reject them. <code>CONCURRENTLY</code> can't run in a transaction block, and migration tools usually run a migration in one, so it is only added to a file with a single statement, or to a migration section that runs outside a transaction (<code>-- migrate:up transaction:false</code> for dbmate, <code>-- +goose NO TRANSACTION</code> for goose, see <a href="../../guides/checking_migrations/">Checking migrations</a>).</li>
+<li><strong>Unsafe</strong> fixes may change what a statement does, e.g. swap the type of a column or add <code>NOT VALID</code> to a constraint. Review them before applying them.</li>
+</ul>
+<p>In the editor, the fixes are offered as quick fixes on the diagnostic, next to a quick fix that suppresses the rule for the statement with a <code>-- pgls-ignore &lt;rule&gt;</code> comment.</p>
+<p>On the command line, <code>check --fix</code> applies the safe fixes and writes the files. Add <code>--unsafe</code> to also apply the unsafe fixes:</p>
+<div class="highlight"><pre><span></span><code>postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>migrations/
+postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>--unsafe<span class="w"> </span>migrations/
+</code></pre></div>
+<p>The documentation of each rule says whether it has a fix and whether the fix is safe.</p>
 
 
 

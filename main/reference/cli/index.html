@@ -1361,7 +1361,7 @@
   Prints help information</p>
 <h2 id="postgres-language-server-check">postgres-language-server check<a class="headerlink" href="#postgres-language-server-check" title="Permanent link">&para;</a></h2>
 <p>Runs everything to the requested files.</p>
-<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>check</code></strong> [<strong><code>--staged</code></strong>] [<strong><code>--changed</code></strong>] [<strong><code>--since</code></strong>=<em><code>REF</code></em>] [<em><code>PATH</code></em>]...</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>check</code></strong> [<strong><code>--staged</code></strong>] [<strong><code>--changed</code></strong>] [<strong><code>--since</code></strong>=<em><code>REF</code></em>] [<strong><code>--fix</code></strong>] [<strong><code>--unsafe</code></strong>] [<em><code>PATH</code></em>]...</p>
 <p><strong>The configuration that is contained inside the configuration file.</strong>
 - <strong><code>--vcs-enabled</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   Whether we should integrate itself with the VCS client
@@ -1477,6 +1477,10 @@
   When set to true, only the files that have been changed compared to your <code>defaultBranch</code> configuration will be linted. This option should be used in CI environments.
 - <strong><code>--since</code></strong>=<em><code>REF</code></em> &mdash; 
   Use this to specify the base branch to compare against when you're using the --changed flag and the <code>defaultBranch</code> is not set in your <code>postgres-language-server.jsonc</code>
+- <strong><code>--fix</code></strong> &mdash; 
+  Apply the safe fixes of the lint rules and write the files.
+- <strong><code>--unsafe</code></strong> &mdash; 
+  Also apply the unsafe fixes, which may change what a statement does. Implies <code>--fix</code>.
 - <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
   Prints help information</p>
 <h2 id="postgres-language-server-format">postgres-language-server format<a class="headerlink" href="#postgres-language-server-format" title="Permanent link">&para;</a></h2>
