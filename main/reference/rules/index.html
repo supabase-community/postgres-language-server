@@ -1355,6 +1355,18 @@
 <td>Concurrent index creation is not allowed within a transaction.</td>
 </tr>
 <tr>
+<td><a href=".././rules/ban-duplicate-column-assignments/">banDuplicateColumnAssignments</a> ✅</td>
+<td>A column is assigned or declared more than once.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-uncommitted-transaction/">banUncommittedTransaction</a> ✅ 🛠</td>
+<td>A transaction is started but never committed or rolled back.</td>
+</tr>
+<tr>
+<td><a href=".././rules/identifier-too-long/">identifierTooLong</a> ✅</td>
+<td>Identifiers longer than 63 bytes are silently truncated.</td>
+</tr>
+<tr>
 <td><a href=".././rules/invalid-drop-type-signature/">invalidDropTypeSignature</a> ✅</td>
 <td><code>DROP TYPE</code> and <code>DROP DOMAIN</code> don't take a parameter list.</td>
 </tr>
@@ -1379,6 +1391,10 @@
 <td>Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.</td>
 </tr>
 <tr>
+<td><a href=".././rules/ban-alter-identity/">banAlterIdentity</a> 🛠</td>
+<td>Changing the identity of a column may break inserts from existing clients.</td>
+</tr>
+<tr>
 <td><a href=".././rules/ban-delete-without-where/">banDeleteWithoutWhere</a> ✅</td>
 <td>A <code>DELETE</code> statement without a <code>WHERE</code> clause will remove all rows from the table.</td>
 </tr>
@@ -1387,8 +1403,32 @@
 <td>Dropping a column may break existing clients.</td>
 </tr>
 <tr>
+<td><a href=".././rules/ban-drop-constraint/">banDropConstraint</a> 🛠</td>
+<td>Dropping a constraint may break existing clients.</td>
+</tr>
+<tr>
 <td><a href=".././rules/ban-drop-database/">banDropDatabase</a> 🛠</td>
 <td>Dropping a database may break existing clients (and everything else, really).</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-drop-default/">banDropDefault</a> 🛠</td>
+<td>Dropping a column or domain default may break existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-drop-domain/">banDropDomain</a> 🛠</td>
+<td>Dropping a domain may break existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-drop-extension/">banDropExtension</a> 🛠</td>
+<td>Dropping an extension may break existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-drop-function/">banDropFunction</a> 🛠</td>
+<td>Dropping a function, procedure, routine, or aggregate may break existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-drop-generated-expression/">banDropGeneratedExpression</a> 🛠</td>
+<td>Dropping the expression of a generated column may break existing clients.</td>
 </tr>
 <tr>
 <td><a href=".././rules/ban-drop-not-null/">banDropNotNull</a> ✅ 🛠</td>
@@ -1399,8 +1439,24 @@
 <td>Dropping a schema will remove all objects within it and may break existing clients.</td>
 </tr>
 <tr>
+<td><a href=".././rules/ban-drop-sequence/">banDropSequence</a> 🛠</td>
+<td>Dropping a sequence may break existing clients.</td>
+</tr>
+<tr>
 <td><a href=".././rules/ban-drop-table/">banDropTable</a> ✅ 🛠</td>
 <td>Dropping a table may break existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-drop-type/">banDropType</a> 🛠</td>
+<td>Dropping a type, cast, operator, operator class, or operator family may break existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-drop-view/">banDropView</a> 🛠</td>
+<td>Dropping a view or materialized view may break existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-set-schema/">banSetSchema</a> 🛠</td>
+<td>Moving an object to another schema may break existing clients.</td>
 </tr>
 <tr>
 <td><a href=".././rules/ban-truncate/">banTruncate</a> ✅ 🛠</td>
@@ -1421,6 +1477,10 @@
 <tr>
 <td><a href=".././rules/renaming-column/">renamingColumn</a> 🛠</td>
 <td>Renaming columns may break existing queries and application code.</td>
+</tr>
+<tr>
+<td><a href=".././rules/renaming-object/">renamingObject</a> 🛠</td>
+<td>Renaming an object or an enum value may break existing clients.</td>
 </tr>
 <tr>
 <td><a href=".././rules/renaming-table/">renamingTable</a> 🛠</td>
@@ -1477,6 +1537,14 @@
 <tr>
 <td><a href=".././rules/avoid-wide-lock-window/">avoidWideLockWindow</a> ✅ 🛠</td>
 <td>Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-domain-with-add-constraint/">banAlterDomainWithAddConstraint</a> 🛠</td>
+<td>Adding a constraint to a domain has poor support for online migrations.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-create-domain-with-constraint/">banCreateDomainWithConstraint</a> 🛠</td>
+<td>Domains with constraints have poor support for online migrations.</td>
 </tr>
 <tr>
 <td><a href=".././rules/ban-drop-trigger/">banDropTrigger</a> 🛠</td>
@@ -1581,6 +1649,14 @@
 <tr>
 <td><a href=".././rules/prefer-timestamptz/">preferTimestamptz</a></td>
 <td>Prefer TIMESTAMPTZ over TIMESTAMP types.</td>
+</tr>
+<tr>
+<td><a href=".././rules/require-enum-value-ordering/">requireEnumValueOrdering</a></td>
+<td><code>ALTER TYPE ... ADD VALUE</code> without <code>BEFORE</code> or <code>AFTER</code> appends the value to the end of the enum.</td>
+</tr>
+<tr>
+<td><a href=".././rules/require-table-schema/">requireTableSchema</a></td>
+<td>Table names in DDL should be schema-qualified.</td>
 </tr>
 </tbody>
 </table>
