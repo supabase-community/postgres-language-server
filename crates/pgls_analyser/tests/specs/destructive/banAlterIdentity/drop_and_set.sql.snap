@@ -1,0 +1,43 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterIdentity
+alter table users alter column id drop identity if exists;
+-- expect_lint/banAlterIdentity
+alter table users alter column id set generated always;
+-- expect_lint/banAlterIdentity
+alter table users alter column id set generated always set start with 100;
+
+```
+
+# Diagnostics
+lint/banAlterIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the identity of column id may break inserts from existing clients.
+  
+  i Inserts that omit the column fail once it no longer generates values.
+  
+  i Update client inserts before changing the identity.
+  
+
+
+lint/banAlterIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the identity of column id may break inserts from existing clients.
+  
+  i Inserts that provide an explicit value fail once the column is GENERATED ALWAYS.
+  
+  i Update client inserts before changing the identity.
+  
+
+
+lint/banAlterIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the identity of column id may break inserts from existing clients.
+  
+  i Inserts that provide an explicit value fail once the column is GENERATED ALWAYS.
+  
+  i Update client inserts before changing the identity.

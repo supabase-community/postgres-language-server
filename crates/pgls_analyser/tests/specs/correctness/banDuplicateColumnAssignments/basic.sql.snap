@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDuplicateColumnAssignments
+update users set name = 'a', name = 'b';
+
+```
+
+# Diagnostics
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Multiple assignments to column name.
+  
+  i Postgres rejects statements that assign a column more than once.
+  
+  i Remove all but one of the assignments.

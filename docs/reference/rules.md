@@ -16,6 +16,9 @@ Code that fails at runtime for reasons other than names or types.
 | --- | --- |
 | [avoidAlterEnumAddValue](./rules/avoid-alter-enum-add-value.md) | `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older Postgres versions. |
 | [banConcurrentIndexCreationInTransaction](./rules/ban-concurrent-index-creation-in-transaction.md) ✅ | Concurrent index creation is not allowed within a transaction. |
+| [banDuplicateColumnAssignments](./rules/ban-duplicate-column-assignments.md) ✅ | A column is assigned or declared more than once. |
+| [banUncommittedTransaction](./rules/ban-uncommitted-transaction.md) ✅ 🛠 | A transaction is started but never committed or rolled back. |
+| [identifierTooLong](./rules/identifier-too-long.md) ✅ | Identifiers longer than 63 bytes are silently truncated. |
 | [invalidDropTypeSignature](./rules/invalid-drop-type-signature.md) ✅ | `DROP TYPE` and `DROP DOMAIN` don't take a parameter list. |
 | [transactionNesting](./rules/transaction-nesting.md) | Detects problematic transaction nesting that could lead to unexpected behavior. |
 
@@ -26,17 +29,29 @@ Code that loses data or breaks existing clients.
 | Rule | Description |
 | --- | --- |
 | [addingRequiredField](./rules/adding-required-field.md) 🛠 | Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required. |
+| [banAlterIdentity](./rules/ban-alter-identity.md) 🛠 | Changing the identity of a column may break inserts from existing clients. |
 | [banDeleteWithoutWhere](./rules/ban-delete-without-where.md) ✅ | A `DELETE` statement without a `WHERE` clause will remove all rows from the table. |
 | [banDropColumn](./rules/ban-drop-column.md) ✅ 🛠 | Dropping a column may break existing clients. |
+| [banDropConstraint](./rules/ban-drop-constraint.md) 🛠 | Dropping a constraint may break existing clients. |
 | [banDropDatabase](./rules/ban-drop-database.md) 🛠 | Dropping a database may break existing clients (and everything else, really). |
+| [banDropDefault](./rules/ban-drop-default.md) 🛠 | Dropping a column or domain default may break existing clients. |
+| [banDropDomain](./rules/ban-drop-domain.md) 🛠 | Dropping a domain may break existing clients. |
+| [banDropExtension](./rules/ban-drop-extension.md) 🛠 | Dropping an extension may break existing clients. |
+| [banDropFunction](./rules/ban-drop-function.md) 🛠 | Dropping a function, procedure, routine, or aggregate may break existing clients. |
+| [banDropGeneratedExpression](./rules/ban-drop-generated-expression.md) 🛠 | Dropping the expression of a generated column may break existing clients. |
 | [banDropNotNull](./rules/ban-drop-not-null.md) ✅ 🛠 | Dropping a NOT NULL constraint may break existing clients. |
 | [banDropSchema](./rules/ban-drop-schema.md) ✅ 🛠 | Dropping a schema will remove all objects within it and may break existing clients. |
+| [banDropSequence](./rules/ban-drop-sequence.md) 🛠 | Dropping a sequence may break existing clients. |
 | [banDropTable](./rules/ban-drop-table.md) ✅ 🛠 | Dropping a table may break existing clients. |
+| [banDropType](./rules/ban-drop-type.md) 🛠 | Dropping a type, cast, operator, operator class, or operator family may break existing clients. |
+| [banDropView](./rules/ban-drop-view.md) 🛠 | Dropping a view or materialized view may break existing clients. |
+| [banSetSchema](./rules/ban-set-schema.md) 🛠 | Moving an object to another schema may break existing clients. |
 | [banTruncate](./rules/ban-truncate.md) ✅ 🛠 | Truncating a table removes all rows and can cause data loss in production. |
 | [banTruncateCascade](./rules/ban-truncate-cascade.md) 🛠 | Using `TRUNCATE`'s `CASCADE` option will truncate any tables that are also foreign-keyed to the specified tables. |
 | [banUpdateWithoutWhere](./rules/ban-update-without-where.md) ✅ | An `UPDATE` statement without a `WHERE` clause will modify all rows in the table. |
 | [changingColumnType](./rules/changing-column-type.md) 🛠 | Changing a column type may require a table rewrite and break existing clients. |
 | [renamingColumn](./rules/renaming-column.md) 🛠 | Renaming columns may break existing queries and application code. |
+| [renamingObject](./rules/renaming-object.md) 🛠 | Renaming an object or an enum value may break existing clients. |
 | [renamingTable](./rules/renaming-table.md) 🛠 | Renaming tables may break existing queries and application code. |
 
 ## Safety
@@ -55,6 +70,8 @@ Valid code that may be dangerous against a live database: locks, rewrites, or bl
 | [avoidCreateTrigger](./rules/avoid-create-trigger.md) 🛠 | Creating a trigger acquires a `SHARE ROW EXCLUSIVE` lock on the table. |
 | [avoidEnableDisableTrigger](./rules/avoid-enable-disable-trigger.md) 🛠 | Enabling or disabling a trigger acquires a `SHARE ROW EXCLUSIVE` lock. |
 | [avoidWideLockWindow](./rules/avoid-wide-lock-window.md) ✅ 🛠 | Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window. |
+| [banAlterDomainWithAddConstraint](./rules/ban-alter-domain-with-add-constraint.md) 🛠 | Adding a constraint to a domain has poor support for online migrations. |
+| [banCreateDomainWithConstraint](./rules/ban-create-domain-with-constraint.md) 🛠 | Domains with constraints have poor support for online migrations. |
 | [banDropTrigger](./rules/ban-drop-trigger.md) 🛠 | Dropping a trigger acquires an `ACCESS EXCLUSIVE` lock on the table. |
 | [banVacuumFull](./rules/ban-vacuum-full.md) ✅ 🛠 | `VACUUM FULL` rewrites the entire table and acquires an `ACCESS EXCLUSIVE` lock. |
 | [constraintMissingNotValid](./rules/constraint-missing-not-valid.md) 🛠 | Adding constraints without NOT VALID blocks all reads and writes. |
@@ -85,6 +102,8 @@ Schema design preferences. Not enabled by the recommended preset.
 | [preferJsonb](./rules/prefer-jsonb.md) | Prefer JSONB over JSON types. |
 | [preferTextField](./rules/prefer-text-field.md) | Prefer using TEXT over VARCHAR(n) types. |
 | [preferTimestamptz](./rules/prefer-timestamptz.md) | Prefer TIMESTAMPTZ over TIMESTAMP types. |
+| [requireEnumValueOrdering](./rules/require-enum-value-ordering.md) | `ALTER TYPE ... ADD VALUE` without `BEFORE` or `AFTER` appends the value to the end of the enum. |
+| [requireTableSchema](./rules/require-table-schema.md) | Table names in DDL should be schema-qualified. |
 
 ## Typecheck
 

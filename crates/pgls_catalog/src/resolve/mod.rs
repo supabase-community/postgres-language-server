@@ -13,6 +13,7 @@
 //! the right answer.
 
 mod column_name;
+pub use column_name::figure_column_name;
 #[cfg(all(test, feature = "db"))]
 mod differential_tests;
 pub(crate) mod expr;

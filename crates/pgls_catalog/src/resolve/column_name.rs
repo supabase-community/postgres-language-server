@@ -9,7 +9,7 @@ const UNNAMED: &str = "?column?";
 /// Returns `None` if we can't tell.
 ///
 /// [`FigureColname`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1713
-pub(crate) fn figure_column_name(value: &NodeEnum) -> Option<String> {
+pub fn figure_column_name(value: &NodeEnum) -> Option<String> {
     figure_column_name_with_strength(value).map(|(name, _)| name)
 }
 
