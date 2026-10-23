@@ -23,7 +23,8 @@ use crate::{
     Workspace, WorkspaceError,
     features::code_actions::{
         CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
-        EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementParams, ExecuteStatementResult,
+        EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementParams,
+        ExecuteStatementResult,
     },
     features::format::PullFileFormattingParams,
     workspace::{
@@ -1847,6 +1848,15 @@ fn get_statement_execution_workspace(
 /// Executes the single statement in `sql` through its code action, returning the action's
 /// disabled reason and the result.
 fn execute_sql(workspace: &WorkspaceServer, sql: &str) -> (Option<String>, ExecuteStatementResult) {
+    execute_sql_at(workspace, sql, TextSize::new(0))
+}
+
+/// Like [execute_sql], for the statement at `cursor_position`.
+fn execute_sql_at(
+    workspace: &WorkspaceServer,
+    sql: &str,
+    cursor_position: TextSize,
+) -> (Option<String>, ExecuteStatementResult) {
     let path = PgLSPath::new("execute.sql");
     workspace
         .open_file(OpenFileParams {
@@ -1859,7 +1869,7 @@ fn execute_sql(workspace: &WorkspaceServer, sql: &str) -> (Option<String>, Execu
     let action = workspace
         .pull_code_actions(CodeActionsParams {
             path: path.clone(),
-            cursor_position: TextSize::new(0),
+            cursor_position,
             only: vec![],
             skip: vec![],
         })
@@ -1968,6 +1978,7 @@ async fn execute_statement_returns_rows(test_db: PgPool) {
             ],
             truncated: false,
             rows_affected: None,
+            error: None,
         }
     );
 }
@@ -2036,4 +2047,61 @@ async fn execute_statement_reports_rows_affected(test_db: PgPool) {
     assert_eq!(result.columns, ["id"]);
     assert_eq!(result.rows, [[Some("1".to_string())]]);
     assert_eq!(result.rows_affected, None);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_returns_sql_errors_without_disabling_the_database(test_db: PgPool) {
+    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(&workspace, "select 1 / 0;");
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: "Statement failed: division by zero".into(),
+            error: Some(ExecuteStatementError {
+                message: "division by zero".into(),
+                code: "22012".into(),
+                detail: None,
+                hint: None,
+                position: None,
+            }),
+            ..Default::default()
+        }
+    );
+
+    // A failed statement says nothing about the connection, so the database stays available.
+    let (_, result) = execute_sql(&workspace, "select 1 as one;");
+    assert_eq!(result.rows, [[Some("1".to_string())]]);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_locates_the_error_in_the_document(test_db: PgPool) {
+    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    // Postgres counts characters, so the multibyte character before the error shifts it.
+    let sql = "select 1;\nselect 'ä' as a, missing_column from pg_class;";
+    let second_statement = TextSize::new(sql.find("select 'ä'").unwrap() as u32);
+    let (_, result) = execute_sql_at(&workspace, sql, second_statement);
+
+    let error = result.error.expect("expected an error");
+    assert_eq!(error.code, "42703");
+    assert_eq!(
+        error.position,
+        Some(TextSize::new(sql.find("missing_column").unwrap() as u32))
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_returns_detail_and_hint(test_db: PgPool) {
+    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(
+        &workspace,
+        "do $$ begin raise exception 'failed' using detail = 'the detail', hint = 'the hint'; end $$;",
+    );
+
+    let error = result.error.expect("expected an error");
+    assert_eq!(error.code, "P0001");
+    assert_eq!(error.detail.as_deref(), Some("the detail"));
+    assert_eq!(error.hint.as_deref(), Some("the hint"));
 }

@@ -1,4 +1,7 @@
-use crate::{adapters::get_cursor_position, session::Session};
+use crate::{
+    adapters::{get_cursor_position, to_lsp},
+    session::Session,
+};
 use anyhow::{Result, anyhow};
 use tower_lsp_server::ls_types::{
     self, CodeAction, CodeActionDisabled, CodeActionOrCommand, Command, ExecuteCommandParams,
@@ -114,13 +117,26 @@ pub async fn execute_command(
              */
             session.update_all_diagnostics().await;
 
+            let message_type = if result.error.is_some() {
+                MessageType::ERROR
+            } else {
+                MessageType::INFO
+            };
             session
                 .client
-                .show_message(MessageType::INFO, &result.message)
+                .show_message(message_type, &result.message)
                 .await;
 
             // The rows go back to the client, so editor extensions can render them as a table.
-            Ok(Some(serde_json::to_value(result)?))
+            let mut value = serde_json::to_value(&result)?;
+            // The workspace locates an error by its offset, the client by its line and character.
+            if let Some(offset) = result.error.and_then(|error| error.position) {
+                let position = session.document(&doc_url).ok().and_then(|doc| {
+                    to_lsp::position(&doc.line_index, offset, session.position_encoding()).ok()
+                });
+                value["error"]["position"] = serde_json::to_value(position)?;
+            }
+            Ok(Some(value))
         }
         "pgls.invalidateSchemaCache" => {
             session.workspace.invalidate_schema_cache(true)?;
