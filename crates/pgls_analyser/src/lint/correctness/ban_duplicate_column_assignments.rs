@@ -1,19 +1,22 @@
+use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::resolve::figure_column_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{Node, SelectStmt, SetOperation};
+use pgls_query::protobuf::{AlterTableType, Node, SelectStmt, SetOperation, Token};
 use pgls_query::{NodeEnum, NodeRef};
+use pgls_text_size::TextRange;
 
 declare_lint_rule! {
     /// A column is assigned or declared more than once.
     ///
     /// Postgres rejects statements that assign the same column twice in a SET clause, like
     /// `update t set a = 1, a = 2`, with `42601 syntax_error`. It rejects column lists that name
-    /// the same column twice, like `insert into t (a, a)`, and tables and views that declare the
-    /// same column twice with `42701 duplicate_column`. This includes view columns that get the
-    /// same name from their expressions, like `select a.id, b.id`.
+    /// the same column twice, like `insert into t (a, a)` or `copy t (a, a)`, tables, views and
+    /// composite types that declare the same column twice, and `ALTER TABLE` commands that add
+    /// the same column twice with `42701 duplicate_column`. This includes view columns that get
+    /// the same name from their expressions, like `select a.id, b.id`.
     ///
     /// Assigning different elements or fields of the same column, like `set a[1] = 1, a[2] = 2`,
     /// is fine.
@@ -53,44 +56,61 @@ impl LinterRule for BanDuplicateColumnAssignments {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        let tokens = ctx.tokens();
         let mut diagnostics = Vec::new();
 
         for node in ctx.stmt().iter() {
             match node {
                 NodeRef::UpdateStmt(stmt) => {
-                    report_assignments(&stmt.target_list, &mut diagnostics)
+                    report_assignments(&stmt.target_list, tokens, &mut diagnostics)
                 }
                 NodeRef::OnConflictClause(clause) => {
-                    report_assignments(&clause.target_list, &mut diagnostics)
+                    report_assignments(&clause.target_list, tokens, &mut diagnostics)
                 }
                 NodeRef::MergeWhenClause(clause) => {
-                    report_assignments(&clause.target_list, &mut diagnostics)
+                    report_assignments(&clause.target_list, tokens, &mut diagnostics)
                 }
-                NodeRef::InsertStmt(stmt) => report_assignments(&stmt.cols, &mut diagnostics),
-                NodeRef::CreateStmt(stmt) => {
-                    let columns =
-                        stmt.table_elts
-                            .iter()
-                            .filter_map(|element| match &element.node {
-                                Some(NodeEnum::ColumnDef(column)) => Some(column.colname.clone()),
-                                _ => None,
-                            });
-                    report_definitions(columns, &mut diagnostics);
+                NodeRef::InsertStmt(stmt) => {
+                    report_assignments(&stmt.cols, tokens, &mut diagnostics)
                 }
+                NodeRef::CopyStmt(stmt) => report_definitions(
+                    string_values(&stmt.attlist),
+                    Definition::ColumnList,
+                    &mut diagnostics,
+                ),
+                NodeRef::CreateStmt(stmt) => report_definitions(
+                    column_definitions(&stmt.table_elts, tokens),
+                    Definition::Relation,
+                    &mut diagnostics,
+                ),
+                NodeRef::CompositeTypeStmt(stmt) => report_definitions(
+                    column_definitions(&stmt.coldeflist, tokens),
+                    Definition::Relation,
+                    &mut diagnostics,
+                ),
+                NodeRef::AlterTableStmt(stmt) => report_definitions(
+                    added_columns(&stmt.cmds, tokens),
+                    Definition::AddedColumn,
+                    &mut diagnostics,
+                ),
                 NodeRef::ViewStmt(stmt) => report_definitions(
-                    output_columns(&stmt.aliases, stmt.query.as_deref()),
+                    output_columns(&stmt.aliases, stmt.query.as_deref(), tokens),
+                    Definition::Relation,
                     &mut diagnostics,
                 ),
                 NodeRef::CreateTableAsStmt(stmt) => {
                     let names = stmt.into.as_ref().map_or(&[][..], |into| &into.col_names);
                     report_definitions(
-                        output_columns(names, stmt.query.as_deref()),
+                        output_columns(names, stmt.query.as_deref(), tokens),
+                        Definition::Relation,
                         &mut diagnostics,
                     );
                 }
-                NodeRef::SelectStmt(stmt) if stmt.into_clause.is_some() => {
-                    report_definitions(select_columns(&[], stmt), &mut diagnostics)
-                }
+                NodeRef::SelectStmt(stmt) if stmt.into_clause.is_some() => report_definitions(
+                    select_columns(&[], stmt, tokens),
+                    Definition::Relation,
+                    &mut diagnostics,
+                ),
                 _ => {}
             }
         }
@@ -99,24 +119,39 @@ impl LinterRule for BanDuplicateColumnAssignments {
     }
 }
 
+/// A column name, and where it is written if we know that.
+struct Column {
+    name: String,
+    span: Option<TextRange>,
+}
+
 /// Reports the columns of a SET clause or an INSERT column list that are assigned more than
 /// once. Assigning distinct subscripts or fields of a column is allowed, so a column is only
 /// reported if one of its assignments is to the whole column.
-fn report_assignments(targets: &[Node], diagnostics: &mut Vec<LinterDiagnostic>) {
+fn report_assignments(
+    targets: &[Node],
+    tokens: Option<StatementTokens>,
+    diagnostics: &mut Vec<LinterDiagnostic>,
+) {
     let assignments = targets.iter().filter_map(|target| match &target.node {
-        Some(NodeEnum::ResTarget(target)) => {
-            Some((target.name.as_str(), target.indirection.is_empty()))
-        }
+        Some(NodeEnum::ResTarget(target)) => Some((
+            Column {
+                name: target.name.clone(),
+                span: token_range(tokens, target.location),
+            },
+            target.indirection.is_empty(),
+        )),
         _ => None,
     });
 
     for column in duplicates(assignments) {
+        let name = &column.name;
         diagnostics.push(
             LinterDiagnostic::new(
                 rule_category!(),
-                None,
+                column.span,
                 markup! {
-                    "Multiple assignments to column "<Emphasis>{column}</Emphasis>"."
+                    "Multiple assignments to column "<Emphasis>{name}</Emphasis>"."
                 },
             )
             .detail(
@@ -128,59 +163,136 @@ fn report_assignments(targets: &[Node], diagnostics: &mut Vec<LinterDiagnostic>)
     }
 }
 
+/// What a list of column definitions or names belongs to.
+#[derive(Clone, Copy)]
+enum Definition {
+    /// The columns of a table, view or composite type.
+    Relation,
+    /// The columns added by an `ALTER TABLE`.
+    AddedColumn,
+    /// The column list of a `COPY`.
+    ColumnList,
+}
+
 fn report_definitions(
-    columns: impl IntoIterator<Item = String>,
+    columns: impl IntoIterator<Item = Column>,
+    definition: Definition,
     diagnostics: &mut Vec<LinterDiagnostic>,
 ) {
-    let columns: Vec<String> = columns.into_iter().collect();
-    for column in duplicates(columns.iter().map(|column| (column.as_str(), true))) {
+    let (detail, note) = match definition {
+        Definition::Relation => (
+            "Postgres rejects relations with duplicate column names.",
+            "Give each column a distinct name.",
+        ),
+        Definition::AddedColumn => (
+            "Postgres rejects adding a column that the statement already added.",
+            "Add the column once.",
+        ),
+        Definition::ColumnList => (
+            "Postgres rejects column lists that name a column more than once.",
+            "Name each column once.",
+        ),
+    };
+    for column in duplicates(columns.into_iter().map(|column| (column, true))) {
+        let name = &column.name;
         diagnostics.push(
             LinterDiagnostic::new(
                 rule_category!(),
-                None,
+                column.span,
                 markup! {
-                    "Column "<Emphasis>{column}</Emphasis>" is specified more than once."
+                    "Column "<Emphasis>{name}</Emphasis>" is specified more than once."
                 },
             )
-            .detail(
-                None,
-                "Postgres rejects relations with duplicate column names.",
-            )
-            .note("Give each column a distinct name."),
+            .detail(None, detail)
+            .note(note),
         );
     }
 }
 
-/// The names that occur more than once, in order of their first occurrence, given whether each
-/// occurrence is to the whole column.
-fn duplicates<'a>(names: impl IntoIterator<Item = (&'a str, bool)>) -> Vec<&'a str> {
-    let mut seen: Vec<(&str, usize, bool)> = Vec::new();
-    for (name, whole) in names {
-        match seen.iter_mut().find(|(seen, ..)| *seen == name) {
-            Some((_, count, any_whole)) => {
-                *count += 1;
+/// The second occurrence of each name that occurs more than once, in order of the first
+/// occurrence, given whether each occurrence is to the whole column.
+fn duplicates(columns: impl IntoIterator<Item = (Column, bool)>) -> Vec<Column> {
+    // The first occurrence, the second one, and whether any occurrence is to the whole column.
+    let mut seen: Vec<(Column, Option<Column>, bool)> = Vec::new();
+    for (column, whole) in columns {
+        match seen
+            .iter_mut()
+            .find(|(first, ..)| first.name == column.name)
+        {
+            Some((_, second, any_whole)) => {
+                second.get_or_insert(column);
                 *any_whole |= whole;
             }
-            None => seen.push((name, 1, whole)),
+            None => seen.push((column, None, whole)),
         }
     }
     seen.into_iter()
-        .filter(|(_, count, any_whole)| *count > 1 && *any_whole)
-        .map(|(name, ..)| name)
+        .filter_map(|(_, second, any_whole)| second.filter(|_| any_whole))
         .collect()
+}
+
+fn column_definitions(elements: &[Node], tokens: Option<StatementTokens>) -> Vec<Column> {
+    elements
+        .iter()
+        .filter_map(|element| match &element.node {
+            Some(NodeEnum::ColumnDef(column)) => Some(Column {
+                name: column.colname.clone(),
+                span: token_range(tokens, column.location),
+            }),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The columns added by `ADD COLUMN`. Postgres skips an `ADD COLUMN IF NOT EXISTS` of a column
+/// that an earlier command added, so only the other ones count as duplicates.
+fn added_columns(cmds: &[Node], tokens: Option<StatementTokens>) -> Vec<Column> {
+    let mut columns = Vec::new();
+    for cmd in cmds {
+        let Some(NodeEnum::AlterTableCmd(cmd)) = &cmd.node else {
+            continue;
+        };
+        if cmd.subtype() != AlterTableType::AtAddColumn {
+            continue;
+        }
+        let Some(NodeEnum::ColumnDef(column)) =
+            cmd.def.as_deref().and_then(|def| def.node.as_ref())
+        else {
+            continue;
+        };
+        let added = columns
+            .iter()
+            .any(|added: &Column| added.name == column.colname);
+        if cmd.missing_ok && added {
+            continue;
+        }
+        columns.push(Column {
+            name: column.colname.clone(),
+            span: token_range(tokens, column.location),
+        });
+    }
+    columns
 }
 
 /// The column names of a view or `CREATE TABLE AS`: the explicit names, then the names of the
 /// remaining entries of the select list.
-fn output_columns(names: &[Node], query: Option<&Node>) -> Vec<String> {
+fn output_columns(
+    names: &[Node],
+    query: Option<&Node>,
+    tokens: Option<StatementTokens>,
+) -> Vec<Column> {
     match query.and_then(|query| query.node.as_ref()) {
-        Some(NodeEnum::SelectStmt(select)) => select_columns(names, select),
+        Some(NodeEnum::SelectStmt(select)) => select_columns(names, select, tokens),
         _ => string_values(names),
     }
 }
 
 /// Columns we can't name, like the expansion of `*`, are left out.
-fn select_columns(names: &[Node], select: &SelectStmt) -> Vec<String> {
+fn select_columns(
+    names: &[Node],
+    select: &SelectStmt,
+    tokens: Option<StatementTokens>,
+) -> Vec<Column> {
     let mut select = select;
     // The left-most select of a set operation names the columns.
     while select.op() != SetOperation::SetopNone {
@@ -191,6 +303,9 @@ fn select_columns(names: &[Node], select: &SelectStmt) -> Vec<String> {
     }
 
     let mut columns = string_values(names);
+    if !select.values_lists.is_empty() {
+        return columns;
+    }
     let targets: Vec<_> = select
         .target_list
         .iter()
@@ -199,35 +314,149 @@ fn select_columns(names: &[Node], select: &SelectStmt) -> Vec<String> {
             _ => None,
         })
         .collect();
-    // Explicit names apply to the expansion of a `*` too, so with a `*` we can't tell which
-    // entries keep their own names.
-    let has_star = targets.iter().any(|target| {
-        matches!(
-            target.val.as_deref().and_then(|value| value.node.as_ref()),
-            Some(NodeEnum::ColumnRef(column))
-                if matches!(column.fields.last().and_then(|field| field.node.as_ref()), Some(NodeEnum::AStar(_)))
-        )
+    // Explicit names apply to the entries in order, and a `*` expands to an unknown number of
+    // them. If the explicit names reach into a `*`, we can't tell which of the entries after it
+    // keep their own names.
+    let first_star = targets.iter().position(|target| {
+        target
+            .val
+            .as_deref()
+            .and_then(|value| value.node.as_ref())
+            .is_some_and(is_star)
     });
-    if has_star || !select.values_lists.is_empty() {
+    if first_star.is_some_and(|star| star < names.len()) {
         return columns;
     }
 
     columns.extend(targets.iter().skip(names.len()).filter_map(|target| {
-        if target.name.is_empty() {
-            figure_column_name(target.val.as_deref()?.node.as_ref()?)
+        let name = if target.name.is_empty() {
+            figure_column_name(target.val.as_deref()?.node.as_ref()?)?
         } else {
-            Some(target.name.clone())
-        }
+            target.name.clone()
+        };
+        Some(Column {
+            name,
+            span: select_entry_range(tokens, target.location),
+        })
     }));
     columns
 }
 
-fn string_values(names: &[Node]) -> Vec<String> {
+fn is_star(value: &NodeEnum) -> bool {
+    let last = match value {
+        NodeEnum::ColumnRef(column) => column.fields.last(),
+        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
+        _ => None,
+    };
+    matches!(
+        last.and_then(|last| last.node.as_ref()),
+        Some(NodeEnum::AStar(_))
+    )
+}
+
+fn string_values(names: &[Node]) -> Vec<Column> {
     names
         .iter()
         .filter_map(|name| match &name.node {
-            Some(NodeEnum::String(name)) => Some(name.sval.clone()),
+            Some(NodeEnum::String(name)) => Some(Column {
+                name: name.sval.clone(),
+                span: None,
+            }),
             _ => None,
         })
         .collect()
+}
+
+/// The range of the token at `location`, e.g. the name of a column definition.
+fn token_range(tokens: Option<StatementTokens>, location: i32) -> Option<TextRange> {
+    let tokens = tokens?;
+    Some(tokens.range(tokens.at(location)?))
+}
+
+/// The range of the select list entry that starts at `location`: up to the next `,` outside
+/// parentheses, or the keyword that ends the select list.
+fn select_entry_range(tokens: Option<StatementTokens>, location: i32) -> Option<TextRange> {
+    let tokens = tokens?;
+    let start = tokens.at(location)?;
+    let mut depth = 0usize;
+    let mut last = start;
+    let mut index = start;
+    while let Some(kind) = tokens.kind(index) {
+        match kind {
+            Token::Ascii40 => depth += 1,
+            Token::Ascii41 if depth == 0 => break,
+            Token::Ascii41 => depth -= 1,
+            Token::Ascii44
+            | Token::Ascii59
+            | Token::From
+            | Token::Into
+            | Token::Where
+            | Token::GroupP
+            | Token::Having
+            | Token::Window
+            | Token::Union
+            | Token::Intersect
+            | Token::Except
+            | Token::Order
+            | Token::Limit
+            | Token::Offset
+            | Token::Fetch
+            | Token::For
+                if depth == 0 =>
+            {
+                break;
+            }
+            _ => {}
+        }
+        if !matches!(kind, Token::SqlComment | Token::CComment) {
+            last = index;
+        }
+        index += 1;
+    }
+    Some(tokens.range(start).cover(tokens.range(last)))
+}
+
+#[cfg(test)]
+mod tests {
+    fn spans(sql: &str) -> Vec<String> {
+        crate::spanned_texts("correctness", "banDuplicateColumnAssignments", sql)
+    }
+
+    #[test]
+    fn points_at_the_second_occurrence() {
+        assert_eq!(
+            spans("update users set name = 'a', email = 'b', \"name\" = 'c'"),
+            ["\"name\""]
+        );
+        assert_eq!(
+            spans("insert into users (id, name, id) values (1, 'a', 2)"),
+            ["id"]
+        );
+        assert_eq!(
+            spans("create table users (id bigint, name text, id text)"),
+            ["id"]
+        );
+        assert_eq!(
+            spans("alter table users add column email text, add email text"),
+            ["email"]
+        );
+        assert_eq!(
+            spans("create view v as select a.id, (b.id) /* id */ from a, b"),
+            ["(b.id)"]
+        );
+        assert_eq!(
+            spans("create view v as select 1 as x, coalesce(a, b) as x, 3 from t"),
+            ["coalesce(a, b) as x"]
+        );
+        assert_eq!(
+            spans("select 1 as x, 2 as x into t union select 3, 4"),
+            ["2 as x"]
+        );
+    }
+
+    #[test]
+    fn statement_without_locations() {
+        let sql = "copy users (id, id) from stdin";
+        assert_eq!(spans(sql), [sql]);
+    }
 }
