@@ -4,7 +4,7 @@ use pgls_text_size::{TextRange, TextSize};
 
 use pgls_query::{
     NodeEnum,
-    protobuf::{CoercionForm, FuncCall},
+    protobuf::{self, CoercionForm, FuncCall},
 };
 
 use super::{
@@ -12,8 +12,9 @@ use super::{
     scope::{Cte, Level},
     span,
 };
-use crate::FunctionInfo;
 use crate::lookup::{CatalogView, Lookup, Origin};
+use crate::typing::TypeId;
+use crate::{FunctionInfo, TypeKind};
 
 pub(super) struct Resolver<'a> {
     pub catalog: &'a dyn CatalogView,
@@ -73,10 +74,16 @@ impl<'a> Resolver<'a> {
 
     /// The parameter of the SQL function with this name.
     pub fn function_param(&self, name: &str) -> Option<&'a FunctionParam> {
+        let index = self.function_param_index(name)?;
+        self.function?.params.get(index)
+    }
+
+    /// The index of the parameter of the SQL function with this name.
+    pub fn function_param_index(&self, name: &str) -> Option<usize> {
         self.function?
             .params
             .iter()
-            .find(|param| param.name.as_deref() == Some(name))
+            .position(|param| param.name.as_deref() == Some(name))
     }
 
     /// SQL function bodies are only checked against the database if their parameters have
@@ -157,11 +164,66 @@ impl<'a> Resolver<'a> {
             };
             arguments.push(ResolvedCallArgument { parameter, named });
         }
+        for (arg, argument) in call.args.iter().zip(&arguments) {
+            let value = match arg.node.as_ref() {
+                Some(NodeEnum::NamedArgExpr(named)) => {
+                    named.arg.as_deref().and_then(|arg| arg.node.as_ref())
+                }
+                value => value,
+            };
+            let is_variadic = expanded && argument.parameter + 1 == parameters.len();
+            let target = if is_variadic {
+                signature.variadic_element.as_ref()
+            } else {
+                parameters[argument.parameter].ty.as_ref()
+            };
+            if let Some(target) = target {
+                self.record_enum_literal(value, target);
+            }
+        }
         self.record(Reference::Function {
             location: call.location,
             span: self.name_span(call.location),
             function: function.clone(),
             arguments,
+        });
+    }
+
+    /// Records that the parameter `index` of the SQL function is referenced at `location`, when
+    /// references are being collected.
+    pub fn record_parameter(&mut self, index: usize, location: i32) {
+        if !self.collects_references() {
+            return;
+        }
+        self.record(Reference::Parameter {
+            location,
+            span: self.name_span(location),
+            index,
+        });
+    }
+
+    /// Records `node` if it is a string literal that is coerced to `target`, and `target` is an
+    /// enum type.
+    pub fn record_enum_literal(&mut self, node: Option<&NodeEnum>, target: &TypeId) {
+        if !self.collects_references() {
+            return;
+        }
+        let Some(NodeEnum::AConst(constant)) = node else {
+            return;
+        };
+        if !matches!(constant.val, Some(protobuf::a_const::Val::Sval(_))) {
+            return;
+        }
+        let Lookup::Found(type_info) = self.catalog.type_by_id(target) else {
+            return;
+        };
+        if type_info.kind != Some(TypeKind::Enum) {
+            return;
+        }
+        self.record(Reference::EnumLiteral {
+            location: constant.location,
+            span: self.literal_span(constant.location),
+            type_info,
         });
     }
 
@@ -203,6 +265,11 @@ impl<'a> Resolver<'a> {
 
     pub fn cast_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::cast_end)
+    }
+
+    /// The span of the string constant starting at `location`.
+    pub fn literal_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::literal_end)
     }
 
     /// The span of the first token of an expression starting at `location`.

@@ -142,6 +142,57 @@ pub(super) fn cast_end(sql: &str, start: usize) -> Option<usize> {
     Some(end)
 }
 
+/// The end of the string constant starting at `start`: `'...'`, with an `E`, `B`, `X`, `N`, or
+/// `U&` prefix, or `$tag$...$tag$`. Constants continued on a new line (`'a'\n'b'`) end after
+/// their last part.
+pub(super) fn literal_end(sql: &str, start: usize) -> Option<usize> {
+    let bytes = sql.as_bytes();
+    let tail = sql.get(start..)?;
+    if let Some(after_dollar) = tail.strip_prefix('$') {
+        let tag_len = after_dollar.find('$')? + 2;
+        let tag = &tail[..tag_len];
+        let tag_is_valid = tag[1..tag_len - 1]
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_');
+        if !tag_is_valid {
+            return None;
+        }
+        let close = tail[tag_len..].find(tag)?;
+        return Some(start + tag_len + close + tag_len);
+    }
+    let (prefix, escapes) = match bytes.get(start..start + 2)? {
+        [b'u' | b'U', b'&'] => (2, false),
+        [b'e' | b'E', b'\''] => (1, true),
+        [b'b' | b'B' | b'x' | b'X' | b'n' | b'N', b'\''] => (1, false),
+        [b'\'', _] => (0, false),
+        _ => return None,
+    };
+    let mut cursor = start + prefix;
+    loop {
+        // The opening quote.
+        cursor += 1;
+        loop {
+            match bytes.get(cursor)? {
+                b'\\' if escapes => cursor += 2,
+                b'\'' if bytes.get(cursor + 1) == Some(&b'\'') => cursor += 2,
+                b'\'' => break,
+                _ => cursor += 1,
+            }
+        }
+        cursor += 1;
+        let mut next = cursor;
+        let mut newline = false;
+        while let Some(byte) = bytes.get(next).filter(|byte| byte.is_ascii_whitespace()) {
+            newline |= *byte == b'\n';
+            next += 1;
+        }
+        if !(newline && bytes.get(next) == Some(&b'\'')) {
+            return Some(cursor);
+        }
+        cursor = next;
+    }
+}
+
 pub(super) fn operator_end(sql: &str, start: usize) -> Option<usize> {
     let tail = sql.get(start..)?;
     if tail
@@ -156,7 +207,7 @@ pub(super) fn operator_end(sql: &str, start: usize) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::{cast_end, operator_end, reference_end};
+    use super::{cast_end, literal_end, operator_end, reference_end};
 
     fn text(sql: &str, start: usize, end: Option<usize>) -> &str {
         &sql[start..end.expect("span")]
@@ -186,5 +237,24 @@ mod tests {
         assert_eq!(text(sql, start, cast_end(sql, start)), "CAST(x AS bad)");
         let start = sql.find("date '").unwrap();
         assert_eq!(text(sql, start, cast_end(sql, start)), "date 'today'");
+    }
+
+    #[test]
+    fn literal_spans_cover_the_whole_constant() {
+        let cases = [
+            ("'happy'", "'happy'"),
+            ("'it''s' = x", "'it''s'"),
+            ("E'a\\'b' || x", "E'a\\'b'"),
+            ("U&'d\\0061t' x", "U&'d\\0061t'"),
+            ("$$a'b$$ x", "$$a'b$$"),
+            ("$t$a$$b$t$ x", "$t$a$$b$t$"),
+            ("'a'\n  'b' x", "'a'\n  'b'"),
+            ("'a' 'b'", "'a'"),
+        ];
+        for (sql, expected) in cases {
+            assert_eq!(text(sql, 0, literal_end(sql, 0)), expected, "{sql}");
+        }
+        assert_eq!(literal_end("x", 0), None);
+        assert_eq!(literal_end("'open", 0), None);
     }
 }

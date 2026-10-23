@@ -2822,6 +2822,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_semantic_tokens"
+version = "0.0.0"
+dependencies = [
+ "pgls_catalog",
+ "pgls_query",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "sqlx",
+]
+
+[[package]]
 name = "pgls_splinter"
 version = "0.0.0"
 dependencies = [
@@ -3009,6 +3020,7 @@ dependencies = [
  "pgls_pretty_print",
  "pgls_query",
  "pgls_query_ext",
+ "pgls_semantic_tokens",
  "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_suppressions",
