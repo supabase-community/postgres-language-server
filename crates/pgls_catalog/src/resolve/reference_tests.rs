@@ -111,6 +111,22 @@ fn references(catalog: &Catalog, search_path: &[String], sql: &str) -> Vec<Strin
                 Reference::Relation { relation, .. } => {
                     format!("relation {}.{}", relation.schema, relation.name)
                 }
+                Reference::Star { columns, .. } => {
+                    let columns = columns
+                        .iter()
+                        .map(|column| {
+                            column
+                                .qualifier
+                                .iter()
+                                .chain(std::iter::once(&column.name))
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .join(".")
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    format!("star {columns}")
+                }
             };
             format!("{text} => {target}")
         })
@@ -286,6 +302,68 @@ async fn relation_references(test_db: PgPool) {
             "users => relation public.users",
             "u.id => column public.users.id: bigint (int8)",
         ]
+    );
+}
+
+/// The `*` references of `sql`.
+fn stars_of(catalog: &Catalog, search_path: &[String], sql: &str) -> Vec<String> {
+    references(catalog, search_path, sql)
+        .into_iter()
+        .filter(|reference| reference.contains("=> star "))
+        .collect()
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn star_references(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let stars = |sql| stars_of(&catalog, &search_path, sql);
+
+    assert_eq!(stars("select * from users"), ["* => star id, name"]);
+    // Columns are qualified when there are several FROM items.
+    assert_eq!(
+        stars("select *, p.* from public.users join posts p on p.user_id = users.id"),
+        [
+            "* => star users.id, users.name, p.id, p.user_id, p.title",
+            "p.* => star p.id, p.user_id, p.title",
+        ]
+    );
+    assert_eq!(
+        stars("select public.users.* from public.users"),
+        ["public.users.* => star public.users.id, public.users.name"]
+    );
+    // Aliases rename the columns.
+    assert_eq!(stars("select * from users u(uid)"), ["* => star uid, name"]);
+    // CTEs, subqueries, and RETURNING lists.
+    assert_eq!(
+        stars(
+            "with c as (select id, name as n from users) \
+             select c.*, s.* from c, (select count(*) as total from posts) s"
+        ),
+        ["c.* => star c.id, c.n", "s.* => star s.total",]
+    );
+    assert_eq!(
+        stars("delete from users returning *"),
+        ["* => star id, name"]
+    );
+    // The `*` of a subquery expands to its own FROM items.
+    assert_eq!(
+        stars("select exists (select * from posts where user_id = users.id) from users"),
+        ["* => star id, user_id, title"]
+    );
+    // Unknown columns, duplicate column names, merged columns, and items without a name have
+    // no reference.
+    assert_eq!(stars("select * from nope"), [""; 0]);
+    assert_eq!(stars("select * from users, nope"), [""; 0]);
+    assert_eq!(
+        stars("select j.* from (users join posts on true) j"),
+        [""; 0]
+    );
+    assert_eq!(stars("select * from users join posts using (id)"), [""; 0]);
+    assert_eq!(stars("select * from users natural join posts"), [""; 0]);
+    assert_eq!(stars("select * from users, (select 1 as one)"), [""; 0]);
+    assert_eq!(
+        stars("select 1 from users where (users.*) is not null"),
+        [""; 0]
     );
 }
 

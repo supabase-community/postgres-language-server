@@ -196,6 +196,11 @@ impl<'a> Resolver<'a> {
         self.span_to(location, span::reference_end)
     }
 
+    /// The span of the `*` or `t.*` starting at `location`.
+    pub fn star_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::star_end)
+    }
+
     /// The span of the operator token starting at `location`.
     pub fn operator_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::operator_end)

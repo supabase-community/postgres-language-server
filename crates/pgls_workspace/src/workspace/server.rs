@@ -90,6 +90,7 @@ mod connection_key;
 #[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
+mod expand_star;
 mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
@@ -394,7 +395,7 @@ impl WorkspaceServer {
                 actions.push(CodeAction {
                     title: fix.message.clone(),
                     kind: CodeActionKind::Edit(EditAction {
-                        rule: category.to_string(),
+                        rule: Some(category.to_string()),
                         category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
                         applicability: fix.applicability,
                         edits: fix
@@ -422,7 +423,7 @@ impl WorkspaceServer {
             actions.push(CodeAction {
                 title: format!("Suppress rule {rule} for this statement"),
                 kind: CodeActionKind::Edit(EditAction {
-                    rule: category.to_string(),
+                    rule: Some(category.to_string()),
                     category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
                     applicability: Applicability::MaybeIncorrect,
                     edits: vec![TextEdit {
@@ -434,6 +435,45 @@ impl WorkspaceServer {
             });
         }
         actions
+    }
+
+    /// The refactors offered at `position`: expanding a `*` into its columns.
+    fn refactor_code_actions(&self, doc: &Document, position: TextSize) -> Vec<CodeAction> {
+        // Code actions are requested whenever the cursor moves, so don't resolve the file unless
+        // there is a `*` on the line.
+        let content = doc.get_document_content();
+        let bytes = content.as_bytes();
+        let offset = usize::from(position).min(bytes.len());
+        let line_start = bytes[..offset]
+            .iter()
+            .rposition(|byte| *byte == b'\n')
+            .map_or(0, |i| i + 1);
+        let line_end = bytes[offset..]
+            .iter()
+            .position(|byte| *byte == b'\n')
+            .map_or(bytes.len(), |i| offset + i);
+        if !bytes[line_start..line_end].contains(&b'*') {
+            return Vec::new();
+        }
+
+        #[cfg(feature = "db")]
+        let snapshot = self.workspaces().settings().and_then(|settings| {
+            self.connection
+                .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                .and_then(Result::ok)
+        });
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = self.snapshot.get();
+
+        let Some(snapshot) = snapshot else {
+            return Vec::new();
+        };
+        let (stmt_start, references) = self.references_at(doc, &snapshot, position);
+        references
+            .iter()
+            .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
+            .collect()
     }
 
     /// The lint diagnostics of a document that are not suppressed.
@@ -546,13 +586,14 @@ impl WorkspaceServer {
     }
 
     /// The references whose span contains `position`, in the innermost statement at `position`
-    /// (the body of a SQL function rather than its `CREATE FUNCTION`).
+    /// (the body of a SQL function rather than its `CREATE FUNCTION`). Their spans are relative
+    /// to the start of that statement, which is returned with them.
     fn references_at(
         &self,
         doc: &Document,
         snapshot: &Arc<Snapshot>,
         position: TextSize,
-    ) -> Vec<Reference> {
+    ) -> (TextSize, Vec<Reference>) {
         let mut innermost: Option<(TextRange, Vec<Reference>)> = None;
         self.walk_statements(
             doc,
@@ -582,17 +623,18 @@ impl WorkspaceServer {
             },
         );
         let Some((range, references)) = innermost else {
-            return Vec::new();
+            return (TextSize::default(), Vec::new());
         };
         let position = position - range.start();
-        references
+        let references = references
             .into_iter()
             .filter(|reference| {
                 reference
                     .span()
                     .is_some_and(|span| span.contains_inclusive(position))
             })
-            .collect()
+            .collect();
+        (range.start(), references)
     }
 
     /// The indexed database snapshot, built once per snapshot.
@@ -1025,6 +1067,11 @@ impl Workspace for WorkspaceServer {
                 }
             })
             .collect();
+
+        actions.splice(
+            0..0,
+            self.refactor_code_actions(parser, params.cursor_position),
+        );
 
         if let Some(settings) = settings {
             let mut lint_actions = self.lint_code_actions(settings, &params, parser);
@@ -1767,7 +1814,7 @@ impl Workspace for WorkspaceServer {
         {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
                 let position_in_stmt = params.position - range.start();
-                let references = self.references_at(doc, &snapshot, params.position);
+                let (_, references) = self.references_at(doc, &snapshot, params.position);
                 let snapshot = self.snapshot_before(doc, range.start(), snapshot);
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
