@@ -75,9 +75,9 @@ fn semantic_tokens(
     let path = session.file_path(url)?;
     let doc = session.document(url)?;
     let encoding = session.position_encoding();
-    let range = range
-        .map(|range| from_lsp::text_range(&doc.line_index, range, encoding))
-        .transpose()?;
+    // A range that ends past the end of the document, as some clients send, gets the tokens
+    // of the whole document.
+    let range = range.and_then(|range| from_lsp::text_range(&doc.line_index, range, encoding).ok());
 
     let result = match session
         .workspace
@@ -93,8 +93,13 @@ fn semantic_tokens(
     let mut data = Vec::with_capacity(result.tokens.len());
     let mut previous = ls_types::Position::default();
     for token in result.tokens {
-        let start = to_lsp::position(&doc.line_index, token.range.start(), encoding)?;
-        let end = to_lsp::position(&doc.line_index, token.range.end(), encoding)?;
+        // A token whose position can't be encoded is left out rather than failing the response.
+        let (Ok(start), Ok(end)) = (
+            to_lsp::position(&doc.line_index, token.range.start(), encoding),
+            to_lsp::position(&doc.line_index, token.range.end(), encoding),
+        ) else {
+            continue;
+        };
         // Clients only support tokens on a single line by default.
         if start.line != end.line {
             continue;
