@@ -224,8 +224,18 @@ impl<'a> Analyser<'a> {
                 unit.section
                     .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
             );
+            let stmts = &params.stmts[unit.stmts.clone()];
+            let end = params
+                .unparsable
+                .iter()
+                .filter(|skipped| skipped.range.start() < unit.end)
+                .map(|skipped| skipped.range.end())
+                .chain(stmts.last().map(|stmt| stmt.range.end()))
+                .max()
+                .unwrap_or_default();
             let mut file_context =
-                AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session);
+                AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
+                    .with_positions(stmts.iter().map(|stmt| stmt.range.start()).collect(), end);
 
             for (stmt, root) in params.stmts[unit.stmts.clone()]
                 .iter()
