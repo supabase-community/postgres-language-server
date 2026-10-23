@@ -18,19 +18,23 @@ use pgls_configuration::ConfigurationPathHint;
 #[cfg(not(target_os = "windows"))]
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_diagnostics::{Diagnostic, Severity};
-use pgls_fs::{ConfigName, FileSystem, MemoryFileSystem, PgLSPath};
+use pgls_fs::{ConfigName, FileSystem, FindFiles, MemoryFileSystem, PgLSPath};
 use pgls_text_size::TextRange;
 use sqlx::{Executor, PgPool};
 
 use crate::{
     DynRef, Workspace, WorkspaceError,
-    configuration::{apply_nested_configurations, load_configuration},
+    configuration::{
+        IncompleteSearch, NestedConfigurationSearch, apply_nested_configurations,
+        is_searched_for_configuration, load_configuration,
+    },
     features::code_actions::{
         CodeActionKind, ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
     },
     features::format::PullFileFormattingParams,
     features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
     features::on_hover::OnHoverParams,
+    settings::FilesSettings,
     workspace::{
         IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
         UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
@@ -2337,6 +2341,24 @@ impl TestProject {
         }
     }
 
+    /// Applies the configuration files the search finds. Returns their folders and whether the
+    /// search was incomplete.
+    fn search(
+        &self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        search: NestedConfigurationSearch,
+    ) -> (Vec<PathBuf>, Option<IncompleteSearch>) {
+        let nested =
+            apply_nested_configurations(&*self.workspace, fs, self.project_key, search, |c| c)
+                .unwrap();
+        let directories = nested
+            .configurations
+            .into_iter()
+            .map(|nested| nested.directory)
+            .collect();
+        (directories, nested.incomplete)
+    }
+
     /// Another project of the same workspace.
     fn other(&self, project_key: ProjectKey) -> Self {
         Self {
@@ -2355,10 +2377,11 @@ impl TestProject {
             &*self.workspace,
             fs,
             self.project_key,
-            root,
+            NestedConfigurationSearch::new(root),
             |configuration| configuration,
         )
         .unwrap()
+        .configurations
         .into_iter()
         .map(|nested| {
             assert!(nested.result.is_ok(), "{:?}", nested.result);
@@ -2413,6 +2436,20 @@ impl TestProject {
             })
             .unwrap()
     }
+}
+
+/// The files settings of the configuration file at or above `root`.
+fn root_files(fs: &DynRef<'_, dyn FileSystem>, root: &str) -> Arc<FilesSettings> {
+    let configuration = load_configuration(
+        fs,
+        ConfigurationPathHint::FromWorkspace(PathBuf::from(root)),
+    )
+    .unwrap()
+    .configuration;
+    Arc::new(
+        FilesSettings::from_configuration(&configuration, Some(PathBuf::from(root)), None, &[])
+            .unwrap(),
+    )
 }
 
 /// A memory file system with a configuration file in each of the given folders.
@@ -2470,6 +2507,172 @@ fn files_use_the_nearest_configuration_file() {
     assert!(project.is_ignored("/repo/legacy/a.sql"));
 }
 
+/// The search doesn't descend into the folders that the root configuration ignores, except below
+/// a nested configuration file: its settings decide there, so the configuration files below it
+/// are still found.
+#[test]
+fn the_search_skips_the_folders_the_root_configuration_ignores() {
+    let fs = file_system_with_configurations(&[
+        (
+            "/repo",
+            r#"{ "files": { "ignore": ["legacy", "db1/generated"] } }"#,
+        ),
+        ("/repo/legacy/app", "{}"),
+        ("/repo/db1", "{}"),
+        (
+            "/repo/db1/generated",
+            r#"{ "linter": { "enabled": false } }"#,
+        ),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let (directories, incomplete) = project.search(
+        &fs,
+        NestedConfigurationSearch {
+            root_files: Some(root_files(&fs, "/repo")),
+            ..NestedConfigurationSearch::new("/repo")
+        },
+    );
+    assert_eq!(
+        directories,
+        [
+            PathBuf::from("/repo/db1"),
+            PathBuf::from("/repo/db1/generated")
+        ]
+    );
+    assert_eq!(incomplete, None);
+    assert_eq!(project.severities("/repo/db1/generated/a.sql"), []);
+}
+
+/// The home directory and the filesystem roots hold unrelated projects, so their configuration
+/// files are not applied, and the search says so.
+#[test]
+fn the_search_skips_the_home_directory() {
+    let mut fs = file_system_with_configurations(&[(
+        "/home/alice/project",
+        r#"{ "linter": { "enabled": false } }"#,
+    )]);
+    fs.set_home_directory("/home/alice");
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/home/alice"));
+    let (directories, incomplete) =
+        project.search(&fs, NestedConfigurationSearch::new("/home/alice"));
+    assert_eq!(directories, Vec::<PathBuf>::new());
+    assert_eq!(
+        incomplete,
+        Some(IncompleteSearch::NotAProjectFolder(PathBuf::from(
+            "/home/alice"
+        )))
+    );
+    assert_eq!(
+        project.severities("/home/alice/project/a.sql"),
+        [Severity::Warning]
+    );
+
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/"));
+    let (directories, incomplete) = project.search(&fs, NestedConfigurationSearch::new("/"));
+    assert_eq!(directories, Vec::<PathBuf>::new());
+    assert_eq!(
+        incomplete,
+        Some(IncompleteSearch::NotAProjectFolder(PathBuf::from("/")))
+    );
+}
+
+/// A search for some paths, like the CLI's, only finds the configuration files on the way to
+/// each path and below the paths that are folders.
+#[test]
+fn the_search_for_paths_only_looks_at_their_folders() {
+    let mut fs = file_system_with_configurations(&[
+        ("/repo", "{}"),
+        ("/repo/db1", "{}"),
+        ("/repo/db1/sub", "{}"),
+        ("/repo/db2", "{}"),
+        ("/repo/db2/nested", "{}"),
+        ("/repo/db3", "{ this is not json"),
+    ]);
+    fs.insert(PathBuf::from("/repo/db1/sub/a.sql"), "select 1;");
+    fs.insert(PathBuf::from("/repo/db2/b.sql"), "select 1;");
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let (directories, incomplete) = project.search(
+        &fs,
+        NestedConfigurationSearch {
+            paths: Some(vec![
+                PathBuf::from("db1/sub/a.sql"),
+                PathBuf::from("/repo/db1/sub/b.sql"),
+                PathBuf::from("/repo/db2"),
+                PathBuf::from("/elsewhere/c.sql"),
+            ]),
+            ..NestedConfigurationSearch::new("/repo")
+        },
+    );
+    assert_eq!(
+        directories,
+        [
+            PathBuf::from("/repo/db1"),
+            PathBuf::from("/repo/db2"),
+            PathBuf::from("/repo/db1/sub"),
+            PathBuf::from("/repo/db2/nested"),
+        ]
+    );
+    assert_eq!(incomplete, None);
+}
+
+/// The search stops at its depth limit and says so.
+#[test]
+fn the_search_reports_its_depth_limit() {
+    let deep = format!(
+        "/repo/{}",
+        ["d"; FindFiles::DEFAULT_MAX_DEPTH + 1].join("/")
+    );
+    let fs =
+        file_system_with_configurations(&[("/repo", "{}"), ("/repo/db1", "{}"), (&deep, "{}")]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let (directories, incomplete) = project.search(&fs, NestedConfigurationSearch::new("/repo"));
+    assert_eq!(directories, [PathBuf::from("/repo/db1")]);
+    assert_eq!(
+        incomplete,
+        Some(IncompleteSearch::LimitReached(PathBuf::from("/repo")))
+    );
+}
+
+/// A change of a configuration file only reloads the configuration if the search looks at its
+/// folder.
+#[test]
+fn configuration_changes_in_skipped_folders_are_ignored() {
+    let fs = file_system_with_configurations(&[
+        (
+            "/repo",
+            r#"{ "files": { "ignore": ["legacy", "db1/generated"] } }"#,
+        ),
+        ("/repo/db1", "{}"),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let root_files = root_files(&fs, "/repo");
+    let is_searched = |directory: &str| {
+        is_searched_for_configuration(
+            &fs,
+            Path::new("/repo"),
+            Some(&root_files),
+            Path::new(directory),
+        )
+    };
+
+    assert!(is_searched("/repo"));
+    assert!(is_searched("/repo/db2"));
+    assert!(is_searched("/repo/db1/generated"));
+    assert!(!is_searched("/repo/legacy"));
+    assert!(!is_searched("/repo/legacy/app"));
+    assert!(!is_searched("/repo/node_modules/pkg"));
+    assert!(!is_searched("/repo/.git"));
+    assert!(!is_searched("/elsewhere"));
+}
+
 /// Applying the nested configuration files again replaces the ones from before, so a deleted
 /// configuration file no longer applies.
 #[test]
@@ -2515,10 +2718,11 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
         &*project.workspace,
         &fs,
         project.project_key,
-        Path::new("/repo"),
+        NestedConfigurationSearch::new("/repo"),
         |configuration| configuration,
     )
-    .unwrap();
+    .unwrap()
+    .configurations;
     let failed: Vec<_> = nested
         .iter()
         .filter(|nested| nested.result.is_err())
@@ -2655,8 +2859,8 @@ fn nested_configurations_do_not_merge_the_user_configuration() {
     );
     let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
 
-    // The home directory is the workspace, and has no project configuration.
-    let root = home.clone();
+    // The workspace has no project configuration.
+    let root = home.join("repo");
     let loaded =
         load_configuration(&fs, ConfigurationPathHint::FromWorkspace(root.clone())).unwrap();
     assert_eq!(
@@ -2679,10 +2883,6 @@ fn nested_configurations_do_not_merge_the_user_configuration() {
         project.severities(home.join("repo/a.sql")),
         [Severity::Error]
     );
-    assert_eq!(
-        project.severities(user_config_directory.join("a.sql")),
-        [Severity::Error]
-    );
     // A nested configuration does not merge it, unless it extends it.
     assert_eq!(
         project.severities(home.join("repo/db/a.sql")),
@@ -2691,6 +2891,28 @@ fn nested_configurations_do_not_merge_the_user_configuration() {
     assert_eq!(
         project.severities(home.join("repo/shared/a.sql")),
         [Severity::Error]
+    );
+}
+
+/// A user configuration directory below the workspace, e.g. with `XDG_CONFIG_HOME` pointing into
+/// it, holds the user configuration, not a nested one.
+#[test]
+fn the_user_configuration_directories_are_not_nested_configurations() {
+    let mut fs = file_system_with_configurations(&[
+        ("/repo", "{}"),
+        (
+            "/repo/config/postgres-language-server",
+            r#"{ "linter": { "enabled": false } }"#,
+        ),
+    ]);
+    fs.set_user_config_directories(vec![PathBuf::from("/repo/config/postgres-language-server")]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let (project, directories) = TestProject::new(&fs, Path::new("/repo"));
+    assert_eq!(directories, Vec::<PathBuf>::new());
+    assert_eq!(
+        project.severities("/repo/config/postgres-language-server/a.sql"),
+        [Severity::Warning]
     );
 }
 

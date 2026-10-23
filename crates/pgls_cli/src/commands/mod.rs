@@ -392,6 +392,18 @@ pub(crate) fn get_files_to_process_with_cli_options(
     }
 }
 
+/// The paths whose nested configuration files apply: the virtual path of the code piped to
+/// `stdin`, or else the paths to process.
+pub(crate) fn nested_configuration_paths(
+    stdin_file_path: &Option<String>,
+    paths: &[OsString],
+) -> Vec<OsString> {
+    match stdin_file_path {
+        Some(path) => vec![OsString::from(path)],
+        None => paths.to_vec(),
+    }
+}
+
 /// Reads the code piped to `stdin` for the given virtual file path.
 pub(crate) fn read_stdin_payload(
     path: &str,

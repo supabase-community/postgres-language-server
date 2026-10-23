@@ -2601,6 +2601,7 @@ dependencies = [
  "schemars",
  "serde",
  "smallvec",
+ "tempfile",
  "tracing",
 ]
 

@@ -1,5 +1,7 @@
 use crate::cli_options::CliOptions;
-use crate::commands::{get_files_to_process_with_cli_options, read_stdin_payload};
+use crate::commands::{
+    get_files_to_process_with_cli_options, nested_configuration_paths, read_stdin_payload,
+};
 use crate::diagnostics::DatabaseUnavailable;
 use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
@@ -33,9 +35,13 @@ pub fn check(
 
     let configuration = session.prepare_with_config(cli_options, args.configuration.clone())?;
     session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
-    session.apply_nested_configurations(cli_options, args.configuration.clone())?;
 
     let paths = resolve_paths(session.fs(), &configuration, &args)?;
+    session.apply_nested_configurations(
+        cli_options,
+        args.configuration.clone(),
+        &nested_configuration_paths(&args.stdin_file_path, &paths),
+    )?;
 
     let vcs = VcsTargeting {
         staged: args.staged,
