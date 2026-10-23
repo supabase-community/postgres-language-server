@@ -127,6 +127,10 @@ The user configuration is only a fallback for projects without a configuration f
 
 The user configuration applies to the project as if it were placed in the project directory: globs in `files` and the VCS settings are resolved against the project. Relative paths in its `extends` are resolved against its own directory.
 
+When the user configuration applies, the CLI prints `Using the user configuration at <path>` to stderr, and the language server writes it to its log.
+
+The language server reloads the configuration when any of these files is created, changed, or deleted: the configuration files below each workspace folder, the configuration file above a workspace folder that applies to it, the configuration file set in your editor, the user configuration, and the files that a loaded configuration file `extends`.
+
 ## Sharing configuration with `extends`
 
 `extends` lists configuration files to inherit from. They are applied from left to right, and the settings of the file that declares `extends` take precedence over all of them.
