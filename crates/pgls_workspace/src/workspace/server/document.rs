@@ -31,9 +31,8 @@ impl Document {
         let cst_db = TreeSitterStore::new();
         let ast_db = PgQueryStore::new();
         let annotation_db = AnnotationStore::new();
-        let suppressions = Suppressions::from(content.as_str());
-
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
+        let suppressions = Suppressions::from(content.as_str()).with_statements(ranges.clone());
 
         Document {
             ranges,
@@ -53,13 +52,19 @@ impl Document {
 
         let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
 
+        self.suppressions =
+            Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
         self.ranges = ranges;
         self.diagnostics = diagnostics;
-        self.suppressions = Suppressions::from(self.content.as_str());
     }
 
     pub fn suppressions(&self) -> &Suppressions {
         &self.suppressions
+    }
+
+    /// The ranges of the top-level statements, in file order.
+    pub fn statement_ranges(&self) -> &[TextRange] {
+        &self.ranges
     }
 
     pub fn get_document_content(&self) -> &str {
