@@ -157,10 +157,21 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FILTER_KW);
         e.space();
+        // `filter (where ...)` stays on one line when it fits. Otherwise the condition goes on
+        // its own lines inside the parentheses, like a policy's `using (...)`.
+        e.group_start(GroupKind::List);
         e.token(TokenKind::L_PAREN);
+        e.indent_start();
+        e.line(LineType::Soft);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, filter);
+        e.space();
+        e.indent_start();
+        super::emit_node(filter, e);
+        e.indent_end();
+        e.indent_end();
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
+        e.group_end();
         e.indent_end();
     }
 
