@@ -259,9 +259,10 @@ DROP INDEX CONCURRENTLY IF EXISTS users_name_idx;
             .count()
     };
 
+    // Both sections run in a transaction.
     assert_eq!(
         in_transaction(migration_diagnostics(SectionMarkers::Goose, None, content)),
-        2
+        4
     );
     let content = format!("-- +goose NO TRANSACTION\n{content}");
     assert_eq!(
@@ -1819,13 +1820,12 @@ fn is_typecheck(diagnostic: &pgls_diagnostics::serde::Diagnostic) -> bool {
     })
 }
 
-/// A workspace that reads dbmate section markers, so a `transaction:false` section runs its
-/// statements outside a transaction, where `CONCURRENTLY` is allowed.
-fn dbmate_workspace() -> WorkspaceServer {
+/// A workspace that reads the section markers of a migration tool.
+fn section_workspace(section_markers: SectionMarkers) -> WorkspaceServer {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Dbmate),
+            section_markers: Some(section_markers),
             ..Default::default()
         }),
         ..Default::default()
@@ -1833,12 +1833,44 @@ fn dbmate_workspace() -> WorkspaceServer {
     get_test_workspace(Some(conf)).expect("Unable to create test workspace")
 }
 
+/// Applies the fixes of the given rules to `content`.
+fn fixed(
+    workspace: &WorkspaceServer,
+    content: &str,
+    fix_file_mode: FixFileMode,
+    rules: &[&str],
+) -> String {
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let code = workspace
+        .fix_file(FixFileParams {
+            path: path.clone(),
+            fix_file_mode,
+            only: rules.iter().map(|rule| rule.parse().unwrap()).collect(),
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    workspace
+        .close_file(crate::workspace::CloseFileParams { path })
+        .expect("Unable to close test file");
+    code
+}
+
 #[test]
 fn test_code_actions_fix_and_suppress_lint_diagnostics() {
-    let workspace = dbmate_workspace();
+    // A dbmate section with `transaction:false` and a single statement runs outside a
+    // transaction, where `DROP INDEX CONCURRENTLY` works.
+    let workspace = section_workspace(SectionMarkers::Dbmate);
 
     let path = PgLSPath::new("test.sql");
-    let content = "-- migrate:up transaction:false\nselect 1;\n  drop index users_email_idx;";
+    let content = "-- migrate:up transaction:false\n  drop index users_email_idx;";
     workspace
         .open_file(OpenFileParams {
             path: path.clone(),
@@ -1850,7 +1882,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
     let actions = workspace
         .pull_code_actions(crate::features::code_actions::CodeActionsParams {
             path: path.clone(),
-            cursor_position: 47.into(),
+            cursor_position: 37.into(),
             only: vec!["safety/requireConcurrentIndexDeletion".parse().unwrap()],
             skip: vec![],
         })
@@ -1872,7 +1904,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
     assert_eq!(
         fix.edits,
         vec![TextEdit {
-            range: TextRange::empty(54.into()),
+            range: TextRange::empty(44.into()),
             new_text: " CONCURRENTLY".into(),
         }]
     );
@@ -1885,7 +1917,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
     assert_eq!(
         suppression.edits,
         vec![TextEdit {
-            range: TextRange::empty(42.into()),
+            range: TextRange::empty(32.into()),
             new_text: "  -- pgls-ignore requireConcurrentIndexDeletion\n".into(),
         }]
     );
@@ -1928,10 +1960,10 @@ fn test_no_concurrently_fix_in_a_transaction() {
 
 #[test]
 fn test_fix_file() {
-    let workspace = dbmate_workspace();
-
+    // goose sends the statements of a `NO TRANSACTION` migration one by one.
+    let workspace = section_workspace(SectionMarkers::Goose);
+    let content = "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;";
     let path = PgLSPath::new("test.sql");
-    let content = "-- migrate:up transaction:false\ndrop index users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;";
     workspace
         .open_file(OpenFileParams {
             path: path.clone(),
@@ -1958,7 +1990,7 @@ fn test_fix_file() {
     let safe = fix(FixFileMode::SafeFixes);
     assert_eq!(
         safe.code,
-        "-- migrate:up transaction:false\ndrop index CONCURRENTLY users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index CONCURRENTLY users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
     );
     assert_eq!(safe.fixes_applied, 1);
     assert_eq!(safe.skipped_suggested_fixes, 1);
@@ -1966,10 +1998,164 @@ fn test_fix_file() {
     let all = fix(FixFileMode::SafeAndUnsafeFixes);
     assert_eq!(
         all.code,
-        "-- migrate:up transaction:false\ndrop index CONCURRENTLY IF EXISTS users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index CONCURRENTLY IF EXISTS users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
     );
     assert_eq!(all.fixes_applied, 2);
     assert_eq!(all.skipped_suggested_fixes, 0);
+}
+
+#[test]
+fn test_no_concurrently_fix_in_a_dbmate_section_with_several_statements() {
+    // dbmate sends a section to Postgres as one query, which runs in a transaction block if it
+    // has more than one statement.
+    let workspace = section_workspace(SectionMarkers::Dbmate);
+    let content = "-- migrate:up transaction:false\ncreate index users_email_idx on users (email);\ncreate index users_name_idx on users (name);\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        content
+    );
+}
+
+#[test]
+fn test_concurrently_in_a_query_with_several_statements_is_flagged() {
+    let flagged = |markers, content| {
+        migration_diagnostics(markers, None, content)
+            .into_iter()
+            .filter(|category| category == "lint/banConcurrentIndexCreationInTransaction")
+            .count()
+    };
+    assert_eq!(
+        flagged(
+            SectionMarkers::Dbmate,
+            "-- migrate:up transaction:false\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n\n-- migrate:down transaction:false\ndrop index concurrently users_email_idx;\n"
+        ),
+        2
+    );
+    // goose sends a `StatementBegin` block as one query, and the other statements one by one.
+    assert_eq!(
+        flagged(
+            SectionMarkers::Goose,
+            "-- +goose NO TRANSACTION\n-- +goose Up\n-- +goose StatementBegin\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n-- +goose StatementEnd\ncreate index concurrently users_age_idx on users (age);\n-- +goose StatementBegin\ndrop index concurrently users_id_idx;\n-- +goose StatementEnd\n"
+        ),
+        2
+    );
+}
+
+#[test]
+fn test_concurrently_in_a_function_body() {
+    // A function runs in the transaction of the statement that calls it, so `CONCURRENTLY`
+    // fails in its body.
+    let workspace = section_workspace(SectionMarkers::Dbmate);
+    let content = "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index users_email_idx on users (email) $$;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        content
+    );
+
+    let diagnostics = migration_diagnostics(
+        SectionMarkers::Dbmate,
+        None,
+        "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index concurrently users_email_idx on users (email) $$;\n",
+    );
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|category| *category == "lint/banConcurrentIndexCreationInTransaction")
+            .count(),
+        1,
+        "{diagnostics:?}"
+    );
+}
+
+#[test]
+fn test_no_concurrently_fix_next_to_an_unparsable_statement() {
+    // The file has two statements, even if the second only parses on Postgres 18.
+    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_email_idx on users (email);\nalter table users add constraint users_age_check check (age > 0) not enforced;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        content
+    );
+}
+
+#[test]
+fn test_concurrently_fix_is_unsafe_without_section_markers() {
+    // We don't know whether the migration tool runs a file with a single statement in a
+    // transaction.
+    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_email_idx on users (email);\n";
+    let rules = &["safety/requireConcurrentIndexCreation"];
+    assert_eq!(
+        fixed(&workspace, content, FixFileMode::SafeFixes, rules),
+        content
+    );
+    assert_eq!(
+        fixed(&workspace, content, FixFileMode::SafeAndUnsafeFixes, rules),
+        "create index CONCURRENTLY users_email_idx on users (email);\n"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
+    test_db
+        .execute(
+            "create table events (id bigint, created_at timestamptz) partition by range (created_at);
+             create index events_created_at_idx on events (created_at);
+             create table users (id bigint, email text);
+             create index users_email_idx on users (email);",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Goose),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    // Postgres can't create or drop the index of a partitioned table concurrently.
+    let content = "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index users_id_idx on users (id);\ndrop index users_email_idx;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            content,
+            FixFileMode::SafeFixes,
+            &[
+                "safety/requireConcurrentIndexCreation",
+                "safety/requireConcurrentIndexDeletion"
+            ]
+        ),
+        "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index CONCURRENTLY users_id_idx on users (id);\ndrop index CONCURRENTLY users_email_idx;\n"
+    );
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
