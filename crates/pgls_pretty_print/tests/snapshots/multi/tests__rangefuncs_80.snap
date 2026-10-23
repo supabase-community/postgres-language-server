@@ -1593,9 +1593,10 @@ select
   row_to_json(u)
 from
   unnest(
-    array[cast(null as rngfunc2),
-    cast((1, 'foo') as rngfunc2),
-    cast(null as rngfunc2)]
+    array[
+      cast(null as rngfunc2), cast((1, 'foo') as rngfunc2),
+      cast(null as rngfunc2)
+    ]
   )
   as u;
 

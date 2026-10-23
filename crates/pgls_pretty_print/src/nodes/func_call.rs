@@ -102,7 +102,10 @@ fn emit_grouped_comma(
 
 pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
     e.group_start(GroupKind::FuncCall);
-    if n.over.is_some() {
+    // The name and arguments have a group of their own when a clause follows them, so that
+    // `count(*)` stays together and the line breaks before FILTER, WITHIN GROUP or OVER first.
+    let has_suffix = n.over.is_some() || n.agg_filter.is_some() || n.agg_within_group;
+    if has_suffix {
         e.group_start(GroupKind::List);
     }
 
@@ -115,7 +118,7 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         emit_standard_function(e, n);
     }
 
-    if n.over.is_some() {
+    if has_suffix {
         e.group_end();
     }
 
@@ -125,6 +128,8 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
             "ordered-set aggregate is missing ORDER BY list"
         );
 
+        // A clause that breaks onto its own line continues the call, one level in.
+        e.indent_start();
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITHIN_KW);
         e.space();
@@ -144,9 +149,11 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
         e.group_end();
+        e.indent_end();
     }
 
     if let Some(ref filter) = n.agg_filter {
+        e.indent_start();
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FILTER_KW);
         e.space();
@@ -154,6 +161,7 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         e.token(TokenKind::WHERE_KW);
         super::emit_clause_condition(e, filter);
         e.token(TokenKind::R_PAREN);
+        e.indent_end();
     }
 
     // Handle OVER clause (window functions)
