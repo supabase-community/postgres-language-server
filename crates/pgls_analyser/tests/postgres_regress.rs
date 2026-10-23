@@ -1,5 +1,6 @@
-//! Runs the type-check rules over Postgres' own regression suite of every supported version
-//! (`pgls_postgres_regress`), against the catalog of a fresh database on that version.
+//! Runs the type-check rules, and the lint rules that only report what Postgres rejects, over
+//! Postgres' own regression suite of every supported version (`pgls_postgres_regress`), against
+//! the catalog of a fresh database on that version.
 //!
 //! A finding on a statement Postgres accepted is a false positive and fails the test. Findings on
 //! statements Postgres rejected are snapshotted per version, so a change in what we detect shows
@@ -96,7 +97,10 @@ fn catalog(version: &Version) -> Arc<CatalogBase> {
 /// are passed on as unparsable.
 fn check(catalog: &Arc<CatalogBase>, file: &File) -> Vec<Finding> {
     let options = LinterOptions::default();
-    let rules = [RuleFilter::Group(TYPECHECK_GROUP)];
+    let rules = [
+        RuleFilter::Group(TYPECHECK_GROUP),
+        RuleFilter::Rule("correctness", "banDuplicateColumnAssignments"),
+    ];
     let analyser = Analyser::new(AnalyserConfig {
         options: &options,
         filter: AnalysisFilter::from_enabled_rules(&rules),
