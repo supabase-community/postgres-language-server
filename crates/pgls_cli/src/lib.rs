@@ -13,6 +13,8 @@ use pgls_console::{ColorMode, Console, ConsoleExt, markup};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
 use std::path::PathBuf;
 
+use pgls_workspace::configuration::{NestedConfiguration, apply_nested_configurations};
+use pgls_workspace::workspace::ProjectKey;
 use pgls_workspace::{App, DynRef, Workspace, WorkspaceRef};
 
 mod changed;
@@ -43,6 +45,8 @@ pub(crate) use pgls_env::VERSION;
 pub struct CliSession<'app> {
     /// Instance of [App] used by this run of the CLI
     pub app: App<'app>,
+    /// The project of the working directory, once [CliSession::setup_workspace] registered it
+    project_key: ProjectKey,
 }
 
 impl<'app> CliSession<'app> {
@@ -56,6 +60,7 @@ impl<'app> CliSession<'app> {
                 console,
                 WorkspaceRef::Borrowed(workspace),
             ),
+            project_key: ProjectKey::default(),
         })
     }
 
@@ -222,23 +227,43 @@ impl<'app> CliSession<'app> {
             });
         }
 
-        let mut configuration = loaded_configuration.configuration;
+        Ok(apply_overrides(
+            loaded_configuration.configuration,
+            cli_configuration,
+        ))
+    }
 
-        // Env vars override config file but are overridden by explicit CLI args.
-        if let Some(env_db) = pgls_configuration::database::PartialDatabaseConfiguration::from_env()
-        {
-            let env_config = PartialConfiguration {
-                db: Some(env_db),
-                ..Default::default()
-            };
-            configuration.merge_with(env_config);
+    /// The project of the working directory, which every file of this run belongs to
+    pub fn project_key(&self) -> ProjectKey {
+        self.project_key
+    }
+
+    /// Applies every configuration file below the working directory to the project, so that each
+    /// file uses its nearest configuration file. The environment and the arguments apply to them
+    /// like to the root configuration file. Skipped when the user chose a configuration file.
+    pub fn apply_nested_configurations(
+        &self,
+        cli_options: &CliOptions,
+        cli_configuration: Option<PartialConfiguration>,
+    ) -> Result<(), CliDiagnostic> {
+        if cli_options.config_path.is_some() {
+            return Ok(());
         }
+        let Some(root) = self.fs().working_directory() else {
+            return Ok(());
+        };
 
-        if let Some(cli_config) = cli_configuration {
-            configuration.merge_with(cli_config);
+        let nested = apply_nested_configurations(
+            self.workspace(),
+            self.fs(),
+            self.project_key,
+            &root,
+            |configuration| apply_overrides(configuration, cli_configuration.clone()),
+        )?;
+        for NestedConfiguration { result, .. } in nested {
+            result?;
         }
-
-        Ok(configuration)
+        Ok(())
     }
 
     pub fn setup_workspace(
@@ -246,7 +271,9 @@ impl<'app> CliSession<'app> {
         configuration: PartialConfiguration,
         vcs: VcsIntegration,
     ) -> Result<(), CliDiagnostic> {
-        workspace::setup_workspace(self.workspace(), self.fs(), configuration, vcs)
+        self.project_key =
+            workspace::setup_workspace(self.workspace(), self.fs(), configuration, vcs)?;
+        Ok(())
     }
 
     pub fn report(
@@ -258,6 +285,28 @@ impl<'app> CliSession<'app> {
         let mut reporter = Reporter::from_cli_options(cli_options);
         reporter.report(self.console(), command_name, payload)
     }
+}
+
+/// Lays the database configuration from the environment and then the arguments over a
+/// configuration file.
+fn apply_overrides(
+    mut configuration: PartialConfiguration,
+    cli_configuration: Option<PartialConfiguration>,
+) -> PartialConfiguration {
+    // Env vars override config file but are overridden by explicit CLI args.
+    if let Some(env_db) = pgls_configuration::database::PartialDatabaseConfiguration::from_env() {
+        let env_config = PartialConfiguration {
+            db: Some(env_db),
+            ..Default::default()
+        };
+        configuration.merge_with(env_config);
+    }
+
+    if let Some(cli_config) = cli_configuration {
+        configuration.merge_with(cli_config);
+    }
+
+    configuration
 }
 
 /// Controls whether workspace setup should include VCS integration details.

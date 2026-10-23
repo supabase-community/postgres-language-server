@@ -15,10 +15,9 @@ describe("Workspace API", () => {
     );
 
     const workspace = await createWorkspaceWithBinary(command);
-    workspace.registerProjectFolder({
-      setAsCurrentWorkspace: true,
-    });
+    const projectKey = await workspace.registerProjectFolder({});
     await workspace.openFile({
+      project_key: projectKey,
       path: {
         path: "test.sql",
         was_written: false,
@@ -33,6 +32,7 @@ describe("Workspace API", () => {
       skip: [],
       max_diagnostics: 100,
       categories: [],
+      project_key: projectKey,
       path: {
         path: "test.sql",
         was_written: false,
@@ -44,6 +44,7 @@ describe("Workspace API", () => {
     expect(diagnostics[0].description).toBe("Invalid statement: syntax error at end of input");
 
     await workspace.closeFile({
+      project_key: projectKey,
       path: {
         path: "test.sql",
         was_written: false,
