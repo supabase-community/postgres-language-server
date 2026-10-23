@@ -1,6 +1,6 @@
 # banUncommittedTransaction
 
-**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Migrations only** · **Since** `Unreleased`  
+**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Migrations only** · **Unsafe fix** · **Since** `Unreleased`  
 **Diagnostic** `lint/banUncommittedTransaction`
 
 **Sources**: inspired by [`squawk/ban-uncommitted-transaction`](https://squawkhq.com/docs/ban-uncommitted-transaction)

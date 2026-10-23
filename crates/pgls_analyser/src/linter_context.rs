@@ -11,6 +11,7 @@ pub(crate) use pgls_catalog::{is_reindex_concurrent, is_vacuum_full};
 
 use crate::fix::StatementTokens;
 use crate::linter_rule::LinterRule;
+use pgls_text_size::TextSize;
 
 /// The kind of file being analysed.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -184,6 +185,10 @@ pub struct AnalysedFileContext<'a> {
     pos: usize,
     catalog: Catalog,
     session: Session,
+    /// Where each statement starts, and where the last statement ends, including the ones that
+    /// don't parse.
+    starts: Vec<TextSize>,
+    end: Option<TextSize>,
 }
 
 impl<'a> AnalysedFileContext<'a> {
@@ -193,7 +198,22 @@ impl<'a> AnalysedFileContext<'a> {
             pos: 0,
             catalog,
             session,
+            starts: Vec::new(),
+            end: None,
         }
+    }
+
+    /// Sets where the statements start in the file, and where the last one ends.
+    pub fn with_positions(mut self, starts: Vec<TextSize>, end: TextSize) -> Self {
+        self.starts = starts;
+        self.end = Some(end);
+        self
+    }
+
+    /// Where the last statement of the file, or of the section, ends, relative to the start of
+    /// the current statement. Fixes can insert text there.
+    pub fn end_offset(&self) -> Option<TextSize> {
+        self.end?.checked_sub(*self.starts.get(self.pos)?)
     }
 
     pub fn previous_stmts(&self) -> &[pgls_query::NodeEnum] {
