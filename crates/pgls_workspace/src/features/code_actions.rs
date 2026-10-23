@@ -85,4 +85,25 @@ pub struct ExecuteStatementResult {
     /// The number of rows affected, for a statement that returns no rows.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rows_affected: Option<u64>,
+    /// Why Postgres rejected the statement, if it did.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<ExecuteStatementError>,
+}
+
+/// An error that Postgres raised while executing a statement.
+#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteStatementError {
+    /// The primary error message, e.g. `division by zero`.
+    pub message: String,
+    /// The SQLSTATE error code, e.g. `22012`.
+    pub code: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hint: Option<String>,
+    /// The offset of the error in the document, if Postgres reported a position.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<TextSize>,
 }
