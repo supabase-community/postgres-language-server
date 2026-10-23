@@ -258,6 +258,12 @@ impl<'a> Resolver<'a> {
         self.span_to(location, span::reference_end)
     }
 
+    /// The span of the (possibly qualified) type name starting at `location`, with all the words
+    /// of multi-word types like `double precision`.
+    pub fn type_name_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::type_name_end)
+    }
+
     /// The span of the operator token starting at `location`.
     pub fn operator_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::operator_end)

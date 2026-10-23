@@ -1015,6 +1015,29 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
         ]
     );
 
+    // A range that ends past the end of the document still gets the tokens.
+    let in_range: Option<lsp::SemanticTokensRangeResult> = server
+        .request(
+            "textDocument/semanticTokens/range",
+            "semantic_tokens_range",
+            lsp::SemanticTokensRangeParams {
+                work_done_progress_params: WorkDoneProgressParams::default(),
+                partial_result_params: lsp::PartialResultParams::default(),
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                range: Range {
+                    start: Position::new(0, 0),
+                    end: Position::new(5, 0),
+                },
+            },
+        )
+        .await?;
+    let Some(lsp::SemanticTokensRangeResult::Tokens(in_range)) = in_range else {
+        bail!("expected semantic tokens, got {in_range:?}");
+    };
+    assert_eq!(in_range.data, tokens.data);
+
     server.shutdown().await?;
     reader.abort();
 
