@@ -538,24 +538,33 @@ fn check_reports_a_broken_nested_configuration_and_continues() {
         ),
     ]);
 
+    let broken = Path::new("tests").join("fixtures").join("broken");
     let (success, output) = check_in(root.path(), &[], &[]);
     assert!(!success, "{output}");
     assert!(
-        output.contains("tests/fixtures/broken/postgres-language-server.jsonc"),
+        output.contains(
+            &broken
+                .join("postgres-language-server.jsonc")
+                .display()
+                .to_string()
+        ),
         "the broken configuration file is not named:\n{output}"
     );
 
     let (_, output) = check_in(root.path(), &["--reporter", "github"], &[]);
-    let annotation = |level: &str, file: &str| {
+    let annotation = |level: &str, file: &Path| {
         format!(
             "::{level} title=lint/banDropColumn,file={},",
             root.path().join(file).display()
         )
     };
-    assert!(output.contains(&annotation("error", "a.sql")), "{output}");
+    assert!(
+        output.contains(&annotation("error", Path::new("a.sql"))),
+        "{output}"
+    );
     // The defaults, not the root configuration's `error`.
     assert!(
-        output.contains(&annotation("warning", "tests/fixtures/broken/b.sql")),
+        output.contains(&annotation("warning", &broken.join("b.sql"))),
         "{output}"
     );
 }
