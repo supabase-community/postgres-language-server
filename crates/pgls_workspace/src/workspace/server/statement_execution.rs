@@ -1,7 +1,7 @@
 use futures::TryStreamExt;
 use pgls_text_size::TextSize;
 use sqlx::{
-    Column, Either, Executor, PgPool, Row, Statement, ValueRef,
+    Column, Either, Executor, PgConnection, PgPool, Row, Statement, ValueRef,
     postgres::{PgColumn, PgDatabaseError, PgErrorPosition, PgRow},
 };
 
@@ -15,11 +15,16 @@ use crate::features::code_actions::{
 /// The statement runs over the simple query protocol, so Postgres sends every value in its text
 /// representation and no type needs decoding. An error that Postgres raises for the statement is
 /// part of the result, with its position relative to `sql`. Only a failed connection is an error.
+///
+/// Each statement runs on its own: afterwards, the session is reset, so a `begin` or `set` does
+/// not carry over to the next statement on the connection.
 pub(super) async fn execute_statement(
     pool: &PgPool,
     sql: &str,
 ) -> Result<ExecuteStatementResult, sqlx::Error> {
-    match collect_result(pool, sql).await {
+    let mut conn = pool.acquire().await?;
+
+    let result = match collect_result(&mut conn, sql).await {
         Err(err) if !is_connection_failure(&err) => match err
             .as_database_error()
             .and_then(|err| err.try_downcast_ref::<PgDatabaseError>())
@@ -28,16 +33,56 @@ pub(super) async fn execute_statement(
             None => Err(err),
         },
         result => result,
+    };
+
+    match reset_session(&mut conn).await {
+        Ok(rolled_back) => result.map(|mut result| {
+            if rolled_back {
+                if !result.message.ends_with('.') {
+                    result.message.push('.');
+                }
+                result.message.push_str(
+                    " The open transaction was rolled back, as executed statements don't share a session.",
+                );
+            }
+            result
+        }),
+        Err(err) => {
+            tracing::warn!("Closing the connection, as its session could not be reset: {err}");
+            let _ = conn.close().await;
+            result
+        }
     }
 }
 
-async fn collect_result(pool: &PgPool, sql: &str) -> Result<ExecuteStatementResult, sqlx::Error> {
+/// Rolls back the transaction that a statement left open and resets the session, like
+/// `pgbouncer`'s `server_reset_query`. Returns whether a transaction was open.
+async fn reset_session(conn: &mut PgConnection) -> Result<bool, sqlx::Error> {
+    match conn.execute(sqlx::raw_sql("discard all")).await {
+        Ok(_) => Ok(false),
+        // `discard all` can't run inside a transaction block (25001), and a failed transaction
+        // only accepts a rollback (25P02).
+        Err(sqlx::Error::Database(err))
+            if matches!(err.code().as_deref(), Some("25001" | "25P02")) =>
+        {
+            conn.execute(sqlx::raw_sql("rollback")).await?;
+            conn.execute(sqlx::raw_sql("discard all")).await?;
+            Ok(true)
+        }
+        Err(err) => Err(err),
+    }
+}
+
+async fn collect_result(
+    conn: &mut PgConnection,
+    sql: &str,
+) -> Result<ExecuteStatementResult, sqlx::Error> {
     let mut columns = None;
     let mut rows = Vec::new();
     let mut rows_affected = 0;
     let mut truncated = false;
 
-    let mut results = sqlx::raw_sql(sql).fetch_many(pool);
+    let mut results = sqlx::raw_sql(sql).fetch_many(&mut *conn);
     while let Some(result) = results.try_next().await? {
         match result {
             Either::Left(result) => rows_affected += result.rows_affected(),
@@ -56,7 +101,7 @@ async fn collect_result(pool: &PgPool, sql: &str) -> Result<ExecuteStatementResu
     // Postgres sends no columns along with zero rows, so a query without rows looks like a command.
     // Describing the statement tells them apart, unless it affected rows and is thus a command.
     if columns.is_none() && rows_affected == 0 {
-        columns = pool
+        columns = conn
             .prepare(sql)
             .await
             .ok()

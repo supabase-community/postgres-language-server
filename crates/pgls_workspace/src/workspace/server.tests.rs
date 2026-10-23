@@ -17,7 +17,7 @@ use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_diagnostics::Diagnostic;
 use pgls_fs::PgLSPath;
 use pgls_text_size::{TextRange, TextSize};
-use sqlx::{Executor, PgPool};
+use sqlx::{Executor, PgPool, Row};
 
 use crate::{
     Workspace, WorkspaceError,
@@ -2104,4 +2104,66 @@ async fn execute_statement_returns_detail_and_hint(test_db: PgPool) {
     assert_eq!(error.code, "P0001");
     assert_eq!(error.detail.as_deref(), Some("the detail"));
     assert_eq!(error.hint.as_deref(), Some("the hint"));
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_rolls_back_the_transaction_it_opens(test_db: PgPool) {
+    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(&workspace, "begin;");
+    assert_eq!(
+        result.message,
+        "Successfully executed statement. Rows affected: 0. The open transaction was rolled back, as executed statements don't share a session."
+    );
+
+    // In autocommit mode, `now()` is the start of this very statement.
+    let (_, result) = execute_sql(
+        &workspace,
+        "select now() = statement_timestamp() as autocommit;",
+    );
+    assert_eq!(result.rows, [[Some("t".to_string())]]);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_resets_session_settings(test_db: PgPool) {
+    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(&workspace, "set search_path to pg_catalog;");
+    assert_eq!(result.error, None);
+    let (_, result) = execute_sql(&workspace, "show search_path;");
+    assert_eq!(result.rows, [[Some("\"$user\", public".to_string())]]);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn executed_statements_do_not_affect_the_server_connections(test_db: PgPool) {
+    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let settings = workspace.workspaces();
+    let pool = workspace
+        .connection
+        .get_pool(&settings.settings().unwrap().db)
+        .unwrap();
+
+    execute_sql(&workspace, "begin;");
+    execute_sql(&workspace, "set search_path to pg_catalog;");
+
+    // The session reset after a statement drops the prepared statements that sqlx caches on the
+    // connection, so the language server's own queries must not share it.
+    assert_eq!(
+        pool.size(),
+        0,
+        "the statements ran on a connection of the language server's own pool"
+    );
+    // The language server's own queries see neither the transaction nor the setting.
+    workspace.snapshot.load(&pool).expect("snapshot");
+    // `now()` is the start of the statement in autocommit mode. Over the extended query
+    // protocol, `statement_timestamp()` moves on with every message, so use the simple one.
+    let row = sqlx::raw_sql("select now() = statement_timestamp(), current_setting('search_path')")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(
+        row.get::<bool, _>(0),
+        "the connection is inside a transaction"
+    );
+    assert_eq!(row.get::<String, _>(1), "\"$user\", public");
 }
