@@ -213,6 +213,14 @@ Paths in a nested configuration file, such as `migrations.migrationsDir`, are re
 
 The [user configuration](#where-the-configuration-is-loaded-from) is a fallback for the workspace root only. When there is no configuration file at or above the root, it applies to the files that no nested configuration file covers. It is never merged into a nested configuration file. To use it there, extend it explicitly, for example with `"extends": ["~/.config/postgres-language-server/postgres-language-server.jsonc"]`.
 
+The database environment variables (`DATABASE_URL`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`) override the connection of the root configuration, as without nested configurations. In a nested configuration file, they only fill in the connection options that the file doesn't set itself, so that each folder keeps its own database even when, for example, `DATABASE_URL` is set in your shell or CI:
+
+- An environment variable is used for an option (`host`, `port`, `username`, `password`, `database`) that the nested file doesn't set itself. An option that the file only gets through `extends` is overridden like in the root configuration.
+- `DATABASE_URL` is only used when the nested file sets none of `connectionString`, `host`, `port`, `username`, `password`, and `database` itself, because a connection string takes precedence over the other options.
+- The database options passed to the CLI, such as `--connection-string`, and the editor's client overrides apply to every configuration file.
+
+Each workspace folder uses its own settings. When the configuration file of a workspace folder can't be loaded, the error is reported and the folder keeps the settings it had, or the defaults if it is new, until the file is fixed; its nested configuration files are not loaded meanwhile. Files outside every workspace folder use the default settings. A nested configuration file that can't be loaded gives its folder the default settings, and `check` reports it as an error but still checks the other files.
+
 Things to keep in mind:
 
 - Configuration files in hidden folders, `node_modules`, `target`, folders ignored by `.gitignore`, folders that the configuration above them ignores through `files.ignore` or `files.include`, and the user configuration directory are not loaded as nested configurations. Ignoring the large folders that hold no SQL files also makes the search faster.
