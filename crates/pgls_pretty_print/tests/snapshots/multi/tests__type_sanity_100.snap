@@ -630,8 +630,9 @@ select
 from
   pg_class as c1
 where
-  c1.relnatts <>
-  (select count(*) from pg_attribute as a1 where a1.attrelid = c1.oid and a1.attnum > 0);
+  c1.relnatts <> (
+    select count(*) from pg_attribute as a1 where a1.attrelid = c1.oid and a1.attnum > 0
+  );
 
 select
   a1.attrelid,
