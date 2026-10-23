@@ -1905,7 +1905,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
         fix.edits,
         vec![TextEdit {
             range: TextRange::empty(44.into()),
-            new_text: " CONCURRENTLY".into(),
+            new_text: " concurrently".into(),
         }]
     );
 
@@ -1990,7 +1990,7 @@ fn test_fix_file() {
     let safe = fix(FixFileMode::SafeFixes);
     assert_eq!(
         safe.code,
-        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index CONCURRENTLY users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index concurrently users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
     );
     assert_eq!(safe.fixes_applied, 1);
     assert_eq!(safe.skipped_suggested_fixes, 1);
@@ -1998,7 +1998,7 @@ fn test_fix_file() {
     let all = fix(FixFileMode::SafeAndUnsafeFixes);
     assert_eq!(
         all.code,
-        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index CONCURRENTLY IF EXISTS users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index concurrently if exists users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
     );
     assert_eq!(all.fixes_applied, 2);
     assert_eq!(all.skipped_suggested_fixes, 0);
@@ -2106,7 +2106,30 @@ fn test_concurrently_fix_is_unsafe_without_section_markers() {
     );
     assert_eq!(
         fixed(&workspace, content, FixFileMode::SafeAndUnsafeFixes, rules),
-        "create index CONCURRENTLY users_email_idx on users (email);\n"
+        "create index concurrently users_email_idx on users (email);\n"
+    );
+}
+
+#[test]
+fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(r#"{"linter": {"rules": {"all": true}}}"#)
+            .unwrap(),
+    );
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let content = "create table t (a char(10)[], b timestamp /* local */ without time zone, c json, d varchar /* name */ (20));\nalter table t add constraint t_a check (a is not null);\n";
+
+    // `char(10)` becomes `varchar(10)`, and then `text` in the next pass.
+    let once = fixed(&workspace, content, FixFileMode::SafeAndUnsafeFixes, &[]);
+    assert_eq!(
+        once,
+        "create table if not exists t (a text[], b timestamptz /* local */, c jsonb, d text /* name */);\nalter table t add constraint t_a check (a is not null) not valid;\n"
+    );
+    assert!(pgls_query::parse(&once).is_ok());
+    assert_eq!(
+        fixed(&workspace, &once, FixFileMode::SafeAndUnsafeFixes, &[]),
+        once
     );
 }
 
@@ -2154,7 +2177,7 @@ async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
                 "safety/requireConcurrentIndexDeletion"
             ]
         ),
-        "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index CONCURRENTLY users_id_idx on users (id);\ndrop index CONCURRENTLY users_email_idx;\n"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index concurrently users_id_idx on users (id);\ndrop index concurrently users_email_idx;\n"
     );
 }
 

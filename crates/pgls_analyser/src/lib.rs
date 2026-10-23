@@ -315,12 +315,15 @@ impl<'a> Analyser<'a> {
                                 None => stmt.range,
                             });
                             // Fixes are computed on the statement text, which only matches the
-                            // source if it has the length of the statement range.
-                            let fix_matches_source = stmt
-                                .sql
-                                .as_ref()
-                                .is_some_and(|sql| TextSize::of(sql.as_str()) == stmt.range.len());
-                            if !fix_matches_source {
+                            // source if it has the length of the statement range. A fix must
+                            // keep the statement valid.
+                            let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
+                                TextSize::of(sql.as_str()) == stmt.range.len()
+                                    && diagnostic.fix.as_ref().is_none_or(|fix| {
+                                        pgls_query::parse(&fix.apply(sql)).is_ok()
+                                    })
+                            });
+                            if !fix_is_valid {
                                 diagnostic.fix = None;
                             }
                             if let Some(fix) = &mut diagnostic.fix {

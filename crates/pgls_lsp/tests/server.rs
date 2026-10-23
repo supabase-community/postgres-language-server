@@ -1553,7 +1553,7 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     assert_eq!(fix.is_preferred, None);
     let edits = &fix.edit.as_ref().unwrap().changes.as_ref().unwrap()[&doc_url];
     assert_eq!(edits.len(), 1);
-    assert_eq!(edits[0].new_text, " CONCURRENTLY");
+    assert_eq!(edits[0].new_text, " concurrently");
     assert_eq!(edits[0].range.start, Position::new(0, 13));
 
     let suppression = actions
