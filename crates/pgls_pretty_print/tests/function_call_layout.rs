@@ -15,7 +15,20 @@ fn count_star_stays_together_when_the_filter_breaks() {
         "select count(*) filter (where status = 'active' and created_at > now() - interval '30 days' and deleted_at is null) from users",
         &FormatConfig::default(),
     );
-    assert!(output.contains("  count(*)\n    filter (where"), "{output}");
+    assert_eq!(
+        output,
+        "select\n  count(*)\n    filter (\n      where status = 'active' and\n        created_at > now() - cast('30 days' as interval) and\n        deleted_at is null\n    )\nfrom\n  users;"
+    );
+
+    // A FILTER clause that fits stays on one line, even when the call breaks before it.
+    let output = format_idempotently(
+        "select percentile_cont(0.5) within group (order by response_time_in_milliseconds) filter (where status_code < 500) from requests",
+        &FormatConfig::default(),
+    );
+    assert!(
+        output.contains("\n    filter (where status_code < 500)\n"),
+        "{output}"
+    );
 }
 
 #[test]

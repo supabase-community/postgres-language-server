@@ -1341,16 +1341,14 @@ select
   (
     select
       max((select i.unique2 from tenk1 as i where i.unique1 = o.unique1))
-        filter (where
-          o.unique1 < 10)
+        filter (where o.unique1 < 10)
   )
 from
   tenk1 as o;
 
 select
   sum(unique1)
-    filter (where
-      unique1 in (select unique1 from onek where unique1 < 100))
+    filter (where unique1 in (select unique1 from onek where unique1 < 100))
 from
   tenk1;
 
@@ -1566,8 +1564,7 @@ as select
   percentile_disc(0.5) within group (order by thousand) as p50,
   percentile_disc(0.5)
     within group (order by thousand)
-    filter (where
-      hundred = 1)
+    filter (where hundred = 1)
   as px,
   rank(5, 'AZZZZ', 50) within group (order by hundred, string4 desc, hundred)
 from
