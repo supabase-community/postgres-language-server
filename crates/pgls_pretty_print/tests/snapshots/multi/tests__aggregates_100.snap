@@ -1171,8 +1171,7 @@ select
   (
     select
       max((select i.unique2 from tenk1 as i where i.unique1 = o.unique1))
-        filter (where
-          o.unique1 < 10)
+        filter (where o.unique1 < 10)
   )
 from
   tenk1 as o;

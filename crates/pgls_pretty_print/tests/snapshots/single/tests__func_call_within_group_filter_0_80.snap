@@ -5,7 +5,6 @@ input_file: crates/pgls_pretty_print/tests/data/single/func_call_within_group_fi
 select
   percentile_cont(0.75)
     within group (order by salary desc)
-    filter (where
-      salary is not null)
+    filter (where salary is not null)
 from
   employees;
