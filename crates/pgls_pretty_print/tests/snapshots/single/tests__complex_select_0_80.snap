@@ -2,9 +2,7 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/complex_select_0.sql
 ---
-with recursive
-pks_fks
-as (
+with recursive pks_fks as (
   select
     cast(contype as text) as contype,
     conname,
@@ -35,8 +33,7 @@ as (
   where
     contype = 'f'
 ),
-views
-as (
+views as (
   select
     c.oid as view_id,
     n.nspname as view_schema,
@@ -50,8 +47,7 @@ as (
   where
     c.relkind in ('v', 'm')
 ),
-transform_json
-as (
+transform_json as (
   select
     view_id,
     view_schema,
@@ -139,8 +135,7 @@ as (
   from
     views
 ),
-target_entries
-as (
+target_entries as (
   select
     view_id,
     view_schema,
@@ -149,8 +144,7 @@ as (
   from
     transform_json
 ),
-results
-as (
+results as (
   select
     view_id,
     view_schema,
@@ -170,8 +164,7 @@ recursion (
   resorigcol,
   is_cycle,
   path
-)
-as (
+) as (
   select r.*, false, array[resorigtbl] from results as r where true
   union all
   select
@@ -191,8 +184,7 @@ as (
   where
     not is_cycle
 ),
-repeated_references
-as (
+repeated_references as (
   select
     view_id,
     view_schema,

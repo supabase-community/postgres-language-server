@@ -916,9 +916,7 @@ from
 where
   d.classoid is null and o1.oid <= 9999;
 
-with
-funcdescs
-as (
+with funcdescs as (
   select
     p.oid as p_oid,
     proname,
@@ -946,9 +944,7 @@ where
   oprdesc not like 'deprecated%' and
   prodesc is distinct from oprdesc;
 
-with
-funcdescs
-as (
+with funcdescs as (
   select
     p.oid as p_oid,
     proname,
