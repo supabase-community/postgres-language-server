@@ -430,8 +430,7 @@ from
   pg_proc as p1
 where
   proallargtypes is not null and
-  array(select unnest(proargtypes)) <>
-  array(
+  array(select unnest(proargtypes)) <> array(
     select
       proallargtypes[i]
     from
@@ -530,8 +529,9 @@ where
     'lo_lseek64', 'lo_tell', 'lo_tell64', 'lo_truncate', 'lo_truncate64',
     'loread', 'lowrite'
   ) and
-  pronamespace =
-  (select oid from pg_catalog.pg_namespace where nspname = 'pg_catalog')
+  pronamespace = (
+    select oid from pg_catalog.pg_namespace where nspname = 'pg_catalog'
+  )
 order by 1;
 
 select
