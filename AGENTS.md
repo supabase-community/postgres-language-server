@@ -32,6 +32,7 @@ nix develop -c bash -c 'cargo clippy --all-targets --all-features && cargo test 
 - The first `nix develop` downloads the toolchain and takes a few minutes; give it a generous timeout. Later runs start in seconds.
 - `just format`, which `just gen-lint` ends with, runs `bun oxfmt`. In a fresh checkout or worktree, run `nix develop -c bun install --frozen-lockfile` first, otherwise it fails with `Script not found "oxfmt"` and leaves the generated TS files unformatted.
 - Tests that use `sqlx::test` need the database from `docker-compose up -d` (see `DATABASE_URL` in `.env`).
+- A worktree's `target/` takes about 6 GB after building every test. When several worktrees build at once, `CARGO_INCREMENTAL=0` saves about 2 GB more per worktree, at the cost of slower rebuilds. Don't point several worktrees at one `CARGO_TARGET_DIR`: the artifacts of the workspace crates have the same names in every worktree, so the builds overwrite each other.
 
 ### Building and Testing
 ```bash
