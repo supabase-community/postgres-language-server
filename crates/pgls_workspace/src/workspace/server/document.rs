@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
+use pgls_statement_splitter::SplitResult;
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
@@ -18,7 +19,8 @@ use super::{
 pub struct Document {
     content: String,
     version: i32,
-    ranges: Vec<TextRange>,
+    /// The statements of `content`, kept to split the next version of it incrementally.
+    split: SplitResult,
     diagnostics: Vec<SDiagnostic>,
     ast_db: PgQueryStore,
     cst_db: TreeSitterStore,
@@ -36,10 +38,11 @@ impl Document {
         let annotation_db = AnnotationStore::new();
         let suppressions = Suppressions::from(content.as_str());
 
-        let (ranges, diagnostics) = split_with_diagnostics(&content, None);
+        let split = pgls_statement_splitter::split(&content);
+        let diagnostics = split_diagnostics(&split);
 
         Document {
-            ranges,
+            split,
             diagnostics,
             content,
             version,
@@ -52,18 +55,18 @@ impl Document {
     }
 
     pub fn update_content(&mut self, content: String, version: i32) {
+        // Only the statements around the change are split again.
+        self.split = pgls_statement_splitter::split_edited(&self.content, &self.split, &content);
         self.content = content;
         self.version = version;
 
-        let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
-
-        self.ranges = ranges;
-        self.diagnostics = diagnostics;
+        self.diagnostics = split_diagnostics(&self.split);
         self.suppressions = Suppressions::from(self.content.as_str());
 
         // Keep what is cached for the statements that are still in the document. The bodies
         // of SQL functions are kept with their function.
         let statements: FxHashSet<&str> = self
+            .split
             .ranges
             .iter()
             .map(|range| &self.content[*range])
@@ -155,8 +158,9 @@ impl Document {
     {
         // The ranges are ordered and don't overlap, so only the first one that ends after
         // `position` can contain it.
-        let first = self.ranges.partition_point(|range| range.end() <= position);
-        let ranges = &self.ranges[first..self.ranges.len().min(first + 1)];
+        let ranges = &self.split.ranges;
+        let first = ranges.partition_point(|range| range.end() <= position);
+        let ranges = &ranges[first..ranges.len().min(first + 1)];
         ParseIterator {
             ranges: ranges.iter(),
             ..ParseIterator::new(self, mapper, CursorPositionFilter::new(position))
@@ -193,7 +197,7 @@ impl<'a, M, F> ParseIterator<'a, M, F> {
             parser,
             mapper,
             filter,
-            ranges: parser.ranges.iter(),
+            ranges: parser.split.ranges.iter(),
             pending_sub_statements: Vec::new(),
         }
     }
@@ -486,28 +490,13 @@ impl StatementFilter<'_> for IdFilter {
     }
 }
 
-/// Helper function that wraps the statement splitter and returns the ranges with unified
-/// diagnostics
-pub(crate) fn split_with_diagnostics(
-    content: &str,
-    offset: Option<TextSize>,
-) -> (Vec<TextRange>, Vec<SDiagnostic>) {
-    let o = offset.unwrap_or_else(|| 0.into());
-    let result = pgls_statement_splitter::split(content);
-
-    (
-        result.ranges,
-        result
-            .errors
-            .into_iter()
-            .map(|err| {
-                SDiagnostic::new(
-                    err.clone()
-                        .with_file_span(err.location().span.map(|r| r + o)),
-                )
-            })
-            .collect(),
-    )
+/// The errors of the statement splitter as diagnostics.
+fn split_diagnostics(split: &SplitResult) -> Vec<SDiagnostic> {
+    split
+        .errors
+        .iter()
+        .map(|err| SDiagnostic::new(err.clone().with_file_span(err.location().span)))
+        .collect()
 }
 
 #[cfg(test)]
@@ -820,6 +809,59 @@ $$ LANGUAGE plpgsql;";
             &second_ast,
             &d.ast_db.get_or_cache_ast(&second)
         ));
+    }
+
+    /// Each change splits only the statements around it, with the same result as splitting the
+    /// whole document.
+    #[test]
+    fn updates_split_like_the_whole_document() {
+        let statements = [
+            "create table t (id bigint primary key, name text);",
+            "create function f(a int) returns int language sql as $$ select a $$;",
+            "select c.relname from pg_class c where c.relnatts = 1;",
+            "insert into t values (1, 'x');",
+            "-- comment\nselect 1;",
+            "update t set name = 'y'",
+        ];
+        let snippets = [
+            "x",
+            " ",
+            "\n",
+            "\n\n",
+            ";",
+            "select 2;",
+            "'",
+            "$$",
+            "(",
+            ")",
+            "",
+        ];
+        let mut seed: u64 = 0x2545_f491_4f6c_dd1d;
+        let mut below = |n: usize| {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed % n as u64) as usize
+        };
+        let mut content: String = (0..200)
+            .map(|i| statements[i % statements.len()])
+            .collect::<Vec<_>>()
+            .join("\n");
+        let mut d = Document::new(content.clone(), 0);
+        for version in 1..1_000 {
+            let at = below(content.len() + 1);
+            let end = (at + below(20)).min(content.len());
+            let inserted = snippets[below(snippets.len())];
+            content = format!("{}{inserted}{}", &content[..at], &content[end..]);
+            d.update_content(content.clone(), version);
+
+            let whole = pgls_statement_splitter::split(&content);
+            assert_eq!(d.split, whole, "{content}");
+            assert_eq!(
+                format!("{:?}", d.diagnostics),
+                format!("{:?}", split_diagnostics(&whole))
+            );
+        }
     }
 
     #[test]

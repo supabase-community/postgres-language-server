@@ -170,6 +170,9 @@ impl Suppressions {
         &self,
         diagnostic: &D,
     ) -> Vec<&Suppression> {
+        if self.line_suppressions.is_empty() {
+            return Vec::new();
+        }
         self.diagnostic_line_range(diagnostic)
             .map(|(start, end)| {
                 self.line_suppressions
