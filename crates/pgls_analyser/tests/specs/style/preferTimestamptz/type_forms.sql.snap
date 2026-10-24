@@ -19,7 +19,7 @@ CREATE TABLE events (
 ```
 
 # Diagnostics
-lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -45,7 +45,7 @@ CREATE TABLE events (
 
 ```
 
-lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -81,7 +81,7 @@ lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━
   
 
 
-lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   

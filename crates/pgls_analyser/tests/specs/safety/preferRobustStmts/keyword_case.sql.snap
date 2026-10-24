@@ -13,7 +13,7 @@ CREATE TABLE posts (id bigint);
 ```
 
 # Diagnostics
-lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferRobustStmts  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × CREATE TABLE should use IF NOT EXISTS.
   
@@ -31,7 +31,7 @@ CREATE TABLE posts (id bigint);
 
 ```
 
-lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferRobustStmts  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × CREATE TABLE should use IF NOT EXISTS.
   

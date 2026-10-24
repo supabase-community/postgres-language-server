@@ -5,6 +5,7 @@ use std::{
 
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode, resolve::FunctionContext};
+use pgls_diagnostics::DiagnosticTags;
 use pgls_text_size::{TextRange, TextSize};
 pub use registry::visit_registry;
 
@@ -329,6 +330,7 @@ impl<'a> Analyser<'a> {
                             }
                             if let Some(fix) = &mut diagnostic.fix {
                                 fix.shift(stmt.range.start());
+                                diagnostic.tags |= DiagnosticTags::FIXABLE;
                             }
                             diagnostic
                         }));

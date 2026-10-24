@@ -26,7 +26,7 @@ lint/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━�
   
 
 
-lint/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireConcurrentIndexDeletion  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Dropping an index non-concurrently blocks reads and writes to the table.
   

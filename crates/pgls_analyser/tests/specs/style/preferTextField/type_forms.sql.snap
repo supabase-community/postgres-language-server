@@ -18,7 +18,7 @@ create table names (
 ```
 
 # Diagnostics
-lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
   
@@ -41,7 +41,7 @@ create table names (
 
 ```
 
-lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
   
@@ -64,7 +64,7 @@ create table names (
 
 ```
 
-lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
   

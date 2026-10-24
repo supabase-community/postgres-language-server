@@ -27,7 +27,7 @@ CREATE INDEX users_email_idx ON users (email);
 ```
 
 ```sh
-code-block.sql:1:1 lint/requireConcurrentIndexCreation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireConcurrentIndexCreation  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Creating an index non-concurrently blocks writes to the table.
   

@@ -38,7 +38,6 @@ pub(crate) enum FileStatus {
 /// Wrapper type for messages that can be printed during the traversal process
 #[derive(Debug)]
 pub(crate) enum Message {
-    #[allow(unused)]
     SkippedFixes {
         /// Suggested fixes skipped during the lint traversal
         skipped_suggested_fixes: u32,
