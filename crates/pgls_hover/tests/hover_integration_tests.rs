@@ -796,3 +796,23 @@ async fn test_procedure_hover_in_call(test_db: PgPool) {
 
     test_hover_at_cursor("procedure_in_call", query, Some(setup), &test_db).await;
 }
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_procedure_hover_in_call_with_output_parameters(test_db: PgPool) {
+    let setup = r#"
+        create procedure hover_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
+    "#;
+
+    let query = format!(
+        "call hover_o{}ut(1, null)",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "procedure_in_call_with_output_parameters",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
