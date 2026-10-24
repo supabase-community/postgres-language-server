@@ -47,22 +47,23 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
                 e.space();
                 e.token(TokenKind::IN_KW);
                 e.space();
-                e.token(TokenKind::L_PAREN);
-                // Emit list of values
+                // Emit list of values, filling indented lines when they don't fit
                 if let Some(arg) = &def_elem.arg
                     && let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref()
                 {
-                    for (j, item) in list.items.iter().enumerate() {
-                        if j > 0 {
-                            e.token(TokenKind::COMMA);
-                            e.space();
-                        }
+                    e.group_start(GroupKind::List);
+                    super::open_call_arguments(e);
+                    super::node_list::emit_fill_comma_separated_list(e, &list.items, |item, e| {
                         if let Some(pgls_query::NodeEnum::String(s)) = item.node.as_ref() {
                             super::emit_string_literal(e, s);
                         }
-                    }
+                    });
+                    super::close_call_arguments(e);
+                    e.group_end();
+                } else {
+                    e.token(TokenKind::L_PAREN);
+                    e.token(TokenKind::R_PAREN);
                 }
-                e.token(TokenKind::R_PAREN);
             }
         }
     }
