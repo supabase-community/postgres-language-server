@@ -6,6 +6,7 @@ use crate::session::{
 use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
+use parking_lot::Mutex;
 use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
 use pgls_workspace::workspace::{RegisterProjectFolderParams, UnregisterProjectFolderParams};
@@ -14,8 +15,8 @@ use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::panic::RefUnwindSafe;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::Notify;
 use tokio::task::spawn_blocking;
@@ -342,16 +343,15 @@ impl LanguageServer for LSPServer {
 
 impl Drop for LSPServer {
     fn drop(&mut self) {
-        if let Ok(mut sessions) = self.sessions.lock() {
-            let _removed = sessions.remove(&self.session.key);
-            debug_assert!(_removed.is_some(), "Session did not exist.");
+        let mut sessions = self.sessions.lock();
+        let _removed = sessions.remove(&self.session.key);
+        debug_assert!(_removed.is_some(), "Session did not exist.");
 
-            if self.stop_on_disconnect
-                && sessions.is_empty()
-                && self.is_initialized.load(Ordering::Relaxed)
-            {
-                self.session.cancellation.notify_one();
-            }
+        if self.stop_on_disconnect
+            && sessions.is_empty()
+            && self.is_initialized.load(Ordering::Relaxed)
+        {
+            self.session.cancellation.notify_one();
         }
     }
 }
@@ -475,7 +475,7 @@ impl ServerFactory {
             }
             let handle = Arc::new(session);
 
-            let mut sessions = self.sessions.lock().unwrap();
+            let mut sessions = self.sessions.lock();
             sessions.insert(session_key, handle.clone());
 
             LSPServer::new(
@@ -595,7 +595,6 @@ mod tests {
         let session = factory
             .sessions
             .lock()
-            .unwrap()
             .values()
             .next()
             .cloned()

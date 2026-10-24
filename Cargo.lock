@@ -2664,6 +2664,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "futures",
+ "parking_lot",
  "pgls_analyse",
  "pgls_completions",
  "pgls_configuration",
