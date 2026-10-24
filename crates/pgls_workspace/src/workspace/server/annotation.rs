@@ -30,6 +30,11 @@ impl AnnotationStore {
         }
     }
 
+    /// Drops every cached annotation.
+    pub fn clear(&self) {
+        self.db.lock().unwrap().clear();
+    }
+
     /// Drops the annotations of the statements for which `keep` returns `false`.
     pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
         self.db.lock().unwrap().retain(|id, _| keep(id));

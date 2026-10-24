@@ -1926,6 +1926,69 @@ fn test_no_concurrently_fix_in_a_transaction() {
     );
 }
 
+/// The caches of the least recently used documents are dropped to stay within the budget, and
+/// recomputed when the document is used again.
+#[test]
+fn document_caches_stay_within_the_budget() {
+    let mut workspace = get_test_workspace(None).expect("Unable to create test workspace");
+    workspace.document_caches = super::cache_budget::CacheBudget::new(20);
+
+    let content = "drop table a;\ndrop table b;\ndrop table c;\nselect 1;\nselect 2;\nselect 3;\n";
+    let paths = [PgLSPath::new("a.sql"), PgLSPath::new("b.sql")];
+    for path in &paths {
+        workspace
+            .open_file(OpenFileParams {
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+    }
+    let diagnostics = |path: &PgLSPath| {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .len()
+    };
+    let cached = |path: &PgLSPath| {
+        let documents = workspace.documents.read().unwrap();
+        let doc = documents.get(path).unwrap();
+        (
+            doc.cache_entries(),
+            doc.analysis().lock().unwrap().is_some(),
+        )
+    };
+
+    let expected = diagnostics(&paths[0]);
+    assert_eq!(expected, 3);
+    assert_eq!(cached(&paths[0]), (12, true));
+
+    // Both documents together keep 24 parse results and trees, so the first one's caches are
+    // dropped.
+    assert_eq!(diagnostics(&paths[1]), expected);
+    assert_eq!(cached(&paths[0]), (0, false));
+    assert_eq!(cached(&paths[1]), (12, true));
+
+    // And recomputed when it is used again.
+    assert_eq!(diagnostics(&paths[0]), expected);
+    assert_eq!(cached(&paths[0]), (12, true));
+    assert_eq!(cached(&paths[1]), (0, false));
+
+    workspace
+        .close_file(crate::workspace::CloseFileParams {
+            path: paths[0].clone(),
+        })
+        .expect("Unable to close test file");
+    assert_eq!(workspace.document_caches.total(), 0);
+}
+
 /// Code actions are requested on every cursor move. They reuse the analysis that the
 /// diagnostics made until the document or the settings change.
 #[test]

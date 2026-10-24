@@ -14,6 +14,7 @@ use std::{
 use analyser::AnalyserVisitorBuilder;
 #[cfg(feature = "db")]
 use async_helper::run_async;
+use cache_budget::CacheBudget;
 #[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
@@ -87,6 +88,7 @@ mod analyser;
 mod annotation;
 #[cfg(feature = "db")]
 mod async_helper;
+mod cache_budget;
 #[cfg(feature = "db")]
 mod connection_key;
 #[cfg(feature = "db")]
@@ -119,9 +121,24 @@ pub struct WorkspaceServer {
     /// Incremented on every change of the settings, which invalidates the cached analyses.
     settings_version: AtomicU64,
 
+    /// The parse results and trees that the open documents keep, see
+    /// [`DOCUMENT_CACHE_ENTRIES_MAX`].
+    document_caches: CacheBudget<PgLSPath>,
+
     #[cfg(feature = "db")]
     connection: ConnectionManager,
 }
+
+/// The number of cached parse results and tree-sitter trees of statements that all open
+/// documents keep together, beyond the document in use. Most statements have one of each. When
+/// the documents keep more, the caches of the least recently used documents are dropped, and
+/// recomputed when they are used again.
+///
+/// An entry takes about 10 KB on average (measured on migration files with tables, indexes, SQL
+/// functions and queries), so this is about 200 MB. That keeps a few files of several thousand
+/// statements fully cached, so that switching between them doesn't parse them again. Without a
+/// limit, 20 open files of 5,000 statements each kept 2.7 GB.
+pub const DOCUMENT_CACHE_ENTRIES_MAX: usize = 20_000;
 
 /// A database snapshot with the changes of the statements before a statement.
 struct SnapshotBefore {
@@ -175,6 +192,7 @@ impl WorkspaceServer {
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
             settings_version: AtomicU64::default(),
+            document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
             connection: ConnectionManager::new(),
         }
     }
@@ -189,6 +207,7 @@ impl WorkspaceServer {
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
             settings_version: AtomicU64::default(),
+            document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
         }
     }
 
@@ -203,6 +222,25 @@ impl WorkspaceServer {
         // caches the result under the new version.
         self.settings_version.fetch_add(1, Ordering::Relaxed);
         handle
+    }
+
+    /// Records what the caches of the document at `path` keep after a request, and drops the
+    /// caches of the least recently used other documents to stay within
+    /// [`DOCUMENT_CACHE_ENTRIES_MAX`].
+    fn charge_document_caches(&self, documents: &HashMap<PgLSPath, Document>, path: &PgLSPath) {
+        let Some(doc) = documents.get(path) else {
+            return;
+        };
+        for evicted in self.document_caches.record(path, doc.cache_entries()) {
+            if let Some(doc) = documents.get(&evicted) {
+                tracing::debug!(
+                    "Dropping the caches of {} to keep at most {} cache entries",
+                    evicted.display(),
+                    self.document_caches.max()
+                );
+                doc.clear_caches();
+            }
+        }
     }
 
     /// The database snapshot that the analysis starts from.
@@ -1038,9 +1076,14 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(path=&params.path)]
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
+        // The caches of the document go with it.
         documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
+        self.document_caches.remove(&params.path);
+        // It may have been built for the document. It's only one snapshot, so it's simpler to
+        // drop it than to track which document it is for.
+        *self.snapshot_before.lock().unwrap() = None;
 
         Ok(())
     }
@@ -1153,6 +1196,7 @@ impl Workspace for WorkspaceServer {
             disabled_reason: invalidate_disabled_reason,
         });
 
+        self.charge_document_caches(&documents, &params.path);
         Ok(CodeActionsResult { actions })
     }
 
@@ -1464,6 +1508,7 @@ impl Workspace for WorkspaceServer {
         diagnostics.extend(suppression_errors.into_iter().map(SDiagnostic::new));
 
         info!("Pulled {:?} diagnostic(s)", diagnostics.len());
+        self.charge_document_caches(&documents, &params.path);
         Ok(PullDiagnosticsResult {
             diagnostics,
             skipped_diagnostics: 0,
@@ -1738,6 +1783,7 @@ impl Workspace for WorkspaceServer {
             formatted_output.push_str(rest);
         }
 
+        self.charge_document_caches(&documents, &params.path);
         Ok(PullFormattingResult {
             original: doc.get_document_content().to_string(),
             formatted: formatted_output,
@@ -1840,6 +1886,7 @@ impl Workspace for WorkspaceServer {
                     text: id.content().to_string(),
                 });
 
+                self.charge_document_caches(&documents, &params.path);
                 Ok(CompletionsResult::with_offset(items, range.start()))
             }
         }
@@ -1877,7 +1924,7 @@ impl Workspace for WorkspaceServer {
         };
 
         // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
-        match doc.iter_at(WithCSTandASTMapper, params.position).last() {
+        let result = match doc.iter_at(WithCSTandASTMapper, params.position).last() {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
                 let position_in_stmt = params.position - range.start();
                 let (references, snapshot) =
@@ -1896,7 +1943,9 @@ impl Workspace for WorkspaceServer {
                 Ok(OnHoverResult { markdown_blocks })
             }
             None => Ok(OnHoverResult::default()),
-        }
+        };
+        self.charge_document_caches(&documents, &params.path);
+        result
     }
 
     #[ignored_path(path=&params.path)]
@@ -1964,6 +2013,7 @@ impl Workspace for WorkspaceServer {
         );
 
         hints.sort_by_key(|hint| hint.offset);
+        self.charge_document_caches(&documents, &params.path);
         Ok(PullInlayHintsResult { hints })
     }
 }
