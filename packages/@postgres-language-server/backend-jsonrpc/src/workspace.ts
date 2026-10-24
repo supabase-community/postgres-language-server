@@ -98,6 +98,7 @@ export type Category =
   | "lint/banDropType"
   | "lint/banDropView"
   | "lint/banDuplicateColumnAssignments"
+  | "lint/banNonTransactionalStatementInTransaction"
   | "lint/banSetSchema"
   | "lint/banTruncate"
   | "lint/banTruncateCascade"
@@ -902,6 +903,10 @@ export interface LinterRules {
    * A column is assigned or declared more than once.
    */
   banDuplicateColumnAssignments?: RuleConfiguration_for_Null;
+  /**
+   * Statements that Postgres can't run inside a transaction block.
+   */
+  banNonTransactionalStatementInTransaction?: RuleConfiguration_for_Null;
   /**
    * Moving an object to another schema may break existing clients.
    */
