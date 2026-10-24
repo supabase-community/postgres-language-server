@@ -227,6 +227,23 @@ impl EventEmitter {
         true
     }
 
+    /// Emits and consumes the comments before `location` that were written before `keyword`,
+    /// the way trailing comments of the previous node are emitted.
+    pub fn take_comments_before_keyword_at(&mut self, location: i32, keyword: &str) {
+        let Some(comments) = self.leading_comments.get_mut(&location) else {
+            return;
+        };
+        let (before_keyword, rest): (Vec<_>, Vec<_>) = std::mem::take(comments)
+            .into_iter()
+            .partition(|comment| comment.before_keyword.as_deref() == Some(keyword));
+        if rest.is_empty() {
+            self.leading_comments.remove(&location);
+        } else {
+            *comments = rest;
+        }
+        self.emit_trailing_comments(before_keyword);
+    }
+
     /// Emits and consumes comments that follow `location`, if any.
     pub fn take_trailing_comments_at(&mut self, location: i32) {
         let comments = self.remove_trailing_comments_at(location);
