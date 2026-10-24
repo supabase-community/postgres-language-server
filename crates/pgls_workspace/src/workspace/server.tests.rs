@@ -1489,6 +1489,16 @@ async fn test_format_keeps_formatted_sql_function_body_as_written() {
 }
 
 #[tokio::test]
+async fn test_format_keeps_sql_function_body_with_several_statements_as_written() {
+    let content = "create function f() returns int language sql as $$\n  insert into t values (1);\n  SELECT   1;\n$$;";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $$\n  insert into t values (1);\n  SELECT   1;\n$$;"
+    );
+}
+
+#[tokio::test]
 async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     let content = "create function f() returns int language sql as $body$SELECT   1$body$;";
     let formatted = format_content(content);
