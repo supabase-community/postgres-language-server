@@ -2758,3 +2758,63 @@ async fn test_cancelled_requests_stop_walking(test_db: PgPool) {
     assert_eq!(crate::cancellation::with_cancellation(cancelled, tokens), 0);
     assert_eq!(tokens(), 200);
 }
+
+/// Cancelled diagnostics and code actions stop analysing the document.
+#[tokio::test]
+async fn test_cancelled_analysis_stops() {
+    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "alter table items drop column name;\n".repeat(200);
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let diagnostics = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 1_000,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .len()
+    };
+    let cancelled = || std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+    assert_eq!(
+        crate::cancellation::with_cancellation(cancelled(), diagnostics),
+        0
+    );
+    assert!(diagnostics() >= 200);
+
+    let last = TextSize::of(content.as_str()) - TextSize::from(10);
+    let actions = || {
+        workspace
+            .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                path: path.clone(),
+                cursor_position: last,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull code actions")
+            .actions
+            .into_iter()
+            .filter(|action| {
+                matches!(
+                    &action.kind,
+                    crate::features::code_actions::CodeActionKind::Edit(_)
+                )
+            })
+            .count()
+    };
+    assert_eq!(
+        crate::cancellation::with_cancellation(cancelled(), actions),
+        0
+    );
+    assert!(actions() > 0);
+}

@@ -352,24 +352,43 @@ impl WorkspaceServer {
                 .any(|section| section.contains(range.start()))
         };
 
+        // Stale work stops early: the document changed, or the request was cancelled.
+        let should_stop = || self.is_outdated(path, doc) || crate::cancellation::is_cancelled();
         let mut analysable_stmts = vec![];
         let mut syntax_diagnostics = vec![];
         let mut unparsable = vec![];
-        for (stmt, diagnostic, unparsable_stmt) in doc.iter(AnalyserDiagnosticsMapper) {
+        for (index, (stmt, diagnostic, unparsable_stmt)) in
+            doc.iter(AnalyserDiagnosticsMapper).enumerate()
+        {
+            if index % 64 == 63 && should_stop() {
+                let stopped = AnalysisResult {
+                    stopped: true,
+                    ..AnalysisResult::default()
+                };
+                return (
+                    stopped,
+                    syntax_diagnostics,
+                    disabled_rules,
+                    skipped_sections,
+                );
+            }
             analysable_stmts.extend(stmt.filter(|stmt| !is_skipped(stmt.range)));
             syntax_diagnostics.extend(diagnostic);
             unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
         }
 
-        let analysis = analyser.analyse(AnalyserParams {
-            stmts: analysable_stmts,
-            unparsable,
-            catalog_base,
-            search_path,
-            file_kind: self.file_kind(settings, path.as_path()),
-            sections,
-            typecheck,
-        });
+        let analysis = analyser.analyse_until(
+            AnalyserParams {
+                stmts: analysable_stmts,
+                unparsable,
+                catalog_base,
+                search_path,
+                file_kind: self.file_kind(settings, path.as_path()),
+                sections,
+                typecheck,
+            },
+            &should_stop,
+        );
 
         (
             analysis,
@@ -548,17 +567,28 @@ impl WorkspaceServer {
     /// that the statements before it create, change, or drop.
     fn snapshot_before(
         &self,
+        path: &PgLSPath,
         doc: &Document,
         statement_start: TextSize,
         snapshot: Arc<Snapshot>,
     ) -> Arc<Snapshot> {
+        // Stale work stops early, and gives the snapshot without the file's changes.
+        let stopped = std::cell::Cell::new(false);
+        let should_stop = |index: usize| {
+            index % 64 == 63 && (self.is_outdated(path, doc) || crate::cancellation::is_cancelled())
+        };
         let statements: Vec<_> = doc
             .iter(ExecuteStatementMapper)
-            .take_while(|(_, range, _, _)| range.end() <= statement_start)
+            .enumerate()
+            .take_while(|(index, (_, range, _, _))| {
+                stopped.set(should_stop(*index));
+                range.end() <= statement_start && !stopped.get()
+            })
+            .map(|(_, statement)| statement)
             .filter(|(id, _, _, _)| !id.is_child())
             .filter_map(|(_, _, sql, ast)| Some((sql, ast?)))
             .collect();
-        if statements.is_empty() {
+        if stopped.get() || statements.is_empty() {
             return snapshot;
         }
 
@@ -585,7 +615,10 @@ impl WorkspaceServer {
 
         let mut catalog = Catalog::new(Some(self.catalog_base(&snapshot)));
         let mut session = Session::new(snapshot.expand_search_path(&search_path));
-        for (_, ast) in &statements {
+        for (index, (_, ast)) in statements.iter().enumerate() {
+            if should_stop(index) {
+                return snapshot;
+            }
             catalog.apply(ast, session.search_path());
             session.apply(ast);
         }
@@ -1189,6 +1222,12 @@ impl Workspace for WorkspaceServer {
                 &params.only,
                 &params.skip,
             );
+        if analysis.stopped {
+            tracing::debug!(
+                "The document changed or the request was cancelled. Skipping the diagnostics."
+            );
+            return Ok(PullDiagnosticsResult::default());
+        }
         let is_skipped = |range: TextRange| {
             skipped_sections
                 .iter()
@@ -1639,7 +1678,8 @@ impl Workspace for WorkspaceServer {
             Some((id, range, cst)) => {
                 let offsets = parsed_doc.statement_offsets(&id);
                 let position = offsets.to_statement(params.position - range.start());
-                let snapshot = self.snapshot_before(parsed_doc, range.start(), snapshot);
+                let snapshot =
+                    self.snapshot_before(&params.path, parsed_doc, range.start(), snapshot);
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
@@ -1697,7 +1737,7 @@ impl Workspace for WorkspaceServer {
                     .statement_offsets(&stmt_id)
                     .to_statement(params.position - range.start());
                 let references = self.references_at(&params.path, doc, &snapshot, params.position);
-                let snapshot = self.snapshot_before(doc, range.start(), snapshot);
+                let snapshot = self.snapshot_before(&params.path, doc, range.start(), snapshot);
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,

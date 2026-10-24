@@ -246,7 +246,7 @@ fn measure(workspace: &WorkspaceServer, name: &str, content: &str) {
             let doc = documents.get(&path).unwrap();
             // Clear the one-entry cache, as hovering another statement would.
             *workspace.snapshot_before.lock().unwrap() = None;
-            workspace.snapshot_before(doc, at, Arc::clone(&snapshot));
+            workspace.snapshot_before(&path, doc, at, Arc::clone(&snapshot));
         });
         println!(
             "  {:<40} {t:>9.1} ms",
