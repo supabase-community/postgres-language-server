@@ -36,9 +36,9 @@ use crate::{
     features::on_hover::OnHoverParams,
     settings::FilesSettings,
     workspace::{
-        IsPathIgnoredParams, NestedSettingsParams, OpenFileParams, ProjectKey,
-        RegisterProjectFolderParams, StatementId, UnregisterProjectFolderParams,
-        UpdateNestedSettingsParams, UpdateSettingsParams, server::WorkspaceServer,
+        IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
+        UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
+        server::WorkspaceServer,
     },
 };
 
@@ -2575,7 +2575,7 @@ fn files_below_the_real_path_of_a_symlinked_folder_use_its_settings() {
     workspace
         .update_nested_settings(UpdateNestedSettingsParams {
             project_key,
-            nested: vec![NestedSettingsParams {
+            nested: vec![crate::workspace::NestedSettingsParams {
                 directory: link.join("db1"),
                 configuration: serde_json::from_str(
                     r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
