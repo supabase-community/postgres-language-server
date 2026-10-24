@@ -23,6 +23,8 @@ const SETUP: &str = r#"
     create table people (id int8, current mood);
     create function cheer(m mood) returns mood language sql as 'select m';
     create function cheer_all(variadic moods mood[]) returns int language sql as 'select 1';
+    create procedure do_it(a int, b text) language sql as 'select 1';
+    create procedure with_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
 "#;
 
 async fn catalog(test_db: &PgPool) -> (Catalog, Vec<String>) {
@@ -192,6 +194,62 @@ async fn function_references(test_db: PgPool) {
     assert_eq!(
         references(&catalog, &search_path, "select nope(1)"),
         [""; 0]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn procedure_call_references(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    assert_eq!(
+        references(&catalog, &search_path, "call do_it(pick(1), b => 'a')"),
+        [
+            "pick => function public.pick(integer) <- i",
+            "do_it => function public.do_it(integer, text) <- a, b (named)",
+        ]
+    );
+    // `CALL` passes an argument for output parameters too, and only calls procedures.
+    assert_eq!(
+        references(&catalog, &search_path, "call with_out(1, null)"),
+        [""; 0]
+    );
+    assert_eq!(references(&catalog, &search_path, "call pick(1)"), [""; 0]);
+}
+
+/// A best-effort catalog keeps resolving functions and enum literals after a statement whose
+/// effects are unknown, which makes the lookups of a normal catalog unknown.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn best_effort_catalogs_ignore_unmodelled_statements(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let mut best_effort = catalog.clone().best_effort();
+    let mut strict = catalog;
+    let do_block = pgls_query::parse("do $$ begin end $$")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    for catalog in [&mut strict, &mut best_effort] {
+        catalog.apply(&do_block, &search_path);
+        catalog.taint();
+    }
+    let sql = "select pick(1), name from users where name = 'x' and cheer('happy') = 'sad'";
+    assert_eq!(
+        references(&strict, &search_path, sql),
+        [
+            "users => relation public.users",
+            "name => column public.users.name: text (text)",
+            "name => column public.users.name: text (text)",
+        ]
+    );
+    assert_eq!(
+        references(&best_effort, &search_path, sql),
+        [
+            "users => relation public.users",
+            "name => column public.users.name: text (text)",
+            "name => column public.users.name: text (text)",
+            "'happy' => enum literal public.mood",
+            "cheer => function public.cheer(public.mood) <- m",
+            "'sad' => enum literal public.mood",
+            "pick => function public.pick(integer) <- i",
+        ]
     );
 }
 
@@ -463,6 +521,23 @@ async fn references_are_only_collected_on_request(test_db: PgPool) {
     let with = resolve(params(true));
     assert!(without.references.is_empty());
     assert_eq!(with.references.len(), 3);
+    assert_eq!(with.findings, without.findings);
+    assert_eq!(with.database_only, without.database_only);
+
+    // `CALL` only gives references, never findings.
+    let sql = "call do_it(nope(1), 1 + 'x')";
+    let stmt = pgls_query::parse(sql).unwrap().into_root().unwrap();
+    let params = |collect_references| ResolveParams {
+        stmt: &stmt,
+        catalog: &catalog,
+        search_path: &search_path,
+        function: None,
+        sql: Some(sql),
+        collect_references,
+    };
+    let without = resolve(params(false));
+    let with = resolve(params(true));
+    assert!(with.findings.is_empty());
     assert_eq!(with.findings, without.findings);
     assert_eq!(with.database_only, without.database_only);
 }

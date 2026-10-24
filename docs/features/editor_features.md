@@ -91,8 +91,8 @@ The language server asks the editor to request inlay hints and semantic tokens a
 ## Limitations
 
 - Only names that resolve to exactly one object get a hover from the resolver, an inlay hint, or a token. Ambiguous calls, unknown objects, and constructs the resolver doesn't model are skipped.
-- After a `DO` block, `CALL`, `EXECUTE`, or a statement that doesn't parse, the rest of the file gets no function hints, function tokens, or enum tokens, because their effects on the schema are unknown. Relations and columns still resolve.
-- `CALL proc(...)` gets no hints, tokens, or resolved hover.
+- The effects of `DO` blocks, `CALL`, `EXECUTE`, and statements that don't parse on the schema are unknown. The statements after them are resolved as if they changed nothing, so an object a `DO` block creates is not known, and one it drops still is.
+- `CALL` of a procedure with output parameters gets no hints, tokens, or resolved hover.
 - Statements in `BEGIN ATOMIC` function bodies and in `'...'`-quoted bodies that contain `''` are not resolved. `$$`-quoted bodies are. PL/pgSQL bodies are not covered.
 - No tokens for roles, for schemas outside qualified names, for DDL (column types in `create table`, function signatures), for CTE names, or for table aliases. Tokens that span several lines are skipped.
 - Each request resolves the file up to the visible range. On very long files, like schema dumps with thousands of statements, hints and tokens take longer to appear.
