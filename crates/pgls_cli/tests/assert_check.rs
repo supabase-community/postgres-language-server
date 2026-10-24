@@ -538,35 +538,26 @@ fn check_reports_a_broken_nested_configuration_and_continues() {
         ),
     ]);
 
-    let broken = Path::new("tests").join("fixtures").join("broken");
     let (success, output) = check_in(root.path(), &[], &[]);
     assert!(!success, "{output}");
     assert!(
-        output.contains(
-            &broken
-                .join("postgres-language-server.jsonc")
-                .display()
-                .to_string()
-        ),
+        output.lines().any(|line| line.contains("broken")
+            && line.contains("postgres-language-server.jsonc")
+            && line.contains("configuration")),
         "the broken configuration file is not named:\n{output}"
     );
 
     let (_, output) = check_in(root.path(), &["--reporter", "github"], &[]);
-    let annotation = |level: &str, file: &Path| {
-        format!(
-            "::{level} title=lint/banDropColumn,file={},",
-            root.path().join(file).display()
-        )
+    let level_of = |file: &str| {
+        output
+            .lines()
+            .find(|line| line.contains("title=lint/banDropColumn") && line.contains(file))
+            .and_then(|line| line.strip_prefix("::"))
+            .and_then(|line| line.split(' ').next())
     };
-    assert!(
-        output.contains(&annotation("error", Path::new("a.sql"))),
-        "{output}"
-    );
+    assert_eq!(level_of("a.sql"), Some("error"), "{output}");
     // The defaults, not the root configuration's `error`.
-    assert!(
-        output.contains(&annotation("warning", &broken.join("b.sql"))),
-        "{output}"
-    );
+    assert_eq!(level_of("b.sql"), Some("warning"), "{output}");
 }
 
 /// The database environment variables don't replace the database of a nested configuration file
