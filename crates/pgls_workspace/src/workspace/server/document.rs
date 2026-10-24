@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
@@ -25,6 +25,8 @@ pub struct Document {
     #[allow(dead_code)]
     annotation_db: AnnotationStore,
     suppressions: Suppressions,
+    /// Cleared when the content changes.
+    analysis: Mutex<Option<super::CachedAnalysis>>,
 }
 
 impl Document {
@@ -45,6 +47,7 @@ impl Document {
             cst_db,
             annotation_db,
             suppressions,
+            analysis: Mutex::default(),
         }
     }
 
@@ -70,6 +73,12 @@ impl Document {
         self.ast_db.retain(is_present);
         self.cst_db.retain(is_present);
         self.annotation_db.retain(is_present);
+        *self.analysis.get_mut().unwrap() = None;
+    }
+
+    /// The analysis of the document, see `WorkspaceServer::analyse_document_cached`.
+    pub(super) fn analysis(&self) -> &Mutex<Option<super::CachedAnalysis>> {
+        &self.analysis
     }
 
     pub fn suppressions(&self) -> &Suppressions {

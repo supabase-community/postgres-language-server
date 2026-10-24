@@ -21,7 +21,7 @@ pub trait LinterRule: RuleMeta + Sized {
 }
 
 /// Diagnostic object returned by a single linter rule
-#[derive(Debug, Diagnostic, PartialEq)]
+#[derive(Clone, Debug, Diagnostic, PartialEq)]
 pub struct LinterDiagnostic {
     #[category]
     pub(crate) category: &'static Category,
@@ -114,7 +114,7 @@ impl RuleFix {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 /// It contains possible advices to show when printing a diagnostic that belong to the rule
 pub struct RuleAdvice {
     pub(crate) details: Vec<Detail>,
@@ -123,7 +123,7 @@ pub struct RuleAdvice {
     pub(crate) code_suggestion_list: Vec<CodeSuggestionAdvice<MarkupBuf>>,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SuggestionList {
     pub(crate) message: MarkupBuf,
     pub(crate) list: Vec<MarkupBuf>,
@@ -165,7 +165,7 @@ impl Advices for RuleAdvice {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Detail {
     pub log_category: LogCategory,
     pub message: MarkupBuf,
