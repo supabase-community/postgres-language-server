@@ -310,8 +310,10 @@ impl Settings {
 
         // inlay hints part
         if let Some(inlay_hints) = configuration.inlay_hints {
+            let inlay_hints = InlayHintsConfiguration::from(inlay_hints);
             self.inlay_hints = InlayHintsSettings {
-                enabled: InlayHintsConfiguration::from(inlay_hints).enabled,
+                enabled: inlay_hints.enabled,
+                parameter_names: inlay_hints.parameter_names,
             };
         }
 
@@ -700,11 +702,15 @@ impl Default for PglinterSettings {
 #[derive(Debug, Clone)]
 pub struct InlayHintsSettings {
     pub enabled: bool,
+    pub parameter_names: pgls_configuration::inlay_hints::ParameterNameHints,
 }
 
 impl Default for InlayHintsSettings {
     fn default() -> Self {
-        Self { enabled: true }
+        Self {
+            enabled: true,
+            parameter_names: Default::default(),
+        }
     }
 }
 

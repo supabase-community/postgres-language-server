@@ -20,6 +20,18 @@ pub struct InlayHintsParams<'a> {
     pub search_path: &'a [String],
     /// Set when the statement is the body of a SQL function.
     pub function: Option<&'a FunctionContext>,
+    pub parameter_names: ParameterNameHints,
+}
+
+/// Which arguments get the name of their parameter.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ParameterNameHints {
+    /// Every positional argument.
+    #[default]
+    All,
+    /// Only constants, like `1`, `-1.5`, `'a'`, `true`, or `null`, whose meaning the call
+    /// doesn't show otherwise.
+    Literals,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,12 +59,16 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
         collect_references: true,
     })
     .references;
-    inlay_hints_of_references(&references, params.sql)
+    inlay_hints_of_references(&references, params.sql, params.parameter_names)
 }
 
 /// The inlay hints of the `references` of the statement `sql`, which
 /// [`pgls_catalog::resolve::resolve`] collected. Ordered by offset.
-pub fn inlay_hints_of_references(references: &[Reference], sql: &str) -> Vec<InlayHint> {
+pub fn inlay_hints_of_references(
+    references: &[Reference],
+    sql: &str,
+    parameter_names: ParameterNameHints,
+) -> Vec<InlayHint> {
     let calls: Vec<_> = references
         .iter()
         .filter_map(|reference| match reference {
@@ -115,7 +131,9 @@ pub fn inlay_hints_of_references(references: &[Reference], sql: &str) -> Vec<Inl
             else {
                 continue;
             };
-            if is_reference_to(sql, tokens, name) {
+            if is_reference_to(sql, tokens, name)
+                || (parameter_names == ParameterNameHints::Literals && !is_literal(tokens))
+            {
                 continue;
             }
             let Ok(offset) = u32::try_from(tokens[0].start) else {
@@ -130,6 +148,29 @@ pub fn inlay_hints_of_references(references: &[Reference], sql: &str) -> Vec<Inl
     }
     hints.sort_by_key(|hint| hint.offset);
     hints
+}
+
+/// Whether the argument is a constant: a string, number, boolean, or `NULL`, with an optional
+/// sign before a number.
+fn is_literal(tokens: &[ScanToken]) -> bool {
+    let number = |token: &ScanToken| matches!(token.token(), Token::Iconst | Token::Fconst);
+    match tokens {
+        [token] => {
+            number(token)
+                || matches!(
+                    token.token(),
+                    Token::Sconst
+                        | Token::Usconst
+                        | Token::Bconst
+                        | Token::Xconst
+                        | Token::TrueP
+                        | Token::FalseP
+                        | Token::NullP
+                )
+        }
+        [sign, token] => matches!(sign.token(), Token::Ascii43 | Token::Ascii45) && number(token),
+        _ => false,
+    }
 }
 
 /// The tokens of each argument of the call whose name starts at `location`, without a leading
