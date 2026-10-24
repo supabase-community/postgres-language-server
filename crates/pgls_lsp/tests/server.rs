@@ -23,6 +23,7 @@ use sqlx::Executor;
 use sqlx::PgPool;
 use std::any::type_name;
 use std::fmt::Display;
+use std::path::Path;
 use std::str::FromStr;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
@@ -688,7 +689,10 @@ async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool
     );
 
     // A configuration reload carries no client configuration, but the sticky layer survives it.
+    drain_notifications(&mut receiver);
     server.change_watched_configuration_file().await?;
+    // The reload refreshes the diagnostics of the open document.
+    wait_for_diagnostics(&mut receiver, 0).await?;
     drain_notifications(&mut receiver);
     server.replace_document(1, STATEMENT).await?;
     assert!(
@@ -3209,10 +3213,15 @@ async fn nested_configuration_files_apply_to_their_directories() -> Result<()> {
         )
         .await?;
     drain_notifications(&mut receiver);
-    assert_eq!(
-        open_and_check(&mut server, &mut receiver, document("db3/a.sql")).await?,
-        []
-    );
+    // The reload can come after the document is first checked.
+    server
+        .open_named_document(
+            "alter table users drop column name;",
+            document("db3/a.sql"),
+            "sql",
+        )
+        .await?;
+    wait_for_severities(&mut receiver, &document("db3/a.sql"), &[]).await?;
 
     // A deleted one no longer applies, and the open documents are checked again.
     std::fs::remove_file(root.path().join("db1").join(ConfigName::pgls_jsonc()))?;
@@ -3344,5 +3353,83 @@ async fn workspace_folders_can_be_added_and_removed() -> Result<()> {
     server.shutdown().await?;
     reader.abort();
 
+    Ok(())
+}
+
+/// A burst of configuration file changes, e.g. from a `git checkout`, reloads the configuration
+/// once, and a change in a folder the nested configuration search skips doesn't reload it.
+#[tokio::test]
+async fn configuration_changes_are_coalesced() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let config = root.path().join(ConfigName::pgls_jsonc());
+    std::fs::write(&config, "{}")?;
+    let skipped = root
+        .path()
+        .join("node_modules/pkg")
+        .join(ConfigName::pgls_jsonc());
+    std::fs::create_dir_all(skipped.parent().unwrap())?;
+    std::fs::write(&skipped, r#"{ "linter": { "enabled": false } }"#)?;
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
+        .await?;
+    server.initialized().await?;
+
+    let document = Uri::from_file_path(root.path().join("a.sql")).unwrap();
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document.clone()).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+
+    let changed = |path: &Path| DidChangeWatchedFilesParams {
+        changes: vec![FileEvent {
+            uri: Uri::from_file_path(path).unwrap(),
+            typ: FileChangeType::CHANGED,
+        }],
+    };
+    // Counts the times the diagnostics of the document are refreshed within a second.
+    async fn refreshes(receiver: &mut Receiver<ServerNotification>, uri: &Uri) -> usize {
+        let mut refreshes = 0;
+        let _ = tokio::time::timeout(Duration::from_secs(1), async {
+            while let Some(ServerNotification::PublishDiagnostics(params)) = receiver.next().await {
+                if &params.uri == uri {
+                    refreshes += 1;
+                }
+            }
+        })
+        .await;
+        refreshes
+    }
+
+    server
+        .notify("workspace/didChangeWatchedFiles", changed(&skipped))
+        .await?;
+    assert_eq!(
+        refreshes(&mut receiver, &document).await,
+        0,
+        "a configuration file in node_modules reloaded the configuration"
+    );
+
+    for _ in 0..5 {
+        server
+            .notify("workspace/didChangeWatchedFiles", changed(&config))
+            .await?;
+    }
+    assert_eq!(refreshes(&mut receiver, &document).await, 1);
+
+    server.shutdown().await?;
+    reader.abort();
     Ok(())
 }

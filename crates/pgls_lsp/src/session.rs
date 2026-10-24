@@ -13,15 +13,17 @@ use pgls_fs::{ConfigName, FileSystem, PgLSPath};
 use pgls_workspace::PartialConfigurationExt;
 use pgls_workspace::Workspace;
 use pgls_workspace::configuration::{
-    LoadedConfiguration, NestedConfiguration, apply_nested_configurations, load_configuration,
+    LoadedConfiguration, NestedConfiguration, NestedConfigurationSearch,
+    apply_nested_configurations, is_searched_for_configuration, load_configuration,
 };
 use pgls_workspace::features;
+use pgls_workspace::settings::FilesSettings;
 use pgls_workspace::workspace::{
     ProjectKey, RegisterProjectFolderParams, UnregisterProjectFolderParams, UpdateSettingsParams,
 };
 use pgls_workspace::{DynRef, WorkspaceError};
 use rustc_hash::FxHashMap;
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -31,12 +33,15 @@ use std::sync::atomic::{AtomicBool, AtomicU8};
 use std::time::Duration;
 use tokio::sync::Notify;
 use tokio::sync::OnceCell;
-use tokio::task::AbortHandle;
+use tokio::task::{AbortHandle, spawn_blocking};
 use tower_lsp_server::ls_types::Uri;
 use tower_lsp_server::ls_types::{self, ClientCapabilities};
+use tower_lsp_server::ls_types::{
+    DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, WatchKind,
+};
 use tower_lsp_server::ls_types::{MessageType, Registration};
 use tower_lsp_server::ls_types::{Unregistration, WorkspaceFolder};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 /// Debounce delay for `textDocument/didChange` diagnostics.
 ///
@@ -44,6 +49,10 @@ use tracing::{debug, error, info};
 /// If another change arrives within the window the previous task is cancelled
 /// and the timer resets, so only one analysis run fires per burst.
 const DIAGNOSTIC_DEBOUNCE: Duration = Duration::from_millis(300);
+
+/// How long the server waits after a configuration file changed before it reloads the
+/// configuration, so that a burst of changes causes one reload.
+const CONFIGURATION_RELOAD_DEBOUNCE: Duration = Duration::from_millis(200);
 
 pub(crate) struct ClientInformation {
     #[allow(dead_code)]
@@ -106,6 +115,13 @@ pub(crate) struct Session {
     /// The projects of the workspace by their folder, deepest first: one per workspace folder, or
     /// one for the root. A document belongs to the project of the deepest folder that contains it.
     projects: RwLock<Vec<(PathBuf, ProjectKey)>>,
+
+    /// The files settings of the root configuration of each project, by its folder. They decide
+    /// which folders are searched for nested configuration files.
+    root_files: parking_lot::RwLock<FxHashMap<PathBuf, Option<Arc<FilesSettings>>>>,
+
+    /// Whether a reload for changed configuration files is scheduled and hasn't started yet.
+    reload_scheduled: AtomicBool,
 
     /// Serialises a whole configuration transition: storing the layer, reloading the settings and
     /// refreshing the diagnostics of all open documents.
@@ -234,6 +250,8 @@ impl Session {
             client_overrides: RwLock::new(ClientOverrides::default()),
             workspace_folders: RwLock::default(),
             projects: RwLock::default(),
+            root_files: parking_lot::RwLock::default(),
+            reload_scheduled: AtomicBool::new(false),
             configuration_transition: tokio::sync::Mutex::new(()),
             #[cfg(test)]
             running_transitions: std::sync::atomic::AtomicUsize::new(0),
@@ -280,6 +298,89 @@ impl Session {
         if let Err(err) = result {
             error!("Failed to initialize session: {err}");
         }
+    }
+
+    /// Registers the capabilities that depend on the client and the workspace folders.
+    pub(crate) async fn setup_capabilities(&self) {
+        let mut capabilities = CapabilitySet::default();
+
+        capabilities.add_capability(
+            "pgls_did_change_extension_settings",
+            "workspace/didChangeConfiguration",
+            if self.can_register_did_change_configuration() {
+                CapabilityStatus::Enable(None)
+            } else {
+                CapabilityStatus::Disable
+            },
+        );
+
+        capabilities.add_capability(
+            "pgls_did_change_workspace_settings",
+            "workspace/didChangeWatchedFiles",
+            match self.base_path() {
+                Some(base_path) => {
+                    // Configuration files below the root apply to their directories.
+                    let watchers = ConfigName::file_names()
+                        .iter()
+                        .map(|config_name| FileSystemWatcher {
+                            glob_pattern: GlobPattern::String(format!(
+                                "{}/**/{}",
+                                base_path.display(),
+                                config_name
+                            )),
+                            kind: Some(WatchKind::all()),
+                        })
+                        .collect();
+
+                    CapabilityStatus::Enable(Some(json!(
+                        DidChangeWatchedFilesRegistrationOptions { watchers }
+                    )))
+                }
+                _ => CapabilityStatus::Disable,
+            },
+        );
+
+        self.register_capabilities(capabilities).await;
+    }
+
+    /// Whether a change of the file at `path` changes the configuration: a configuration file at
+    /// or above a workspace folder, or one below it that the nested configuration search looks
+    /// at. Others, e.g. in `node_modules` or in ignored folders, are skipped.
+    pub(crate) fn is_configuration_change(&self, path: &Path) -> bool {
+        let is_configuration_file = path
+            .file_name()
+            .and_then(|file_name| file_name.to_str())
+            .is_some_and(|file_name| ConfigName::file_names().contains(&file_name));
+        let Some(directory) = path.parent().filter(|_| is_configuration_file) else {
+            return false;
+        };
+        let projects = self.projects.read().unwrap();
+        let Some((folder, _)) = projects
+            .iter()
+            .find(|(folder, _)| directory.starts_with(folder))
+        else {
+            return true;
+        };
+        let root_files = self.root_files.read().get(folder).cloned().flatten();
+        is_searched_for_configuration(&self.fs, folder, root_files.as_deref(), directory)
+    }
+
+    /// Reloads the configuration and refreshes the diagnostics shortly, once for every
+    /// configuration file that changes in the meantime, such as during a `git checkout`.
+    pub(crate) fn schedule_configuration_reload(self: &Arc<Self>) {
+        if self.reload_scheduled.swap(true, Ordering::AcqRel) {
+            return;
+        }
+        let session = Arc::clone(self);
+        tokio::spawn(async move {
+            tokio::time::sleep(CONFIGURATION_RELOAD_DEBOUNCE).await;
+            // A change from here on needs another reload, as this one may have read the file
+            // before it.
+            session.reload_scheduled.store(false, Ordering::Release);
+            session.reload_workspace_settings().await;
+            session.setup_capabilities().await;
+            session.update_all_diagnostics().await;
+        });
     }
 
     /// Register a set of capabilities with the client
@@ -574,7 +675,7 @@ impl Session {
     /// every workspace folder, or of the root URI, and update the settings of its project
     /// accordingly. The configuration files below a folder apply to the files below them.
     #[tracing::instrument(level = "trace", skip(self))]
-    async fn load_workspace_settings(&self) {
+    async fn load_workspace_settings(self: &Arc<Self>) {
         let roots = if let Some(config_path) = &self.config_path {
             // Providing a custom configuration path will not allow to support workspaces
             vec![ConfigurationPathHint::FromUser(config_path.clone())]
@@ -606,6 +707,7 @@ impl Session {
         let previous = std::mem::take(&mut *self.projects.write().unwrap());
         for (folder, _) in previous {
             if !projects.iter().any(|(project, _)| project == &folder) {
+                self.root_files.write().remove(&folder);
                 let result =
                     self.workspace
                         .unregister_project_folder(UnregisterProjectFolderParams {
@@ -625,7 +727,7 @@ impl Session {
     /// Loads the configuration of a project and its nested configuration files. Returns the folder
     /// and the key of the project, unless it could not be registered.
     async fn load_project(
-        &self,
+        self: &Arc<Self>,
         base_path: ConfigurationPathHint,
     ) -> (Option<(PathBuf, ProjectKey)>, ConfigurationStatus) {
         // The configuration files below a workspace root apply to their directories. With a
@@ -659,7 +761,7 @@ impl Session {
             .iter()
             .any(|(project, _)| project == &folder);
 
-        let status = self
+        let (status, root_files) = self
             .load_pgls_configuration_file(project_key, base_path)
             .await;
         if !matches!(status, ConfigurationStatus::Loaded) {
@@ -675,11 +777,15 @@ impl Session {
             }
             return (Some((folder, project_key)), status);
         }
+        let root_files = root_files.map(Arc::new);
+        self.root_files
+            .write()
+            .insert(folder.clone(), root_files.clone());
         let project = Some((folder, project_key));
 
         let status = match root {
             Some(root) => {
-                self.load_nested_configuration_files(project_key, &root)
+                self.load_nested_configuration_files(project_key, root, root_files)
                     .await
             }
             None => ConfigurationStatus::Loaded,
@@ -706,29 +812,49 @@ impl Session {
     }
 
     /// Applies every configuration file below `root` to the project, with the same layers as the
-    /// root configuration.
+    /// root configuration. The folders that `root_files` ignores are not searched.
     async fn load_nested_configuration_files(
-        &self,
+        self: &Arc<Self>,
         project_key: ProjectKey,
-        root: &Path,
+        root: PathBuf,
+        root_files: Option<Arc<FilesSettings>>,
     ) -> ConfigurationStatus {
-        let nested = match apply_nested_configurations(
-            &*self.workspace,
-            &self.fs,
-            project_key,
-            root,
-            self.configure(),
-        ) {
-            Ok(nested) => nested,
-            Err(error) => {
+        // Walking a large folder takes a while, so keep it off the async runtime.
+        let session = Arc::clone(self);
+        let result = spawn_blocking(move || {
+            apply_nested_configurations(
+                &*session.workspace,
+                &session.fs,
+                project_key,
+                NestedConfigurationSearch {
+                    root_files,
+                    ..NestedConfigurationSearch::new(root)
+                },
+                session.configure(),
+            )
+        })
+        .await;
+        let nested = match result {
+            Ok(Ok(nested)) => nested,
+            Ok(Err(error)) => {
                 error!("Failed to apply the nested configuration files: {}", error);
                 self.client.log_message(MessageType::ERROR, &error).await;
                 return ConfigurationStatus::Error;
             }
+            Err(error) => {
+                error!("Failed to look for nested configuration files: {}", error);
+                return ConfigurationStatus::Error;
+            }
         };
 
+        if let Some(incomplete) = nested.incomplete {
+            warn!("{incomplete}");
+            self.client
+                .log_message(MessageType::WARNING, incomplete.to_string())
+                .await;
+        }
         let mut status = ConfigurationStatus::Loaded;
-        for NestedConfiguration { directory, result } in nested {
+        for NestedConfiguration { directory, result } in nested.configurations {
             match result {
                 Ok(()) => info!("Loaded the nested configuration in {}", directory.display()),
                 Err(error) => {
@@ -746,11 +872,14 @@ impl Session {
     }
 
     /// Loads the configuration file at or above the root of a project into its root settings.
+    ///
+    /// Also returns the files settings of the configuration, which decide the folders to search
+    /// for nested configuration files.
     async fn load_pgls_configuration_file(
         &self,
         project_key: ProjectKey,
         base_path: ConfigurationPathHint,
-    ) -> ConfigurationStatus {
+    ) -> (ConfigurationStatus, Option<FilesSettings>) {
         match load_configuration(&self.fs, base_path.clone()) {
             Ok(loaded_configuration) => {
                 let LoadedConfiguration {
@@ -810,9 +939,17 @@ impl Session {
 
                 match result {
                     Ok((vcs_base_path, gitignore_matches)) => {
+                        let workspace_directory = self.fs.working_directory();
+                        let root_files = FilesSettings::from_configuration(
+                            &configuration,
+                            workspace_directory.clone(),
+                            vcs_base_path.clone(),
+                            &gitignore_matches,
+                        )
+                        .ok();
                         let result = self.workspace.update_settings(UpdateSettingsParams {
                             project_key,
-                            workspace_directory: self.fs.working_directory(),
+                            workspace_directory,
                             configuration,
                             vcs_base_path,
                             gitignore_matches,
@@ -821,22 +958,22 @@ impl Session {
                         if let Err(error) = result {
                             error!("Failed to set workspace settings: {}", error);
                             self.client.log_message(MessageType::ERROR, &error).await;
-                            ConfigurationStatus::Error
+                            (ConfigurationStatus::Error, None)
                         } else {
-                            ConfigurationStatus::Loaded
+                            (ConfigurationStatus::Loaded, root_files)
                         }
                     }
                     Err(err) => {
                         error!("Couldn't load the configuration file, reason:\n {}", err);
                         self.client.log_message(MessageType::ERROR, &err).await;
-                        ConfigurationStatus::Error
+                        (ConfigurationStatus::Error, None)
                     }
                 }
             }
             Err(err) => {
                 error!("Couldn't load the configuration file, reason:\n {}", err);
                 self.client.log_message(MessageType::ERROR, &err).await;
-                ConfigurationStatus::Error
+                (ConfigurationStatus::Error, None)
             }
         }
     }
@@ -847,7 +984,7 @@ impl Session {
     /// open documents happen as one transition under `configuration_transition`, so that two
     /// concurrent calls cannot interleave.
     pub(crate) async fn set_client_overrides(
-        &self,
+        self: &Arc<Self>,
         overrides: Option<PartialConfiguration>,
     ) -> ConfigurationStatus {
         let _transition = self.configuration_transition.lock().await;
@@ -878,7 +1015,7 @@ impl Session {
     /// Reloads the configuration from disk, re-applying the sticky layers.
     ///
     /// Diagnostics are left alone: the callers decide whether the reload should refresh them.
-    pub(crate) async fn reload_workspace_settings(&self) -> ConfigurationStatus {
+    pub(crate) async fn reload_workspace_settings(self: &Arc<Self>) -> ConfigurationStatus {
         let _transition = self.configuration_transition.lock().await;
         #[cfg(test)]
         let _running = self.enter_transition();
