@@ -27,6 +27,24 @@ mod reporter;
 mod service;
 mod workspace;
 
+/// The stack size of the threads that run the workspace: the tokio workers and blocking threads
+/// of the language server, and the rayon workers of `check`.
+///
+/// libpg_query serializes the parse tree recursively, so a long expression needs stack
+/// proportional to its length. In a release build, `select 1 + abs(1) + ...` overflows the 2 MiB
+/// default of tokio and rayon at about 10,000 terms, and the overflow aborts the whole process.
+/// With 8 MiB, the default stack of the main thread on Linux, it handles 20,000 terms. Postgres
+/// itself rejects that statement at 5,000 terms with its default `max_stack_depth` of 2 MB.
+pub(crate) const WORKER_STACK_SIZE_BYTES: usize = 8 * 1024 * 1024;
+
+/// A multi-threaded tokio runtime whose threads have a stack of [`WORKER_STACK_SIZE_BYTES`].
+pub(crate) fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_stack_size(WORKER_STACK_SIZE_BYTES)
+        .build()
+}
+
 use crate::cli_options::ColorsArg;
 pub use crate::commands::{PgLSCommand, pg_l_s_command};
 pub use crate::logging::{LoggingLevel, setup_cli_subscriber};
@@ -168,7 +186,7 @@ impl<'app> CliSession<'app> {
                             "schema-export",
                         )
                     })?;
-                let runtime = tokio::runtime::Runtime::new().map_err(CliDiagnostic::io_error)?;
+                let runtime = runtime().map_err(CliDiagnostic::io_error)?;
                 runtime.block_on(commands::schema_export::run_schema_export(
                     &connection_string,
                     output.as_deref(),
@@ -271,5 +289,22 @@ pub fn to_color_mode(color: Option<&ColorsArg>) -> ColorMode {
         Some(ColorsArg::Off) => ColorMode::Disabled,
         Some(ColorsArg::Force) => ColorMode::Enabled,
         None => ColorMode::Auto,
+    }
+}
+
+#[cfg(test)]
+mod runtime_tests {
+    /// A long expression needs more stack than the 2 MiB default of tokio's threads. In a debug
+    /// build, 2,000 terms already overflow 2 MiB.
+    #[test]
+    fn workers_parse_long_expressions() {
+        let sql = format!("select 1{};", " + abs(1)".repeat(2_000));
+        let runtime = super::runtime().unwrap();
+        let parsed = runtime
+            .block_on(runtime.spawn(async move { pgls_query::parse(&sql).is_ok() }))
+            .unwrap();
+        // The tree is too deep for the protobuf decoder, so it doesn't parse, but the parser
+        // returns instead of overflowing the stack.
+        assert!(!parsed);
     }
 }
