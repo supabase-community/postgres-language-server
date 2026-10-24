@@ -3591,7 +3591,11 @@ async fn the_configuration_files_of_every_workspace_folder_are_watched() -> Resu
     let glob = |name: &str| {
         format!(
             "{}/**/{}",
-            root.path().join(name).display(),
+            root.path()
+                .join(name)
+                .display()
+                .to_string()
+                .replace('\\', "/"),
             ConfigName::pgls_jsonc()
         )
     };
