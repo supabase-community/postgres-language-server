@@ -1,6 +1,6 @@
 use crate::adapters::line_index::LineIndex;
 use crate::adapters::{LineCol, PositionEncoding, WideLineCol};
-use anyhow::Result;
+use anyhow::{Result, ensure};
 use pgls_text_size::{TextRange, TextSize};
 use tower_lsp_server::ls_types;
 
@@ -35,5 +35,7 @@ pub fn text_range(
 ) -> Result<TextRange> {
     let start = offset(line_index, range.start, position_encoding)?;
     let end = offset(line_index, range.end, position_encoding)?;
+    // `TextRange::new` panics on a range that ends before it starts.
+    ensure!(start <= end, "range {range:?} ends before it starts");
     Ok(TextRange::new(start, end))
 }

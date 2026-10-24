@@ -1,5 +1,5 @@
-use crate::adapters::PositionEncoding;
 use crate::adapters::line_index::LineIndex;
+use crate::adapters::{PositionEncoding, from_lsp};
 use anyhow::{Context, Result};
 use pgls_text_edit::{CompressedOp, DiffOp, TextEdit};
 use pgls_text_size::{TextRange, TextSize};
@@ -24,6 +24,11 @@ pub fn position(
             ls_types::Position::new(line_col.line, line_col.col)
         }
     };
+    debug_assert_eq!(
+        from_lsp::offset(line_index, position, position_encoding).ok(),
+        Some(offset),
+        "{position:?} doesn't map back to offset {offset:?}"
+    );
 
     Ok(position)
 }
@@ -90,6 +95,10 @@ pub fn text_edits(
             }
         }
     }
+    debug_assert_eq!(
+        offset, line_index.len,
+        "the diff doesn't cover the whole text"
+    );
 
     Ok(result)
 }
