@@ -2365,3 +2365,21 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
         .collect();
     assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
 }
+
+#[test]
+fn test_non_transactional_statement_in_a_function_body() {
+    // A function runs in the transaction of the statement that calls it.
+    let categories = migration_diagnostics(
+        SectionMarkers::Dbmate,
+        None,
+        "-- migrate:up transaction:false\ncreate function clean_up() returns void language sql as $$ vacuum users $$;\n",
+    );
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "lint/banNonTransactionalStatementInTransaction")
+            .count(),
+        1,
+        "{categories:?}"
+    );
+}

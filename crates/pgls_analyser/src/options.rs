@@ -59,6 +59,7 @@ pub type BanDropType =
 pub type BanDropView =
     <lint::destructive::ban_drop_view::BanDropView as crate::LinterRule>::Options;
 pub type BanDuplicateColumnAssignments = < lint :: correctness :: ban_duplicate_column_assignments :: BanDuplicateColumnAssignments as crate :: LinterRule > :: Options ;
+pub type BanNonTransactionalStatementInTransaction = < lint :: correctness :: ban_non_transactional_statement_in_transaction :: BanNonTransactionalStatementInTransaction as crate :: LinterRule > :: Options ;
 pub type BanSetSchema =
     <lint::destructive::ban_set_schema::BanSetSchema as crate::LinterRule>::Options;
 pub type BanTruncate = <lint::destructive::ban_truncate::BanTruncate as crate::LinterRule>::Options;

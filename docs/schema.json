@@ -1247,6 +1247,17 @@
             }
           ]
         },
+        "banNonTransactionalStatementInTransaction": {
+          "description": "Statements that Postgres can't run inside a transaction block.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banSetSchema": {
           "description": "Moving an object to another schema may break existing clients.",
           "anyOf": [
