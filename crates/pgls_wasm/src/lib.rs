@@ -23,9 +23,13 @@ use std::path::PathBuf;
 
 use pgls_analyse::RuleCategories;
 use pgls_configuration::{PartialConfiguration, PartialFormatConfiguration};
+use pgls_diagnostics::Diagnostic as _;
 use pgls_fs::PgLSPath;
 use pgls_text_size::TextSize;
 use pgls_workspace::Workspace as WorkspaceTrait;
+use pgls_workspace::features::code_actions::{
+    CodeAction, CodeActionsParams, FixFileMode, FixFileParams, FixFileResult,
+};
 use pgls_workspace::features::completions::GetCompletionsParams;
 use pgls_workspace::features::diagnostics::PullFileDiagnosticsParams;
 use pgls_workspace::features::format::PullFileFormattingParams;
@@ -55,6 +59,8 @@ pub struct Diagnostic {
     pub message: String,
     /// Severity: "error", "warning", "info"
     pub severity: String,
+    /// The category, e.g. `lint/banDropTable` or `syntax`
+    pub category: String,
 }
 
 impl From<pgls_diagnostics::serde::Diagnostic> for Diagnostic {
@@ -72,6 +78,10 @@ impl From<pgls_diagnostics::serde::Diagnostic> for Diagnostic {
                 pgls_diagnostics::Severity::Information => "info".to_string(),
                 pgls_diagnostics::Severity::Hint => "hint".to_string(),
             },
+            category: d
+                .category()
+                .map(|category| category.name().to_string())
+                .unwrap_or_default(),
         }
     }
 }
@@ -318,6 +328,40 @@ impl Workspace {
             .collect();
 
         Ok(diagnostics)
+    }
+
+    /// The code actions at `offset`: the fixes of the lint diagnostics there and the actions that
+    /// suppress them. There is no database connection, so there are no commands.
+    pub fn code_actions(&self, path: &str, offset: u32) -> Result<Vec<CodeAction>, WasmError> {
+        self.fs.read(path)?;
+        let result = self
+            .inner
+            .pull_code_actions(CodeActionsParams {
+                path: PgLSPath::new(PathBuf::from(path)),
+                cursor_position: TextSize::from(offset),
+                only: vec![],
+                skip: vec![],
+            })
+            .map_err(|e| WasmError::ParseError(format!("Code actions failed: {e}")))?;
+        Ok(result.actions)
+    }
+
+    /// The content of the file with all safe fixes applied, and with the unsafe ones too if
+    /// `unsafe_fixes` is set.
+    pub fn fix_file(&self, path: &str, unsafe_fixes: bool) -> Result<FixFileResult, WasmError> {
+        self.fs.read(path)?;
+        self.inner
+            .fix_file(FixFileParams {
+                path: PgLSPath::new(PathBuf::from(path)),
+                fix_file_mode: if unsafe_fixes {
+                    FixFileMode::SafeAndUnsafeFixes
+                } else {
+                    FixFileMode::SafeFixes
+                },
+                only: vec![],
+                skip: vec![],
+            })
+            .map_err(|e| WasmError::ParseError(format!("Fixing failed: {e}")))
     }
 
     /// Format a file in the workspace.
