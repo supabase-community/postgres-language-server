@@ -2365,3 +2365,18 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
         .collect();
     assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
 }
+
+#[test]
+fn test_section_marker_problems_are_reported() {
+    let content =
+        "create table t (id int);\n-- migrate:up\nselect 1;\n-- Migrate:Down\nselect 2;\n";
+    let categories = migration_diagnostics(SectionMarkers::Dbmate, None, content);
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "migrations/sectionMarkers")
+            .count(),
+        2,
+        "{categories:?}"
+    );
+}
