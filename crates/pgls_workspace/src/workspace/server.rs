@@ -140,6 +140,18 @@ pub struct WorkspaceServer {
 /// limit, 20 open files of 5,000 statements each kept 2.7 GB.
 pub const DOCUMENT_CACHE_ENTRIES_MAX: usize = 20_000;
 
+/// What the caches of an open document hold, for tests of their memory.
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DocumentCacheStats {
+    /// The distinct statements of the document, including the bodies of SQL functions. The
+    /// caches are keyed by the text of the statement.
+    pub statements: usize,
+    pub parse_results: usize,
+    pub trees: usize,
+    pub analysis: bool,
+}
+
 /// A database snapshot with the changes of the statements before a statement.
 struct SnapshotBefore {
     /// The database snapshot it is built from.
@@ -222,6 +234,13 @@ impl WorkspaceServer {
         // caches the result under the new version.
         self.settings_version.fetch_add(1, Ordering::Relaxed);
         handle
+    }
+
+    /// What the caches of the open document at `path` hold, for tests of their memory.
+    #[doc(hidden)]
+    pub fn document_cache_stats(&self, path: &PgLSPath) -> Option<DocumentCacheStats> {
+        let documents = self.documents.read().unwrap();
+        documents.get(path).map(Document::cache_stats)
     }
 
     /// Records what the caches of the document at `path` keep after a request, and drops the

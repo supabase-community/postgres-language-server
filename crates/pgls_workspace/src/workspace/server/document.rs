@@ -82,6 +82,18 @@ impl Document {
         self.ast_db.len() + self.cst_db.len()
     }
 
+    /// What the caches of the document hold.
+    pub fn cache_stats(&self) -> super::DocumentCacheStats {
+        let statements: FxHashSet<StatementId> =
+            self.iter(DefaultMapper).map(|(id, _, _)| id).collect();
+        super::DocumentCacheStats {
+            statements: statements.len(),
+            parse_results: self.ast_db.len(),
+            trees: self.cst_db.len(),
+            analysis: self.analysis.lock().unwrap().is_some(),
+        }
+    }
+
     /// Drops everything that is cached for the document. It is recomputed when it is needed
     /// again.
     pub fn clear_caches(&self) {

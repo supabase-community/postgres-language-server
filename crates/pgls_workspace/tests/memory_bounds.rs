@@ -1,14 +1,14 @@
 //! The memory that the workspace keeps for open documents.
 //!
-//! Counts every allocation of the test binary with a global allocator, so the test runs on its
-//! own in this file. `MEMORY_DOCUMENTS` and `MEMORY_GROUPS` (four statements and one SQL function
+//! Counts every allocation of the test binary with the allocator in `common`, so the test runs
+//! on its own in this file. `MEMORY_DOCUMENTS` and `MEMORY_GROUPS` (four statements and one SQL function
 //! body each) change the size of the workload, e.g. `MEMORY_DOCUMENTS=20 MEMORY_GROUPS=1250` for
 //! 20 documents with 5,000 statements each. Run it in a release build for numbers that match
 //! what users see.
 
-use std::alloc::{GlobalAlloc, Layout, System};
-use std::sync::atomic::{AtomicUsize, Ordering};
+mod common;
 
+use common::{MIB, current, mib, peak, reset_peak};
 use pgls_analyse::RuleCategories;
 use pgls_configuration::{Merge, PartialConfiguration, database::PartialDatabaseConfiguration};
 use pgls_fs::PgLSPath;
@@ -25,57 +25,6 @@ use pgls_workspace::{
     },
 };
 use sqlx::PgPool;
-
-struct Counting;
-
-static CURRENT: AtomicUsize = AtomicUsize::new(0);
-static PEAK: AtomicUsize = AtomicUsize::new(0);
-
-unsafe impl GlobalAlloc for Counting {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let ptr = unsafe { System.alloc(layout) };
-        if !ptr.is_null() {
-            let current = CURRENT.fetch_add(layout.size(), Ordering::Relaxed) + layout.size();
-            PEAK.fetch_max(current, Ordering::Relaxed);
-        }
-        ptr
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        unsafe { System.dealloc(ptr, layout) };
-        CURRENT.fetch_sub(layout.size(), Ordering::Relaxed);
-    }
-
-    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        let new = unsafe { System.realloc(ptr, layout, new_size) };
-        if !new.is_null() {
-            if new_size >= layout.size() {
-                let grown = new_size - layout.size();
-                let current = CURRENT.fetch_add(grown, Ordering::Relaxed) + grown;
-                PEAK.fetch_max(current, Ordering::Relaxed);
-            } else {
-                CURRENT.fetch_sub(layout.size() - new_size, Ordering::Relaxed);
-            }
-        }
-        new
-    }
-}
-
-#[global_allocator]
-static ALLOCATOR: Counting = Counting;
-
-const MIB: usize = 1024 * 1024;
-
-fn mib(bytes: usize) -> f64 {
-    bytes as f64 / MIB as f64
-}
-
-/// Resets the peak to the current usage and returns it.
-fn reset_peak() -> usize {
-    let current = CURRENT.load(Ordering::Relaxed);
-    PEAK.store(current, Ordering::Relaxed);
-    current
-}
 
 fn env(name: &str, default: usize) -> usize {
     std::env::var(name).map_or(default, |value| value.parse().unwrap())
@@ -205,14 +154,11 @@ async fn open_documents_stay_within_the_budget(test_db: PgPool) {
             .unwrap();
         use_document(&*workspace, &path, content);
         if document == 0 {
-            first = (
-                PEAK.load(Ordering::Relaxed) - baseline,
-                CURRENT.load(Ordering::Relaxed) - baseline,
-            );
+            first = (peak() - baseline, current() - baseline);
         }
     }
-    let open_peak = PEAK.load(Ordering::Relaxed) - baseline;
-    let open_retained = CURRENT.load(Ordering::Relaxed) - baseline;
+    let open_peak = peak() - baseline;
+    let open_retained = current() - baseline;
     for document in 0..documents {
         workspace
             .close_file(CloseFileParams {
@@ -220,7 +166,7 @@ async fn open_documents_stay_within_the_budget(test_db: PgPool) {
             })
             .unwrap();
     }
-    let closed_retained = CURRENT.load(Ordering::Relaxed).saturating_sub(baseline);
+    let closed_retained = current().saturating_sub(baseline);
 
     // The CLI: each file is opened, checked and closed.
     let reset = reset_peak();
@@ -244,8 +190,8 @@ async fn open_documents_stay_within_the_budget(test_db: PgPool) {
             .unwrap();
         workspace.close_file(CloseFileParams { path }).unwrap();
     }
-    let cli_peak = PEAK.load(Ordering::Relaxed).saturating_sub(reset);
-    let cli_retained = CURRENT.load(Ordering::Relaxed).saturating_sub(baseline);
+    let cli_peak = peak().saturating_sub(reset);
+    let cli_retained = current().saturating_sub(baseline);
 
     println!(
         "{documents} documents, {:.1} MiB of SQL: one document peak {:.1} MiB, retained {:.1} MiB; \
