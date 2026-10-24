@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_17_11: 43838 statements and 355 SQL function bodies, 1751 findings on statements Postgres rejected
+REL_17_11: 43838 statements and 365 in SQL function bodies, 1751 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 functionArgumentMismatch 42725: 5

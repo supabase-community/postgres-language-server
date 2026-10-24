@@ -50,7 +50,7 @@ fn typecheck_reports_nothing_postgres_accepts() {
             .collect::<Vec<_>>();
         let analysed = Analysed {
             statements: files.iter().map(|x| x.statements.len()).sum(),
-            bodies: checked.iter().map(|x| x.bodies).sum(),
+            body_statements: checked.iter().map(|x| x.body_statements).sum(),
         };
         let mut rejected = Vec::new();
         let mut artefacts = Vec::new();
@@ -115,13 +115,13 @@ fn typecheck_reports_nothing_postgres_accepts() {
 
 struct Analysed {
     statements: usize,
-    /// The SQL function bodies analysed.
-    bodies: usize,
+    /// The statements in SQL function bodies.
+    body_statements: usize,
 }
 
 struct Checked {
     findings: Vec<Finding>,
-    bodies: usize,
+    body_statements: usize,
 }
 
 struct Finding {
@@ -172,10 +172,8 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
                         .with_sql(sql)
                         .with_identifier_parameters(has_identifier_parameters),
                 );
-                if let Some(body) = body {
-                    bodies.push(body.range);
-                    stmts.push(body);
-                }
+                bodies.extend(body.iter().map(|x| x.range));
+                stmts.extend(body);
             }
             Ok(None) => {}
             Err(()) => unparsable.push(UnparsableStatement {
@@ -222,7 +220,7 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
         .collect();
     Checked {
         findings,
-        bodies: bodies.len(),
+        body_statements: bodies.len(),
     }
 }
 
@@ -237,20 +235,29 @@ fn parse(sql: &str) -> Result<Option<(NodeEnum, bool)>, ()> {
         .map(|root| (root, conversion.has_identifier_parameters)))
 }
 
-/// The statement in the body of a `LANGUAGE sql` function, as the workspace extracts and analyses
-/// it.
-fn sql_function_body(root: &NodeEnum, sql: &str, range: TextRange) -> Option<AnalysableStatement> {
+/// The statements in the body of a `LANGUAGE sql` function, as the workspace extracts and
+/// analyses them.
+fn sql_function_body(root: &NodeEnum, sql: &str, range: TextRange) -> Vec<AnalysableStatement> {
     let NodeEnum::CreateFunctionStmt(create_fn) = root else {
-        return None;
+        return Vec::new();
     };
-    let body = pgls_query_ext::utils::sql_function_body(root, sql)?;
-    let (body_root, has_identifier_parameters) = parse(&body.body).ok()??;
-    Some(
-        AnalysableStatement::new(body_root, body.range + range.start())
-            .with_sql(body.body)
-            .with_function(FunctionContext::from_create_function(create_fn))
-            .with_identifier_parameters(has_identifier_parameters),
-    )
+    let Some(body) = pgls_query_ext::utils::sql_function_body(root, sql) else {
+        return Vec::new();
+    };
+    let function = FunctionContext::from_create_function(create_fn);
+    body.statements()
+        .into_iter()
+        .filter_map(|statement| {
+            let text = &body.body[statement];
+            let (root, has_identifier_parameters) = parse(text).ok()??;
+            Some(
+                AnalysableStatement::new(root, statement + body.range.start() + range.start())
+                    .with_sql(text)
+                    .with_function(function.clone())
+                    .with_identifier_parameters(has_identifier_parameters),
+            )
+        })
+        .collect()
 }
 
 fn known_false_positive(finding: &Finding) -> Option<usize> {
@@ -285,10 +292,10 @@ fn report(
         *counts.entry((&finding.rule, state)).or_default() += 1;
     }
     let mut report = format!(
-        "{}: {} statements and {} SQL function bodies, {} findings on statements Postgres rejected\n\n",
+        "{}: {} statements and {} in SQL function bodies, {} findings on statements Postgres rejected\n\n",
         version.tag,
         analysed.statements,
-        analysed.bodies,
+        analysed.body_statements,
         rejected.len()
     );
     for ((rule, state), count) in counts {
