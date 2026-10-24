@@ -5,7 +5,10 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, RwLock},
+    sync::{
+        Arc, Mutex, RwLock,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 use analyser::AnalyserVisitorBuilder;
@@ -113,6 +116,9 @@ pub struct WorkspaceServer {
     /// The last snapshot built for completions and hover
     snapshot_before: Mutex<Option<SnapshotBefore>>,
 
+    /// Incremented on every change of the settings, which invalidates the cached analyses.
+    settings_version: AtomicU64,
+
     #[cfg(feature = "db")]
     connection: ConnectionManager,
 }
@@ -124,6 +130,24 @@ struct SnapshotBefore {
     /// The text that the statement sees.
     key: u64,
     snapshot: Arc<Snapshot>,
+}
+
+/// The result of [`WorkspaceServer::analyse_document`].
+struct DocumentAnalysis {
+    analysis: AnalysisResult,
+    /// The syntax errors of the statements.
+    syntax_diagnostics: Vec<SyntaxDiagnostic>,
+    disabled_rules: Vec<RuleFilter<'static>>,
+    /// The migration sections that are not linted.
+    skipped_sections: Vec<TextRange>,
+}
+
+/// An analysis of a document, see [`WorkspaceServer::analyse_document_cached`], and what it
+/// depends on besides the content of the document.
+pub(crate) struct CachedAnalysis {
+    settings_version: u64,
+    snapshot: Option<Arc<Snapshot>>,
+    analysis: Arc<DocumentAnalysis>,
 }
 
 /// The `Workspace` object is long-lived, so we want it to be able to cross
@@ -150,6 +174,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
+            settings_version: AtomicU64::default(),
             connection: ConnectionManager::new(),
         }
     }
@@ -163,6 +188,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
+            settings_version: AtomicU64::default(),
         }
     }
 
@@ -172,7 +198,28 @@ impl WorkspaceServer {
     }
 
     fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut<'_> {
-        WorkspaceSettingsHandleMut::new(&self.settings)
+        let handle = WorkspaceSettingsHandleMut::new(&self.settings);
+        // While the settings are locked, so that nobody analyses with the old settings and
+        // caches the result under the new version.
+        self.settings_version.fetch_add(1, Ordering::Relaxed);
+        handle
+    }
+
+    /// The database snapshot that the analysis starts from.
+    fn database_snapshot(&self, settings: &Settings) -> Option<Arc<Snapshot>> {
+        #[cfg(feature = "db")]
+        let snapshot = self
+            .connection
+            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+            .and_then(Result::ok);
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = {
+            let _ = settings;
+            self.snapshot.get()
+        };
+
+        snapshot
     }
 
     /// Load schema from JSON string.
@@ -269,8 +316,46 @@ impl WorkspaceServer {
         }
     }
 
-    /// Runs the lint and typecheck rules on a document. Returns the analysis, the syntax errors
-    /// of the statements, the disabled rules, and the migration sections that are not linted.
+    /// [`Self::analyse_document`] with every rule category and no rule selection, which is what
+    /// the editor asks for after every edit and on every code action request. The result is kept
+    /// until the content of the document, the settings, or the database snapshot change.
+    fn analyse_document_cached(
+        &self,
+        settings: &Settings,
+        path: &PgLSPath,
+        doc: &Document,
+    ) -> Arc<DocumentAnalysis> {
+        let snapshot = self.database_snapshot(settings);
+        let settings_version = self.settings_version.load(Ordering::Relaxed);
+        let mut cached = doc.analysis().lock().unwrap();
+        if let Some(cached) = cached.as_ref()
+            && cached.settings_version == settings_version
+            && match (&cached.snapshot, &snapshot) {
+                (Some(cached), Some(snapshot)) => Arc::ptr_eq(cached, snapshot),
+                (None, None) => true,
+                _ => false,
+            }
+        {
+            return Arc::clone(&cached.analysis);
+        }
+
+        let analysis = Arc::new(self.analyse_document(
+            settings,
+            path,
+            doc,
+            RuleCategoriesBuilder::default().all().build(),
+            &[],
+            &[],
+        ));
+        *cached = Some(CachedAnalysis {
+            settings_version,
+            snapshot,
+            analysis: Arc::clone(&analysis),
+        });
+        analysis
+    }
+
+    /// Runs the lint and typecheck rules on a document.
     fn analyse_document(
         &self,
         settings: &Settings,
@@ -279,20 +364,8 @@ impl WorkspaceServer {
         categories: RuleCategories,
         only: &[RuleSelector],
         skip: &[RuleSelector],
-    ) -> (
-        AnalysisResult,
-        Vec<SyntaxDiagnostic>,
-        Vec<RuleFilter<'static>>,
-        Vec<TextRange>,
-    ) {
-        #[cfg(feature = "db")]
-        let snapshot = self
-            .connection
-            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
-            .and_then(Result::ok);
-
-        #[cfg(not(feature = "db"))]
-        let snapshot = self.snapshot.get();
+    ) -> DocumentAnalysis {
+        let snapshot = self.database_snapshot(settings);
 
         /*
          * Static analysis: the lint rules, and the typecheck rules when a database schema is
@@ -369,12 +442,12 @@ impl WorkspaceServer {
             typecheck,
         });
 
-        (
+        DocumentAnalysis {
             analysis,
             syntax_diagnostics,
             disabled_rules,
             skipped_sections,
-        )
+        }
     }
 
     /// The fixes of the lint diagnostics at the cursor, and an action to suppress each of them.
@@ -385,14 +458,16 @@ impl WorkspaceServer {
         doc: &Document,
     ) -> Vec<CodeAction> {
         let content = doc.get_document_content();
+        let suppressions = doc.suppressions();
+        let analysis = self.lint_analysis(settings, &params.path, doc, &params.only, &params.skip);
         let mut actions = Vec::new();
-        for diagnostic in
-            self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
-        {
+        for diagnostic in &analysis.analysis.diagnostics {
             let Some(span) = diagnostic.location().span else {
                 continue;
             };
-            if !span.contains_inclusive(params.cursor_position) {
+            if !span.contains_inclusive(params.cursor_position)
+                || suppressions.is_suppressed(diagnostic)
+            {
                 continue;
             }
             let category = diagnostic.get_category_name();
@@ -444,6 +519,29 @@ impl WorkspaceServer {
         actions
     }
 
+    /// The analysis of a document with every rule category and the rules selected by `only`
+    /// and `skip`.
+    fn lint_analysis(
+        &self,
+        settings: &Settings,
+        path: &PgLSPath,
+        doc: &Document,
+        only: &[RuleSelector],
+        skip: &[RuleSelector],
+    ) -> Arc<DocumentAnalysis> {
+        if only.is_empty() && skip.is_empty() {
+            return self.analyse_document_cached(settings, path, doc);
+        }
+        Arc::new(self.analyse_document(
+            settings,
+            path,
+            doc,
+            RuleCategoriesBuilder::default().all().build(),
+            only,
+            skip,
+        ))
+    }
+
     /// The lint diagnostics of a document that are not suppressed.
     fn lint_diagnostics(
         &self,
@@ -453,19 +551,13 @@ impl WorkspaceServer {
         only: &[RuleSelector],
         skip: &[RuleSelector],
     ) -> Vec<LinterDiagnostic> {
-        let (analysis, _, _, _) = self.analyse_document(
-            settings,
-            path,
-            doc,
-            RuleCategoriesBuilder::default().all().build(),
-            only,
-            skip,
-        );
         let suppressions = doc.suppressions();
-        analysis
+        self.lint_analysis(settings, path, doc, only, skip)
+            .analysis
             .diagnostics
-            .into_iter()
-            .filter(|diagnostic| !suppressions.is_suppressed(diagnostic))
+            .iter()
+            .filter(|diagnostic| !suppressions.is_suppressed(*diagnostic))
+            .cloned()
             .collect()
     }
 
@@ -1254,15 +1346,27 @@ impl Workspace for WorkspaceServer {
         let mut diagnostics: Vec<SDiagnostic> = doc.document_diagnostics().to_vec();
         let path = params.path.as_path().display().to_string();
 
-        let (analysis, syntax_diagnostics, disabled_rules, skipped_sections) = self
-            .analyse_document(
+        let analysis = if params.categories == RuleCategoriesBuilder::default().all().build()
+            && params.only.is_empty()
+            && params.skip.is_empty()
+        {
+            self.analyse_document_cached(settings, &params.path, doc)
+        } else {
+            Arc::new(self.analyse_document(
                 settings,
                 &params.path,
                 doc,
                 params.categories,
                 &params.only,
                 &params.skip,
-            );
+            ))
+        };
+        let DocumentAnalysis {
+            analysis,
+            syntax_diagnostics,
+            disabled_rules,
+            skipped_sections,
+        } = analysis.as_ref();
         let is_skipped = |range: TextRange| {
             skipped_sections
                 .iter()
@@ -1281,7 +1385,7 @@ impl Workspace for WorkspaceServer {
                 &params.path,
                 doc,
                 &analysis.statements,
-                &skipped_sections,
+                skipped_sections,
             )?;
             diagnostics.extend(db_diagnostics);
             plpgsql_checked
@@ -1310,30 +1414,38 @@ impl Workspace for WorkspaceServer {
             if !covered && !checked {
                 diagnostics.push(SDiagnostic::new(
                     diagnostic
+                        .clone()
                         .with_file_path(path.clone())
                         .with_severity(Severity::Error),
                 ));
             }
         }
 
-        diagnostics.extend(analysis.diagnostics.into_iter().map(Error::from).map(|d| {
-            let severity = d
-                .category()
-                .and_then(|category| settings.get_severity_from_rule_code(category))
-                .unwrap_or(Severity::Warning);
+        diagnostics.extend(
+            analysis
+                .diagnostics
+                .iter()
+                .cloned()
+                .map(Error::from)
+                .map(|d| {
+                    let severity = d
+                        .category()
+                        .and_then(|category| settings.get_severity_from_rule_code(category))
+                        .unwrap_or(Severity::Warning);
 
-            let span = d.location().span;
-            SDiagnostic::new(
-                d.with_file_path(path.clone())
-                    .with_file_span(span)
-                    .with_severity(severity),
-            )
-        }));
+                    let span = d.location().span;
+                    SDiagnostic::new(
+                        d.with_file_path(path.clone())
+                            .with_file_span(span)
+                            .with_severity(severity),
+                    )
+                }),
+        );
 
         let suppressions = doc.suppressions();
 
         let disabled_suppression_errors =
-            suppressions.get_disabled_diagnostic_suppressions_as_errors(&disabled_rules);
+            suppressions.get_disabled_diagnostic_suppressions_as_errors(disabled_rules);
 
         let mut unused_suppression_errors =
             suppressions.get_unused_suppressions_as_errors(&diagnostics);

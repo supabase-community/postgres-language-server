@@ -128,10 +128,31 @@ pub fn get_actions(
         })
         .collect();
 
+    let only = params.context.only.as_deref();
     Ok(actions
         .into_iter()
+        .filter(|action| is_requested(action.kind.as_ref(), only))
         .map(CodeActionOrCommand::CodeAction)
         .collect())
+}
+
+/// Whether an action of `kind` is of one of the kinds in the request's `context.only`. Kinds are
+/// hierarchical: `quickfix` includes `quickfix.pgls.banDropTable`.
+fn is_requested(
+    kind: Option<&ls_types::CodeActionKind>,
+    only: Option<&[ls_types::CodeActionKind]>,
+) -> bool {
+    let Some(only) = only else {
+        return true;
+    };
+    let kind = kind.map_or("", |kind| kind.as_str());
+    only.iter().any(|requested| {
+        let requested = requested.as_str();
+        requested.is_empty()
+            || kind
+                .strip_prefix(requested)
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
+    })
 }
 
 pub fn command_id(command: &CommandActionCategory) -> String {
@@ -185,5 +206,36 @@ pub async fn execute_command(
             Ok(None)
         }
         any => Err(anyhow!(format!("Unknown command: {any}"))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tower_lsp_server::ls_types::CodeActionKind;
+
+    use super::is_requested;
+
+    #[test]
+    fn requested_kinds_are_hierarchical() {
+        let fix = CodeActionKind::from("quickfix.pgls.banDropTable".to_string());
+        let requested = |only: &[&str]| {
+            let only: Vec<_> = only
+                .iter()
+                .map(|kind| CodeActionKind::from(kind.to_string()))
+                .collect();
+            is_requested(Some(&fix), Some(&only))
+        };
+        assert!(is_requested(Some(&fix), None));
+        assert!(requested(&["quickfix"]));
+        assert!(requested(&["quickfix.pgls"]));
+        assert!(requested(&["source", "quickfix.pgls.banDropTable"]));
+        assert!(requested(&[""]));
+        assert!(!requested(&["quick"]));
+        assert!(!requested(&["source.fixAll"]));
+        assert!(!requested(&[]));
+        assert!(!is_requested(
+            Some(&CodeActionKind::EMPTY),
+            Some(&[CodeActionKind::QUICKFIX])
+        ));
     }
 }

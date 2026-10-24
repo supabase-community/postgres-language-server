@@ -1565,6 +1565,48 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     );
     assert_eq!(edits[0].range.start, Position::new(0, 0));
 
+    // Only the kinds in `context.only`, e.g. when the editor asks for quick fixes.
+    for (only, expected) in [
+        (
+            lsp::CodeActionKind::QUICKFIX,
+            vec![
+                "Add CONCURRENTLY",
+                "Suppress rule requireConcurrentReindex for this statement",
+            ],
+        ),
+        (lsp::CodeActionKind::SOURCE_FIX_ALL, vec![]),
+    ] {
+        let titles: Vec<String> = server
+            .request::<CodeActionParams, CodeActionResponse>(
+                "textDocument/codeAction",
+                "_code_action",
+                CodeActionParams {
+                    text_document: TextDocumentIdentifier {
+                        uri: doc_url.clone(),
+                    },
+                    range: Range {
+                        start: Position::new(0, 3),
+                        end: Position::new(0, 3),
+                    },
+                    context: CodeActionContext {
+                        only: Some(vec![only.clone()]),
+                        ..Default::default()
+                    },
+                    partial_result_params: PartialResultParams::default(),
+                    work_done_progress_params: WorkDoneProgressParams::default(),
+                },
+            )
+            .await?
+            .unwrap_or_default()
+            .into_iter()
+            .map(|action| match action {
+                lsp::CodeActionOrCommand::CodeAction(action) => action.title,
+                lsp::CodeActionOrCommand::Command(command) => command.title,
+            })
+            .collect();
+        assert_eq!(titles, expected, "{only:?}");
+    }
+
     server.shutdown().await?;
     reader.abort();
 
