@@ -6,6 +6,7 @@ use pgls_workspace::configuration::{LoadedConfiguration, load_configuration};
 use pgls_workspace::settings::FilesSettings;
 use pgls_workspace::workspace::{ProjectKey, RegisterProjectFolderParams, UpdateSettingsParams};
 use pgls_workspace::{DynRef, Workspace};
+use std::path::PathBuf;
 
 /// Load configuration from disk and emit warnings for deprecated filenames.
 pub fn load_config(
@@ -16,17 +17,20 @@ pub fn load_config(
 }
 
 /// Registers the project of the working directory and configures it and the VCS integration
-/// according to the provided configuration. Returns the key of the project and the files settings
-/// of the configuration.
+/// according to the provided configuration, whose relative paths are relative to
+/// `configuration_directory` (by default the working directory). Returns the key of the project
+/// and the files settings of the configuration.
 pub fn setup_workspace(
     workspace: &dyn Workspace,
     fs: &DynRef<'_, dyn FileSystem>,
     configuration: PartialConfiguration,
+    configuration_directory: Option<PathBuf>,
     vcs: VcsIntegration,
 ) -> Result<(ProjectKey, FilesSettings), CliDiagnostic> {
+    let configuration_directory = configuration_directory.or_else(|| fs.working_directory());
     let (vcs_base_path, gitignore_matches) = match vcs {
         VcsIntegration::Enabled => configuration
-            .retrieve_gitignore_matches(fs, fs.working_directory().as_deref())
+            .retrieve_gitignore_matches(fs, configuration_directory.as_deref())
             .map_err(CliDiagnostic::from)?,
         VcsIntegration::Disabled => (None, vec![]),
     };
@@ -39,17 +43,18 @@ pub fn setup_workspace(
 
     let files = FilesSettings::from_configuration(
         &configuration,
-        fs.working_directory(),
+        configuration_directory.clone(),
         vcs_base_path.clone(),
         &gitignore_matches,
     )?;
     workspace
         .update_settings(UpdateSettingsParams {
             project_key,
-            workspace_directory: fs.working_directory(),
+            workspace_directory: configuration_directory,
             configuration,
             vcs_base_path,
             gitignore_matches,
+            replace: true,
         })
         .map_err(CliDiagnostic::from)?;
 

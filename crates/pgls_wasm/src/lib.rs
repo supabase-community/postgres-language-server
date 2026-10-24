@@ -393,6 +393,8 @@ impl Workspace {
                 vcs_base_path: None,
                 gitignore_matches: vec![],
                 workspace_directory: None,
+                // Only the formatter settings change, the others keep their values.
+                replace: false,
             })
             .map_err(|e| {
                 WasmError::InvalidOptions(format!("Failed to apply format options: {e}"))

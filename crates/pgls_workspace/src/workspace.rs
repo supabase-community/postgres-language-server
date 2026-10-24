@@ -73,7 +73,13 @@ pub struct UpdateSettingsParams {
     pub configuration: PartialConfiguration,
     pub vcs_base_path: Option<PathBuf>,
     pub gitignore_matches: Vec<String>,
+    /// The folder that relative paths and globs of the configuration are resolved against: the
+    /// folder of the configuration file.
     pub workspace_directory: Option<PathBuf>,
+    /// Whether the configuration replaces the root settings. Otherwise it is merged into them, and
+    /// the sections it doesn't set keep their values.
+    #[serde(default)]
+    pub replace: bool,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

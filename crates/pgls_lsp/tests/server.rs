@@ -3784,3 +3784,125 @@ async fn the_user_configuration_and_extended_files_are_watched() -> Result<()> {
     reader.abort();
     Ok(())
 }
+
+/// Relative paths of the root configuration, here `migrations.migrationsDir`, are relative to the
+/// folder of the configuration file, like in a nested one, not to the working directory of the
+/// server process (Neovim started elsewhere, the daemon, another workspace folder).
+#[tokio::test]
+async fn relative_paths_of_the_root_configuration_are_relative_to_its_folder() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let elsewhere = tempfile::tempdir()?;
+    let migrations = r#"{ "migrations": { "migrationsDir": "migrations", "after": 5 } }"#;
+    for directory in [root.path().to_path_buf(), root.path().join("sub")] {
+        std::fs::create_dir_all(&directory)?;
+        std::fs::write(directory.join(ConfigName::pgls_jsonc()), migrations)?;
+    }
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            // The server process runs somewhere else than the workspace.
+            DynRef::Owned(Box::new(OsFileSystem::new(elsewhere.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
+        .await?;
+    server.initialized().await?;
+
+    let document = |path: &str| Uri::from_file_path(root.path().join(path)).unwrap();
+    // `banDropColumn` only runs on migrations once `migrations` is configured, and migrations up
+    // to `after` are ignored.
+    for directory in ["sub/", ""] {
+        assert_eq!(
+            open_and_check(
+                &mut server,
+                &mut receiver,
+                document(&format!("{directory}migrations/0001_init.sql"))
+            )
+            .await?,
+            [],
+            "{directory}migrations/0001_init.sql"
+        );
+        assert_eq!(
+            open_and_check(
+                &mut server,
+                &mut receiver,
+                document(&format!("{directory}migrations/0009_later.sql"))
+            )
+            .await?,
+            [lsp::DiagnosticSeverity::WARNING],
+            "{directory}migrations/0009_later.sql is not recognised as a migration"
+        );
+    }
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// Reloading the root configuration replaces its settings, so a section removed from the file
+/// goes back to its defaults, like in a nested configuration.
+#[tokio::test]
+async fn a_section_removed_from_the_configuration_goes_back_to_its_defaults() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let config = root.path().join(ConfigName::pgls_jsonc());
+    std::fs::write(
+        &config,
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )?;
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
+        .await?;
+    server.initialized().await?;
+
+    let document = Uri::from_file_path(root.path().join("a.sql")).unwrap();
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document.clone()).await?,
+        [lsp::DiagnosticSeverity::ERROR]
+    );
+
+    std::fs::write(&config, "{}")?;
+    drain_notifications(&mut receiver);
+    server
+        .notify(
+            "workspace/didChangeWatchedFiles",
+            DidChangeWatchedFilesParams {
+                changes: vec![FileEvent {
+                    uri: Uri::from_file_path(&config).unwrap(),
+                    typ: FileChangeType::CHANGED,
+                }],
+            },
+        )
+        .await?;
+    wait_for_severities(
+        &mut receiver,
+        &document,
+        &[lsp::DiagnosticSeverity::WARNING],
+    )
+    .await
+    .context("the removed `linter` section still applies after the reload")?;
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}

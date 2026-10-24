@@ -646,6 +646,35 @@ fn check_announces_the_user_configuration() {
     );
 }
 
+/// Relative paths of the configuration file are relative to its folder, also when `check` runs
+/// in a folder below it.
+#[test]
+fn relative_paths_are_relative_to_the_configuration_file() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "migrations": { "migrationsDir": "migrations", "after": 5 } }"#,
+        ),
+        (
+            "migrations/0009_later.sql",
+            "alter table users drop column name;\n",
+        ),
+        ("sub/a.sql", "select 1;\n"),
+    ]);
+
+    let migration = Path::new("..").join("migrations").join("0009_later.sql");
+    let (_, output) = check_in(
+        &root.path().join("sub"),
+        &[migration.to_str().unwrap()],
+        &[],
+    );
+    // `banDropColumn` only runs on migrations once `migrations` is configured.
+    assert!(
+        output.contains("lint/banDropColumn"),
+        "the file is not recognised as a migration:\n{output}"
+    );
+}
+
 /// Runs `check` with the database settings given in `args` only, without the connection
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]

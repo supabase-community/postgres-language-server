@@ -57,6 +57,8 @@ pub struct CliSession<'app> {
     /// The files settings of the root configuration, which decide the folders to search for
     /// nested configuration files
     root_files: Option<FilesSettings>,
+    /// The folder of the root configuration file, which its relative paths are relative to
+    configuration_directory: Option<PathBuf>,
 }
 
 impl<'app> CliSession<'app> {
@@ -72,6 +74,7 @@ impl<'app> CliSession<'app> {
             ),
             project_key: ProjectKey::default(),
             root_files: None,
+            configuration_directory: None,
         })
     }
 
@@ -221,6 +224,7 @@ impl<'app> CliSession<'app> {
         let fs = self.fs();
         let loaded_configuration =
             workspace::load_config(fs, cli_options.as_configuration_path_hint())?;
+        self.configuration_directory = loaded_configuration.directory_path.clone();
 
         if let Some(config_path) = &loaded_configuration.file_path
             && let Some(file_name) = config_path.file_name().and_then(|name| name.to_str())
@@ -321,8 +325,13 @@ impl<'app> CliSession<'app> {
         configuration: PartialConfiguration,
         vcs: VcsIntegration,
     ) -> Result<(), CliDiagnostic> {
-        let (project_key, root_files) =
-            workspace::setup_workspace(self.workspace(), self.fs(), configuration, vcs)?;
+        let (project_key, root_files) = workspace::setup_workspace(
+            self.workspace(),
+            self.fs(),
+            configuration,
+            self.configuration_directory.clone(),
+            vcs,
+        )?;
         self.project_key = project_key;
         self.root_files = Some(root_files);
         Ok(())
