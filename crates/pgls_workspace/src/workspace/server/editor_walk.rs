@@ -552,19 +552,61 @@ fn prune(cache: &mut WalkCache, doc: &Document, sections: &[MigrationSection], k
         return;
     }
     let hashes = WalkHashes::new(doc, sections, key, roots);
-    let current: FxHashSet<u64> = doc
-        .iter_from(IdMapper, 0)
-        .scan(usize::MAX, |root, (id, _)| {
-            if id.is_root() {
-                *root = root.wrapping_add(1);
-            }
-            Some(statement_key(hashes.with_section[*root], &id))
-        })
-        .collect();
+    let current = current_keys(doc, &hashes);
     cache.statements.retain(|key, _| current.contains(key));
     cache
         .checkpoints
         .retain(|checkpoint| hashes.before.get(checkpoint.root) == Some(&checkpoint.hash));
+}
+
+/// The keys of the statements of `doc` as it is now.
+fn current_keys(doc: &Document, hashes: &WalkHashes) -> FxHashSet<u64> {
+    doc.iter_from(IdMapper, 0)
+        .scan(usize::MAX, |root, (id, _)| {
+            if id.is_root() {
+                *root = root.wrapping_add(1);
+            }
+            Some(statement_key(*hashes.with_section.get(*root)?, &id))
+        })
+        .collect()
+}
+
+/// The size of the cached walk of a document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EditorWalkSize {
+    /// The cached statements, including those of earlier versions of the document.
+    pub statements: usize,
+    /// The cached statements that are statements of the document as it is now.
+    pub current_statements: usize,
+    /// The statements of the document as it is now, with those of function bodies.
+    pub document_statements: usize,
+    pub checkpoints: usize,
+}
+
+impl WorkspaceServer {
+    /// The size of the cached walk of the document at `path`, for tests and benchmarks.
+    #[doc(hidden)]
+    pub fn editor_walk_size(&self, path: &PgLSPath) -> Option<EditorWalkSize> {
+        let doc = self.document(path).ok()?;
+        let sections = self
+            .workspaces()
+            .settings()
+            .map(|settings| document_sections(settings, &doc))
+            .unwrap_or_default();
+        let cache = Arc::clone(self.editor_walks.caches.lock().unwrap().get(path)?);
+        let cache = cache.lock().unwrap();
+        let roots = doc.statement_ranges().len();
+        let current = current_keys(&doc, &WalkHashes::new(&doc, &sections, cache.key, roots));
+        Some(EditorWalkSize {
+            statements: cache.statements.len(),
+            current_statements: current
+                .iter()
+                .filter(|key| cache.statements.contains_key(key))
+                .count(),
+            document_statements: current.len(),
+            checkpoints: cache.checkpoints.len(),
+        })
+    }
 }
 
 /// The cached walks of the open documents, within [`CACHED_STATEMENTS_MAX`] and

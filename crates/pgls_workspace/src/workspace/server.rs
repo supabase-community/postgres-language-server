@@ -80,6 +80,7 @@ use super::{
     Workspace,
 };
 
+pub use editor_walk::EditorWalkSize;
 pub use statement_identifier::StatementId;
 
 mod analyser;
