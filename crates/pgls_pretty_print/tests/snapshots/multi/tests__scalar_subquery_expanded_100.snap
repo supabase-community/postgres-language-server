@@ -37,14 +37,14 @@ select *
 from t
 where a = (
   select coalesce(
-      (
-        select max(x)
-        from y
-        where y.id = t.id
-          and y.kind = 'some kind of value'
-      ),
-      0
-    )
+    (
+      select max(x)
+      from y
+      where y.id = t.id
+        and y.kind = 'some kind of value'
+    ),
+    0
+  )
 );
 
 select *

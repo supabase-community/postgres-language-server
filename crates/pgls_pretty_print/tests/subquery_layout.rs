@@ -119,3 +119,29 @@ fn a_subquery_opened_on_the_on_line_closes_under_on() {
     assert!(output.contains("\n  on u.id = (\n    select\n"), "{output}");
     assert!(output.ends_with("\n  );"), "{output}");
 }
+
+#[test]
+fn a_lone_compact_select_item_closes_under_select() {
+    let config = FormatConfig {
+        clause_body_style: ClauseBodyStyle::Compact,
+        line_width: 60,
+        ..Default::default()
+    };
+    assert_eq!(
+        format_idempotently(
+            "select coalesce(some_long_column_name, another_long_column_name, 0) from t",
+            &config,
+        ),
+        "select coalesce(\n  some_long_column_name,\n  another_long_column_name,\n  0\n)\nfrom t;"
+    );
+
+    // An item with continuation lines of its own keeps the indent for them.
+    let output = format_idempotently(
+        "select some_long_column_name + another_long_column_name + a_third_long_column from t",
+        &config,
+    );
+    assert!(
+        output.starts_with("select some_long_column_name +\n  "),
+        "{output}"
+    );
+}

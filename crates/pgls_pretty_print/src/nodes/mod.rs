@@ -660,6 +660,34 @@ pub(super) fn emit_condition_on_keyword_line(e: &mut EventEmitter, condition: &N
     }
 }
 
+/// Whether a select item without an alias, which would continue on a line of its own, is written as
+/// a name or keyword followed by
+/// parentheses that hold everything that can break: a function call, `coalesce(...)`, `cast(...)`,
+/// a subquery, ...
+pub(super) fn breaks_only_inside_its_parentheses(e: &EventEmitter, item: &Node) -> bool {
+    let Some(NodeEnum::ResTarget(target)) = item.node.as_ref() else {
+        return false;
+    };
+    if !target.name.is_empty() || !target.indirection.is_empty() {
+        return false;
+    }
+    let Some(value) = target.val.as_deref() else {
+        return false;
+    };
+    match value.node.as_ref() {
+        // FILTER, WITHIN GROUP and OVER continue the call on lines of their own.
+        Some(NodeEnum::FuncCall(call)) => {
+            call.agg_filter.is_none() && call.over.is_none() && !call.agg_within_group
+        }
+        Some(NodeEnum::CoalesceExpr(_) | NodeEnum::MinMaxExpr(_) | NodeEnum::XmlSerialize(_)) => {
+            true
+        }
+        Some(NodeEnum::TypeCast(_)) => matches!(e.config().cast_style, crate::CastStyle::Cast),
+        Some(NodeEnum::SubLink(_)) => breaks_only_inside_a_subquery(value),
+        _ => false,
+    }
+}
+
 fn breaks_only_inside_a_subquery(node: &Node) -> bool {
     use pgls_query::protobuf::{AExprKind, BoolExprType, SubLinkType};
 

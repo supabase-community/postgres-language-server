@@ -200,18 +200,30 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
         }
 
         if !n.target_list.is_empty() {
-            e.indent_start();
-
             // Compact keeps a lone item on the SELECT line, `select 1`; a list of several still
-            // puts one item per line.
-            match e.config().clause_body_style {
-                ClauseBodyStyle::Compact if n.target_list.len() == 1 => e.space(),
-                _ => super::emit_layout_break(e),
+            // puts one item per line. The indent is for the item's continuation lines, which an
+            // item that only breaks inside its parentheses, `coalesce(...)`, doesn't have: indented,
+            // its arguments would sit two levels in and its `)` one level in.
+            let lone_compact_item =
+                matches!(e.config().clause_body_style, ClauseBodyStyle::Compact)
+                    && n.target_list.len() == 1;
+            let indent = !(lone_compact_item
+                && super::breaks_only_inside_its_parentheses(e, &n.target_list[0]));
+
+            if indent {
+                e.indent_start();
+            }
+            if lone_compact_item {
+                e.space();
+            } else {
+                super::emit_layout_break(e);
             }
 
             emit_comma_separated_list_with_layout_break(e, &n.target_list, super::emit_node);
 
-            e.indent_end();
+            if indent {
+                e.indent_end();
+            }
         }
 
         // Emit INTO clause if present (SELECT ... INTO table_name)
