@@ -34,10 +34,10 @@ from accounts;
 select case kind
            when 'a'
                then case
-                        when x > 1
-                            then 'big'
-                        else 'small'
-                    end
+                   when x > 1
+                       then 'big'
+                   else 'small'
+               end
            else 'other'
        end
 from t;
