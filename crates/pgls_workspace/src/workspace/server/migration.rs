@@ -192,7 +192,7 @@ pub(crate) fn section_marker_diagnostics(
         SectionMarkers::Goose => (
             "goose",
             "-- +goose Up",
-            "goose only reads `-- +goose` annotations with `+goose` in lowercase and at the start of the line, so this line is a plain comment.",
+            "goose only reads `-- +goose` annotations with `+goose` in lowercase, so this line is a plain comment.",
         ),
     };
     let is_marker = |line: &str| match markers {
@@ -225,7 +225,14 @@ pub(crate) fn section_marker_diagnostics(
         };
         if !is_marker(line) && looks_like_marker() {
             let span = TextRange::at(start, TextSize::of(line));
-            diagnostics.push(SectionMarkerDiagnostic::new(span, ignored_marker));
+            // goose fails on an annotation with leading whitespace instead of ignoring it, see
+            // https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L321
+            let message = if markers == SectionMarkers::Goose && line.contains("+goose") {
+                "goose rejects a migration with an annotation that doesn't start at the beginning of the line."
+            } else {
+                ignored_marker
+            };
+            diagnostics.push(SectionMarkerDiagnostic::new(span, message));
         }
     }
     diagnostics.sort_by_key(|diagnostic| diagnostic.span.start());
@@ -486,14 +493,15 @@ mod tests {
                 .starts_with("dbmate only reads `-- migrate:up`")
         );
 
-        let text = "-- +goose Up\nselect 1;\n-- +Goose Down\nselect 2;\n";
+        let text =
+            "-- +goose Up\nselect 1;\n-- +Goose Down\n  -- +goose StatementBegin\nselect 2;\n";
+        let problems = marker_problems(text, SectionMarkers::Goose);
         assert_eq!(
-            marker_problems(text, SectionMarkers::Goose)
-                .iter()
-                .map(|(line, _)| *line)
-                .collect::<Vec<_>>(),
-            ["-- +Goose Down"]
+            problems.iter().map(|(line, _)| *line).collect::<Vec<_>>(),
+            ["-- +Goose Down", "  -- +goose StatementBegin"]
         );
+        assert!(problems[0].1.ends_with("so this line is a plain comment."));
+        assert!(problems[1].1.starts_with("goose rejects a migration"));
     }
 
     #[test]
