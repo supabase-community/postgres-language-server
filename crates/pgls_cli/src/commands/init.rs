@@ -4,6 +4,7 @@ use pgls_configuration::migrations::PartialMigrationsConfiguration;
 use pgls_console::{ConsoleExt, markup};
 use pgls_fs::{ConfigName, FileSystem, OpenOptions};
 use pgls_workspace::configuration::create_config;
+use std::ffi::OsStr;
 use std::path::Path;
 
 /// The folder of a project managed by the Supabase CLI, and its configuration file in it.
@@ -18,7 +19,8 @@ const SKIPPED_DIRECTORIES: &[&str] = &["node_modules", "target", SUPABASE_DIRECT
 
 /// A Supabase project and its local database, as reported by `supabase status`.
 struct SupabaseProject {
-    /// The `supabase` folder, relative to the working directory, with `/` as the separator.
+    /// The `supabase` folder, relative to the folder of the configuration file, with `/` as the
+    /// separator.
     directory: String,
     port: u16,
     /// Whether the port could not be read from the Supabase configuration.
@@ -28,8 +30,20 @@ struct SupabaseProject {
 pub(crate) fn init(mut session: CliSession) -> Result<(), CliDiagnostic> {
     let fs = &mut session.app.fs;
     let config = &mut PartialConfiguration::init();
-    let (supabase, ambiguous) = match find_supabase_directories(&**fs).as_slice() {
-        [directory] => (detect_supabase_project(&**fs, directory), Vec::new()),
+    // Inside the `supabase` folder, the configuration goes into the project folder above it, so
+    // that it applies to the whole project like the Supabase configuration does, and the editor
+    // finds it when it opens the project.
+    let project_directory = if is_inside_supabase_directory(&**fs) {
+        Path::new("..")
+    } else {
+        Path::new("")
+    };
+    let (supabase, ambiguous) = match find_supabase_directories(&**fs, project_directory).as_slice()
+    {
+        [directory] => (
+            detect_supabase_project(&**fs, project_directory, directory),
+            Vec::new(),
+        ),
         directories => (None, directories.to_vec()),
     };
     if let Some(supabase) = &supabase {
@@ -45,8 +59,11 @@ pub(crate) fn init(mut session: CliSession) -> Result<(), CliDiagnostic> {
             ..Default::default()
         });
     }
-    create_config(fs, config)?;
-    let file_created = ConfigName::pgls_jsonc();
+    create_config(fs, project_directory, config)?;
+    let file_created = project_directory
+        .join(ConfigName::pgls_jsonc())
+        .display()
+        .to_string();
     session.app.console.log(markup! {
 "
 Welcome to the Postgres Language Server! Let's get you started...
@@ -79,10 +96,30 @@ Welcome to the Postgres Language Server! Let's get you started...
     Ok(())
 }
 
-/// The `supabase` folders with a `config.toml`: the one in the working directory, or else the
-/// ones in the folders one or two levels below it, as in a monorepo (`supabase/`, `db/supabase/`,
-/// `apps/web/supabase/`).
-fn find_supabase_directories(fs: &dyn FileSystem) -> Vec<String> {
+/// Whether the working directory is the `supabase` folder of a project: it is named like it and
+/// has a `config.toml` with a `[db]` section.
+fn is_inside_supabase_directory(fs: &dyn FileSystem) -> bool {
+    let is_named_supabase = fs
+        .working_directory()
+        .is_some_and(|directory| directory.file_name() == Some(OsStr::new(SUPABASE_DIRECTORY)));
+    let mut contents = String::new();
+    is_named_supabase
+        && fs
+            .open_with_options(
+                Path::new(SUPABASE_CONFIG_FILE),
+                OpenOptions::default().read(true),
+            )
+            .and_then(|mut file| file.read_to_string(&mut contents))
+            .is_ok()
+        && contents
+            .parse::<toml::Table>()
+            .is_ok_and(|config| config.get("db").is_some_and(toml::Value::is_table))
+}
+
+/// The `supabase` folders with a `config.toml`, relative to `project_directory`: the one in it,
+/// or else, if it is the working directory, the ones in the folders one or two levels below it,
+/// as in a monorepo (`supabase/`, `db/supabase/`, `apps/web/supabase/`).
+fn find_supabase_directories(fs: &dyn FileSystem, project_directory: &Path) -> Vec<String> {
     let is_project = |directory: &Path| {
         fs.path_is_file(
             &directory
@@ -90,8 +127,11 @@ fn find_supabase_directories(fs: &dyn FileSystem) -> Vec<String> {
                 .join(SUPABASE_CONFIG_FILE),
         )
     };
-    if is_project(Path::new("")) {
+    if is_project(project_directory) {
         return vec![SUPABASE_DIRECTORY.to_string()];
+    }
+    if !project_directory.as_os_str().is_empty() {
+        return Vec::new();
     }
     let Some(working_directory) = fs.working_directory() else {
         return Vec::new();
@@ -126,9 +166,14 @@ fn subdirectories(directory: &Path) -> Vec<String> {
     names
 }
 
-/// Reads the Supabase project in `directory`, relative to the working directory.
-fn detect_supabase_project(fs: &dyn FileSystem, directory: &str) -> Option<SupabaseProject> {
-    let path = Path::new(directory).join(SUPABASE_CONFIG_FILE);
+/// Reads the Supabase project in `directory`, relative to `project_directory`, which is relative
+/// to the working directory.
+fn detect_supabase_project(
+    fs: &dyn FileSystem,
+    project_directory: &Path,
+    directory: &str,
+) -> Option<SupabaseProject> {
+    let path = project_directory.join(directory).join(SUPABASE_CONFIG_FILE);
     if !fs.path_is_file(&path) {
         return None;
     }
