@@ -390,7 +390,12 @@ impl WorkspaceServer {
             let category = diagnostic.get_category_name();
             let rule = category.strip_prefix("lint/").unwrap_or(category);
 
-            if let Some(fix) = diagnostic.get_fix() {
+            // A fix must not write the placeholder of an `ENVSUB` expansion into the file.
+            if let Some(fix) = diagnostic.get_fix().filter(|fix| {
+                !fix.edits
+                    .iter()
+                    .any(|edit| doc.touches_placeholder(edit.range))
+            }) {
                 actions.push(CodeAction {
                     title: fix.message.clone(),
                     kind: CodeActionKind::Edit(EditAction {
@@ -1090,7 +1095,15 @@ impl Workspace for WorkspaceServer {
 
             skipped_suggested_fixes = 0;
             let mut fixes: Vec<&RuleFix> = Vec::new();
-            for fix in diagnostics.iter().filter_map(LinterDiagnostic::get_fix) {
+            for fix in diagnostics
+                .iter()
+                .filter_map(LinterDiagnostic::get_fix)
+                .filter(|fix| {
+                    !fix.edits
+                        .iter()
+                        .any(|edit| doc.touches_placeholder(edit.range))
+                })
+            {
                 if fix.applicability == Applicability::Always
                     || params.fix_file_mode == FixFileMode::SafeAndUnsafeFixes
                 {
@@ -1536,11 +1549,14 @@ impl Workspace for WorkspaceServer {
             }
             last_end = stmt_end;
 
-            // Leave statements outside the requested range untouched.
-            if let Some(filter_range) = params.range
-                && stmt_range.intersect(filter_range).is_none()
+            // Leave statements outside the requested range untouched, and those with `ENVSUB`
+            // expansions, whose text holds placeholders.
+            if params
+                .range
+                .is_some_and(|filter_range| stmt_range.intersect(filter_range).is_none())
+                || doc.touches_placeholder(stmt_range)
             {
-                formatted_output.push_str(&text);
+                formatted_output.push_str(&source[stmt_start..stmt_end]);
                 continue;
             }
 

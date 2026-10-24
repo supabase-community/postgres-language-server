@@ -8,6 +8,7 @@ use pgls_text_size::{TextRange, TextSize};
 
 use super::{
     annotation::AnnotationStore,
+    migration::goose_envsub,
     pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
     sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
     statement_identifier::StatementId,
@@ -16,6 +17,11 @@ use super::{
 
 pub struct Document {
     content: String,
+    /// The text that is split and parsed: the content with placeholders for goose's `ENVSUB`
+    /// expansions, see [`goose_envsub`]. It has the length of the content.
+    text: String,
+    /// The ranges of the expansions that `text` replaces.
+    placeholders: Vec<TextRange>,
     version: i32,
     ranges: Vec<TextRange>,
     diagnostics: Vec<SDiagnostic>,
@@ -32,13 +38,17 @@ impl Document {
         let ast_db = PgQueryStore::new();
         let annotation_db = AnnotationStore::new();
         let suppressions = Suppressions::from(content.as_str());
+        let (text, placeholders) =
+            goose_envsub(&content).unwrap_or_else(|| (content.clone(), vec![]));
 
-        let (ranges, diagnostics) = split_with_diagnostics(&content, None);
+        let (ranges, diagnostics) = split_with_diagnostics(&text, None);
 
         Document {
             ranges,
             diagnostics,
             content,
+            text,
+            placeholders,
             version,
             ast_db,
             cst_db,
@@ -48,10 +58,12 @@ impl Document {
     }
 
     pub fn update_content(&mut self, content: String, version: i32) {
+        (self.text, self.placeholders) =
+            goose_envsub(&content).unwrap_or_else(|| (content.clone(), vec![]));
         self.content = content;
         self.version = version;
 
-        let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
+        let (ranges, diagnostics) = split_with_diagnostics(&self.text, None);
 
         self.ranges = ranges;
         self.diagnostics = diagnostics;
@@ -64,6 +76,18 @@ impl Document {
 
     pub fn get_document_content(&self) -> &str {
         &self.content
+    }
+
+    /// Whether `range` overlaps an `ENVSUB` expansion that the analysis replaced with a
+    /// placeholder. Edits there would write the placeholder into the file.
+    pub fn touches_placeholder(&self, range: TextRange) -> bool {
+        self.placeholders.iter().any(|placeholder| {
+            if range.is_empty() {
+                placeholder.start() < range.start() && range.start() < placeholder.end()
+            } else {
+                placeholder.start() < range.end() && range.start() < placeholder.end()
+            }
+        })
     }
 
     pub fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
@@ -151,7 +175,7 @@ where
         if let Some(range) = next_range {
             // If we should include sub-statements and this statement has an AST
 
-            let content = &self.parser.content[*range];
+            let content = &self.parser.text[*range];
             let root_id = StatementId::new(content);
 
             if let Ok(ast) = self.parser.ast_db.get_or_cache_ast(&root_id).as_ref() {

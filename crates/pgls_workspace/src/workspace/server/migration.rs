@@ -122,6 +122,101 @@ pub(crate) fn migration_sections(text: &str, markers: SectionMarkers) -> Vec<Mig
     sections
 }
 
+/// The text that the analysis reads for a file with goose's `-- +goose ENVSUB ON`, and the
+/// ranges of the replaced expansions, or `None` if nothing is replaced.
+///
+/// Between `ENVSUB ON` and `ENVSUB OFF`, goose replaces `${NAME}`, `${NAME:-default}` and the
+/// other braced forms of [interpolate] with environment variables before it runs the SQL. We
+/// don't know their values, so each braced expansion becomes the named parameter `$NAME`,
+/// padded with spaces to the same length so that all offsets stay the same. Named parameters
+/// are analysed like psql variables: as values, or as identifiers that aren't typechecked.
+/// `$NAME` is a named parameter already. See
+/// https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L211
+///
+/// [interpolate]: https://github.com/mfridman/interpolate/blob/v0.0.2/parser.go
+pub(crate) fn goose_envsub(text: &str) -> Option<(String, Vec<TextRange>)> {
+    if !text.contains("+goose") {
+        return None;
+    }
+    let mut substituted = String::with_capacity(text.len());
+    let mut expansions = Vec::new();
+    let mut envsub = false;
+    let mut offset = 0;
+    for line in text.split_inclusive('\n') {
+        let start = offset;
+        offset += line.len();
+        let annotation = goose_annotation(line.trim_end_matches(['\n', '\r']));
+        match annotation {
+            Some(annotation) if annotation.eq_ignore_ascii_case("envsub on") => envsub = true,
+            Some(annotation) if annotation.eq_ignore_ascii_case("envsub off") => envsub = false,
+            _ if envsub && annotation.is_none() => {
+                substitute_line(line, start, &mut substituted, &mut expansions);
+                continue;
+            }
+            _ => {}
+        }
+        substituted.push_str(line);
+    }
+    (!expansions.is_empty()).then_some((substituted, expansions))
+}
+
+/// Replaces the braced expansions of a line, see [`goose_envsub`].
+fn substitute_line(line: &str, start: usize, out: &mut String, expansions: &mut Vec<TextRange>) {
+    let mut rest = line;
+    while let Some(dollar) = rest.find(['$', '\\']) {
+        let (before, from) = rest.split_at(dollar);
+        out.push_str(before);
+        // `\\`, `\$` and `$$` are escapes, and `$(` is left alone.
+        let escape = ["\\\\", "\\$", "$$", "$("]
+            .iter()
+            .find(|escape| from.starts_with(**escape));
+        if let Some(escape) = escape {
+            out.push_str(escape);
+            rest = &from[escape.len()..];
+            continue;
+        }
+        let Some(body) = from.strip_prefix("${") else {
+            out.push_str(&from[..1]);
+            rest = &from[1..];
+            continue;
+        };
+        // The expansion ends at the matching brace, defaults can hold expansions too.
+        let mut depth = 1;
+        let end = body.char_indices().find_map(|(index, c)| {
+            match c {
+                '{' => depth += 1,
+                '}' => depth -= 1,
+                _ => {}
+            }
+            (depth == 0).then_some(index)
+        });
+        let Some(end) = end else {
+            out.push_str(from);
+            return;
+        };
+        let expansion = &from[..end + 3];
+        let name: String = body
+            .chars()
+            .take_while(|c| c.is_alphanumeric() || *c == '_')
+            .collect();
+        let name = if name.starts_with(|c: char| c.is_alphabetic()) {
+            name
+        } else {
+            "e".to_string()
+        };
+        let placeholder = format!("${name}");
+        out.push_str(&placeholder);
+        out.push_str(&" ".repeat(expansion.len().saturating_sub(placeholder.len())));
+        let expansion_start = start + (line.len() - from.len());
+        expansions.push(TextRange::at(
+            TextSize::from(expansion_start as u32),
+            TextSize::of(expansion),
+        ));
+        rest = &from[expansion.len()..];
+    }
+    out.push_str(rest);
+}
+
 /// `-- migrate:up` or `-- migrate:down` at the start of the line, with options like
 /// `transaction:false`. See
 /// https://github.com/amacneil/dbmate/blob/v2.37.0/pkg/dbmate/migration.go#L62
@@ -295,6 +390,26 @@ mod tests {
                 ("-- +goose down\nselect 2;", Direction::Down, true),
             ]
         );
+    }
+
+    #[test]
+    fn goose_envsub_replaces_braced_expansions_with_named_parameters() {
+        let text = "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema ${SCHEMA};\ngrant usage on schema ${SCHEMA:-${FALLBACK}} to $ROLE, \\${KEPT}, $${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n";
+        let (substituted, expansions) = goose_envsub(text).unwrap();
+        assert_eq!(substituted.len(), text.len());
+        assert_eq!(
+            substituted,
+            "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema $SCHEMA  ;\ngrant usage on schema $SCHEMA                to $ROLE, \\${KEPT}, $${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n"
+        );
+        assert_eq!(
+            expansions
+                .iter()
+                .map(|range| &text[*range])
+                .collect::<Vec<_>>(),
+            ["${SCHEMA}", "${SCHEMA:-${FALLBACK}}"]
+        );
+        assert!(goose_envsub("-- +goose Up\nselect ${A};\n").is_none());
+        assert!(goose_envsub("select 1;").is_none());
     }
 
     #[test]
