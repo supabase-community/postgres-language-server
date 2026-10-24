@@ -2515,6 +2515,12 @@ fn files_use_the_nearest_configuration_file() {
     );
     // A relative path is relative to the root of the project, like the paths of the CLI.
     assert_eq!(project.severities("db2/a.sql"), [Severity::Error]);
+    // `..` leaves the folder it follows.
+    assert_eq!(
+        project.severities("/repo/db1/../db2/sub/a.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(project.severities("db2/nested/../a.sql"), [Severity::Error]);
     assert!(project.is_ignored("/repo/legacy/a.sql"));
 }
 
@@ -2547,6 +2553,55 @@ fn updating_the_settings_replaces_or_merges_them() {
     assert_eq!(project.severities("/repo/b.sql"), [Severity::Error]);
     update(true);
     assert_eq!(project.severities("/repo/c.sql"), [Severity::Warning]);
+}
+
+/// A file opened by its real path gets the settings of a folder that was opened through a
+/// symlink.
+#[cfg(unix)]
+#[test]
+fn files_below_the_real_path_of_a_symlinked_folder_use_its_settings() {
+    let root = tempfile::tempdir().unwrap();
+    // On macOS, the temporary directory is itself below a symlink (`/var` -> `/private/var`).
+    let root = root.path().canonicalize().unwrap();
+    let real = root.join("real");
+    std::fs::create_dir_all(real.join("db1")).unwrap();
+    let link = root.join("link");
+    std::os::unix::fs::symlink(&real, &link).unwrap();
+
+    let workspace = WorkspaceServer::new();
+    let project_key = workspace
+        .register_project_folder(RegisterProjectFolderParams {
+            path: Some(link.clone()),
+        })
+        .unwrap();
+    workspace
+        .update_nested_settings(UpdateNestedSettingsParams {
+            project_key,
+            nested: vec![crate::workspace::NestedSettingsParams {
+                directory: link.join("db1"),
+                configuration: serde_json::from_str(
+                    r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+                )
+                .unwrap(),
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+            }],
+        })
+        .unwrap();
+    let project = TestProject {
+        workspace: Rc::new(workspace),
+        project_key,
+    };
+
+    assert_eq!(
+        project.severities(link.join("db1/a.sql")),
+        [Severity::Error]
+    );
+    assert_eq!(
+        project.severities(real.join("db1/b.sql")),
+        [Severity::Error]
+    );
+    assert_eq!(project.severities(real.join("c.sql")), [Severity::Warning]);
 }
 
 /// The search doesn't descend into the folders that the root configuration ignores, except below

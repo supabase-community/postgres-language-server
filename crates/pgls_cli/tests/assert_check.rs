@@ -709,6 +709,33 @@ fn check_reports_every_unreachable_database_at_once() {
     );
 }
 
+/// Without `vcs.enabled`, `.gitignore` doesn't hide nested configuration files, like it doesn't
+/// hide the files to check.
+#[test]
+fn nested_configurations_ignore_gitignore_without_vcs() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "vcs": { "enabled": false } }"#,
+        ),
+        (".gitignore", "generated/\n"),
+        (
+            "generated/postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        ("generated/a.sql", "alter table users drop column name;\n"),
+    ]);
+
+    let (_, output) = check_in(root.path(), &["--reporter", "github"], &[]);
+    assert!(
+        output
+            .lines()
+            .any(|line| line.starts_with("::error title=lint/banDropColumn")
+                && line.contains("a.sql")),
+        "the configuration in the gitignored folder doesn't apply:\n{output}"
+    );
+}
+
 /// Runs `check` with the database settings given in `args` only, without the connection
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]

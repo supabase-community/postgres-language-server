@@ -27,7 +27,7 @@ use pgls_configuration::{
     plpgsql_check::PlPgSqlCheckConfiguration,
     splinter::SplinterConfiguration,
 };
-use pgls_fs::PgLSPath;
+use pgls_fs::{PgLSPath, normalize_path, real_path};
 #[cfg(feature = "db")]
 use sqlx::postgres::PgConnectOptions;
 
@@ -47,17 +47,31 @@ pub struct ProjectData {
     settings: Settings,
     /// The settings of the configuration files below the root, by their folder, deepest first.
     nested: Vec<(PathBuf, Settings)>,
+    /// The root path with symlinks resolved, if it is a symlink or below one.
+    real_path: Option<PathBuf>,
 }
 
 impl ProjectData {
-    /// The settings that apply to `path`: those of the deepest nested configuration file that
-    /// contains it, or else the root settings. A relative path is relative to the root.
+    /// `path` as a path below the root of the project, if it is one: relative to the root if it is
+    /// relative, without `.` and `..`, and with the root as it was registered if the path goes
+    /// through its real path instead, as when the folder was opened through a symlink.
+    fn resolve(&self, path: &Path) -> PathBuf {
+        let path = normalize_path(&self.path.join(path));
+        match &self.real_path {
+            Some(real_path) if !path.starts_with(self.path.as_path()) => {
+                match path.strip_prefix(real_path) {
+                    Ok(relative) => self.path.join(relative),
+                    Err(_) => path,
+                }
+            }
+            _ => path,
+        }
+    }
+
+    /// The settings that apply to `path`, see [ProjectData::resolve]: those of the deepest nested
+    /// configuration file that contains it, or else the root settings.
     fn settings_for(&self, path: &Path) -> &Settings {
-        let path = if path.is_relative() {
-            Cow::Owned(self.path.join(path))
-        } else {
-            Cow::Borrowed(path)
-        };
+        let path = self.resolve(path);
         self.nested
             .iter()
             .find(|(directory, _)| path.starts_with(directory))
@@ -78,10 +92,12 @@ impl WorkspaceSettings {
     pub fn insert_project(&mut self, workspace_path: impl Into<PathBuf>) -> ProjectKey {
         let path = PgLSPath::new(workspace_path.into());
         trace!("Insert workspace folder: {:?}", path);
+        let real_path = real_path(path.as_path());
         self.data.insert(ProjectData {
             path,
             settings: Settings::default(),
             nested: Vec::new(),
+            real_path,
         })
     }
 

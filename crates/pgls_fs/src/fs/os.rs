@@ -189,6 +189,9 @@ impl FileSystem for OsFileSystem {
         let walk = ignore::WalkBuilder::new(root)
             .hidden(true)
             .require_git(false)
+            .git_ignore(search.vcs_ignore_files)
+            .git_global(search.vcs_ignore_files)
+            .git_exclude(search.vcs_ignore_files)
             .filter_entry(filter)
             .build();
         for (index, entry) in walk.filter_map(Result::ok).enumerate() {
