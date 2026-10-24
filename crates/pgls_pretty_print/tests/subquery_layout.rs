@@ -140,8 +140,8 @@ fn a_lone_compact_select_item_closes_under_select() {
         "select some_long_column_name + another_long_column_name + a_third_long_column from t",
         &config,
     );
-    assert!(
-        output.starts_with("select some_long_column_name +\n  "),
-        "{output}"
+    assert_eq!(
+        output,
+        "select some_long_column_name + another_long_column_name +\n  a_third_long_column\nfrom t;"
     );
 }
