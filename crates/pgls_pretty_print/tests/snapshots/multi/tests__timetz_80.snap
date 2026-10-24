@@ -74,14 +74,14 @@ select f1 + cast('00:01' as time with time zone) as "Illegal" from timetz_tbl;
 
 select
   extract(
-    microsecond from cast('2020-05-26 13:30:25.575401-04'
-    as time with time zone)
+    microsecond from
+    cast('2020-05-26 13:30:25.575401-04' as time with time zone)
   );
 
 select
   extract(
-    millisecond from cast('2020-05-26 13:30:25.575401-04'
-    as time with time zone)
+    millisecond from
+    cast('2020-05-26 13:30:25.575401-04' as time with time zone)
   );
 
 select
@@ -111,20 +111,20 @@ select
 
 select
   extract(
-    timezone from cast('2020-05-26 13:30:25.575401-04:30'
-    as time with time zone)
+    timezone from
+    cast('2020-05-26 13:30:25.575401-04:30' as time with time zone)
   );
 
 select
   extract(
-    timezone_hour from cast('2020-05-26 13:30:25.575401-04:30'
-    as time with time zone)
+    timezone_hour from
+    cast('2020-05-26 13:30:25.575401-04:30' as time with time zone)
   );
 
 select
   extract(
-    timezone_minute from cast('2020-05-26 13:30:25.575401-04:30'
-    as time with time zone)
+    timezone_minute from
+    cast('2020-05-26 13:30:25.575401-04:30' as time with time zone)
   );
 
 select

@@ -614,17 +614,13 @@ select 'i_dio' like pg_catalog.like_escape('i$_d%o', '$') as "true";
 select 'i_dio' not like pg_catalog.like_escape('i$_d%o', '$') as "false";
 
 select
-  cast('a_c' as bytea) like pg_catalog.like_escape(
-    cast('a$__' as bytea),
-    cast('$' as bytea)
-  )
+  cast('a_c' as bytea) like
+  pg_catalog.like_escape(cast('a$__' as bytea), cast('$' as bytea))
   as "true";
 
 select
-  cast('a_c' as bytea) not like pg_catalog.like_escape(
-    cast('a$__' as bytea),
-    cast('$' as bytea)
-  )
+  cast('a_c' as bytea) not like
+  pg_catalog.like_escape(cast('a$__' as bytea), cast('$' as bytea))
   as "false";
 
 select 'maca' like pg_catalog.like_escape('m%aca', '%') as "true";
@@ -1198,9 +1194,7 @@ select btrim(cast('\000trim\000' as bytea), cast('' as bytea));
 select
   encode(
     overlay(
-      cast('Th\000omas' as bytea)
-      placing cast('Th\001omas' as bytea)
-      from 2
+      cast('Th\000omas' as bytea) placing cast('Th\001omas' as bytea) from 2
     ),
     'escape'
   );
@@ -1208,9 +1202,7 @@ select
 select
   encode(
     overlay(
-      cast('Th\000omas' as bytea)
-      placing cast('\002\003' as bytea)
-      from 8
+      cast('Th\000omas' as bytea) placing cast('\002\003' as bytea) from 8
     ),
     'escape'
   );
@@ -1218,10 +1210,7 @@ select
 select
   encode(
     overlay(
-      cast('Th\000omas' as bytea)
-      placing cast('\002\003' as bytea)
-      from 5
-      for 3
+      cast('Th\000omas' as bytea) placing cast('\002\003' as bytea) from 5 for 3
     ),
     'escape'
   );
