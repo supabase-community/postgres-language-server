@@ -468,8 +468,7 @@ from
 
 select
   to_json(a) as a,
-  json_objectagg(k : v
-  absent on null)
+  json_objectagg(k : v absent on null)
   over (
     order by k
     range between
@@ -488,20 +487,23 @@ as select json_array('1' format json, 2 absent on null returning json);
 drop view json_array_view;
 
 select
-  json_objectagg(i : cast('111' || i as bytea) format json
-  null on null
-  with unique keys
-  returning text)
-  filter (where
-    i > 3)
+  json_objectagg(
+    i : cast('111' || i as bytea) format json
+    null on null
+    with unique keys
+    returning text
+  )
+    filter (where i > 3)
 from
   generate_series(1, 5) as i;
 
 select
-  json_objectagg(i : cast('111' || i as bytea) format json
-  null on null
-  with unique keys
-  returning text)
+  json_objectagg(
+    i : cast('111' || i as bytea) format json
+    null on null
+    with unique keys
+    returning text
+  )
   over (
     partition by i % 2
   )
@@ -510,30 +512,26 @@ from
 
 create view json_objectagg_view
 as select
-  json_objectagg(i : cast('111' || i as bytea) format json
-  null on null
-  with unique keys
-  returning text)
-  filter (where
-    i > 3)
+  json_objectagg(
+    i : cast('111' || i as bytea) format json
+    null on null
+    with unique keys
+    returning text
+  )
+    filter (where i > 3)
 from
   generate_series(1, 5) as i;
 
 drop view json_objectagg_view;
 
 select
-  json_arrayagg(cast('111' || i as bytea) format json
-  null on null
-  returning text)
-  filter (where
-    i > 3)
+  json_arrayagg(cast('111' || i as bytea) format json null on null returning text)
+    filter (where i > 3)
 from
   generate_series(1, 5) as i;
 
 select
-  json_arrayagg(cast('111' || i as bytea) format json
-  null on null
-  returning text)
+  json_arrayagg(cast('111' || i as bytea) format json null on null returning text)
   over (
     partition by i % 2
   )
@@ -542,11 +540,8 @@ from
 
 create view json_arrayagg_view
 as select
-  json_arrayagg(cast('111' || i as bytea) format json
-  null on null
-  returning text)
-  filter (where
-    i > 3)
+  json_arrayagg(cast('111' || i as bytea) format json null on null returning text)
+    filter (where i > 3)
 from
   generate_series(1, 5) as i;
 

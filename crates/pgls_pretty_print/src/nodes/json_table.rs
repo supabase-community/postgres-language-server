@@ -162,8 +162,10 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
         super::json_value_expr::emit_json_format(e, format);
     }
 
+    // The clauses of a column that doesn't fit continue on their own lines, one level in.
+    e.indent_start();
     if let Some(pathspec) = col.pathspec.as_ref() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::PATH_KW);
         e.space();
         emit_json_table_path_spec(e, pathspec);
@@ -177,14 +179,14 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
                     | JsonTableColumnType::JtcFormatted
                     | JsonTableColumnType::Undefined
             ) {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::WITHOUT_KW);
                 e.space();
                 e.token(TokenKind::WRAPPER_KW);
             }
         }
         JsonWrapper::JswConditional => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::WITH_KW);
             e.space();
             e.token(TokenKind::CONDITIONAL_KW);
@@ -192,7 +194,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
             e.token(TokenKind::WRAPPER_KW);
         }
         JsonWrapper::JswUnconditional => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::WITH_KW);
             e.space();
             e.token(TokenKind::UNCONDITIONAL_KW);
@@ -204,13 +206,13 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
 
     match col.quotes() {
         JsonQuotes::JsQuotesKeep => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::KEEP_KW);
             e.space();
             e.token(TokenKind::QUOTES_KW);
         }
         JsonQuotes::JsQuotesOmit => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::OMIT_KW);
             e.space();
             e.token(TokenKind::QUOTES_KW);
@@ -219,15 +221,16 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
     }
 
     if let Some(on_empty) = col.on_empty.as_ref() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         emit_json_behavior_clause(e, on_empty, JsonBehaviorClause::OnEmpty);
     }
 
     if let Some(on_error) = col.on_error.as_ref() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         emit_json_behavior_clause(e, on_error, JsonBehaviorClause::OnError);
     }
 
+    e.indent_end();
     e.group_end();
 }
 

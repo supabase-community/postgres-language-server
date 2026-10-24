@@ -155,23 +155,7 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
     if let Some(ref filter) = n.agg_filter {
         e.indent_start();
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::FILTER_KW);
-        e.space();
-        // `filter (where ...)` stays on one line when it fits. Otherwise the condition goes on
-        // its own lines inside the parentheses, like a policy's `using (...)`.
-        e.group_start(GroupKind::List);
-        e.token(TokenKind::L_PAREN);
-        e.indent_start();
-        e.line(LineType::Soft);
-        e.token(TokenKind::WHERE_KW);
-        e.space();
-        e.indent_start();
-        super::emit_node(filter, e);
-        e.indent_end();
-        e.indent_end();
-        e.line(LineType::Soft);
-        e.token(TokenKind::R_PAREN);
-        e.group_end();
+        emit_filter_clause(e, filter);
         e.indent_end();
     }
 
@@ -185,6 +169,26 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         e.group_end();
     }
 
+    e.group_end();
+}
+
+/// Emits `filter (where ...)`, on one line when it fits. Otherwise the condition goes on its own
+/// lines inside the parentheses, like a policy's `using (...)`.
+pub(super) fn emit_filter_clause(e: &mut EventEmitter, filter: &Node) {
+    e.token(TokenKind::FILTER_KW);
+    e.space();
+    e.group_start(GroupKind::List);
+    e.token(TokenKind::L_PAREN);
+    e.indent_start();
+    e.line(LineType::Soft);
+    e.token(TokenKind::WHERE_KW);
+    e.space();
+    e.indent_start();
+    super::emit_node(filter, e);
+    e.indent_end();
+    e.indent_end();
+    e.line(LineType::Soft);
+    e.token(TokenKind::R_PAREN);
     e.group_end();
 }
 
@@ -332,49 +336,49 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
     match (name, args) {
         ("extract", [field, source]) => {
             e.token(TokenKind::EXTRACT_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             emit_extract_field(e, field);
             e.space();
             e.token(TokenKind::FROM_KW);
             e.space();
             super::emit_node(source, e);
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         ("overlay", [string, replacement, start, rest @ ..]) if rest.len() <= 1 => {
             e.token(TokenKind::OVERLAY_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             super::emit_node(string, e);
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::PLACING_KW);
             e.space();
             super::emit_node(replacement, e);
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::FROM_KW);
             e.space();
             super::emit_node(start, e);
             if let [length] = rest {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::FOR_KW);
                 e.space();
                 super::emit_node(length, e);
             }
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         // Stored as position(string, substring), written POSITION(substring IN string). Both
         // operands are `b_expr`, which an operator expression is not.
         ("position", [string, substring]) => {
             e.token(TokenKind::POSITION_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             emit_parenthesized_unless_simple(e, substring);
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::IN_KW);
             e.space();
             emit_parenthesized_unless_simple(e, string);
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         ("substring", [string, start, rest @ ..]) if rest.len() <= 1 => {
             e.token(TokenKind::SUBSTRING_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             super::emit_node(string, e);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::FROM_KW);
@@ -386,12 +390,12 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
                 e.space();
                 super::emit_node(length, e);
             }
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         // Stored as btrim(string[, characters]), written TRIM(BOTH characters FROM string).
         ("btrim" | "ltrim" | "rtrim", [string, rest @ ..]) if rest.len() <= 1 => {
             e.token(TokenKind::TRIM_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             match name {
                 "ltrim" => {
                     e.token(TokenKind::LEADING_KW);
@@ -410,21 +414,21 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
                 e.space();
             }
             super::emit_node(string, e);
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         ("normalize", [string, rest @ ..]) => {
             let Some(form) = optional_normalization_form(rest) else {
                 return false;
             };
             e.token(TokenKind::NORMALIZE_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             super::emit_node(string, e);
             if let Some(form) = form {
                 e.token(TokenKind::COMMA);
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(form);
             }
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         ("is_normalized", [string, rest @ ..]) => {
             let Some(form) = optional_normalization_form(rest) else {
@@ -486,13 +490,13 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
         // The XML document is a `c_expr`.
         ("xmlexists", [xpath, document]) => {
             e.token(TokenKind::XMLEXISTS_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             super::emit_node(xpath, e);
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::PASSING_KW);
             e.space();
             emit_parenthesized_unless_simple(e, document);
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         ("system_user", []) => e.token(TokenKind::SYSTEM_USER_KW),
         _ => return false,
