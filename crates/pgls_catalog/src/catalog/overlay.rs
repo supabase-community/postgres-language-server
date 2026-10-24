@@ -1,6 +1,8 @@
 //! The changes that statements are made of: defining, moving, and dropping relations, types,
 //! functions, and schemas in the overlay.
 
+use std::sync::Arc;
+
 use crate::typing::TypeId;
 use crate::{FunctionArgumentMode, FunctionSignature};
 use pgls_query::{Node, protobuf};
@@ -82,7 +84,7 @@ impl Catalog {
         if relation.kind != RelationKind::Other {
             self.types.insert(
                 key.clone(),
-                Entry::Defined(TypeInfo {
+                Entry::defined(TypeInfo {
                     schema: relation.schema.clone(),
                     name: relation.name.clone(),
                     attributes: relation.columns.clone(),
@@ -108,7 +110,7 @@ impl Catalog {
             );
             self.ensure_array_type(&relation.schema, &relation.name, None);
         }
-        self.relations.insert(key, Entry::Defined(relation));
+        self.relations.insert(key, Entry::defined(relation));
     }
 
     pub(super) fn mark_relation_unknown(&mut self, key: Key) {
@@ -195,26 +197,26 @@ impl Catalog {
         self.relations.insert(old_key.clone(), Entry::Dropped);
         if relation.kind != RelationKind::Other {
             let old_type = self.types.get(&old_key).and_then(|entry| match entry {
-                Entry::Defined(info) => Some(info.clone()),
+                Entry::Defined(info) => Some(TypeInfo::clone(info)),
                 _ => None,
             });
             self.types.insert(old_key.clone(), Entry::Dropped);
             if let Some(mut info) = old_type {
                 let old_array = key(&info.schema, &format!("_{}", info.name));
                 let array_info = self.types.get(&old_array).and_then(|entry| match entry {
-                    Entry::Defined(info) => Some(info.clone()),
+                    Entry::Defined(info) => Some(TypeInfo::clone(info)),
                     _ => None,
                 });
                 self.types.insert(old_array, Entry::Dropped);
                 info.schema = relation.schema.clone();
                 info.name = relation.name.clone();
                 self.types
-                    .insert(key(&info.schema, &info.name), Entry::Defined(info.clone()));
+                    .insert(key(&info.schema, &info.name), Entry::defined(info.clone()));
                 if let Some(mut array) = array_info {
                     array.schema = relation.schema.clone();
                     array.name = format!("_{}", relation.name);
                     self.types
-                        .insert(key(&array.schema, &array.name), Entry::Defined(array));
+                        .insert(key(&array.schema, &array.name), Entry::defined(array));
                 }
             }
         }
@@ -259,7 +261,7 @@ impl Catalog {
         let array_id = self.allocate_type_id();
         self.types.insert(
             type_key,
-            Entry::Defined(TypeInfo {
+            Entry::defined(TypeInfo {
                 schema: schema.clone(),
                 name: name.clone(),
                 attributes: attributes.clone(),
@@ -276,7 +278,7 @@ impl Catalog {
         );
         self.types.insert(
             key(&schema, &array_name),
-            Entry::Defined(TypeInfo {
+            Entry::defined(TypeInfo {
                 schema,
                 name: array_name,
                 attributes: None,
@@ -313,11 +315,11 @@ impl Catalog {
             })
             .unwrap_or_else(|| self.allocate_type_id());
         if let Some(Entry::Defined(row)) = self.types.get_mut(&row_key) {
-            row.array = Some(array_id.clone());
+            Arc::make_mut(row).array = Some(array_id.clone());
         }
         self.types.insert(
             array_key,
-            Entry::Defined(TypeInfo {
+            Entry::defined(TypeInfo {
                 schema: schema.to_owned(),
                 name: array_name,
                 attributes,
@@ -355,7 +357,7 @@ impl Catalog {
         type_info.origin = Origin::File;
         self.types.insert(old_key, Entry::Dropped);
         let new_key = key(&type_info.schema, &type_info.name);
-        self.types.insert(new_key, Entry::Defined(type_info));
+        self.types.insert(new_key, Entry::defined(type_info));
     }
 
     // ----- functions -----
@@ -376,9 +378,9 @@ impl Catalog {
                     Some(position) => overloads[position] = function,
                     None => overloads.push(function),
                 }
-                Entry::Defined(overloads)
+                Entry::defined(overloads)
             }
-            Lookup::Missing => Entry::Defined(vec![function]),
+            Lookup::Missing => Entry::defined(vec![function]),
             Lookup::Unknown => Entry::Unknown,
         };
         self.functions.insert(key, entry);
@@ -454,7 +456,7 @@ impl Catalog {
         let entry = if overloads.is_empty() {
             Entry::Dropped
         } else {
-            Entry::Defined(overloads)
+            Entry::defined(overloads)
         };
         self.functions.insert(key, entry);
         Some(function)

@@ -10,7 +10,10 @@
 
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
-    sync::{Arc, Mutex},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 use pgls_analyser::{AnalysableStatement, Direction, MigrationSection, StatementOffsets};
@@ -49,6 +52,8 @@ impl WalkedStatement {
 /// The cached walk of one document.
 #[derive(Default)]
 pub(super) struct WalkCache {
+    /// When the walk was last used, from [`EditorWalks::clock`].
+    last_used: u64,
     /// The snapshot the walk starts from. Holding it also keeps another snapshot from being
     /// allocated where it is, so comparing the pointers is enough.
     snapshot: Option<Arc<Snapshot>>,
@@ -127,10 +132,26 @@ impl WalkHashes {
 /// Checks whether the document changed every this many statements of the walk.
 const OUTDATED_CHECK_INTERVAL: usize = 64;
 
-/// Saves a checkpoint every this many top-level statements, but at most about 32 per document:
-/// each holds a copy of the catalog.
+/// The checkpoints of a document. Each is a copy of the catalog's maps of the objects the file
+/// changed (the objects themselves are shared), so with 16 a request on a long file still
+/// resumes at most 1/16 of the file before its range.
+const CHECKPOINTS_PER_DOCUMENT_MAX: usize = 16;
+
+/// The statements whose references are cached, across all documents. A cached statement takes
+/// about 1.75 KiB on a migration-style file (its references copy the objects they resolve to,
+/// with their columns), so this is about 85 MiB, enough for the whole of two and a half
+/// 20,000-statement files. Beyond it, the caches of the least recently used documents are
+/// dropped.
+const CACHED_STATEMENTS_MAX: usize = 50_000;
+
+/// The checkpoints across all documents, beyond which the least recently used documents' caches
+/// are dropped.
+const CHECKPOINTS_MAX: usize = 256;
+
+/// Saves a checkpoint every this many top-level statements, so that a document has at most
+/// [`CHECKPOINTS_PER_DOCUMENT_MAX`] of them.
 fn checkpoint_interval(roots: usize) -> usize {
-    (roots / 32).max(64)
+    roots.div_ceil(CHECKPOINTS_PER_DOCUMENT_MAX).max(64)
 }
 
 /// The index of the migration section that contains `offset`.
@@ -202,14 +223,46 @@ impl WorkspaceServer {
             hasher.finish()
         };
 
-        let cache = Arc::clone(
-            self.editor_walks
-                .lock()
-                .unwrap()
-                .entry(path.clone())
-                .or_default(),
-        );
+        let cache = self.editor_walks.get(path);
         let mut cache = cache.lock().unwrap();
+        let statements = self.walk_cached(
+            &mut cache,
+            path,
+            doc,
+            snapshot,
+            range,
+            &search_path,
+            &sections,
+            key,
+        );
+        cache.last_used = self.editor_walks.tick();
+        if cache.statements.len() > CACHED_STATEMENTS_MAX {
+            tracing::debug!(
+                "The editor walk of {} caches {} statements, more than {CACHED_STATEMENTS_MAX}. Dropping them.",
+                path.display(),
+                cache.statements.len()
+            );
+            cache.statements.clear();
+        }
+        let size = (cache.statements.len(), cache.checkpoints.len());
+        drop(cache);
+        self.editor_walks
+            .enforce_budget(path, size, CACHED_STATEMENTS_MAX, CHECKPOINTS_MAX);
+        statements
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn walk_cached(
+        &self,
+        cache: &mut WalkCache,
+        path: &PgLSPath,
+        doc: &Document,
+        snapshot: &Arc<Snapshot>,
+        range: TextRange,
+        search_path: &[String],
+        sections: &[MigrationSection],
+        key: u64,
+    ) -> Option<Vec<WalkedStatement>> {
         if cache.key != key
             || !cache
                 .snapshot
@@ -227,9 +280,9 @@ impl WorkspaceServer {
         // The top-level statements that may intersect the range, and those before them.
         let first = ranges.partition_point(|root| root.end() < range.start());
         let end = ranges.partition_point(|root| !is_after(*root, range));
-        let hashes = WalkHashes::new(doc, &sections, key, end);
+        let hashes = WalkHashes::new(doc, sections, key, end);
 
-        if let Some(statements) = cached_statements(&cache, doc, &hashes, first, end, range) {
+        if let Some(statements) = cached_statements(cache, doc, &hashes, first, end, range) {
             return Some(statements);
         }
 
@@ -252,7 +305,7 @@ impl WorkspaceServer {
                     // or a statement that doesn't parse doesn't turn them off for the rest of
                     // the file.
                     catalog: Catalog::new(Some(self.catalog_base(snapshot))).best_effort(),
-                    session: new_session(&search_path, &sections, None),
+                    session: new_session(search_path, sections, None),
                     section: None,
                     up_catalog: None,
                 },
@@ -274,7 +327,7 @@ impl WorkspaceServer {
             if id.is_root() {
                 root = root.wrapping_add(1);
                 if root > start && root % interval == 0 {
-                    save_checkpoint(&mut cache, root, hashes.before[root], &state);
+                    save_checkpoint(cache, root, hashes.before[root], &state, interval);
                 }
             }
             let in_range = stmt_range.intersect(range).is_some();
@@ -283,7 +336,7 @@ impl WorkspaceServer {
                 continue;
             }
 
-            let current = section_of(&sections, stmt_range.start());
+            let current = section_of(sections, stmt_range.start());
             if current != state.section {
                 if let Some(up_catalog) = state.up_catalog.take() {
                     state.catalog = up_catalog;
@@ -294,7 +347,7 @@ impl WorkspaceServer {
                 {
                     state.up_catalog = Some(state.catalog.clone());
                 }
-                state.session = new_session(&search_path, &sections, current);
+                state.session = new_session(search_path, sections, current);
                 state.section = current;
             }
 
@@ -363,7 +416,7 @@ impl WorkspaceServer {
             }
         }
 
-        prune(&mut cache, doc, &sections, key);
+        prune(cache, doc, sections, key);
         Some(statements)
     }
 }
@@ -453,7 +506,13 @@ fn cached_statements(
     Some(statements)
 }
 
-fn save_checkpoint(cache: &mut WalkCache, root: usize, hash: u64, state: &WalkState) {
+fn save_checkpoint(
+    cache: &mut WalkCache,
+    root: usize,
+    hash: u64,
+    state: &WalkState,
+    interval: usize,
+) {
     let index = cache
         .checkpoints
         .partition_point(|checkpoint| checkpoint.root < root);
@@ -467,8 +526,19 @@ fn save_checkpoint(cache: &mut WalkCache, root: usize, hash: u64, state: &WalkSt
             if existing.hash != hash {
                 *existing = checkpoint;
             }
+            return;
         }
         _ => cache.checkpoints.insert(index, checkpoint),
+    }
+    // The interval grows with the file, so earlier checkpoints may be at other statements.
+    if cache.checkpoints.len() > CHECKPOINTS_PER_DOCUMENT_MAX {
+        cache
+            .checkpoints
+            .retain(|checkpoint| checkpoint.root % interval == 0);
+    }
+    while cache.checkpoints.len() > CHECKPOINTS_PER_DOCUMENT_MAX {
+        tracing::debug!("Too many checkpoints in an editor walk. Dropping the first.");
+        cache.checkpoints.remove(0);
     }
 }
 
@@ -495,5 +565,89 @@ fn prune(cache: &mut WalkCache, doc: &Document, sections: &[MigrationSection], k
         .retain(|checkpoint| hashes.before.get(checkpoint.root) == Some(&checkpoint.hash));
 }
 
-/// The cached walks of the open documents.
-pub(super) type EditorWalks = Mutex<std::collections::HashMap<PgLSPath, Arc<Mutex<WalkCache>>>>;
+/// The cached walks of the open documents, within [`CACHED_STATEMENTS_MAX`] and
+/// [`CHECKPOINTS_MAX`] together.
+#[derive(Default)]
+pub(super) struct EditorWalks {
+    caches: Mutex<std::collections::HashMap<PgLSPath, Arc<Mutex<WalkCache>>>>,
+    /// Counts the walks, to find the least recently used caches.
+    clock: AtomicU64,
+}
+
+impl EditorWalks {
+    fn get(&self, path: &PgLSPath) -> Arc<Mutex<WalkCache>> {
+        Arc::clone(self.caches.lock().unwrap().entry(path.clone()).or_default())
+    }
+
+    fn tick(&self) -> u64 {
+        self.clock.fetch_add(1, Ordering::Relaxed) + 1
+    }
+
+    /// Drops the cached walk of a document, e.g. when it is closed.
+    pub(super) fn remove(&self, path: &PgLSPath) {
+        self.caches.lock().unwrap().remove(path);
+    }
+
+    /// Drops the cached walks of all documents, e.g. when the schema changed.
+    pub(super) fn clear(&self) {
+        self.caches.lock().unwrap().clear();
+    }
+
+    /// The cached statements and checkpoints of all documents.
+    #[cfg(test)]
+    pub(super) fn size(&self) -> (usize, usize) {
+        self.caches
+            .lock()
+            .unwrap()
+            .values()
+            .map(|cache| {
+                let cache = cache.lock().unwrap();
+                (cache.statements.len(), cache.checkpoints.len())
+            })
+            .fold((0, 0), |total, size| (total.0 + size.0, total.1 + size.1))
+    }
+
+    /// Drops the caches of the least recently used documents other than `current` until all
+    /// caches together are within the budget. `size` is the size of the cache of `current`, which
+    /// the caller holds. Caches that another request is using are left alone.
+    pub(super) fn enforce_budget(
+        &self,
+        current: &PgLSPath,
+        size: (usize, usize),
+        statements_max: usize,
+        checkpoints_max: usize,
+    ) {
+        let caches = self.caches.lock().unwrap();
+        let mut others: Vec<(u64, &PgLSPath, std::sync::MutexGuard<'_, WalkCache>)> = caches
+            .iter()
+            .filter(|(path, _)| *path != current)
+            .filter_map(|(path, cache)| {
+                let cache = cache.try_lock().ok()?;
+                Some((cache.last_used, path, cache))
+            })
+            .collect();
+        let (mut statements, mut checkpoints) = others.iter().fold(size, |total, (_, _, cache)| {
+            (
+                total.0 + cache.statements.len(),
+                total.1 + cache.checkpoints.len(),
+            )
+        });
+        others.sort_by_key(|(last_used, _, _)| *last_used);
+        for (_, path, cache) in &mut others {
+            if statements <= statements_max && checkpoints <= checkpoints_max {
+                break;
+            }
+            if cache.statements.is_empty() && cache.checkpoints.is_empty() {
+                continue;
+            }
+            tracing::debug!(
+                "The editor walks cache {statements} statements and {checkpoints} checkpoints, \
+                 more than {statements_max} and {checkpoints_max}. Dropping the walk of {}.",
+                path.display()
+            );
+            statements -= cache.statements.len();
+            checkpoints -= cache.checkpoints.len();
+            **cache = WalkCache::default();
+        }
+    }
+}

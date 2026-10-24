@@ -2647,3 +2647,73 @@ async fn test_editor_requests_use_document_snapshots(test_db: PgPool) {
             .is_some_and(|statements| statements.len() == 200)
     );
 }
+
+/// The cached walks stay within their budget: a document has at most 16 checkpoints, and the
+/// least recently used documents' caches are dropped first, with the same results afterwards.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_editor_walk_cache_budget(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let content = "create table items (id int);\nselect id from items;\n".repeat(1_500);
+    let paths: Vec<PgLSPath> = (0..3)
+        .map(|i| PgLSPath::new(format!("doc{i}.sql")))
+        .collect();
+    let tokens = |path: &PgLSPath| {
+        workspace
+            .pull_semantic_tokens(PullSemanticTokensParams {
+                path: path.clone(),
+                range: None,
+            })
+            .expect("Unable to pull semantic tokens")
+            .tokens
+    };
+    let mut expected = Vec::new();
+    for path in &paths {
+        workspace
+            .open_file(OpenFileParams {
+                path: path.clone(),
+                content: content.clone(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        expected.push(tokens(path));
+    }
+    // 3,000 top-level statements per document, so the checkpoints are spaced out.
+    let (statements, checkpoints) = workspace.editor_walks.size();
+    assert_eq!(statements, 9_000);
+    assert!(checkpoints <= 3 * 16, "{checkpoints} checkpoints");
+
+    // A budget of a bit more than one document keeps only the most recently used one.
+    let last = paths.last().unwrap();
+    let size = (3_000, checkpoints / 3);
+    workspace
+        .editor_walks
+        .enforce_budget(last, size, 4_000, 1_000);
+    assert_eq!(workspace.editor_walks.size().0, 3_000);
+
+    // Dropped caches are filled again on the next request, with the same results.
+    for (path, expected) in paths.iter().zip(&expected) {
+        assert_eq!(&tokens(path), expected);
+    }
+
+    // Closing a document drops its cache.
+    for path in &paths {
+        workspace
+            .close_file(crate::workspace::CloseFileParams { path: path.clone() })
+            .expect("Unable to close test file");
+    }
+    assert_eq!(workspace.editor_walks.size(), (0, 0));
+}

@@ -122,7 +122,7 @@ fn time<T>(f: impl Fn() -> T) -> (f64, T) {
 /// repeated runs.
 fn time_cold_warm<T>(workspace: &WorkspaceServer, f: impl Fn() -> T) -> (f64, f64, T) {
     let (cold, _) = time(|| {
-        workspace.editor_walks.lock().unwrap().clear();
+        workspace.editor_walks.clear();
         f()
     });
     f();
@@ -339,7 +339,7 @@ fn measure(workspace: &WorkspaceServer, name: &str, content: &str) {
     );
 
     // An edit while a request walks the whole file.
-    workspace.editor_walks.lock().unwrap().clear();
+    workspace.editor_walks.clear();
     let (request, change) = std::thread::scope(|scope| {
         let request = scope.spawn(|| {
             time_once(|| {
