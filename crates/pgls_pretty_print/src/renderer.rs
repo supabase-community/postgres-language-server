@@ -289,7 +289,8 @@ impl<W: Write> Renderer<W> {
 
     /// The group on one line, if it can be collapsed and fits on the current line followed by
     /// `trailing_width` columns that cannot move to the next line. Only the first line of a text
-    /// spanning several lines, a function body for instance, sits on the current one.
+    /// spanning several lines, a function body for instance, sits on the current one, and what
+    /// follows the text has to fit on its last line.
     ///
     /// Measuring stops as soon as the line is full, so a large group that cannot fit is not
     /// rendered in full for every level it is nested in.
@@ -298,13 +299,15 @@ impl<W: Write> Renderer<W> {
         group_events: &[LayoutEvent],
         trailing_width: usize,
     ) -> Option<String> {
-        let available = self
+        let mut available = self
             .config
             .max_line_length
             .saturating_sub(self.effective_line_length());
         let mut buffer = String::new();
-        // Set once the text reaches a line break, after which the width no longer matters.
-        let mut first_line_fits = false;
+        // Where the line being measured starts in `buffer`. After a text spanning several lines,
+        // that is its last line, which starts at the left margin; the lines in between are the
+        // text's own.
+        let mut line_start = 0;
 
         for event in group_events {
             match event {
@@ -335,15 +338,15 @@ impl<W: Write> Renderer<W> {
                 | LayoutEvent::AlignEnd => {}
             }
 
-            if !first_line_fits {
-                match buffer.split_once('\n') {
-                    Some((first_line, _)) if first_line.len() <= available => {
-                        first_line_fits = true;
-                    }
-                    Some(_) => return None,
-                    None if buffer.len() + trailing_width > available => return None,
-                    None => {}
+            if let Some(last_break) = buffer[line_start..].rfind('\n') {
+                if line_start == 0 && buffer.find('\n').is_some_and(|first| first > available) {
+                    return None;
                 }
+                line_start += last_break + 1;
+                available = self.config.max_line_length;
+            }
+            if buffer.len() - line_start + trailing_width > available {
+                return None;
             }
         }
 

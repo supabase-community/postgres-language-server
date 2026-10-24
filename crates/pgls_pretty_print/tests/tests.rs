@@ -32,14 +32,6 @@ const WINDOWS_SKIP_FILES: &[&str] = &[
     "tidscan",
 ];
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum StringState {
-    None,
-    Single,
-    Double,
-    Dollar(Vec<char>),
-}
-
 /// A fixture may open with `-- pgls-format: key=value, key=value` to declare the configuration it
 /// must be rendered with. Keeping it in the fixture rather than in the harness is what lets an
 /// option that is off by default own its own test data.
@@ -168,7 +160,7 @@ fn test_single(fixture: Fixture<&str>) {
 
         println!("Formatted content (width={max_line_length}):\n{output}");
 
-        assert_line_lengths(&output, max_line_length);
+        assert_line_lengths(&output, max_line_length, fixture_config.indent_size);
         common::assert_clean_whitespace(&output);
 
         let parsed_output = pgls_query::parse(&output).expect("Failed to parse SQL");
@@ -257,7 +249,7 @@ fn test_multi(fixture: Fixture<&str>) {
             renderer.render(emitter.events).expect("Failed to render");
 
             // Verify line length
-            assert_line_lengths(&output, max_line_length);
+            assert_line_lengths(&output, max_line_length, fixture_config.indent_size);
             common::assert_clean_whitespace(&output);
 
             // Verify AST equality
@@ -292,146 +284,11 @@ fn test_multi(fixture: Fixture<&str>) {
     }
 }
 
-fn assert_line_lengths(sql: &str, max_line_length: usize) {
-    let mut state = StringState::None;
-
-    for line in sql.lines() {
-        let chars: Vec<char> = line.chars().collect();
-        let mut i = 0usize;
-        let mut current_outside_run = 0usize;
-        let mut max_outside_run = 0usize;
-        let mut longest_token = 0usize;
-        let mut current_token_len = 0usize;
-
-        while i < chars.len() {
-            match state.clone() {
-                StringState::None => {
-                    current_outside_run += 1;
-                    if current_outside_run > max_outside_run {
-                        max_outside_run = current_outside_run;
-                    }
-
-                    // Track token length (identifier-like sequences and numeric literals)
-                    // Numeric literals can include digits, '.', '-', '+', 'e', 'E'
-                    let is_token_char = chars[i].is_alphanumeric()
-                        || chars[i] == '_'
-                        || chars[i] == '.'
-                        || ((chars[i] == '-' || chars[i] == '+')
-                            && (current_token_len == 0
-                                || (i > 0 && (chars[i - 1] == 'e' || chars[i - 1] == 'E'))));
-
-                    if is_token_char {
-                        current_token_len += 1;
-                    } else {
-                        if current_token_len > longest_token {
-                            longest_token = current_token_len;
-                        }
-                        current_token_len = 0;
-                    }
-
-                    match chars[i] {
-                        '\'' => {
-                            state = StringState::Single;
-                            current_outside_run = 0;
-                            i += 1;
-                        }
-                        '"' => {
-                            state = StringState::Double;
-                            current_outside_run = 0;
-                            i += 1;
-                        }
-                        '$' => {
-                            if let Some((tag, len)) = parse_dollar_tag(&chars[i..]) {
-                                state = StringState::Dollar(tag);
-                                current_outside_run = 0;
-                                i += len;
-                            } else {
-                                i += 1;
-                            }
-                        }
-                        _ => {
-                            i += 1;
-                        }
-                    }
-                }
-                StringState::Single => {
-                    if chars[i] == '\'' {
-                        if i + 1 < chars.len() && chars[i + 1] == '\'' {
-                            i += 2;
-                        } else {
-                            state = StringState::None;
-                            current_outside_run = 0;
-                            i += 1;
-                        }
-                    } else {
-                        i += 1;
-                    }
-                }
-                StringState::Double => {
-                    if chars[i] == '"' {
-                        if i + 1 < chars.len() && chars[i + 1] == '"' {
-                            i += 2;
-                        } else {
-                            state = StringState::None;
-                            current_outside_run = 0;
-                            i += 1;
-                        }
-                    } else {
-                        i += 1;
-                    }
-                }
-                StringState::Dollar(tag) => {
-                    if chars[i] == '$' && slice_starts_with(&chars[i..], &tag) {
-                        state = StringState::None;
-                        current_outside_run = 0;
-                        i += tag.len();
-                    } else {
-                        i += 1;
-                    }
-                }
-            }
-        }
-
-        // Check final token
-        if current_token_len > longest_token {
-            longest_token = current_token_len;
-        }
-
-        // If the longest token exceeds max length, the line can't be broken further
-        // Allow lines where the excess is due to an unbreakable identifier/literal
-        // Also allow some overhead for indentation, keywords, and punctuation (up to 20 chars)
-        // This accounts for things like "CREATE TRIGGER " or "EXECUTE FUNCTION " prefixes
-        let min_overhead = 20;
-        if max_outside_run > max_line_length && longest_token + min_overhead <= max_line_length {
-            panic!("Line exceeds max length of {max_line_length} outside literals: {line}");
-        }
-    }
-}
-
-fn parse_dollar_tag(chars: &[char]) -> Option<(Vec<char>, usize)> {
-    if chars.is_empty() || chars[0] != '$' {
-        return None;
-    }
-
-    let mut end = 1usize;
-    while end < chars.len() {
-        let c = chars[end];
-        if c.is_ascii_alphanumeric() || c == '_' {
-            end += 1;
-        } else {
-            break;
-        }
-    }
-
-    if end < chars.len() && chars[end] == '$' {
-        let mut tag = Vec::with_capacity(end + 1);
-        tag.extend_from_slice(&chars[..=end]);
-        Some((tag, end + 1))
-    } else {
-        None
-    }
-}
-
-fn slice_starts_with(haystack: &[char], needle: &[char]) -> bool {
-    haystack.len() >= needle.len() && haystack[..needle.len()] == needle[..]
+fn assert_line_lengths(output: &str, max_line_length: usize, tab_width: usize) {
+    let problems = common::width_problems(output, max_line_length, tab_width);
+    assert!(
+        problems.is_empty(),
+        "lines past the width:\n{}\n\n{output}",
+        problems.join("\n")
+    );
 }

@@ -337,16 +337,21 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
         ("extract", [field, source]) => {
             e.token(TokenKind::EXTRACT_KW);
             super::open_call_arguments(e);
+            // The arguments stay together on the indented line when they fit there.
+            e.group_start(GroupKind::List);
             emit_extract_field(e, field);
             e.space();
             e.token(TokenKind::FROM_KW);
-            e.space();
+            e.line(LineType::SoftOrSpace);
             super::emit_node(source, e);
+            e.group_end();
             super::close_call_arguments(e);
         }
         ("overlay", [string, replacement, start, rest @ ..]) if rest.len() <= 1 => {
             e.token(TokenKind::OVERLAY_KW);
             super::open_call_arguments(e);
+            // The arguments stay together on the indented line when they fit there.
+            e.group_start(GroupKind::List);
             super::emit_node(string, e);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::PLACING_KW);
@@ -362,6 +367,7 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
                 e.space();
                 super::emit_node(length, e);
             }
+            e.group_end();
             super::close_call_arguments(e);
         }
         // Stored as position(string, substring), written POSITION(substring IN string). Both
@@ -369,16 +375,21 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
         ("position", [string, substring]) => {
             e.token(TokenKind::POSITION_KW);
             super::open_call_arguments(e);
+            // The arguments stay together on the indented line when they fit there.
+            e.group_start(GroupKind::List);
             emit_parenthesized_unless_simple(e, substring);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::IN_KW);
             e.space();
             emit_parenthesized_unless_simple(e, string);
+            e.group_end();
             super::close_call_arguments(e);
         }
         ("substring", [string, start, rest @ ..]) if rest.len() <= 1 => {
             e.token(TokenKind::SUBSTRING_KW);
             super::open_call_arguments(e);
+            // The arguments stay together on the indented line when they fit there.
+            e.group_start(GroupKind::List);
             super::emit_node(string, e);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::FROM_KW);
@@ -390,6 +401,7 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
                 e.space();
                 super::emit_node(length, e);
             }
+            e.group_end();
             super::close_call_arguments(e);
         }
         // Stored as btrim(string[, characters]), written TRIM(BOTH characters FROM string).
@@ -491,11 +503,14 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
         ("xmlexists", [xpath, document]) => {
             e.token(TokenKind::XMLEXISTS_KW);
             super::open_call_arguments(e);
+            // The arguments stay together on the indented line when they fit there.
+            e.group_start(GroupKind::List);
             super::emit_node(xpath, e);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::PASSING_KW);
             e.space();
             emit_parenthesized_unless_simple(e, document);
+            e.group_end();
             super::close_call_arguments(e);
         }
         ("system_user", []) => e.token(TokenKind::SYSTEM_USER_KW),
