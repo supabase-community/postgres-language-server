@@ -40,6 +40,7 @@ jobs:
     outputs:
       code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.code == 'true' }}
       docs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+      formatter: ${{ github.event_name != 'pull_request' || steps.filter.outputs.formatter == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -66,6 +67,13 @@ jobs:
               - "mkdocs.yml"
               - "pyproject.toml"
               - "uv.lock"
+            formatter:
+              - "crates/pgls_pretty_print/**"
+              - "crates/pgls_pretty_print_codegen/**"
+              - "crates/pgls_query/**"
+              - "crates/pgls_postgres_regress/**"
+              - "Cargo.lock"
+              - ".github/workflows/pull_request.yml"
 
   format:
     name: Format
@@ -220,6 +228,30 @@ jobs:
             git diff
             exit 1
           fi
+
+  # Formats the fixtures and the Postgres regression suite under 32 combinations of the formatter
+  # options. Too slow for the debug test run on every platform, so it runs once, in release, when
+  # the formatter or the parser changes.
+  formatter-option-matrix:
+    name: Formatter Option Matrix
+    needs: changes
+    if: needs.changes.outputs.formatter == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run the option matrix
+        run: cargo test -p pgls_pretty_print --release --test option_matrix -- --ignored
 
   test:
     name: Test

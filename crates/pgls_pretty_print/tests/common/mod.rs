@@ -94,3 +94,34 @@ pub fn assert_clean_whitespace(output: &str) {
         problems.join("\n")
     );
 }
+
+/// Lines indented with the other character than `indent_style` asks for: a tab when indenting with
+/// spaces, a space before a tab when indenting with tabs. Alignment after the tabs is written as
+/// spaces, so spaces after tabs are fine. Lines inside a multi-line token, such as a function body,
+/// keep the indentation of the source.
+#[allow(dead_code)] // Not every test crate checks indentation.
+pub fn mixed_indentation(output: &str, indent_with_tabs: bool) -> Vec<String> {
+    let token_ranges = pgls_query::scan(output)
+        .map(|scan| {
+            scan.tokens
+                .iter()
+                .map(|token| token.start as usize..token.end as usize)
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    let wrong = if indent_with_tabs { " \t" } else { "\t" };
+
+    let mut problems = Vec::new();
+    let mut line_start = 0;
+    for (index, line) in output.split('\n').enumerate() {
+        let indent = &line[..line.len() - line.trim_start().len()];
+        let inside_token = token_ranges
+            .iter()
+            .any(|range| range.start < line_start && line_start < range.end);
+        if indent.contains(wrong) && !inside_token {
+            problems.push(format!("mixed indentation in line {} `{line}`", index + 1));
+        }
+        line_start += line.len() + 1;
+    }
+    problems
+}
