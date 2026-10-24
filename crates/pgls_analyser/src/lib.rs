@@ -267,6 +267,7 @@ impl<'a> Analyser<'a> {
                     result
                         .diagnostics
                         .extend(diagnostics.into_iter().map(|mut diagnostic| {
+                            debug_assert_in_statement(&diagnostic, stmt);
                             diagnostic.span = Some(match diagnostic.span {
                                 Some(span) => span + stmt.range.start(),
                                 None => stmt.range,
@@ -314,6 +315,36 @@ impl<'a> Analyser<'a> {
         }
 
         result
+    }
+}
+
+/// The span and the fix edits of a rule's diagnostic are relative to the statement and must lie
+/// on char boundaries of its text. Fix edits may also start at or after its end, e.g. to add a
+/// `COMMIT` after it. They are moved into the file next, and checked again where they are used.
+fn debug_assert_in_statement(diagnostic: &LinterDiagnostic, stmt: &AnalysableStatement) {
+    if !cfg!(debug_assertions) {
+        return;
+    }
+    let in_statement = |range: TextRange| match &stmt.sql {
+        Some(sql) => sql.get(Range::<usize>::from(range)).is_some(),
+        None => range.end() <= stmt.range.len(),
+    };
+    let category = diagnostic.category.name();
+    if let Some(span) = diagnostic.span {
+        debug_assert!(
+            in_statement(span),
+            "{category}: span {span:?} is not inside the statement at {:?}",
+            stmt.range
+        );
+    }
+    let len = stmt.sql.as_deref().map_or(stmt.range.len(), TextSize::of);
+    for edit in diagnostic.fix.iter().flat_map(|fix| &fix.edits) {
+        debug_assert!(
+            edit.range.start() >= len || in_statement(edit.range),
+            "{category}: fix edit {:?} is not on char boundaries of the statement at {:?}",
+            edit.range,
+            stmt.range
+        );
     }
 }
 

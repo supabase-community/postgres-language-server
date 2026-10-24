@@ -228,6 +228,11 @@ pub(crate) fn apply_document_changes(
             }
             index_valid = range.start.line;
             if let Ok(range) = text_range(&line_index, range, position_encoding) {
+                debug_assert!(
+                    text.get(Range::<usize>::from(range)).is_some(),
+                    "{range:?} is not on char boundaries of a text of length {}",
+                    text.len()
+                );
                 text.replace_range(Range::<usize>::from(range), &change.text);
             }
         }
@@ -422,6 +427,26 @@ line 7 new";
                 },
             ]
         );
+    }
+
+    #[test]
+    fn document_changes_with_invalid_ranges() {
+        let change = |start: u32, end: u32, text: &str| lsp::TextDocumentContentChangeEvent {
+            range: Some(lsp::Range::new(
+                lsp::Position::new(0, start),
+                lsp::Position::new(0, end),
+            )),
+            range_length: None,
+            text: text.to_string(),
+        };
+        let apply = |text: &str, change| {
+            super::apply_document_changes(PositionEncoding::Utf8, text.to_string(), vec![change])
+        };
+
+        // A range that ends before it starts is skipped.
+        assert_eq!(apply("select 1;", change(5, 2, "x")), "select 1;");
+        // A column inside `é` (bytes 8..10) means the start of the character.
+        assert_eq!(apply("select 'é';", change(9, 10, "e")), "select 'e';");
     }
 
     // #[test]
