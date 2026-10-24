@@ -1,5 +1,6 @@
-use pgls_query::protobuf::FunctionParameterMode;
-use pgls_text_size::TextRange;
+use pgls_analyser::StatementOffsets;
+use pgls_query::protobuf::{CreateFunctionStmt, FunctionParameterMode, ScanToken, Token};
+use pgls_text_size::{TextRange, TextSize};
 
 #[derive(Debug, Clone)]
 pub struct ArgType {
@@ -22,10 +23,24 @@ pub struct SQLFunctionSignature {
     pub args: Vec<SQLFunctionArg>,
 }
 
+/// A statement in the body of a SQL function.
 #[derive(Debug, Clone)]
 pub struct SQLFunctionBody {
+    /// The range of the statement in the `CREATE FUNCTION` statement.
     pub range: TextRange,
     pub body: String,
+    /// Where the characters of `body` are in the range, if it is not a slice of the `CREATE
+    /// FUNCTION` statement.
+    pub offsets: StatementOffsets,
+}
+
+/// Whether the function is written in SQL: `LANGUAGE sql`, or a `BEGIN ATOMIC` or `RETURN` body,
+/// whose language defaults to SQL.
+fn is_sql_function(create_fn: &CreateFunctionStmt) -> bool {
+    match pgls_query_ext::utils::find_option_value(create_fn, "language") {
+        Some(language) => language == "sql",
+        None => create_fn.sql_body.is_some(),
+    }
 }
 
 /// Extracts the function signature from a SQL function definition
@@ -35,11 +50,8 @@ pub fn get_sql_fn_signature(ast: &pgls_query::NodeEnum) -> Option<SQLFunctionSig
         _ => return None,
     };
 
-    // Extract language from function options
-    let language = pgls_query_ext::utils::find_option_value(create_fn, "language")?;
-
     // Only process SQL functions
-    if language != "sql" {
+    if !is_sql_function(create_fn) {
         return None;
     }
 
@@ -93,33 +105,183 @@ pub fn get_sql_fn_signature(ast: &pgls_query::NodeEnum) -> Option<SQLFunctionSig
     })
 }
 
-/// Extracts the SQL body from a function definition
-pub fn get_sql_fn_body(ast: &pgls_query::NodeEnum, content: &str) -> Option<SQLFunctionBody> {
-    let create_fn = match ast {
-        pgls_query::NodeEnum::CreateFunctionStmt(cf) => cf,
-        _ => return None,
+/// The statements of the body of a SQL function: the string after `AS`, the statements of a
+/// `BEGIN ATOMIC` body, or the expression of a `RETURN` body as a `SELECT`.
+pub fn get_sql_fn_bodies(ast: &pgls_query::NodeEnum, content: &str) -> Vec<SQLFunctionBody> {
+    let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = ast else {
+        return Vec::new();
     };
-
-    // Extract language from function options
-    let language = pgls_query_ext::utils::find_option_value(create_fn, "language")?;
-
-    // Only process SQL functions
-    if language != "sql" {
-        return None;
+    if !is_sql_function(create_fn) {
+        return Vec::new();
     }
+    let Ok(scan) = pgls_query::scan(content) else {
+        return Vec::new();
+    };
+    let tokens: Vec<ScanToken> = scan
+        .tokens
+        .into_iter()
+        .filter(|token| !matches!(token.token(), Token::SqlComment | Token::CComment))
+        .collect();
 
-    // Extract SQL body from function options
-    let sql_body = pgls_query_ext::utils::find_option_value(create_fn, "as")?;
+    match create_fn
+        .sql_body
+        .as_deref()
+        .and_then(|body| body.node.as_ref())
+    {
+        Some(pgls_query::NodeEnum::List(body)) => atomic_body(body, &tokens, content),
+        Some(pgls_query::NodeEnum::ReturnStmt(_)) => {
+            return_body(&tokens, content).into_iter().collect()
+        }
+        Some(_) => Vec::new(),
+        None => pgls_query_ext::utils::find_option_value(create_fn, "as")
+            .and_then(|body| string_body(&body, &tokens, content))
+            .into_iter()
+            .collect(),
+    }
+}
 
-    // Find the range of the SQL body in the content
-    let start = content.find(&sql_body)?;
-    let end = start + sql_body.len();
+fn token_range(token: &ScanToken) -> Option<TextRange> {
+    Some(TextRange::new(
+        TextSize::try_from(usize::try_from(token.start).ok()?).ok()?,
+        TextSize::try_from(usize::try_from(token.end).ok()?).ok()?,
+    ))
+}
 
-    let range = TextRange::new(start.try_into().unwrap(), end.try_into().unwrap());
+/// The body of a function defined with `AS '...'` or `AS $$...$$`. The body is the string
+/// constant after `AS` whose value is `body`. In a `'...'` string, each `'` of the body is
+/// written `''`. Strings with other escapes (`E'...'`, `U&'...'`) are not supported.
+fn string_body(body: &str, tokens: &[ScanToken], content: &str) -> Option<SQLFunctionBody> {
+    tokens.windows(2).find_map(|pair| {
+        let [as_token, string] = pair else {
+            return None;
+        };
+        if as_token.token() != Token::As || string.token() != Token::Sconst {
+            return None;
+        }
+        let range = token_range(string)?;
+        let text = &content[range];
+        let (inner, offsets) = if let Some(after_dollar) = text.strip_prefix('$') {
+            let tag_end = after_dollar.find('$')? + 2;
+            let inner = text.get(tag_end..text.len().checked_sub(tag_end)?)?;
+            if inner != body {
+                return None;
+            }
+            (
+                TextRange::at(
+                    range.start() + TextSize::try_from(tag_end).ok()?,
+                    TextSize::of(inner),
+                ),
+                StatementOffsets::default(),
+            )
+        } else {
+            let inner = text.strip_prefix('\'')?.strip_suffix('\'')?;
+            let mut escaped = Vec::new();
+            let mut unescaped = String::with_capacity(inner.len());
+            let mut chars = inner.chars().peekable();
+            while let Some(c) = chars.next() {
+                if c == '\'' {
+                    // A string constant continued on a new line, not a doubled quote.
+                    chars.next_if_eq(&'\'')?;
+                    escaped.push(TextSize::of(unescaped.as_str()));
+                }
+                unescaped.push(c);
+            }
+            if unescaped != body {
+                return None;
+            }
+            (
+                TextRange::at(range.start() + TextSize::from(1), TextSize::of(inner)),
+                StatementOffsets::new(escaped),
+            )
+        };
+        Some(SQLFunctionBody {
+            range: inner,
+            body: body.to_owned(),
+            offsets,
+        })
+    })
+}
 
+/// The statements of a `BEGIN ATOMIC ... END` body. Each ends with a `;`. The body ends at the
+/// `END` that starts a statement; the other `END`s close `CASE` expressions.
+fn atomic_body(
+    body: &pgls_query::protobuf::List,
+    tokens: &[ScanToken],
+    content: &str,
+) -> Vec<SQLFunctionBody> {
+    let Some(start) = tokens
+        .windows(2)
+        .position(|pair| pair[0].token() == Token::BeginP && pair[1].token() == Token::Atomic)
+    else {
+        return Vec::new();
+    };
+    let mut statements = Vec::new();
+    let mut statement_start: Option<&ScanToken> = None;
+    let (mut parens, mut cases) = (0usize, 0usize);
+    for token in &tokens[start + 2..] {
+        let Some(first) = statement_start else {
+            match token.token() {
+                Token::EndP => break,
+                // An empty statement.
+                Token::Ascii59 => continue,
+                _ => {}
+            }
+            statement_start = Some(token);
+            if token.token() == Token::Case {
+                cases += 1;
+            }
+            continue;
+        };
+        match token.token() {
+            Token::Ascii40 => parens += 1,
+            Token::Ascii41 => parens = parens.saturating_sub(1),
+            Token::Case => cases += 1,
+            Token::EndP => cases = cases.saturating_sub(1),
+            Token::Ascii59 if parens == 0 && cases == 0 => {
+                if let (Some(first), Some(last)) = (token_range(first), token_range(token)) {
+                    statements.push(first.cover(last));
+                }
+                statement_start = None;
+            }
+            _ => {}
+        }
+    }
+    // The body has one list of statements.
+    let expected = match body.items.as_slice() {
+        [list] => match list.node.as_ref() {
+            Some(pgls_query::NodeEnum::List(list)) => list.items.len(),
+            _ => return Vec::new(),
+        },
+        _ => return Vec::new(),
+    };
+    if statements.len() != expected {
+        return Vec::new();
+    }
+    statements
+        .into_iter()
+        .map(|range| SQLFunctionBody {
+            range,
+            body: content[range].to_owned(),
+            offsets: StatementOffsets::default(),
+        })
+        .collect()
+}
+
+/// The expression of a `RETURN` body, as a `SELECT` of the same length: `return x + 1` is
+/// resolved as `select x + 1`.
+fn return_body(tokens: &[ScanToken], content: &str) -> Option<SQLFunctionBody> {
+    let return_token = tokens.iter().find(|token| token.token() == Token::Return)?;
+    let last = tokens
+        .iter()
+        .rev()
+        .find(|token| token.token() != Token::Ascii59)?;
+    let range = token_range(return_token)?.cover(token_range(last)?);
+    let expression =
+        content.get(usize::try_from(return_token.end).ok()?..usize::from(range.end()))?;
     Some(SQLFunctionBody {
         range,
-        body: sql_body.clone(),
+        body: format!("select{expression}"),
+        offsets: StatementOffsets::default(),
     })
 }
 
@@ -230,6 +392,69 @@ mod tests {
                 Some("c".to_string())
             ]
         );
+    }
+
+    /// The statements of the body, as their text in `input` and the text that is resolved.
+    fn bodies(input: &str) -> Vec<(&str, String)> {
+        let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+        get_sql_fn_bodies(&ast, input)
+            .into_iter()
+            .map(|body| (&input[body.range], body.body))
+            .collect()
+    }
+
+    #[test]
+    fn quoted_bodies_are_found_by_their_token() {
+        // The default is the same text as the body, and comes first.
+        assert_eq!(
+            bodies(
+                "create function f(t text default 'select 1') returns int language sql as 'select 1'"
+            ),
+            [("select 1", "select 1".to_string())]
+        );
+        assert_eq!(
+            bodies("create function f() returns int language sql as $body$ select 1 $body$"),
+            [(" select 1 ", " select 1 ".to_string())]
+        );
+    }
+
+    #[test]
+    fn doubled_quotes_are_mapped() {
+        let input = "create function f(p text) returns text language sql as 'select ''a'' || p'";
+        let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+        let [body] = get_sql_fn_bodies(&ast, input).try_into().unwrap();
+        assert_eq!(body.body, "select 'a' || p");
+        assert_eq!(&input[body.range], "select ''a'' || p");
+        let p = TextSize::of("select 'a' || ");
+        assert_eq!(
+            &input[body.range][usize::from(body.offsets.to_document(p))..],
+            "p"
+        );
+    }
+
+    #[test]
+    fn atomic_bodies_have_a_statement_each() {
+        assert_eq!(
+            bodies(
+                "create function f(p int) returns int language sql begin atomic \
+                 select case when p > 0 then 1 else 2 end; select (p); end"
+            ),
+            [
+                (
+                    "select case when p > 0 then 1 else 2 end;",
+                    "select case when p > 0 then 1 else 2 end;".to_string()
+                ),
+                ("select (p);", "select (p);".to_string()),
+            ]
+        );
+        // The language defaults to SQL.
+        let input = "create function f(p int) returns int return p + 1;";
+        assert_eq!(
+            bodies(input),
+            [("return p + 1", "select p + 1".to_string())]
+        );
+        let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+        assert!(get_sql_fn_signature(&ast).is_some());
     }
 
     #[test]
