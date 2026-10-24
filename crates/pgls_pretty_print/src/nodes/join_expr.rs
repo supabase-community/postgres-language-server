@@ -123,9 +123,7 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();
-        e.indent_start();
-        super::emit_node(quals, e);
-        e.indent_end();
+        super::emit_condition_on_keyword_line(e, quals);
     } else if matches!(jointype, JoinType::JoinInner) && !n.is_natural {
         // For INNER JOIN without qualifications (converted from CROSS JOIN), add ON TRUE
         // This is semantically equivalent to CROSS JOIN

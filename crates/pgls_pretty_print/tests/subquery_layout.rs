@@ -74,3 +74,48 @@ fn nested_subquery_inside_select_list_only_subquery_expands() {
         "{output}"
     );
 }
+
+#[test]
+fn a_subquery_opened_on_the_where_line_closes_under_where() {
+    let config = FormatConfig {
+        layout: Layout::Expanded,
+        clause_body_style: ClauseBodyStyle::Compact,
+        ..Default::default()
+    };
+    assert_eq!(
+        format_idempotently(
+            "select * from t where exists (select 1 from u where u.id = t.id)",
+            &config,
+        ),
+        "select *\nfrom t\nwhere exists (\n  select 1\n  from u\n  where u.id = t.id\n);"
+    );
+    assert_eq!(
+        format_idempotently(
+            "select * from t where t.a = (select max(x) from u where u.id = t.id)",
+            &config,
+        ),
+        "select *\nfrom t\nwhere t.a = (\n  select max(x)\n  from u\n  where u.id = t.id\n);"
+    );
+
+    // A chain still indents its continuation lines, and a subquery in it closes on its own line.
+    let output = format_idempotently(
+        "select * from t where t.a = 1 and exists (select 1 from u where u.id = t.id)",
+        &config,
+    );
+    assert!(output.contains("\n  exists (\n    select 1\n"), "{output}");
+    assert!(output.ends_with("\n  );"), "{output}");
+}
+
+#[test]
+fn a_subquery_opened_on_the_on_line_closes_under_on() {
+    let config = FormatConfig {
+        line_width: 60,
+        ..Default::default()
+    };
+    let output = format_idempotently(
+        "select * from t inner join u on u.id = (select max(id) from versions where versions.name = t.name)",
+        &config,
+    );
+    assert!(output.contains("\n  on u.id = (\n    select\n"), "{output}");
+    assert!(output.ends_with("\n  );"), "{output}");
+}
