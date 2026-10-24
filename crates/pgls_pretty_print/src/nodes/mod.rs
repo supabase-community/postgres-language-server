@@ -609,13 +609,69 @@ pub(super) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
     // Compact keeps the condition on the keyword line. The indent stays in both cases so that the
     // condition's own continuation lines, the second AND of a chain for instance, sit under it.
     match e.config().clause_body_style {
-        ClauseBodyStyle::Compact => e.space(),
-        ClauseBodyStyle::Break => e.line(LineType::SoftOrSpace),
+        ClauseBodyStyle::Compact => {
+            e.space();
+            emit_condition_on_keyword_line(e, clause);
+        }
+        ClauseBodyStyle::Break => {
+            e.line(LineType::SoftOrSpace);
+            e.indent_start();
+            emit_node(clause, e);
+            e.indent_end();
+        }
     }
+}
 
-    e.indent_start();
-    emit_node(clause, e);
-    e.indent_end();
+/// Emits a condition that starts on its keyword's line, `where` or `on`, indenting its
+/// continuation lines.
+///
+/// A condition that only breaks inside the parentheses of a subquery, `exists (...)` or
+/// `a = (...)`, has no continuation lines of its own. Indenting it would put the subquery two
+/// levels in and the closing parenthesis one level in, so it keeps the keyword's indent and closes
+/// under the keyword.
+pub(super) fn emit_condition_on_keyword_line(e: &mut EventEmitter, condition: &Node) {
+    if breaks_only_inside_a_subquery(condition) {
+        emit_node(condition, e);
+    } else {
+        e.indent_start();
+        emit_node(condition, e);
+        e.indent_end();
+    }
+}
+
+fn breaks_only_inside_a_subquery(node: &Node) -> bool {
+    use pgls_query::protobuf::{AExprKind, BoolExprType, SubLinkType};
+
+    match node.node.as_ref() {
+        Some(NodeEnum::SubLink(sub_link)) => {
+            sub_link.sub_link_type != SubLinkType::MultiexprSublink as i32
+        }
+        Some(NodeEnum::AExpr(expr)) => {
+            expr.kind() == AExprKind::AexprOp
+                && expr.lexpr.as_deref().is_some_and(is_simple_operand)
+                && expr.rexpr.as_deref().is_some_and(|rexpr| {
+                    matches!(
+                        rexpr.node.as_ref(),
+                        Some(NodeEnum::SubLink(sub_link))
+                            if sub_link.sub_link_type == SubLinkType::ExprSublink as i32
+                                || sub_link.sub_link_type == SubLinkType::ArraySublink as i32
+                    )
+                })
+        }
+        Some(NodeEnum::BoolExpr(expr)) => {
+            expr.boolop() == BoolExprType::NotExpr
+                && matches!(expr.args.as_slice(), [arg] if breaks_only_inside_a_subquery(arg))
+        }
+        _ => false,
+    }
+}
+
+/// A column reference, parameter or constant, which never breaks.
+fn is_simple_operand(node: &Node) -> bool {
+    matches!(
+        node.node.as_ref(),
+        Some(NodeEnum::ColumnRef(_) | NodeEnum::ParamRef(_) | NodeEnum::AConst(_))
+    )
 }
 
 /// Emits a condition wrapped in parentheses, such as the `USING (...)` of a policy.
