@@ -3083,3 +3083,192 @@ async fn test_crash_on_delete_character() -> Result<()> {
 
     Ok(())
 }
+
+/// A document of another scheme with the path of an open file, like the `git:` side of a diff in
+/// VS Code, has a workspace document of its own. Closing it used to close the document of the
+/// file, and the next edit of the file was never analysed.
+#[tokio::test]
+async fn closing_a_document_of_another_scheme_keeps_the_file() -> Result<()> {
+    let factory = ServerFactory::default();
+    let (service, client) = factory.create(None).into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    let file = url!("a.sql");
+    let git = if cfg!(windows) {
+        Uri::from_str("git:/z%3A/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D").unwrap()
+    } else {
+        Uri::from_str("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D").unwrap()
+    };
+
+    server
+        .open_named_document("select 1;", file.clone(), "sql")
+        .await?;
+    server
+        .open_named_document("selec 1;", git.clone(), "sql")
+        .await?;
+    server
+        .notify(
+            "textDocument/didClose",
+            DidCloseTextDocumentParams {
+                text_document: TextDocumentIdentifier { uri: git },
+            },
+        )
+        .await?;
+    drain_notifications(&mut receiver);
+
+    server
+        .change_named_document(
+            file.clone(),
+            2,
+            vec![TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: "selec 1;".to_string(),
+            }],
+        )
+        .await?;
+
+    let published = wait_for_diagnostics(&mut receiver, 2).await?;
+    assert_eq!(published.uri, file);
+    assert!(!published.diagnostics.is_empty(), "{published:?}");
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// `pgls.executeStatement` without its arguments is an invalid request, not a panic.
+#[tokio::test]
+async fn execute_statement_without_arguments_is_invalid() -> Result<()> {
+    let factory = ServerFactory::default();
+    let (service, client) = factory.create(None).into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    for arguments in [vec![], vec![json!("not a statement"), json!(1)]] {
+        let result: Result<Option<Value>> = server
+            .request(
+                "workspace/executeCommand",
+                "_execute",
+                ExecuteCommandParams {
+                    command: "pgls.executeStatement".to_string(),
+                    arguments,
+                    work_done_progress_params: Default::default(),
+                },
+            )
+            .await;
+        let error = result.expect_err("expected an error response");
+        let code = error
+            .chain()
+            .find_map(|error| error.downcast_ref::<jsonrpc::Error>())
+            .map(|error| error.code);
+        assert_eq!(code, Some(jsonrpc::ErrorCode::InvalidParams), "{error:?}");
+    }
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// Inlay hints after multi-byte characters are positioned in UTF-16, and a range that ends past
+/// the end of the document, as some clients send, still gets them.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute(
+            "create function make_point(x int, y int) returns int language sql as 'select x + y';",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    // No line break at the end: the document has lines 0 and 1.
+    server
+        .open_document("select 1;\nselect '😀', make_point(1, 2)")
+        .await?;
+
+    for end in [
+        Position::new(1, 29),
+        Position::new(1, 500),
+        Position::new(2, 0),
+    ] {
+        let hints: Option<Vec<lsp::InlayHint>> = server
+            .request(
+                "textDocument/inlayHint",
+                "inlay_hints",
+                lsp::InlayHintParams {
+                    work_done_progress_params: WorkDoneProgressParams::default(),
+                    text_document: TextDocumentIdentifier {
+                        uri: url!("document.sql"),
+                    },
+                    range: Range {
+                        start: Position::new(0, 0),
+                        end,
+                    },
+                },
+            )
+            .await?;
+        let positions: Vec<_> = hints
+            .context("expected inlay hints")?
+            .into_iter()
+            .map(|hint| hint.position)
+            .collect();
+        // `1` starts at UTF-16 column 24, 26 in bytes.
+        assert_eq!(
+            positions,
+            [Position::new(1, 24), Position::new(1, 27)],
+            "{end:?}"
+        );
+    }
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
