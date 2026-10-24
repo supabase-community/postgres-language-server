@@ -40,7 +40,7 @@ pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[
                     rename_in(&mut type_info.attributes, &n.subname, &n.newname);
                     type_info.origin = Origin::File;
                     let key = key(&type_info.schema, &type_info.name);
-                    c.types.insert(key, Entry::Defined(type_info));
+                    c.types.insert(key, Entry::defined(type_info));
                 }
             }
         }

@@ -149,7 +149,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
-            editor_walks: Mutex::default(),
+            editor_walks: editor_walk::EditorWalks::default(),
             connection: ConnectionManager::new(),
         }
     }
@@ -163,7 +163,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
-            editor_walks: Mutex::default(),
+            editor_walks: editor_walk::EditorWalks::default(),
         }
     }
 
@@ -879,7 +879,7 @@ impl Workspace for WorkspaceServer {
         documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
-        self.editor_walks.lock().unwrap().remove(&params.path);
+        self.editor_walks.remove(&params.path);
 
         Ok(())
     }
@@ -1129,7 +1129,7 @@ impl Workspace for WorkspaceServer {
 
     #[cfg(feature = "db")]
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
-        self.editor_walks.lock().unwrap().clear();
+        self.editor_walks.clear();
         if all {
             // Clear all schemas - both db-loaded and json-loaded
             // DB completions always take precedence when a connection is available,
@@ -1151,7 +1151,7 @@ impl Workspace for WorkspaceServer {
 
     #[cfg(not(feature = "db"))]
     fn invalidate_schema_cache(&self, _all: bool) -> Result<(), WorkspaceError> {
-        self.editor_walks.lock().unwrap().clear();
+        self.editor_walks.clear();
         self.snapshot.clear_all();
         Ok(())
     }
