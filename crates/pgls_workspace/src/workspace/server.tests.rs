@@ -1178,6 +1178,55 @@ fn typecheck_diagnostics(
         .collect()
 }
 
+/// Postgres treats non-ASCII characters as letters in identifiers, so diagnostics and hover
+/// cover the whole name.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn non_ascii_names_get_whole_spans(test_db: PgPool) {
+    let content = "create table café (id int);\nselect a.größe from café a;\n";
+    let diagnostics = typecheck_diagnostics(&test_db, content);
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+    let span = diagnostics[0].location().span.expect("a span");
+    assert_eq!(&content[span], "a.größe");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "create table café (größe int);\ncreate table tee (größe int);\n\
+        select a.größe from café a, tee b;\n";
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    // On the `ß`, after the first non-ASCII character. Without the resolved reference, hover
+    // shows the columns of both tables.
+    let position = content.find("ße from").unwrap();
+    let blocks = workspace
+        .on_hover(OnHoverParams {
+            path: path.clone(),
+            position: u32::try_from(position).unwrap().into(),
+        })
+        .expect("Unable to hover")
+        .markdown_blocks;
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.café.größe"), "{blocks:?}");
+}
+
 /// GitHub issue #835: `RETURNS TABLE` columns are not parameters of the body, and `r.received_at`
 /// is a column of `r` even if an output column has the same name.
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
