@@ -31,10 +31,6 @@ transactions.sql:90:1
 transactions.sql:92:1
   `DROP TABLE writetest` fails in a read-only session, so the table still exists
 
-Known false positives
-polymorphism.sql:690:1 (body) functionArgumentMismatch
-  parameters of polymorphic types keep the pseudo-type in the body, so `$1 anyelement` doesn't match `anycompatible`
-
 Findings
 aggregates.sql:23:1 42P01 unknownRelation
 aggregates.sql:32:1 42P01 unknownRelation
