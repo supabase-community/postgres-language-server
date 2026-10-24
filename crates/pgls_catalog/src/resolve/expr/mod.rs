@@ -34,7 +34,7 @@ use crate::{
     },
 };
 pub(super) use assignment::check_assignment;
-pub(super) use func_call::call_args;
+pub(super) use func_call::{call_args, resolve_procedure_call};
 use pgls_query::{NodeEnum, protobuf};
 
 fn named(r: &Resolver<'_>, name: &str) -> Option<Type> {

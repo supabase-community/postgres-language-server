@@ -2205,6 +2205,105 @@ async fn test_hover_shows_resolved_references(test_db: PgPool) {
     assert_eq!(blocks.len(), 2, "{blocks:?}");
 }
 
+/// `DO`, `CALL`, and statements that don't parse have effects the catalog can't follow. The linter
+/// treats everything after them as unknown, but hints, tokens, and hover keep working.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_editor_features_after_unmodelled_statements(test_db: PgPool) {
+    test_db
+        .execute("create procedure db_proc(p int, label text) language sql as 'select 1';")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create type file_mood as enum ('up', 'down');\n\
+        create table file_items (id int, mood file_mood);\n\
+        create function file_point(a int, b int) returns int language sql as 'select a + b';\n\
+        create table broken (id int,);\n\
+        do $$ begin raise notice 'x'; end $$;\n\
+        call db_proc(1, 'x');\n\
+        select file_point(2, 3) from file_items where mood = 'up';\n";
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let call = content.find("call").unwrap();
+    let range = TextRange::new(
+        u32::try_from(call).unwrap().into(),
+        pgls_text_size::TextSize::of(content),
+    );
+    let hints = workspace
+        .pull_inlay_hints(PullInlayHintsParams {
+            path: path.clone(),
+            range,
+        })
+        .expect("Unable to pull inlay hints")
+        .hints
+        .into_iter()
+        .map(|hint| (usize::from(hint.offset), hint.label))
+        .collect::<Vec<_>>();
+    let offset_of = |needle: &str| content.find(needle).unwrap();
+    assert_eq!(
+        hints,
+        vec![
+            (offset_of("1, 'x'"), "p:".to_string()),
+            (offset_of("'x');"), "label:".to_string()),
+            (offset_of("2, 3"), "a:".to_string()),
+            (offset_of("3)"), "b:".to_string()),
+        ]
+    );
+
+    let tokens = workspace
+        .pull_semantic_tokens(PullSemanticTokensParams {
+            path: path.clone(),
+            range: Some(range),
+        })
+        .expect("Unable to pull semantic tokens")
+        .tokens
+        .into_iter()
+        .map(|token| (&content[token.range], token.kind))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        tokens,
+        vec![
+            ("db_proc", SemanticTokenKind::Function),
+            ("file_point", SemanticTokenKind::Function),
+            ("file_items", SemanticTokenKind::Class),
+            ("mood", SemanticTokenKind::Property),
+            ("'up'", SemanticTokenKind::EnumMember),
+        ]
+    );
+
+    let blocks = workspace
+        .on_hover(OnHoverParams {
+            path: path.clone(),
+            position: u32::try_from(offset_of("db_proc") + 2).unwrap().into(),
+        })
+        .expect("Unable to hover")
+        .markdown_blocks;
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.db_proc"), "{blocks:?}");
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();

@@ -4,8 +4,11 @@ use pgls_text_size::TextSize;
 use pgls_treesitter::TreeSitterContextParams;
 
 use crate::{
-    contextual_priority::prioritize_by_context, hoverables::Hoverable, hovered_node::HoveredNode,
-    resolved::resolved_hoverable, to_markdown::format_hover_markdown,
+    contextual_priority::prioritize_by_context,
+    hoverables::Hoverable,
+    hovered_node::HoveredNode,
+    resolved::{resolved_function, resolved_hoverable},
+    to_markdown::format_hover_markdown,
 };
 
 mod contextual_priority;
@@ -146,7 +149,11 @@ pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
 
         (!markdown_blocks.is_empty()).then_some(markdown_blocks)
     } else {
-        None
+        // The grammar doesn't cover every statement, like `CALL`, but the resolver may.
+        let item = resolved_function(params.references, params.snapshot)?;
+        format_hover_markdown(&item, params.snapshot)
+            .ok()
+            .map(|markdown| vec![markdown])
     }
 }
 

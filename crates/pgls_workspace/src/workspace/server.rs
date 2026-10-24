@@ -491,7 +491,9 @@ impl WorkspaceServer {
             )
         };
 
-        let mut catalog = Catalog::new(Some(self.catalog_base(snapshot)));
+        // Editor features show what names most likely refer to, so a `DO` block or a statement
+        // that doesn't parse doesn't turn them off for the rest of the file.
+        let mut catalog = Catalog::new(Some(self.catalog_base(snapshot))).best_effort();
         let mut session = new_session(None);
         let mut section: Option<&MigrationSection> = None;
         // The catalog after the up sections so far, while walking a down section.
