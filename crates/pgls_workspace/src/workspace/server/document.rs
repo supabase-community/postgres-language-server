@@ -84,6 +84,23 @@ impl Document {
         self.iter_with_filter(mapper, NoFilter)
     }
 
+    /// The statements from the top-level statement at index `root` of [`Document::statement_ranges`]
+    /// on.
+    pub fn iter_from<'a, M>(&'a self, mapper: M, root: usize) -> ParseIterator<'a, M, NoFilter>
+    where
+        M: StatementMapper<'a>,
+    {
+        let mut iter = ParseIterator::new(self, mapper, NoFilter);
+        iter.ranges = self.ranges.get(root..).unwrap_or_default().iter();
+        iter
+    }
+
+    /// The ranges of the top-level statements, in order. The statements in the bodies of SQL
+    /// functions are not included.
+    pub fn statement_ranges(&self) -> &[TextRange] {
+        &self.ranges
+    }
+
     pub fn iter_with_filter<'a, M, F>(&'a self, mapper: M, filter: F) -> ParseIterator<'a, M, F>
     where
         M: StatementMapper<'a>,
@@ -194,6 +211,16 @@ where
         }
 
         None
+    }
+}
+
+/// The id and range of each statement, without parsing it.
+pub struct IdMapper;
+impl<'a> StatementMapper<'a> for IdMapper {
+    type Output = (StatementId, TextRange);
+
+    fn map(&self, _parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
+        (id, range)
     }
 }
 

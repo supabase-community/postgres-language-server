@@ -47,22 +47,39 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
         collect_references: true,
     })
     .references;
+    inlay_hints_of_references(&references, params.sql)
+}
+
+/// The inlay hints of the `references` of the statement `sql`, which
+/// [`pgls_catalog::resolve::resolve`] collected. Ordered by offset.
+pub fn inlay_hints_of_references(references: &[Reference], sql: &str) -> Vec<InlayHint> {
     let calls: Vec<_> = references
-        .into_iter()
+        .iter()
         .filter_map(|reference| match reference {
             Reference::Function {
                 location,
                 function,
                 arguments,
                 ..
-            } => Some((location, function, arguments)),
+            } => Some((*location, function, arguments)),
             _ => None,
+        })
+        // Only functions with named parameters get hints, which most built-in functions don't.
+        .filter(|(_, function, _)| {
+            function.signature.as_ref().is_some_and(|signature| {
+                signature.arguments.iter().any(|argument| {
+                    argument
+                        .name
+                        .as_deref()
+                        .is_some_and(|name| !name.is_empty())
+                })
+            })
         })
         .collect();
     if calls.is_empty() {
         return Vec::new();
     }
-    let Ok(scan) = pgls_query::scan(params.sql) else {
+    let Ok(scan) = pgls_query::scan(sql) else {
         return Vec::new();
     };
     let tokens: Vec<ScanToken> = scan
@@ -98,7 +115,7 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
             else {
                 continue;
             };
-            if is_reference_to(params.sql, tokens, name) {
+            if is_reference_to(sql, tokens, name) {
                 continue;
             }
             let Ok(offset) = u32::try_from(tokens[0].start) else {
@@ -118,7 +135,8 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
 /// The tokens of each argument of the call whose name starts at `location`, without a leading
 /// `DISTINCT` or `ALL` of an aggregate.
 fn argument_tokens(tokens: &[ScanToken], location: i32) -> Option<Vec<&[ScanToken]>> {
-    let name = tokens.iter().position(|token| token.start == location)?;
+    let name = tokens.partition_point(|token| token.start < location);
+    tokens.get(name).filter(|token| token.start == location)?;
     // The name is at most `schema.name`.
     let open = name
         + tokens[name..]
