@@ -3917,13 +3917,15 @@ async fn a_section_removed_from_the_configuration_goes_back_to_its_defaults() ->
 #[tokio::test]
 async fn files_opened_by_their_real_path_belong_to_a_symlinked_folder() -> Result<()> {
     let root = tempfile::tempdir()?;
-    let real = root.path().join("real");
+    // On macOS, the temporary directory is itself below a symlink (`/var` -> `/private/var`).
+    let root_path = root.path().canonicalize()?;
+    let real = root_path.join("real");
     std::fs::create_dir_all(&real)?;
     std::fs::write(
         real.join(ConfigName::pgls_jsonc()),
         r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
     )?;
-    let link = root.path().join("link");
+    let link = root_path.join("link");
     std::os::unix::fs::symlink(&real, &link)?;
     let folder = WorkspaceFolder {
         uri: Uri::from_file_path(&link).unwrap(),
@@ -3934,7 +3936,7 @@ async fn files_opened_by_their_real_path_belong_to_a_symlinked_folder() -> Resul
     let (service, client) = factory
         .create_with_fs(
             None,
-            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+            DynRef::Owned(Box::new(OsFileSystem::new(root_path.clone()))),
         )
         .into_inner();
     let (stream, sink) = client.split();

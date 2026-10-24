@@ -2561,9 +2561,11 @@ fn updating_the_settings_replaces_or_merges_them() {
 #[test]
 fn files_below_the_real_path_of_a_symlinked_folder_use_its_settings() {
     let root = tempfile::tempdir().unwrap();
-    let real = root.path().join("real");
+    // On macOS, the temporary directory is itself below a symlink (`/var` -> `/private/var`).
+    let root = root.path().canonicalize().unwrap();
+    let real = root.join("real");
     std::fs::create_dir_all(real.join("db1")).unwrap();
-    let link = root.path().join("link");
+    let link = root.join("link");
     std::os::unix::fs::symlink(&real, &link).unwrap();
 
     let workspace = WorkspaceServer::new();
