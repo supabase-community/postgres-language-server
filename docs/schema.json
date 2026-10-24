@@ -372,6 +372,7 @@
       "type": "object",
       "properties": {
         "allowStatementExecutionsAgainst": {
+          "description": "Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.",
           "anyOf": [
             {
               "$ref": "#/definitions/StringSet"

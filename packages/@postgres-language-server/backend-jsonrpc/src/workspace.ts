@@ -392,6 +392,9 @@ export interface PartialConfiguration {
  * The configuration of the database connection.
  */
 export interface PartialDatabaseConfiguration {
+  /**
+   * Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
+   */
   allowStatementExecutionsAgainst?: StringSet;
   /**
    * The connection timeout in seconds.
