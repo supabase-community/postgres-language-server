@@ -76,6 +76,21 @@ impl Document {
         *self.analysis.get_mut().unwrap() = None;
     }
 
+    /// The number of cached parse results and trees of statements, which is what most of the
+    /// memory of a document's caches is for.
+    pub fn cache_entries(&self) -> usize {
+        self.ast_db.len() + self.cst_db.len()
+    }
+
+    /// Drops everything that is cached for the document. It is recomputed when it is needed
+    /// again.
+    pub fn clear_caches(&self) {
+        self.ast_db.clear();
+        self.cst_db.clear();
+        self.annotation_db.clear();
+        *self.analysis.lock().unwrap() = None;
+    }
+
     /// The analysis of the document, see `WorkspaceServer::analyse_document_cached`.
     pub(super) fn analysis(&self) -> &Mutex<Option<super::CachedAnalysis>> {
         &self.analysis

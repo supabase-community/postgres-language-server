@@ -24,6 +24,16 @@ impl TreeSitterStore {
         }
     }
 
+    /// The number of statements with a cached tree.
+    pub fn len(&self) -> usize {
+        self.db.lock().unwrap().len()
+    }
+
+    /// Drops every cached tree.
+    pub fn clear(&self) {
+        self.db.lock().unwrap().clear();
+    }
+
     /// Drops the trees of the statements for which `keep` returns `false`.
     pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
         self.db.lock().unwrap().retain(|id, _| keep(id));

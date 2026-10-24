@@ -23,6 +23,17 @@ impl PgQueryStore {
         }
     }
 
+    /// The number of statements with a cached parse result.
+    pub fn len(&self) -> usize {
+        self.ast_db.lock().unwrap().len()
+    }
+
+    /// Drops every cached result.
+    pub fn clear(&self) {
+        self.ast_db.lock().unwrap().clear();
+        self.plpgsql_db.lock().unwrap().clear();
+    }
+
     /// Drops the results of the statements for which `keep` returns `false`.
     pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
         self.ast_db.lock().unwrap().retain(|id, _| keep(id));
