@@ -42,17 +42,31 @@ impl LSPServer {
     /// Runs a request handler that walks the document on the blocking thread pool, so that it
     /// doesn't hold up the runtime that applies the edits. If the document changed meanwhile,
     /// the request fails with `ContentModified`, which tells the client to ask again.
+    ///
+    /// When the client cancels the request, tower-lsp drops this future, which tells the
+    /// handler to stop through [`pgls_workspace::cancellation`].
     async fn run_document_request<T: Send + 'static>(
         &self,
         uri: &Uri,
         handler: impl FnOnce(&Session) -> Result<T, crate::diagnostics::LspError> + Send + 'static,
     ) -> LspResult<T> {
+        /// Cancels the handler when the request is dropped, whether it finished or not.
+        struct CancelOnDrop(Arc<AtomicBool>);
+
+        impl Drop for CancelOnDrop {
+            fn drop(&mut self) {
+                self.0.store(true, Ordering::Relaxed);
+            }
+        }
+
         let version = self.session.document(uri).ok().map(|doc| doc.version);
         let session = Arc::clone(&self.session);
         let span = tracing::Span::current();
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let _cancel_on_drop = CancelOnDrop(Arc::clone(&cancelled));
         let result = spawn_blocking(move || {
             let _guard = span.entered();
-            handler(&session)
+            pgls_workspace::cancellation::with_cancellation(cancelled, || handler(&session))
         })
         .await;
         let result = match result {
@@ -350,10 +364,11 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn completion(&self, params: CompletionParams) -> LspResult<Option<CompletionResponse>> {
-        match handlers::completions::get_completions(&self.session, params) {
-            Ok(result) => LspResult::Ok(Some(result)),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document_position.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::completions::get_completions(session, params).map(Some)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip(self))]
@@ -385,10 +400,11 @@ impl LanguageServer for LSPServer {
         &self,
         params: DocumentFormattingParams,
     ) -> LspResult<Option<Vec<TextEdit>>> {
-        match handlers::formatting::formatting(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::formatting::formatting(session, params)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip(self))]
@@ -396,10 +412,11 @@ impl LanguageServer for LSPServer {
         &self,
         params: DocumentRangeFormattingParams,
     ) -> LspResult<Option<Vec<TextEdit>>> {
-        match handlers::formatting::range_formatting(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::formatting::range_formatting(session, params)
+        })
+        .await
     }
 }
 

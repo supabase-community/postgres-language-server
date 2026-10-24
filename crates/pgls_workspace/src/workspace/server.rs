@@ -912,10 +912,8 @@ impl Workspace for WorkspaceServer {
 
     #[ignored_path(path=&params.path)]
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let document = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let document = document.as_ref();
         Ok(document.get_document_content().to_string())
     }
 
@@ -1001,10 +999,8 @@ impl Workspace for WorkspaceServer {
         /// that overlap are applied one after the other.
         const MAX_PASSES: usize = 10;
 
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let doc = self.document(&params.path)?;
+        let doc = doc.as_ref();
         let mut code = doc.get_document_content().to_string();
 
         let settings = self.workspaces();
@@ -1072,10 +1068,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let parser = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let parser = self.document(&params.path)?;
+        let parser = parser.as_ref();
 
         let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
 
@@ -1175,10 +1169,8 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let doc = self.document(&params.path)?;
+        let doc = doc.as_ref();
 
         /*
          * The statements in the document might already have associated diagnostics,
@@ -1378,10 +1370,8 @@ impl Workspace for WorkspaceServer {
             return Ok(PullFormattingResult::default());
         }
 
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let doc = self.document(&params.path)?;
+        let doc = doc.as_ref();
 
         let config = pgls_pretty_print::FormatConfig {
             line_width: settings.formatter.line_width as usize,
@@ -1617,10 +1607,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let parsed_doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let parsed_doc = self.document(&params.path)?;
+        let parsed_doc = parsed_doc.as_ref();
 
         #[cfg(feature = "db")]
         let Some(snapshot) = self
@@ -1768,7 +1756,9 @@ impl Workspace for WorkspaceServer {
 
         let Some(statements) = self.walk_references(&params.path, doc, &snapshot, params.range)
         else {
-            tracing::debug!("The document changed. Skipping inlay hints.");
+            tracing::debug!(
+                "The document changed or the request was cancelled. Skipping inlay hints."
+            );
             return Ok(PullInlayHintsResult::default());
         };
         let mut hints = Vec::new();
@@ -1833,7 +1823,9 @@ impl Workspace for WorkspaceServer {
             .range
             .unwrap_or_else(|| TextRange::up_to(TextSize::of(doc.get_document_content())));
         let Some(statements) = self.walk_references(&params.path, doc, &snapshot, range) else {
-            tracing::debug!("The document changed. Skipping semantic tokens.");
+            tracing::debug!(
+                "The document changed or the request was cancelled. Skipping semantic tokens."
+            );
             return Ok(PullSemanticTokensResult::default());
         };
         let mut tokens = Vec::new();
