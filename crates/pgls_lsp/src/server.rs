@@ -39,6 +39,38 @@ pub struct LSPServer {
 impl RefUnwindSafe for LSPServer {}
 
 impl LSPServer {
+    /// Runs a request handler that walks the document on the blocking thread pool, so that it
+    /// doesn't hold up the runtime that applies the edits. If the document changed meanwhile,
+    /// the request fails with `ContentModified`, which tells the client to ask again.
+    async fn run_document_request<T: Send + 'static>(
+        &self,
+        uri: &Uri,
+        handler: impl FnOnce(&Session) -> Result<T, crate::diagnostics::LspError> + Send + 'static,
+    ) -> LspResult<T> {
+        let version = self.session.document(uri).ok().map(|doc| doc.version);
+        let session = Arc::clone(&self.session);
+        let span = tracing::Span::current();
+        let result = spawn_blocking(move || {
+            let _guard = span.entered();
+            handler(&session)
+        })
+        .await;
+        let result = match result {
+            Ok(Ok(result)) => result,
+            Ok(Err(err)) => return Err(into_lsp_error(err)),
+            Err(err) => {
+                return Err(match err.try_into_panic() {
+                    Ok(err) => panic_to_lsp_error(err),
+                    Err(err) => into_lsp_error(err),
+                });
+            }
+        };
+        if self.session.document(uri).ok().map(|doc| doc.version) != version {
+            return Err(tower_lsp_server::jsonrpc::Error::content_modified());
+        }
+        Ok(result)
+    }
+
     fn new(
         session: SessionHandle,
         sessions: Sessions,
@@ -267,21 +299,29 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn hover(&self, params: HoverParams) -> LspResult<Option<Hover>> {
-        match handlers::hover::on_hover(&self.session, params) {
-            Ok(result) => LspResult::Ok(result.map(|contents| Hover {
-                contents,
-                range: None,
-            })),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params
+            .text_document_position_params
+            .text_document
+            .uri
+            .clone();
+        let result = self
+            .run_document_request(&uri, move |session| {
+                handlers::hover::on_hover(session, params)
+            })
+            .await?;
+        Ok(result.map(|contents| Hover {
+            contents,
+            range: None,
+        }))
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn inlay_hint(&self, params: InlayHintParams) -> LspResult<Option<Vec<InlayHint>>> {
-        match handlers::inlay_hints::inlay_hints(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::inlay_hints::inlay_hints(session, params)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -289,10 +329,11 @@ impl LanguageServer for LSPServer {
         &self,
         params: SemanticTokensParams,
     ) -> LspResult<Option<SemanticTokensResult>> {
-        match handlers::semantic_tokens::semantic_tokens_full(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::semantic_tokens::semantic_tokens_full(session, params)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -300,10 +341,11 @@ impl LanguageServer for LSPServer {
         &self,
         params: SemanticTokensRangeParams,
     ) -> LspResult<Option<SemanticTokensRangeResult>> {
-        match handlers::semantic_tokens::semantic_tokens_range(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::semantic_tokens::semantic_tokens_range(session, params)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -316,13 +358,14 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "trace", skip(self))]
     async fn code_action(&self, params: CodeActionParams) -> LspResult<Option<CodeActionResponse>> {
-        match handlers::code_actions::get_actions(&self.session, params) {
-            Ok(result) => {
-                tracing::trace!("Got {} Code Action(s)", result.len());
-                return LspResult::Ok(Some(result));
-            }
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        let result = self
+            .run_document_request(&uri, move |session| {
+                Ok(handlers::code_actions::get_actions(session, params)?)
+            })
+            .await?;
+        tracing::trace!("Got {} Code Action(s)", result.len());
+        Ok(Some(result))
     }
 
     #[tracing::instrument(level = "trace", skip(self))]

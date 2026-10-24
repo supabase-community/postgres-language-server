@@ -124,6 +124,9 @@ impl WalkHashes {
     }
 }
 
+/// Checks whether the document changed every this many statements of the walk.
+const OUTDATED_CHECK_INTERVAL: usize = 64;
+
 /// Saves a checkpoint every this many top-level statements, but at most about 32 per document:
 /// each holds a copy of the catalog.
 fn checkpoint_interval(roots: usize) -> usize {
@@ -173,13 +176,15 @@ impl WorkspaceServer {
     /// that each statement sees the objects created earlier in the file. Each migration section
     /// gets a session of its own, and the changes of a down section don't carry into the next
     /// section.
+    ///
+    /// Returns `None` if the document changed while walking it: the result would be outdated.
     pub(super) fn walk_references(
         &self,
         path: &PgLSPath,
         doc: &Document,
         snapshot: &Arc<Snapshot>,
         range: TextRange,
-    ) -> Vec<WalkedStatement> {
+    ) -> Option<Vec<WalkedStatement>> {
         let (search_path, sections) = self
             .workspaces()
             .settings()
@@ -225,7 +230,7 @@ impl WorkspaceServer {
         let hashes = WalkHashes::new(doc, &sections, key, end);
 
         if let Some(statements) = cached_statements(&cache, doc, &hashes, first, end, range) {
-            return statements;
+            return Some(statements);
         }
 
         // Start from the last valid checkpoint before the range.
@@ -257,9 +262,14 @@ impl WorkspaceServer {
         let interval = checkpoint_interval(ranges.len());
         let mut statements = Vec::new();
         let mut root = start.wrapping_sub(1);
-        for (id, stmt_range) in doc.iter_from(IdMapper, start) {
+        for (walked, (id, stmt_range)) in doc.iter_from(IdMapper, start).enumerate() {
             if is_after(stmt_range, range) {
                 break;
+            }
+            if walked % OUTDATED_CHECK_INTERVAL == OUTDATED_CHECK_INTERVAL - 1
+                && self.is_outdated(path, doc)
+            {
+                return None;
             }
             if id.is_root() {
                 root = root.wrapping_add(1);
@@ -354,7 +364,7 @@ impl WorkspaceServer {
         }
 
         prune(&mut cache, doc, &sections, key);
-        statements
+        Some(statements)
     }
 }
 
