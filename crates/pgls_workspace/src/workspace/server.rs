@@ -93,6 +93,8 @@ use connection_key::ConnectionKey;
 #[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
+#[cfg(feature = "db")]
+mod last_used;
 mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
@@ -191,6 +193,25 @@ impl WorkspaceServer {
     pub fn get_schema(&self) -> Option<Arc<Snapshot>> {
         self.snapshot.get()
     }
+
+    /// Drops the pools, failures and snapshots of the connections that no settings of any project
+    /// use any more, after a configuration changed or a project was removed. Otherwise every
+    /// database a configuration ever pointed at would stay in memory until the server stops.
+    #[cfg(feature = "db")]
+    fn drop_unused_connections(&self) {
+        let used: std::collections::HashSet<ConnectionKey> = self
+            .workspaces()
+            .as_ref()
+            .every_settings()
+            .filter(|settings| settings.db.enable_connection)
+            .map(|settings| ConnectionKey::from(&settings.db))
+            .collect();
+        self.connection.retain(|key| used.contains(key));
+        self.snapshot.retain(|key| used.contains(key));
+    }
+
+    #[cfg(not(feature = "db"))]
+    fn drop_unused_connections(&self) {}
 
     /// Register a new project in the current workspace
     fn register_project(&self, path: PathBuf) -> ProjectKey {
@@ -822,8 +843,10 @@ impl Workspace for WorkspaceServer {
         &self,
         params: UnregisterProjectFolderParams,
     ) -> Result<(), WorkspaceError> {
-        let mut workspace = self.workspaces_mut();
-        workspace.as_mut().remove_project(params.path.as_path());
+        self.workspaces_mut()
+            .as_mut()
+            .remove_project(params.path.as_path());
+        self.drop_unused_connections();
         Ok(())
     }
 
@@ -858,6 +881,8 @@ impl Workspace for WorkspaceServer {
                 params.gitignore_matches.as_slice(),
             )?;
         }
+        drop(workspace);
+        self.drop_unused_connections();
 
         Ok(())
     }
@@ -926,6 +951,7 @@ impl Workspace for WorkspaceServer {
         self.workspaces_mut()
             .as_mut()
             .set_nested_settings(params.project_key, nested);
+        self.drop_unused_connections();
         Ok(result)
     }
 
