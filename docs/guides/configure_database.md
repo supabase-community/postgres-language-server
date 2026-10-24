@@ -134,9 +134,14 @@ The language server runs the statement with the LSP command `pgls.executeStateme
 
 - `columns` and `rows` are filled for statements that return rows, such as `select`, `values`, `show`, `explain`, and statements with `returning`.
 - Each value is a string in its Postgres text representation, as `psql` shows it, or `null` for SQL `NULL`.
-- At most 100 rows are returned. `truncated` is `true` if the statement returned more.
+- At most 100 rows and 1 MB of values are returned. `truncated` is `true` if the statement returned more. A `select` or `values` runs in a cursor that fetches 101 rows, so Postgres stops once it produced them. Any other statement runs to completion, and the rows after the first 100 are read and dropped: an `insert ... returning` inserts every row.
+- A value longer than 10,000 bytes is cut and ends with `…`. `truncatedValues` is `true` then.
+- `notices` lists the notices and warnings Postgres sent, e.g. for `raise notice`, as `"NOTICE: message"`. `message` ends with them as well.
 - `rowsAffected` is set instead of `columns` and `rows` for statements that return no rows, such as `insert` without `returning` or `create table`. For example: `{ "message": "Successfully executed statement. Rows affected: 2", "columns": [], "rows": [], "truncated": false, "rowsAffected": 2 }`.
 - Every statement runs on its own. Afterwards, the language server rolls back a transaction the statement left open and resets the session with `discard all`, so a `begin` or `set` does not carry over to the next executed statement. Executed statements never share a connection with the language server's own queries either.
+- A statement runs for at most `db.statementTimeoutSecs` seconds, 60 by default, before Postgres cancels it with `canceling statement due to statement timeout`. `0` keeps the `statement_timeout` of the database. Cancelling the `workspace/executeCommand` request with `$/cancelRequest` cancels the statement in the database too.
+- After a statement that may change the schema, i.e. anything but a query, `insert`, `update`, `delete`, `merge` or `show`, the language server reloads the schema, so diagnostics, completions and hover see the change.
+- `COPY ... FROM STDIN` and `COPY ... TO STDOUT` are not executed. Use `\copy` in `psql`, or a file on the database server.
 - If the statement is not executed, for example because statement execution is disabled, only `message` is meaningful: `columns` and `rows` are empty and `rowsAffected` is not set.
 - If Postgres rejects the statement, `error` holds the Postgres error: its `message`, the SQLSTATE `code`, and `detail` and `hint` if Postgres sent them. `position` is the LSP position of the error in the document, if Postgres reported one. For example: `{ "message": "Statement failed: column \"nme\" does not exist", "columns": [], "rows": [], "truncated": false, "error": { "message": "column \"nme\" does not exist", "code": "42703", "position": { "line": 3, "character": 7 } } }`. Only a failed connection makes the command fail with a JSON-RPC error.
 

@@ -8,9 +8,11 @@ use tower_lsp_server::ls_types::{
     MessageType,
 };
 
+use pgls_workspace::Workspace;
 use pgls_workspace::features::code_actions::{
     CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams,
 };
+use std::sync::Arc;
 
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn get_actions(
@@ -107,9 +109,15 @@ pub async fn execute_command(
 
             let path = session.file_path(&doc_url)?;
 
-            let result = session
-                .workspace
-                .execute_statement(ExecuteStatementParams { statement_id, path })?;
+            let params = ExecuteStatementParams { statement_id, path };
+            // The statement runs on a blocking thread, so that the server keeps handling requests,
+            // `$/cancelRequest` included. That drops this future, and the guard then cancels the
+            // statement in the database.
+            let guard = CancelStatementOnDrop(Some((session.workspace.clone(), params.clone())));
+            let workspace = session.workspace.clone();
+            let result =
+                tokio::task::spawn_blocking(move || workspace.execute_statement(params)).await??;
+            guard.disarm();
 
             /*
              * Updating all diagnostics: the changes caused by the statement execution
@@ -149,5 +157,26 @@ pub async fn execute_command(
             Ok(None)
         }
         any => Err(anyhow!(format!("Unknown command: {any}"))),
+    }
+}
+
+/// Cancels the execution of a statement when dropped, unless disarmed.
+struct CancelStatementOnDrop(Option<(Arc<dyn Workspace>, ExecuteStatementParams)>);
+
+impl CancelStatementOnDrop {
+    fn disarm(mut self) {
+        self.0 = None;
+    }
+}
+
+impl Drop for CancelStatementOnDrop {
+    fn drop(&mut self) {
+        if let Some((workspace, params)) = self.0.take() {
+            tokio::task::spawn_blocking(move || {
+                if let Err(err) = workspace.cancel_statement_execution(params) {
+                    tracing::warn!("Could not cancel the statement execution: {err}");
+                }
+            });
+        }
     }
 }
