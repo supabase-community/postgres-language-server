@@ -4,7 +4,6 @@ use std::sync::{Arc, LazyLock, Mutex};
 use lru::LruCache;
 pub use pgls_lexer::{convert_to_positional_params, convert_to_positional_params_with_metadata};
 use pgls_query_ext::diagnostics::*;
-use pgls_text_size::TextRange;
 use regex::Regex;
 
 use super::statement_identifier::StatementId;
@@ -75,11 +74,10 @@ impl PgQueryStore {
         }
 
         let sql_body = pgls_query_ext::utils::find_option_value(create_fn, "as")?;
-
-        let start = statement.content().find(&sql_body)?;
-        let end = start + sql_body.len();
-
-        let range = TextRange::new(start.try_into().unwrap(), end.try_into().unwrap());
+        // The body is in the string constant after `AS`, which may have escapes. Errors are
+        // reported on the whole statement if it can't be found.
+        let range =
+            super::sql_function::string_body(&sql_body, statement.content()).map(|body| body.range);
 
         let r = pgls_query::parse_plpgsql(statement.content())
             .or_else(|e| match &e {
@@ -88,7 +86,7 @@ impl PgQueryStore {
                 pgls_query::Error::Parse(err) if is_composite_type_error(err) => Ok(()),
                 _ => Err(e),
             })
-            .map_err(|e| SyntaxDiagnostic::new(e.to_string(), Some(range)));
+            .map_err(|e| SyntaxDiagnostic::new(e.to_string(), range));
 
         cache.put(statement.clone(), r.clone());
 
@@ -181,6 +179,36 @@ $$;
         let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
 
         assert!(matches!(res, Some(Err(_))));
+    }
+
+    #[test]
+    fn plpgsql_syntax_errors_cover_quoted_bodies() {
+        // A default with the same text as the body comes first, and the body has `''`.
+        for (input, body) in [
+            (
+                "create function f(t text default 'delare x') returns void language plpgsql as 'delare x'",
+                "'delare x'",
+            ),
+            (
+                "create function f() returns void language plpgsql as 'begin raise notice ''x''; ende'",
+                "'begin raise notice ''x''; ende'",
+            ),
+        ] {
+            let store = PgQueryStore::new();
+            let Some(Err(diagnostic)) = store.get_or_cache_plpgsql_parse(&StatementId::new(input))
+            else {
+                panic!("expected a syntax error for {input}");
+            };
+            let span = pgls_diagnostics::Diagnostic::location(&diagnostic)
+                .span
+                .expect("a span");
+            let start = input.rfind(body).unwrap() + 1;
+            assert_eq!(
+                std::ops::Range::<usize>::from(span),
+                start..start + body.len() - 2,
+                "{input}"
+            );
+        }
     }
 
     #[test]
