@@ -134,7 +134,7 @@ pub fn get_sql_fn_bodies(ast: &pgls_query::NodeEnum, content: &str) -> Vec<SQLFu
         }
         Some(_) => Vec::new(),
         None => pgls_query_ext::utils::find_option_value(create_fn, "as")
-            .and_then(|body| string_body(&body, &tokens, content))
+            .and_then(|body| string_body_in(&body, &tokens, content))
             .into_iter()
             .collect(),
     }
@@ -147,10 +147,21 @@ fn token_range(token: &ScanToken) -> Option<TextRange> {
     ))
 }
 
-/// The body of a function defined with `AS '...'` or `AS $$...$$`. The body is the string
-/// constant after `AS` whose value is `body`. In a `'...'` string, each `'` of the body is
-/// written `''`. Strings with other escapes (`E'...'`, `U&'...'`) are not supported.
-fn string_body(body: &str, tokens: &[ScanToken], content: &str) -> Option<SQLFunctionBody> {
+/// The body of a function defined with `AS '...'`, `AS E'...'` or `AS $$...$$`: the string
+/// constant after `AS` whose value is `body`, with the offsets of the escapes in it. Unicode
+/// escape strings (`U&'...'`) are not supported.
+pub fn string_body(body: &str, content: &str) -> Option<SQLFunctionBody> {
+    let scan = pgls_query::scan(content).ok()?;
+    let tokens: Vec<ScanToken> = scan
+        .tokens
+        .into_iter()
+        .filter(|token| !matches!(token.token(), Token::SqlComment | Token::CComment))
+        .collect();
+    string_body_in(body, &tokens, content)
+}
+
+/// [`string_body`] with the tokens of `content`, without comments.
+fn string_body_in(body: &str, tokens: &[ScanToken], content: &str) -> Option<SQLFunctionBody> {
     tokens.windows(2).find_map(|pair| {
         let [as_token, string] = pair else {
             return None;
@@ -158,48 +169,135 @@ fn string_body(body: &str, tokens: &[ScanToken], content: &str) -> Option<SQLFun
         if as_token.token() != Token::As || string.token() != Token::Sconst {
             return None;
         }
-        let range = token_range(string)?;
-        let text = &content[range];
-        let (inner, offsets) = if let Some(after_dollar) = text.strip_prefix('$') {
-            let tag_end = after_dollar.find('$')? + 2;
-            let inner = text.get(tag_end..text.len().checked_sub(tag_end)?)?;
-            if inner != body {
-                return None;
-            }
-            (
-                TextRange::at(
-                    range.start() + TextSize::try_from(tag_end).ok()?,
-                    TextSize::of(inner),
-                ),
-                StatementOffsets::default(),
-            )
-        } else {
-            let inner = text.strip_prefix('\'')?.strip_suffix('\'')?;
-            let mut escaped = Vec::new();
-            let mut unescaped = String::with_capacity(inner.len());
-            let mut chars = inner.chars().peekable();
-            while let Some(c) = chars.next() {
-                if c == '\'' {
-                    // A string constant continued on a new line, not a doubled quote.
-                    chars.next_if_eq(&'\'')?;
-                    escaped.push(TextSize::of(unescaped.as_str()));
-                }
-                unescaped.push(c);
-            }
-            if unescaped != body {
-                return None;
-            }
-            (
-                TextRange::at(range.start() + TextSize::from(1), TextSize::of(inner)),
-                StatementOffsets::new(escaped),
-            )
-        };
-        Some(SQLFunctionBody {
-            range: inner,
-            body: body.to_owned(),
-            offsets,
-        })
+        string_constant_body(body, token_range(string)?, content)
     })
+}
+
+/// The body in the string constant at `range`, if its value is `body`.
+fn string_constant_body(body: &str, range: TextRange, content: &str) -> Option<SQLFunctionBody> {
+    let text = &content[range];
+    if let Some(after_dollar) = text.strip_prefix('$') {
+        let tag_end = after_dollar.find('$')? + 2;
+        let inner = text.get(tag_end..text.len().checked_sub(tag_end)?)?;
+        if inner != body {
+            return None;
+        }
+        return Some(SQLFunctionBody {
+            range: TextRange::at(
+                range.start() + TextSize::try_from(tag_end).ok()?,
+                TextSize::of(inner),
+            ),
+            body: body.to_owned(),
+            offsets: StatementOffsets::default(),
+        });
+    }
+    let (prefix, escapes) = match text.as_bytes() {
+        [b'e' | b'E', b'\'', ..] => (2, true),
+        [b'\'', ..] => (1, false),
+        _ => return None,
+    };
+    let inner = text.get(prefix..)?.strip_suffix('\'')?;
+    let (unescaped, offsets) = unescape(inner, escapes)?;
+    if unescaped != body {
+        return None;
+    }
+    Some(SQLFunctionBody {
+        range: TextRange::at(
+            range.start() + TextSize::try_from(prefix).ok()?,
+            TextSize::of(inner),
+        ),
+        body: body.to_owned(),
+        offsets,
+    })
+}
+
+/// The value of the inside of a string constant, and where its escapes are. With `escapes`, the
+/// backslash escapes of `E'...'` strings are read, like the `xe` rules of Postgres' lexer:
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L262
+/// `None` if a quote ends the constant before its end (a constant continued on a new line), or
+/// if the value isn't valid UTF-8.
+fn unescape(inner: &str, escapes: bool) -> Option<(String, StatementOffsets)> {
+    let bytes = inner.as_bytes();
+    let mut value = Vec::with_capacity(bytes.len());
+    let mut offsets = StatementOffsets::default();
+    let mut cursor = 0;
+    while let Some(&byte) = bytes.get(cursor) {
+        let (decoded, len): (Vec<u8>, usize) = match byte {
+            b'\'' => {
+                if bytes.get(cursor + 1) != Some(&b'\'') {
+                    return None;
+                }
+                (vec![b'\''], 2)
+            }
+            b'\\' if escapes => escape_sequence(&bytes[cursor..])?,
+            _ => {
+                value.push(byte);
+                cursor += 1;
+                continue;
+            }
+        };
+        offsets.push_escape(
+            TextSize::try_from(value.len()).ok()?,
+            TextSize::try_from(decoded.len()).ok()?,
+            TextSize::try_from(len).ok()?,
+        );
+        value.extend(decoded);
+        cursor += len;
+    }
+    Some((String::from_utf8(value).ok()?, offsets))
+}
+
+/// The bytes that the backslash escape at the start of `text` stands for, and its length.
+fn escape_sequence(text: &[u8]) -> Option<(Vec<u8>, usize)> {
+    let digits = |start: usize, max: usize, radix: u32| {
+        text.iter()
+            .skip(start)
+            .take(max)
+            .take_while(|byte| char::from(**byte).is_digit(radix))
+            .count()
+    };
+    let number = |start: usize, len: usize, radix: u32| {
+        u32::from_str_radix(
+            std::str::from_utf8(text.get(start..start + len)?).ok()?,
+            radix,
+        )
+        .ok()
+    };
+    let escaped = *text.get(1)?;
+    match escaped {
+        b'0'..=b'7' => {
+            let len = digits(1, 3, 8);
+            Some((vec![(number(1, len, 8)? & 0xFF) as u8], 1 + len))
+        }
+        b'x' if digits(2, 2, 16) > 0 => {
+            let len = digits(2, 2, 16);
+            Some((vec![number(2, len, 16)? as u8], 2 + len))
+        }
+        b'u' | b'U' => {
+            let len = if escaped == b'u' { 4 } else { 8 };
+            if digits(2, len, 16) != len {
+                return None;
+            }
+            // Surrogate pairs are not supported.
+            let c = char::from_u32(number(2, len, 16)?)?;
+            Some((c.to_string().into_bytes(), 2 + len))
+        }
+        b'b' => Some((vec![0x08], 2)),
+        b'f' => Some((vec![0x0C], 2)),
+        b'n' => Some((vec![b'\n'], 2)),
+        b'r' => Some((vec![b'\r'], 2)),
+        b't' => Some((vec![b'\t'], 2)),
+        b'v' => Some((vec![0x0B], 2)),
+        // Any other character stands for itself.
+        _ => {
+            let len = std::str::from_utf8(text.get(1..)?)
+                .ok()?
+                .chars()
+                .next()?
+                .len_utf8();
+            Some((text.get(1..1 + len)?.to_vec(), 1 + len))
+        }
+    }
 }
 
 /// The statements of a `BEGIN ATOMIC ... END` body. Each ends with a `;`. The body ends at the
@@ -429,6 +527,39 @@ mod tests {
         assert_eq!(
             &input[body.range][usize::from(body.offsets.to_document(p))..],
             "p"
+        );
+    }
+
+    #[test]
+    fn escape_string_bodies_are_mapped() {
+        let input = r"create function f(p text) returns text language sql as E'select ''\u00e9'' ||\n E\'\\t\' || p'";
+        let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+        let [body] = get_sql_fn_bodies(&ast, input).try_into().unwrap();
+        assert_eq!(body.body, "select '\u{e9}' ||\n E'\\t' || p");
+        let p = TextSize::of("select '\u{e9}' ||\n E'\\t' || ");
+        let source = &input[body.range];
+        assert_eq!(&source[usize::from(body.offsets.to_document(p))..], "p");
+        assert_eq!(
+            body.offsets
+                .to_statement(TextSize::of(source) - TextSize::from(1)),
+            p
+        );
+    }
+
+    #[test]
+    fn unescapes_like_postgres() {
+        let value = |inner: &str| super::unescape(inner, true).map(|(value, _)| value);
+        assert_eq!(value(r"a\tb\x41\101\q\\"), Some("a\tbAAq\\".to_string()));
+        assert_eq!(value(r"\U0001F600 é"), Some("\u{1F600} \u{e9}".to_string()));
+        assert_eq!(value(r"\xc3\xa9"), Some("\u{e9}".to_string()));
+        // Not UTF-8, a `\u` without four digits, and a quote that ends the constant.
+        assert_eq!(value(r"\xff"), None);
+        assert_eq!(value(r"\u12"), None);
+        assert_eq!(value("a'\n'b"), None);
+        // Without escapes, backslashes are themselves.
+        assert_eq!(
+            super::unescape(r"a\n''", false).map(|(value, _)| value),
+            Some(r"a\n'".to_string())
         );
     }
 

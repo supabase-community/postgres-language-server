@@ -1,30 +1,63 @@
 use pgls_text_size::{TextRange, TextSize};
 
 /// Where the text of a statement is in the document, when it is not a slice of the document: the
-/// body of a SQL function quoted with `'`, where each `'` of the body is written `''`. Empty for
-/// every other statement, whose offsets are the same in the statement and the document.
+/// body of a SQL function in a string constant with escapes, like `''` in `'...'`, or `\n` and
+/// `é` in `E'...'`. Empty for every other statement, whose offsets are the same in the
+/// statement and the document.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct StatementOffsets {
-    /// The offsets in the statement of the characters that take one more byte in the document,
-    /// in ascending order.
-    escaped: Vec<TextSize>,
+    /// The escapes, in ascending order.
+    escapes: Vec<Escape>,
+}
+
+/// The bytes of the statement that an escape in the document stands for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Escape {
+    /// The bytes in the statement, relative to its start.
+    statement: TextRange,
+    /// The escape in the document, relative to the start of the statement.
+    document: TextRange,
 }
 
 impl StatementOffsets {
-    pub fn new(escaped: Vec<TextSize>) -> Self {
-        debug_assert!(escaped.is_sorted());
-        Self { escaped }
+    /// Adds an escape of `document_len` bytes in the document that stands for the
+    /// `statement_len` bytes at `statement_offset` in the statement. Escapes are added in order.
+    pub fn push_escape(
+        &mut self,
+        statement_offset: TextSize,
+        statement_len: TextSize,
+        document_len: TextSize,
+    ) {
+        let document_offset = self.to_document(statement_offset);
+        debug_assert!(
+            self.escapes
+                .last()
+                .is_none_or(|last| last.statement.end() <= statement_offset)
+        );
+        self.escapes.push(Escape {
+            statement: TextRange::at(statement_offset, statement_len),
+            document: TextRange::at(document_offset, document_len),
+        });
     }
 
     pub fn is_empty(&self) -> bool {
-        self.escaped.is_empty()
+        self.escapes.is_empty()
     }
 
     /// The offset in the document of `offset` in the statement, both relative to the start of
-    /// the statement.
+    /// the statement. Offsets inside the bytes of an escape map to the start of the escape.
     pub fn to_document(&self, offset: TextSize) -> TextSize {
-        let before = self.escaped.partition_point(|&escaped| escaped < offset);
-        offset + TextSize::from(u32::try_from(before).unwrap_or(u32::MAX))
+        let index = self
+            .escapes
+            .partition_point(|escape| escape.statement.start() <= offset);
+        let Some(escape) = index.checked_sub(1).and_then(|i| self.escapes.get(i)) else {
+            return offset;
+        };
+        if offset < escape.statement.end() {
+            escape.document.start()
+        } else {
+            offset - escape.statement.end() + escape.document.end()
+        }
     }
 
     pub fn range_to_document(&self, range: TextRange) -> TextRange {
@@ -35,23 +68,19 @@ impl StatementOffsets {
     }
 
     /// The offset in the statement of `offset` in the document, both relative to the start of
-    /// the statement. Both bytes of an escaped character map to the character.
+    /// the statement. Offsets inside an escape map to the start of what it stands for.
     pub fn to_statement(&self, offset: TextSize) -> TextSize {
-        // The escaped characters that end before `offset` in the document.
-        let before = self
-            .escaped
-            .iter()
-            .enumerate()
-            .take_while(|&(i, &escaped)| {
-                escaped + TextSize::from(u32::try_from(i).unwrap_or(u32::MAX) + 2) <= offset
-            })
-            .count();
-        let in_escape = self.escaped.get(before).is_some_and(|&escaped| {
-            escaped + TextSize::from(u32::try_from(before).unwrap_or(u32::MAX) + 1) == offset
-        });
-        offset
-            - TextSize::from(u32::try_from(before).unwrap_or(u32::MAX))
-            - TextSize::from(u32::from(in_escape))
+        let index = self
+            .escapes
+            .partition_point(|escape| escape.document.start() <= offset);
+        let Some(escape) = index.checked_sub(1).and_then(|i| self.escapes.get(i)) else {
+            return offset;
+        };
+        if offset < escape.document.end() {
+            escape.statement.start()
+        } else {
+            offset - escape.document.end() + escape.statement.end()
+        }
     }
 }
 
@@ -64,7 +93,9 @@ mod tests {
     #[test]
     fn maps_offsets_through_doubled_quotes() {
         // The statement `a'b'c`, written `a''b''c` in the document.
-        let offsets = StatementOffsets::new(vec![1.into(), 3.into()]);
+        let mut offsets = StatementOffsets::default();
+        offsets.push_escape(1.into(), 1.into(), 2.into());
+        offsets.push_escape(3.into(), 1.into(), 2.into());
         let document = [0, 1, 3, 4, 6, 7];
         for (statement, document) in document.into_iter().enumerate() {
             let statement = TextSize::try_from(statement).unwrap();
@@ -79,5 +110,18 @@ mod tests {
         let identity = StatementOffsets::default();
         assert_eq!(identity.to_document(5.into()), 5.into());
         assert_eq!(identity.to_statement(5.into()), 5.into());
+    }
+
+    #[test]
+    fn maps_offsets_through_longer_escapes() {
+        // The statement `aéb` (`é` takes 2 bytes), written `aéb` in the document.
+        let mut offsets = StatementOffsets::default();
+        offsets.push_escape(1.into(), 2.into(), 6.into());
+        assert_eq!(offsets.to_document(1.into()), 1.into());
+        assert_eq!(offsets.to_document(3.into()), 7.into());
+        assert_eq!(offsets.to_document(4.into()), 8.into());
+        assert_eq!(offsets.to_statement(7.into()), 3.into());
+        assert_eq!(offsets.to_statement(4.into()), 1.into());
+        assert_eq!(offsets.to_statement(0.into()), 0.into());
     }
 }

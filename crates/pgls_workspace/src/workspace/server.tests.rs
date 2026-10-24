@@ -2347,7 +2347,9 @@ async fn test_sql_function_bodies(test_db: PgPool) {
         begin atomic select p + id from body_users; end;\n\
         create function return_fn(p int) returns int return p + 1;\n\
         create function quoted_fn(p text) returns text language sql\n\
-        as 'select name || ''x'' || p from body_users where name = ''y'' and nope = 1';\n";
+        as 'select name || ''x'' || p from body_users where name = ''y'' and nope = 1';\n\
+        create function escaped_fn() returns text language sql\n\
+        as E'select \\'\\u00e9\\' || name from body_users where gone = 1';\n";
     workspace
         .open_file(OpenFileParams {
             path: path.clone(),
@@ -2377,6 +2379,8 @@ async fn test_sql_function_bodies(test_db: PgPool) {
             ("p", SemanticTokenKind::Parameter),
             ("body_users", SemanticTokenKind::Class),
             ("name", SemanticTokenKind::Property),
+            ("name", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
         ]
     );
 
@@ -2416,7 +2420,7 @@ async fn test_sql_function_bodies(test_db: PgPool) {
         })
         .map(|diagnostic| &content[diagnostic.location().span.expect("a span")])
         .collect::<Vec<_>>();
-    assert_eq!(unknown_columns, ["nope"], "{diagnostics:#?}");
+    assert_eq!(unknown_columns, ["nope", "gone"], "{diagnostics:#?}");
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
