@@ -176,6 +176,8 @@ pub async fn execute_command(
         }
         "pgls.invalidateSchemaCache" => {
             session.workspace.invalidate_schema_cache(true)?;
+            // Everything that depends on the schema is out of date.
+            session.update_all_diagnostics().await;
 
             session
                 .client

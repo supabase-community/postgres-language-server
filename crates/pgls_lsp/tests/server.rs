@@ -144,9 +144,17 @@ impl Server {
     }
 
     /// Basic implementation of the `initialize` request for tests
+    async fn initialize(&mut self) -> Result<()> {
+        self.initialize_with_capabilities(ClientCapabilities::default())
+            .await
+    }
+
     // The `root_path` field is deprecated, but we still need to specify it
     #[allow(deprecated)]
-    async fn initialize(&mut self) -> Result<()> {
+    async fn initialize_with_capabilities(
+        &mut self,
+        capabilities: ClientCapabilities,
+    ) -> Result<()> {
         let _res: InitializeResult = self
             .request(
                 "initialize",
@@ -156,7 +164,7 @@ impl Server {
                     root_path: None,
                     root_uri: Some(url!("")),
                     initialization_options: None,
-                    capabilities: ClientCapabilities::default(),
+                    capabilities,
                     trace: None,
                     workspace_folders: None,
                     client_info: None,
@@ -383,6 +391,8 @@ const CHANNEL_BUFFER_SIZE: usize = 8;
 #[derive(Debug, PartialEq, Eq)]
 enum ServerNotification {
     PublishDiagnostics(PublishDiagnosticsParams),
+    /// A `workspace/*/refresh` request, by its method.
+    Refresh(String),
 }
 
 /// Basic handler for requests and notifications coming from the server for tests
@@ -412,6 +422,20 @@ where
             Some(id) => id,
             None => continue,
         };
+
+        if matches!(
+            req.method(),
+            "workspace/inlayHint/refresh" | "workspace/semanticTokens/refresh"
+        ) {
+            sink.send(Response::from_ok(id.clone(), Value::Null))
+                .await
+                .ok();
+            let notification = ServerNotification::Refresh(req.method().to_string());
+            match notify.send(notification).await {
+                Ok(_) => continue,
+                Err(_) => break,
+            }
+        }
 
         let res = Response::from_error(id.clone(), jsonrpc::Error::method_not_found());
 
@@ -664,6 +688,7 @@ async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool
                         return true;
                     }
                 }
+                Some(ServerNotification::Refresh(_)) => {}
                 None => return false,
             }
         }
@@ -3176,5 +3201,175 @@ async fn test_crash_on_delete_character() -> Result<()> {
 
     reader.abort();
 
+    Ok(())
+}
+
+/// Waits for the `workspace/*/refresh` requests of inlay hints and semantic tokens.
+async fn wait_for_editor_feature_refresh(
+    receiver: &mut Receiver<ServerNotification>,
+) -> Result<()> {
+    let mut pending = vec![
+        "workspace/inlayHint/refresh",
+        "workspace/semanticTokens/refresh",
+    ];
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !pending.is_empty() {
+            match receiver.next().await {
+                Some(ServerNotification::Refresh(method)) => {
+                    pending.retain(|pending| *pending != method);
+                }
+                Some(ServerNotification::PublishDiagnostics(_)) => {}
+                None => bail!("the server closed the connection"),
+            }
+        }
+        Ok(())
+    })
+    .await
+    .context("timed out waiting for the inlay hint and semantic token refresh")?
+}
+
+async fn inlay_hint_count(server: &mut Server) -> Result<usize> {
+    let hints: Option<Vec<lsp::InlayHint>> = server
+        .request(
+            "textDocument/inlayHint",
+            "inlay_hints",
+            lsp::InlayHintParams {
+                work_done_progress_params: WorkDoneProgressParams::default(),
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                range: Range {
+                    start: Position::new(0, 0),
+                    end: Position::new(1, 0),
+                },
+            },
+        )
+        .await?;
+    Ok(hints.map_or(0, |hints| hints.len()))
+}
+
+async fn semantic_token_count(server: &mut Server) -> Result<usize> {
+    let tokens: Option<lsp::SemanticTokensResult> = server
+        .request(
+            "textDocument/semanticTokens/full",
+            "semantic_tokens",
+            lsp::SemanticTokensParams {
+                work_done_progress_params: WorkDoneProgressParams::default(),
+                partial_result_params: lsp::PartialResultParams::default(),
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+            },
+        )
+        .await?;
+    Ok(match tokens {
+        Some(lsp::SemanticTokensResult::Tokens(tokens)) => tokens.data.len(),
+        _ => 0,
+    })
+}
+
+/// Inlay hints and semantic tokens are refreshed when the schema cache is invalidated and when the
+/// configuration changes, and the configuration can turn them off.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_editor_features_refresh_and_settings(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute(
+            "create table people (id int, name text);
+             create function make_point(x int, y int) returns int language sql as 'select x + y';",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_capabilities(ClientCapabilities {
+            workspace: Some(lsp::WorkspaceClientCapabilities {
+                inlay_hint: Some(lsp::InlayHintWorkspaceClientCapabilities {
+                    refresh_support: Some(true),
+                }),
+                semantic_tokens: Some(lsp::SemanticTokensWorkspaceClientCapabilities {
+                    refresh_support: Some(true),
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        })
+        .await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+    wait_for_editor_feature_refresh(&mut receiver).await?;
+
+    server
+        .open_document("select name, make_point(1, 2) from people;\n")
+        .await?;
+
+    assert_eq!(inlay_hint_count(&mut server).await?, 2);
+    assert_eq!(semantic_token_count(&mut server).await?, 3);
+
+    drain_notifications(&mut receiver);
+    server
+        .request::<ExecuteCommandParams, Option<Value>>(
+            "workspace/executeCommand",
+            "_invalidate",
+            ExecuteCommandParams {
+                command: "pgls.invalidateSchemaCache".to_string(),
+                arguments: vec![],
+                ..Default::default()
+            },
+        )
+        .await?;
+    wait_for_editor_feature_refresh(&mut receiver).await?;
+
+    drain_notifications(&mut receiver);
+    server
+        .notify(
+            "workspace/didChangeConfiguration",
+            DidChangeConfigurationParams {
+                settings: json!({
+                    "inlayHints": { "enabled": false },
+                    "semanticTokens": { "enabled": false },
+                }),
+            },
+        )
+        .await?;
+    wait_for_editor_feature_refresh(&mut receiver).await?;
+
+    assert_eq!(inlay_hint_count(&mut server).await?, 0);
+    assert_eq!(semantic_token_count(&mut server).await?, 0);
+
+    server.shutdown().await?;
+    reader.abort();
     Ok(())
 }

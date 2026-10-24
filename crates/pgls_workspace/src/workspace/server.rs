@@ -1801,6 +1801,14 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
+        if !self
+            .workspaces()
+            .settings()
+            .is_none_or(|settings| settings.inlay_hints.enabled)
+        {
+            return Ok(PullInlayHintsResult::default());
+        }
+
         #[cfg(feature = "db")]
         let Some(snapshot) = self
             .workspaces()
@@ -1868,6 +1876,14 @@ impl Workspace for WorkspaceServer {
         let doc = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
+
+        if !self
+            .workspaces()
+            .settings()
+            .is_none_or(|settings| settings.semantic_tokens.enabled)
+        {
+            return Ok(PullSemanticTokensResult::default());
+        }
 
         #[cfg(feature = "db")]
         let Some(snapshot) = self

@@ -185,6 +185,7 @@ impl LanguageServer for LSPServer {
                         {
                             self.session.reload_workspace_settings().await;
                             self.setup_capabilities().await;
+                            self.session.refresh_editor_features();
                             // self.session.update_all_diagnostics().await;
                             // for now we are only interested to the configuration file,
                             // so it's OK to exist the loop

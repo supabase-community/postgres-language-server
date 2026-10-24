@@ -379,6 +379,10 @@ export interface PartialConfiguration {
    */
   format?: PartialFormatConfiguration;
   /**
+   * The configuration for inlay hints in editors
+   */
+  inlayHints?: PartialInlayHintsConfiguration;
+  /**
    * The configuration for the linter
    */
   linter?: PartialLinterConfiguration;
@@ -394,6 +398,10 @@ export interface PartialConfiguration {
    * The configuration for type checking
    */
   plpgsqlCheck?: PartialPlPgSqlCheckConfiguration;
+  /**
+   * The configuration for semantic highlighting in editors
+   */
+  semanticTokens?: PartialSemanticTokensConfiguration;
   /**
    * The configuration for splinter
    */
@@ -536,6 +544,15 @@ export interface PartialFormatConfiguration {
    */
   valuesRowLayout?: Layout;
 }
+/**
+ * The configuration for inlay hints.
+ */
+export interface PartialInlayHintsConfiguration {
+  /**
+   * if `false`, the language server sends no inlay hints. `true` by default
+   */
+  enabled?: boolean;
+}
 export interface PartialLinterConfiguration {
   /**
    * if `false`, it disables the feature and the linter won't be executed. `true` by default
@@ -641,6 +658,15 @@ export interface PartialPlPgSqlCheckConfiguration {
    * Disable all warnings, overriding individual warning parameters. `false` by default.
    */
   withoutWarnings?: boolean;
+}
+/**
+ * The configuration for semantic highlighting.
+ */
+export interface PartialSemanticTokensConfiguration {
+  /**
+   * if `false`, the language server sends no semantic tokens, and editors keep the highlighting of their grammar. `true` by default
+   */
+  enabled?: boolean;
 }
 export interface PartialSplinterConfiguration {
   /**

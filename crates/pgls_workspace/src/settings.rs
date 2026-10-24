@@ -22,9 +22,11 @@ use pgls_configuration::{
         CastStyle, ClauseBodyStyle, CommaStyle, FormatConfiguration, IndentStyle, KeywordCase,
         Layout, LogicalOperatorPlacement,
     },
+    inlay_hints::InlayHintsConfiguration,
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration, SectionMarkers},
     pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
+    semantic_tokens::SemanticTokensConfiguration,
     splinter::SplinterConfiguration,
 };
 use pgls_fs::PgLSPath;
@@ -238,6 +240,12 @@ pub struct Settings {
 
     /// Migrations settings
     pub migrations: Option<MigrationSettings>,
+
+    /// Inlay hint settings for the workspace
+    pub inlay_hints: InlayHintsSettings,
+
+    /// Semantic token settings for the workspace
+    pub semantic_tokens: SemanticTokensSettings,
 }
 
 impl Settings {
@@ -298,6 +306,20 @@ impl Settings {
         if let Some(plpgsql_check) = configuration.plpgsql_check {
             self.plpgsql_check =
                 to_plpgsql_check_settings(PlPgSqlCheckConfiguration::from(plpgsql_check));
+        }
+
+        // inlay hints part
+        if let Some(inlay_hints) = configuration.inlay_hints {
+            self.inlay_hints = InlayHintsSettings {
+                enabled: InlayHintsConfiguration::from(inlay_hints).enabled,
+            };
+        }
+
+        // semantic tokens part
+        if let Some(semantic_tokens) = configuration.semantic_tokens {
+            self.semantic_tokens = SemanticTokensSettings {
+                enabled: SemanticTokensConfiguration::from(semantic_tokens).enabled,
+            };
         }
 
         // Migrations settings
@@ -671,6 +693,30 @@ impl Default for PglinterSettings {
             enabled: false, // Disabled by default since pglinter extension might not be installed
             rules: Some(pgls_configuration::pglinter::Rules::default()),
         }
+    }
+}
+
+/// Inlay hint settings for the entire workspace
+#[derive(Debug, Clone)]
+pub struct InlayHintsSettings {
+    pub enabled: bool,
+}
+
+impl Default for InlayHintsSettings {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
+/// Semantic token settings for the entire workspace
+#[derive(Debug, Clone)]
+pub struct SemanticTokensSettings {
+    pub enabled: bool,
+}
+
+impl Default for SemanticTokensSettings {
+    fn default() -> Self {
+        Self { enabled: true }
     }
 }
 
