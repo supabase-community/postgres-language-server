@@ -1,6 +1,7 @@
 use crate::cli_options::CliOptions;
 use crate::commands::{
-    get_files_to_process_with_cli_options, nested_configuration_paths, read_stdin_payload,
+    get_files_to_process_with_cli_options, nested_configuration_paths, print_diagnostics,
+    read_stdin_payload,
 };
 use crate::diagnostics::DatabaseUnavailable;
 use crate::execute::{run_files, run_stdin};
@@ -37,7 +38,7 @@ pub fn check(
     session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
 
     let paths = resolve_paths(session.fs(), &configuration, &args)?;
-    session.apply_nested_configurations(
+    let configuration_errors = session.apply_nested_configurations(
         cli_options,
         args.configuration.clone(),
         &nested_configuration_paths(&args.stdin_file_path, &paths),
@@ -63,12 +64,16 @@ pub fn check(
     let execution = ExecutionConfig::new(mode, max_diagnostics);
 
     if let Some(stdin_path) = args.stdin_file_path.as_deref() {
+        print_diagnostics(session.console(), configuration_errors);
         let payload = read_stdin_payload(stdin_path, session.console(), "check")?;
         run_stdin(&mut session, &execution, payload)
     } else {
         let database_error = check_database_connection(&session)?;
         let mut report: Report = run_files(&mut session, &execution, paths)?;
         if let Some(error) = database_error {
+            report.prepend_diagnostic(error);
+        }
+        for error in configuration_errors.into_iter().rev() {
             report.prepend_diagnostic(error);
         }
 

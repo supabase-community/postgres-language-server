@@ -10,7 +10,7 @@ use pgls_analyser::LinterRules;
 use pgls_configuration::Merge;
 use pgls_configuration::{
     ConfigurationDiagnostic, ConfigurationPathHint, ConfigurationPayload, PartialConfiguration,
-    VERSION, diagnostics::CantLoadExtendFile,
+    VERSION, database::PartialDatabaseConfiguration, diagnostics::CantLoadExtendFile,
 };
 use pgls_console::markup;
 use pgls_env::PGLS_WEBSITE;
@@ -41,6 +41,8 @@ pub struct LoadedConfiguration {
     pub file_path: Option<PathBuf>,
     /// The Deserialized configuration
     pub configuration: PartialConfiguration,
+    /// The `db` section of the configuration file itself, without what it extends
+    pub file_database: Option<PartialDatabaseConfiguration>,
 }
 
 impl LoadedConfiguration {
@@ -54,6 +56,7 @@ impl LoadedConfiguration {
             deserialized: mut partial_configuration,
         } = value;
 
+        let file_database = partial_configuration.db.clone();
         partial_configuration.apply_extends(
             fs,
             &configuration_file_path,
@@ -62,6 +65,7 @@ impl LoadedConfiguration {
 
         Ok(Self {
             configuration: partial_configuration,
+            file_database,
             directory_path: configuration_file_path.parent().map(PathBuf::from),
             file_path: Some(configuration_file_path),
         })
@@ -195,8 +199,11 @@ impl std::fmt::Display for IncompleteSearch {
 /// configuration directories are skipped even when they are below the root, and so is everything
 /// below the home directory or a filesystem root, which hold unrelated projects.
 ///
-/// `configure` lays the layers of the caller, such as the environment or the arguments of the
-/// CLI, over each configuration file. Folders that the settings above them ignore are skipped.
+/// The database settings of the `environment` (see [PartialDatabaseConfiguration::from_env])
+/// only fill in the connection options that a nested configuration file doesn't set itself, so
+/// that each file keeps its own database. `configure` then lays the layers of the caller, such as
+/// the arguments of the CLI, over each configuration file. Folders that the settings above them
+/// ignore are skipped.
 ///
 /// This walks the file system, so call it off the async runtime. Fails if the project is not
 /// registered.
@@ -205,6 +212,7 @@ pub fn apply_nested_configurations(
     fs: &DynRef<'_, dyn FileSystem>,
     project_key: ProjectKey,
     search: NestedConfigurationSearch,
+    environment: Option<&PartialDatabaseConfiguration>,
     configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
 ) -> Result<NestedConfigurations, WorkspaceError> {
     let NestedConfigurationSearch {
@@ -228,16 +236,18 @@ pub fn apply_nested_configurations(
     let nested = directories
         .into_iter()
         .map(|directory| {
-            load_nested_configuration(fs, &directory, &configure).unwrap_or_else(|error| {
-                load_errors.push((directory.clone(), error));
-                // Neither the configuration above it nor a part of the broken one applies.
-                NestedSettingsParams {
-                    directory,
-                    configuration: PartialConfiguration::default(),
-                    vcs_base_path: None,
-                    gitignore_matches: Vec::new(),
-                }
-            })
+            load_nested_configuration(fs, &directory, environment, &configure).unwrap_or_else(
+                |error| {
+                    load_errors.push((directory.clone(), error));
+                    // Neither the configuration above it nor a part of the broken one applies.
+                    NestedSettingsParams {
+                        directory,
+                        configuration: PartialConfiguration::default(),
+                        vcs_base_path: None,
+                        gitignore_matches: Vec::new(),
+                    }
+                },
+            )
         })
         .collect();
 
@@ -399,13 +409,23 @@ fn is_not_a_project_folder(fs: &DynRef<'_, dyn FileSystem>, folder: &Path) -> bo
 fn load_nested_configuration(
     fs: &DynRef<'_, dyn FileSystem>,
     directory: &Path,
+    environment: Option<&PartialDatabaseConfiguration>,
     configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
 ) -> Result<NestedSettingsParams, WorkspaceError> {
     let loaded = load_configuration(
         fs,
         ConfigurationPathHint::FromWorkspace(directory.to_path_buf()),
     )?;
-    let configuration = configure(loaded.configuration);
+    let mut configuration = loaded.configuration;
+    if let Some(environment) = environment
+        .and_then(|environment| environment.for_nested_configuration(loaded.file_database.as_ref()))
+    {
+        configuration.merge_with(PartialConfiguration {
+            db: Some(environment),
+            ..Default::default()
+        });
+    }
+    let configuration = configure(configuration);
     let (vcs_base_path, gitignore_matches) =
         configuration.retrieve_gitignore_matches(fs, Some(directory))?;
     Ok(NestedSettingsParams {

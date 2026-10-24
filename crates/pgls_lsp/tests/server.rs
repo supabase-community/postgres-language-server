@@ -3433,3 +3433,63 @@ async fn configuration_changes_are_coalesced() -> Result<()> {
     reader.abort();
     Ok(())
 }
+
+/// A workspace folder whose configuration file is broken keeps its own project with the default
+/// settings, and a file outside every workspace folder gets the defaults too. Neither gets the
+/// settings of another folder, which could point at another database.
+#[tokio::test]
+async fn files_never_get_the_settings_of_another_workspace_folder() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    for (folder, configuration) in [
+        (
+            "one",
+            r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        ("two", "{ this is not json"),
+    ] {
+        std::fs::create_dir_all(root.path().join(folder))?;
+        std::fs::write(
+            root.path().join(folder).join(ConfigName::pgls_jsonc()),
+            configuration,
+        )?;
+    }
+    let folder = |name: &str| WorkspaceFolder {
+        uri: Uri::from_file_path(root.path().join(name)).unwrap(),
+        name: name.to_string(),
+    };
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_folders(folder("one").uri, Some(vec![folder("one"), folder("two")]))
+        .await?;
+    server.initialized().await?;
+
+    let document = |path: &str| Uri::from_file_path(root.path().join(path)).unwrap();
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("one/a.sql")).await?,
+        [lsp::DiagnosticSeverity::ERROR]
+    );
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("two/a.sql")).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("elsewhere/a.sql")).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
