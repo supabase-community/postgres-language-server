@@ -75,6 +75,7 @@ fn format_with_guard<'ctx>(
             file_name: path.display().to_string(),
             diff,
             start_line,
+            statement: true,
         }));
     }
 
@@ -87,6 +88,7 @@ fn format_with_guard<'ctx>(
                 &format_result.formatted,
             ),
             start_line: 0,
+            statement: false,
         }));
     }
 

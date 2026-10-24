@@ -375,8 +375,8 @@ fn to_formatter_settings(
 ) -> Result<FormatterSettings, WorkspaceError> {
     Ok(FormatterSettings {
         enabled: conf.enabled,
-        line_width: conf.line_width,
-        indent_size: conf.indent_size,
+        line_width: conf.line_width.get(),
+        indent_size: conf.indent_size.get(),
         indent_style: conf.indent_style,
         keyword_case: conf.keyword_case,
         constant_case: conf.constant_case,
