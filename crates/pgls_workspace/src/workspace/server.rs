@@ -556,7 +556,7 @@ impl WorkspaceServer {
         snapshot: &Arc<Snapshot>,
         position: TextSize,
     ) -> Vec<Reference> {
-        let mut innermost: Option<(TextRange, Vec<Reference>)> = None;
+        let mut innermost: Option<(TextRange, TextSize, Vec<Reference>)> = None;
         self.walk_statements(
             doc,
             snapshot,
@@ -568,7 +568,7 @@ impl WorkspaceServer {
                 if !stmt.range.contains(position)
                     || innermost
                         .as_ref()
-                        .is_some_and(|(range, _)| !range.contains_range(stmt.range))
+                        .is_some_and(|(range, _, _)| !range.contains_range(stmt.range))
                 {
                     return;
                 }
@@ -581,13 +581,12 @@ impl WorkspaceServer {
                     collect_references: true,
                 })
                 .references;
-                innermost = Some((stmt.range, references));
+                innermost = Some((stmt.range, stmt.statement_offset(position), references));
             },
         );
-        let Some((range, references)) = innermost else {
+        let Some((_, position, references)) = innermost else {
             return Vec::new();
         };
-        let position = position - range.start();
         references
             .into_iter()
             .filter(|reference| {
@@ -1714,7 +1713,8 @@ impl Workspace for WorkspaceServer {
                 Ok(CompletionsResult::default())
             }
             Some((id, range, cst)) => {
-                let position = params.position - range.start();
+                let offsets = parsed_doc.statement_offsets(&id);
+                let position = offsets.to_statement(params.position - range.start());
                 let snapshot = self.snapshot_before(parsed_doc, range.start(), snapshot);
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
@@ -1724,7 +1724,9 @@ impl Workspace for WorkspaceServer {
                     text: id.content().to_string(),
                 });
 
-                Ok(CompletionsResult::with_offset(items, range.start()))
+                Ok(CompletionsResult::with_ranges(items, |item_range| {
+                    offsets.range_to_document(item_range) + range.start()
+                }))
             }
         }
     }
@@ -1769,7 +1771,9 @@ impl Workspace for WorkspaceServer {
             .last()
         {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
-                let position_in_stmt = params.position - range.start();
+                let position_in_stmt = doc
+                    .statement_offsets(&stmt_id)
+                    .to_statement(params.position - range.start());
                 let references = self.references_at(doc, &snapshot, params.position);
                 let snapshot = self.snapshot_before(doc, range.start(), snapshot);
 
@@ -1853,7 +1857,7 @@ impl Workspace for WorkspaceServer {
                     })
                     .into_iter()
                     .map(|hint| InlayHint {
-                        offset: hint.offset + stmt.range.start(),
+                        offset: stmt.document_offset(hint.offset),
                         label: hint.label,
                         kind: hint.kind.into(),
                     }),
@@ -1928,7 +1932,7 @@ impl Workspace for WorkspaceServer {
                 })
                 .into_iter()
                 .map(|token| SemanticToken {
-                    range: token.range + stmt.range.start(),
+                    range: stmt.document_range(token.range),
                     kind: token.kind.into(),
                     default_library: token.default_library,
                 }),

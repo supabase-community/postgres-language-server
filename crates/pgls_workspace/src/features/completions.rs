@@ -22,10 +22,14 @@ pub struct CompletionsResult {
 }
 
 impl CompletionsResult {
-    pub fn with_offset(mut items: Vec<CompletionItem>, offset: TextSize) -> Self {
+    /// The items with the ranges of their edits moved from the statement to the document.
+    pub fn with_ranges(
+        mut items: Vec<CompletionItem>,
+        to_document: impl Fn(TextRange) -> TextRange,
+    ) -> Self {
         for item in &mut items {
             if let Some(text_edit) = &mut item.completion_text {
-                text_edit.range += offset;
+                text_edit.range = to_document(text_edit.range);
             }
         }
 

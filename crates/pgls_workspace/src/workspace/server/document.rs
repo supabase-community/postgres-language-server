@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pgls_analyser::{AnalysableStatement, UnparsableStatement};
+use pgls_analyser::{AnalysableStatement, StatementOffsets, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_suppressions::Suppressions;
@@ -9,7 +9,7 @@ use pgls_text_size::{TextRange, TextSize};
 use super::{
     annotation::AnnotationStore,
     pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
-    sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
+    sql_function::{SQLFunctionSignature, get_sql_fn_bodies, get_sql_fn_signature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
 };
@@ -92,6 +92,24 @@ impl Document {
         ParseIterator::new(self, mapper, filter)
     }
 
+    /// Where the text of the statement `id` is in the document, if it is not a slice of it: a
+    /// statement in the body of a SQL function quoted with `'`, which contains `''`.
+    pub fn statement_offsets(&self, id: &StatementId) -> StatementOffsets {
+        // Only a body with a `'` can have been written with `''`.
+        let Some(parent) = id.parent().filter(|_| id.content().contains('\'')) else {
+            return StatementOffsets::default();
+        };
+        let ast = self.ast_db.get_or_cache_ast(&parent);
+        let Ok(ast) = ast.as_ref() else {
+            return StatementOffsets::default();
+        };
+        get_sql_fn_bodies(ast, parent.content())
+            .into_iter()
+            .find(|body| body.body == id.content())
+            .map(|body| body.offsets)
+            .unwrap_or_default()
+    }
+
     #[allow(dead_code)]
     pub fn count(&self) -> usize {
         self.iter(DefaultMapper).count()
@@ -155,14 +173,13 @@ where
             let root_id = StatementId::new(content);
 
             if let Ok(ast) = self.parser.ast_db.get_or_cache_ast(&root_id).as_ref() {
-                // Check if this is a SQL function definition with a body
-                if let Some(sub_statement) = get_sql_fn_body(ast, content) {
-                    // Add sub-statements to our pending queue
+                // The statements of the body of a SQL function, popped in order.
+                for sub_statement in get_sql_fn_bodies(ast, content).into_iter().rev() {
                     self.pending_sub_statements.push((
                         root_id.create_child(&sub_statement.body),
                         // adjust range to document
                         sub_statement.range + range.start(),
-                        sub_statement.body.clone(),
+                        sub_statement.body,
                     ));
                 }
             }
@@ -300,6 +317,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
                 AnalysableStatement::new(root, range)
                     .with_sql(id.content())
                     .with_function(function)
+                    .with_offsets(parser.statement_offsets(&id))
                     .with_identifier_parameters(
                         convert_to_positional_params_with_metadata(id.content())
                             .has_identifier_parameters,

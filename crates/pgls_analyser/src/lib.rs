@@ -17,6 +17,7 @@ mod linter_rule;
 mod migration;
 pub mod options;
 mod registry;
+mod statement_offsets;
 
 // Re-export linter-specific types
 pub use linter_context::{AnalysedFileContext, FileKind, LinterRuleContext, StatementContext};
@@ -26,6 +27,7 @@ pub use linter_registry::{
 };
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use migration::{Direction, MigrationSection};
+pub use statement_offsets::StatementOffsets;
 
 // For convenience in macros and rule files - keep these shorter names
 pub use LinterDiagnostic as RuleDiagnostic;
@@ -87,6 +89,8 @@ pub struct AnalysableStatement {
     /// Set when identifiers of the statement are client-side parameters, like psql's
     /// `:schema.table`. The parsed names are placeholders, so the statement isn't typechecked.
     pub has_identifier_parameters: bool,
+    /// Where the text of the statement is in the document, if it is not a slice of it.
+    pub offsets: StatementOffsets,
 }
 
 impl AnalysableStatement {
@@ -97,7 +101,28 @@ impl AnalysableStatement {
             sql: None,
             function: None,
             has_identifier_parameters: false,
+            offsets: StatementOffsets::default(),
         }
+    }
+
+    pub fn with_offsets(mut self, offsets: StatementOffsets) -> Self {
+        self.offsets = offsets;
+        self
+    }
+
+    /// The range in the document of `range` in the statement.
+    pub fn document_range(&self, range: TextRange) -> TextRange {
+        self.offsets.range_to_document(range) + self.range.start()
+    }
+
+    /// The offset in the document of `offset` in the statement.
+    pub fn document_offset(&self, offset: TextSize) -> TextSize {
+        self.offsets.to_document(offset) + self.range.start()
+    }
+
+    /// The offset in the statement of `offset` in the document, which must be in the statement.
+    pub fn statement_offset(&self, offset: TextSize) -> TextSize {
+        self.offsets.to_statement(offset - self.range.start())
     }
 
     pub fn with_sql(mut self, sql: impl Into<String>) -> Self {
@@ -268,7 +293,7 @@ impl<'a> Analyser<'a> {
                         .diagnostics
                         .extend(diagnostics.into_iter().map(|mut diagnostic| {
                             diagnostic.span = Some(match diagnostic.span {
-                                Some(span) => span + stmt.range.start(),
+                                Some(span) => stmt.document_range(span),
                                 None => stmt.range,
                             });
                             // Fixes are computed on the statement text, which only matches the

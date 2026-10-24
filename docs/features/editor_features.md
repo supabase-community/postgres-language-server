@@ -2,7 +2,7 @@
 
 When connected to a database, the language server helps you write SQL with autocompletion, hover information, inlay hints, and semantic highlighting.
 
-Hover, inlay hints, and semantic highlighting follow Postgres' name resolution. They see the database schema with the DDL of the current file applied on top of it, so a table created or altered earlier in the file is known, and the search path follows `set search_path` in the file. They also work in the bodies of `LANGUAGE sql` functions, where the function's parameters are in scope.
+Hover, inlay hints, and semantic highlighting follow Postgres' name resolution. They see the database schema with the DDL of the current file applied on top of it, so a table created or altered earlier in the file is known, and the search path follows `set search_path` in the file. They also work in the bodies of SQL functions, quoted with `$$` or `'`, or written with `BEGIN ATOMIC` or `RETURN`, where the function's parameters are in scope.
 
 ## Requirements
 
@@ -93,6 +93,6 @@ The language server asks the editor to request inlay hints and semantic tokens a
 - Only names that resolve to exactly one object get a hover from the resolver, an inlay hint, or a token. Ambiguous calls, unknown objects, and constructs the resolver doesn't model are skipped.
 - The effects of `DO` blocks, `CALL`, `EXECUTE`, and statements that don't parse on the schema are unknown. The statements after them are resolved as if they changed nothing, so an object a `DO` block creates is not known, and one it drops still is.
 - `CALL` of a procedure with output parameters gets no hints, tokens, or resolved hover.
-- Statements in `BEGIN ATOMIC` function bodies and in `'...'`-quoted bodies that contain `''` are not resolved. `$$`-quoted bodies are. PL/pgSQL bodies are not covered.
+- PL/pgSQL bodies, and SQL function bodies in `E'...'` strings, are not covered.
 - No tokens for roles, for schemas outside qualified names, for DDL (column types in `create table`, function signatures), for CTE names, or for table aliases. Tokens that span several lines are skipped.
 - Each request resolves the file up to the visible range. On very long files, like schema dumps with thousands of statements, hints and tokens take longer to appear.
