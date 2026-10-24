@@ -552,6 +552,10 @@ export interface PartialInlayHintsConfiguration {
    * if `false`, the language server sends no inlay hints. `true` by default
    */
   enabled?: boolean;
+  /**
+   * Which arguments of function calls show the name of their parameter: "all", "literals" (only constants like `1`, `'a'`, `true` or `null`) or "none". Default: "all".
+   */
+  parameterNames?: ParameterNameHints;
 }
 export interface PartialLinterConfiguration {
   /**
@@ -750,6 +754,10 @@ export type Layout = "fit" | "expanded";
  * Where a boolean operator sits when a condition breaks across lines.
  */
 export type LogicalOperatorPlacement = "trailing" | "leading";
+/**
+ * Which arguments of function calls show the name of their parameter.
+ */
+export type ParameterNameHints = "all" | "literals" | "none";
 /**
  * The level of all rules of a group, unless a rule is configured individually.
  */

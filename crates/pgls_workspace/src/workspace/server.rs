@@ -37,6 +37,7 @@ use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
+use pgls_configuration::inlay_hints::ParameterNameHints;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
@@ -1738,13 +1739,22 @@ impl Workspace for WorkspaceServer {
         let doc = self.document(&params.path)?;
         let doc = doc.as_ref();
 
-        if !self
-            .workspaces()
-            .settings()
-            .is_none_or(|settings| settings.inlay_hints.enabled)
-        {
-            return Ok(PullInlayHintsResult::default());
-        }
+        let parameter_names =
+            match self
+                .workspaces()
+                .settings()
+                .map_or(Some(ParameterNameHints::All), |settings| {
+                    settings
+                        .inlay_hints
+                        .enabled
+                        .then_some(settings.inlay_hints.parameter_names)
+                }) {
+                Some(ParameterNameHints::All) => pgls_inlay_hints::ParameterNameHints::All,
+                Some(ParameterNameHints::Literals) => {
+                    pgls_inlay_hints::ParameterNameHints::Literals
+                }
+                Some(ParameterNameHints::None) | None => return Ok(PullInlayHintsResult::default()),
+            };
 
         #[cfg(feature = "db")]
         let Some(snapshot) = self
@@ -1774,14 +1784,17 @@ impl Workspace for WorkspaceServer {
         let mut hints = Vec::new();
         for statement in statements {
             hints.extend(
-                pgls_inlay_hints::inlay_hints_of_references(&statement.references, statement.sql())
-                    .into_iter()
-                    .map(|hint| InlayHint {
-                        offset: statement.offsets.to_document(hint.offset)
-                            + statement.range.start(),
-                        label: hint.label,
-                        kind: hint.kind.into(),
-                    }),
+                pgls_inlay_hints::inlay_hints_of_references(
+                    &statement.references,
+                    statement.sql(),
+                    parameter_names,
+                )
+                .into_iter()
+                .map(|hint| InlayHint {
+                    offset: statement.offsets.to_document(hint.offset) + statement.range.start(),
+                    label: hint.label,
+                    kind: hint.kind.into(),
+                }),
             );
         }
 
