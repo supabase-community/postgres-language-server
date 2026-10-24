@@ -14,23 +14,26 @@ use super::{
     tree_sitter::TreeSitterStore,
 };
 
+/// An open document. Cloning it is cheap: the caches of its statements are shared, which is
+/// correct because they are keyed by the statement text.
+#[derive(Clone)]
 pub struct Document {
     content: String,
     version: i32,
     ranges: Vec<TextRange>,
     diagnostics: Vec<SDiagnostic>,
-    ast_db: PgQueryStore,
-    cst_db: TreeSitterStore,
+    ast_db: Arc<PgQueryStore>,
+    cst_db: Arc<TreeSitterStore>,
     #[allow(dead_code)]
-    annotation_db: AnnotationStore,
+    annotation_db: Arc<AnnotationStore>,
     suppressions: Suppressions,
 }
 
 impl Document {
     pub fn new(content: String, version: i32) -> Document {
-        let cst_db = TreeSitterStore::new();
-        let ast_db = PgQueryStore::new();
-        let annotation_db = AnnotationStore::new();
+        let cst_db = Arc::new(TreeSitterStore::new());
+        let ast_db = Arc::new(PgQueryStore::new());
+        let annotation_db = Arc::new(AnnotationStore::new());
         let suppressions = Suppressions::from(content.as_str());
 
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
@@ -99,6 +102,10 @@ impl Document {
     /// functions are not included.
     pub fn statement_ranges(&self) -> &[TextRange] {
         &self.ranges
+    }
+
+    pub fn version(&self) -> i32 {
+        self.version
     }
 
     pub fn iter_with_filter<'a, M, F>(&'a self, mapper: M, filter: F) -> ParseIterator<'a, M, F>

@@ -105,7 +105,9 @@ pub struct WorkspaceServer {
     /// global settings object for this workspace
     settings: RwLock<WorkspaceSettings>,
 
-    documents: RwLock<HashMap<PgLSPath, Document>>,
+    /// The open documents. Requests that take long clone the `Arc` and release the lock, so
+    /// that changes to the documents aren't blocked.
+    documents: RwLock<HashMap<PgLSPath, Arc<Document>>>,
 
     /// The database snapshots, loaded from a database connection or from JSON
     snapshot: SnapshotManager,
@@ -477,12 +479,14 @@ impl WorkspaceServer {
         snapshot: &Arc<Snapshot>,
         position: TextSize,
     ) -> Vec<Reference> {
-        let statements = self.walk_references(
+        let Some(statements) = self.walk_references(
             path,
             doc,
             snapshot,
             TextRange::at(position, TextSize::from(1)),
-        );
+        ) else {
+            return Vec::new();
+        };
         let mut innermost: Option<&editor_walk::WalkedStatement> = None;
         for statement in &statements {
             if statement.range.contains(position)
@@ -507,6 +511,25 @@ impl WorkspaceServer {
             })
             .cloned()
             .collect()
+    }
+
+    /// The open document at `path`. Holding it doesn't block changes to the document.
+    fn document(&self, path: &PgLSPath) -> Result<Arc<Document>, WorkspaceError> {
+        self.documents
+            .read()
+            .unwrap()
+            .get(path)
+            .cloned()
+            .ok_or_else(WorkspaceError::not_found)
+    }
+
+    /// Whether the document at `path` changed since `doc` was taken.
+    fn is_outdated(&self, path: &PgLSPath, doc: &Document) -> bool {
+        self.documents
+            .read()
+            .unwrap()
+            .get(path)
+            .is_none_or(|current| current.version() != doc.version())
     }
 
     /// The indexed database snapshot, built once per snapshot.
@@ -840,7 +863,7 @@ impl Workspace for WorkspaceServer {
         let mut documents = self.documents.write().unwrap();
         documents
             .entry(params.path.clone())
-            .or_insert_with(|| Document::new(params.content, params.version));
+            .or_insert_with(|| Arc::new(Document::new(params.content, params.version)));
 
         if let Some(project_key) = self.path_belongs_to_current_workspace(&params.path) {
             self.set_current_project(project_key);
@@ -872,12 +895,11 @@ impl Workspace for WorkspaceServer {
 
         match documents.entry(params.path.clone()) {
             std::collections::hash_map::Entry::Occupied(mut entry) => {
-                entry
-                    .get_mut()
-                    .update_content(params.content, params.version);
+                // Clones the document if a request still works on the previous version.
+                Arc::make_mut(entry.get_mut()).update_content(params.content, params.version);
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
-                entry.insert(Document::new(params.content, params.version));
+                entry.insert(Arc::new(Document::new(params.content, params.version)));
             }
         }
 
@@ -906,10 +928,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: CodeActionsParams,
     ) -> Result<CodeActionsResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let parser = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let parser = self.document(&params.path)?;
+        let parser = parser.as_ref();
 
         let settings = self.workspaces();
         let settings = settings.settings();
@@ -1652,10 +1672,8 @@ impl Workspace for WorkspaceServer {
         position = params.position.to_string()
     ), err)]
     fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let doc = self.document(&params.path)?;
+        let doc = doc.as_ref();
 
         #[cfg(feature = "db")]
         let Some(snapshot) = self
@@ -1717,10 +1735,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullInlayHintsParams,
     ) -> Result<PullInlayHintsResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let doc = self.document(&params.path)?;
+        let doc = doc.as_ref();
 
         if !self
             .workspaces()
@@ -1750,8 +1766,13 @@ impl Workspace for WorkspaceServer {
             return Ok(PullInlayHintsResult::default());
         };
 
+        let Some(statements) = self.walk_references(&params.path, doc, &snapshot, params.range)
+        else {
+            tracing::debug!("The document changed. Skipping inlay hints.");
+            return Ok(PullInlayHintsResult::default());
+        };
         let mut hints = Vec::new();
-        for statement in self.walk_references(&params.path, doc, &snapshot, params.range) {
+        for statement in statements {
             hints.extend(
                 pgls_inlay_hints::inlay_hints_of_references(&statement.references, statement.sql())
                     .into_iter()
@@ -1777,10 +1798,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullSemanticTokensParams,
     ) -> Result<PullSemanticTokensResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let doc = self.document(&params.path)?;
+        let doc = doc.as_ref();
 
         if !self
             .workspaces()
@@ -1813,8 +1832,12 @@ impl Workspace for WorkspaceServer {
         let range = params
             .range
             .unwrap_or_else(|| TextRange::up_to(TextSize::of(doc.get_document_content())));
+        let Some(statements) = self.walk_references(&params.path, doc, &snapshot, range) else {
+            tracing::debug!("The document changed. Skipping semantic tokens.");
+            return Ok(PullSemanticTokensResult::default());
+        };
         let mut tokens = Vec::new();
-        for statement in self.walk_references(&params.path, doc, &snapshot, range) {
+        for statement in statements {
             tokens.extend(
                 pgls_semantic_tokens::semantic_tokens_of_references(
                     &statement.references,

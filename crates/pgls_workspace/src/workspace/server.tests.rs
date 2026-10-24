@@ -2585,3 +2585,65 @@ async fn test_editor_walk_cache_follows_edits(test_db: PgPool) {
         );
     }
 }
+
+/// Requests work on a snapshot of the document: changing it doesn't wait for them, and a walk of
+/// an outdated snapshot is abandoned.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_editor_requests_use_document_snapshots(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "create table items (id int);\nselect id from items;\n".repeat(100);
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let snapshot = {
+        let settings = workspace.workspaces();
+        let settings = settings.settings().unwrap();
+        workspace
+            .connection
+            .with_pool(&settings.db, |pool| workspace.snapshot.load(pool))
+            .unwrap()
+            .unwrap()
+    };
+    let outdated = workspace.document(&path).expect("an open document");
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            path: path.clone(),
+            version: 2,
+            content: format!("{content}select 1;\n"),
+        })
+        .expect("Unable to change test file");
+    assert_eq!(outdated.get_document_content(), content);
+
+    let everything = TextRange::up_to(TextSize::of(content.as_str()));
+    assert!(
+        workspace
+            .walk_references(&path, &outdated, &snapshot, everything)
+            .is_none()
+    );
+    let current = workspace.document(&path).expect("an open document");
+    assert!(
+        workspace
+            .walk_references(&path, &current, &snapshot, everything)
+            .is_some_and(|statements| statements.len() == 200)
+    );
+}

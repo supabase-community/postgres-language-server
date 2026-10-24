@@ -337,6 +337,37 @@ fn measure(workspace: &WorkspaceServer, name: &str, content: &str) {
         "  {:<40} {best:>9.1} ms",
         "edit @end, then tokens + hints @end"
     );
+
+    // An edit while a request walks the whole file.
+    workspace.editor_walks.lock().unwrap().clear();
+    let (request, change) = std::thread::scope(|scope| {
+        let request = scope.spawn(|| {
+            time_once(|| {
+                workspace
+                    .pull_semantic_tokens(PullSemanticTokensParams {
+                        path: path.clone(),
+                        range: None,
+                    })
+                    .unwrap()
+            })
+            .0
+        });
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        let (change, ()) = time_once(|| {
+            workspace
+                .change_file(crate::workspace::ChangeFileParams {
+                    path: path.clone(),
+                    version: 10,
+                    content: content.to_string(),
+                })
+                .unwrap()
+        });
+        (request.join().unwrap(), change)
+    });
+    println!(
+        "  {:<40} {change:>9.1} ms  (the request took {request:.1} ms)",
+        "edit during a full token request"
+    );
 }
 
 #[ignore = "timing benchmark"]
