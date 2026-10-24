@@ -60,18 +60,20 @@ select
   cast(thousand as bit(10)),
   cast(cast(tenthous as bit(16)) as varbit),
   cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
-  cast(format(
-    '%s%s-%s-%s-%s-%s%s%s',
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000')
-  )
-  as uuid),
+  cast(
+    format(
+      '%s%s-%s-%s-%s-%s%s%s',
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000')
+    )
+    as uuid
+  ),
   int4range(thousand, twothousand),
   cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn),
   box(point(odd, even), point(thousand, twothousand))
@@ -493,18 +495,20 @@ select
   cast(thousand as bit(10)),
   cast(cast(tenthous as bit(16)) as varbit),
   cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
-  cast(format(
-    '%s%s-%s-%s-%s-%s%s%s',
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000')
-  )
-  as uuid),
+  cast(
+    format(
+      '%s%s-%s-%s-%s-%s%s%s',
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000')
+    )
+    as uuid
+  ),
   int4range(thousand, twothousand),
   cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn),
   box(point(odd, even), point(thousand, twothousand))

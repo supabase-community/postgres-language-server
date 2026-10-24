@@ -162,8 +162,10 @@ select pg_current_xact_id() >= pg_snapshot_xmin(pg_current_snapshot());
 select pg_visible_in_snapshot(pg_current_xact_id(), pg_current_snapshot());
 
 select
-  cast('1000100010001000:1000100010001100:1000100010001012,1000100010001013'
-  as pg_snapshot);
+  cast(
+    '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+    as pg_snapshot
+  );
 
 select
   pg_visible_in_snapshot(

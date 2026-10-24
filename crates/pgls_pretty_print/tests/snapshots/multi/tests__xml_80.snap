@@ -360,8 +360,9 @@ execute foo ('<bar/>');
 execute foo ('good');
 
 select
-  cast('<!-- in SQL:2006+ a doc is content too--> <?y z?> <!DOCTYPE a><a/>'
-  as xml);
+  cast(
+    '<!-- in SQL:2006+ a doc is content too--> <?y z?> <!DOCTYPE a><a/>' as xml
+  );
 
 select cast('<?xml version="1.0"?> <!-- hi--> <!DOCTYPE a><a/>' as xml);
 
@@ -528,15 +529,19 @@ select xmlexists('count(/nosuchtag)' passing '<root/>');
 select
   xpath_exists(
     '//town[text() = ''Toronto'']',
-    cast('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
-    as xml)
+    cast(
+      '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+      as xml
+    )
   );
 
 select
   xpath_exists(
     '//town[text() = ''Cwmbran'']',
-    cast('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
-    as xml)
+    cast(
+      '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+      as xml
+    )
   );
 
 select xpath_exists('count(/nosuchtag)', cast('<root/>' as xml));
@@ -545,32 +550,40 @@ insert into xmltest
 values
   (
     4,
-    cast('<menu><beers><name>Budvar</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
-    as xml)
+    cast(
+      '<menu><beers><name>Budvar</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
+      as xml
+    )
   );
 
 insert into xmltest
 values
   (
     5,
-    cast('<menu><beers><name>Molson</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
-    as xml)
+    cast(
+      '<menu><beers><name>Molson</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
+      as xml
+    )
   );
 
 insert into xmltest
 values
   (
     6,
-    cast('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Budvar</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
-    as xml)
+    cast(
+      '<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Budvar</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
+      as xml
+    )
   );
 
 insert into xmltest
 values
   (
     7,
-    cast('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Molson</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
-    as xml)
+    cast(
+      '<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Molson</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
+      as xml
+    )
   );
 
 select count(id) from xmltest where xmlexists('/menu/beer' passing data);

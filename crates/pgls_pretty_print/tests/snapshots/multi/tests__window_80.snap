@@ -271,9 +271,11 @@ where
   unique2 < 10;
 
 select
-  cast(count(*) over (partition by four order by ten) +
-  sum(hundred) over (partition by four order by ten)
-  as varchar)
+  cast(
+    count(*) over (partition by four order by ten) +
+    sum(hundred) over (partition by four order by ten)
+    as varchar
+  )
   as cntsum
 from
   tenk1

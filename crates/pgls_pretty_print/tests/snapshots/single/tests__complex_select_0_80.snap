@@ -52,15 +52,15 @@ transform_json as (
     view_id,
     view_schema,
     view_name,
-    cast(replace(
+    cast(
       replace(
         replace(
           replace(
             replace(
               replace(
                 replace(
-                  regexp_replace(
-                    replace(
+                  replace(
+                    regexp_replace(
                       replace(
                         replace(
                           replace(
@@ -71,66 +71,68 @@ transform_json as (
                                     replace(
                                       replace(
                                         replace(
-                                          cast(view_definition as text),
-                                          '<>',
-                                          '()'
+                                          replace(
+                                            cast(view_definition as text),
+                                            '<>',
+                                            '()'
+                                          ),
+                                          ',',
+                                          ''
                                         ),
-                                        ',',
+                                        '\\{',
                                         ''
                                       ),
-                                      '\\{',
+                                      '\\}',
                                       ''
                                     ),
-                                    '\\}',
-                                    ''
+                                    ' :targetList ',
+                                    ',"targetList":'
                                   ),
-                                  ' :targetList ',
-                                  ',"targetList":'
+                                  ' :resno ',
+                                  ',"resno":'
                                 ),
-                                ' :resno ',
-                                ',"resno":'
+                                ' :resorigtbl ',
+                                ',"resorigtbl":'
                               ),
-                              ' :resorigtbl ',
-                              ',"resorigtbl":'
+                              ' :resorigcol ',
+                              ',"resorigcol":'
                             ),
-                            ' :resorigcol ',
-                            ',"resorigcol":'
+                            '{',
+                            '{ :'
                           ),
-                          '{',
-                          '{ :'
+                          '((',
+                          '{(('
                         ),
-                        '((',
-                        '{(('
+                        '({',
+                        '{({'
                       ),
-                      '({',
-                      '{({'
+                      ' :[^}{,]+',
+                      ',"":',
+                      'g'
                     ),
-                    ' :[^}{,]+',
-                    ',"":',
-                    'g'
+                    ',"":}',
+                    '}'
                   ),
-                  ',"":}',
-                  '}'
+                  ',"":,',
+                  ','
                 ),
-                ',"":,',
-                ','
+                '{(',
+                '('
               ),
-              '{(',
-              '('
+              '{,',
+              '{'
             ),
-            '{,',
-            '{'
+            '(',
+            '['
           ),
-          '(',
-          '['
+          ')',
+          ']'
         ),
-        ')',
-        ']'
-      ),
-      ' ',
-      ','
+        ' ',
+        ','
+      )
+      as json
     )
-    as json)
     as view_definition
   from
     views

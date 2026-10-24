@@ -67,8 +67,10 @@ select txid_current() >= txid_snapshot_xmin(txid_current_snapshot());
 select txid_visible_in_snapshot(txid_current(), txid_current_snapshot());
 
 select
-  cast('1000100010001000:1000100010001100:1000100010001012,1000100010001013'
-  as txid_snapshot);
+  cast(
+    '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+    as txid_snapshot
+  );
 
 select
   txid_visible_in_snapshot(

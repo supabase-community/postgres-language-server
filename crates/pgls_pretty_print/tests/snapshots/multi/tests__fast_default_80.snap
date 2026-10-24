@@ -266,8 +266,9 @@ insert into t values (9), (10);
 
 alter table t
   add column c_array text[]
-      default cast('{"This", "is", "' || foo(4) || '","the", "real", "world"}'
-      as text[]),
+      default cast(
+        '{"This", "is", "' || foo(4) || '","the", "real", "world"}' as text[]
+      ),
   alter column c_timestamp set default cast('1970-12-31' as date) +
   length(foo(30));
 
@@ -275,9 +276,9 @@ insert into t values (11), (12);
 
 alter table t
   alter column c_int drop default,
-  alter column c_array set default cast('{"This", "is", "' || foo(1) ||
-  '", "fantasy"}'
-  as text[]);
+  alter column c_array set default cast(
+    '{"This", "is", "' || foo(1) || '", "fantasy"}' as text[]
+  );
 
 insert into t values (13), (14);
 
@@ -303,8 +304,9 @@ create domain domain2 as int default random(min := 10, max := 100);
 create domain domain3 as text default foo(4);
 
 create domain domain4 as text[]
-  default cast('{"This", "is", "' || foo(4) || '","the", "real", "world"}'
-  as text[]);
+  default cast(
+    '{"This", "is", "' || foo(4) || '","the", "real", "world"}' as text[]
+  );
 
 create table t2 (a domain1);
 
