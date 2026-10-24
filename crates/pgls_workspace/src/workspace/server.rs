@@ -1728,7 +1728,11 @@ impl Workspace for WorkspaceServer {
                 Ok(ast) => {
                     let mut ast = ast;
                     if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
-                        sql_function::set_formatted_sql_fn_body(&mut ast, formatted_sql_fn_body);
+                        // Copies the tree only for the functions whose body is replaced.
+                        sql_function::set_formatted_sql_fn_body(
+                            Arc::make_mut(&mut ast),
+                            formatted_sql_fn_body,
+                        );
                     }
 
                     match pgls_pretty_print::format_statement(&ast, &text, &config) {
@@ -1952,7 +1956,7 @@ impl Workspace for WorkspaceServer {
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,
                     snapshot: &snapshot,
-                    ast: maybe_ast.as_ref(),
+                    ast: maybe_ast.as_deref(),
                     position: position_in_stmt,
                     stmt_sql: stmt_id.content(),
                     references: &references,

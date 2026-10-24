@@ -258,7 +258,12 @@ impl<'a> StatementMapper<'a> for DefaultMapper {
 
 pub struct ExecuteStatementMapper;
 impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
-    type Output = (StatementId, TextRange, String, Option<pgls_query::NodeEnum>);
+    type Output = (
+        StatementId,
+        TextRange,
+        String,
+        Option<Arc<pgls_query::NodeEnum>>,
+    );
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
         let ast_result = parser.ast_db.get_or_cache_ast(&id);
@@ -277,7 +282,7 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
         StatementId,
         TextRange,
         String,
-        Result<pgls_query::NodeEnum, pgls_query_ext::diagnostics::SyntaxDiagnostic>,
+        Result<Arc<pgls_query::NodeEnum>, pgls_query_ext::diagnostics::SyntaxDiagnostic>,
     );
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
@@ -296,7 +301,7 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (
         StatementId,
         TextRange,
-        Option<pgls_query::NodeEnum>,
+        Option<Arc<pgls_query::NodeEnum>>,
         Arc<tree_sitter::Tree>,
         Option<SQLFunctionSignature>,
     );
@@ -409,7 +414,7 @@ impl<'a> StatementMapper<'a> for WithCSTandASTMapper {
         StatementId,
         TextRange,
         Arc<tree_sitter::Tree>,
-        Option<pgls_query::NodeEnum>,
+        Option<Arc<pgls_query::NodeEnum>>,
     );
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {

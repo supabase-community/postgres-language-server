@@ -77,7 +77,9 @@ pub fn replacement_of_removed_rule(name: &str) -> Option<&'static str> {
 
 #[derive(Debug)]
 pub struct AnalysableStatement {
-    pub root: pgls_query::NodeEnum,
+    /// Shared with the workspace's cache of parsed statements, so that analysing a file doesn't
+    /// copy every statement's tree.
+    pub root: Arc<pgls_query::NodeEnum>,
     pub range: TextRange,
     /// The statement text, used for precise spans of typecheck findings.
     pub sql: Option<String>,
@@ -90,9 +92,9 @@ pub struct AnalysableStatement {
 }
 
 impl AnalysableStatement {
-    pub fn new(root: pgls_query::NodeEnum, range: TextRange) -> Self {
+    pub fn new(root: impl Into<Arc<pgls_query::NodeEnum>>, range: TextRange) -> Self {
         Self {
-            root,
+            root: root.into(),
             range,
             sql: None,
             function: None,
@@ -191,8 +193,7 @@ impl<'a> Analyser<'a> {
             .catalog_base
             .as_ref()
             .map(|base| base.snapshot().as_ref());
-        let roots: Vec<pgls_query::NodeEnum> =
-            params.stmts.iter().map(|s| s.root.clone()).collect();
+        let roots: Vec<&pgls_query::NodeEnum> = params.stmts.iter().map(|s| &*s.root).collect();
 
         let rules: Vec<_> = self
             .registry

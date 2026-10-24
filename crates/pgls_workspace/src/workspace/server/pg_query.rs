@@ -8,10 +8,14 @@ use rustc_hash::FxHashMap;
 
 use super::statement_identifier::StatementId;
 
+/// The tree of a statement, or why it doesn't parse.
+pub type ParseResult = Result<Arc<pgls_query::NodeEnum>, SyntaxDiagnostic>;
+
 /// The parse results of the statements of a document. They are kept until the statement is
 /// no longer in the document, see [`PgQueryStore::retain`].
 pub struct PgQueryStore {
-    ast_db: Mutex<FxHashMap<StatementId, Arc<Result<pgls_query::NodeEnum, SyntaxDiagnostic>>>>,
+    /// The tree is in an `Arc` of its own, so that the analyser can share it.
+    ast_db: Mutex<FxHashMap<StatementId, Arc<ParseResult>>>,
     plpgsql_db: Mutex<FxHashMap<StatementId, Result<(), SyntaxDiagnostic>>>,
 }
 
@@ -40,10 +44,7 @@ impl PgQueryStore {
         self.plpgsql_db.lock().unwrap().retain(|id, _| keep(id));
     }
 
-    pub fn get_or_cache_ast(
-        &self,
-        statement: &StatementId,
-    ) -> Arc<Result<pgls_query::NodeEnum, SyntaxDiagnostic>> {
+    pub fn get_or_cache_ast(&self, statement: &StatementId) -> Arc<ParseResult> {
         let mut cache = self.ast_db.lock().unwrap();
 
         if let Some(existing) = cache.get(statement) {
@@ -54,7 +55,7 @@ impl PgQueryStore {
             pgls_query::parse(&convert_to_positional_params(statement.content()))
                 .map_err(SyntaxDiagnostic::from)
                 .and_then(|ast| {
-                    ast.into_root().ok_or_else(|| {
+                    ast.into_root().map(Arc::new).ok_or_else(|| {
                         SyntaxDiagnostic::new("No root node found in parse result", None)
                     })
                 }),
@@ -69,7 +70,7 @@ impl PgQueryStore {
     ) -> Option<Result<(), SyntaxDiagnostic>> {
         let ast = self.get_or_cache_ast(statement);
 
-        let create_fn = match ast.as_ref() {
+        let create_fn = match ast.as_ref().as_deref() {
             Ok(pgls_query::NodeEnum::CreateFunctionStmt(node)) => node,
             _ => return None,
         };

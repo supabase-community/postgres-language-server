@@ -170,6 +170,7 @@ async fn open_documents_stay_within_the_budget(test_db: PgPool) {
 
     // The CLI: each file is opened, checked and closed.
     let reset = reset_peak();
+    let cli_started = std::time::Instant::now();
     for (document, content) in contents.iter().enumerate() {
         let path = PgLSPath::new(format!("cli_{document}.sql"));
         workspace
@@ -190,13 +191,14 @@ async fn open_documents_stay_within_the_budget(test_db: PgPool) {
             .unwrap();
         workspace.close_file(CloseFileParams { path }).unwrap();
     }
+    let cli_duration = cli_started.elapsed();
     let cli_peak = peak().saturating_sub(reset);
     let cli_retained = current().saturating_sub(baseline);
 
     println!(
         "{documents} documents, {:.1} MiB of SQL: one document peak {:.1} MiB, retained {:.1} MiB; \
          all open: peak {:.1} MiB, retained {:.1} MiB; retained after closing {:.1} MiB; \
-         CLI peak {:.1} MiB, retained {:.1} MiB",
+         CLI peak {:.1} MiB, retained {:.1} MiB, {cli_duration:.1?}",
         mib(text),
         mib(first.0),
         mib(first.1),
