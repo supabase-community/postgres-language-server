@@ -253,11 +253,11 @@ impl FileSystem for MemoryFileSystem {
 
     fn resolve_configuration(
         &self,
-        _specifier: &str,
+        specifier: &str,
         _path: &Path,
     ) -> Result<Resolution, ResolveError> {
-        // not needed for the memory file system
-        todo!()
+        // The memory file system has no `node_modules` to resolve packages from.
+        Err(ResolveError::NotFound(specifier.to_string()))
     }
 }
 

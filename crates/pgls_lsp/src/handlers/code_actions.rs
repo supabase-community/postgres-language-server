@@ -50,8 +50,8 @@ pub fn get_actions(
                                 title: title.clone(),
                                 command: command_id,
                                 arguments: Some(vec![
-                                    serde_json::to_value(&stmt_id).unwrap(),
-                                    serde_json::to_value(&url).unwrap(),
+                                    serde_json::to_value(&stmt_id).ok()?,
+                                    serde_json::to_value(&url).ok()?,
                                 ]),
                             }
                         }),

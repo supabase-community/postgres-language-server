@@ -36,3 +36,6 @@ serde_json              = { workspace = true }
 sqlx                    = { workspace = true }
 termcolor               = { workspace = true }
 tokio                   = { workspace = true }
+
+[lints]
+workspace = true

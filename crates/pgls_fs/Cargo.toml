@@ -31,3 +31,6 @@ serde  = ["dep:serde"]
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

@@ -12,6 +12,12 @@ license      = "MIT"
 repository   = "https://github.com/supabase-community/postgres-language-server"
 rust-version = "1.86.0"
 
+# Lints for every crate of the workspace. Each member opts in with `lints.workspace = true`.
+[workspace.lints.clippy]
+dbg_macro     = "deny"
+todo          = "deny"
+unimplemented = "deny"
+
 [workspace.dependencies]
 # supporting crates unrelated to postgres
 anyhow              = "1.0.92"

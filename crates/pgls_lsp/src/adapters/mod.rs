@@ -32,20 +32,12 @@ pub fn get_cursor_position(
     url: &Uri,
     position: Position,
 ) -> anyhow::Result<TextSize> {
-    let client_capabilities = session
-        .client_capabilities()
-        .expect("Client capabilities not established for current session.");
-
     let line_index = session
         .document(url)
         .map(|doc| doc.line_index)
         .map_err(|_| anyhow::anyhow!("Document not found."))?;
 
-    let cursor_pos = from_lsp::offset(
-        &line_index,
-        position,
-        negotiated_encoding(client_capabilities),
-    )?;
+    let cursor_pos = from_lsp::offset(&line_index, position, session.position_encoding())?;
 
     Ok(cursor_pos)
 }
