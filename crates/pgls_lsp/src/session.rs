@@ -120,7 +120,7 @@ pub(crate) struct Session {
 
     /// The projects whose folder is or is below a symlink, by the real path of the folder,
     /// deepest first.
-    real_folders: RwLock<Vec<(PathBuf, ProjectKey)>>,
+    real_folders: parking_lot::RwLock<Vec<(PathBuf, ProjectKey)>>,
 
     /// The project of the files outside every workspace folder, once one was opened.
     folderless_project: OnceLock<ProjectKey>,
@@ -265,7 +265,7 @@ impl Session {
             client_overrides: RwLock::new(ClientOverrides::default()),
             workspace_folders: RwLock::default(),
             projects: RwLock::default(),
-            real_folders: RwLock::default(),
+            real_folders: parking_lot::RwLock::default(),
             folderless_project: OnceLock::new(),
             root_files: parking_lot::RwLock::default(),
             configuration_files: parking_lot::RwLock::default(),
@@ -730,7 +730,6 @@ impl Session {
         if let Some((_, key)) = self
             .real_folders
             .read()
-            .unwrap()
             .iter()
             .find(|(folder, _)| path.starts_with(folder))
         {
@@ -832,7 +831,7 @@ impl Session {
             .filter_map(|(folder, key)| Some((real_path(folder)?, *key)))
             .collect();
         real_folders.sort_by_key(|(folder, _)| std::cmp::Reverse(folder.components().count()));
-        *self.real_folders.write().unwrap() = real_folders;
+        *self.real_folders.write() = real_folders;
         *self.projects.write().unwrap() = projects;
         if !matches!(status, ConfigurationStatus::Loaded) {
             // A broken file can't tell what it extends, so keep watching what it did before.
