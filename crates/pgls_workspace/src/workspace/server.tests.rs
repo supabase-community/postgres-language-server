@@ -3085,7 +3085,7 @@ async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
         project_key,
         nested: databases
             .iter()
-            .map(|database| NestedSettingsParams {
+            .map(|database| crate::workspace::NestedSettingsParams {
                 directory: PathBuf::from("/repo").join(database),
                 configuration: PartialConfiguration {
                     db: Some(PartialDatabaseConfiguration {
