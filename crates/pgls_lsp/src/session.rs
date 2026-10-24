@@ -120,20 +120,20 @@ pub(crate) struct Session {
 
     /// The projects whose folder is or is below a symlink, by the real path of the folder,
     /// deepest first.
-    real_folders: RwLock<Vec<(PathBuf, ProjectKey)>>,
+    real_folders: parking_lot::RwLock<Vec<(PathBuf, ProjectKey)>>,
 
     /// The project of the files outside every workspace folder, once one was opened.
     folderless_project: OnceLock<ProjectKey>,
 
     /// The files settings of the root configuration of each project, by its folder. They decide
     /// which folders are searched for nested configuration files.
-    root_files: RwLock<FxHashMap<PathBuf, Option<Arc<FilesSettings>>>>,
+    root_files: parking_lot::RwLock<FxHashMap<PathBuf, Option<Arc<FilesSettings>>>>,
 
     /// The files the configuration was loaded from besides the nested configuration files: the
     /// root configuration files, which can be above a workspace folder or the user
     /// configuration, and the files they and the nested ones extend. Changing one of them
     /// reloads the configuration.
-    configuration_files: RwLock<FxHashSet<PathBuf>>,
+    configuration_files: parking_lot::RwLock<FxHashSet<PathBuf>>,
 
     /// Whether a reload for changed configuration files is scheduled and hasn't started yet.
     reload_scheduled: AtomicBool,
@@ -265,10 +265,10 @@ impl Session {
             client_overrides: RwLock::new(ClientOverrides::default()),
             workspace_folders: RwLock::default(),
             projects: RwLock::default(),
-            real_folders: RwLock::default(),
+            real_folders: parking_lot::RwLock::default(),
             folderless_project: OnceLock::new(),
-            root_files: RwLock::default(),
-            configuration_files: RwLock::default(),
+            root_files: parking_lot::RwLock::default(),
+            configuration_files: parking_lot::RwLock::default(),
             reload_scheduled: AtomicBool::new(false),
             configuration_transition: tokio::sync::Mutex::new(()),
             #[cfg(test)]
@@ -392,7 +392,6 @@ impl Session {
         let mut files: Vec<PathBuf> =
             self.configuration_files
                 .read()
-                .unwrap()
                 .iter()
                 .cloned()
                 .chain(self.config_path.iter().map(
@@ -423,7 +422,7 @@ impl Session {
     /// or above a workspace folder, or one below it that the nested configuration search looks
     /// at. Others, e.g. in `node_modules` or in ignored folders, are skipped.
     pub(crate) fn is_configuration_change(&self, path: &Path) -> bool {
-        if self.configuration_files.read().unwrap().contains(path) {
+        if self.configuration_files.read().contains(path) {
             return true;
         }
         let is_configuration_file = path
@@ -440,8 +439,7 @@ impl Session {
         else {
             return true;
         };
-        let root_files = self.root_files.read().unwrap();
-        let root_files = root_files.get(folder).cloned().flatten();
+        let root_files = self.root_files.read().get(folder).cloned().flatten();
         is_searched_for_configuration(&self.fs, folder, root_files.as_deref(), directory)
     }
 
@@ -732,7 +730,6 @@ impl Session {
         if let Some((_, key)) = self
             .real_folders
             .read()
-            .unwrap()
             .iter()
             .find(|(folder, _)| path.starts_with(folder))
         {
@@ -801,7 +798,7 @@ impl Session {
         };
 
         self.set_configuration_status(ConfigurationStatus::Loading);
-        let previous_files = std::mem::take(&mut *self.configuration_files.write().unwrap());
+        let previous_files = std::mem::take(&mut *self.configuration_files.write());
         let mut status = ConfigurationStatus::Loaded;
         let mut projects = Vec::new();
         for root in roots {
@@ -816,7 +813,7 @@ impl Session {
         let previous = std::mem::take(&mut *self.projects.write().unwrap());
         for (folder, _) in previous {
             if !projects.iter().any(|(project, _)| project == &folder) {
-                self.root_files.write().unwrap().remove(&folder);
+                self.root_files.write().remove(&folder);
                 let result =
                     self.workspace
                         .unregister_project_folder(UnregisterProjectFolderParams {
@@ -834,14 +831,11 @@ impl Session {
             .filter_map(|(folder, key)| Some((real_path(folder)?, *key)))
             .collect();
         real_folders.sort_by_key(|(folder, _)| std::cmp::Reverse(folder.components().count()));
-        *self.real_folders.write().unwrap() = real_folders;
+        *self.real_folders.write() = real_folders;
         *self.projects.write().unwrap() = projects;
         if !matches!(status, ConfigurationStatus::Loaded) {
             // A broken file can't tell what it extends, so keep watching what it did before.
-            self.configuration_files
-                .write()
-                .unwrap()
-                .extend(previous_files);
+            self.configuration_files.write().extend(previous_files);
         }
         self.set_configuration_status(status);
     }
@@ -889,7 +883,6 @@ impl Session {
         let root_files = root_files.map(Arc::new);
         self.root_files
             .write()
-            .unwrap()
             .insert(folder.clone(), root_files.clone());
         let project = Some((folder, project_key));
 
@@ -981,10 +974,7 @@ impl Session {
             extended_files,
         } in nested.configurations
         {
-            self.configuration_files
-                .write()
-                .unwrap()
-                .extend(extended_files);
+            self.configuration_files.write().extend(extended_files);
             match result {
                 Ok(()) => info!("Loaded the nested configuration in {}", directory.display()),
                 Err(error) => {
@@ -1043,7 +1033,7 @@ impl Session {
                         )
                         .await;
                 }
-                self.configuration_files.write().unwrap().extend(
+                self.configuration_files.write().extend(
                     configuration_file_path
                         .iter()
                         .cloned()
