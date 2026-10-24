@@ -1062,7 +1062,16 @@ impl Session {
 
                 match result {
                     Ok((vcs_base_path, gitignore_matches)) => {
-                        let workspace_directory = self.fs.working_directory();
+                        // Relative paths are relative to the folder of the configuration file,
+                        // or the project's for the user configuration and the defaults.
+                        let workspace_directory = configuration_path
+                            .clone()
+                            .or_else(|| match &base_path {
+                                ConfigurationPathHint::FromWorkspace(path)
+                                | ConfigurationPathHint::FromLsp(path) => Some(path.clone()),
+                                _ => None,
+                            })
+                            .or_else(|| self.fs.working_directory());
                         let root_files = FilesSettings::from_configuration(
                             &configuration,
                             workspace_directory.clone(),
@@ -1076,6 +1085,8 @@ impl Session {
                             configuration,
                             vcs_base_path,
                             gitignore_matches,
+                            // A section removed from the file goes back to its defaults.
+                            replace: true,
                         });
 
                         if let Err(error) = result {

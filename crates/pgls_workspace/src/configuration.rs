@@ -665,36 +665,25 @@ impl PartialConfigurationExt for PartialConfiguration {
     /// Mutates the configuration so that any fields that have not been configured explicitly are
     /// filled in with their values from configs listed in the `extends` field.
     ///
-    /// The `extends` configs are applied from left to right.
+    /// The `extends` configs are applied from left to right, each with its own `extends` applied
+    /// first. Relative paths in an extended file are relative to that file.
     ///
-    /// If a configuration can't be resolved from the file system, the operation will fail.
+    /// If a configuration can't be resolved from the file system, extends itself, or is extended
+    /// more than [MAX_EXTENDS_DEPTH] levels deep, the operation will fail.
     fn apply_extends(
         &mut self,
         fs: &DynRef<'_, dyn FileSystem>,
         file_path: &Path,
         external_resolution_base_path: &Path,
     ) -> Result<Vec<PathBuf>, WorkspaceError> {
-        let (extended_files, configurations): (Vec<_>, Vec<_>) = self
-            .deserialize_extends(
-                fs,
-                file_path.parent().expect("file path should have a parent"),
-                external_resolution_base_path,
-            )?
-            .into_iter()
-            .unzip();
-
-        let extended_configuration = configurations.into_iter().reduce(
-            |mut previous_configuration, current_configuration| {
-                previous_configuration.merge_with(current_configuration);
-                previous_configuration
-            },
-        );
-        if let Some(mut extended_configuration) = extended_configuration {
-            // We swap them to avoid having to clone `self.configuration` to merge it.
-            std::mem::swap(self, &mut extended_configuration);
-            self.merge_with(extended_configuration)
-        }
-
+        let mut extended_files = Vec::new();
+        apply_extends_recursively(
+            self,
+            fs,
+            &mut vec![normalize_path(file_path)],
+            external_resolution_base_path,
+            &mut extended_files,
+        )?;
         Ok(extended_files)
     }
 
@@ -819,6 +808,77 @@ impl PartialConfigurationExt for PartialConfiguration {
     }
 }
 
+/// How many levels deep configuration files can extend each other.
+const MAX_EXTENDS_DEPTH: usize = 10;
+
+/// Applies the `extends` of `configuration`, the last file of `chain`, and theirs, collecting the
+/// extended files.
+fn apply_extends_recursively(
+    configuration: &mut PartialConfiguration,
+    fs: &DynRef<'_, dyn FileSystem>,
+    chain: &mut Vec<PathBuf>,
+    external_resolution_base_path: &Path,
+    extended_files: &mut Vec<PathBuf>,
+) -> Result<(), WorkspaceError> {
+    let file_path = chain
+        .last()
+        .expect("the chain starts with the configuration file");
+    let mut configurations = Vec::new();
+    for (path, mut extended) in configuration.deserialize_extends(
+        fs,
+        file_path.parent().expect("file path should have a parent"),
+        external_resolution_base_path,
+    )? {
+        let path = normalize_path(&path);
+        if chain.contains(&path) {
+            let cycle: Vec<_> = chain
+                .iter()
+                .chain(std::iter::once(&path))
+                .map(|file| file.display().to_string())
+                .collect();
+            return Err(ConfigurationDiagnostic::invalid_configuration(format!(
+                "The configuration files extend each other: {}",
+                cycle.join(" -> ")
+            ))
+            .into());
+        }
+        if chain.len() > MAX_EXTENDS_DEPTH {
+            return Err(ConfigurationDiagnostic::invalid_configuration(format!(
+                "The configuration files extend each other more than {MAX_EXTENDS_DEPTH} levels \
+                 deep, at {}",
+                path.display()
+            ))
+            .into());
+        }
+        extended_files.push(path.clone());
+        chain.push(path);
+        apply_extends_recursively(
+            &mut extended,
+            fs,
+            chain,
+            external_resolution_base_path,
+            extended_files,
+        )?;
+        chain.pop();
+        configurations.push(extended);
+    }
+
+    let extended_configuration =
+        configurations
+            .into_iter()
+            .reduce(|mut previous_configuration, current_configuration| {
+                previous_configuration.merge_with(current_configuration);
+                previous_configuration
+            });
+    if let Some(mut extended_configuration) = extended_configuration {
+        // We swap them to avoid having to clone `configuration` to merge it.
+        std::mem::swap(configuration, &mut extended_configuration);
+        configuration.merge_with(extended_configuration)
+    }
+
+    Ok(())
+}
+
 /// Expands a leading `~` in a path to the home directory.
 ///
 /// Returns `None` if the path doesn't start with `~` or the home directory is unknown.
@@ -940,6 +1000,99 @@ mod tests {
 
     fn files_config(max_size: u32) -> String {
         format!(r#"{{ "files": {{ "maxSize": {max_size} }} }}"#)
+    }
+
+    /// A configuration that extends a file which itself extends another, e.g. a nested
+    /// configuration extending the root configuration that extends a shared one, gets all three.
+    /// Relative paths in an extended file are relative to it.
+    #[test]
+    fn extends_is_applied_transitively() {
+        let mut fs = file_system();
+        fs.insert(
+            project_directory()
+                .join("db1")
+                .join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["../postgres-language-server.jsonc"], "db": { "database": "db1" } }"#,
+        );
+        fs.insert(
+            project_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["./shared/base.jsonc"], "db": { "database": "root", "host": "db" } }"#,
+        );
+        fs.insert(
+            project_directory().join("shared").join("base.jsonc"),
+            r#"{ "extends": ["./files.jsonc"] }"#,
+        );
+        fs.insert(
+            project_directory().join("shared").join("files.jsonc"),
+            files_config(7),
+        );
+
+        let loaded = load(
+            fs,
+            ConfigurationPathHint::FromWorkspace(project_directory().join("db1")),
+        );
+        assert_eq!(max_file_size(&loaded), Some(7));
+        let db = loaded.configuration.db.as_ref().unwrap();
+        assert_eq!(db.database.as_deref(), Some("db1"));
+        assert_eq!(db.host.as_deref(), Some("db"));
+        assert_eq!(
+            loaded.extended_files,
+            [
+                project_directory().join(ConfigName::pgls_jsonc()),
+                project_directory().join("shared").join("base.jsonc"),
+                project_directory().join("shared").join("files.jsonc"),
+            ]
+        );
+    }
+
+    #[test]
+    fn extends_fails_on_a_cycle() {
+        let mut fs = file_system();
+        fs.insert(
+            project_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["./a.jsonc"] }"#,
+        );
+        fs.insert(
+            project_directory().join("a.jsonc"),
+            r#"{ "extends": ["./b.jsonc"] }"#,
+        );
+        fs.insert(
+            project_directory().join("b.jsonc"),
+            r#"{ "extends": ["./a.jsonc"] }"#,
+        );
+
+        let error = load_configuration(
+            &DynRef::Owned(Box::new(fs)),
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        )
+        .expect_err("a cycle can't be applied");
+        assert!(error.to_string().contains("extend each other"), "{error}");
+    }
+
+    #[test]
+    fn extends_fails_when_too_deep() {
+        let mut fs = file_system();
+        fs.insert(
+            project_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["./0.jsonc"] }"#,
+        );
+        for level in 0..=MAX_EXTENDS_DEPTH {
+            fs.insert(
+                project_directory().join(format!("{level}.jsonc")),
+                format!(r#"{{ "extends": ["./{}.jsonc"] }}"#, level + 1),
+            );
+        }
+        fs.insert(
+            project_directory().join(format!("{}.jsonc", MAX_EXTENDS_DEPTH + 1)),
+            "{}",
+        );
+
+        let error = load_configuration(
+            &DynRef::Owned(Box::new(fs)),
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        )
+        .expect_err("too deep");
+        assert!(error.to_string().contains("levels"), "{error}");
     }
 
     #[test]
