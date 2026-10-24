@@ -1371,6 +1371,24 @@ async fn execute_statement_at(
     doc_url: &Uri,
     position: Position,
 ) -> Result<Option<Value>> {
+    let params = execute_statement_command(server, doc_url, position).await?;
+    let result = server
+        .request::<ExecuteCommandParams, Option<Value>>(
+            "workspace/executeCommand",
+            "_execStmt",
+            params,
+        )
+        .await?;
+
+    Ok(result.flatten())
+}
+
+/// The `pgls.executeStatement` command of the statement at `position`.
+async fn execute_statement_command(
+    server: &mut Server,
+    doc_url: &Uri,
+    position: Position,
+) -> Result<ExecuteCommandParams> {
     let code_actions_response = server
         .request::<CodeActionParams, CodeActionResponse>(
             "textDocument/codeAction",
@@ -1409,19 +1427,11 @@ async fn execute_statement_at(
         })
         .expect("Did not find executeStatement command!");
 
-    let result = server
-        .request::<ExecuteCommandParams, Option<Value>>(
-            "workspace/executeCommand",
-            "_execStmt",
-            ExecuteCommandParams {
-                command: exec_statement_command.0,
-                arguments: exec_statement_command.1,
-                ..Default::default()
-            },
-        )
-        .await?;
-
-    Ok(result.flatten())
+    Ok(ExecuteCommandParams {
+        command: exec_statement_command.0,
+        arguments: exec_statement_command.1,
+        ..Default::default()
+    })
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -1534,6 +1544,76 @@ async fn execute_statement_returns_the_postgres_error_at_its_position(
         result.as_ref().and_then(|result| result.get("rows")),
         Some(&json!([["1"]]))
     );
+
+    server.shutdown().await?;
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn cancel_request_cancels_the_executed_statement(test_db: PgPool) -> Result<()> {
+    let mut server = statement_execution_server(&test_db);
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    let doc_url = url!("test.sql");
+    server
+        .open_named_document("select pg_sleep(30);", doc_url.clone(), "sql")
+        .await?;
+    let params = execute_statement_command(&mut server, &doc_url, Position::new(0, 3)).await?;
+
+    let sleeping = async || {
+        sqlx::query_scalar::<_, i64>(
+            "select count(*) from pg_stat_activity where state = 'active' and query like '%pg_sleep(30)%' and pid <> pg_backend_pid()",
+        )
+        .fetch_one(&test_db)
+        .await
+        .unwrap()
+    };
+
+    // The executed statement runs on a blocking thread, so the server handles the cancel
+    // request while it waits for the database.
+    let execution = tokio::spawn(
+        server.service.ready().await.map_err(Error::msg)?.call(
+            Request::build("workspace/executeCommand")
+                .id("exec")
+                .params(to_value(params)?)
+                .finish(),
+        ),
+    );
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while sleeping().await == 0 {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    })
+    .await
+    .context("the statement did not start")?;
+
+    server
+        .notify(
+            "$/cancelRequest",
+            lsp::CancelParams {
+                id: lsp::NumberOrString::String("exec".into()),
+            },
+        )
+        .await?;
+
+    let response = execution.await?.map_err(Error::msg)?.unwrap();
+    assert_eq!(
+        response.error().map(|error| error.code),
+        Some(tower_lsp_server::jsonrpc::ErrorCode::RequestCancelled)
+    );
+
+    // The database cancels the statement as well.
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while sleeping().await > 0 {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    })
+    .await
+    .context("the statement still runs")?;
 
     server.shutdown().await?;
 

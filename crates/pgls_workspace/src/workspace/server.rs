@@ -104,6 +104,16 @@ pub struct WorkspaceServer {
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
+
+    /// The statements that are being executed, to cancel them
+    #[cfg(feature = "db")]
+    running_statements: Mutex<Vec<RunningStatement>>,
+}
+
+#[cfg(feature = "db")]
+struct RunningStatement {
+    params: ExecuteStatementParams,
+    cancel: futures::channel::oneshot::Sender<()>,
 }
 
 /// The `Workspace` object is long-lived, so we want it to be able to cross
@@ -131,6 +141,7 @@ impl WorkspaceServer {
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
             connection: ConnectionManager::new(),
+            running_statements: Mutex::default(),
         }
     }
 
@@ -718,7 +729,9 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        let stmt = parser.find(params.statement_id.clone(), ExecuteStatementMapper);
+        // Files can change while the statement runs.
+        drop(documents);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
@@ -729,34 +742,89 @@ impl Workspace for WorkspaceServer {
 
         let (_id, range, content, ast) = stmt.unwrap();
 
-        if ast.is_none() {
+        let Some(ast) = ast else {
             return Ok(ExecuteStatementResult {
                 message: "Statement is invalid.".into(),
                 ..Default::default()
             });
         };
 
+        // The language server has no data to send, and nowhere to put the data it receives.
+        if let pgls_query::NodeEnum::CopyStmt(copy) = &ast
+            && copy.filename.is_empty()
+            && !copy.is_program
+        {
+            let copy = if copy.is_from {
+                "COPY ... FROM STDIN"
+            } else {
+                "COPY ... TO STDOUT"
+            };
+            return Ok(ExecuteStatementResult {
+                message: format!(
+                    "`{copy}` can't be executed from the editor. Use `\\copy` in psql, or a file on the database server."
+                ),
+                ..Default::default()
+            });
+        }
+
         let settings = self.workspaces();
         let no_connection = ExecuteStatementResult {
             message: "No database connection available.".into(),
             ..Default::default()
         };
-        let Some(settings) = settings.settings() else {
+        let Some(db) = settings.settings().map(|settings| settings.db.clone()) else {
             return Ok(no_connection);
         };
+        // The settings can change while the statement runs.
+        drop(settings);
 
-        if let Some(reason) = settings.db.statement_execution_disabled_reason() {
+        if let Some(reason) = db.statement_execution_disabled_reason() {
             return Ok(ExecuteStatementResult {
                 message: reason,
                 ..Default::default()
             });
         }
 
-        let Some(result) = self.connection.with_pools(&settings.db, |pools| {
-            let pool = pools.statement_pool.clone();
-            run_async(async move { statement_execution::execute_statement(&pool, &content).await })?
-                .map_err(WorkspaceError::from)
-        }) else {
+        let options = statement_execution::ExecuteOptions {
+            is_query: statement_execution::is_query(&ast),
+            timeout: db.statement_timeout,
+        };
+        let (cancel, cancelled) = futures::channel::oneshot::channel();
+        self.running_statements
+            .lock()
+            .unwrap()
+            .push(RunningStatement {
+                params: params.clone(),
+                cancel,
+            });
+
+        let result = self.connection.with_pools(&db, |pools| {
+            let statement_pools = pools.clone();
+            let result = run_async(async move {
+                statement_execution::execute_statement(
+                    &statement_pools,
+                    &content,
+                    options,
+                    cancelled,
+                )
+                .await
+            })?
+            .map_err(WorkspaceError::from)?;
+
+            // Diagnostics, completions and hover should see the objects the statement created.
+            if result.error.is_none() && statement_execution::may_change_schema(&ast) {
+                self.snapshot.clear_connection(&pools.pool);
+            }
+            Ok(result)
+        });
+
+        // The execution is over once it dropped the receiver.
+        self.running_statements
+            .lock()
+            .unwrap()
+            .retain(|running| !running.cancel.is_canceled());
+
+        let Some(result) = result else {
             return Ok(no_connection);
         };
 
@@ -782,6 +850,35 @@ impl Workspace for WorkspaceServer {
             message: "Statement execution requires database support.".into(),
             ..Default::default()
         })
+    }
+
+    #[cfg(feature = "db")]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        let cancelled = self
+            .running_statements
+            .lock()
+            .unwrap()
+            .extract_if(.., |running| {
+                running.params.path == params.path
+                    && running.params.statement_id == params.statement_id
+            })
+            .collect::<Vec<_>>();
+        for running in cancelled {
+            let _ = running.cancel.send(());
+        }
+        Ok(())
+    }
+
+    #[cfg(not(feature = "db"))]
+    #[allow(unused_variables)]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        Ok(())
     }
 
     #[cfg(feature = "db")]
