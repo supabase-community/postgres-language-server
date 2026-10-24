@@ -116,12 +116,14 @@ pub(crate) fn traverse(
 
 /// This function will setup the global Rayon thread pool the first time it's called
 ///
-/// This is currently only used to assign friendly debug names to the threads of the pool
+/// It assigns friendly debug names to the threads of the pool, and gives them the stack size of
+/// the workspace's threads.
 fn init_thread_pool() {
     static INIT_ONCE: Once = Once::new();
     INIT_ONCE.call_once(|| {
         rayon::ThreadPoolBuilder::new()
             .thread_name(|index| format!("pgls::worker_{index}"))
+            .stack_size(crate::WORKER_STACK_SIZE_BYTES)
             .build_global()
             .expect("failed to initialize the global thread pool");
     });
