@@ -337,15 +337,19 @@ impl Session {
         let categories = RuleCategoriesBuilder::default().all();
 
         let diagnostics: Vec<ls_types::Diagnostic> = {
-            let result = self.workspace.pull_file_diagnostics(
-                features::diagnostics::PullFileDiagnosticsParams {
-                    path: pgls_path.clone(),
-                    max_diagnostics: u32::MAX,
-                    categories: categories.build(),
-                    only: Vec::new(),
-                    skip: Vec::new(),
-                },
-            )?;
+            // The analysis takes long on large files, so it runs on the blocking thread pool.
+            let workspace = Arc::clone(&self.workspace);
+            let params = features::diagnostics::PullFileDiagnosticsParams {
+                path: pgls_path.clone(),
+                max_diagnostics: u32::MAX,
+                categories: categories.build(),
+                only: Vec::new(),
+                skip: Vec::new(),
+            };
+            let result =
+                tokio::task::spawn_blocking(move || workspace.pull_file_diagnostics(params))
+                    .await
+                    .map_err(anyhow::Error::from)??;
 
             result
                 .diagnostics

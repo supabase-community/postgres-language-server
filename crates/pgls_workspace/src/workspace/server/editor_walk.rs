@@ -129,7 +129,8 @@ impl WalkHashes {
     }
 }
 
-/// Checks whether the document changed every this many statements of the walk.
+/// Checks whether the document changed or the request was cancelled every this many statements
+/// of the walk.
 const OUTDATED_CHECK_INTERVAL: usize = 64;
 
 /// The checkpoints of a document. Each is a copy of the catalog's maps of the objects the file
@@ -198,7 +199,8 @@ impl WorkspaceServer {
     /// gets a session of its own, and the changes of a down section don't carry into the next
     /// section.
     ///
-    /// Returns `None` if the document changed while walking it: the result would be outdated.
+    /// Returns `None` if the document changed while walking it, so that the result would be
+    /// outdated, or if the request was cancelled.
     pub(super) fn walk_references(
         &self,
         path: &PgLSPath,
@@ -320,7 +322,7 @@ impl WorkspaceServer {
                 break;
             }
             if walked % OUTDATED_CHECK_INTERVAL == OUTDATED_CHECK_INTERVAL - 1
-                && self.is_outdated(path, doc)
+                && (self.is_outdated(path, doc) || crate::cancellation::is_cancelled())
             {
                 return None;
             }

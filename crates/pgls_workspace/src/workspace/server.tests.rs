@@ -2717,3 +2717,44 @@ async fn test_editor_walk_cache_budget(test_db: PgPool) {
     }
     assert_eq!(workspace.editor_walks.size(), (0, 0));
 }
+
+/// A cancelled request stops walking the document.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_cancelled_requests_stop_walking(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: "create table items (id int);\nselect id from items;\n".repeat(100),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let tokens = || {
+        workspace
+            .pull_semantic_tokens(PullSemanticTokensParams {
+                path: path.clone(),
+                range: None,
+            })
+            .expect("Unable to pull semantic tokens")
+            .tokens
+            .len()
+    };
+    let cancelled = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+    assert_eq!(crate::cancellation::with_cancellation(cancelled, tokens), 0);
+    assert_eq!(tokens(), 200);
+}
