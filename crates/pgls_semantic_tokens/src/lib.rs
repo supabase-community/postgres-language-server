@@ -61,13 +61,18 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
         collect_references: true,
     })
     .references;
+    semantic_tokens_of_references(&references, params.sql)
+}
 
+/// The semantic tokens of the `references` of the statement `sql`, which
+/// [`pgls_catalog::resolve::resolve`] collected. Ordered by their start, and they don't overlap.
+pub fn semantic_tokens_of_references(references: &[Reference], sql: &str) -> Vec<SemanticToken> {
     let mut tokens = Vec::new();
-    for reference in &references {
+    for reference in references {
         let Some(span) = reference.span() else {
             continue;
         };
-        let Some(text) = params.sql.get(std::ops::Range::<usize>::from(span)) else {
+        let Some(text) = sql.get(std::ops::Range::<usize>::from(span)) else {
             continue;
         };
         let parts: Vec<TextRange> = name_parts(text)
@@ -127,8 +132,7 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                     }
                     // `table.column`, but not `alias.column`.
                     [table, _]
-                        if relation
-                            .is_some_and(|(_, name)| identifier(&params.sql[*table]) == *name) =>
+                        if relation.is_some_and(|(_, name)| identifier(&sql[*table]) == *name) =>
                     {
                         push(Some(table), SemanticTokenKind::Class, schema);
                     }

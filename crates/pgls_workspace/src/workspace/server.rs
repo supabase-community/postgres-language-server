@@ -31,8 +31,8 @@ use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
     LinterDiagnostic, LinterOptions, MigrationSection, RuleFix,
 };
-use pgls_catalog::resolve::{Reference, ResolveParams, resolve};
-use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
+use pgls_catalog::resolve::Reference;
+use pgls_catalog::{Catalog, CatalogBase, Session};
 use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
@@ -91,6 +91,7 @@ mod connection_key;
 #[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
+mod editor_walk;
 mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
@@ -114,6 +115,9 @@ pub struct WorkspaceServer {
 
     /// The last snapshot built for completions and hover, by the statements it includes
     snapshot_before: Mutex<Option<(u64, Arc<Snapshot>)>>,
+
+    /// The cached walks of the documents for hover, inlay hints, and semantic tokens
+    editor_walks: editor_walk::EditorWalks,
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
@@ -143,6 +147,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
+            editor_walks: Mutex::default(),
             connection: ConnectionManager::new(),
         }
     }
@@ -156,6 +161,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
+            editor_walks: Mutex::default(),
         }
     }
 
@@ -462,138 +468,44 @@ impl WorkspaceServer {
             .collect()
     }
 
-    /// Walks the statements of `doc` that start before `end` like the analyser does: the catalog
-    /// and the session follow the statements, so that each statement sees the objects created
-    /// earlier in the file. Each migration section gets a session of its own, and the changes of
-    /// a down section don't carry into the next section. `visit` gets every parsed statement with
-    /// the catalog and the session as they are before it.
-    fn walk_statements(
-        &self,
-        doc: &Document,
-        snapshot: &Arc<Snapshot>,
-        end: TextSize,
-        mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
-    ) {
-        let (search_path, sections) = self
-            .workspaces()
-            .settings()
-            .map(|settings| {
-                (
-                    settings.typecheck.search_path.clone(),
-                    document_sections(settings, doc),
-                )
-            })
-            .unwrap_or_default();
-        let search_path = snapshot.expand_search_path(&search_path);
-        let new_session = |section: Option<&MigrationSection>| {
-            Session::new(search_path.clone()).with_transaction_mode(
-                section.map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-            )
-        };
-
-        // Editor features show what names most likely refer to, so a `DO` block or a statement
-        // that doesn't parse doesn't turn them off for the rest of the file.
-        let mut catalog = Catalog::new(Some(self.catalog_base(snapshot))).best_effort();
-        let mut session = new_session(None);
-        let mut section: Option<&MigrationSection> = None;
-        // The catalog after the up sections so far, while walking a down section.
-        let mut up_catalog: Option<Catalog> = None;
-        for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
-            let Some(start) = stmt.as_ref().map(|stmt| stmt.range.start()).or_else(|| {
-                unparsable
-                    .as_ref()
-                    .map(|unparsable| unparsable.range.start())
-            }) else {
-                continue;
-            };
-            if start >= end {
-                break;
-            }
-            let current = sections
-                .iter()
-                .find(|section| section.range.contains(start));
-            if current != section {
-                if let Some(up_catalog) = up_catalog.take() {
-                    catalog = up_catalog;
-                }
-                if current.is_some_and(|section| section.direction == Direction::Down) {
-                    up_catalog = Some(catalog.clone());
-                }
-                session = new_session(current);
-                section = current;
-            }
-
-            if let Some(unparsable) = unparsable {
-                if pgls_analyser::may_change_catalog(&unparsable.sql) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            let Some(stmt) = stmt else {
-                continue;
-            };
-            // The names of statements with identifier parameters like `:name` are placeholders.
-            if stmt.has_identifier_parameters {
-                if !pgls_analyser::is_plain_query(&stmt.root) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            visit(&stmt, &catalog, &session);
-            // Statements in the bodies of SQL functions are not executed.
-            if stmt.function.is_none() {
-                catalog.apply(&stmt.root, session.search_path());
-                session.apply(&stmt.root);
-            }
-        }
-    }
-
     /// The references whose span contains `position`, in the innermost statement at `position`
     /// (the body of a SQL function rather than its `CREATE FUNCTION`).
     fn references_at(
         &self,
+        path: &PgLSPath,
         doc: &Document,
         snapshot: &Arc<Snapshot>,
         position: TextSize,
     ) -> Vec<Reference> {
-        let mut innermost: Option<(TextRange, TextSize, Vec<Reference>)> = None;
-        self.walk_statements(
+        let statements = self.walk_references(
+            path,
             doc,
             snapshot,
-            position + TextSize::from(1),
-            |stmt, catalog, session| {
-                let Some(sql) = stmt.sql.as_deref() else {
-                    return;
-                };
-                if !stmt.range.contains(position)
-                    || innermost
-                        .as_ref()
-                        .is_some_and(|(range, _, _)| !range.contains_range(stmt.range))
-                {
-                    return;
-                }
-                let references = resolve(ResolveParams {
-                    stmt: &stmt.root,
-                    catalog,
-                    search_path: session.search_path(),
-                    function: stmt.function.as_ref(),
-                    sql: Some(sql),
-                    collect_references: true,
-                })
-                .references;
-                innermost = Some((stmt.range, stmt.statement_offset(position), references));
-            },
+            TextRange::at(position, TextSize::from(1)),
         );
-        let Some((_, position, references)) = innermost else {
+        let mut innermost: Option<&editor_walk::WalkedStatement> = None;
+        for statement in &statements {
+            if statement.range.contains(position)
+                && innermost.is_none_or(|innermost| innermost.range.contains_range(statement.range))
+            {
+                innermost = Some(statement);
+            }
+        }
+        let Some(statement) = innermost else {
             return Vec::new();
         };
-        references
-            .into_iter()
+        let position = statement
+            .offsets
+            .to_statement(position - statement.range.start());
+        statement
+            .references
+            .iter()
             .filter(|reference| {
                 reference
                     .span()
                     .is_some_and(|span| span.contains_inclusive(position))
             })
+            .cloned()
             .collect()
     }
 
@@ -944,6 +856,7 @@ impl Workspace for WorkspaceServer {
         documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
+        self.editor_walks.lock().unwrap().remove(&params.path);
 
         Ok(())
     }
@@ -1196,6 +1109,7 @@ impl Workspace for WorkspaceServer {
 
     #[cfg(feature = "db")]
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
+        self.editor_walks.lock().unwrap().clear();
         if all {
             // Clear all schemas - both db-loaded and json-loaded
             // DB completions always take precedence when a connection is available,
@@ -1217,6 +1131,7 @@ impl Workspace for WorkspaceServer {
 
     #[cfg(not(feature = "db"))]
     fn invalidate_schema_cache(&self, _all: bool) -> Result<(), WorkspaceError> {
+        self.editor_walks.lock().unwrap().clear();
         self.snapshot.clear_all();
         Ok(())
     }
@@ -1774,7 +1689,7 @@ impl Workspace for WorkspaceServer {
                 let position_in_stmt = doc
                     .statement_offsets(&stmt_id)
                     .to_statement(params.position - range.start());
-                let references = self.references_at(doc, &snapshot, params.position);
+                let references = self.references_at(&params.path, doc, &snapshot, params.position);
                 let snapshot = self.snapshot_before(doc, range.start(), snapshot);
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
@@ -1836,34 +1751,18 @@ impl Workspace for WorkspaceServer {
         };
 
         let mut hints = Vec::new();
-        self.walk_statements(
-            doc,
-            &snapshot,
-            params.range.end(),
-            |stmt, catalog, session| {
-                let Some(sql) = stmt.sql.as_deref() else {
-                    return;
-                };
-                if stmt.range.intersect(params.range).is_none() {
-                    return;
-                }
-                hints.extend(
-                    pgls_inlay_hints::inlay_hints(pgls_inlay_hints::InlayHintsParams {
-                        stmt: &stmt.root,
-                        sql,
-                        catalog,
-                        search_path: session.search_path(),
-                        function: stmt.function.as_ref(),
-                    })
+        for statement in self.walk_references(&params.path, doc, &snapshot, params.range) {
+            hints.extend(
+                pgls_inlay_hints::inlay_hints_of_references(&statement.references, statement.sql())
                     .into_iter()
                     .map(|hint| InlayHint {
-                        offset: stmt.document_offset(hint.offset),
+                        offset: statement.offsets.to_document(hint.offset)
+                            + statement.range.start(),
                         label: hint.label,
                         kind: hint.kind.into(),
                     }),
-                );
-            },
-        );
+            );
+        }
 
         hints.sort_by_key(|hint| hint.offset);
         Ok(PullInlayHintsResult { hints })
@@ -1915,29 +1814,21 @@ impl Workspace for WorkspaceServer {
             .range
             .unwrap_or_else(|| TextRange::up_to(TextSize::of(doc.get_document_content())));
         let mut tokens = Vec::new();
-        self.walk_statements(doc, &snapshot, range.end(), |stmt, catalog, session| {
-            let Some(sql) = stmt.sql.as_deref() else {
-                return;
-            };
-            if stmt.range.intersect(range).is_none() {
-                return;
-            }
+        for statement in self.walk_references(&params.path, doc, &snapshot, range) {
             tokens.extend(
-                pgls_semantic_tokens::semantic_tokens(pgls_semantic_tokens::SemanticTokensParams {
-                    stmt: &stmt.root,
-                    sql,
-                    catalog,
-                    search_path: session.search_path(),
-                    function: stmt.function.as_ref(),
-                })
+                pgls_semantic_tokens::semantic_tokens_of_references(
+                    &statement.references,
+                    statement.sql(),
+                )
                 .into_iter()
                 .map(|token| SemanticToken {
-                    range: stmt.document_range(token.range),
+                    range: statement.offsets.range_to_document(token.range)
+                        + statement.range.start(),
                     kind: token.kind.into(),
                     default_library: token.default_library,
                 }),
             );
-        });
+        }
 
         // The body of a SQL function is a statement of its own, inside its `CREATE FUNCTION`.
         tokens.sort_by_key(|token| (token.range.start(), token.range.end()));
@@ -2059,3 +1950,7 @@ fn restore_named_parameters(
 #[cfg(all(test, feature = "db"))]
 #[path = "server.tests.rs"]
 mod tests;
+
+#[cfg(all(test, feature = "db"))]
+#[path = "server.perf_tests.rs"]
+mod perf_tests;

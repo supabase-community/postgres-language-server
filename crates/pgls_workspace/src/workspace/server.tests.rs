@@ -16,7 +16,7 @@ use pgls_configuration::{
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_diagnostics::Diagnostic;
 use pgls_fs::PgLSPath;
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 use sqlx::{Executor, PgPool};
 
 use crate::{
@@ -1721,7 +1721,7 @@ select * from auth.users;
 
     let position = content
         .find('|')
-        .map(|idx| pgls_text_size::TextSize::new(idx as u32))
+        .map(|idx| TextSize::new(idx as u32))
         .expect("Unable to find cursor position in test content");
 
     let sanitized_content = content.replace('|', "");
@@ -1781,7 +1781,7 @@ async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
     let labels = |content: &str| {
         let position = content
             .find('|')
-            .map(|idx| pgls_text_size::TextSize::new(idx as u32))
+            .map(|idx| TextSize::new(idx as u32))
             .expect("Unable to find cursor position in test content");
         workspace
             .open_file(OpenFileParams {
@@ -2260,10 +2260,7 @@ async fn test_editor_features_after_unmodelled_statements(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let call = content.find("call").unwrap();
-    let range = TextRange::new(
-        u32::try_from(call).unwrap().into(),
-        pgls_text_size::TextSize::of(content),
-    );
+    let range = TextRange::new(u32::try_from(call).unwrap().into(), TextSize::of(content));
     let hints = workspace
         .pull_inlay_hints(PullInlayHintsParams {
             path: path.clone(),
@@ -2475,4 +2472,116 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
         })
         .collect();
     assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
+}
+
+/// The cached walk of a document gives the same tokens and hints as walking it from the start,
+/// after edits before, inside, and after the parts of the file it has cached.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_editor_walk_cache_follows_edits(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let cached = get_test_workspace(Some(conf.clone())).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+
+    // 300 top-level statements, so that the walk keeps checkpoints.
+    let file = |renamed: Option<usize>| {
+        let mut content = String::from(
+            "create function point(x int, y int) returns int language sql as 'select x + y';\n",
+        );
+        for i in 0..100 {
+            let column = if renamed == Some(i) { "other" } else { "id" };
+            content.push_str(&format!(
+                "create table t{i} ({column} int);\nselect id, point(1, 2) from t{i};\nselect id from t{} ;\n",
+                i / 2
+            ));
+        }
+        content
+    };
+    let results = |workspace: &WorkspaceServer, content: &str, range: Option<TextRange>| {
+        let tokens = workspace
+            .pull_semantic_tokens(PullSemanticTokensParams {
+                path: path.clone(),
+                range,
+            })
+            .expect("Unable to pull semantic tokens")
+            .tokens
+            .into_iter()
+            .map(|token| (token.range, token.kind))
+            .collect::<Vec<_>>();
+        let hints = workspace
+            .pull_inlay_hints(PullInlayHintsParams {
+                path: path.clone(),
+                range: range.unwrap_or(TextRange::up_to(TextSize::of(content))),
+            })
+            .expect("Unable to pull inlay hints")
+            .hints;
+        (tokens, hints)
+    };
+    let fresh = |content: &str, range: Option<TextRange>| {
+        let workspace =
+            get_test_workspace(Some(conf.clone())).expect("Unable to create test workspace");
+        workspace
+            .open_file(OpenFileParams {
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        results(&workspace, content, range)
+    };
+    let tail = |content: &str| {
+        let start = content.find("create table t90 ").unwrap();
+        Some(TextRange::new(
+            u32::try_from(start).unwrap().into(),
+            TextSize::of(content),
+        ))
+    };
+
+    let content = file(None);
+    cached
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    assert_eq!(
+        results(&cached, &content, tail(&content)),
+        fresh(&content, tail(&content))
+    );
+    assert_eq!(results(&cached, &content, None), fresh(&content, None));
+
+    // Renaming a column changes what the statements after it resolve to.
+    for (version, renamed) in [(2, 60), (3, 95), (4, 3), (5, 60)] {
+        let content = file(Some(renamed));
+        cached
+            .change_file(crate::workspace::ChangeFileParams {
+                path: path.clone(),
+                version,
+                content: content.clone(),
+            })
+            .expect("Unable to change test file");
+        assert_eq!(
+            results(&cached, &content, tail(&content)),
+            fresh(&content, tail(&content)),
+            "tail after renaming in t{renamed}"
+        );
+        assert_eq!(
+            results(&cached, &content, None),
+            fresh(&content, None),
+            "everything after renaming in t{renamed}"
+        );
+    }
 }
