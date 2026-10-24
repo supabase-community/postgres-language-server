@@ -43,6 +43,9 @@ pub struct DatabaseConfiguration {
     #[partial(bpaf(long("database")))]
     pub database: String,
 
+    /// Glob patterns of the databases that code actions may execute statements against, matched
+    /// against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched
+    /// against `host/database` and allows every port.
     #[partial(bpaf(long("allow_statement_executions_against")))]
     pub allow_statement_executions_against: StringSet,
 
