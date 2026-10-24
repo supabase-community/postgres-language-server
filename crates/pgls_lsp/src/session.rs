@@ -122,7 +122,7 @@ pub(crate) struct Session {
 
     /// The files settings of the root configuration of each project, by its folder. They decide
     /// which folders are searched for nested configuration files.
-    root_files: RwLock<FxHashMap<PathBuf, Option<Arc<FilesSettings>>>>,
+    root_files: parking_lot::RwLock<FxHashMap<PathBuf, Option<Arc<FilesSettings>>>>,
 
     /// Whether a reload for changed configuration files is scheduled and hasn't started yet.
     reload_scheduled: AtomicBool,
@@ -255,7 +255,7 @@ impl Session {
             workspace_folders: RwLock::default(),
             projects: RwLock::default(),
             folderless_project: OnceLock::new(),
-            root_files: RwLock::default(),
+            root_files: parking_lot::RwLock::default(),
             reload_scheduled: AtomicBool::new(false),
             configuration_transition: tokio::sync::Mutex::new(()),
             #[cfg(test)]
@@ -366,8 +366,7 @@ impl Session {
         else {
             return true;
         };
-        let root_files = self.root_files.read().unwrap();
-        let root_files = root_files.get(folder).cloned().flatten();
+        let root_files = self.root_files.read().get(folder).cloned().flatten();
         is_searched_for_configuration(&self.fs, folder, root_files.as_deref(), directory)
     }
 
@@ -730,7 +729,7 @@ impl Session {
         let previous = std::mem::take(&mut *self.projects.write().unwrap());
         for (folder, _) in previous {
             if !projects.iter().any(|(project, _)| project == &folder) {
-                self.root_files.write().unwrap().remove(&folder);
+                self.root_files.write().remove(&folder);
                 let result =
                     self.workspace
                         .unregister_project_folder(UnregisterProjectFolderParams {
@@ -790,7 +789,6 @@ impl Session {
         let root_files = root_files.map(Arc::new);
         self.root_files
             .write()
-            .unwrap()
             .insert(folder.clone(), root_files.clone());
         let project = Some((folder, project_key));
 
