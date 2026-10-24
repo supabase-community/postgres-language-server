@@ -87,10 +87,10 @@ fn expanded_nested_case_keeps_each_branch_at_its_own_indent() {
                     \tCASE status\n\
                     \t\tWHEN 'A'\n\
                     \t\t\tTHEN CASE\n\
-                    \t\t\t\t     WHEN enabled\n\
-                    \t\t\t\t\t     THEN 'active'\n\
-                    \t\t\t\t     ELSE 'paused'\n\
-                    \t\t\t     END\n\
+                    \t\t\t\tWHEN enabled\n\
+                    \t\t\t\t\tTHEN 'active'\n\
+                    \t\t\t\tELSE 'paused'\n\
+                    \t\t\tEND\n\
                     \t\tELSE 'closed'\n\
                     \tEND\n\
                     ;";
@@ -248,4 +248,38 @@ fn the_documented_expanded_case_layout() {
         ),
         "select\n  id\n  , case\n      when status = 'active'\n        and deleted_at is null\n        then 'live'\n      else 'archived'\n    end as state\nfrom\n  accounts;"
     );
+}
+
+#[test]
+fn expanded_case_nested_in_else_is_indented_from_else() {
+    let sql = "SELECT CASE WHEN a THEN 1 ELSE CASE WHEN b THEN 2 ELSE 3 END END;";
+    let expected = "SELECT\n\
+                    \tCASE\n\
+                    \t\tWHEN a\n\
+                    \t\t\tTHEN 1\n\
+                    \t\tELSE CASE\n\
+                    \t\t\tWHEN b\n\
+                    \t\t\t\tTHEN 2\n\
+                    \t\t\tELSE 3\n\
+                    \t\tEND\n\
+                    \tEND\n\
+                    ;";
+    assert_expanded_layout(sql, expected);
+}
+
+/// Every level of a CASE nested in THEN moves right by two indents, so twenty levels stay within
+/// a width of 100 with the default indent.
+#[test]
+fn deeply_nested_expanded_case_stays_within_the_width() {
+    let mut sql = String::from("0");
+    for level in 0..20 {
+        sql = format!("case when c{level} > {level} then {sql} else {level} end");
+    }
+    let config = FormatConfig {
+        layout: Layout::Expanded,
+        ..Default::default()
+    };
+    let output = format_idempotently(&format!("select {sql} as x from t"), &config);
+    let widest = output.lines().map(str::len).max().unwrap();
+    assert!(widest <= 100, "{widest} columns:\n{output}");
 }
