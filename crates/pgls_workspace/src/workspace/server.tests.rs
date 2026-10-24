@@ -2179,3 +2179,108 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
         .collect();
     assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
 }
+
+const GOOSE_ENVSUB: &str = "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SCHEMA}.events (id bigint, at timestamp);\ndrop table ${SCHEMA:-public}.old_events;\n-- +goose ENVSUB OFF\nselect ${NOT_SUBSTITUTED};\n";
+
+#[test]
+fn test_goose_envsub_expansions_are_analysed_as_parameters() {
+    let categories = migration_diagnostics(SectionMarkers::Goose, None, GOOSE_ENVSUB);
+    // Only the expansion after `ENVSUB OFF` is a syntax error, and the rules still run.
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "syntax")
+            .count(),
+        1,
+        "{categories:?}"
+    );
+    assert!(
+        categories
+            .iter()
+            .any(|category| category == "lint/banDropTable"),
+        "{categories:?}"
+    );
+}
+
+#[test]
+fn test_goose_envsub_expansions_stay_as_written() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(
+            r#"{"linter": {"rules": {"all": true}}, "format": {"enabled": true}, "migrations": {"sectionMarkers": "goose"}}"#,
+        )
+        .unwrap(),
+    );
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let content = "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SCHEMA}.events (id bigint, at timestamp);\ncreate table logs (at timestamp);\n";
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let fixed = workspace
+        .fix_file(FixFileParams {
+            path: path.clone(),
+            fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    // The fixes apply around the expansion, which stays as written.
+    assert_eq!(
+        fixed.to_lowercase(),
+        "-- +goose up\n-- +goose envsub on\ncreate table if not exists ${schema}.events (id bigint, at timestamptz);\ncreate table if not exists logs (at timestamptz);\n"
+    );
+
+    // The formatter leaves the statement alone.
+    let formatted = workspace
+        .pull_file_formatting(PullFileFormattingParams {
+            path: path.clone(),
+            range: None,
+        })
+        .expect("Unable to format file");
+    assert!(
+        formatted
+            .formatted
+            .contains("create table ${SCHEMA}.events (id bigint, at timestamp);"),
+        "{}",
+        formatted.formatted
+    );
+}
+
+#[test]
+fn test_no_fix_inside_a_goose_envsub_expansion() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(
+            r#"{"linter": {"rules": {"all": true}}, "migrations": {"sectionMarkers": "goose"}}"#,
+        )
+        .unwrap(),
+    );
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    // `NOT VALID` would go after the last token of the constraint, inside `${PARENT}`.
+    let content = "-- +goose Up\n-- +goose ENVSUB ON\nalter table orders add constraint orders_parent_fk foreign key (parent_id) references ${PARENT};\n";
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let fixed = workspace
+        .fix_file(FixFileParams {
+            path,
+            fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
+            only: vec!["safety/constraintMissingNotValid".parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    assert_eq!(fixed, content);
+}

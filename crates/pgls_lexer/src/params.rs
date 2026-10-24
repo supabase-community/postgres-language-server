@@ -4,9 +4,21 @@ use crate::{SyntaxKind, lex};
 
 // Keywords that, when preceding a named parameter, indicate that the parameter should be treated
 // as an identifier rather than a positional parameter.
-const IDENTIFIER_CONTEXT: [SyntaxKind; 15] = [
+const IDENTIFIER_CONTEXT: [SyntaxKind; 27] = [
     SyntaxKind::TO_KW,
     SyntaxKind::FROM_KW,
+    SyntaxKind::INTO_KW,
+    SyntaxKind::JOIN_KW,
+    SyntaxKind::ON_KW,
+    SyntaxKind::UPDATE_KW,
+    SyntaxKind::TRUNCATE_KW,
+    SyntaxKind::REFERENCES_KW,
+    SyntaxKind::EXISTS_KW,
+    SyntaxKind::VIEW_KW,
+    SyntaxKind::SEQUENCE_KW,
+    SyntaxKind::EXTENSION_KW,
+    SyntaxKind::FUNCTION_KW,
+    SyntaxKind::TRIGGER_KW,
     SyntaxKind::SCHEMA_KW,
     SyntaxKind::TABLE_KW,
     SyntaxKind::INDEX_KW,
@@ -275,6 +287,23 @@ mod tests {
             let normalized = convert_to_positional_params(input);
             assert_eq!(normalized, expected);
             assert_eq!(normalized.len(), input.len());
+        }
+    }
+
+    #[test]
+    fn parameters_after_keywords_that_name_objects_are_identifiers() {
+        for input in [
+            "alter table orders add foreign key (parent_id) references $parent",
+            "insert into :items values (1)",
+            "create index on $items (id)",
+            "drop view if exists $report",
+            "select * from orders join :customers using (id)",
+            "update :items set id = 1",
+        ] {
+            let conversion = convert_to_positional_params_with_metadata(input);
+            assert!(conversion.has_identifier_parameters, "{input}");
+            assert!(!conversion.sql.contains('$'), "{}", conversion.sql);
+            assert_eq!(conversion.sql.len(), input.len());
         }
     }
 
