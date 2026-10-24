@@ -80,4 +80,16 @@ postgres-language-server check --fix migrations/
 postgres-language-server check --fix --unsafe migrations/
 ```
 
+Diagnostics with a fix are tagged `FIXABLE`. The summary says how many diagnostics have a fix, and with `--fix`, how many unsafe fixes it skipped. `--only` and `--skip` limit the check, and the fixes, to some rules or groups:
+
+```sh
+postgres-language-server check --fix --only=requireConcurrentIndexCreation migrations/
+```
+
+With `--stdin-file-path`, `check` reads the SQL from stdin and prints it to stdout, with the fixes applied if `--fix` is set. The diagnostics go to stderr:
+
+```sh
+cat migration.sql | postgres-language-server check --fix --unsafe --stdin-file-path=migration.sql
+```
+
 The documentation of each rule says whether it has a fix and whether the fix is safe.

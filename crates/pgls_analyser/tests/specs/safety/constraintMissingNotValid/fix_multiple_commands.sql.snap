@@ -13,7 +13,7 @@ alter table orders
 ```
 
 # Diagnostics
-lint/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/constraintMissingNotValid  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
   
@@ -31,7 +31,7 @@ alter table orders
 
 ```
 
-lint/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/constraintMissingNotValid  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
   

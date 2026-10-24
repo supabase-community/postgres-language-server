@@ -598,8 +598,8 @@ fn trim_trailing_newlines(mut value: String) -> String {
 }
 
 /// Runs `check` with the given arguments on a file with `content`, with the test config plus the
-/// `config` entries, and returns the file afterwards.
-fn check_fixed(name: &str, config: &str, args: &[&str], content: &str) -> String {
+/// `config` entries, and returns the file afterwards and the output of the command.
+fn check_file(name: &str, config: &str, args: &[&str], content: &str) -> (String, String) {
     let dir = Path::new("tests/fixtures").join(format!("{name}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let mut base = std::fs::read_to_string(CONFIG_PATH).unwrap();
@@ -612,7 +612,9 @@ fn check_fixed(name: &str, config: &str, args: &[&str], content: &str) -> String
     std::fs::write(&file, content).unwrap();
 
     let mut cmd = cargo_bin_cmd!("postgres-language-server");
-    cmd.args(["check", "--config-path", config_path.to_str().unwrap()])
+    let output = cmd
+        .args(["check", "--config-path", config_path.to_str().unwrap()])
+        .args(["--log-level", "none", "--disable-db"])
         .args(args)
         .arg(file.to_str().unwrap())
         .output()
@@ -620,7 +622,17 @@ fn check_fixed(name: &str, config: &str, args: &[&str], content: &str) -> String
 
     let fixed = std::fs::read_to_string(&file).unwrap();
     std::fs::remove_dir_all(&dir).unwrap();
-    fixed
+    let output = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    (fixed, output)
+}
+
+/// The file after `check` with the given arguments, see [`check_file`].
+fn check_fixed(name: &str, config: &str, args: &[&str], content: &str) -> String {
+    check_file(name, config, args, content).0
 }
 
 #[test]
@@ -643,9 +655,66 @@ fn check_fix_without_section_markers_needs_unsafe() {
     // Without section markers, we don't know whether the migration tool runs the file in a
     // transaction, where `CONCURRENTLY` fails.
     let content = "reindex index my_index;\n";
-    assert_eq!(check_fixed("fix-plain", "", &["--fix"], content), content);
+    let (fixed, output) = check_file("fix-plain", "", &["--fix"], content);
+    assert_eq!(fixed, content);
+    assert!(
+        output.contains("Skipped 1 unsafe fix. Rerun with --fix --unsafe to apply them."),
+        "{output}"
+    );
     assert_eq!(
         check_fixed("fix-plain-unsafe", "", &["--fix", "--unsafe"], content),
         "reindex index concurrently my_index;\n"
+    );
+}
+
+#[test]
+fn check_reports_fixable_diagnostics() {
+    let (_, output) = check_file("fixable", "", &[], "reindex index my_index;\n");
+    assert!(output.contains(" FIXABLE "), "{output}");
+    assert!(
+        output.contains("1 diagnostic has a fix. Run with --fix to apply the safe fixes, and with --fix --unsafe to apply all of them."),
+        "{output}"
+    );
+    assert!(!output.contains("No fixes applied."), "{output}");
+}
+
+#[test]
+fn check_fix_only_applies_the_selected_rules() {
+    let content = "create table t (a json, b varchar(10));\n";
+    let args = ["--fix", "--unsafe", "--only=preferJsonb"];
+    let (fixed, output) = check_file("fix-only", "", &args, content);
+    assert_eq!(
+        fixed, "create table t (a jsonb, b varchar(10));\n",
+        "{output}"
+    );
+    // The diagnostics of other rules are left out too.
+    assert!(!output.contains("preferTextField"), "{output}");
+
+    let args = ["--fix", "--unsafe", "--only=style", "--skip=preferJsonb"];
+    assert_eq!(
+        check_fixed("fix-skip", "", &args, content),
+        "create table t (a json, b text);\n"
+    );
+}
+
+#[test]
+fn check_stdin_applies_fixes() {
+    let output = run_check_with(
+        &[
+            "--config-path",
+            CONFIG_PATH,
+            "--log-level",
+            "none",
+            "--fix",
+            "--unsafe",
+            "--stdin-file-path",
+            "tests/fixtures/virtual.sql",
+        ],
+        Some("reindex index my_index;\n"),
+        None,
+    );
+    assert!(
+        output.contains("stdout:\nreindex index concurrently my_index;\n"),
+        "{output}"
     );
 }
