@@ -666,6 +666,49 @@ fn relative_paths_are_relative_to_the_configuration_file() {
     );
 }
 
+/// `check` verifies the databases of all configuration files at the same time, and reports each
+/// one it can't reach with its address and the folder that uses it.
+#[cfg(target_os = "linux")]
+#[test]
+fn check_reports_every_unreachable_database_at_once() {
+    let unreachable = |port: u16| {
+        format!(
+            r#"{{ "db": {{ "host": "10.255.255.1", "port": {port}, "username": "postgres", "password": "postgres", "connTimeoutSecs": 2 }} }}"#
+        )
+    };
+    let (one, two, three) = (unreachable(5001), unreachable(5002), unreachable(5003));
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        ("db1/postgres-language-server.jsonc", &one),
+        ("db2/postgres-language-server.jsonc", &two),
+        ("db3/postgres-language-server.jsonc", &three),
+        ("db1/a.sql", "select 1;\n"),
+        ("db2/a.sql", "select 1;\n"),
+        ("db3/a.sql", "select 1;\n"),
+    ]);
+
+    let start = std::time::Instant::now();
+    let (success, output) = check_in(root.path(), &[], &[]);
+    let elapsed = start.elapsed();
+    assert!(!success, "{output}");
+    for (port, folder) in [(5001, "db1"), (5002, "db2"), (5003, "db3")] {
+        let address = format!("postgres@10.255.255.1:{port}/postgres, the database of ");
+        assert!(
+            output.lines().any(|line| line.contains(&address)
+                && line.contains(&root.path().join(folder).display().to_string())),
+            "the database of {folder} is not reported:\n{output}"
+        );
+    }
+    // One connection timeout for the check, not one per database.
+    assert!(
+        elapsed < std::time::Duration::from_secs(5),
+        "the connection checks ran one after the other: {elapsed:?}"
+    );
+}
+
 /// Runs `check` with the database settings given in `args` only, without the connection
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]
@@ -821,7 +864,7 @@ fn normalize_durations(input: &str) -> String {
 }
 
 fn normalize_output(status: ExitStatus, stdout: &str, stderr: &str) -> String {
-    let normalized_stdout = normalize_durations(stdout);
+    let normalized_stdout = normalize_test_environment(&normalize_durations(stdout));
     let normalized_stderr = normalize_diagnostics(stderr);
     let status_label = if status.success() {
         "success"
@@ -835,8 +878,28 @@ fn normalize_output(status: ExitStatus, stdout: &str, stderr: &str) -> String {
     )
 }
 
+/// Replaces the address of the database in connection errors, which names the database that
+/// `sqlx::test` creates, and the working directory.
+fn normalize_test_environment(input: &str) -> String {
+    const PREFIX: &str = "Could not connect to ";
+    let mut output = String::new();
+    let mut rest = input;
+    while let Some(start) = rest.find(PREFIX) {
+        output.push_str(&rest[..start + PREFIX.len()]);
+        output.push_str("<database>");
+        rest = &rest[start + PREFIX.len()..];
+        let end = rest.find([',', ' ']).unwrap_or(rest.len());
+        rest = &rest[end..];
+    }
+    output.push_str(rest);
+    match std::env::current_dir() {
+        Ok(cwd) => output.replace(&cwd.display().to_string(), "<cwd>"),
+        Err(_) => output,
+    }
+}
+
 fn normalize_diagnostics(input: &str) -> String {
-    let normalized = normalize_durations(input);
+    let normalized = normalize_test_environment(&normalize_durations(input));
     let mut lines = normalized.lines().peekable();
     let mut diagnostic_sections: Vec<String> = Vec::new();
     let mut other_lines: Vec<String> = Vec::new();
