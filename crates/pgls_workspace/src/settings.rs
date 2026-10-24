@@ -121,11 +121,15 @@ impl WorkspaceSettings {
         self.data.get(key).map(|project| project.settings_for(path))
     }
 
-    /// The root settings and the nested settings of a project.
-    pub fn get_all_settings(&self, key: ProjectKey) -> impl Iterator<Item = &Settings> {
+    /// The root settings and the nested settings of a project, with the folders they apply to.
+    pub fn get_all_settings(&self, key: ProjectKey) -> impl Iterator<Item = (&Path, &Settings)> {
         self.data.get(key).into_iter().flat_map(|project| {
-            std::iter::once(&project.settings)
-                .chain(project.nested.iter().map(|(_, settings)| settings))
+            std::iter::once((project.path.as_path(), &project.settings)).chain(
+                project
+                    .nested
+                    .iter()
+                    .map(|(folder, settings)| (folder.as_path(), settings)),
+            )
         })
     }
 
@@ -713,6 +717,7 @@ impl Default for TypecheckSettings {
 pub const DEFAULT_DATABASE_PASSWORD: &str = "postgres";
 
 /// Database settings for the entire workspace
+#[derive(Clone)]
 pub struct DatabaseSettings {
     pub enable_connection: bool,
     pub connection_string: Option<String>,
