@@ -55,6 +55,17 @@
         }
       ]
     },
+    "inlayHints": {
+      "description": "The configuration for inlay hints in editors",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/InlayHintsConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "linter": {
       "description": "The configuration for the linter",
       "anyOf": [
@@ -93,6 +104,17 @@
       "anyOf": [
         {
           "$ref": "#/definitions/PlPgSqlCheckConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "semanticTokens": {
+      "description": "The configuration for semantic highlighting in editors",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SemanticTokensConfiguration"
         },
         {
           "type": "null"
@@ -683,6 +705,20 @@
           ]
         }
       ]
+    },
+    "InlayHintsConfiguration": {
+      "description": "The configuration for inlay hints.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, the language server sends no inlay hints. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "KeywordCase": {
       "description": "Keyword casing style for the formatter.",
@@ -3031,6 +3067,20 @@
             {
               "type": "null"
             }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SemanticTokensConfiguration": {
+      "description": "The configuration for semantic highlighting.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, the language server sends no semantic tokens, and editors keep the highlighting of their grammar. `true` by default",
+          "type": [
+            "boolean",
+            "null"
           ]
         }
       },
