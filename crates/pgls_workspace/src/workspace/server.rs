@@ -49,7 +49,7 @@ use pgls_workspace_macros::ignored_path;
 use snapshot_manager::SnapshotManager;
 #[cfg(feature = "db")]
 use sqlx::Executor;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use crate::{
     WorkspaceError,
@@ -1083,6 +1083,7 @@ impl Workspace for WorkspaceServer {
 
         let mut fixes_applied = 0;
         let mut skipped_suggested_fixes = 0;
+        let mut converged = false;
         for _ in 0..MAX_PASSES {
             let doc = Document::new(code.clone(), 0);
             let diagnostics =
@@ -1118,10 +1119,17 @@ impl Workspace for WorkspaceServer {
                 applied += 1;
             }
             if applied == 0 {
+                converged = true;
                 break;
             }
             code = combined.apply(&code);
             fixes_applied += applied;
+        }
+        if !converged {
+            warn!(
+                path = ?params.path,
+                "Fixes still changed the file after {MAX_PASSES} passes, some may be left"
+            );
         }
 
         Ok(FixFileResult {

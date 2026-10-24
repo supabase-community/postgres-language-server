@@ -23,6 +23,6 @@ lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━
 ## Fix (unsafe): Use JSONB
 ```
 -- expect_lint/preferJsonb
-alter table users add column settings jsonb default '{}';
+alter table users add column settings JSONB default '{}';
 
 ```

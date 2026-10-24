@@ -27,7 +27,7 @@ lint/requireConcurrentIndexCreation ━━━━━━━━━━━━━━�
 -- The statements surely run outside a transaction, so the fixes are safe.
 -- section: up transaction:false queries:separate
 -- expect_lint/requireConcurrentIndexCreation
-create index CONCURRENTLY users_email_idx on users (email);
+create index concurrently users_email_idx on users (email);
 -- expect_lint/requireConcurrentIndexCreation
 create index users_name_idx on users (name);
 
@@ -48,6 +48,6 @@ lint/requireConcurrentIndexCreation ━━━━━━━━━━━━━━�
 -- expect_lint/requireConcurrentIndexCreation
 create index users_email_idx on users (email);
 -- expect_lint/requireConcurrentIndexCreation
-create index CONCURRENTLY users_name_idx on users (name);
+create index concurrently users_name_idx on users (name);
 
 ```

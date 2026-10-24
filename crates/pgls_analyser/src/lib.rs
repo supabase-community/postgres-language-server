@@ -315,12 +315,16 @@ impl<'a> Analyser<'a> {
                                 None => stmt.range,
                             });
                             // Fixes are computed on the statement text, which only matches the
-                            // source if it has the length of the statement range.
-                            let fix_matches_source = stmt
-                                .sql
-                                .as_ref()
-                                .is_some_and(|sql| TextSize::of(sql.as_str()) == stmt.range.len());
-                            if !fix_matches_source {
+                            // source if it has the length of the statement range. A fix must
+                            // keep the statement valid.
+                            let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
+                                TextSize::of(sql.as_str()) == stmt.range.len()
+                                    && diagnostic
+                                        .fix
+                                        .as_ref()
+                                        .is_none_or(|fix| keeps_statement_valid(fix, sql))
+                            });
+                            if !fix_is_valid {
                                 diagnostic.fix = None;
                             }
                             if let Some(fix) = &mut diagnostic.fix {
@@ -359,6 +363,17 @@ impl<'a> Analyser<'a> {
 
         result
     }
+}
+
+/// Whether the statement `sql` still parses with the fix applied. The edits are relative to the
+/// statement. A fix that also edits outside of the statement, e.g. to add a `COMMIT` after it,
+/// can't be checked on the statement alone and is kept.
+fn keeps_statement_valid(fix: &RuleFix, sql: &str) -> bool {
+    let len = TextSize::of(sql);
+    if fix.edits.iter().any(|edit| edit.range.end() > len) {
+        return true;
+    }
+    pgls_query::parse(&fix.apply(sql)).is_ok()
 }
 
 /// Statements that run together: those before the first section marker, then each section.
@@ -477,7 +492,35 @@ mod tests {
     use pgls_text_size::TextRange;
     use termcolor::NoColor;
 
-    use crate::{AnalysableStatement, Analyser};
+    use crate::{AnalysableStatement, Analyser, RuleFix, keeps_statement_valid};
+
+    #[test]
+    fn fixes_must_keep_the_statement_valid() {
+        let sql = "create index users_email_idx on users (email)";
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        assert!(keeps_statement_valid(
+            &RuleFix::new("").insert(at(12), " concurrently"),
+            sql
+        ));
+        assert!(!keeps_statement_valid(
+            &RuleFix::new("").insert(at(12), " concurrently ("),
+            sql
+        ));
+        // At the end of the statement, the edit is checked with it.
+        assert!(keeps_statement_valid(
+            &RuleFix::new("").insert(at(45), " where email is not null"),
+            sql
+        ));
+        assert!(!keeps_statement_valid(
+            &RuleFix::new("").insert(at(45), " where"),
+            sql
+        ));
+        // After the statement, the fix can't be checked on the statement alone.
+        assert!(keeps_statement_valid(
+            &RuleFix::new("").insert(at(47), "\ncommit;"),
+            sql
+        ));
+    }
 
     #[ignore]
     #[test]
