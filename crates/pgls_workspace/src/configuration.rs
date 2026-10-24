@@ -16,7 +16,7 @@ use pgls_console::markup;
 use pgls_env::PGLS_WEBSITE;
 use pgls_fs::{
     AutoSearchResult, ConfigName, FileSystem, FindFiles, OpenOptions, SKIPPED_DIRECTORIES,
-    SkipDirectory,
+    SkipDirectory, normalize_path,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -307,6 +307,10 @@ fn find_nested_configurations(
     root_files: Option<Arc<FilesSettings>>,
 ) -> (Vec<PathBuf>, Option<IncompleteSearch>) {
     let file_names = ConfigName::file_names();
+    // Like the settings, which only use `.gitignore` with `vcs.enabled` and `vcs.useIgnoreFile`.
+    let vcs_ignore_files = root_files
+        .as_ref()
+        .is_none_or(|root_files| root_files.git_ignore.is_some());
     let skip_directory = root_files.map(|root_files| {
         Arc::new(move |directory: &Path| root_files.is_ignored(directory)) as SkipDirectory
     });
@@ -320,6 +324,7 @@ fn find_nested_configurations(
             folder,
             &FindFiles {
                 skip_directory: skip_directory.clone(),
+                vcs_ignore_files,
                 ..FindFiles::new(&file_names)
             },
         );
@@ -890,73 +895,6 @@ fn expand_home(path: &str, home_directory: Option<&Path>) -> Option<PathBuf> {
             .or_else(|| path.strip_prefix("~\\").filter(|_| cfg!(windows)))?
     };
     Some(home_directory?.join(rest))
-}
-
-/// Normalizes a path, resolving '..' and '.' segments without requiring the path to exist
-fn normalize_path(path: &Path) -> PathBuf {
-    let mut components = Vec::new();
-    let mut prefix_component = None;
-    let mut is_absolute = false;
-
-    for component in path.components() {
-        match component {
-            std::path::Component::Prefix(_prefix) => {
-                prefix_component = Some(component);
-                components.clear();
-            }
-            std::path::Component::RootDir => {
-                is_absolute = true;
-                components.clear();
-            }
-            std::path::Component::ParentDir => {
-                if !components.is_empty() {
-                    components.pop();
-                } else if !is_absolute && prefix_component.is_none() {
-                    // Only keep parent dir if we're not absolute and have no prefix
-                    components.push(component.as_os_str());
-                }
-            }
-            std::path::Component::Normal(c) => {
-                components.push(c);
-            }
-            std::path::Component::CurDir => {
-                // Skip current directory components
-            }
-        }
-    }
-
-    let mut result = PathBuf::new();
-
-    // Add prefix component (like C: on Windows)
-    if let Some(prefix) = prefix_component {
-        result.push(prefix.as_os_str());
-    }
-
-    // Add root directory if path is absolute
-    if is_absolute {
-        result.push(std::path::Component::RootDir.as_os_str());
-    }
-
-    // Add normalized components
-    for component in components {
-        result.push(component);
-    }
-
-    // Handle edge cases
-    if result.as_os_str().is_empty() {
-        if prefix_component.is_some() || is_absolute {
-            // This shouldn't happen with proper input, but fallback to original path's root
-            return path
-                .ancestors()
-                .last()
-                .unwrap_or(Path::new(""))
-                .to_path_buf();
-        } else {
-            return PathBuf::from(".");
-        }
-    }
-
-    result
 }
 
 #[cfg(test)]

@@ -3910,3 +3910,54 @@ async fn a_section_removed_from_the_configuration_goes_back_to_its_defaults() ->
     reader.abort();
     Ok(())
 }
+
+/// A file opened by its real path belongs to the workspace folder that was opened through a
+/// symlink, instead of getting the defaults of a file outside every folder.
+#[cfg(unix)]
+#[tokio::test]
+async fn files_opened_by_their_real_path_belong_to_a_symlinked_folder() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let real = root.path().join("real");
+    std::fs::create_dir_all(&real)?;
+    std::fs::write(
+        real.join(ConfigName::pgls_jsonc()),
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )?;
+    let link = root.path().join("link");
+    std::os::unix::fs::symlink(&real, &link)?;
+    let folder = WorkspaceFolder {
+        uri: Uri::from_file_path(&link).unwrap(),
+        name: "link".to_string(),
+    };
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_folders(folder.uri.clone(), Some(vec![folder]))
+        .await?;
+    server.initialized().await?;
+
+    assert_eq!(
+        open_and_check(
+            &mut server,
+            &mut receiver,
+            Uri::from_file_path(real.join("a.sql")).unwrap()
+        )
+        .await?,
+        [lsp::DiagnosticSeverity::ERROR]
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}

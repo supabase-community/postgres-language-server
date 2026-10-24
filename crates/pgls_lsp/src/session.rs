@@ -9,7 +9,7 @@ use futures::stream::FuturesUnordered;
 use pgls_analyse::RuleCategoriesBuilder;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
-use pgls_fs::{ConfigName, FileSystem, PgLSPath};
+use pgls_fs::{ConfigName, FileSystem, PgLSPath, normalize_path, real_path};
 use pgls_workspace::PartialConfigurationExt;
 use pgls_workspace::Workspace;
 use pgls_workspace::configuration::{
@@ -117,6 +117,10 @@ pub(crate) struct Session {
     /// The projects of the workspace by their folder, deepest first: one per workspace folder, or
     /// one for the root. A document belongs to the project of the deepest folder that contains it.
     projects: RwLock<Vec<(PathBuf, ProjectKey)>>,
+
+    /// The projects whose folder is or is below a symlink, by the real path of the folder,
+    /// deepest first.
+    real_folders: RwLock<Vec<(PathBuf, ProjectKey)>>,
 
     /// The project of the files outside every workspace folder, once one was opened.
     folderless_project: OnceLock<ProjectKey>,
@@ -261,6 +265,7 @@ impl Session {
             client_overrides: RwLock::new(ClientOverrides::default()),
             workspace_folders: RwLock::default(),
             projects: RwLock::default(),
+            real_folders: RwLock::default(),
             folderless_project: OnceLock::new(),
             root_files: RwLock::default(),
             configuration_files: RwLock::default(),
@@ -718,8 +723,19 @@ impl Session {
     /// configuration is loaded, the key of no project, for which the workspace only reports what
     /// needs no settings.
     pub(crate) fn project_key(&self, path: &Path) -> ProjectKey {
+        let path = normalize_path(path);
         let projects = self.projects.read().unwrap();
         if let Some((_, key)) = projects.iter().find(|(folder, _)| path.starts_with(folder)) {
+            return *key;
+        }
+        // A file opened by its real path in a folder opened through a symlink.
+        if let Some((_, key)) = self
+            .real_folders
+            .read()
+            .unwrap()
+            .iter()
+            .find(|(folder, _)| path.starts_with(folder))
+        {
             return *key;
         }
         let Some((_, only_project)) = projects.last() else {
@@ -813,6 +829,12 @@ impl Session {
         }
 
         projects.sort_by_key(|(folder, _)| std::cmp::Reverse(folder.components().count()));
+        let mut real_folders: Vec<_> = projects
+            .iter()
+            .filter_map(|(folder, key)| Some((real_path(folder)?, *key)))
+            .collect();
+        real_folders.sort_by_key(|(folder, _)| std::cmp::Reverse(folder.components().count()));
+        *self.real_folders.write().unwrap() = real_folders;
         *self.projects.write().unwrap() = projects;
         if !matches!(status, ConfigurationStatus::Loaded) {
             // A broken file can't tell what it extends, so keep watching what it did before.

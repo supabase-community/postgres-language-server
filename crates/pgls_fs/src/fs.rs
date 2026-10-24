@@ -186,8 +186,8 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     /// Finds the files at or below `root` named like one of `search.file_names`.
     ///
     /// It skips hidden directories, the directories in [SKIPPED_DIRECTORIES], the directories that
-    /// [FindFiles::skip_directory] skips, and, on the OS file system, everything that `.gitignore`
-    /// and `.ignore` files exclude. It stops at [FindFiles::max_depth] and
+    /// [FindFiles::skip_directory] skips, and, on the OS file system, everything that `.ignore`
+    /// files and, with [FindFiles::vcs_ignore_files], `.gitignore` files exclude. It stops at [FindFiles::max_depth] and
     /// [FindFiles::max_entries].
     fn find_files(&self, root: &Path, search: &FindFiles) -> FoundFiles;
 }
@@ -208,6 +208,9 @@ pub struct FindFiles<'a> {
     pub max_depth: usize,
     /// The search stops after this many files and directories.
     pub max_entries: usize,
+    /// Whether the OS file system skips what `.gitignore` files and git's excludes exclude.
+    /// `.ignore` files are always honoured.
+    pub vcs_ignore_files: bool,
 }
 
 impl<'a> FindFiles<'a> {
@@ -223,6 +226,7 @@ impl<'a> FindFiles<'a> {
             skip_directory: None,
             max_depth: Self::DEFAULT_MAX_DEPTH,
             max_entries: Self::DEFAULT_MAX_ENTRIES,
+            vcs_ignore_files: true,
         }
     }
 }
