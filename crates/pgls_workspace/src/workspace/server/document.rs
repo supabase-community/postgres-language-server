@@ -62,6 +62,11 @@ impl Document {
         &self.suppressions
     }
 
+    /// The ranges of the top-level statements, in file order.
+    pub fn statement_ranges(&self) -> &[TextRange] {
+        &self.ranges
+    }
+
     pub fn get_document_content(&self) -> &str {
         &self.content
     }
@@ -231,7 +236,6 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
         TextRange,
         Option<pgls_query::NodeEnum>,
         Arc<tree_sitter::Tree>,
-        Option<SQLFunctionSignature>,
     );
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
@@ -244,15 +248,7 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
 
         let cst_result = parser.cst_db.get_or_cache_tree(&id);
 
-        let sql_fn_sig = id.parent().and_then(|root| {
-            let ast_option = parser.ast_db.get_or_cache_ast(&root).as_ref().clone().ok();
-
-            let ast_option = ast_option.as_ref()?;
-
-            get_sql_fn_signature(ast_option)
-        });
-
-        (id.clone(), range, ast_option, cst_result, sql_fn_sig)
+        (id.clone(), range, ast_option, cst_result)
     }
 }
 
@@ -610,14 +606,11 @@ $$ LANGUAGE plpgsql;";
         let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (_id, _range, ast, cst, sql_fn_sig) = &results[0];
+        let (_id, _range, ast, cst) = &results[0];
 
         // Should have both AST and CST
         assert!(ast.is_some());
         assert_eq!(cst.root_node().kind(), "program");
-
-        // Should not have SQL function signature for top-level statement
-        assert!(sql_fn_sig.is_none());
     }
 
     #[test]
@@ -630,16 +623,9 @@ $$ LANGUAGE plpgsql;";
         assert_eq!(results.len(), 2);
 
         // Check the function body
-        let (_id, _range, ast, _cst, sql_fn_sig) = &results[1];
-        assert_eq!(_id.content(), "SELECT $1 + $2;");
+        let (id, _range, ast, _cst) = &results[1];
+        assert_eq!(id.content(), "SELECT $1 + $2;");
         assert!(ast.is_some());
-        assert!(sql_fn_sig.is_some());
-
-        let sig = sql_fn_sig.as_ref().unwrap();
-        assert_eq!(sig.name, "add");
-        assert_eq!(sig.args.len(), 2);
-        assert_eq!(sig.args[0].name, Some("a".to_string()));
-        assert_eq!(sig.args[1].name, Some("b".to_string()));
     }
 
     #[test]

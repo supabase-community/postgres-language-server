@@ -203,6 +203,7 @@ export type Category =
   | "plpgsql_check"
   | "internalError/panic"
   | "syntax"
+  | "migrations/sectionMarkers"
   | "dummy"
   | "lint"
   | "splinter"
