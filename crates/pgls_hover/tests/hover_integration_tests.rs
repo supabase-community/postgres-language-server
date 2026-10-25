@@ -781,3 +781,59 @@ async fn test_table_hover_resolved_by_search_path(test_db: PgPool) {
     )
     .await;
 }
+
+const MIXED_CASE_TABLES: &str = r#"
+    create table "MyTable" (quoted_id int);
+    create table mytable (folded_id int);
+    create table "a""b" (escaped_id int);
+"#;
+
+// The statements don't parse, so hover finds the tables by name instead of by reference.
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_unquoted_name_is_downcased(test_db: PgPool) {
+    let query = format!(
+        "select * from MyTa{}ble where",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_unquoted_name_is_downcased",
+        query,
+        Some(MIXED_CASE_TABLES),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_quoted_name_keeps_its_case(test_db: PgPool) {
+    let query = format!(
+        r#"select * from "MyTa{}ble" where"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_quoted_name_keeps_its_case",
+        query,
+        Some(MIXED_CASE_TABLES),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_quoted_name_with_escaped_quote(test_db: PgPool) {
+    let query = format!(
+        r#"select * from "a""{}b" where"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_quoted_name_with_escaped_quote",
+        query,
+        Some(MIXED_CASE_TABLES),
+        &test_db,
+    )
+    .await;
+}

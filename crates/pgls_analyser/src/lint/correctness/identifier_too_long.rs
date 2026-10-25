@@ -1,5 +1,6 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::identifier_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::Token;
@@ -45,6 +46,7 @@ impl LinterRule for IdentifierTooLong {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // The parser already truncated the names in the syntax tree, so we read the tokens.
+        // Downcasing an unquoted identifier doesn't change its length.
         let Some(sql) = ctx.sql() else {
             return vec![];
         };
@@ -61,7 +63,7 @@ impl LinterRule for IdentifierTooLong {
                     TextSize::from(u32::try_from(token.end).ok()?),
                 );
                 let identifier =
-                    identifier_value(sql.get(range.start().into()..range.end().into())?);
+                    identifier_name(sql.get(range.start().into()..range.end().into())?);
                 (identifier.len() > MAX_IDENTIFIER_BYTES).then_some((range, identifier))
             })
             .map(|(range, identifier)| {
@@ -77,17 +79,5 @@ impl LinterRule for IdentifierTooLong {
                 .note("Use a shorter name.")
             })
             .collect()
-    }
-}
-
-/// The name a quoted or unquoted identifier stands for. Downcasing an unquoted identifier
-/// doesn't change its length.
-fn identifier_value(text: &str) -> String {
-    match text
-        .strip_prefix('"')
-        .and_then(|text| text.strip_suffix('"'))
-    {
-        Some(quoted) => quoted.replace("\"\"", "\""),
-        None => text.to_owned(),
     }
 }
