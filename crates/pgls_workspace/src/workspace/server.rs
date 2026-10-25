@@ -11,6 +11,9 @@ use std::{
     },
 };
 
+#[cfg(test)]
+use std::sync::atomic::AtomicUsize;
+
 use analyser::AnalyserVisitorBuilder;
 #[cfg(feature = "db")]
 use async_helper::run_async;
@@ -33,7 +36,7 @@ use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
     AnalysableStatement, AnalysedFileContext, Analyser, AnalyserConfig, AnalyserParams,
     AnalysisResult, Direction, FileKind, LinterDiagnostic, LinterOptions, MigrationSection,
-    RuleFix, WalkParams,
+    RuleFix, WalkParams, WalkState,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin};
@@ -128,6 +131,11 @@ pub struct WorkspaceServer {
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
+
+    /// The statements that [`Self::walk_statements`] walked, to test that it resumes from its
+    /// checkpoints.
+    #[cfg(test)]
+    walked_statements: AtomicUsize,
 }
 
 /// The number of cached parse results and tree-sitter trees of statements that all open
@@ -151,6 +159,7 @@ pub struct DocumentCacheStats {
     pub parse_results: usize,
     pub trees: usize,
     pub analysis: bool,
+    pub walk_checkpoints: usize,
 }
 
 /// A database snapshot with the changes of the statements before a statement.
@@ -180,6 +189,25 @@ pub(crate) struct CachedAnalysis {
     analysis: Arc<DocumentAnalysis>,
 }
 
+/// The number of walk checkpoints that a document keeps, see [`WalkCheckpoint`]. Each holds the
+/// changes that the file made to the catalog before it, so they are few.
+const WALK_CHECKPOINTS_MAX: usize = 4;
+
+/// Where [`WorkspaceServer::walk_statements`] stopped before, to resume from there: the state of
+/// the walk at the start of a top-level statement, and what it depends on besides the text
+/// before it.
+pub(crate) struct WalkCheckpoint {
+    settings_version: u64,
+    catalog_base: Arc<CatalogBase>,
+    state: WalkState,
+}
+
+impl WalkCheckpoint {
+    pub(crate) fn at(&self) -> TextSize {
+        self.state.at()
+    }
+}
+
 /// The `Workspace` object is long-lived, so we want it to be able to cross
 /// unwind boundaries.
 /// In return, we have to make sure operations on the workspace either do not
@@ -207,6 +235,8 @@ impl WorkspaceServer {
             settings_version: AtomicU64::default(),
             document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
             connection: ConnectionManager::new(),
+            #[cfg(test)]
+            walked_statements: AtomicUsize::default(),
         }
     }
 
@@ -221,6 +251,8 @@ impl WorkspaceServer {
             snapshot_before: Mutex::default(),
             settings_version: AtomicU64::default(),
             document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
+            #[cfg(test)]
+            walked_statements: AtomicUsize::default(),
         }
     }
 
@@ -620,12 +652,16 @@ impl WorkspaceServer {
     }
 
     /// Walks the statements of `doc` that start before `end` like the analyser does, see
-    /// [`pgls_analyser::walk_statements`]. `visit` gets every parsed statement with the file
-    /// context as it is before it. Returns the catalog as a statement at `end` sees it.
+    /// [`pgls_analyser::walk_statements`]. `visit` gets the parsed statements with the file
+    /// context as it is before them, from the top-level statement that contains `start` or comes
+    /// after it on. The walk resumes from the last checkpoint of the document before that
+    /// statement, and records a checkpoint at it. Returns the catalog as a statement at `end` sees
+    /// it.
     fn walk_statements(
         &self,
         doc: &Document,
         snapshot: &Arc<Snapshot>,
+        start: TextSize,
         end: TextSize,
         visit: impl FnMut(&AnalysableStatement, &AnalysedFileContext),
     ) -> Catalog {
@@ -639,10 +675,58 @@ impl WorkspaceServer {
                 )
             })
             .unwrap_or_default();
+        let settings_version = self.settings_version.load(Ordering::Relaxed);
+        let catalog_base = self.catalog_base(snapshot);
+
+        // The walk records a checkpoint at the top-level statement that contains `start` or comes
+        // after it, and one at the statement where the last change of the document starts. The
+        // next keystroke there keeps that one, also for requests after it.
+        let ranges = doc.top_level_ranges();
+        let request_at = ranges
+            .get(ranges.partition_point(|range| range.end() <= start))
+            .map_or(end, |range| range.start())
+            .min(end);
+        let edit_at = doc
+            .edited_at()
+            .and_then(|edited_at| {
+                let i = ranges.partition_point(|range| range.start() <= edited_at);
+                Some(ranges.get(i.checked_sub(1)?)?.start())
+            })
+            .filter(|edit_at| *edit_at < request_at);
+        let checkpoint_at: Vec<TextSize> = edit_at.into_iter().chain([request_at]).collect();
+
+        let from = {
+            let mut checkpoints = doc.walk_checkpoints().lock().unwrap();
+            checkpoints.retain(|checkpoint| {
+                checkpoint.settings_version == settings_version
+                    && Arc::ptr_eq(&checkpoint.catalog_base, &catalog_base)
+            });
+            let last = checkpoints
+                .iter()
+                .enumerate()
+                .filter(|(_, checkpoint)| {
+                    checkpoint.at() <= request_at && checkpoint.state.fits(&sections)
+                })
+                .max_by_key(|(_, checkpoint)| checkpoint.at())
+                .map(|(i, _)| i);
+            last.map(|i| {
+                let checkpoint = checkpoints.remove(i);
+                if checkpoint_at.contains(&checkpoint.at()) {
+                    // The walk records it again.
+                    checkpoint.state
+                } else {
+                    // Most recently used last.
+                    let state = checkpoint.state.clone();
+                    checkpoints.push(checkpoint);
+                    state
+                }
+            })
+        };
 
         let mut stmts = Vec::new();
         let mut unparsable = Vec::new();
-        for (stmt, _, skipped) in doc.iter(AnalyserDiagnosticsMapper) {
+        let walk_start = from.as_ref().map_or(TextSize::from(0), WalkState::at);
+        for (stmt, _, skipped) in doc.iter_from(AnalyserDiagnosticsMapper, walk_start) {
             let Some(start) = stmt
                 .as_ref()
                 .map(|stmt| stmt.range.start())
@@ -656,18 +740,36 @@ impl WorkspaceServer {
             stmts.extend(stmt);
             unparsable.extend(skipped);
         }
+        #[cfg(test)]
+        self.walked_statements
+            .fetch_add(stmts.len() + unparsable.len(), Ordering::Relaxed);
 
-        pgls_analyser::walk_statements(
+        let walk = pgls_analyser::walk_statements(
             WalkParams {
                 stmts: &stmts,
                 unparsable: &unparsable,
-                catalog_base: Some(self.catalog_base(snapshot)),
+                catalog_base: Some(Arc::clone(&catalog_base)),
                 search_path: &snapshot.expand_search_path(&search_path),
                 sections: &sections,
                 end,
+                from,
+                checkpoints: &checkpoint_at,
             },
             visit,
-        )
+        );
+        let mut checkpoints = doc.walk_checkpoints().lock().unwrap();
+        for state in walk.checkpoints {
+            checkpoints.retain(|checkpoint| checkpoint.at() != state.at());
+            if checkpoints.len() == WALK_CHECKPOINTS_MAX {
+                checkpoints.remove(0);
+            }
+            checkpoints.push(WalkCheckpoint {
+                settings_version,
+                catalog_base: Arc::clone(&catalog_base),
+                state,
+            });
+        }
+        walk.catalog
     }
 
     /// For hover on the statement `id` at `range`: the references whose span contains
@@ -684,6 +786,7 @@ impl WorkspaceServer {
         let catalog = self.walk_statements(
             doc,
             &snapshot,
+            range.start(),
             position + TextSize::from(1),
             |stmt, file_context| {
                 let Some(sql) = stmt.sql.as_deref() else {
@@ -1689,7 +1792,13 @@ impl Workspace for WorkspaceServer {
                 let position = params.position - range.start();
                 let snapshot =
                     self.snapshot_before(parsed_doc, &id, range, Arc::clone(&snapshot), || {
-                        self.walk_statements(parsed_doc, &snapshot, range.start(), |_, _| {})
+                        self.walk_statements(
+                            parsed_doc,
+                            &snapshot,
+                            range.start(),
+                            range.start(),
+                            |_, _| {},
+                        )
                     });
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
@@ -1795,29 +1904,35 @@ impl Workspace for WorkspaceServer {
         };
 
         let mut hints = Vec::new();
-        self.walk_statements(doc, &snapshot, params.range.end(), |stmt, file_context| {
-            let Some(sql) = stmt.sql.as_deref() else {
-                return;
-            };
-            if stmt.range.intersect(params.range).is_none() || stmt.has_identifier_parameters {
-                return;
-            }
-            hints.extend(
-                pgls_inlay_hints::inlay_hints(pgls_inlay_hints::InlayHintsParams {
-                    stmt: &stmt.root,
-                    sql,
-                    catalog: file_context.catalog(),
-                    search_path: file_context.session().search_path(),
-                    function: stmt.function.as_ref(),
-                })
-                .into_iter()
-                .map(|hint| InlayHint {
-                    offset: hint.offset + stmt.range.start(),
-                    label: hint.label,
-                    kind: hint.kind.into(),
-                }),
-            );
-        });
+        self.walk_statements(
+            doc,
+            &snapshot,
+            params.range.start(),
+            params.range.end(),
+            |stmt, file_context| {
+                let Some(sql) = stmt.sql.as_deref() else {
+                    return;
+                };
+                if stmt.range.intersect(params.range).is_none() || stmt.has_identifier_parameters {
+                    return;
+                }
+                hints.extend(
+                    pgls_inlay_hints::inlay_hints(pgls_inlay_hints::InlayHintsParams {
+                        stmt: &stmt.root,
+                        sql,
+                        catalog: file_context.catalog(),
+                        search_path: file_context.session().search_path(),
+                        function: stmt.function.as_ref(),
+                    })
+                    .into_iter()
+                    .map(|hint| InlayHint {
+                        offset: hint.offset + stmt.range.start(),
+                        label: hint.label,
+                        kind: hint.kind.into(),
+                    }),
+                );
+            },
+        );
 
         hints.sort_by_key(|hint| hint.offset);
         self.charge_document_caches(&documents, &params.path);

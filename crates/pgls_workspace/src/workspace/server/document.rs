@@ -26,6 +26,10 @@ pub struct Document {
     suppressions: Suppressions,
     /// Cleared when the content changes.
     analysis: Mutex<Option<super::CachedAnalysis>>,
+    /// Least recently used first. Kept when the content changes after them.
+    walk_checkpoints: Mutex<Vec<super::WalkCheckpoint>>,
+    /// Where the last change of the content starts.
+    edited_at: Option<TextSize>,
 }
 
 impl Document {
@@ -46,12 +50,33 @@ impl Document {
             cst_db,
             suppressions,
             analysis: Mutex::default(),
+            walk_checkpoints: Mutex::default(),
+            edited_at: None,
         }
     }
 
     pub fn update_content(&mut self, content: String, version: i32) {
         // Only the statements around the change are split again.
-        self.split = pgls_statement_splitter::split_edited(&self.content, &self.split, &content);
+        let split = pgls_statement_splitter::split_edited(&self.content, &self.split, &content);
+
+        // A walk checkpoint stays valid if the text before it and the statements that start
+        // before it are the same.
+        let unchanged =
+            pgls_statement_splitter::common_prefix(self.content.as_bytes(), content.as_bytes());
+        let (old_ranges, new_ranges) = (&self.split.ranges, &split.ranges);
+        self.walk_checkpoints
+            .get_mut()
+            .unwrap()
+            .retain(|checkpoint| {
+                let at = checkpoint.at();
+                let before =
+                    |ranges: &[TextRange]| ranges.partition_point(|range| range.start() < at);
+                usize::from(at) <= unchanged
+                    && old_ranges[..before(old_ranges)] == new_ranges[..before(new_ranges)]
+            });
+
+        self.split = split;
+        self.edited_at = TextSize::try_from(unchanged).ok();
         self.content = content;
         self.version = version;
 
@@ -88,6 +113,7 @@ impl Document {
             parse_results: self.ast_db.len(),
             trees: self.cst_db.len(),
             analysis: self.analysis.lock().unwrap().is_some(),
+            walk_checkpoints: self.walk_checkpoints.lock().unwrap().len(),
         }
     }
 
@@ -97,6 +123,22 @@ impl Document {
         self.ast_db.clear();
         self.cst_db.clear();
         *self.analysis.lock().unwrap() = None;
+        self.walk_checkpoints.lock().unwrap().clear();
+    }
+
+    /// Where walks over the statements stopped, see `WorkspaceServer::walk_statements`.
+    pub(super) fn walk_checkpoints(&self) -> &Mutex<Vec<super::WalkCheckpoint>> {
+        &self.walk_checkpoints
+    }
+
+    /// Where the last change of the content starts.
+    pub fn edited_at(&self) -> Option<TextSize> {
+        self.edited_at
+    }
+
+    /// The ranges of the top-level statements.
+    pub fn top_level_ranges(&self) -> &[TextRange] {
+        &self.split.ranges
     }
 
     /// The analysis of the document, see `WorkspaceServer::analyse_document_cached`.
@@ -128,6 +170,19 @@ impl Document {
         M: StatementMapper<'a>,
     {
         self.iter_with_filter(mapper, NoFilter)
+    }
+
+    /// The statements from the first top-level statement that starts at or after `offset` on.
+    pub fn iter_from<'a, M>(&'a self, mapper: M, offset: TextSize) -> ParseIterator<'a, M, NoFilter>
+    where
+        M: StatementMapper<'a>,
+    {
+        let ranges = &self.split.ranges;
+        let first = ranges.partition_point(|range| range.start() < offset);
+        ParseIterator {
+            ranges: ranges[first..].iter(),
+            ..ParseIterator::new(self, mapper, NoFilter)
+        }
     }
 
     pub fn iter_with_filter<'a, M, F>(&'a self, mapper: M, filter: F) -> ParseIterator<'a, M, F>

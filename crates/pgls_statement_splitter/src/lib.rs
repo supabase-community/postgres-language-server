@@ -133,7 +133,7 @@ pub fn split_edited(old: &str, previous: &SplitResult, new: &str) -> SplitResult
 const COMPARE_BLOCK_BYTES: usize = 64;
 
 /// The length of the longest common prefix of `a` and `b`.
-fn common_prefix(a: &[u8], b: &[u8]) -> usize {
+pub fn common_prefix(a: &[u8], b: &[u8]) -> usize {
     let len = a.len().min(b.len());
     let mut equal = 0;
     while equal + COMPARE_BLOCK_BYTES <= len
