@@ -355,6 +355,28 @@ fn types() {
 }
 
 #[test]
+fn catalog_qualified_names() {
+    // `catalog.schema.name`, where Postgres only accepts the current database as the catalog.
+    assert_valid("select db.pg_catalog.upper('a'), null::db.public.address");
+    assert_eq!(
+        findings("select db.public.nope()"),
+        [FindingKind::UnknownFunction {
+            schema: Some("public".into()),
+            name: "nope".into(),
+            arg_count: 0,
+            name_exists: false
+        }]
+    );
+    assert_eq!(
+        findings("select null::db.public.nope"),
+        [FindingKind::UnknownType {
+            schema: Some("public".into()),
+            name: "nope".into()
+        }]
+    );
+}
+
+#[test]
 fn inserts() {
     assert_valid("insert into users (id) values (1)");
     assert_valid("insert into users (id) values (default)");

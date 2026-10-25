@@ -5,6 +5,7 @@ use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{Node, SelectStmt, SetOperation};
 use pgls_query::{NodeEnum, NodeRef};
+use pgls_query_ext::utils::string_values;
 
 declare_lint_rule! {
     /// A column is assigned or declared more than once.
@@ -175,7 +176,7 @@ fn duplicates<'a>(names: impl IntoIterator<Item = (&'a str, bool)>) -> Vec<&'a s
 fn output_columns(names: &[Node], query: Option<&Node>) -> Vec<String> {
     match query.and_then(|query| query.node.as_ref()) {
         Some(NodeEnum::SelectStmt(select)) => select_columns(names, select),
-        _ => string_values(names),
+        _ => string_values(names).unwrap_or_default(),
     }
 }
 
@@ -186,11 +187,11 @@ fn select_columns(names: &[Node], select: &SelectStmt) -> Vec<String> {
     while select.op() != SetOperation::SetopNone {
         match select.larg.as_deref() {
             Some(larg) => select = larg,
-            None => return string_values(names),
+            None => return string_values(names).unwrap_or_default(),
         }
     }
 
-    let mut columns = string_values(names);
+    let mut columns = string_values(names).unwrap_or_default();
     let targets: Vec<_> = select
         .target_list
         .iter()
@@ -220,14 +221,4 @@ fn select_columns(names: &[Node], select: &SelectStmt) -> Vec<String> {
         }
     }));
     columns
-}
-
-fn string_values(names: &[Node]) -> Vec<String> {
-    names
-        .iter()
-        .filter_map(|name| match &name.node {
-            Some(NodeEnum::String(name)) => Some(name.sval.clone()),
-            _ => None,
-        })
-        .collect()
 }

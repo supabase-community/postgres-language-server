@@ -1,23 +1,6 @@
 //! Helpers to read names out of the parse tree.
 
-use pgls_query::{NodeEnum, protobuf};
-
-/// The value of a `String` node.
-pub(super) fn string_value(node: &protobuf::Node) -> Option<&str> {
-    match node.node.as_ref()? {
-        NodeEnum::String(value) => Some(&value.sval),
-        _ => None,
-    }
-}
-
-/// All `String` values of a name list, e.g. `["public", "users"]`.
-pub(super) fn string_values(nodes: &[protobuf::Node]) -> Vec<String> {
-    nodes
-        .iter()
-        .filter_map(string_value)
-        .map(str::to_owned)
-        .collect()
-}
+use pgls_query::protobuf;
 
 /// A possibly schema-qualified name.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,13 +15,13 @@ impl QualifiedName {
     }
 }
 
-/// Reads `name`, `schema.name`, or `catalog.schema.name` from a name list.
+/// Reads `name`, `schema.name`, or `catalog.schema.name` from a name list, like
+/// [`pgls_query_ext::utils::qualified_name`].
 pub(super) fn qualified_name(nodes: &[protobuf::Node]) -> Option<QualifiedName> {
-    let mut names = string_values(nodes);
-    let name = names.pop()?;
+    let name = pgls_query_ext::utils::qualified_name(nodes)?;
     Some(QualifiedName {
-        schema: names.pop(),
-        name,
+        schema: name.schema.map(str::to_owned),
+        name: name.name.to_owned(),
     })
 }
 
@@ -57,5 +40,5 @@ pub(super) fn type_name(type_name: &protobuf::TypeName) -> Option<QualifiedName>
 
 /// The unqualified name of a type, as stored in [`crate::ColumnInfo::type_name`].
 pub(super) fn type_label(type_name: &protobuf::TypeName) -> Option<String> {
-    string_values(&type_name.names).pop()
+    qualified_name(&type_name.names).map(|name| name.name)
 }

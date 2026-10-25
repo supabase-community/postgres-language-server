@@ -213,7 +213,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
                     .iter()
                     .rev()
                     .nth(1)
-                    .and_then(|f| super::string::string_value(f));
+                    .and_then(pgls_query_ext::utils::string_value);
                 if let Some(item) = qualifier.and_then(|q| r.levels.last().and_then(|l| l.item(q)))
                 {
                     out.extend(item.typed_columns.clone().unwrap_or_default());

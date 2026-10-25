@@ -3,7 +3,8 @@
 
 use crate::typing::{Decision, Type, TypeId};
 use crate::{CatalogView, Lookup, TypeInfo, TypeKind};
-use pgls_query::{NodeEnum, protobuf};
+use pgls_query::protobuf;
+use pgls_query_ext::utils::{QualifiedName, qualified_name};
 
 pub(super) fn info(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeInfo> {
     match c.type_by_id(id) {
@@ -85,19 +86,15 @@ pub fn normalize_type_name(
     if name.pct_type {
         return (None, name.setof);
     }
-    let mut names: Vec<String> = name
-        .names
-        .iter()
-        .filter_map(|n| match n.node.as_ref()? {
-            NodeEnum::String(s) => Some(s.sval.clone()),
-            _ => None,
-        })
-        .collect();
-    let Some(type_name) = names.pop() else {
+    let Some(QualifiedName {
+        schema,
+        name: type_name,
+        ..
+    }) = qualified_name(&name.names)
+    else {
         return (None, name.setof);
     };
-    let schema = names.pop();
-    let Lookup::Found(info) = catalog.type_(schema.as_deref(), &type_name, search_path) else {
+    let Lookup::Found(info) = catalog.type_(schema, type_name, search_path) else {
         return (None, name.setof);
     };
     let mut id = info.id;

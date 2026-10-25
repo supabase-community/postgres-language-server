@@ -4,10 +4,11 @@
 use crate::typing::TypeId;
 use crate::{FunctionArgumentMode, FunctionSignature};
 use pgls_query::{Node, protobuf};
+use pgls_query_ext::utils::string_value;
 
 use super::{
     Catalog, Entry, Key, key,
-    names::{QualifiedName, qualified_name, range_var_name, string_value, type_label},
+    names::{QualifiedName, qualified_name, range_var_name, type_label},
 };
 use crate::lookup::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, Lookup, Origin, RelationInfo,

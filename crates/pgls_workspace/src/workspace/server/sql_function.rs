@@ -1,4 +1,5 @@
 use pgls_query::protobuf::FunctionParameterMode;
+use pgls_query_ext::utils::{find_option_value, find_option_value_mut, qualified_name};
 use pgls_text_size::TextRange;
 
 #[derive(Debug, Clone)]
@@ -36,14 +37,14 @@ pub fn get_sql_fn_signature(ast: &pgls_query::NodeEnum) -> Option<SQLFunctionSig
     };
 
     // Extract language from function options
-    let language = pgls_query_ext::utils::find_option_value(create_fn, "language")?;
+    let language = find_option_value(create_fn, "language")?;
 
     // Only process SQL functions
     if language != "sql" {
         return None;
     }
 
-    let fn_name = pgls_query_ext::utils::parse_name(&create_fn.funcname)?;
+    let fn_name = qualified_name(&create_fn.funcname)?;
 
     // we return None if anything is not expected
     let mut fn_args = Vec::new();
@@ -68,12 +69,12 @@ pub fn get_sql_fn_signature(ast: &pgls_query::NodeEnum) -> Option<SQLFunctionSig
             let arg_name = (!node.name.is_empty()).then_some(node.name.clone());
 
             let arg_type = node.arg_type.as_ref()?;
-            let type_name = pgls_query_ext::utils::parse_name(&arg_type.names)?;
+            let type_name = qualified_name(&arg_type.names)?;
             fn_args.push(SQLFunctionArg {
                 name: arg_name,
                 type_: ArgType {
-                    schema: type_name.0,
-                    name: type_name.1,
+                    schema: type_name.schema.map(str::to_owned),
+                    name: type_name.name.to_owned(),
                     is_array: node
                         .arg_type
                         .as_ref()
@@ -87,8 +88,8 @@ pub fn get_sql_fn_signature(ast: &pgls_query::NodeEnum) -> Option<SQLFunctionSig
     }
 
     Some(SQLFunctionSignature {
-        schema: fn_name.0,
-        name: fn_name.1,
+        schema: fn_name.schema.map(str::to_owned),
+        name: fn_name.name.to_owned(),
         args: fn_args,
     })
 }
@@ -101,7 +102,7 @@ pub fn get_sql_fn_body(ast: &pgls_query::NodeEnum, content: &str) -> Option<SQLF
     };
 
     // Extract language from function options
-    let language = pgls_query_ext::utils::find_option_value(create_fn, "language")?;
+    let language = find_option_value(create_fn, "language")?;
 
     // Only process SQL functions
     if language != "sql" {
@@ -109,17 +110,17 @@ pub fn get_sql_fn_body(ast: &pgls_query::NodeEnum, content: &str) -> Option<SQLF
     }
 
     // Extract SQL body from function options
-    let sql_body = pgls_query_ext::utils::find_option_value(create_fn, "as")?;
+    let sql_body = find_option_value(create_fn, "as")?;
 
     // Find the range of the SQL body in the content
-    let start = content.find(&sql_body)?;
+    let start = content.find(sql_body)?;
     let end = start + sql_body.len();
 
     let range = TextRange::new(start.try_into().unwrap(), end.try_into().unwrap());
 
     Some(SQLFunctionBody {
         range,
-        body: sql_body.clone(),
+        body: sql_body.to_owned(),
     })
 }
 
@@ -145,31 +146,11 @@ fn sql_fn_body_mut(ast: &mut pgls_query::NodeEnum) -> Option<&mut String> {
         return None;
     };
 
-    let language = pgls_query_ext::utils::find_option_value(create_fn, "language");
-    if language.as_deref() != Some("sql") {
+    if find_option_value(create_fn, "language") != Some("sql") {
         return None;
     }
 
-    let def_elem = create_fn
-        .options
-        .iter_mut()
-        .find_map(|option| match option.node.as_mut() {
-            Some(pgls_query::NodeEnum::DefElem(def_elem)) if def_elem.defname == "as" => {
-                Some(def_elem)
-            }
-            _ => None,
-        })?;
-
-    match def_elem.arg.as_mut()?.node.as_mut()? {
-        pgls_query::NodeEnum::String(s) => Some(&mut s.sval),
-        pgls_query::NodeEnum::List(list) if list.items.len() == 1 => {
-            match list.items[0].node.as_mut()? {
-                pgls_query::NodeEnum::String(s) => Some(&mut s.sval),
-                _ => None,
-            }
-        }
-        _ => None,
-    }
+    find_option_value_mut(create_fn, "as")
 }
 
 #[cfg(test)]
@@ -276,8 +257,8 @@ mod tests {
             _ => panic!("Expected CreateFunctionStmt"),
         };
 
-        let body = pgls_query_ext::utils::find_option_value(create_fn, "as");
-        assert_eq!(body, Some("\nselect $1 + $2;\n".to_string()));
+        let body = find_option_value(create_fn, "as");
+        assert_eq!(body, Some("\nselect $1 + $2;\n"));
     }
 
     #[test]

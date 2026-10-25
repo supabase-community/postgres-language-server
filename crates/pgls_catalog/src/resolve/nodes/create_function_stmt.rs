@@ -7,8 +7,9 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParameterMode as Mode, TypeName},
 };
+use pgls_query_ext::utils::{QualifiedName, find_option_value, qualified_name};
 
-use super::{Resolver, resolve_node_enum, string::string_values};
+use super::{Resolver, resolve_node_enum};
 use crate::TypeKind;
 use crate::lookup::Lookup;
 use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch};
@@ -214,30 +215,8 @@ fn compare(r: &Resolver, shape: &Shape, found: &[Option<Type>]) -> Option<Return
 fn is_sql_function(n: &CreateFunctionStmt) -> bool {
     // `BEGIN ATOMIC` and `RETURN` bodies only exist for SQL functions.
     n.sql_body.is_some()
-        || option_string(n, "language").is_some_and(|language| language.eq_ignore_ascii_case("sql"))
-}
-
-/// The string value of a function option, like `language` or `as`.
-fn option_string<'a>(n: &'a CreateFunctionStmt, name: &str) -> Option<&'a str> {
-    n.options.iter().find_map(|option| {
-        let Some(NodeEnum::DefElem(option)) = &option.node else {
-            return None;
-        };
-        if option.defname != name {
-            return None;
-        }
-        match option.arg.as_deref()?.node.as_ref()? {
-            NodeEnum::String(value) => Some(value.sval.as_str()),
-            NodeEnum::List(list) => match list.items.as_slice() {
-                [item] => match item.node.as_ref()? {
-                    NodeEnum::String(value) => Some(value.sval.as_str()),
-                    _ => None,
-                },
-                _ => None,
-            },
-            _ => None,
-        }
-    })
+        || find_option_value(n, "language")
+            .is_some_and(|language| language.eq_ignore_ascii_case("sql"))
 }
 
 /// The statements of the body. `None` if it can't be read, and for `RETURN expression`
@@ -257,7 +236,7 @@ fn body_statements(n: &CreateFunctionStmt) -> Option<Vec<NodeEnum>> {
             .map(|statement| statement.node.clone())
             .collect();
     }
-    let body = option_string(n, "as")?;
+    let body = find_option_value(n, "as")?;
     let parsed = pgls_query::parse(body).ok()?;
     Some(parsed.stmts().into_iter().cloned().collect())
 }
@@ -297,12 +276,7 @@ fn declared_result(
 }
 
 fn declared_type(r: &Resolver, type_name: &TypeName) -> Option<Declared> {
-    let names = string_values(&type_name.names)?;
-    let (schema, name) = match names.as_slice() {
-        [name] => (None, name.as_str()),
-        [schema, name] => (Some(schema.as_str()), name.as_str()),
-        _ => return None,
-    };
+    let QualifiedName { schema, name, .. } = qualified_name(&type_name.names)?;
     let is_array = !type_name.array_bounds.is_empty();
     let builtin = schema.is_none_or(|schema| schema == "pg_catalog");
     let mut label = match schema {
@@ -380,14 +354,10 @@ fn declared_type(r: &Resolver, type_name: &TypeName) -> Option<Declared> {
 }
 
 fn is_pseudo_type(type_name: &TypeName) -> bool {
-    let Some(names) = string_values(&type_name.names) else {
+    let Some(QualifiedName { schema, name, .. }) = qualified_name(&type_name.names) else {
         return true;
     };
-    match names.as_slice() {
-        [name] => PSEUDO_TYPES.contains(&name.as_str()),
-        [schema, name] => schema == "pg_catalog" && PSEUDO_TYPES.contains(&name.as_str()),
-        _ => false,
-    }
+    schema.is_none_or(|schema| schema == "pg_catalog") && PSEUDO_TYPES.contains(&name)
 }
 
 fn type_id(r: &Resolver, name: &str) -> Option<TypeId> {
@@ -406,17 +376,17 @@ fn output_columns(
     last: &NodeEnum,
 ) -> Option<Vec<Option<Type>>> {
     let function = FunctionContext {
-        function_name: string_values(&n.funcname)?.pop()?,
+        function_name: qualified_name(&n.funcname)?.name.to_owned(),
         params: params
             .iter()
             .filter(|param| !matches!(param.mode(), Mode::FuncParamOut | Mode::FuncParamTable))
             .map(|param| {
                 let type_name = param.arg_type.as_ref()?;
-                let mut names = string_values(&type_name.names)?;
+                let type_ = qualified_name(&type_name.names)?;
                 Some(FunctionParam {
                     name: (!param.name.is_empty()).then(|| param.name.clone()),
-                    type_name: names.pop()?,
-                    type_schema: names.pop(),
+                    type_name: type_.name.to_owned(),
+                    type_schema: type_.schema.map(str::to_owned),
                     is_array: !type_name.array_bounds.is_empty(),
                 })
             })
