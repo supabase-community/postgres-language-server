@@ -31,11 +31,12 @@ use pgls_analyse::{
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix,
+    AnalysableStatement, AnalysedFileContext, Analyser, AnalyserConfig, AnalyserParams,
+    AnalysisResult, Direction, FileKind, LinterDiagnostic, LinterOptions, MigrationSection,
+    RuleFix, WalkParams,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
-use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
+use pgls_catalog::{Catalog, CatalogBase, Origin};
 use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
@@ -618,18 +619,15 @@ impl WorkspaceServer {
             .collect()
     }
 
-    /// Walks the statements of `doc` that start before `end` like the analyser does: the catalog
-    /// and the session follow the statements, so that each statement sees the objects created
-    /// earlier in the file. Each migration section gets a session of its own, and the changes of
-    /// a down section don't carry into the next section. `visit` gets every parsed statement with
-    /// the catalog and the session as they are before it. Returns the catalog after the walked
-    /// statements.
+    /// Walks the statements of `doc` that start before `end` like the analyser does, see
+    /// [`pgls_analyser::walk_statements`]. `visit` gets every parsed statement with the file
+    /// context as it is before it. Returns the catalog as a statement at `end` sees it.
     fn walk_statements(
         &self,
         doc: &Document,
         snapshot: &Arc<Snapshot>,
         end: TextSize,
-        mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
+        visit: impl FnMut(&AnalysableStatement, &AnalysedFileContext),
     ) -> Catalog {
         let (search_path, sections) = self
             .workspaces()
@@ -641,67 +639,35 @@ impl WorkspaceServer {
                 )
             })
             .unwrap_or_default();
-        let search_path = snapshot.expand_search_path(&search_path);
-        let new_session = |section: Option<&MigrationSection>| {
-            Session::new(search_path.clone()).with_transaction_mode(
-                section.map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-            )
-        };
 
-        let mut catalog = Catalog::new(Some(self.catalog_base(snapshot)));
-        let mut session = new_session(None);
-        let mut section: Option<&MigrationSection> = None;
-        // The catalog after the up sections so far, while walking a down section.
-        let mut up_catalog: Option<Catalog> = None;
-        for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
-            let Some(start) = stmt.as_ref().map(|stmt| stmt.range.start()).or_else(|| {
-                unparsable
-                    .as_ref()
-                    .map(|unparsable| unparsable.range.start())
-            }) else {
+        let mut stmts = Vec::new();
+        let mut unparsable = Vec::new();
+        for (stmt, _, skipped) in doc.iter(AnalyserDiagnosticsMapper) {
+            let Some(start) = stmt
+                .as_ref()
+                .map(|stmt| stmt.range.start())
+                .or_else(|| skipped.as_ref().map(|skipped| skipped.range.start()))
+            else {
                 continue;
             };
             if start >= end {
                 break;
             }
-            let current = sections
-                .iter()
-                .find(|section| section.range.contains(start));
-            if current != section {
-                if let Some(up_catalog) = up_catalog.take() {
-                    catalog = up_catalog;
-                }
-                if current.is_some_and(|section| section.direction == Direction::Down) {
-                    up_catalog = Some(catalog.clone());
-                }
-                session = new_session(current);
-                section = current;
-            }
-
-            if let Some(unparsable) = unparsable {
-                if pgls_analyser::may_change_catalog(&unparsable.sql) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            let Some(stmt) = stmt else {
-                continue;
-            };
-            // The names of statements with identifier parameters like `:name` are placeholders.
-            if stmt.has_identifier_parameters {
-                if !pgls_analyser::is_plain_query(&stmt.root) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            visit(&stmt, &catalog, &session);
-            // Statements in the bodies of SQL functions are not executed.
-            if stmt.function.is_none() {
-                catalog.apply(&stmt.root, session.search_path());
-                session.apply(&stmt.root);
-            }
+            stmts.extend(stmt);
+            unparsable.extend(skipped);
         }
-        catalog
+
+        pgls_analyser::walk_statements(
+            WalkParams {
+                stmts: &stmts,
+                unparsable: &unparsable,
+                catalog_base: Some(self.catalog_base(snapshot)),
+                search_path: &snapshot.expand_search_path(&search_path),
+                sections: &sections,
+                end,
+            },
+            visit,
+        )
     }
 
     /// For hover on the statement `id` at `range`: the references whose span contains
@@ -719,18 +685,21 @@ impl WorkspaceServer {
             doc,
             &snapshot,
             position + TextSize::from(1),
-            |stmt, catalog, session| {
+            |stmt, file_context| {
                 let Some(sql) = stmt.sql.as_deref() else {
                     return;
                 };
-                if stmt.range != range {
+                // The names of statements with identifier parameters like `:name` are
+                // placeholders.
+                if stmt.range != range || stmt.has_identifier_parameters {
                     return;
                 }
+                let catalog = file_context.catalog();
                 let position = position - range.start();
                 let (references, others): (Vec<_>, Vec<_>) = resolve(ResolveParams {
                     stmt: &stmt.root,
                     catalog,
-                    search_path: session.search_path(),
+                    search_path: file_context.session().search_path(),
                     function: stmt.function.as_ref(),
                     sql: Some(sql),
                     collect_references: true,
@@ -751,8 +720,8 @@ impl WorkspaceServer {
                 found = Some((references, snapshot));
             },
         );
-        // A statement that doesn't parse is not visited. It changes nothing, so it sees the
-        // catalog after the walk.
+        // A statement that doesn't parse is not visited, and one with identifier parameters is
+        // not resolved. It sees the catalog after the walk, which stopped right after its start.
         found.unwrap_or_else(|| {
             (
                 Vec::new(),
@@ -1899,7 +1868,7 @@ impl Workspace for WorkspaceServer {
                 let position = params.position - range.start();
                 let snapshot =
                     self.snapshot_before(parsed_doc, &id, range, Arc::clone(&snapshot), || {
-                        self.walk_statements(parsed_doc, &snapshot, range.start(), |_, _, _| {})
+                        self.walk_statements(parsed_doc, &snapshot, range.start(), |_, _| {})
                     });
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
@@ -2006,34 +1975,29 @@ impl Workspace for WorkspaceServer {
         };
 
         let mut hints = Vec::new();
-        self.walk_statements(
-            doc,
-            &snapshot,
-            params.range.end(),
-            |stmt, catalog, session| {
-                let Some(sql) = stmt.sql.as_deref() else {
-                    return;
-                };
-                if stmt.range.intersect(params.range).is_none() {
-                    return;
-                }
-                hints.extend(
-                    pgls_inlay_hints::inlay_hints(pgls_inlay_hints::InlayHintsParams {
-                        stmt: &stmt.root,
-                        sql,
-                        catalog,
-                        search_path: session.search_path(),
-                        function: stmt.function.as_ref(),
-                    })
-                    .into_iter()
-                    .map(|hint| InlayHint {
-                        offset: hint.offset + stmt.range.start(),
-                        label: hint.label,
-                        kind: hint.kind.into(),
-                    }),
-                );
-            },
-        );
+        self.walk_statements(doc, &snapshot, params.range.end(), |stmt, file_context| {
+            let Some(sql) = stmt.sql.as_deref() else {
+                return;
+            };
+            if stmt.range.intersect(params.range).is_none() || stmt.has_identifier_parameters {
+                return;
+            }
+            hints.extend(
+                pgls_inlay_hints::inlay_hints(pgls_inlay_hints::InlayHintsParams {
+                    stmt: &stmt.root,
+                    sql,
+                    catalog: file_context.catalog(),
+                    search_path: file_context.session().search_path(),
+                    function: stmt.function.as_ref(),
+                })
+                .into_iter()
+                .map(|hint| InlayHint {
+                    offset: hint.offset + stmt.range.start(),
+                    label: hint.label,
+                    kind: hint.kind.into(),
+                }),
+            );
+        });
 
         hints.sort_by_key(|hint| hint.offset);
         self.charge_document_caches(&documents, &params.path);

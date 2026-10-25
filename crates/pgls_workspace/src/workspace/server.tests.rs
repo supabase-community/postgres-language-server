@@ -2481,3 +2481,134 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
         .collect();
     assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
 }
+
+/// Lint, hover and completions see the same catalog at each statement: after a down section,
+/// after a statement that doesn't parse, and after a statement on identifier parameters.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn lint_hover_and_completions_see_the_same_catalog(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Dbmate),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+
+    // Opens `content` without the `|`, and returns the typecheck diagnostics of the file, the
+    // completions at the `|`, and the hover on each needle.
+    let check = |content: &str, needles: &[&str]| {
+        let cursor = content.find('|').expect("cursor in content");
+        let content = content.replace('|', "");
+        workspace
+            .open_file(OpenFileParams {
+                path: path.clone(),
+                content: content.clone(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        let typecheck: Vec<_> = workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .into_iter()
+            .filter(is_typecheck)
+            .map(|diagnostic| {
+                let span = diagnostic.location().span.expect("span");
+                content[span].to_string()
+            })
+            .collect();
+        let completions: Vec<_> = workspace
+            .get_completions(crate::workspace::GetCompletionsParams {
+                path: path.clone(),
+                position: u32::try_from(cursor).unwrap().into(),
+            })
+            .expect("Unable to request completions")
+            .items
+            .into_iter()
+            .map(|item| item.label)
+            .collect();
+        let hovers: Vec<_> = needles
+            .iter()
+            .map(|needle| {
+                let offset = content.rfind(needle).expect("needle in content") + 2;
+                workspace
+                    .on_hover(OnHoverParams {
+                        path: path.clone(),
+                        position: u32::try_from(offset).unwrap().into(),
+                    })
+                    .expect("Unable to hover")
+                    .markdown_blocks
+                    .join("\n")
+            })
+            .collect();
+        workspace
+            .close_file(crate::workspace::CloseFileParams { path: path.clone() })
+            .expect("Unable to close test file");
+        (typecheck, completions, hovers)
+    };
+
+    // The changes of a down section don't carry into the next up section, also for its first
+    // statement.
+    let (typecheck, completions, hovers) = check(
+        "-- migrate:up\n\
+         create table walk_items (id int);\n\
+         -- migrate:down\n\
+         alter table walk_items add column down_only int;\n\
+         -- migrate:up\n\
+         select | from walk_items;\n\
+         select down_only from walk_items;\n",
+        &["walk_items;"],
+    );
+    assert_eq!(typecheck, ["down_only"]);
+    assert!(completions.contains(&"id".to_string()), "{completions:?}");
+    assert!(
+        !completions.contains(&"down_only".to_string()),
+        "{completions:?}"
+    );
+    assert!(hovers[0].contains("- id: int4"), "{hovers:?}");
+    assert!(!hovers[0].contains("down_only"), "{hovers:?}");
+
+    // A statement that doesn't parse may have created anything, but the objects created before
+    // it are still known.
+    let (typecheck, completions, hovers) = check(
+        "create table walk_parsed (id int);\n\
+         create tabel walk_unparsed (id int);\n\
+         select id from walk_unparsed;\n\
+         select | from walk_parsed;\n",
+        &["walk_parsed;"],
+    );
+    assert!(typecheck.is_empty(), "{typecheck:?}");
+    assert!(completions.contains(&"id".to_string()), "{completions:?}");
+    assert!(hovers[0].contains("- id: int4"), "{hovers:?}");
+
+    // The names of a statement with identifier parameters are placeholders: `:tbl` doesn't
+    // create a table `tbl`.
+    let (typecheck, completions, hovers) = check(
+        "create table :tbl (id int);\n\
+         select id from tbl;\n\
+         select | from tbl;\n",
+        &["tbl;"],
+    );
+    assert!(typecheck.is_empty(), "{typecheck:?}");
+    assert!(!completions.contains(&"id".to_string()), "{completions:?}");
+    assert_eq!(hovers, [""]);
+}
