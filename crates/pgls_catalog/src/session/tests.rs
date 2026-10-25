@@ -49,6 +49,19 @@ fn created_objects_and_schema_use_search_path() {
     assert!(s.has_created_object("app", "made_idx"));
 }
 #[test]
+fn altered_tables_use_the_search_path_of_their_statement() {
+    let mut s = Session::new(vec!["public".into()]);
+    apply(&mut s, "ALTER TABLE things ADD COLUMN a int");
+    apply(&mut s, "SET search_path = app");
+    assert_eq!(s.object_schema(""), "app");
+    assert!(!s.has_altered_table("", "things"));
+    assert!(s.has_altered_table("public", "things"));
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "ALTER TABLE things ADD COLUMN b int");
+    apply(&mut s, "COMMIT");
+    assert!(s.has_altered_table("app", "things"));
+}
+#[test]
 fn not_valid_and_access_exclusive_are_tracked() {
     let mut s = Session::new(vec!["app".into()]);
     apply(

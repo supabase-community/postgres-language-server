@@ -220,7 +220,7 @@ impl Locks {
 
 /// The schema of an object name. Unqualified names are created in the first schema of the
 /// search path.
-fn normalized_schema<'a>(schema: &'a str, search_path: &'a [String]) -> &'a str {
+pub(super) fn normalized_schema<'a>(schema: &'a str, search_path: &'a [String]) -> &'a str {
     if schema.is_empty() {
         search_path
             .iter()

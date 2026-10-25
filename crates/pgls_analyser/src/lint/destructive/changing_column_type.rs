@@ -1,3 +1,4 @@
+use crate::linter_context::builtin_type_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -80,31 +81,23 @@ fn is_safe_type_widening(col_def: &pgls_query::protobuf::ColumnDef) -> bool {
         return false;
     };
 
-    let target_type = type_name
-        .names
-        .iter()
-        .filter_map(|n| {
-            if let Some(pgls_query::NodeEnum::String(s)) = &n.node {
-                Some(s.sval.as_str())
-            } else {
-                None
-            }
-        })
-        .next_back();
-
-    let Some(target_type) = target_type else {
+    // An array of the type is a different type.
+    let Some(target_type) =
+        builtin_type_name(type_name).filter(|_| type_name.array_bounds.is_empty())
+    else {
         return false;
     };
 
     let has_type_modifier = !type_name.typmods.is_empty();
 
-    match target_type.to_lowercase().as_str() {
+    match target_type {
         // text is always safe — binary compatible with varchar/char
         "text" => true,
         // varchar without length is safe (dropping a length constraint)
         "varchar" if !has_type_modifier => true,
-        // numeric without precision is safe (dropping precision constraint)
-        "numeric" | "decimal" if !has_type_modifier => true,
+        // numeric (or decimal, which the parser turns into numeric) without precision is safe
+        // (dropping precision constraint)
+        "numeric" if !has_type_modifier => true,
         _ => false,
     }
 }
