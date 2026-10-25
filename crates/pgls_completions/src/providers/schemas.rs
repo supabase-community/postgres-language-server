@@ -1,12 +1,14 @@
+use super::helper::{get_range_to_replace, with_schema_or_alias};
 use crate::{
+    CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
-use pgls_catalog::Snapshot;
+use pgls_catalog::{NamePosition, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 pub fn complete_schemas<'a>(
-    _ctx: &'a TreesitterContext,
+    ctx: &'a TreesitterContext,
     snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,
 ) {
@@ -22,7 +24,11 @@ pub fn complete_schemas<'a>(
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
             detail: None,
-            completion_text: None,
+            completion_text: Some(CompletionText {
+                is_snippet: false,
+                range: get_range_to_replace(ctx),
+                text: with_schema_or_alias(ctx, schema.name.as_str(), None, NamePosition::ColId),
+            }),
         };
 
         builder.add_item(item);

@@ -1,4 +1,4 @@
-use pgls_catalog::{Column, Snapshot};
+use pgls_catalog::{Column, NamePosition, Snapshot, identifier_name};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -35,9 +35,17 @@ pub fn complete_columns<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText {
-    let alias = ctx.get_used_alias_for_table(col.table_name.as_str());
+    // The alias as a name, which is quoted again if needed.
+    let alias = ctx
+        .get_used_alias_for_table(col.table_name.as_str())
+        .map(|alias| identifier_name(&alias));
 
-    let with_schema_or_alias = with_schema_or_alias(ctx, col.name.as_str(), alias.as_deref());
+    let with_schema_or_alias = with_schema_or_alias(
+        ctx,
+        col.name.as_str(),
+        alias.as_deref(),
+        NamePosition::ColId,
+    );
 
     let range = get_range_to_replace(ctx);
 
