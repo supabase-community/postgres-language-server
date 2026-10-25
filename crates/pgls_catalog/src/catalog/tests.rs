@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use rustc_hash::FxHashMap;
+
 use crate::Snapshot;
 
 use super::{Catalog, CatalogBase};
@@ -741,8 +743,7 @@ fn snapshot_excludes_dropped_objects() {
     assert_eq!(tables, ["people"]);
     assert_eq!(table_columns(&snapshot, "public", "people"), ["id", "name"]);
 }
-/// The snapshot of a file with many changes, one line per object in the order of the snapshot,
-/// so that it shows the ids, the order and every field of the objects.
+/// The snapshot of a file with many changes, one line per object with every field.
 #[test]
 fn snapshot_of_a_file_with_many_changes() {
     let base = base();
@@ -820,20 +821,58 @@ fn snapshot_of_a_file_with_many_changes() {
     }
     let snapshot = catalog.snapshot().unwrap();
 
-    fn lines<T: serde::Serialize>(name: &str, objects: &[T]) -> String {
-        objects
+    // The file's objects get their ids in the order of a hash map, which depends on the
+    // platform. The ids are written as the object they stand for, and the lines are sorted.
+    let mut labels: FxHashMap<i64, String> = FxHashMap::default();
+    for table in &snapshot.tables {
+        labels.insert(table.id, format!("<table {}.{}>", table.schema, table.name));
+    }
+    for type_ in &snapshot.types {
+        labels.insert(type_.id, format!("<type {}.{}>", type_.schema, type_.name));
+    }
+    fn label_ids(value: &mut serde_json::Value, labels: &FxHashMap<i64, String>) {
+        match value {
+            serde_json::Value::Number(number) => {
+                if let Some(id) = number.as_i64().filter(|id| *id < 0) {
+                    let label = labels.get(&id).map_or("<file id>", String::as_str);
+                    *value = label.into();
+                }
+            }
+            serde_json::Value::Array(values) => {
+                values.iter_mut().for_each(|value| label_ids(value, labels));
+            }
+            serde_json::Value::Object(fields) => {
+                fields
+                    .values_mut()
+                    .for_each(|value| label_ids(value, labels));
+            }
+            _ => {}
+        }
+    }
+    fn lines<T: serde::Serialize>(
+        name: &str,
+        objects: &[T],
+        labels: &FxHashMap<i64, String>,
+    ) -> String {
+        let mut lines: Vec<String> = objects
             .iter()
-            .map(|object| format!("{name} {}\n", serde_json::to_string(object).unwrap()))
-            .collect()
+            .map(|object| {
+                let mut object = serde_json::to_value(object).unwrap();
+                label_ids(&mut object, labels);
+                format!("{name} {object}\n")
+            })
+            .collect();
+        lines.sort();
+        lines.concat()
     }
     let rendered = [
-        lines("schema", &snapshot.schemas),
-        lines("table", &snapshot.tables),
-        lines("column", &snapshot.columns),
-        lines("type", &snapshot.types),
-        lines("function", &snapshot.functions),
-        lines("index", &snapshot.indexes),
-        lines("sequence", &snapshot.sequences),
+        lines("schema", &snapshot.schemas, &labels),
+        lines("table", &snapshot.tables, &labels),
+        lines("column", &snapshot.columns, &labels),
+        lines("type", &snapshot.types, &labels),
+        lines("function", &snapshot.functions, &labels),
+        lines("index", &snapshot.indexes, &labels),
+        lines("sequence", &snapshot.sequences, &labels),
     ]
     .concat();
     insta::assert_snapshot!(rendered);
