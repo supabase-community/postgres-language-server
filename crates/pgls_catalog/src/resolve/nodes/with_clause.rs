@@ -1,6 +1,6 @@
 use pgls_query::{NodeEnum, protobuf::WithClause};
 
-use super::{Resolver, common_table_expr::resolve_common_table_expr};
+use super::{Resolver, alias::rename_typed_columns, common_table_expr::resolve_common_table_expr};
 use crate::resolve::scope::Cte;
 
 /// Resolves the CTEs of a WITH clause and brings them into scope. The query that owns the
@@ -31,10 +31,16 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
         let resolved = Cte {
             name: cte.ctename.clone(),
             columns,
+            // The column list renames the first columns ([`analyzeCTETargetList`]).
+            //
+            // [`analyzeCTETargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L571
             typed_columns: if n.recursive {
                 None
             } else {
-                crate::resolve::resolve_unknown_outputs(r.catalog, r.output.clone())
+                rename_typed_columns(
+                    crate::resolve::resolve_unknown_outputs(r.catalog, r.output.clone()),
+                    &cte.aliascolnames,
+                )
             },
         };
         match r

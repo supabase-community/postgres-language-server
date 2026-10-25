@@ -756,3 +756,27 @@ fn alias_column_names_apply_to_typed_columns() {
         None
     );
 }
+
+#[test]
+fn cte_column_lists_apply_to_typed_columns() {
+    assert_eq!(
+        typed_output_names("with c(x) as (select 1 as a, 2 as b) select * from c"),
+        Some(vec!["x".into(), "b".into()])
+    );
+    let catalog = Catalog::new(Some(database()));
+    let parsed =
+        pgls_query::parse("with c(x) as (select 1::int8 as a) select x from c").expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let columns = query_output_types(&query, &catalog, &search_path()).expect("known columns");
+    assert_eq!(
+        columns[0].ty,
+        catalog.builtin_type("int8").map(crate::typing::Type::Named)
+    );
+    // Postgres rejects more names than columns, so the columns are unknown.
+    assert_eq!(
+        typed_output_names("with c(x, y) as (select 1 as a) select * from c"),
+        None
+    );
+}

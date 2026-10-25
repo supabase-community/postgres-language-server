@@ -781,3 +781,17 @@ async fn test_table_hover_resolved_by_search_path(test_db: PgPool) {
     )
     .await;
 }
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_cte_column_list(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+    "#;
+
+    let query = format!(
+        "with c(label) as (select name from hover_users) select lab{}el from c",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("column_cte_column_list", query, Some(setup), &test_db).await;
+}
