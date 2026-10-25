@@ -215,8 +215,31 @@ impl Document {
         }
     }
 
-    pub fn count(&self) -> usize {
-        self.iter(DefaultMapper).count()
+    /// The statements that [`GetCompletionsFilter`] accepts for `position`, without looking at
+    /// the statements far from it.
+    pub fn iter_for_completions<'a, M>(
+        &'a self,
+        mapper: M,
+        position: TextSize,
+    ) -> ParseIterator<'a, M, GetCompletionsFilter>
+    where
+        M: StatementMapper<'a>,
+    {
+        // The filter accepts a statement up to two characters after its end. The bodies of SQL
+        // functions are inside their top-level statement.
+        let ranges = &self.split.ranges;
+        let first = ranges.partition_point(|range| range.end() + TextSize::from(2) <= position);
+        let last = first + ranges[first..].partition_point(|range| range.start() <= position);
+        ParseIterator {
+            ranges: ranges[first..last].iter(),
+            ..ParseIterator::new(
+                self,
+                mapper,
+                GetCompletionsFilter {
+                    cursor_position: position,
+                },
+            )
+        }
     }
 }
 
