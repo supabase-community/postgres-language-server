@@ -34,7 +34,7 @@ pub(crate) fn traverse(
 ) -> Result<Report, CliDiagnostic> {
     init_thread_pool();
 
-    if inputs.is_empty() && !config.mode.vcs().changed && !config.mode.vcs().staged {
+    if inputs.is_empty() && !config.mode.vcs().is_targeted() {
         match current_dir() {
             Ok(current_dir) => inputs.push(current_dir.into_os_string()),
             Err(err) => return Err(CliDiagnostic::io_error(err)),
@@ -109,6 +109,7 @@ pub(crate) fn traverse(
         writes: config.allows_writes(),
         diagnostics_not_printed,
         workspace_root: session.fs().working_directory(),
+        vcs_targeted: config.mode.vcs().is_targeted(),
     };
 
     Ok(Report::new(
