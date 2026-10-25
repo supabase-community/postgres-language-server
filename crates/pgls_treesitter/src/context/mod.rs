@@ -195,9 +195,11 @@ impl<'a> TreesitterContext<'a> {
                 }
 
                 QueryResult::TableAliases(table_alias_match) => {
+                    // the table as the catalog names it: `"users"` is `users`, so that the
+                    // columns of a quoted table are found by its alias
                     self.mentioned_table_aliases.insert(
                         table_alias_match.get_alias(sql),
-                        table_alias_match.get_table(sql),
+                        unquote_identifier(&table_alias_match.get_table(sql)),
                     );
                 }
 
@@ -567,6 +569,18 @@ impl<'a> TreesitterContext<'a> {
     }
 }
 
+/// An identifier without its double quotes, those doubled in it made one: `"a""b"` is `a"b`.
+/// An identifier that is not quoted is returned as it is.
+fn unquote_identifier(ident: &str) -> String {
+    match ident
+        .strip_prefix('"')
+        .and_then(|rest| rest.strip_suffix('"'))
+    {
+        Some(inner) => inner.replace(r#""""#, r#"""#),
+        None => ident.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::context::{TreeSitterContextParams, TreesitterContext, WrappingClause};
@@ -664,6 +678,40 @@ mod tests {
             let ctx = TreesitterContext::new(params);
 
             assert_eq!(ctx.wrapping_clause_type, Some(expected_clause));
+        }
+    }
+
+    #[test]
+    fn finds_the_quoted_table_of_an_alias() {
+        let test_cases = vec![
+            (
+                r#"select u.id from public."users" u where u.id = 1;"#,
+                "users",
+            ),
+            (
+                r#"select s.n from sales."Счета" as s where s.n = 1;"#,
+                "Счета",
+            ),
+            (r#"select u.id from users u where u.id = 1;"#, "users"),
+        ];
+
+        for (query, expected_table) in test_cases {
+            let tree = get_tree(query);
+
+            let params = TreeSitterContextParams {
+                position: 0.into(),
+                text: query,
+                tree: &tree,
+            };
+
+            let ctx = TreesitterContext::new(params);
+            let alias = &query[7..8];
+
+            assert_eq!(
+                ctx.get_mentioned_table_for_alias(alias).map(String::as_str),
+                Some(expected_table),
+                "{query}"
+            );
         }
     }
 
