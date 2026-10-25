@@ -473,6 +473,104 @@ fn write_tree(files: &[(&str, &str)]) -> tempfile::TempDir {
     root
 }
 
+/// Commits `files` to a new git repository below a new temporary directory.
+fn git_repo(files: &[(&str, &str)]) -> tempfile::TempDir {
+    let root = write_tree(files);
+    git(root.path(), &["init", "--quiet"]);
+    git(root.path(), &["add", "--all"]);
+    git(
+        root.path(),
+        &["commit", "--quiet", "--no-verify", "--message", "init"],
+    );
+    root
+}
+
+fn git(cwd: &Path, args: &[&str]) {
+    let status = std::process::Command::new("git")
+        .current_dir(cwd)
+        .args(["-c", "user.name=test", "-c", "user.email=test@example.com"])
+        .args(["-c", "commit.gpgsign=false"])
+        .args(args)
+        .status()
+        .expect("failed to run git");
+    assert!(status.success(), "git {args:?} failed");
+}
+
+const DROP_COLUMN_REPO: &[(&str, &str)] = &[
+    (
+        "postgres-language-server.jsonc",
+        r#"{ "db": { "disableConnection": true } }"#,
+    ),
+    ("a.sql", "alter table users drop column name;\n"),
+];
+
+/// With nothing staged there is nothing to check, which is not an error: a pre-commit hook runs
+/// on every commit.
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_staged_without_staged_files_snapshot() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    assert_snapshot!(run_check_with(
+        &["--staged", "--log-level", "none"],
+        None,
+        Some(repo.path())
+    ));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_changed_without_changed_files_snapshot() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    assert_snapshot!(run_check_with(
+        &["--changed", "--since", "HEAD", "--log-level", "none"],
+        None,
+        Some(repo.path())
+    ));
+}
+
+#[test]
+fn check_staged_checks_only_the_staged_files() {
+    let repo = git_repo(&[
+        DROP_COLUMN_REPO[0],
+        DROP_COLUMN_REPO[1],
+        ("b.sql", "select 1;\n"),
+        ("notes.txt", "notes\n"),
+    ]);
+    std::fs::write(
+        repo.path().join("b.sql"),
+        "alter table users drop column name;\n",
+    )
+    .unwrap();
+    git(repo.path(), &["add", "b.sql"]);
+
+    let (_, output) = check_in(repo.path(), &["--staged", "--reporter", "github"], &[]);
+    assert!(output.contains("file=b.sql,"), "{output}");
+    assert!(!output.contains("a.sql"), "{output}");
+
+    // Only files that aren't SQL are staged.
+    git(repo.path(), &["reset", "--quiet"]);
+    std::fs::write(repo.path().join("notes.txt"), "more notes\n").unwrap();
+    git(repo.path(), &["add", "notes.txt"]);
+    let (success, output) = check_in(repo.path(), &["--staged"], &[]);
+    assert!(success, "{output}");
+    assert!(output.contains("Checked 0 files"), "{output}");
+}
+
+/// A base git doesn't know is an error, not a run without changed files.
+#[test]
+fn check_changed_fails_for_an_unknown_base() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    let (success, output) = check_in(repo.path(), &["--changed", "--since", "unknown"], &[]);
+    assert!(!success, "{output}");
+    assert!(output.contains("git diff failed"), "{output}");
+}
+
 /// Runs `check` in `cwd` without the connection settings of the environment but with `envs`.
 /// Returns whether it succeeded and its output.
 fn check_in(cwd: &Path, args: &[&str], envs: &[(&str, &str)]) -> (bool, String) {

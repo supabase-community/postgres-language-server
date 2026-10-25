@@ -70,6 +70,8 @@ pub struct TraversalData {
     pub suggested_fixes_skipped: u32,
     pub diagnostics_not_printed: u32,
     pub workspace_root: Option<PathBuf>,
+    /// Whether the files came from git, with `--staged` or `--changed`.
+    pub vcs_targeted: bool,
 }
 
 #[derive(Debug)]
