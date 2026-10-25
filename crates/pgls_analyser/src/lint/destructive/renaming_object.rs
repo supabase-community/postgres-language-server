@@ -1,4 +1,4 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::object_type_noun};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, utils::object_type_noun};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;

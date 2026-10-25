@@ -1,3 +1,4 @@
+use crate::utils::qualified_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_catalog::resolve::{FindingKind, MatchFailure};
@@ -39,11 +40,8 @@ impl LinterRule for FunctionArgumentMismatch {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
         let mut diagnostics = Vec::new();
-        for finding in &resolution.findings {
+        for finding in ctx.findings() {
             let FindingKind::FunctionArgumentMismatch {
                 schema,
                 name,
@@ -61,10 +59,7 @@ impl LinterRule for FunctionArgumentMismatch {
             else {
                 continue;
             };
-            let name = match schema {
-                Some(schema) => format!("{schema}.{name}"),
-                None => name.clone(),
-            };
+            let name = qualified_name(schema.as_deref(), name);
             let call = format!("{name}({})", args.join(", "));
             let (message, note) = match failure {
                 MatchFailure::NoMatch => (

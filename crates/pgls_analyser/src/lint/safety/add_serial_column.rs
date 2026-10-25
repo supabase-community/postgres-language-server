@@ -1,3 +1,4 @@
+use crate::utils::{alter_table_cmds, cmd_def, dotted_name};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -45,76 +46,57 @@ impl LinterRule for AddSerialColumn {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
-                    && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                        &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                {
-                    // Check for SERIAL types
-                    if let Some(type_name) = &col_def.type_name {
-                        let type_str = get_type_name(type_name);
-                        if is_serial_type(&type_str) {
-                            diagnostics.push(
-                                        LinterDiagnostic::new(
-                                            rule_category!(),
-                                            None,
-                                            markup! {
-                                                "Adding a column with type "<Emphasis>{type_str}</Emphasis>" requires a table rewrite."
-                                            },
-                                        )
-                                        .detail(None, "SERIAL types require rewriting the entire table with an ACCESS EXCLUSIVE lock, blocking all reads and writes.")
-                                        .note("SERIAL types cannot be added to existing tables without a full table rewrite. Consider using a non-serial type with a sequence instead."),
-                                    );
-                            continue;
-                        }
-                    }
-
-                    // Check for GENERATED ALWAYS AS ... STORED
-                    let has_stored_generated = col_def.constraints.iter().any(|constraint| {
-                        if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
-                            c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
-                                && c.generated_when == "a" // 'a' = ALWAYS
-                        } else {
-                            false
-                        }
-                    });
-
-                    if has_stored_generated {
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
+                && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd)
+            {
+                // Check for SERIAL types
+                if let Some(type_name) = &col_def.type_name {
+                    let type_str = dotted_name(&type_name.names);
+                    if is_serial_type(&type_str) {
                         diagnostics.push(
                                     LinterDiagnostic::new(
                                         rule_category!(),
                                         None,
                                         markup! {
-                                            "Adding a column with "<Emphasis>"GENERATED ALWAYS AS ... STORED"</Emphasis>" requires a table rewrite."
+                                            "Adding a column with type "<Emphasis>{type_str}</Emphasis>" requires a table rewrite."
                                         },
                                     )
-                                    .detail(None, "GENERATED ... STORED columns require rewriting the entire table with an ACCESS EXCLUSIVE lock, blocking all reads and writes.")
-                                    .note("GENERATED ... STORED columns cannot be added to existing tables without a full table rewrite."),
+                                    .detail(None, "SERIAL types require rewriting the entire table with an ACCESS EXCLUSIVE lock, blocking all reads and writes.")
+                                    .note("SERIAL types cannot be added to existing tables without a full table rewrite. Consider using a non-serial type with a sequence instead."),
                                 );
+                        continue;
                     }
+                }
+
+                // Check for GENERATED ALWAYS AS ... STORED
+                let has_stored_generated = col_def.constraints.iter().any(|constraint| {
+                    if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
+                        c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
+                            && c.generated_when == "a" // 'a' = ALWAYS
+                    } else {
+                        false
+                    }
+                });
+
+                if has_stored_generated {
+                    diagnostics.push(
+                                LinterDiagnostic::new(
+                                    rule_category!(),
+                                    None,
+                                    markup! {
+                                        "Adding a column with "<Emphasis>"GENERATED ALWAYS AS ... STORED"</Emphasis>" requires a table rewrite."
+                                    },
+                                )
+                                .detail(None, "GENERATED ... STORED columns require rewriting the entire table with an ACCESS EXCLUSIVE lock, blocking all reads and writes.")
+                                .note("GENERATED ... STORED columns cannot be added to existing tables without a full table rewrite."),
+                            );
                 }
             }
         }
 
         diagnostics
     }
-}
-
-fn get_type_name(type_name: &pgls_query::protobuf::TypeName) -> String {
-    type_name
-        .names
-        .iter()
-        .filter_map(|n| {
-            if let Some(pgls_query::NodeEnum::String(s)) = &n.node {
-                Some(s.sval.as_str())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(".")
 }
 
 fn is_serial_type(type_name: &str) -> bool {

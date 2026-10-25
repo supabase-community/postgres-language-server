@@ -4,10 +4,8 @@ use pgls_analyse::{GroupCategory, RuleCategory, RuleGroup, RuleMetadata};
 use pgls_catalog::Snapshot;
 use pgls_catalog::{
     Catalog, Session,
-    resolve::{FunctionContext, Resolution, ResolveParams, resolve},
+    resolve::{Finding, FunctionContext, Resolution, ResolveParams, resolve},
 };
-
-pub(crate) use pgls_catalog::{is_reindex_concurrent, is_vacuum_full};
 
 use pgls_query::protobuf::{ScanToken, Token};
 
@@ -100,6 +98,13 @@ where
     /// connection. The resolution is computed once per statement and shared by all rules.
     pub fn resolution(&self) -> Option<&Resolution> {
         self.statement.resolution(self.file_context)
+    }
+
+    /// The findings of the name resolution of the current statement, see [`Self::resolution`].
+    pub fn findings(&self) -> impl Iterator<Item = &Finding> {
+        self.resolution()
+            .into_iter()
+            .flat_map(|resolution| &resolution.findings)
     }
 
     /// The SQL function whose body the current statement is in, if it is in one.
@@ -291,70 +296,5 @@ impl<'a> AnalysedFileContext<'a> {
             self.session.apply(stmt);
         }
         self.pos += 1;
-    }
-}
-
-/// The name of a built-in type, e.g. `varchar` for `varchar(10)` and `pg_catalog.varchar`, but
-/// not for `myschema.varchar`. Unqualified names are built-in types if they exist, since
-/// `pg_catalog` comes first on the search path.
-pub(crate) fn builtin_type_name(type_name: &pgls_query::protobuf::TypeName) -> Option<&str> {
-    let names: Vec<&str> = type_name
-        .names
-        .iter()
-        .map(|name| match &name.node {
-            Some(pgls_query::NodeEnum::String(name)) => Some(name.sval.as_str()),
-            _ => None,
-        })
-        .collect::<Option<_>>()?;
-    match names.as_slice() {
-        [name] | ["pg_catalog", name] => Some(name),
-        _ => None,
-    }
-}
-
-/// The object type as a noun with its article, e.g. "a view", for diagnostic messages.
-pub(crate) fn object_type_noun(object_type: pgls_query::protobuf::ObjectType) -> &'static str {
-    use pgls_query::protobuf::ObjectType;
-    match object_type {
-        ObjectType::ObjectAggregate => "an aggregate",
-        ObjectType::ObjectAttribute => "an attribute",
-        ObjectType::ObjectCollation => "a collation",
-        ObjectType::ObjectColumn => "a column",
-        ObjectType::ObjectConversion => "a conversion",
-        ObjectType::ObjectDatabase => "a database",
-        ObjectType::ObjectDomain => "a domain",
-        ObjectType::ObjectDomconstraint | ObjectType::ObjectTabconstraint => "a constraint",
-        ObjectType::ObjectEventTrigger => "an event trigger",
-        ObjectType::ObjectExtension => "an extension",
-        ObjectType::ObjectFdw => "a foreign-data wrapper",
-        ObjectType::ObjectForeignServer => "a foreign server",
-        ObjectType::ObjectForeignTable => "a foreign table",
-        ObjectType::ObjectFunction => "a function",
-        ObjectType::ObjectIndex => "an index",
-        ObjectType::ObjectLanguage => "a language",
-        ObjectType::ObjectMatview => "a materialized view",
-        ObjectType::ObjectOpclass => "an operator class",
-        ObjectType::ObjectOperator => "an operator",
-        ObjectType::ObjectOpfamily => "an operator family",
-        ObjectType::ObjectPolicy => "a policy",
-        ObjectType::ObjectProcedure => "a procedure",
-        ObjectType::ObjectPublication => "a publication",
-        ObjectType::ObjectRole => "a role",
-        ObjectType::ObjectRoutine => "a routine",
-        ObjectType::ObjectRule => "a rule",
-        ObjectType::ObjectSchema => "a schema",
-        ObjectType::ObjectSequence => "a sequence",
-        ObjectType::ObjectStatisticExt => "a statistics object",
-        ObjectType::ObjectSubscription => "a subscription",
-        ObjectType::ObjectTable => "a table",
-        ObjectType::ObjectTablespace => "a tablespace",
-        ObjectType::ObjectTrigger => "a trigger",
-        ObjectType::ObjectTsconfiguration => "a text search configuration",
-        ObjectType::ObjectTsdictionary => "a text search dictionary",
-        ObjectType::ObjectTsparser => "a text search parser",
-        ObjectType::ObjectTstemplate => "a text search template",
-        ObjectType::ObjectType => "a type",
-        ObjectType::ObjectView => "a view",
-        _ => "an object",
     }
 }

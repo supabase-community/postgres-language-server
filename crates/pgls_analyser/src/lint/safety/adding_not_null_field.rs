@@ -1,3 +1,4 @@
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -46,20 +47,16 @@ impl LinterRule for AddingNotNullField {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtSetNotNull
-                {
-                    diagnostics.push(LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Setting a column NOT NULL blocks reads while the table is scanned."
-                            },
-                        ).detail(None, "This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.")
-                        .note("On PostgreSQL 12+, a validated CHECK (column IS NOT NULL) constraint lets PostgreSQL skip the scan."));
-                }
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtSetNotNull {
+                diagnostics.push(LinterDiagnostic::new(
+                        rule_category!(),
+                        None,
+                        markup! {
+                            "Setting a column NOT NULL blocks reads while the table is scanned."
+                        },
+                    ).detail(None, "This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.")
+                    .note("On PostgreSQL 12+, a validated CHECK (column IS NOT NULL) constraint lets PostgreSQL skip the scan."));
             }
         }
 

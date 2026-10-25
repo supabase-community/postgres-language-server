@@ -1,3 +1,4 @@
+use crate::utils::qualified_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_catalog::resolve::FindingKind;
@@ -40,24 +41,14 @@ impl LinterRule for UnknownFunction {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
-
-        resolution
-            .findings
-            .iter()
-            .filter_map(|finding| match &finding.kind {
+        ctx.findings().filter_map(|finding| match &finding.kind {
                 FindingKind::UnknownFunction {
                     schema,
                     name,
                     arg_count,
                     name_exists,
                 } => {
-                    let name = match schema {
-                        Some(schema) => format!("{schema}.{name}"),
-                        None => name.clone(),
-                    };
+                    let name = qualified_name(schema.as_deref(), name);
                     Some(if *name_exists {
                         LinterDiagnostic::new(
                             rule_category!(),

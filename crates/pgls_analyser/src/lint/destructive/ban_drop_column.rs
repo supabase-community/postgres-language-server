@@ -1,3 +1,4 @@
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -34,19 +35,15 @@ impl LinterRule for BanDropColumn {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDropColumn
-                {
-                    diagnostics.push(LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Dropping a column may break existing clients."
-                            },
-                        ).detail(None, "You can leave the column as nullable or delete the column once queries no longer select or modify the column."));
-                }
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDropColumn {
+                diagnostics.push(LinterDiagnostic::new(
+                        rule_category!(),
+                        None,
+                        markup! {
+                            "Dropping a column may break existing clients."
+                        },
+                    ).detail(None, "You can leave the column as nullable or delete the column once queries no longer select or modify the column."));
             }
         }
 
