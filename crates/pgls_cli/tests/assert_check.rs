@@ -48,6 +48,34 @@ fn check_gitlab_reporter_snapshot() {
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
+fn check_github_reporter_verbose_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "github",
+        "--verbose",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_gitlab_reporter_verbose_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "gitlab",
+        "--verbose",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
 fn check_junit_reporter_snapshot() {
     assert_snapshot!(run_check(&[
         "--reporter",

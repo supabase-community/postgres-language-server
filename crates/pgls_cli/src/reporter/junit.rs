@@ -31,7 +31,7 @@ fn append_diagnostics(
     config: &ReportConfig,
     diagnostics: &[Error],
 ) -> Result<(), CliDiagnostic> {
-    for diagnostic in diagnostics.iter().filter(|diag| should_emit(config, diag)) {
+    for diagnostic in diagnostics.iter().filter(|diag| config.should_emit(diag)) {
         let mut status = TestCaseStatus::non_success(NonSuccessKind::Failure);
         let message = format!("{}", JunitDiagnostic { diagnostic });
         status.set_message(message.clone());
@@ -80,18 +80,6 @@ fn append_diagnostics(
     }
 
     Ok(())
-}
-
-fn should_emit(config: &ReportConfig, diagnostic: &Error) -> bool {
-    if diagnostic.severity() < config.diagnostic_level {
-        return false;
-    }
-
-    if diagnostic.tags().is_verbose() {
-        config.verbose
-    } else {
-        true
-    }
 }
 
 struct JunitDiagnostic<'a> {

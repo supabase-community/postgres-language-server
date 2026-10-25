@@ -33,6 +33,13 @@ impl ReportConfig {
             no_errors_on_unmatched: cli_options.no_errors_on_unmatched,
         }
     }
+
+    /// Whether a reporter prints the diagnostic: it must reach `--diagnostic-level`, and
+    /// diagnostics tagged as verbose only print with `--verbose`.
+    pub fn should_emit(&self, diagnostic: &Error) -> bool {
+        diagnostic.severity() >= self.diagnostic_level
+            && (self.verbose || !diagnostic.tags().is_verbose())
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -170,4 +177,76 @@ fn count_levels(diagnostics: &[Error]) -> (u32, u32) {
         }
     }
     (errors, warnings)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Report, ReportConfig, ReportMode, Reporter};
+    use pgls_console::{BufferConsole, StdDisplay};
+    use pgls_diagnostics::{Diagnostic, DiagnosticExt, DiagnosticTags, Error, Severity};
+    use std::time::Duration;
+
+    #[derive(Debug, Diagnostic)]
+    #[diagnostic(category = "syntax", severity = Error, message = "Invalid statement")]
+    struct TestDiagnostic;
+
+    fn diagnostic(path: &str) -> Error {
+        TestDiagnostic
+            .with_file_path(path)
+            .with_file_span(0u32..6)
+            .with_file_source_code("select;")
+    }
+
+    fn report_output(mode: ReportMode, verbose: bool) -> String {
+        let report = Report::new(
+            vec![
+                diagnostic("regular.sql"),
+                diagnostic("verbose.sql").with_tags(DiagnosticTags::VERBOSE),
+            ],
+            Duration::ZERO,
+            0,
+            None,
+        );
+        let mut reporter = Reporter::new(ReportConfig {
+            mode,
+            verbose,
+            diagnostic_level: Severity::Hint,
+            error_on_warnings: false,
+            no_errors_on_unmatched: false,
+        });
+        let mut console = BufferConsole::default();
+        reporter.report(&mut console, "check", &report).unwrap();
+
+        console
+            .out_buffer
+            .iter()
+            .map(|message| StdDisplay(&message.content).to_string())
+            .collect()
+    }
+
+    #[test]
+    fn every_reporter_prints_verbose_diagnostics_only_with_verbose() {
+        for mode in [
+            ReportMode::Terminal,
+            ReportMode::GitHub,
+            ReportMode::GitLab,
+            ReportMode::Junit,
+            ReportMode::Json,
+            ReportMode::JsonPretty,
+            ReportMode::Summary,
+        ] {
+            for verbose in [false, true] {
+                let output = report_output(mode, verbose);
+                assert!(
+                    output.contains("regular.sql"),
+                    "{mode:?} (verbose: {verbose}) drops the regular diagnostic:\n{output}"
+                );
+                assert_eq!(
+                    output.contains("verbose.sql"),
+                    verbose,
+                    "{mode:?} (verbose: {verbose}) gets the verbose diagnostic wrong:\n{output}"
+                );
+            }
+        }
+    }
 }

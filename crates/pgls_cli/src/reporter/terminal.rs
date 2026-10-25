@@ -39,13 +39,13 @@ impl ReportWriter for TerminalReportWriter {
 
 fn log_diagnostics(console: &mut dyn Console, config: &ReportConfig, diagnostics: &[Error]) {
     for diagnostic in diagnostics {
-        if diagnostic.severity() < config.diagnostic_level {
+        if !config.should_emit(diagnostic) {
             continue;
         }
 
-        if diagnostic.tags().is_verbose() && config.verbose {
+        if diagnostic.tags().is_verbose() {
             console.error(markup! {{PrintDiagnostic::verbose(diagnostic)}});
-        } else if !diagnostic.tags().is_verbose() {
+        } else {
             console.error(markup! {{PrintDiagnostic::simple(diagnostic)}});
         }
     }
