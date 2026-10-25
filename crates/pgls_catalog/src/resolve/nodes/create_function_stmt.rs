@@ -12,7 +12,7 @@ use pgls_query_ext::utils::{QualifiedName, find_option_value, qualified_name};
 use super::{Resolver, resolve_node_enum};
 use crate::TypeKind;
 use crate::lookup::Lookup;
-use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch};
+use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch, utils::named};
 use crate::typing::{
     CoercionContext, Decision, Type, TypeId, can_coerce, format_type_with_search_path,
     normalize_type_name,
@@ -264,7 +264,7 @@ fn declared_result(
         [first, ..] => Some(Declared::Value {
             label: "record".into(),
             shape: Some(Shape::Row {
-                row: type_id(r, "record"),
+                row: r.catalog.builtin_type("record"),
                 attributes: outputs
                     .iter()
                     .map(|output| normalize_type_name(r.catalog, output, r.search_path).0)
@@ -360,13 +360,6 @@ fn is_pseudo_type(type_name: &TypeName) -> bool {
     schema.is_none_or(|schema| schema == "pg_catalog") && PSEUDO_TYPES.contains(&name)
 }
 
-fn type_id(r: &Resolver, name: &str) -> Option<TypeId> {
-    match r.catalog.type_(Some("pg_catalog"), name, r.search_path) {
-        Lookup::Found(info) => info.id,
-        _ => None,
-    }
-}
-
 /// The types of the columns the final statement returns, if the columns are known with
 /// certainty. Unknown literals are `text`: Postgres resolves them before checking the result.
 fn output_columns(
@@ -404,7 +397,7 @@ fn output_columns(
         }
         _ => vec![None; columns.len()],
     };
-    let text = type_id(r, "text").map(Type::Named);
+    let text = named(r, "text");
     Some(
         types
             .into_iter()

@@ -8,7 +8,11 @@ use super::{
     resolve_node,
     with_clause::resolve_with_clause,
 };
-use crate::resolve::scope::{Columns, Level};
+use crate::resolve::{
+    expr::{check_assignment, infer_expr},
+    scope::{Columns, Level},
+    utils::node_location,
+};
 
 /// Resolves an UPDATE and returns the columns of its RETURNING list. Port of
 /// [`transformUpdateStmt`] and [`transformUpdateTargetList`].
@@ -45,8 +49,8 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
                 target.type_of(&assignment.name).flatten(),
                 assignment.val.as_deref().and_then(|v| v.node.as_ref()),
             ) {
-                let expr_type = super::super::expr::infer_expr(r, expr);
-                super::super::expr::check_assignment(
+                let expr_type = infer_expr(r, expr);
+                check_assignment(
                     r,
                     &assignment.name,
                     column_type,
@@ -54,7 +58,7 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
                     assignment
                         .val
                         .as_deref()
-                        .and_then(super::insert_stmt::node_location)
+                        .and_then(node_location)
                         .unwrap_or(assignment.location),
                 );
             }
@@ -64,7 +68,7 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
     if let Some(where_clause) = n.where_clause.as_deref() {
         resolve_node(r, where_clause);
         if let Some(expr) = where_clause.node.as_ref() {
-            super::super::expr::infer_expr(r, expr);
+            infer_expr(r, expr);
         }
     }
 

@@ -27,11 +27,12 @@ mod span;
 mod tests;
 #[cfg(all(test, feature = "db"))]
 mod type_tests;
+mod utils;
 
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
 
-use crate::lookup::{CatalogView, Lookup};
+use crate::lookup::CatalogView;
 use crate::typing::{QueryColumns, Type};
 use resolver::Resolver;
 
@@ -306,10 +307,7 @@ pub(crate) fn resolve_unknown_outputs(
         .iter()
         .any(|column| column.ty == Some(Type::UnknownLiteral))
     {
-        let text = match catalog.type_(Some("pg_catalog"), "text", &[]) {
-            Lookup::Found(info) => info.id.map(Type::Named),
-            _ => None,
-        };
+        let text = catalog.builtin_type("text").map(Type::Named);
         for column in &mut columns {
             if column.ty == Some(Type::UnknownLiteral) {
                 column.ty = text.clone();

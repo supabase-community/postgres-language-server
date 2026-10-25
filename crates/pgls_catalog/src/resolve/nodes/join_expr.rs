@@ -1,9 +1,17 @@
 use pgls_query::protobuf::JoinExpr;
 use pgls_query_ext::utils::string_values;
 
-use super::{Resolver, alias::apply_alias, from_clause::resolve_from_item, resolve_node};
+use super::{
+    Resolver,
+    alias::{apply_alias, apply_typed_alias},
+    from_clause::resolve_from_item,
+    resolve_node,
+};
 use crate::{
-    resolve::scope::{Item, Level},
+    resolve::{
+        expr::infer_expr,
+        scope::{Item, Level},
+    },
     typing::{Selection, TypedColumn, select_common_type},
 };
 
@@ -63,7 +71,7 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
         r.enter_level(joined);
         resolve_node(r, quals);
         if let Some(expr) = quals.node.as_ref() {
-            super::super::expr::infer_expr(r, expr);
+            infer_expr(r, expr);
         }
         joined = r.exit_level();
     }
@@ -79,14 +87,7 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
             Some(alias.aliasname.clone()),
             apply_alias(columns, Some(alias)),
         );
-        if let Some(mut typed) = joined.star_typed_columns() {
-            for (column, name) in typed.iter_mut().zip(&alias.colnames) {
-                if let Some(pgls_query::NodeEnum::String(name)) = name.node.as_ref() {
-                    column.name = name.sval.clone();
-                }
-            }
-            item.typed_columns = Some(typed);
-        }
+        item.typed_columns = apply_typed_alias(joined.star_typed_columns(), Some(alias));
         return Level {
             items: vec![item],
             has_opaque_items: joined.has_opaque_items,

@@ -718,3 +718,41 @@ fn function_return_types() {
         mismatch("pair", 2, 3)
     );
 }
+
+/// The names of the output columns of `sql`, if their types are known.
+fn typed_output_names(sql: &str) -> Option<Vec<String>> {
+    let catalog = Catalog::new(Some(database()));
+    let parsed = pgls_query::parse(sql).expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    query_output_types(&query, &catalog, &search_path())
+        .map(|columns| columns.into_iter().map(|column| column.name).collect())
+}
+
+#[test]
+fn alias_column_names_apply_to_typed_columns() {
+    assert_eq!(
+        typed_output_names("select * from users as u(a)"),
+        Some(vec!["a".into(), "name".into()])
+    );
+    assert_eq!(
+        typed_output_names("select * from (select 1 as x, 2 as y) as s(a)"),
+        Some(vec!["a".into(), "y".into()])
+    );
+    assert_eq!(
+        typed_output_names("select * from (users join posts on true) as j(a)")
+            .and_then(|names| names.first().cloned()),
+        Some("a".into())
+    );
+    // Postgres rejects more names than columns, so the columns are unknown, like the untyped
+    // ones.
+    assert_eq!(
+        typed_output_names("select * from users as u(a, b, c)"),
+        None
+    );
+    assert_eq!(
+        typed_output_names("select * from (select 1 as x) as s(a, b)"),
+        None
+    );
+}

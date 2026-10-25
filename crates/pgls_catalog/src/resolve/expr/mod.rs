@@ -21,29 +21,12 @@ mod row_expr;
 mod sql_value_function;
 mod sub_link;
 mod type_cast;
-use super::{
-    resolver::Resolver,
-    scope::{find_column_type, find_item},
-};
-use crate::{
-    OperatorKind,
-    lookup::Lookup,
-    typing::{
-        CallArg, CoercionContext, Decision, Selection, Type, can_coerce, normalize_type_name,
-        select_common_type, select_function, select_operator,
-    },
-};
+use pgls_query::NodeEnum;
+
+use super::resolver::Resolver;
+use crate::typing::Type;
 pub(super) use assignment::check_assignment;
 pub(super) use func_call::call_args;
-use pgls_query::{NodeEnum, protobuf};
-use pgls_query_ext::utils::{QualifiedName, qualified_name, string_value, string_values};
-
-fn named(r: &Resolver<'_>, name: &str) -> Option<Type> {
-    match r.catalog.type_(Some("pg_catalog"), name, r.search_path) {
-        Lookup::Found(info) => info.id.map(Type::Named),
-        _ => None,
-    }
-}
 
 pub(super) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type> {
     match expr {
@@ -66,115 +49,5 @@ pub(super) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type> 
         NodeEnum::AArrayExpr(n) => a_array_expr::infer_a_array_expr(r, n),
         NodeEnum::MinMaxExpr(n) => min_max_expr::infer_min_max_expr(r, n),
         _ => None,
-    }
-}
-
-/// The type of a field of a row.
-fn field_type(r: &Resolver<'_>, row: &Type, field: &str) -> Option<Type> {
-    let columns = match row {
-        Type::Record(columns) => columns.clone(),
-        Type::Named(id) => {
-            let Lookup::Found(info) = r.catalog.type_by_id(id) else {
-                return None;
-            };
-            info.attributes?
-                .into_iter()
-                .map(|attribute| crate::typing::TypedColumn {
-                    name: attribute.name,
-                    ty: attribute.ty,
-                })
-                .collect()
-        }
-        Type::UnknownLiteral => return None,
-    };
-    columns.into_iter().find(|column| column.name == field)?.ty
-}
-
-fn function_param_type(r: &Resolver<'_>, param: &crate::resolve::FunctionParam) -> Option<Type> {
-    let Lookup::Found(mut info) = r.catalog.type_(
-        param.type_schema.as_deref(),
-        &param.type_name,
-        r.search_path,
-    ) else {
-        return None;
-    };
-    if param.is_array {
-        let element = info.id.as_ref()?;
-        let Lookup::Found(array) = r.catalog.type_by_id(element) else {
-            return None;
-        };
-        return array.array.map(Type::Named);
-    }
-    info.id.take().map(Type::Named)
-}
-
-/// The common type of the arguments, if all their types are known ([`select_common_type`]).
-///
-/// [`select_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1345
-fn common(r: &mut Resolver<'_>, args: &[pgls_query::Node]) -> Option<Type> {
-    let types = args
-        .iter()
-        .map(|arg| arg.node.as_ref().and_then(|x| infer_expr(r, x)))
-        .collect::<Vec<_>>();
-    common_types(r, &types.into_iter().collect::<Option<Vec<_>>>()?)
-}
-fn common_types(r: &Resolver<'_>, ts: &[Type]) -> Option<Type> {
-    match select_common_type(r.catalog, ts) {
-        Selection::Match(t) => Some(t),
-        _ => None,
-    }
-}
-
-/// Checks the `=` that `IS DISTINCT FROM`, `NULLIF` and simple `CASE` compare with, like
-/// [`make_op`] (through [`oper`]) does. Reports only proven selection failures.
-///
-/// [`make_op`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L660
-/// [`oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L370
-fn check_operator(
-    r: &mut Resolver<'_>,
-    operator: &str,
-    left: Option<&Type>,
-    right: &Type,
-    location: i32,
-) {
-    let selection = select_operator(
-        r.catalog,
-        None,
-        operator,
-        OperatorKind::Infix,
-        left,
-        right,
-        r.search_path,
-    );
-    let failure = match selection {
-        Selection::NoMatch => Some(crate::resolve::MatchFailure::NoMatch),
-        Selection::Ambiguous => Some(crate::resolve::MatchFailure::Ambiguous),
-        Selection::Match(operator_result) => {
-            let Lookup::Found(boolean_info) =
-                r.catalog.type_(Some("pg_catalog"), "bool", r.search_path)
-            else {
-                return;
-            };
-            let Some(boolean) = boolean_info.id else {
-                return;
-            };
-            if operator_result.result.as_ref() != Some(&Type::Named(boolean)) {
-                return;
-            }
-            None
-        }
-        Selection::Unknown => None,
-    };
-    if let Some(failure) = failure {
-        let span = r.operator_span(location);
-        r.report_with_span(
-            crate::resolve::FindingKind::OperatorMismatch {
-                operator: operator.to_owned(),
-                left: left.cloned(),
-                right: right.clone(),
-                failure,
-            },
-            span,
-        );
     }
 }

@@ -162,6 +162,11 @@ pub trait CatalogView {
     /// the search path is used.
     fn type_(&self, schema: Option<&str>, name: &str, search_path: &[String]) -> Lookup<TypeInfo>;
 
+    /// The identity of the builtin type `pg_catalog.<name>`, if it is known.
+    fn builtin_type(&self, name: &str) -> Option<TypeId> {
+        self.type_(Some("pg_catalog"), name, &[]).found()?.id
+    }
+
     /// Looks up a type by identity.
     fn type_by_id(&self, _: &TypeId) -> Lookup<TypeInfo> {
         Lookup::Unknown

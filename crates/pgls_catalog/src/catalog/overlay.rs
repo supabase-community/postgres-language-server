@@ -515,10 +515,7 @@ pub(super) fn column_info(
                 Some("smallserial") => "int2",
                 _ => return None,
             };
-            catalog
-                .type_(Some("pg_catalog"), internal_name, search_path)
-                .found()
-                .and_then(|ty| ty.id)
+            catalog.builtin_type(internal_name)
         });
     let type_name = column.type_name.as_ref().and_then(type_label);
     ColumnInfo {

@@ -1,4 +1,5 @@
-use super::*;
+use crate::resolve::{resolver::Resolver, utils::function_param_type};
+use crate::typing::Type;
 
 /// `$1` in the body of a SQL function is the type of its parameter. [`transformParamRef`]
 /// asks the function's parameter hook for it.
