@@ -627,6 +627,18 @@ fn changed_range(old: &str, new: &str) -> TextEdit {
         .take_while(|(a, b)| a == b)
         .map(|(a, _)| a.len_utf8())
         .sum::<usize>();
+    // A position can't point into a `\r\n`, so the edit takes in the whole line break when only
+    // one half of it changed. The characters it takes in are the same in `old` and `new`.
+    let prefix = if splits_crlf(old, prefix) {
+        prefix - 1
+    } else {
+        prefix
+    };
+    let suffix = if splits_crlf(old, old.len() - suffix) {
+        suffix - 1
+    } else {
+        suffix
+    };
     TextEdit {
         range: Range {
             start: offset_to_position(old, prefix),
@@ -641,30 +653,43 @@ fn changed_range(old: &str, new: &str) -> TextEdit {
 // =============================================================================
 
 /// Convert LSP Position (line:character in UTF-16) to byte offset.
+///
+/// Lines end at `\n`, like in the native language server; the `\r` of a `\r\n` belongs to the
+/// line break, not to the line.
 fn position_to_offset(content: &str, pos: Position) -> usize {
-    let mut offset = 0;
+    let line_start = match pos.line {
+        0 => 0,
+        line => match content.match_indices('\n').nth(line as usize - 1) {
+            Some((newline, _)) => newline + 1,
+            None => return content.len(),
+        },
+    };
+    let rest = &content[line_start..];
+    let line = rest.find('\n').map_or(rest, |end| &rest[..end]);
+    let line = line.strip_suffix('\r').unwrap_or(line);
 
-    for (i, line) in content.lines().enumerate() {
-        if i == pos.line as usize {
-            // Convert UTF-16 character offset to byte offset
-            let mut utf16_count = 0u32;
-            for (byte_idx, c) in line.char_indices() {
-                if utf16_count >= pos.character {
-                    return offset + byte_idx;
-                }
-                utf16_count += c.len_utf16() as u32;
-            }
-            return offset + line.len();
+    // Convert UTF-16 character offset to byte offset
+    let mut utf16_count = 0u32;
+    for (byte_idx, c) in line.char_indices() {
+        if utf16_count >= pos.character {
+            return line_start + byte_idx;
         }
-        offset += line.len() + 1; // +1 for newline
+        utf16_count += c.len_utf16() as u32;
     }
-
-    offset.min(content.len())
+    line_start + line.len()
 }
 
 /// Convert byte offset to LSP Position (line:character in UTF-16).
+///
+/// A position can't point between the `\r` and the `\n` of a line break, so an offset there
+/// becomes the end of the line.
 fn offset_to_position(content: &str, offset: usize) -> Position {
     let offset = offset.min(content.len());
+    let offset = if splits_crlf(content, offset) {
+        offset - 1
+    } else {
+        offset
+    };
     let text = &content[..offset];
 
     let line = text.matches('\n').count() as u32;
@@ -672,6 +697,11 @@ fn offset_to_position(content: &str, offset: usize) -> Position {
     let col = text[line_start..].encode_utf16().count() as u32;
 
     Position::new(line, col)
+}
+
+/// Whether `offset` is between the `\r` and the `\n` of a line break.
+fn splits_crlf(content: &str, offset: usize) -> bool {
+    content[..offset].ends_with('\r') && content[offset..].starts_with('\n')
 }
 
 // =============================================================================
@@ -862,6 +892,14 @@ mod tests {
     }
 
     fn code_actions(handler: &mut LspHandler, only: Option<&[&str]>) -> Vec<CodeAction> {
+        code_actions_at(handler, Position::new(0, 2), only)
+    }
+
+    fn code_actions_at(
+        handler: &mut LspHandler,
+        position: Position,
+        only: Option<&[&str]>,
+    ) -> Vec<CodeAction> {
         let response = handler.handle_message(
             &serde_json::json!({
                 "jsonrpc": "2.0",
@@ -869,10 +907,7 @@ mod tests {
                 "method": "textDocument/codeAction",
                 "params": {
                     "textDocument": { "uri": "file:///test.sql" },
-                    "range": {
-                        "start": { "line": 0, "character": 2 },
-                        "end": { "line": 0, "character": 2 }
-                    },
+                    "range": { "start": position, "end": position },
                     "context": { "diagnostics": [], "only": only }
                 }
             })
@@ -902,6 +937,22 @@ mod tests {
             [&Uri::from_str("file:///test.sql").unwrap()];
         assert_eq!(edits[0].new_text.to_lowercase(), " concurrently");
         assert_eq!(edits[0].range.start, Position::new(0, 25));
+    }
+
+    #[test]
+    fn test_code_actions_in_crlf_file() {
+        let mut handler = test_handler();
+        open(
+            &mut handler,
+            "{}",
+            "select 1;\r\nselect 2;\r\nrefresh materialized view user_stats;\r\n",
+        );
+
+        let actions = code_actions_at(&mut handler, Position::new(2, 0), None);
+        assert_eq!(actions[0].title, "Add CONCURRENTLY", "{actions:#?}");
+        let edits = &actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap()
+            [&Uri::from_str("file:///test.sql").unwrap()];
+        assert_eq!(edits[0].range.start, Position::new(2, 25));
     }
 
     #[test]
@@ -1056,5 +1107,71 @@ mod tests {
         let pos = offset_to_position(content, 17);
         assert_eq!(pos.line, 0);
         assert_eq!(pos.character, 11); // 8 + 3 = 11 UTF-16 units
+        assert_eq!(position_to_offset(content, pos), 17);
+    }
+
+    #[test]
+    fn test_position_conversion_lf() {
+        let content = "select 1;\nselect 2;\n";
+
+        // Past the end of a line is the end of that line, past the last line the end of the file.
+        assert_eq!(position_to_offset(content, Position::new(0, 100)), 9);
+        assert_eq!(position_to_offset(content, Position::new(2, 0)), 20);
+        assert_eq!(position_to_offset(content, Position::new(5, 3)), 20);
+
+        assert_eq!(offset_to_position(content, 9), Position::new(0, 9));
+        assert_eq!(offset_to_position(content, 10), Position::new(1, 0));
+        assert_eq!(offset_to_position(content, 20), Position::new(2, 0));
+    }
+
+    #[test]
+    fn test_position_conversion_crlf() {
+        let content = "select 1;\r\nselect '日本語';\r\nselect 3;";
+
+        // "select 1;\r\n" is 11 bytes, "select '日本語';\r\n" 21 bytes.
+        assert_eq!(position_to_offset(content, Position::new(1, 0)), 11);
+        assert_eq!(position_to_offset(content, Position::new(1, 11)), 28);
+        assert_eq!(position_to_offset(content, Position::new(2, 7)), 39);
+        assert_eq!(offset_to_position(content, 39), Position::new(2, 7));
+        assert_eq!(offset_to_position(content, 28), Position::new(1, 11));
+
+        // The `\r` is part of the line break, not of the line.
+        assert_eq!(position_to_offset(content, Position::new(0, 100)), 9);
+        assert_eq!(offset_to_position(content, 9), Position::new(0, 9));
+        assert_eq!(offset_to_position(content, 10), Position::new(0, 9));
+        assert_eq!(offset_to_position(content, 11), Position::new(1, 0));
+    }
+
+    #[test]
+    fn test_position_conversion_surrogate_pairs() {
+        // '😀' is 4 bytes in UTF-8 and a surrogate pair, 2 units, in UTF-16.
+        let content = "select '😀😀';\r\nselect 2;";
+
+        assert_eq!(offset_to_position(content, 12), Position::new(0, 10));
+        assert_eq!(position_to_offset(content, Position::new(0, 10)), 12);
+        assert_eq!(offset_to_position(content, 16), Position::new(0, 12));
+        assert_eq!(position_to_offset(content, Position::new(0, 14)), 18);
+        assert_eq!(position_to_offset(content, Position::new(1, 7)), 27);
+
+        // A position inside a surrogate pair moves past the character.
+        assert_eq!(position_to_offset(content, Position::new(0, 9)), 12);
+    }
+
+    #[test]
+    fn test_changed_range_keeps_crlf_whole() {
+        for (old, new) in [
+            ("select 1;\r\nselect 2;", "select 1;\nselect 2;"),
+            ("select 1;\nselect 2;", "select 1;\r\nselect 2;"),
+            ("select 1;\r\n", "select 1;\r\r\n"),
+            ("select 1;\r\nselect 2;", "select 1;\r\n\r\nselect 2;"),
+        ] {
+            let edit = changed_range(old, new);
+            let mut applied = old.to_string();
+            applied.replace_range(
+                position_to_offset(old, edit.range.start)..position_to_offset(old, edit.range.end),
+                &edit.new_text,
+            );
+            assert_eq!(applied, new, "{edit:?}");
+        }
     }
 }
