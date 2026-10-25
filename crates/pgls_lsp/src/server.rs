@@ -1,8 +1,6 @@
 use crate::capabilities::server_capabilities;
 use crate::handlers;
-use crate::session::{
-    CapabilitySet, CapabilityStatus, ClientInformation, Session, SessionHandle, SessionKey,
-};
+use crate::session::{CapabilitySet, CapabilityStatus, Session, SessionHandle, SessionKey};
 use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
@@ -115,10 +113,6 @@ impl LanguageServer for LSPServer {
 
         self.session.initialize(
             params.capabilities,
-            params.client_info.map(|client_info| ClientInformation {
-                name: client_info.name,
-                version: client_info.version,
-            }),
             params.root_uri,
             params.workspace_folders,
         );

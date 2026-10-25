@@ -74,7 +74,7 @@ use crate::{
         on_hover::{OnHoverParams, OnHoverResult},
     },
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    workspace::{AnalyserDiagnosticsMapper, WithCSTandASTMapper},
+    workspace::{AnalyserDiagnosticsMapper, WithCSTMapper},
 };
 
 use super::{
@@ -86,7 +86,6 @@ use super::{
 pub use statement_identifier::StatementId;
 
 mod analyser;
-mod annotation;
 #[cfg(feature = "db")]
 mod async_helper;
 mod cache_budget;
@@ -1738,8 +1737,8 @@ impl Workspace for WorkspaceServer {
         };
 
         // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
-        let result = match doc.iter_at(WithCSTandASTMapper, params.position).last() {
-            Some((stmt_id, range, ts_tree, maybe_ast)) => {
+        let result = match doc.iter_at(WithCSTMapper, params.position).last() {
+            Some((stmt_id, range, ts_tree)) => {
                 let position_in_stmt = params.position - range.start();
                 let (references, snapshot) =
                     self.hover_references(doc, &stmt_id, range, params.position, snapshot);
@@ -1747,7 +1746,6 @@ impl Workspace for WorkspaceServer {
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,
                     snapshot: &snapshot,
-                    ast: maybe_ast.as_deref(),
                     position: position_in_stmt,
                     stmt_sql: stmt_id.content(),
                     references: &references,

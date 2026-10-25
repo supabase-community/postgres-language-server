@@ -2647,7 +2647,6 @@ dependencies = [
  "pgls_analyse",
  "pgls_completions",
  "pgls_configuration",
- "pgls_console",
  "pgls_diagnostics",
  "pgls_fs",
  "pgls_test_utils",

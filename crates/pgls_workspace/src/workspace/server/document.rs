@@ -9,7 +9,6 @@ use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 use super::{
-    annotation::AnnotationStore,
     pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
     sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
     statement_identifier::StatementId,
@@ -24,8 +23,6 @@ pub struct Document {
     diagnostics: Vec<SDiagnostic>,
     ast_db: PgQueryStore,
     cst_db: TreeSitterStore,
-    #[allow(dead_code)]
-    annotation_db: AnnotationStore,
     suppressions: Suppressions,
     /// Cleared when the content changes.
     analysis: Mutex<Option<super::CachedAnalysis>>,
@@ -35,7 +32,6 @@ impl Document {
     pub fn new(content: String, version: i32) -> Document {
         let cst_db = TreeSitterStore::new();
         let ast_db = PgQueryStore::new();
-        let annotation_db = AnnotationStore::new();
         let suppressions = Suppressions::from(content.as_str());
 
         let split = pgls_statement_splitter::split(&content);
@@ -48,7 +44,6 @@ impl Document {
             version,
             ast_db,
             cst_db,
-            annotation_db,
             suppressions,
             analysis: Mutex::default(),
         }
@@ -75,7 +70,6 @@ impl Document {
             |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
         self.ast_db.retain(is_present);
         self.cst_db.retain(is_present);
-        self.annotation_db.retain(is_present);
         *self.analysis.get_mut().unwrap() = None;
     }
 
@@ -102,7 +96,6 @@ impl Document {
     pub fn clear_caches(&self) {
         self.ast_db.clear();
         self.cst_db.clear();
-        self.annotation_db.clear();
         *self.analysis.lock().unwrap() = None;
     }
 
@@ -167,7 +160,6 @@ impl Document {
         }
     }
 
-    #[allow(dead_code)]
     pub fn count(&self) -> usize {
         self.iter(DefaultMapper).count()
     }
@@ -405,28 +397,6 @@ impl<'a> StatementMapper<'a> for WithCSTMapper {
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
         let tree = parser.cst_db.get_or_cache_tree(&id);
         (id.clone(), range, tree)
-    }
-}
-
-pub struct WithCSTandASTMapper;
-impl<'a> StatementMapper<'a> for WithCSTandASTMapper {
-    type Output = (
-        StatementId,
-        TextRange,
-        Arc<tree_sitter::Tree>,
-        Option<Arc<pgls_query::NodeEnum>>,
-    );
-
-    fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
-        let tree = parser.cst_db.get_or_cache_tree(&id);
-        let ast_result = parser.ast_db.get_or_cache_ast(&id);
-
-        let ast_option = match &*ast_result {
-            Ok(node) => Some(node.clone()),
-            Err(_) => None,
-        };
-
-        (id.clone(), range, tree, ast_option)
     }
 }
 

@@ -16,8 +16,6 @@ pub struct SQLFunctionArg {
 
 #[derive(Debug, Clone)]
 pub struct SQLFunctionSignature {
-    #[allow(dead_code)]
-    pub schema: Option<String>,
     pub name: String,
     pub args: Vec<SQLFunctionArg>,
 }
@@ -87,7 +85,6 @@ pub fn get_sql_fn_signature(ast: &pgls_query::NodeEnum) -> Option<SQLFunctionSig
     }
 
     Some(SQLFunctionSignature {
-        schema: fn_name.0,
         name: fn_name.1,
         args: fn_args,
     })

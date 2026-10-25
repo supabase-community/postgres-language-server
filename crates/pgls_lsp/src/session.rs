@@ -41,16 +41,6 @@ use tracing::{debug, error, info};
 /// and the timer resets, so only one analysis run fires per burst.
 const DIAGNOSTIC_DEBOUNCE: Duration = Duration::from_millis(300);
 
-pub(crate) struct ClientInformation {
-    #[allow(dead_code)]
-    /// The name of the client
-    pub(crate) name: String,
-
-    #[allow(dead_code)]
-    /// The version of the client
-    pub(crate) version: Option<String>,
-}
-
 /// Key, uniquely identifying a LSP session.
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
 pub(crate) struct SessionKey(pub u64);
@@ -131,10 +121,7 @@ pub(crate) struct Session {
 struct InitializeParams {
     /// The capabilities provided by the client as part of [`ls_types::InitializeParams`]
     client_capabilities: ls_types::ClientCapabilities,
-    #[allow(dead_code)]
-    client_information: Option<ClientInformation>,
     root_uri: Option<Uri>,
-    #[allow(unused)]
     workspace_folders: Option<Vec<WorkspaceFolder>>,
 }
 
@@ -240,13 +227,11 @@ impl Session {
     pub(crate) fn initialize(
         &self,
         client_capabilities: ls_types::ClientCapabilities,
-        client_information: Option<ClientInformation>,
         root_uri: Option<Uri>,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
     ) {
         let result = self.initialize_params.set(InitializeParams {
             client_capabilities,
-            client_information,
             root_uri,
             workspace_folders,
         });

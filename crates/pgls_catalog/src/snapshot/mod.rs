@@ -197,20 +197,6 @@ impl Snapshot {
             .collect()
     }
 
-    pub fn find_types(&self, name: &str, schema: Option<&str>) -> Vec<&PostgresType> {
-        let sanitized_name = Self::sanitize_identifier(name);
-        self.types
-            .iter()
-            .filter(|t| {
-                t.name == sanitized_name
-                    && schema
-                        .map(Self::sanitize_identifier)
-                        .as_deref()
-                        .is_none_or(|s| s == t.schema.as_str())
-            })
-            .collect()
-    }
-
     pub fn find_functions(&self, name: &str, schema: Option<&str>) -> Vec<&Function> {
         let sanitized_name = Self::sanitize_identifier(name);
         self.functions
