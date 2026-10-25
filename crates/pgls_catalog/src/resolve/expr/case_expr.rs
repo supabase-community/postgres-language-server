@@ -1,4 +1,11 @@
-use super::*;
+use pgls_query::NodeEnum;
+
+use super::infer_expr;
+use crate::resolve::{resolver::Resolver, utils::common_types};
+use crate::{
+    OperatorKind,
+    typing::{Selection, Type, select_operator},
+};
 
 /// `CASE` is the common type of its results. Port of [`transformCaseExpr`], which also
 /// compares the test value of a simple `CASE` with each `WHEN` value using `=`.

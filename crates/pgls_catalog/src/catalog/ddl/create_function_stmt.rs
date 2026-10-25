@@ -181,7 +181,7 @@ fn variadic_element(c: &Catalog, id: &crate::typing::TypeId) -> Option<crate::ty
             _ => None,
         };
         if let Some(element) = element {
-            return c.type_(Some("pg_catalog"), element, &[]).found()?.id;
+            return c.builtin_type(element);
         }
     }
     info.element

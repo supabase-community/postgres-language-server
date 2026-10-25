@@ -4,7 +4,10 @@ use super::{
     Resolver, from_clause::resolve_from_clause, range_var::resolve_target_relation,
     res_target::resolve_returning_list, resolve_node, with_clause::resolve_with_clause,
 };
-use crate::resolve::scope::{Columns, Level};
+use crate::resolve::{
+    expr::infer_expr,
+    scope::{Columns, Level},
+};
 
 /// Resolves a DELETE and returns the columns of its RETURNING list. Port of
 /// [`transformDeleteStmt`].
@@ -34,7 +37,7 @@ fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Columns {
     if let Some(where_clause) = n.where_clause.as_deref() {
         resolve_node(r, where_clause);
         if let Some(expr) = where_clause.node.as_ref() {
-            super::super::expr::infer_expr(r, expr);
+            infer_expr(r, expr);
         }
     }
 

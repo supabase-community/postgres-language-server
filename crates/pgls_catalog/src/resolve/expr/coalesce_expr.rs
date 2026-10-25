@@ -1,4 +1,5 @@
-use super::*;
+use crate::resolve::{resolver::Resolver, utils::common};
+use crate::typing::Type;
 
 /// `COALESCE` is the common type of its arguments. Port of [`transformCoalesceExpr`].
 ///

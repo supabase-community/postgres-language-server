@@ -1,4 +1,8 @@
-use super::*;
+use pgls_query_ext::utils::string_value;
+
+use super::infer_expr;
+use crate::resolve::resolver::Resolver;
+use crate::typing::Type;
 
 /// `ROW(...)` is an anonymous record of its fields. Port of [`transformRowExpr`].
 ///

@@ -1,4 +1,8 @@
-use super::*;
+use pgls_query::protobuf;
+
+use super::infer_expr;
+use crate::resolve::{resolver::Resolver, utils::named};
+use crate::typing::Type;
 
 /// `EXISTS`, `ANY`/`ALL` and `IN` subqueries are bool, a scalar subquery is the type of its only
 /// column. Port of [`transformSubLink`].

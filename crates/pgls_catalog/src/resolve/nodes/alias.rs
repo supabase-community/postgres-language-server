@@ -1,7 +1,7 @@
 use pgls_query::{Node, protobuf::Alias};
 use pgls_query_ext::utils::string_values;
 
-use crate::resolve::scope::Columns;
+use crate::resolve::scope::{Columns, TypedColumns};
 
 /// Applies the column names of an alias (`AS t(a, b)`) to the first columns.
 pub(super) fn apply_alias(columns: Columns, alias: Option<&Alias>) -> Columns {
@@ -11,8 +11,28 @@ pub(super) fn apply_alias(columns: Columns, alias: Option<&Alias>) -> Columns {
     }
 }
 
+/// Applies the column names of an alias (`AS t(a, b)`) to the first typed columns.
+pub(super) fn apply_typed_alias(columns: TypedColumns, alias: Option<&Alias>) -> TypedColumns {
+    match alias {
+        Some(alias) => rename(columns, &alias.colnames, |column, name| column.name = name),
+        None => columns,
+    }
+}
+
 /// Applies a list of column names (`WITH c(a, b) AS ...`) to the first columns.
 pub(super) fn rename_columns(columns: Columns, names: &[Node]) -> Columns {
+    rename(columns, names, |column, name| *column = name)
+}
+
+/// Renames the first columns, like [`buildRelationAliases`]. The columns are unknown if there
+/// are more names than columns, which Postgres rejects.
+///
+/// [`buildRelationAliases`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L1224
+fn rename<T>(
+    columns: Option<Vec<T>>,
+    names: &[Node],
+    set_name: impl Fn(&mut T, String),
+) -> Option<Vec<T>> {
     if names.is_empty() {
         return columns;
     }
@@ -22,7 +42,7 @@ pub(super) fn rename_columns(columns: Columns, names: &[Node]) -> Columns {
         return None;
     }
     for (column, name) in columns.iter_mut().zip(names) {
-        *column = name;
+        set_name(column, name);
     }
     Some(columns)
 }

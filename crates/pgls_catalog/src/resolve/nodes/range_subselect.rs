@@ -2,7 +2,11 @@ use std::rc::Rc;
 
 use pgls_query::protobuf::RangeSubselect;
 
-use super::{Resolver, alias::apply_alias, resolve_node};
+use super::{
+    Resolver,
+    alias::{apply_alias, apply_typed_alias},
+    resolve_node,
+};
 use crate::resolve::{
     ColumnSource,
     scope::{Item, ItemSource, Level},
@@ -46,16 +50,7 @@ pub(super) fn resolve_range_subselect(
         alias.map(|alias| alias.aliasname.clone()),
         apply_alias(columns, alias),
     );
-    item.typed_columns = typed_columns.map(|mut columns| {
-        if let Some(alias) = alias
-            && let Some(names) = pgls_query_ext::utils::string_values(&alias.colnames)
-        {
-            for (column, name) in columns.iter_mut().zip(names) {
-                column.name = name;
-            }
-        }
-        columns
-    });
+    item.typed_columns = apply_typed_alias(typed_columns, alias);
     item.source = source;
     item
 }
