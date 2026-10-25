@@ -841,10 +841,14 @@ fn snapshot_of_a_file_with_many_changes() {
             serde_json::Value::Array(values) => {
                 values.iter_mut().for_each(|value| label_ids(value, labels));
             }
+            // In the order of the keys, also when another crate enables `preserve_order`.
             serde_json::Value::Object(fields) => {
-                fields
-                    .values_mut()
-                    .for_each(|value| label_ids(value, labels));
+                let mut entries: Vec<_> = std::mem::take(fields).into_iter().collect();
+                entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+                for (key, mut value) in entries {
+                    label_ids(&mut value, labels);
+                    fields.insert(key, value);
+                }
             }
             _ => {}
         }
