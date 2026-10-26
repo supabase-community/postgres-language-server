@@ -1,0 +1,50 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/constraintMissingNotValid
+-- expect_lint/constraintMissingNotValid
+alter table orders
+    add constraint orders_amount_check check (amount > 0),
+    add constraint orders_user_fk foreign key (user_id) references users (id) on delete cascade deferrable;
+
+```
+
+# Diagnostics
+lint/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
+  
+  i Add the constraint as NOT VALID in one transaction, then run VALIDATE CONSTRAINT in a separate transaction.
+  
+
+
+## Fix (unsafe): Add NOT VALID
+```
+-- expect_lint/constraintMissingNotValid
+-- expect_lint/constraintMissingNotValid
+alter table orders
+    add constraint orders_amount_check check (amount > 0) not valid,
+    add constraint orders_user_fk foreign key (user_id) references users (id) on delete cascade deferrable;
+
+```
+
+lint/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
+  
+  i Add the constraint as NOT VALID in one transaction, then run VALIDATE CONSTRAINT in a separate transaction.
+  
+
+
+## Fix (unsafe): Add NOT VALID
+```
+-- expect_lint/constraintMissingNotValid
+-- expect_lint/constraintMissingNotValid
+alter table orders
+    add constraint orders_amount_check check (amount > 0),
+    add constraint orders_user_fk foreign key (user_id) references users (id) on delete cascade deferrable not valid;
+
+```

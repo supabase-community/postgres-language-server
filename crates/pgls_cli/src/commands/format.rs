@@ -1,5 +1,8 @@
 use crate::cli_options::CliOptions;
-use crate::commands::{get_files_to_process_with_cli_options, read_stdin_payload};
+use crate::commands::{
+    get_files_to_process_with_cli_options, nested_configuration_paths, print_diagnostics,
+    read_stdin_payload,
+};
 use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
@@ -41,13 +44,26 @@ pub fn format(
     };
     let execution = ExecutionConfig::new(mode, u32::MAX);
 
+    let paths = match args.stdin_file_path {
+        Some(_) => Vec::new(),
+        None => resolve_paths(session.fs(), &configuration, &args)?,
+    };
+    let configuration_errors = session.apply_nested_configurations(
+        cli_options,
+        args.configuration.clone(),
+        &nested_configuration_paths(&args.stdin_file_path, &paths),
+    )?;
+
     if let Some(stdin_path) = args.stdin_file_path.as_deref() {
+        print_diagnostics(session.console(), configuration_errors);
         let payload = read_stdin_payload(stdin_path, session.console(), "format")?;
         return run_stdin(&mut session, &execution, payload);
     }
 
-    let paths = resolve_paths(session.fs(), &configuration, &args)?;
-    let report: Report = run_files(&mut session, &execution, paths)?;
+    let mut report: Report = run_files(&mut session, &execution, paths)?;
+    for error in configuration_errors.into_iter().rev() {
+        report.prepend_diagnostic(error);
+    }
 
     let exit_result = enforce_exit_codes(cli_options, &report);
     session.report("format", cli_options, &report)?;

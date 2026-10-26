@@ -1,6 +1,5 @@
 ---
 source: crates/pgls_analyser/tests/rules_tests.rs
-assertion_line: 156
 expression: snapshot
 ---
 # Input

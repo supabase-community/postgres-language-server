@@ -5,7 +5,8 @@ use crate::logging::LoggingKind;
 use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
 use pgls_configuration::{PartialConfiguration, partial_configuration};
-use pgls_console::Console;
+use pgls_console::{Console, ConsoleExt, markup};
+use pgls_diagnostics::{Error, PrintDiagnostic};
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
 use std::ffi::OsString;
@@ -70,6 +71,14 @@ pub enum PgLSCommand {
         /// flag and the `defaultBranch` is not set in your `postgres-language-server.jsonc`
         #[bpaf(long("since"), argument("REF"))]
         since: Option<String>,
+
+        /// Apply the safe fixes of the lint rules and write the files.
+        #[bpaf(long("fix"), switch)]
+        fix: bool,
+
+        /// Also apply the unsafe fixes, which may change what a statement does. Implies `--fix`.
+        #[bpaf(long("unsafe"), switch)]
+        unsafe_: bool,
 
         /// Single file, single path or list of paths
         #[bpaf(positional("PATH"), many)]
@@ -381,6 +390,25 @@ pub(crate) fn get_files_to_process_with_cli_options(
         Ok(Some(get_staged_files(fs)?))
     } else {
         Ok(None)
+    }
+}
+
+/// The paths whose nested configuration files apply: the virtual path of the code piped to
+/// `stdin`, or else the paths to process.
+pub(crate) fn nested_configuration_paths(
+    stdin_file_path: &Option<String>,
+    paths: &[OsString],
+) -> Vec<OsString> {
+    match stdin_file_path {
+        Some(path) => vec![OsString::from(path)],
+        None => paths.to_vec(),
+    }
+}
+
+/// Prints diagnostics to stderr, for the commands that write their result to stdout.
+pub(crate) fn print_diagnostics(console: &mut dyn Console, diagnostics: Vec<Error>) {
+    for diagnostic in diagnostics {
+        console.error(markup! {{PrintDiagnostic::simple(&diagnostic)}});
     }
 }
 

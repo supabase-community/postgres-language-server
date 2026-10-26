@@ -6,32 +6,59 @@ const UNNAMED: &str = "?column?";
 
 /// The column name Postgres chooses for an unnamed select list entry. Port of [`FigureColname`].
 ///
-/// Returns `None` if we can't tell.
+/// Returns `None` if we can't tell. A `*` expands to the columns it stands for, so it has no name
+/// of its own.
 ///
 /// [`FigureColname`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1713
-pub(crate) fn figure_column_name(value: &NodeEnum) -> Option<String> {
+pub fn figure_column_name(value: &NodeEnum) -> Option<String> {
+    if is_star(value) {
+        return None;
+    }
     figure_column_name_with_strength(value).map(|(name, _)| name)
 }
 
+/// Whether a select list entry is a `*` that expands to several columns, like `*`, `t.*` or
+/// `(t.c).*`.
+fn is_star(value: &NodeEnum) -> bool {
+    let last = match value {
+        NodeEnum::ColumnRef(column) => column.fields.last(),
+        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
+        _ => None,
+    };
+    matches!(
+        last.and_then(|last| last.node.as_ref()),
+        Some(NodeEnum::AStar(_))
+    )
+}
+
+/// The last field name of a column reference or indirection, ignoring `*` and subscripts.
+fn last_field_name(fields: &[pgls_query::protobuf::Node]) -> Option<&str> {
+    fields
+        .iter()
+        .rev()
+        .find_map(|field| match field.node.as_ref()? {
+            NodeEnum::String(name) => Some(name.sval.as_str()),
+            _ => None,
+        })
+}
+
 /// The column name together with how strong that choice is. A type cast uses the name of its
-/// argument only if that name is strong (2), and its type name otherwise. Port of
+/// argument only if that name is strong (2), and its type name otherwise. A CASE likewise uses the
+/// name of its ELSE result only if it is strong, and `case` otherwise. Port of
 /// [`FigureColnameInternal`].
 ///
 /// [`FigureColnameInternal`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1752
 fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
     let named = |name: &str| Some((name.to_owned(), 2));
     match value {
-        NodeEnum::ColumnRef(column) => match column.fields.last()?.node.as_ref()? {
-            NodeEnum::String(name) => named(&name.sval),
-            _ => Some((UNNAMED.into(), 0)),
+        NodeEnum::ColumnRef(column) => match last_field_name(&column.fields) {
+            Some(name) => named(name),
+            None => Some((UNNAMED.into(), 0)),
         },
-        NodeEnum::AIndirection(indirection) => {
-            match indirection.indirection.last()?.node.as_ref()? {
-                NodeEnum::String(name) => named(&name.sval),
-                NodeEnum::AStar(_) => None,
-                _ => figure_column_name_with_strength(indirection.arg.as_deref()?.node.as_ref()?),
-            }
-        }
+        NodeEnum::AIndirection(indirection) => match last_field_name(&indirection.indirection) {
+            Some(name) => named(name),
+            None => figure_column_name_with_strength(indirection.arg.as_deref()?.node.as_ref()?),
+        },
         NodeEnum::FuncCall(call) => match call.funcname.last()?.node.as_ref()? {
             NodeEnum::String(name) => named(&name.sval),
             _ => None,
@@ -56,22 +83,26 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
         NodeEnum::SubLink(link) => match link.sub_link_type() {
             protobuf::SubLinkType::ExistsSublink => named("exists"),
             protobuf::SubLinkType::ArraySublink => named("array"),
-            protobuf::SubLinkType::ExprSublink | protobuf::SubLinkType::MultiexprSublink => {
+            // Postgres transforms the subquery first and takes the name of its column.
+            protobuf::SubLinkType::ExprSublink => {
                 let NodeEnum::SelectStmt(select) = link.subselect.as_deref()?.node.as_ref()? else {
                     return None;
                 };
-                let NodeEnum::ResTarget(target) = select.target_list.first()?.node.as_ref()? else {
-                    return None;
-                };
-                if target.name.is_empty() {
-                    Some((UNNAMED.into(), 0))
-                } else {
-                    named(&target.name)
-                }
+                Some((first_column_name(select)?, 2))
             }
             _ => Some((UNNAMED.into(), 0)),
         },
-        NodeEnum::CaseExpr(_) => Some(("case".into(), 1)),
+        NodeEnum::CaseExpr(case) => {
+            let default = match case.defresult.as_deref() {
+                Some(default) => figure_column_name_with_strength(default.node.as_ref()?)?,
+                None => (UNNAMED.into(), 0),
+            };
+            if default.1 > 1 {
+                Some(default)
+            } else {
+                Some(("case".into(), 1))
+            }
+        }
         NodeEnum::AArrayExpr(_) => named("array"),
         NodeEnum::RowExpr(_) => named("row"),
         NodeEnum::CoalesceExpr(_) => named("coalesce"),
@@ -139,4 +170,27 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
         | NodeEnum::ParamRef(_) => Some((UNNAMED.into(), 0)),
         _ => None,
     }
+}
+
+/// The name of the first output column of a subquery. A set operation takes the names of its
+/// left-most select ([`transformSetOperationStmt`]), and VALUES names its columns `column1`,
+/// `column2`, ... ([`addRangeTableEntryForValues`]).
+///
+/// [`transformSetOperationStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1751
+/// [`addRangeTableEntryForValues`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L2183
+fn first_column_name(select: &protobuf::SelectStmt) -> Option<String> {
+    let mut select = select;
+    while select.op() != protobuf::SetOperation::SetopNone {
+        select = select.larg.as_deref()?;
+    }
+    if !select.values_lists.is_empty() {
+        return Some("column1".into());
+    }
+    let NodeEnum::ResTarget(target) = select.target_list.first()?.node.as_ref()? else {
+        return None;
+    };
+    if !target.name.is_empty() {
+        return Some(target.name.clone());
+    }
+    figure_column_name(target.val.as_deref()?.node.as_ref()?)
 }

@@ -55,6 +55,17 @@
         }
       ]
     },
+    "inlayHints": {
+      "description": "The configuration for inlay hints in editors",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/InlayHintsConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "linter": {
       "description": "The configuration for the linter",
       "anyOf": [
@@ -93,6 +104,17 @@
       "anyOf": [
         {
           "$ref": "#/definitions/PlPgSqlCheckConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "semanticTokens": {
+      "description": "The configuration for semantic highlighting in editors",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SemanticTokensConfiguration"
         },
         {
           "type": "null"
@@ -571,7 +593,7 @@
             "null"
           ],
           "format": "uint8",
-          "minimum": 0.0
+          "minimum": 1.0
         },
         "indentStyle": {
           "description": "Indentation style: \"spaces\" or \"tabs\". Default: \"spaces\".",
@@ -603,7 +625,7 @@
           ]
         },
         "layout": {
-          "description": "How a statement is laid out: \"fit\" breaks only when a line would exceed the line width, \"expanded\" always breaks between clauses. Default: \"fit\".",
+          "description": "How a statement is laid out: \"fit\" breaks only when a line would exceed the line width, \"expanded\" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: \"fit\".",
           "anyOf": [
             {
               "$ref": "#/definitions/Layout"
@@ -620,7 +642,7 @@
             "null"
           ],
           "format": "uint16",
-          "minimum": 0.0
+          "minimum": 1.0
         },
         "logicalOperatorPlacement": {
           "description": "Where a boolean operator sits when a condition breaks: \"trailing\" or \"leading\". Default: \"trailing\".",
@@ -683,6 +705,20 @@
           ]
         }
       ]
+    },
+    "InlayHintsConfiguration": {
+      "description": "The configuration for inlay hints.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, the language server sends no inlay hints. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "KeywordCase": {
       "description": "Keyword casing style for the formatter.",
@@ -1005,6 +1041,28 @@
             }
           ]
         },
+        "banAlterDomainWithAddConstraint": {
+          "description": "Adding a constraint to a domain has poor support for online migrations.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterIdentity": {
+          "description": "Changing the identity of a column may break inserts from existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banCharField": {
           "description": "Using CHAR(n) or CHARACTER(n) types is discouraged.",
           "anyOf": [
@@ -1017,7 +1075,18 @@
           ]
         },
         "banConcurrentIndexCreationInTransaction": {
-          "description": "Concurrent index creation is not allowed within a transaction.",
+          "description": "Concurrent index operations are not allowed within a transaction.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banCreateDomainWithConstraint": {
+          "description": "Domains with constraints have poor support for online migrations.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1049,8 +1118,74 @@
             }
           ]
         },
+        "banDropConstraint": {
+          "description": "Dropping a constraint may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banDropDatabase": {
           "description": "Dropping a database may break existing clients (and everything else, really).",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropDefault": {
+          "description": "Dropping a column or domain default may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropDomain": {
+          "description": "Dropping a domain may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropExtension": {
+          "description": "Dropping an extension may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropFunction": {
+          "description": "Dropping a function, procedure, routine, or aggregate may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropGeneratedExpression": {
+          "description": "Dropping the expression of a generated column may break existing clients.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1082,6 +1217,17 @@
             }
           ]
         },
+        "banDropSequence": {
+          "description": "Dropping a sequence may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banDropTable": {
           "description": "Dropping a table may break existing clients.",
           "anyOf": [
@@ -1104,6 +1250,61 @@
             }
           ]
         },
+        "banDropType": {
+          "description": "Dropping a type, cast, operator, operator class, or operator family may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropView": {
+          "description": "Dropping a view or materialized view may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDuplicateColumnAssignments": {
+          "description": "A column is assigned or declared more than once.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banNonTransactionalStatementInTransaction": {
+          "description": "Statements that Postgres can't run inside a transaction block.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banSetSchema": {
+          "description": "Moving an object to another schema may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banTruncate": {
           "description": "Truncating a table removes all rows and can cause data loss in production.",
           "anyOf": [
@@ -1117,6 +1318,17 @@
         },
         "banTruncateCascade": {
           "description": "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banUncommittedTransaction": {
+          "description": "A transaction is started but never committed or rolled back.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1205,6 +1417,17 @@
         },
         "functionReturnTypeMismatch": {
           "description": "The final statement of a SQL function doesn't return what the function is declared to return.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "identifierTooLong": {
+          "description": "Identifiers longer than 63 bytes are silently truncated.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1375,6 +1598,17 @@
             }
           ]
         },
+        "renamingObject": {
+          "description": "Renaming an object or an enum value may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "renamingTable": {
           "description": "Renaming tables may break existing queries and application code.",
           "anyOf": [
@@ -1441,6 +1675,17 @@
             }
           ]
         },
+        "requireEnumValueOrdering": {
+          "description": "ALTER TYPE ... ADD VALUE without BEFORE or AFTER appends the value to the end of the enum.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "requireIdleInTransactionTimeout": {
           "description": "Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.",
           "anyOf": [
@@ -1465,6 +1710,17 @@
         },
         "requireStatementTimeout": {
           "description": "Dangerous lock statements should be preceded by SET statement_timeout.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireTableSchema": {
+          "description": "Table names in DDL should be schema-qualified.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -2615,14 +2871,14 @@
           ]
         },
         {
-          "description": "`-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section without a transaction.",
+          "description": "`-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section without a transaction, but still as one query.",
           "type": "string",
           "enum": [
             "dbmate"
           ]
         },
         {
-          "description": "`-- +goose Up` and `-- +goose Down` of goose. `-- +goose NO TRANSACTION` runs the file without a transaction.",
+          "description": "`-- +goose Up` and `-- +goose Down` of goose. `-- +goose NO TRANSACTION` runs the file without a transaction, statement by statement.",
           "type": "string",
           "enum": [
             "goose"
@@ -2822,6 +3078,20 @@
             {
               "type": "null"
             }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SemanticTokensConfiguration": {
+      "description": "The configuration for semantic highlighting.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, the language server sends no semantic tokens, and editors keep the highlighting of their grammar. `true` by default",
+          "type": [
+            "boolean",
+            "null"
           ]
         }
       },

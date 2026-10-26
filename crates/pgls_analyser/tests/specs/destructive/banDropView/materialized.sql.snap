@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropView
+drop materialized view if exists user_stats;
+
+```
+
+# Diagnostics
+lint/banDropView ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a materialized view may break existing clients.
+  
+  i Queries that still use the view fail, and rolling back the application does not restore it.
+  
+  i Update your application code to no longer use the view, then drop it in a later migration.

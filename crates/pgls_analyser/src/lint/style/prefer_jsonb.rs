@@ -1,5 +1,7 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
-use pgls_analyse::{RuleSource, declare_lint_rule};
+use crate::fix::StatementTokens;
+use crate::linter_context::builtin_type_name;
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
+use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -56,6 +58,7 @@ declare_lint_rule! {
         version: "0.15.0",
         name: "preferJsonb",
         severity: Severity::Warning,
+        fix_kind: FixKind::Unsafe,
         recommended: false,
         sources: &[RuleSource::Eugene("E3")],
     }
@@ -71,7 +74,7 @@ impl LinterRule for PreferJsonb {
             pgls_query::NodeEnum::CreateStmt(stmt) => {
                 for table_elt in &stmt.table_elts {
                     if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = &table_elt.node {
-                        check_column_def(&mut diagnostics, col_def);
+                        check_column_def(&mut diagnostics, col_def, ctx.tokens());
                     }
                 }
             }
@@ -84,7 +87,7 @@ impl LinterRule for PreferJsonb {
                         && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
                             &cmd.def.as_ref().and_then(|d| d.node.as_ref())
                     {
-                        check_column_def(&mut diagnostics, col_def);
+                        check_column_def(&mut diagnostics, col_def, ctx.tokens());
                     }
                 }
             }
@@ -98,31 +101,36 @@ impl LinterRule for PreferJsonb {
 fn check_column_def(
     diagnostics: &mut Vec<LinterDiagnostic>,
     col_def: &pgls_query::protobuf::ColumnDef,
+    tokens: Option<StatementTokens>,
 ) {
     let Some(type_name) = &col_def.type_name else {
         return;
     };
 
-    for name_node in &type_name.names {
-        let Some(pgls_query::NodeEnum::String(name)) = &name_node.node else {
-            continue;
-        };
-
-        let type_name_lower = name.sval.to_lowercase();
-        if type_name_lower != "json" {
-            continue;
-        }
-
-        diagnostics.push(
-            LinterDiagnostic::new(
-                rule_category!(),
-                None,
-                markup! {
-                    "Prefer JSONB over JSON for better performance and functionality."
-                },
-            )
-            .detail(None, "JSON stores exact text representation while JSONB stores parsed binary format. JSONB is faster for queries, supports indexing, and removes duplicate keys.")
-            .note("Consider using JSONB instead unless you specifically need to preserve formatting or duplicate keys."),
-        );
+    if builtin_type_name(type_name) != Some("json") {
+        return;
     }
+
+    diagnostics.push(
+        LinterDiagnostic::new(
+            rule_category!(),
+            None,
+            markup! {
+                "Prefer JSONB over JSON for better performance and functionality."
+            },
+        )
+        .detail(None, "JSON stores exact text representation while JSONB stores parsed binary format. JSONB is faster for queries, supports indexing, and removes duplicate keys.")
+        .note("Consider using JSONB instead unless you specifically need to preserve formatting or duplicate keys.")
+        .maybe_fix(tokens.and_then(|tokens| use_jsonb(tokens, type_name.location))),
+    );
+}
+
+/// Replaces `json` with `jsonb`. It is unsafe because JSONB doesn't keep the formatting, key order
+/// and duplicate keys of the input.
+fn use_jsonb(tokens: StatementTokens, location: i32) -> Option<RuleFix> {
+    let name = tokens.type_name_end(tokens.at(location)?);
+    if !tokens.text(name).eq_ignore_ascii_case("json") {
+        return None;
+    }
+    Some(tokens.replace(name, "Use JSONB", "jsonb"))
 }

@@ -1,15 +1,17 @@
 use pgls_catalog::Snapshot;
+use pgls_catalog::resolve::Reference;
 use pgls_text_size::TextSize;
 use pgls_treesitter::TreeSitterContextParams;
 
 use crate::{
     contextual_priority::prioritize_by_context, hoverables::Hoverable, hovered_node::HoveredNode,
-    to_markdown::format_hover_markdown,
+    resolved::resolved_hoverable, to_markdown::format_hover_markdown,
 };
 
 mod contextual_priority;
 mod hoverables;
 mod hovered_node;
+mod resolved;
 mod to_markdown;
 
 pub struct OnHoverParams<'a> {
@@ -18,6 +20,10 @@ pub struct OnHoverParams<'a> {
     pub stmt_sql: &'a str,
     pub ast: Option<&'a pgls_query::NodeEnum>,
     pub ts_tree: &'a tree_sitter::Tree,
+    /// The references of [`pgls_catalog::resolve::resolve`] whose span contains the cursor.
+    /// When one of them is of the hovered kind, hover shows the object it resolves to instead of
+    /// the objects found by name.
+    pub references: &'a [Reference],
 }
 
 #[tracing::instrument(level = "debug", skip_all, fields(
@@ -32,6 +38,18 @@ pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
     });
 
     if let Some(hovered_node) = HoveredNode::get(&ctx) {
+        if let Some(item) = resolved_hoverable(
+            &hovered_node,
+            params.references,
+            params.snapshot,
+            params.stmt_sql,
+            params.position,
+        ) {
+            return format_hover_markdown(&item, params.snapshot)
+                .ok()
+                .map(|markdown| vec![markdown]);
+        }
+
         let items: Vec<Hoverable> = match hovered_node {
             HoveredNode::Table(node_identification) => match node_identification {
                 (None, n) => params
@@ -162,6 +180,7 @@ mod tests {
             stmt_sql: &sql,
             ast: None,
             ts_tree: &tree,
+            references: &[],
         });
 
         assert!(hover.is_none());

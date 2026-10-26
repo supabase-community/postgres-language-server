@@ -1,6 +1,6 @@
 # preferRobustStmts
 
-**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/preferRobustStmts`
 
 **Sources**: inspired by [`squawk/prefer-robust-stmts`](https://squawkhq.com/docs/prefer-robust-stmts)

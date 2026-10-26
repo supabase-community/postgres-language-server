@@ -1,0 +1,43 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropConstraint
+alter table users drop constraint users_email_key;
+-- Each dropped constraint is reported.
+-- expect_lint/banDropConstraint
+-- expect_lint/banDropConstraint
+alter table users drop constraint users_email_key, add column age int, drop constraint if exists users_name_check;
+
+```
+
+# Diagnostics
+lint/banDropConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping constraint users_email_key may break existing clients.
+  
+  i Clients may depend on the guarantee of the constraint, e.g. as the arbiter of INSERT ... ON CONFLICT.
+  
+  i Update clients to no longer depend on the constraint, then drop it in a later migration.
+  
+
+
+lint/banDropConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping constraint users_email_key may break existing clients.
+  
+  i Clients may depend on the guarantee of the constraint, e.g. as the arbiter of INSERT ... ON CONFLICT.
+  
+  i Update clients to no longer depend on the constraint, then drop it in a later migration.
+  
+
+
+lint/banDropConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping constraint users_name_check may break existing clients.
+  
+  i Clients may depend on the guarantee of the constraint, e.g. as the arbiter of INSERT ... ON CONFLICT.
+  
+  i Update clients to no longer depend on the constraint, then drop it in a later migration.

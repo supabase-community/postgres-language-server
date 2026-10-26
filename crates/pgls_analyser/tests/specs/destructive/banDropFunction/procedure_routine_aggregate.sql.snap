@@ -1,0 +1,43 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropFunction
+drop procedure archive_orders();
+-- expect_lint/banDropFunction
+drop routine archive_orders();
+-- expect_lint/banDropFunction
+drop aggregate my_sum(int);
+
+```
+
+# Diagnostics
+lint/banDropFunction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a procedure may break existing clients.
+  
+  i Clients that still call it fail, and rolling back the application does not restore it.
+  
+  i Update your application code to no longer call it, then drop it in a later migration.
+  
+
+
+lint/banDropFunction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a routine may break existing clients.
+  
+  i Clients that still call it fail, and rolling back the application does not restore it.
+  
+  i Update your application code to no longer call it, then drop it in a later migration.
+  
+
+
+lint/banDropFunction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping an aggregate may break existing clients.
+  
+  i Clients that still call it fail, and rolling back the application does not restore it.
+  
+  i Update your application code to no longer call it, then drop it in a later migration.

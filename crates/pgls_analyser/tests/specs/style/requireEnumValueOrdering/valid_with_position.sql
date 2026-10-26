@@ -1,0 +1,4 @@
+-- expect_no_diagnostics
+alter type order_status add value 'in_review' before 'approved';
+alter type order_status add value if not exists 'archived' after 'rejected';
+alter type order_status rename value 'shipped' to 'dispatched';

@@ -1,5 +1,6 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
-use pgls_analyse::{RuleSource, declare_lint_rule};
+use crate::fix::StatementTokens;
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
+use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -30,6 +31,7 @@ declare_lint_rule! {
         version: "0.15.0",
         name: "constraintMissingNotValid",
         severity: Severity::Warning,
+        fix_kind: FixKind::Unsafe,
         recommended: false,
         applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Squawk("constraint-missing-not-valid")],
@@ -58,7 +60,7 @@ impl LinterRule for ConstraintMissingNotValid {
             };
 
             if let Some(diagnostic) = check_constraint_needs_not_valid(constraint) {
-                diagnostics.push(diagnostic);
+                diagnostics.push(diagnostic.maybe_fix(add_not_valid(ctx.tokens(), constraint)));
             }
         }
 
@@ -89,4 +91,16 @@ fn check_constraint_needs_not_valid(
         ),
         _ => None,
     }
+}
+
+/// Appends `NOT VALID` to the constraint. It is unsafe because the existing rows are not
+/// checked until the constraint is validated.
+fn add_not_valid(
+    tokens: Option<StatementTokens>,
+    constraint: &pgls_query::protobuf::Constraint,
+) -> Option<RuleFix> {
+    let tokens = tokens?;
+    let start = tokens.at(constraint.location)?;
+    let end = tokens.element_end(start);
+    Some(tokens.insert_after(end, "Add NOT VALID", "NOT VALID"))
 }

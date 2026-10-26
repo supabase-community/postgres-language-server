@@ -29,6 +29,8 @@ pub enum WorkspaceError {
     CantReadFile(CantReadFile),
     /// The file does not exist in the [crate::Workspace]
     NotFound(NotFound),
+    /// The project is not registered in the [crate::Workspace]
+    NoProject(NoProject),
     /// Error emitted by the underlying transport layer for a remote Workspace
     TransportError(TransportError),
     /// Emitted when the file is ignored and should not be processed
@@ -52,6 +54,10 @@ impl WorkspaceError {
 
     pub fn not_found() -> Self {
         Self::NotFound(NotFound)
+    }
+
+    pub fn no_project() -> Self {
+        Self::NoProject(NoProject)
     }
 
     pub fn protected_file(file_path: impl Into<String>) -> Self {
@@ -314,6 +320,14 @@ pub(crate) fn is_connection_failure(err: &sqlx::Error) -> bool {
     tags(INTERNAL)
 )]
 pub struct NotFound;
+
+#[derive(Debug, Serialize, Deserialize, Diagnostic)]
+#[diagnostic(
+    category = "project",
+    message = "The project is not registered in the workspace.",
+    tags(INTERNAL)
+)]
+pub struct NoProject;
 
 #[derive(Debug, Serialize, Deserialize, Diagnostic)]
 #[diagnostic(

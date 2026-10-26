@@ -27,6 +27,48 @@ pub struct RuleMetadata {
     pub sources: &'static [RuleSource],
     /// The default severity of the rule
     pub severity: Severity,
+    /// Whether the rule can fix the issues it reports, and how safe the fix is
+    pub fix_kind: FixKind,
+}
+
+/// Whether a rule can fix the issues it reports, and how safe the fix is.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+pub enum FixKind {
+    /// The rule doesn't fix the issues it reports.
+    #[default]
+    None,
+    /// The fix doesn't change what the statement does beyond what the rule asks for. It is
+    /// applied with `--fix`.
+    Safe,
+    /// The fix may change the behaviour of the statement, e.g. the type of a column. It is
+    /// only applied with `--fix --unsafe`.
+    Unsafe,
+}
+
+impl FixKind {
+    /// The applicability of the fixes of a rule with this fix kind.
+    pub const fn applicability(self) -> Option<Applicability> {
+        match self {
+            Self::None => None,
+            Self::Safe => Some(Applicability::Always),
+            Self::Unsafe => Some(Applicability::MaybeIncorrect),
+        }
+    }
+}
+
+/// Whether a fix can be applied without reviewing it.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+pub enum Applicability {
+    /// The fix is safe to apply automatically.
+    Always,
+    /// The fix may change the behaviour of the code and should be reviewed.
+    MaybeIncorrect,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -55,7 +97,13 @@ impl RuleMetadata {
             sources: &[],
             recommended: false,
             severity,
+            fix_kind: FixKind::None,
         }
+    }
+
+    pub const fn fix_kind(mut self, fix_kind: FixKind) -> Self {
+        self.fix_kind = fix_kind;
+        self
     }
 
     pub const fn applies_to(mut self, applies_to: AppliesTo) -> Self {

@@ -1,0 +1,55 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropType
+drop cast (text as point);
+-- expect_lint/banDropType
+drop operator === (int, int);
+-- expect_lint/banDropType
+drop operator class my_ops using btree;
+-- expect_lint/banDropType
+drop operator family my_ops using btree;
+
+```
+
+# Diagnostics
+lint/banDropType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a cast may break existing clients.
+  
+  i Queries that still use it fail, and rolling back the application does not restore it.
+  
+  i Update your application code to no longer use it, then drop it in a later migration.
+  
+
+
+lint/banDropType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping an operator may break existing clients.
+  
+  i Queries that still use it fail, and rolling back the application does not restore it.
+  
+  i Update your application code to no longer use it, then drop it in a later migration.
+  
+
+
+lint/banDropType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping an operator class may break existing clients.
+  
+  i Queries that still use it fail, and rolling back the application does not restore it.
+  
+  i Update your application code to no longer use it, then drop it in a later migration.
+  
+
+
+lint/banDropType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping an operator family may break existing clients.
+  
+  i Queries that still use it fail, and rolling back the application does not restore it.
+  
+  i Update your application code to no longer use it, then drop it in a later migration.
