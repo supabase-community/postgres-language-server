@@ -7,7 +7,7 @@ macro_rules! assert_node_variant {
     };
 }
 
-mod clauses;
+pub(crate) mod clauses;
 mod prelude;
 mod utils;
 

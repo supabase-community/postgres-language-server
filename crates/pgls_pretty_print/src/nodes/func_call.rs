@@ -144,26 +144,6 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
     e.group_end();
 }
 
-/// Emits `filter (where ...)`, on one line when it fits. Otherwise the condition goes on its own
-/// lines inside the parentheses, like a policy's `using (...)`.
-pub(super) fn emit_filter_clause(e: &mut EventEmitter, filter: &Node) {
-    e.token(TokenKind::FILTER_KW);
-    e.space();
-    e.group_start();
-    e.token(TokenKind::L_PAREN);
-    e.indent_start();
-    e.line(LineType::Soft);
-    e.token(TokenKind::WHERE_KW);
-    e.space();
-    e.indent_start();
-    emit_node(e, filter);
-    e.indent_end();
-    e.indent_end();
-    e.line(LineType::Soft);
-    e.token(TokenKind::R_PAREN);
-    e.group_end();
-}
-
 // Standard function call: func(arg1, arg2, ...)
 fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
     // Emit opening parenthesis

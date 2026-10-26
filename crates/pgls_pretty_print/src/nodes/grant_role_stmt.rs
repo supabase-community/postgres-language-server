@@ -1,6 +1,5 @@
 use pgls_query::protobuf::GrantRoleStmt;
 
-use super::grant_stmt::emit_grant_list;
 use super::prelude::*;
 
 pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {

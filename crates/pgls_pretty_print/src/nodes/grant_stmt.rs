@@ -30,7 +30,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     } else {
         emit_grant_list(e, &n.privileges, |e, node| {
             if let Some(pgls_query::NodeEnum::AccessPriv(priv_node)) = &node.node {
-                emit_access_priv(e, priv_node);
+                emit_privilege(e, priv_node);
             }
         });
     }
@@ -166,45 +166,4 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     e.indent_end();
 
     e.group_end();
-}
-
-/// Emits the privileges, objects, or roles of a `GRANT` or `REVOKE`. The list is its own group, so
-/// it stays on one line when it fits even though the statement broke, and otherwise fills each line
-/// with as many items as fit, wrapping one level deeper than its clause.
-///
-/// The deeper level starts after the first item, which shares the clause's line: a column list
-/// such as `insert (a, b)` that breaks closes its parenthesis under the line that opened it.
-pub(super) fn emit_grant_list<F>(e: &mut EventEmitter, nodes: &[pgls_query::Node], render: F)
-where
-    F: Fn(&mut EventEmitter, &pgls_query::Node),
-{
-    let Some((first, rest)) = nodes.split_first() else {
-        return;
-    };
-
-    e.group_start();
-    render(e, first);
-    if !rest.is_empty() {
-        e.indent_start();
-        for node in rest {
-            emit_list_comma(e, Some(node), ListSeparatorSpacing::Fill);
-            render(e, node);
-        }
-        e.indent_end();
-    }
-    e.group_end();
-}
-
-fn emit_access_priv(e: &mut EventEmitter, priv_node: &pgls_query::protobuf::AccessPriv) {
-    if priv_node.priv_name.is_empty() && !priv_node.cols.is_empty() {
-        e.token(TokenKind::ALL_KW);
-    } else if !priv_node.priv_name.is_empty() {
-        emit_keywords(e, &priv_node.priv_name);
-    }
-
-    // Handle column privileges
-    if !priv_node.cols.is_empty() {
-        e.space();
-        emit_parenthesized_list(e, &priv_node.cols, emit_node);
-    }
 }

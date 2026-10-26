@@ -44,7 +44,7 @@ pub(super) fn emit_on_conflict_expr(e: &mut EventEmitter, n: &OnConflictExpr) {
             e.token(TokenKind::SET_KW);
             if !n.on_conflict_set.is_empty() {
                 e.space();
-                super::res_target::emit_set_clause_list(e, &n.on_conflict_set);
+                emit_set_clause_list(e, &n.on_conflict_set);
             }
 
             if let Some(ref where_clause) = n.on_conflict_where {
