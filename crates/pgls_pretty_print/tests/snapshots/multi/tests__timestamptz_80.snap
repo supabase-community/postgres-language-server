@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/timestamptz.sql
-snapshot_kind: text
 ---
 create table timestamptz_tbl (d1 timestamp(2) with time zone);
 
@@ -774,9 +773,7 @@ select make_timestamptz(1973, 7, 15, 8, 15, 55.33, '+2');
 
 select make_timestamptz(1973, 7, 15, 8, 15, 55.33, '-2');
 
-with
-tzs (tz)
-as (
+with tzs (tz) as (
   values
     ('+1'),
     ('+1:'),
@@ -1160,8 +1157,9 @@ set local time zone 'Europe/Paris';
 
 values
   (
-    (cast('1978-07-07 19:38 America/New_York'
-    as timestamp with time zone) at local)
+    (cast(
+      '1978-07-07 19:38 America/New_York' as timestamp with time zone
+    ) at local)
   );
 
 values ((cast('1978-07-07 19:38' as timestamp) at local));
@@ -1170,8 +1168,9 @@ set local time zone 'Australia/Sydney';
 
 values
   (
-    (cast('1978-07-07 19:38 America/New_York'
-    as timestamp with time zone) at local)
+    (cast(
+      '1978-07-07 19:38 America/New_York' as timestamp with time zone
+    ) at local)
   );
 
 values ((cast('1978-07-07 19:38' as timestamp) at local));
@@ -1180,8 +1179,9 @@ set local time zone 'UTC';
 
 create view timestamp_local_view
 as select
-  (cast('1978-07-07 19:38 America/New_York'
-  as timestamp with time zone) at local)
+  (cast(
+    '1978-07-07 19:38 America/New_York' as timestamp with time zone
+  ) at local)
   as ttz_at_local,
   timezone(
     cast('1978-07-07 19:38 America/New_York' as timestamp with time zone)

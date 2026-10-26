@@ -36,3 +36,5 @@ pgls_statement_splitter = { workspace = true }
 pgls_console = { workspace = true }
 convert_case = { workspace = true }
 
+[lints]
+workspace = true

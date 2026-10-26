@@ -24,7 +24,7 @@ const MAX_FAILURE_BACKOFF: Duration = Duration::from_secs(60);
 /// shouldn't keep one. Reconnecting takes a few milliseconds on the next use.
 const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 
-/// How often [`ConnectionManager::get_pool`] looks for idle pools at most.
+/// How often [`ConnectionManager::get_pools`] looks for idle pools at most.
 const IDLE_SWEEP_INTERVAL: Duration = Duration::from_secs(60);
 
 /// Fingerprints the connection parameters that [`ConnectionKey`] does not cover, so that a change
@@ -80,9 +80,20 @@ fn connection_string_options(uri: &str) -> Result<PgConnectOptions, sqlx::Error>
     })
 }
 
+/// The connection pools of one database.
+#[derive(Clone)]
+pub(crate) struct DatabasePools {
+    /// The pool for the language server's own queries.
+    pub(crate) pool: PgPool,
+    /// The pool for the statements a user executes. Its connections never run the language
+    /// server's own queries, so the session state that a statement leaves behind can't leak into
+    /// them.
+    pub(crate) statement_pool: PgPool,
+}
+
 /// Cached connection pool with last access time
 struct CachedPool {
-    pool: PgPool,
+    pools: DatabasePools,
     settings_fingerprint: u64,
     last_used: LastUsed,
 }
@@ -172,11 +183,16 @@ impl ConnectionManager {
         });
     }
 
-    /// Get a connection pool for the given database settings.
-    /// If a pool already exists for these settings, it will be returned.
-    /// If not, a new pool will be created if connections are enabled.
-    /// Will also clean up idle connections that haven't been accessed for a while.
+    #[cfg(test)]
     pub(crate) fn get_pool(&self, settings: &DatabaseSettings) -> Option<PgPool> {
+        self.get_pools(settings).map(|pools| pools.pool)
+    }
+
+    /// Get the connection pools for the given database settings.
+    /// If pools already exist for these settings, they will be returned.
+    /// If not, new pools will be created if connections are enabled.
+    /// Will also clean up idle connections that haven't been accessed for a while.
+    pub(crate) fn get_pools(&self, settings: &DatabaseSettings) -> Option<DatabasePools> {
         let key = ConnectionKey::from(settings);
 
         if !settings.enable_connection {
@@ -196,7 +212,7 @@ impl ConnectionManager {
                 && cached_pool.settings_fingerprint == settings_fingerprint
             {
                 cached_pool.last_used.touch();
-                return Some(cached_pool.pool.clone());
+                return Some(cached_pool.pools.clone());
             }
         }
 
@@ -213,7 +229,7 @@ impl ConnectionManager {
         // Double-check after acquiring write lock
         if let Some(cached_pool) = pools.get(&key) {
             cached_pool.last_used.touch();
-            return Some(cached_pool.pool.clone());
+            return Some(cached_pool.pools.clone());
         }
 
         // Create a new pool
@@ -236,21 +252,28 @@ impl ConnectionManager {
 
         let timeout = settings.conn_timeout_secs;
 
-        let pool = PoolOptions::<Postgres>::new()
-            .acquire_timeout(timeout)
-            .acquire_slow_threshold(Duration::from_secs(2))
-            .idle_timeout(POOL_IDLE_TIMEOUT)
-            .connect_lazy_with(config);
+        let pool_options = || {
+            PoolOptions::<Postgres>::new()
+                .acquire_timeout(timeout)
+                .acquire_slow_threshold(Duration::from_secs(2))
+                .idle_timeout(POOL_IDLE_TIMEOUT)
+        };
+        let database_pools = DatabasePools {
+            pool: pool_options().connect_lazy_with(config.clone()),
+            // Without cached prepared statements, `discard all` can reset the whole session after
+            // a statement.
+            statement_pool: pool_options().connect_lazy_with(config.statement_cache_capacity(0)),
+        };
 
         let cached_pool = CachedPool {
-            pool: pool.clone(),
+            pools: database_pools.clone(),
             settings_fingerprint,
             last_used: LastUsed::now(),
         };
 
         pools.insert(key, cached_pool);
 
-        Some(pool)
+        Some(database_pools)
     }
 
     /// Like [`Self::with_pool`], but returns the error of a connection that failed recently
@@ -277,9 +300,18 @@ impl ConnectionManager {
         settings: &DatabaseSettings,
         operation: impl FnOnce(&PgPool) -> Result<T, WorkspaceError>,
     ) -> Option<Result<T, WorkspaceError>> {
-        let pool = self.get_pool(settings)?;
+        self.with_pools(settings, |pools| operation(&pools.pool))
+    }
+
+    /// Like [`Self::with_pool`], but passes the pool for executed statements as well.
+    pub(crate) fn with_pools<T>(
+        &self,
+        settings: &DatabaseSettings,
+        operation: impl FnOnce(&DatabasePools) -> Result<T, WorkspaceError>,
+    ) -> Option<Result<T, WorkspaceError>> {
+        let pools = self.get_pools(settings)?;
         let key = ConnectionKey::from(settings);
-        let result = operation(&pool);
+        let result = operation(&pools);
         self.record_result(&key, settings_fingerprint(settings), &result);
         Some(result)
     }
@@ -292,9 +324,12 @@ impl ConnectionManager {
     ) {
         match result {
             Ok(_) => self.clear_failure(key),
-            Err(err @ WorkspaceError::DatabaseConnectionError(error)) => {
+            Err(err @ WorkspaceError::DatabaseConnectionError(error))
+                if error.connection_failure =>
+            {
                 self.record_failure(key, settings_fingerprint, error, &err.to_string());
             }
+            // A query that fails, e.g. on a division by zero, says nothing about the connection.
             Err(_) => {}
         }
     }
@@ -421,7 +456,7 @@ mod tests {
         assert_ne!(first_fingerprint, changed_fingerprint);
         assert_eq!(cached.settings_fingerprint, changed_fingerprint);
         assert_eq!(
-            cached.pool.connect_options().get_host(),
+            cached.pools.pool.connect_options().get_host(),
             pool.connect_options().get_host()
         );
         assert_eq!(pools.len(), 1);
@@ -507,6 +542,7 @@ mod tests {
         DatabaseConnectionError {
             message: "password authentication failed".to_string(),
             code: Some("28P01".to_string()),
+            connection_failure: true,
         }
     }
 
@@ -529,5 +565,25 @@ mod tests {
             Some(Err(WorkspaceError::DatabaseConnectionError(error)))
                 if error.message == "password authentication failed"
         ));
+    }
+
+    #[test]
+    fn only_connection_failures_start_the_backoff() {
+        let manager = ConnectionManager::new();
+        let settings = settings();
+
+        let query_error = manager.with_pool(&settings, |_| {
+            Err::<(), _>(WorkspaceError::from(sqlx::Error::ColumnNotFound(
+                "id".to_string(),
+            )))
+        });
+        assert!(matches!(query_error, Some(Err(_))));
+        assert!(manager.with_pool(&settings, |_| Ok(())).is_some());
+
+        let connection_failure = manager.with_pool(&settings, |_| {
+            Err::<(), _>(WorkspaceError::from(sqlx::Error::PoolTimedOut))
+        });
+        assert!(matches!(connection_failure, Some(Err(_))));
+        assert!(manager.with_pool(&settings, |_| Ok(())).is_none());
     }
 }

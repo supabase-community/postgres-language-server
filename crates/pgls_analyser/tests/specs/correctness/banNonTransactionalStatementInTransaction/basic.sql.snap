@@ -1,0 +1,199 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+begin;
+-- expect_lint/banNonTransactionalStatementInTransaction
+vacuum users;
+-- expect_lint/banNonTransactionalStatementInTransaction
+vacuum (analyze) users;
+analyze users;
+-- expect_lint/banNonTransactionalStatementInTransaction
+create database app;
+-- expect_lint/banNonTransactionalStatementInTransaction
+drop database if exists app;
+-- expect_lint/banNonTransactionalStatementInTransaction
+alter database app set tablespace fast;
+alter database app set work_mem = '4MB';
+-- expect_lint/banNonTransactionalStatementInTransaction
+create tablespace fast location '/mnt/fast';
+-- expect_lint/banNonTransactionalStatementInTransaction
+drop tablespace fast;
+-- expect_lint/banNonTransactionalStatementInTransaction
+alter system set work_mem = '4MB';
+-- expect_lint/banNonTransactionalStatementInTransaction
+cluster;
+cluster users using users_pkey;
+-- expect_lint/banNonTransactionalStatementInTransaction
+reindex schema public;
+-- expect_lint/banNonTransactionalStatementInTransaction
+reindex system app;
+-- expect_lint/banNonTransactionalStatementInTransaction
+reindex database app;
+reindex table users;
+-- expect_lint/banNonTransactionalStatementInTransaction
+discard all;
+discard plans;
+-- expect_lint/banNonTransactionalStatementInTransaction
+commit prepared 'tx';
+-- expect_lint/banNonTransactionalStatementInTransaction
+rollback prepared 'tx';
+-- expect_lint/banNonTransactionalStatementInTransaction
+create subscription sub connection 'dbname=app' publication pub;
+-- expect_lint/banNonTransactionalStatementInTransaction
+create subscription sub connection 'dbname=app' publication pub with (connect = false, create_slot = true);
+create subscription sub connection 'dbname=app' publication pub with (connect = false);
+create subscription sub connection 'dbname=app' publication pub with (create_slot = false, slot_name = none);
+-- expect_lint/banNonTransactionalStatementInTransaction
+alter subscription sub refresh publication;
+alter subscription sub disable;
+-- CONCURRENTLY is reported by banConcurrentIndexCreationInTransaction.
+reindex schema concurrently public;
+commit;
+
+```
+
+# Diagnostics
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × VACUUM cannot run inside a transaction block.
+  
+  i Run VACUUM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × VACUUM cannot run inside a transaction block.
+  
+  i Run VACUUM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CREATE DATABASE cannot run inside a transaction block.
+  
+  i Run CREATE DATABASE outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × DROP DATABASE cannot run inside a transaction block.
+  
+  i Run DROP DATABASE outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × ALTER DATABASE SET TABLESPACE cannot run inside a transaction block.
+  
+  i Run ALTER DATABASE SET TABLESPACE outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CREATE TABLESPACE cannot run inside a transaction block.
+  
+  i Run CREATE TABLESPACE outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × DROP TABLESPACE cannot run inside a transaction block.
+  
+  i Run DROP TABLESPACE outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × ALTER SYSTEM cannot run inside a transaction block.
+  
+  i Run ALTER SYSTEM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CLUSTER cannot run inside a transaction block.
+  
+  i Run CLUSTER outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REINDEX SCHEMA cannot run inside a transaction block.
+  
+  i Run REINDEX SCHEMA outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REINDEX SYSTEM cannot run inside a transaction block.
+  
+  i Run REINDEX SYSTEM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REINDEX DATABASE cannot run inside a transaction block.
+  
+  i Run REINDEX DATABASE outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × DISCARD ALL cannot run inside a transaction block.
+  
+  i Run DISCARD ALL outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × COMMIT PREPARED cannot run inside a transaction block.
+  
+  i Run COMMIT PREPARED outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × ROLLBACK PREPARED cannot run inside a transaction block.
+  
+  i Run ROLLBACK PREPARED outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CREATE SUBSCRIPTION ... WITH (create_slot = true) cannot run inside a transaction block.
+  
+  i Run CREATE SUBSCRIPTION ... WITH (create_slot = true) outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CREATE SUBSCRIPTION ... WITH (create_slot = true) cannot run inside a transaction block.
+  
+  i Run CREATE SUBSCRIPTION ... WITH (create_slot = true) outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × ALTER SUBSCRIPTION ... REFRESH cannot run inside a transaction block.
+  
+  i Run ALTER SUBSCRIPTION ... REFRESH outside of a transaction, e.g. in a migration of its own that runs without a transaction.

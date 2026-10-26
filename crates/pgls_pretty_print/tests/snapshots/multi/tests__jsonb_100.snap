@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/jsonb.sql
-snapshot_kind: text
 ---
 create table testjsonb (j jsonb);
 
@@ -45,8 +44,10 @@ select cast('1.3ex100' as jsonb);
 select cast('[]' as jsonb);
 
 select
-  cast('[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
-  as jsonb);
+  cast(
+    '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
+    as jsonb
+  );
 
 select cast('[1,2]' as jsonb);
 
@@ -1113,26 +1114,28 @@ select
   rec
 from
   jsonb_populate_record(
-    cast(row(
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      cast(row('x', 3, '2012-12-31 15:30:56') as jbpop),
-      null
-    )
-    as jsbrec),
+    cast(
+      row(
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        cast(row('x', 3, '2012-12-31 15:30:56') as jbpop),
+        null
+      )
+      as jsbrec
+    ),
     '{"rec": {"a": "abc", "c": "01.02.2003", "x": 43.2}}'
   )
   as q;
@@ -1359,8 +1362,10 @@ select
   c is null as c_is_null
 from
   jsonb_to_record(
-    cast('{"a":1, "b":{"c":16, "d":2}, "x":8, "ca": ["1 2", 3], "ia": [[1,2],[3,4]], "r": {"a": "aaa", "b": 123}}'
-    as jsonb)
+    cast(
+      '{"a":1, "b":{"c":16, "d":2}, "x":8, "ca": ["1 2", 3], "ia": [[1,2],[3,4]], "r": {"a": "aaa", "b": 123}}'
+      as jsonb
+    )
   )
   as t
   (a int, b jsonb, c text, x int, ca char(5)[], ia int[][], r jbpop);
@@ -1711,16 +1716,21 @@ select cast('{"ff":{"a":12,"b":16}}' as jsonb);
 select cast('{"ff":{"a":12,"b":16},"qq":123}' as jsonb);
 
 select
-  cast('{"aa":["a","aaa"],"qq":{"a":12,"b":16,"c":["c1","c2"],"d":{"d1":"d1","d2":"d2","d1":"d3"}}}'
-  as jsonb);
+  cast(
+    '{"aa":["a","aaa"],"qq":{"a":12,"b":16,"c":["c1","c2"],"d":{"d1":"d1","d2":"d2","d1":"d3"}}}'
+    as jsonb
+  );
 
 select
-  cast('{"aa":["a","aaa"],"qq":{"a":"12","b":"16","c":["c1","c2"],"d":{"d1":"d1","d2":"d2"}}}'
-  as jsonb);
+  cast(
+    '{"aa":["a","aaa"],"qq":{"a":"12","b":"16","c":["c1","c2"],"d":{"d1":"d1","d2":"d2"}}}' as jsonb
+  );
 
 select
-  cast('{"aa":["a","aaa"],"qq":{"a":"12","b":"16","c":["c1","c2",["c3"],{"c4":4}],"d":{"d1":"d1","d2":"d2"}}}'
-  as jsonb);
+  cast(
+    '{"aa":["a","aaa"],"qq":{"a":"12","b":"16","c":["c1","c2",["c3"],{"c4":4}],"d":{"d1":"d1","d2":"d2"}}}'
+    as jsonb
+  );
 
 select cast('{"ff":["a","aaa"]}' as jsonb);
 
@@ -2664,8 +2674,10 @@ select
 
 select
   ts_headline(
-    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
-    as jsonb),
+    cast(
+      '{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
+      as jsonb
+    ),
     tsquery('bbb & ddd & hhh')
   );
 
@@ -2678,8 +2690,10 @@ select
 
 select
   ts_headline(
-    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
-    as jsonb),
+    cast(
+      '{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
+      as jsonb
+    ),
     tsquery('bbb & ddd & hhh'),
     'StartSel = <, StopSel = >'
   );
@@ -2687,8 +2701,10 @@ select
 select
   ts_headline(
     'english',
-    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
-    as jsonb),
+    cast(
+      '{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
+      as jsonb
+    ),
     tsquery('bbb & ddd & hhh'),
     'StartSel = <, StopSel = >'
   );
