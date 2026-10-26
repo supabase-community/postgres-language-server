@@ -1,6 +1,6 @@
 # preferTimestamptz
 
-**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Group** [`style`](../rules.md#style) · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/preferTimestamptz`
 
 **Sources**: inspired by [`squawk/prefer-timestamptz`](https://squawkhq.com/docs/prefer-timestamptz)
@@ -24,7 +24,7 @@ CREATE TABLE app.users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -49,7 +49,7 @@ CREATE TABLE app.accounts (
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -72,7 +72,7 @@ ALTER TABLE app.users ALTER COLUMN created_ts TYPE timestamp;
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   

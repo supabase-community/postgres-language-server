@@ -10,8 +10,17 @@ SELECT 1;
 ```
 
 # Diagnostics
-lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferRobustStmts  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Concurrent index creation should use IF NOT EXISTS.
   
   i Add IF NOT EXISTS to make the migration re-runnable if it fails.
+  
+
+
+## Fix (unsafe): Add IF NOT EXISTS
+```
+-- expect_lint/preferRobustStmts
+CREATE INDEX CONCURRENTLY IF NOT EXISTS users_email_idx ON users (email);
+SELECT 1;
+```

@@ -1,9 +1,13 @@
 use pgls_analyse::RuleCategoriesBuilder;
 use pgls_diagnostics::{Error, category};
 
+use crate::execute::config::ExecutionMode;
 use crate::execute::diagnostics::ResultExt;
 use crate::execute::process_file::workspace_file::WorkspaceFile;
 use crate::execute::process_file::{FileResult, FileStatus, Message, SharedTraversalOptions};
+use pgls_fs::PgLSPath;
+use pgls_workspace::WorkspaceError;
+use pgls_workspace::features::code_actions::FixFileParams;
 use std::path::Path;
 use std::sync::atomic::Ordering;
 
@@ -22,10 +26,53 @@ pub(crate) fn check_with_guard<'ctx>(
 ) -> FileResult {
     tracing::info_span!("Processes check", path =? workspace_file.path.display()).in_scope(
         move || {
-            let input = workspace_file.input()?;
-            let changed = false;
+            let mut input = workspace_file.input()?;
+            let mut changed = false;
 
-            let (only, skip) = (Vec::new(), Vec::new());
+            let ExecutionMode::Check {
+                fix, only, skip, ..
+            } = &ctx.config.mode
+            else {
+                return Ok(FileStatus::Unchanged);
+            };
+
+            if let Some(fix_file_mode) = *fix {
+                let fixed = ctx
+                    .workspace
+                    .fix_file(FixFileParams {
+                        project_key: ctx.project_key,
+                        path: PgLSPath::new(&workspace_file.path),
+                        fix_file_mode,
+                        only: only.clone(),
+                        skip: skip.clone(),
+                    })
+                    .with_file_path_and_code(
+                        workspace_file.path.display().to_string(),
+                        category!("check"),
+                    )?;
+
+                if fixed.fixes_applied > 0 && fixed.code != input {
+                    std::fs::write(&workspace_file.path, &fixed.code).map_err(|e| {
+                        Message::from(WorkspaceError::runtime(&format!(
+                            "Could not write to file: {e}"
+                        )))
+                    })?;
+                    workspace_file
+                        .guard()
+                        .change_file(1, fixed.code.clone())
+                        .with_file_path_and_code(
+                            workspace_file.path.display().to_string(),
+                            category!("check"),
+                        )?;
+                    input = fixed.code;
+                    changed = true;
+                }
+                if fixed.skipped_suggested_fixes > 0 {
+                    ctx.push_message(Message::SkippedFixes {
+                        skipped_suggested_fixes: fixed.skipped_suggested_fixes,
+                    });
+                }
+            }
 
             let max_diagnostics = ctx.remaining_diagnostics.load(Ordering::Relaxed);
 
@@ -34,8 +81,8 @@ pub(crate) fn check_with_guard<'ctx>(
                 .pull_file_diagnostics(
                     RuleCategoriesBuilder::default().all().build(),
                     max_diagnostics,
-                    only,
-                    skip,
+                    only.clone(),
+                    skip.clone(),
                 )
                 .with_file_path_and_code(
                     workspace_file.path.display().to_string(),

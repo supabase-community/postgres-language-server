@@ -1,4 +1,7 @@
-use pgls_catalog::Snapshot;
+use std::sync::Arc;
+
+use pgls_catalog::resolve::{ResolveParams, resolve};
+use pgls_catalog::{Catalog, CatalogBase, Snapshot};
 use pgls_hover::{OnHoverParams, on_hover};
 use pgls_test_utils::QueryWithCursorPosition;
 use pgls_text_size::TextSize;
@@ -12,9 +15,11 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
             .expect("Failed to setup test database");
     }
 
-    let snapshot = Snapshot::load(test_db)
-        .await
-        .expect("Failed to load snapshot");
+    let snapshot = Arc::new(
+        Snapshot::load(test_db)
+            .await
+            .expect("Failed to load snapshot"),
+    );
 
     let (position, sql) = QueryWithCursorPosition::from(query).get_text_and_position();
 
@@ -28,12 +33,38 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
         .ok()
         .map(|parsed| parsed.into_root().unwrap());
 
+    // What the workspace passes: the references at the cursor.
+    let position = TextSize::new(position as u32);
+    let references = ast
+        .as_ref()
+        .map(|stmt| {
+            let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::clone(&snapshot)))));
+            resolve(ResolveParams {
+                stmt,
+                catalog: &catalog,
+                search_path: &snapshot.expand_search_path(&["public".to_owned()]),
+                function: None,
+                sql: Some(&sql),
+                collect_references: true,
+            })
+            .references
+        })
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|reference| {
+            reference
+                .span()
+                .is_some_and(|span| span.contains_inclusive(position))
+        })
+        .collect::<Vec<_>>();
+
     let hover_results = on_hover(OnHoverParams {
-        position: TextSize::new(position as u32),
+        position,
         snapshot: &snapshot,
         stmt_sql: &sql,
         ast: ast.as_ref(),
         ts_tree: &tree,
+        references: &references,
     })
     .unwrap_or_default();
 
@@ -43,7 +74,7 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
     snapshot.push_str(&sql);
     snapshot.push('\n');
 
-    for _ in 0..position {
+    for _ in 0..usize::from(position) {
         snapshot.push(' ');
     }
     snapshot.push_str("↑ hovered here\n");
@@ -644,4 +675,234 @@ async fn no_hover_results_over_params(test_db: PgPool) {
         );
         test_hover_at_cursor("questionmark-param", query, None, &test_db).await;
     }
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_function_hover_overload(test_db: PgPool) {
+    let setup = r#"
+        create function pick(i integer) returns integer language sql immutable as 'select i';
+        create function pick(t text) returns text language sql immutable as 'select t';
+    "#;
+
+    let query = format!("select pi{}ck(1)", QueryWithCursorPosition::cursor_marker());
+
+    test_hover_at_cursor("function_overload", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_function_hover_ambiguous_overload_falls_back(test_db: PgPool) {
+    let setup = r#"
+        create function amb(a integer, b text) returns integer language sql immutable as 'select 1';
+        create function amb(c text, d integer) returns integer language sql immutable as 'select 1';
+    "#;
+
+    let query = format!(
+        "select am{}b('1', '2')",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("function_ambiguous_overload", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_resolved_alias_in_join(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+        create table hover_orgs (id serial primary key, name text);
+    "#;
+
+    let query = format!(
+        "select o.na{}me from hover_users u join hover_orgs o on o.id = u.id",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "column_resolved_alias_in_join",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_resolved_unqualified_in_join(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+        create table hover_orgs (id serial primary key, name text, slug text);
+    "#;
+
+    let query = format!(
+        "select sl{}ug from hover_users u join hover_orgs o on o.id = u.id",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "column_resolved_unqualified_in_join",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_cte_column(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+    "#;
+
+    let query = format!(
+        "with c as (select id, name as label from hover_users) select lab{}el from c",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("column_cte", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_resolved_by_search_path(test_db: PgPool) {
+    let setup = r#"
+        create schema other;
+        create table public.hover_users (id serial primary key, name text not null);
+        create table other.hover_users (id serial primary key);
+    "#;
+
+    let query = format!(
+        "select * from hover_us{}ers",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_resolved_by_search_path",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+const MIXED_CASE_TABLES: &str = r#"
+    create table "MyTable" (quoted_id int);
+    create table mytable (folded_id int);
+    create table "a""b" (escaped_id int);
+"#;
+
+// The statements don't parse, so hover finds the tables by name instead of by reference.
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_unquoted_name_is_downcased(test_db: PgPool) {
+    let query = format!(
+        "select * from MyTa{}ble where",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_unquoted_name_is_downcased",
+        query,
+        Some(MIXED_CASE_TABLES),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_quoted_name_keeps_its_case(test_db: PgPool) {
+    let query = format!(
+        r#"select * from "MyTa{}ble" where"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_quoted_name_keeps_its_case",
+        query,
+        Some(MIXED_CASE_TABLES),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_quoted_name_with_escaped_quote(test_db: PgPool) {
+    let query = format!(
+        r#"select * from "a""{}b" where"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_quoted_name_with_escaped_quote",
+        query,
+        Some(MIXED_CASE_TABLES),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_procedure_hover_in_call(test_db: PgPool) {
+    let setup = r#"
+        create procedure hover_proc(a int, b text) language sql as 'select 1';
+        create procedure hover_proc(a text) language sql as 'select 1';
+    "#;
+
+    let query = format!(
+        "call hover_p{}roc(1, 'x')",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("procedure_in_call", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_procedure_hover_in_call_with_output_parameters(test_db: PgPool) {
+    let setup = r#"
+        create procedure hover_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
+    "#;
+
+    let query = format!(
+        "call hover_o{}ut(1, null)",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "procedure_in_call_with_output_parameters",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_not_on_qualifier(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+    "#;
+
+    let query = format!(
+        "select {}u.name from hover_users u",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("column_not_on_qualifier", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_on_last_part_of_quoted_name(test_db: PgPool) {
+    let setup = r#"
+        create table "Hover.Users" ("Id" int primary key);
+    "#;
+
+    let query = format!(
+        r#"select "Hover.Users"."I{}d" from "Hover.Users""#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "column_on_last_part_of_quoted_name",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
 }

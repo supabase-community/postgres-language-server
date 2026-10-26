@@ -53,8 +53,20 @@ pub(super) fn emit_json_object_constructor(e: &mut EventEmitter, n: &JsonObjectC
 pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
     e.group_start(GroupKind::JsonObjectAgg);
 
+    // Laid out like a function call: the arguments and clauses on one line when they fit,
+    // otherwise on their own lines one level in, with `)` back on the call's line. The call has
+    // its own group so that FILTER and OVER break before it does.
+    let has_suffix = n
+        .constructor
+        .as_ref()
+        .is_some_and(|constructor| constructor.agg_filter.is_some() || constructor.over.is_some());
+    if has_suffix {
+        e.group_start(GroupKind::List);
+    }
     e.token(TokenKind::JSON_OBJECTAGG_KW);
     e.token(TokenKind::L_PAREN);
+    e.indent_start();
+    e.line(crate::emitter::LineType::Soft);
 
     let has_arg = n.arg.is_some();
 
@@ -102,25 +114,28 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
     if let Some(ref constructor) = n.constructor
         && let Some(ref output) = constructor.output
     {
-        let mut has_content = has_arg;
-        if has_content {
+        if has_arg {
             e.line(crate::emitter::LineType::SoftOrSpace);
         }
-        super::json_value_expr::emit_json_output(e, output, &mut has_content);
+        // The line above already separates RETURNING from the arguments.
+        super::json_value_expr::emit_json_output(e, output, &mut false);
     }
 
+    e.indent_end();
+    e.line(crate::emitter::LineType::Soft);
     e.token(TokenKind::R_PAREN);
+    if has_suffix {
+        e.group_end();
+    }
 
     // FILTER and OVER clauses go outside the parentheses
     if let Some(ref constructor) = n.constructor {
         if let Some(ref filter) = constructor.agg_filter {
+            // A clause that breaks onto its own line continues the call, one level in.
+            e.indent_start();
             e.line(crate::emitter::LineType::SoftOrSpace);
-            e.token(TokenKind::FILTER_KW);
-            e.space();
-            e.token(TokenKind::L_PAREN);
-            e.token(TokenKind::WHERE_KW);
-            super::emit_clause_condition(e, filter);
-            e.token(TokenKind::R_PAREN);
+            super::func_call::emit_filter_clause(e, filter);
+            e.indent_end();
         }
 
         if let Some(ref over) = constructor.over {

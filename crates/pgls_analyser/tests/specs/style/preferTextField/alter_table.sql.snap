@@ -1,0 +1,26 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/preferTextField
+alter table users alter column name type varchar(100) collate "C";
+
+```
+
+# Diagnostics
+lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
+  
+  i Use a text field with a check constraint.
+  
+
+
+## Fix (unsafe): Use TEXT
+```
+-- expect_lint/preferTextField
+alter table users alter column name type text collate "C";
+
+```

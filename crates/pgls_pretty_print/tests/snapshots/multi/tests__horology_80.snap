@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/horology.sql
-snapshot_kind: text
 ---
 show timezone;
 
@@ -470,17 +469,25 @@ select
   as "14:31:00-08";
 
 select
-  cast(cast(cast('today' as date) + cast('05:30' as time with time zone) +
-  cast('02:01' as interval)
-  as time with time zone)
-  as time)
+  cast(
+    cast(
+      cast('today' as date) + cast('05:30' as time with time zone) +
+      cast('02:01' as interval)
+      as time with time zone
+    )
+    as time
+  )
   as "07:31:00";
 
 select
-  cast(cast(cast('today' as date) + cast('03:30' as time with time zone) +
-  cast('1 month 04:01' as interval)
-  as timestamp)
-  as time)
+  cast(
+    cast(
+      cast('today' as date) + cast('03:30' as time with time zone) +
+      cast('1 month 04:01' as interval)
+      as timestamp
+    )
+    as time
+  )
   as "07:31:00";
 
 select

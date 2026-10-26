@@ -1,9 +1,11 @@
 use std::{
+    path::{Path, PathBuf},
+    rc::Rc,
     sync::Arc,
     time::{Duration, Instant},
 };
 
-use pgls_analyse::RuleCategories;
+use pgls_analyse::{ActionCategory, Applicability, RefactorKind, RuleCategories};
 use pgls_configuration::{Merge, StringSet};
 use pgls_configuration::{
     PartialConfiguration, PartialFormatConfiguration, PartialTypecheckConfiguration,
@@ -12,46 +14,56 @@ use pgls_configuration::{
     migrations::{PartialMigrationsConfiguration, SectionMarkers},
 };
 
+use pgls_configuration::ConfigurationPathHint;
 #[cfg(not(target_os = "windows"))]
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
-use pgls_diagnostics::Diagnostic;
-use pgls_fs::PgLSPath;
+use pgls_diagnostics::{Diagnostic, Severity};
+use pgls_fs::{ConfigName, FileSystem, FindFiles, MemoryFileSystem, PgLSPath};
 use pgls_text_size::{TextRange, TextSize};
 use sqlx::{Executor, PgPool, Row};
 
 use crate::{
-    Workspace, WorkspaceError,
+    DynRef, Workspace, WorkspaceError,
+    configuration::{
+        IncompleteSearch, NestedConfigurationSearch, apply_nested_configurations,
+        is_searched_for_configuration, load_configuration,
+    },
     features::code_actions::{
         CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
         EXECUTE_STATEMENT_MAX_RESULT_SIZE, EXECUTE_STATEMENT_MAX_ROWS,
         EXECUTE_STATEMENT_MAX_VALUE_SIZE, ExecuteStatementError, ExecuteStatementParams,
-        ExecuteStatementResult,
+        ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
     },
     features::format::PullFileFormattingParams,
+    features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
+    features::on_hover::OnHoverParams,
+    features::semantic_tokens::{PullSemanticTokensParams, SemanticTokenKind},
+    settings::FilesSettings,
     workspace::{
-        OpenFileParams, RegisterProjectFolderParams, StatementId, UpdateSettingsParams,
+        IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
+        UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
         server::WorkspaceServer,
     },
 };
 
+/// A workspace with a project without a folder, which every file belongs to.
 fn get_test_workspace(
     partial_config: Option<PartialConfiguration>,
-) -> Result<WorkspaceServer, WorkspaceError> {
+) -> Result<(WorkspaceServer, ProjectKey), WorkspaceError> {
     let workspace = WorkspaceServer::new();
 
-    workspace.register_project_folder(RegisterProjectFolderParams {
-        path: None,
-        set_as_current_workspace: true,
-    })?;
+    let project_key =
+        workspace.register_project_folder(RegisterProjectFolderParams { path: None })?;
 
     workspace.update_settings(UpdateSettingsParams {
+        project_key,
         configuration: partial_config.unwrap_or(PartialConfiguration::init()),
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
     })?;
 
-    Ok(workspace)
+    Ok((workspace, project_key))
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -71,7 +83,8 @@ async fn test_diagnostics(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     let content = r#"
@@ -87,6 +100,7 @@ async fn test_diagnostics(test_db: PgPool) {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -95,6 +109,7 @@ async fn test_diagnostics(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -121,7 +136,8 @@ async fn test_diagnostics(test_db: PgPool) {
 
 #[test]
 fn test_suppresses_multiline_alter_table_drop_column() {
-    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     let content = r#"ALTER TABLE users
@@ -130,6 +146,7 @@ fn test_suppresses_multiline_alter_table_drop_column() {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -138,6 +155,7 @@ fn test_suppresses_multiline_alter_table_drop_column() {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -169,11 +187,13 @@ fn migration_diagnostics(
         }),
         ..Default::default()
     });
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("20250301120000_migration.sql");
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -182,6 +202,7 @@ fn migration_diagnostics(
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -260,9 +281,10 @@ DROP INDEX CONCURRENTLY IF EXISTS users_name_idx;
             .count()
     };
 
+    // Both sections run in a transaction.
     assert_eq!(
         in_transaction(migration_diagnostics(SectionMarkers::Goose, None, content)),
-        2
+        4
     );
     let content = format!("-- +goose NO TRANSACTION\n{content}");
     assert_eq!(
@@ -273,7 +295,8 @@ DROP INDEX CONCURRENTLY IF EXISTS users_name_idx;
 
 #[test]
 fn test_legacy_suppression_still_suppresses_and_warns() {
-    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     let content = r#"-- pgls-ignore lint/safety/banDropColumn
@@ -281,6 +304,7 @@ ALTER TABLE users DROP COLUMN deprecated_field;"#;
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -289,6 +313,7 @@ ALTER TABLE users DROP COLUMN deprecated_field;"#;
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -326,13 +351,15 @@ fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     let content = "drop table non_existing_table;";
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -342,6 +369,7 @@ fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
     let pull_diagnostics = || {
         workspace
             .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
                 path: path.clone(),
                 categories: RuleCategories::all(),
                 max_diagnostics: 100,
@@ -393,7 +421,8 @@ async fn test_syntax_error(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     let content = r#"
@@ -402,6 +431,7 @@ async fn test_syntax_error(test_db: PgPool) {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -410,6 +440,7 @@ async fn test_syntax_error(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -433,12 +464,14 @@ async fn test_syntax_error(test_db: PgPool) {
 
 #[tokio::test]
 async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
-    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
     let path = PgLSPath::new("named-parameter.sql");
     let content = "SELECT * FROM :very_long_schema.existing_table AS t seect 1;";
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -447,6 +480,7 @@ async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path,
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -493,12 +527,14 @@ async fn format_preserves_named_parameters() {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
     let path = PgLSPath::new("named-parameter-format.sql");
     let content = "SELECT x FROM :raw_data.t WHERE t.a = :'agen_code' AND t.b = :var_date;";
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -506,7 +542,11 @@ async fn format_preserves_named_parameters() {
         .expect("Unable to open test file");
 
     let result = workspace
-        .pull_file_formatting(PullFileFormattingParams { path, range: None })
+        .pull_file_formatting(PullFileFormattingParams {
+            project_key,
+            path,
+            range: None,
+        })
         .expect("Unable to format file");
 
     assert!(result.formatted.contains(":raw_data.t"));
@@ -526,7 +566,8 @@ async fn correctly_ignores_files() {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     let content = r#"
@@ -535,6 +576,7 @@ async fn correctly_ignores_files() {
 
     let diagnostics_result =
         workspace.pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -547,13 +589,16 @@ async fn correctly_ignores_files() {
             .is_ok_and(|res| res.diagnostics.is_empty() && res.skipped_diagnostics == 0)
     );
 
-    let close_file_result =
-        workspace.close_file(crate::workspace::CloseFileParams { path: path.clone() });
+    let close_file_result = workspace.close_file(crate::workspace::CloseFileParams {
+        project_key,
+        path: path.clone(),
+    });
 
     assert!(close_file_result.is_ok());
 
     let execute_statement_result =
         workspace.execute_statement(crate::workspace::ExecuteStatementParams {
+            project_key,
             path: path.clone(),
             statement_id: StatementId::Root {
                 content: Arc::from(content),
@@ -581,7 +626,8 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
 
@@ -602,6 +648,7 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -610,6 +657,7 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -653,7 +701,8 @@ async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
 
@@ -673,6 +722,7 @@ async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -681,6 +731,7 @@ async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -698,7 +749,8 @@ async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
 async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
     let conf = PartialConfiguration::init();
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
 
@@ -727,6 +779,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -735,6 +788,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -764,7 +818,8 @@ async fn test_positional_params(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
 
@@ -781,6 +836,7 @@ async fn test_positional_params(test_db: PgPool) {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -789,6 +845,7 @@ async fn test_positional_params(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -819,7 +876,8 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
 
@@ -842,6 +900,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -850,6 +909,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -869,6 +929,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
     );
 
     let _ = workspace.update_settings(UpdateSettingsParams {
+        project_key,
         configuration: PartialConfiguration {
             plpgsql_check: Some(PartialPlPgSqlCheckConfiguration {
                 enabled: Some(false),
@@ -883,6 +944,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -919,7 +981,8 @@ async fn test_disable_typecheck(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
 
@@ -935,6 +998,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -943,6 +1007,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -959,6 +1024,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
     );
 
     let _ = workspace.update_settings(UpdateSettingsParams {
+        project_key,
         configuration: PartialConfiguration {
             typecheck: Some(PartialTypecheckConfiguration {
                 enabled: Some(false),
@@ -973,6 +1039,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -1008,12 +1075,14 @@ async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
     let path = PgLSPath::new("test.sql");
     let content = "SELECT 1;\nCREATE VIEW v1 AS SELECT t.nope FROM t;";
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -1022,6 +1091,7 @@ async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path,
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -1086,7 +1156,8 @@ async fn named_identifier_params_skip_only_affected_typecheck(test_db: PgPool) {
         .await
         .expect("test table setup must succeed");
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
     let path = PgLSPath::new("named-identifier-parameter.sql");
     let content = r#"
 SELECT * FROM :raw_data.documents;
@@ -1095,6 +1166,7 @@ SELECT missing_column FROM named_parameter_typecheck_users;
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -1103,6 +1175,7 @@ SELECT missing_column FROM named_parameter_typecheck_users;
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path,
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -1155,10 +1228,12 @@ fn typecheck_diagnostics(
         }),
         ..Default::default()
     });
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
     let path = PgLSPath::new("test.sql");
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -1166,6 +1241,7 @@ fn typecheck_diagnostics(
         .expect("Unable to open test file");
     workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path,
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -1177,6 +1253,58 @@ fn typecheck_diagnostics(
         .into_iter()
         .filter(is_typecheck)
         .collect()
+}
+
+/// Postgres treats non-ASCII characters as letters in identifiers, so diagnostics and hover
+/// cover the whole name.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn non_ascii_names_get_whole_spans(test_db: PgPool) {
+    let content = "create table café (id int);\nselect a.größe from café a;\n";
+    let diagnostics = typecheck_diagnostics(&test_db, content);
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+    let span = diagnostics[0].location().span.expect("a span");
+    assert_eq!(&content[span], "a.größe");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "create table café (größe int);\ncreate table tee (größe int);\n\
+        select a.größe from café a, tee b;\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    // On the `ß`, after the first non-ASCII character. Without the resolved reference, hover
+    // shows the columns of both tables.
+    let position = content.find("ße from").unwrap();
+    let blocks = workspace
+        .on_hover(OnHoverParams {
+            project_key,
+            path: path.clone(),
+            position: u32::try_from(position).unwrap().into(),
+        })
+        .expect("Unable to hover")
+        .markdown_blocks;
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.café.größe"), "{blocks:?}");
 }
 
 /// GitHub issue #835: `RETURNS TABLE` columns are not parameters of the body, and `r.received_at`
@@ -1277,7 +1405,8 @@ $$;
 async fn test_named_params(_test_db: PgPool) {
     let conf = PartialConfiguration::init();
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
 
@@ -1293,6 +1422,7 @@ FOR NO KEY UPDATE;
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -1301,6 +1431,7 @@ FOR NO KEY UPDATE;
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -1331,7 +1462,8 @@ async fn test_format_keeps_sql_function_body_intact() {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     let content =
@@ -1339,6 +1471,7 @@ async fn test_format_keeps_sql_function_body_intact() {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -1347,6 +1480,7 @@ async fn test_format_keeps_sql_function_body_intact() {
 
     let result = workspace
         .pull_file_formatting(PullFileFormattingParams {
+            project_key,
             path: path.clone(),
             range: None,
         })
@@ -1376,11 +1510,13 @@ fn format_content(content: &str) -> String {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -1388,7 +1524,11 @@ fn format_content(content: &str) -> String {
         .expect("Unable to open test file");
 
     workspace
-        .pull_file_formatting(PullFileFormattingParams { path, range: None })
+        .pull_file_formatting(PullFileFormattingParams {
+            project_key,
+            path,
+            range: None,
+        })
         .expect("Unable to pull formatting")
         .formatted
 }
@@ -1490,6 +1630,16 @@ async fn test_format_keeps_formatted_sql_function_body_as_written() {
 }
 
 #[tokio::test]
+async fn test_format_keeps_sql_function_body_with_several_statements_as_written() {
+    let content = "create function f() returns int language sql as $$\n  insert into t values (1);\n  SELECT   1;\n$$;";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $$\n  insert into t values (1);\n  SELECT   1;\n$$;"
+    );
+}
+
+#[tokio::test]
 async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     let content = "create function f() returns int language sql as $body$SELECT   1$body$;";
     let formatted = format_content(content);
@@ -1517,7 +1667,8 @@ async fn test_cstyle_comments(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
 
@@ -1534,6 +1685,7 @@ async fn test_cstyle_comments(test_db: PgPool) {
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -1542,6 +1694,7 @@ async fn test_cstyle_comments(test_db: PgPool) {
 
     let diagnostics = workspace
         .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -1589,11 +1742,12 @@ async fn test_search_path_configuration(test_db: PgPool) {
 
     // without glob
     {
-        let workspace =
+        let (workspace, project_key) =
             get_test_workspace(Some(glob_conf.clone())).expect("Unable to create test workspace");
 
         workspace
             .open_file(OpenFileParams {
+                project_key,
                 path: path_glob.clone(),
                 content: file_content.into(),
                 version: 1,
@@ -1602,6 +1756,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
 
         let diagnostics_glob = workspace
             .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
                 path: path_glob.clone(),
                 categories: RuleCategories::all(),
                 max_diagnostics: 100,
@@ -1635,11 +1790,12 @@ async fn test_search_path_configuration(test_db: PgPool) {
     }); // checking with the pattern should yield no diagnostics
 
     {
-        let workspace =
+        let (workspace, project_key) =
             get_test_workspace(Some(glob_conf.clone())).expect("Unable to create test workspace");
 
         workspace
             .open_file(OpenFileParams {
+                project_key,
                 path: path_glob.clone(),
                 content: file_content.into(),
                 version: 1,
@@ -1648,6 +1804,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
 
         let diagnostics_glob = workspace
             .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
                 path: path_glob.clone(),
                 categories: RuleCategories::all(),
                 max_diagnostics: 100,
@@ -1693,7 +1850,8 @@ async fn test_multi_line_completions(test_db: PgPool) {
         ..Default::default()
     });
 
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
 
@@ -1715,6 +1873,7 @@ select * from auth.users;
 
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: sanitized_content,
             version: 1,
@@ -1723,6 +1882,7 @@ select * from auth.users;
 
     let completions = workspace
         .get_completions(crate::workspace::GetCompletionsParams {
+            project_key,
             path: path.clone(),
             position,
         })
@@ -1762,7 +1922,8 @@ async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
         }),
         ..Default::default()
     });
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
     let path = PgLSPath::new("test.sql");
 
     let labels = |content: &str| {
@@ -1772,6 +1933,7 @@ async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
             .expect("Unable to find cursor position in test content");
         workspace
             .open_file(OpenFileParams {
+                project_key,
                 path: path.clone(),
                 content: content.replace('|', ""),
                 version: 1,
@@ -1779,12 +1941,16 @@ async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
             .expect("Unable to open test file");
         let completions = workspace
             .get_completions(crate::workspace::GetCompletionsParams {
+                project_key,
                 path: path.clone(),
                 position,
             })
             .expect("Unable to request completions");
         workspace
-            .close_file(crate::workspace::CloseFileParams { path: path.clone() })
+            .close_file(crate::workspace::CloseFileParams {
+                project_key,
+                path: path.clone(),
+            })
             .expect("Unable to close test file");
         completions
             .items
@@ -1823,7 +1989,7 @@ fn is_typecheck(diagnostic: &pgls_diagnostics::serde::Diagnostic) -> bool {
 fn get_statement_execution_workspace(
     test_db: &PgPool,
     allow_statement_executions_against: &[String],
-) -> WorkspaceServer {
+) -> (WorkspaceServer, ProjectKey) {
     get_statement_execution_workspace_with_timeout(
         test_db,
         allow_statement_executions_against,
@@ -1835,7 +2001,7 @@ fn get_statement_execution_workspace_with_timeout(
     test_db: &PgPool,
     allow_statement_executions_against: &[String],
     statement_timeout_secs: Option<u16>,
-) -> WorkspaceServer {
+) -> (WorkspaceServer, ProjectKey) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         db: Some(PartialDatabaseConfiguration {
@@ -1861,19 +2027,25 @@ fn get_statement_execution_workspace_with_timeout(
 
 /// Executes the single statement in `sql` through its code action, returning the action's
 /// disabled reason and the result.
-fn execute_sql(workspace: &WorkspaceServer, sql: &str) -> (Option<String>, ExecuteStatementResult) {
-    execute_sql_at(workspace, sql, TextSize::new(0))
+fn execute_sql(
+    workspace: &WorkspaceServer,
+    project_key: ProjectKey,
+    sql: &str,
+) -> (Option<String>, ExecuteStatementResult) {
+    execute_sql_at(workspace, project_key, sql, TextSize::new(0))
 }
 
 /// Like [execute_sql], for the statement at `cursor_position`.
 fn execute_sql_at(
     workspace: &WorkspaceServer,
+    project_key: ProjectKey,
     sql: &str,
     cursor_position: TextSize,
 ) -> (Option<String>, ExecuteStatementResult) {
     let path = PgLSPath::new("execute.sql");
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: sql.into(),
             version: 1,
@@ -1882,6 +2054,7 @@ fn execute_sql_at(
 
     let action = workspace
         .pull_code_actions(CodeActionsParams {
+            project_key,
             path: path.clone(),
             cursor_position,
             only: vec![],
@@ -1901,13 +2074,14 @@ fn execute_sql_at(
 
     let result = workspace
         .execute_statement(ExecuteStatementParams {
+            project_key,
             path: path.clone(),
             statement_id,
         })
         .expect("Unable to execute statement");
 
     workspace
-        .close_file(crate::workspace::CloseFileParams { path })
+        .close_file(crate::workspace::CloseFileParams { project_key, path })
         .expect("Unable to close test file");
 
     (disabled_reason, result)
@@ -1919,9 +2093,13 @@ fn allow_test_host(test_db: &PgPool) -> Vec<String> {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &[]);
+    let (workspace, project_key) = get_statement_execution_workspace(&test_db, &[]);
 
-    let (disabled_reason, result) = execute_sql(&workspace, "create table not_created (id int);");
+    let (disabled_reason, result) = execute_sql(
+        &workspace,
+        project_key,
+        "create table not_created (id int);",
+    );
 
     let host = test_db.connect_options().get_host().to_string();
     let database = test_db
@@ -1930,7 +2108,7 @@ async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool)
         .unwrap()
         .to_string();
     let reason = format!(
-        "Statement execution is disabled for `{host}/{database}`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"{host}/*\"]."
+        "Statement execution is disabled for `{host}:5432/{database}`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"{host}:5432/*\"]."
     );
     assert_eq!(disabled_reason.as_deref(), Some(reason.as_str()));
     assert_eq!(
@@ -1954,9 +2132,9 @@ async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool)
 async fn execute_statement_ignores_invalid_patterns(test_db: PgPool) {
     let mut patterns = vec!["local[host/*".to_string()];
     patterns.extend(allow_test_host(&test_db));
-    let workspace = get_statement_execution_workspace(&test_db, &patterns);
+    let (workspace, project_key) = get_statement_execution_workspace(&test_db, &patterns);
 
-    let (disabled_reason, result) = execute_sql(&workspace, "select 1 as one;");
+    let (disabled_reason, result) = execute_sql(&workspace, project_key, "select 1 as one;");
 
     assert_eq!(disabled_reason, None);
     assert_eq!(result.rows, [[Some("1".to_string())]]);
@@ -1964,10 +2142,12 @@ async fn execute_statement_ignores_invalid_patterns(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_returns_rows(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
     let (_, result) = execute_sql(
         &workspace,
+        project_key,
         "select 1 as id, null::text as name, array[1, 2] as numbers, interval '1 day' as span, '{\"a\": 1}'::jsonb as data
          union all
          select 2, 'two', null, null, null;",
@@ -1998,9 +2178,10 @@ async fn execute_statement_returns_rows(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_returns_columns_without_rows(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
-    let (_, result) = execute_sql(&workspace, "select 1 as id where false;");
+    let (_, result) = execute_sql(&workspace, project_key, "select 1 as id where false;");
 
     assert_eq!(
         result,
@@ -2014,9 +2195,14 @@ async fn execute_statement_returns_columns_without_rows(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_truncates_rows(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
-    let (_, result) = execute_sql(&workspace, "select generate_series(1, 150) as n;");
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select generate_series(1, 150) as n;",
+    );
 
     assert!(result.truncated);
     assert_eq!(result.rows.len(), EXECUTE_STATEMENT_MAX_ROWS);
@@ -2025,15 +2211,16 @@ async fn execute_statement_truncates_rows(test_db: PgPool) {
     assert_eq!(result.message, "Showing the first 100 rows (truncated).");
 
     // The connection is still usable after the dropped rows.
-    let (_, result) = execute_sql(&workspace, "select 'next' as value;");
+    let (_, result) = execute_sql(&workspace, project_key, "select 'next' as value;");
     assert_eq!(result.rows, [[Some("next".to_string())]]);
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_reports_rows_affected(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
-    let (_, result) = execute_sql(&workspace, "create table executed (id int);");
+    let (_, result) = execute_sql(&workspace, project_key, "create table executed (id int);");
     assert_eq!(
         result,
         ExecuteStatementResult {
@@ -2043,7 +2230,11 @@ async fn execute_statement_reports_rows_affected(test_db: PgPool) {
         }
     );
 
-    let (_, result) = execute_sql(&workspace, "insert into executed values (1), (2);");
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "insert into executed values (1), (2);",
+    );
     assert_eq!(
         result,
         ExecuteStatementResult {
@@ -2055,6 +2246,7 @@ async fn execute_statement_reports_rows_affected(test_db: PgPool) {
 
     let (_, result) = execute_sql(
         &workspace,
+        project_key,
         "delete from executed where id = 1 returning id;",
     );
     assert_eq!(result.columns, ["id"]);
@@ -2064,9 +2256,10 @@ async fn execute_statement_reports_rows_affected(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_returns_sql_errors_without_disabling_the_database(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
-    let (_, result) = execute_sql(&workspace, "select 1 / 0;");
+    let (_, result) = execute_sql(&workspace, project_key, "select 1 / 0;");
     assert_eq!(
         result,
         ExecuteStatementResult {
@@ -2083,18 +2276,19 @@ async fn execute_statement_returns_sql_errors_without_disabling_the_database(tes
     );
 
     // A failed statement says nothing about the connection, so the database stays available.
-    let (_, result) = execute_sql(&workspace, "select 1 as one;");
+    let (_, result) = execute_sql(&workspace, project_key, "select 1 as one;");
     assert_eq!(result.rows, [[Some("1".to_string())]]);
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_locates_the_error_in_the_document(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
     // Postgres counts characters, so the multibyte character before the error shifts it.
     let sql = "select 1;\nselect 'ä' as a, missing_column from pg_class;";
     let second_statement = TextSize::new(sql.find("select 'ä'").unwrap() as u32);
-    let (_, result) = execute_sql_at(&workspace, sql, second_statement);
+    let (_, result) = execute_sql_at(&workspace, project_key, sql, second_statement);
 
     let error = result.error.expect("expected an error");
     assert_eq!(error.code, "42703");
@@ -2106,10 +2300,12 @@ async fn execute_statement_locates_the_error_in_the_document(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_returns_detail_and_hint(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
     let (_, result) = execute_sql(
         &workspace,
+        project_key,
         "do $$ begin raise exception 'failed' using detail = 'the detail', hint = 'the hint'; end $$;",
     );
 
@@ -2121,9 +2317,10 @@ async fn execute_statement_returns_detail_and_hint(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_rolls_back_the_transaction_it_opens(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
-    let (_, result) = execute_sql(&workspace, "begin;");
+    let (_, result) = execute_sql(&workspace, project_key, "begin;");
     assert_eq!(
         result.message,
         "Successfully executed statement. Rows affected: 0. The open transaction was rolled back, as executed statements don't share a session."
@@ -2132,6 +2329,7 @@ async fn execute_statement_rolls_back_the_transaction_it_opens(test_db: PgPool) 
     // In autocommit mode, `now()` is the start of this very statement.
     let (_, result) = execute_sql(
         &workspace,
+        project_key,
         "select now() = statement_timestamp() as autocommit;",
     );
     assert_eq!(result.rows, [[Some("t".to_string())]]);
@@ -2139,32 +2337,35 @@ async fn execute_statement_rolls_back_the_transaction_it_opens(test_db: PgPool) 
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_resets_session_settings(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
-    let (_, result) = execute_sql(&workspace, "set search_path to pg_catalog;");
+    let (_, result) = execute_sql(&workspace, project_key, "set search_path to pg_catalog;");
     assert_eq!(result.error, None);
-    let (_, result) = execute_sql(&workspace, "show search_path;");
+    let (_, result) = execute_sql(&workspace, project_key, "show search_path;");
     assert_eq!(result.rows, [[Some("\"$user\", public".to_string())]]);
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn executed_statements_do_not_affect_the_server_connections(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
-    let settings = workspace.workspaces();
-    let pool = workspace
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let pools = workspace
         .connection
-        .get_pool(&settings.settings().unwrap().db)
+        .get_pools(&workspace.workspaces().settings(project_key).unwrap().db)
         .unwrap();
+    let pool = pools.pool;
 
-    execute_sql(&workspace, "begin;");
-    execute_sql(&workspace, "set search_path to pg_catalog;");
+    execute_sql(&workspace, project_key, "begin;");
+    execute_sql(&workspace, project_key, "set search_path to pg_catalog;");
 
     // The session reset after a statement drops the prepared statements that sqlx caches on the
-    // connection, so the language server's own queries must not share it.
-    assert_eq!(
-        pool.size(),
-        0,
-        "the statements ran on a connection of the language server's own pool"
+    // connection, so the language server's own queries must not share it. Opening the file and
+    // pulling its code actions use the language server's own pool, so only check that the
+    // statements ran on the other one.
+    assert!(
+        pools.statement_pool.size() > 0,
+        "the statements didn't run on the pool for executed statements"
     );
     // The language server's own queries see neither the transaction nor the setting.
     workspace.snapshot.load(&pool).expect("snapshot");
@@ -2183,14 +2384,14 @@ async fn executed_statements_do_not_affect_the_server_connections(test_db: PgPoo
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_times_out(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace_with_timeout(
+    let (workspace, project_key) = get_statement_execution_workspace_with_timeout(
         &test_db,
         &allow_test_host(&test_db),
         Some(1),
     );
 
     let start = Instant::now();
-    let (_, result) = execute_sql(&workspace, "select pg_sleep(10);");
+    let (_, result) = execute_sql(&workspace, project_key, "select pg_sleep(10);");
 
     assert_eq!(
         result.error.map(|error| error.code).as_deref(),
@@ -2205,10 +2406,12 @@ async fn execute_statement_times_out(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_can_be_cancelled(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
     let path = PgLSPath::new("execute.sql");
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: "select pg_sleep(30);".into(),
             version: 1,
@@ -2216,6 +2419,7 @@ async fn execute_statement_can_be_cancelled(test_db: PgPool) {
         .unwrap();
     let statement_id = workspace
         .pull_code_actions(CodeActionsParams {
+            project_key,
             path: path.clone(),
             cursor_position: TextSize::new(0),
             only: vec![],
@@ -2231,7 +2435,11 @@ async fn execute_statement_can_be_cancelled(test_db: PgPool) {
             _ => None,
         })
         .unwrap();
-    let params = ExecuteStatementParams { path, statement_id };
+    let params = ExecuteStatementParams {
+        project_key,
+        path,
+        statement_id,
+    };
 
     let start = Instant::now();
     let result = std::thread::scope(|scope| {
@@ -2257,12 +2465,17 @@ async fn execute_statement_can_be_cancelled(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_stops_a_truncated_query_early(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
     // Without the cursor, Postgres would produce and send all 50 million rows.
     let start = Instant::now();
-    let (_, result) = execute_sql(&workspace, "select generate_series(1, 50000000) as n");
-    let (_, next) = execute_sql(&workspace, "select 1 as one;");
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select generate_series(1, 50000000) as n",
+    );
+    let (_, next) = execute_sql(&workspace, project_key, "select 1 as one;");
 
     assert!(result.truncated);
     assert_eq!(result.rows.len(), EXECUTE_STATEMENT_MAX_ROWS);
@@ -2276,27 +2489,31 @@ async fn execute_statement_stops_a_truncated_query_early(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_completes_a_truncated_command(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
-    execute_sql(&workspace, "create table inserted (id int);");
+    execute_sql(&workspace, project_key, "create table inserted (id int);");
     let (_, result) = execute_sql(
         &workspace,
+        project_key,
         "insert into inserted select generate_series(1, 1000) returning id;",
     );
     assert!(result.truncated);
     assert_eq!(result.rows.len(), EXECUTE_STATEMENT_MAX_ROWS);
 
-    let (_, result) = execute_sql(&workspace, "select count(*) from inserted;");
+    let (_, result) = execute_sql(&workspace, project_key, "select count(*) from inserted;");
     assert_eq!(result.rows, [[Some("1000".to_string())]]);
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_cuts_long_values(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
     // The cut falls into the middle of an `ä`.
     let (_, result) = execute_sql(
         &workspace,
+        project_key,
         "select repeat('x', 20000000) as big, 'x' || repeat('ä', 10000) as umlauts, 'short' as short;",
     );
 
@@ -2316,10 +2533,12 @@ async fn execute_statement_cuts_long_values(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_caps_the_result_size(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
     let (_, result) = execute_sql(
         &workspace,
+        project_key,
         "select repeat('x', 10000) as a, repeat('y', 10000) as b from generate_series(1, 150);",
     );
 
@@ -2334,31 +2553,38 @@ async fn execute_statement_caps_the_result_size(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_refuses_copy_with_the_client(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
-    execute_sql(&workspace, "create table copy_target (id int);");
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    execute_sql(
+        &workspace,
+        project_key,
+        "create table copy_target (id int);",
+    );
 
-    let (_, result) = execute_sql(&workspace, "copy (select 1) to stdout;");
+    let (_, result) = execute_sql(&workspace, project_key, "copy (select 1) to stdout;");
     assert_eq!(
         result.message,
         "`COPY ... TO STDOUT` can't be executed from the editor. Use `\\copy` in psql, or a file on the database server."
     );
-    let (_, result) = execute_sql(&workspace, "copy copy_target from stdin;");
+    let (_, result) = execute_sql(&workspace, project_key, "copy copy_target from stdin;");
     assert!(
         result
             .message
             .starts_with("`COPY ... FROM STDIN` can't be executed")
     );
 
-    let (_, result) = execute_sql(&workspace, "select 1 as one;");
+    let (_, result) = execute_sql(&workspace, project_key, "select 1 as one;");
     assert_eq!(result.rows, [[Some("1".to_string())]]);
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn execute_statement_returns_notices(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
     let (_, result) = execute_sql(
         &workspace,
+        project_key,
         "do $$ begin raise notice 'hello'; raise warning 'careful'; end $$;",
     );
 
@@ -2371,10 +2597,12 @@ async fn execute_statement_returns_notices(test_db: PgPool) {
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn executed_ddl_refreshes_the_snapshot(test_db: PgPool) {
-    let workspace = get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
     let other = PgLSPath::new("other.sql");
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: other.clone(),
             content: "select id from created_by_execute;".into(),
             version: 1,
@@ -2383,6 +2611,7 @@ async fn executed_ddl_refreshes_the_snapshot(test_db: PgPool) {
     let typecheck_findings = || {
         workspace
             .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
                 path: other.clone(),
                 categories: RuleCategories::all(),
                 max_diagnostics: 100,
@@ -2397,7 +2626,1932 @@ async fn executed_ddl_refreshes_the_snapshot(test_db: PgPool) {
     };
     assert!(typecheck_findings() > 0, "the table should be unknown");
 
-    execute_sql(&workspace, "create table created_by_execute (id int);");
+    execute_sql(
+        &workspace,
+        project_key,
+        "create table created_by_execute (id int);",
+    );
 
     assert_eq!(typecheck_findings(), 0);
+}
+
+/// A workspace that reads the section markers of a migration tool.
+fn section_workspace(section_markers: SectionMarkers) -> (WorkspaceServer, ProjectKey) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(section_markers),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    get_test_workspace(Some(conf)).expect("Unable to create test workspace")
+}
+
+/// Applies the fixes of the given rules to `content`.
+fn fixed(
+    workspace: &WorkspaceServer,
+    project_key: ProjectKey,
+    content: &str,
+    fix_file_mode: FixFileMode,
+    rules: &[&str],
+) -> String {
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let code = workspace
+        .fix_file(FixFileParams {
+            project_key,
+            path: path.clone(),
+            fix_file_mode,
+            only: rules.iter().map(|rule| rule.parse().unwrap()).collect(),
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    workspace
+        .close_file(crate::workspace::CloseFileParams { project_key, path })
+        .expect("Unable to close test file");
+    code
+}
+
+#[test]
+fn test_code_actions_fix_and_suppress_lint_diagnostics() {
+    // A dbmate section with `transaction:false` and a single statement runs outside a
+    // transaction, where `DROP INDEX CONCURRENTLY` works.
+    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+
+    let path = PgLSPath::new("test.sql");
+    let content = "-- migrate:up transaction:false\n  drop index users_email_idx;";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let actions = workspace
+        .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+            project_key,
+            path: path.clone(),
+            cursor_position: 37.into(),
+            only: vec!["safety/requireConcurrentIndexDeletion".parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull code actions")
+        .actions;
+
+    let edits: Vec<_> = actions
+        .iter()
+        .filter_map(|action| match &action.kind {
+            CodeActionKind::Edit(edit) => Some((action.title.as_str(), edit)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(edits.len(), 2, "{actions:#?}");
+
+    let (title, fix) = edits[0];
+    assert_eq!(title, "Add CONCURRENTLY");
+    assert_eq!(fix.applicability, Applicability::Always);
+    assert_eq!(
+        fix.edits,
+        vec![TextEdit {
+            range: TextRange::empty(44.into()),
+            new_text: " concurrently".into(),
+        }]
+    );
+
+    let (title, suppression) = edits[1];
+    assert_eq!(
+        title,
+        "Suppress rule requireConcurrentIndexDeletion for this statement"
+    );
+    assert_eq!(
+        suppression.edits,
+        vec![TextEdit {
+            range: TextRange::empty(32.into()),
+            new_text: "  -- pgls-ignore requireConcurrentIndexDeletion\n".into(),
+        }]
+    );
+}
+
+#[test]
+fn test_no_concurrently_fix_in_a_transaction() {
+    // Without section markers, a file with several statements is assumed to run in a
+    // transaction, where `DROP INDEX CONCURRENTLY` fails. Only the suppression is offered.
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "select 1;\n  drop index users_email_idx;";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let titles: Vec<_> = workspace
+        .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+            project_key,
+            path: path.clone(),
+            cursor_position: 15.into(),
+            only: vec!["safety/requireConcurrentIndexDeletion".parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull code actions")
+        .actions
+        .into_iter()
+        .filter(|action| matches!(action.kind, CodeActionKind::Edit(_)))
+        .map(|action| action.title)
+        .collect();
+    assert_eq!(
+        titles,
+        ["Suppress rule requireConcurrentIndexDeletion for this statement"]
+    );
+}
+
+#[test]
+fn test_fix_file() {
+    // goose sends the statements of a `NO TRANSACTION` migration one by one.
+    let (workspace, project_key) = section_workspace(SectionMarkers::Goose);
+    let content = "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;";
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let fix = |fix_file_mode| {
+        workspace
+            .fix_file(FixFileParams {
+                project_key,
+                path: path.clone(),
+                fix_file_mode,
+                only: vec![
+                    "safety/requireConcurrentIndexDeletion".parse().unwrap(),
+                    "safety/preferRobustStmts".parse().unwrap(),
+                ],
+                skip: vec![],
+            })
+            .expect("Unable to fix file")
+    };
+
+    // The unsafe `IF EXISTS` fix only applies once `CONCURRENTLY` was added, in a second pass.
+    let safe = fix(FixFileMode::SafeFixes);
+    assert_eq!(
+        safe.code,
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index concurrently users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+    );
+    assert_eq!(safe.fixes_applied, 1);
+    assert_eq!(safe.skipped_suggested_fixes, 1);
+
+    let all = fix(FixFileMode::SafeAndUnsafeFixes);
+    assert_eq!(
+        all.code,
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index concurrently if exists users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+    );
+    assert_eq!(all.fixes_applied, 2);
+    assert_eq!(all.skipped_suggested_fixes, 0);
+}
+
+#[test]
+fn test_no_concurrently_fix_in_a_dbmate_section_with_several_statements() {
+    // dbmate sends a section to Postgres as one query, which runs in a transaction block if it
+    // has more than one statement.
+    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let content = "-- migrate:up transaction:false\ncreate index users_email_idx on users (email);\ncreate index users_name_idx on users (name);\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        content
+    );
+}
+
+#[test]
+fn test_concurrently_in_a_query_with_several_statements_is_flagged() {
+    let flagged = |markers, content| {
+        migration_diagnostics(markers, None, content)
+            .into_iter()
+            .filter(|category| category == "lint/banConcurrentIndexCreationInTransaction")
+            .count()
+    };
+    assert_eq!(
+        flagged(
+            SectionMarkers::Dbmate,
+            "-- migrate:up transaction:false\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n\n-- migrate:down transaction:false\ndrop index concurrently users_email_idx;\n"
+        ),
+        2
+    );
+    // goose sends a `StatementBegin` block as one query, and the other statements one by one.
+    assert_eq!(
+        flagged(
+            SectionMarkers::Goose,
+            "-- +goose NO TRANSACTION\n-- +goose Up\n-- +goose StatementBegin\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n-- +goose StatementEnd\ncreate index concurrently users_age_idx on users (age);\n-- +goose StatementBegin\ndrop index concurrently users_id_idx;\n-- +goose StatementEnd\n"
+        ),
+        2
+    );
+}
+
+#[test]
+fn test_concurrently_in_a_function_body() {
+    // A function runs in the transaction of the statement that calls it, so `CONCURRENTLY`
+    // fails in its body.
+    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let content = "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index users_email_idx on users (email) $$;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        content
+    );
+
+    let diagnostics = migration_diagnostics(
+        SectionMarkers::Dbmate,
+        None,
+        "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index concurrently users_email_idx on users (email) $$;\n",
+    );
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|category| *category == "lint/banConcurrentIndexCreationInTransaction")
+            .count(),
+        1,
+        "{diagnostics:?}"
+    );
+}
+
+#[test]
+fn test_no_concurrently_fix_next_to_an_unparsable_statement() {
+    // The file has two statements, even if the second only parses on Postgres 18.
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_email_idx on users (email);\nalter table users add constraint users_age_check check (age > 0) not enforced;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        content
+    );
+}
+
+#[test]
+fn test_concurrently_fix_is_unsafe_without_section_markers() {
+    // We don't know whether the migration tool runs a file with a single statement in a
+    // transaction.
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_email_idx on users (email);\n";
+    let rules = &["safety/requireConcurrentIndexCreation"];
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeFixes,
+            rules
+        ),
+        content
+    );
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            rules
+        ),
+        "create index concurrently users_email_idx on users (email);\n"
+    );
+}
+
+#[test]
+fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(r#"{"linter": {"rules": {"all": true}}}"#)
+            .unwrap(),
+    );
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let content = "create table t (a char(10)[], b timestamp /* local */ without time zone, c json, d varchar /* name */ (20));\nalter table t add constraint t_a check (a is not null);\n";
+
+    // `char(10)` becomes `varchar(10)`, and then `text` in the next pass.
+    let once = fixed(
+        &workspace,
+        project_key,
+        content,
+        FixFileMode::SafeAndUnsafeFixes,
+        &[],
+    );
+    assert_eq!(
+        once,
+        "create table if not exists t (a text[], b timestamptz /* local */, c jsonb, d text /* name */);\nalter table t add constraint t_a check (a is not null) not valid;\n"
+    );
+    assert!(pgls_query::parse(&once).is_ok());
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            &once,
+            FixFileMode::SafeAndUnsafeFixes,
+            &[]
+        ),
+        once
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
+    test_db
+        .execute(
+            "create table events (id bigint, created_at timestamptz) partition by range (created_at);
+             create index events_created_at_idx on events (created_at);
+             create table users (id bigint, email text);
+             create index users_email_idx on users (email);",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Goose),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    // Postgres can't create or drop the index of a partitioned table concurrently.
+    let content = "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index users_id_idx on users (id);\ndrop index users_email_idx;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeFixes,
+            &[
+                "safety/requireConcurrentIndexCreation",
+                "safety/requireConcurrentIndexDeletion"
+            ]
+        ),
+        "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index concurrently users_id_idx on users (id);\ndrop index concurrently users_email_idx;\n"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints(test_db: PgPool) {
+    test_db
+        .execute(
+            "create function db_point(x int, y int) returns int language sql as 'select x + y';",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create function file_point(a int, b int) returns int language sql as 'select a + b';\nselect db_point(1, y => 2), file_point(3, 4);\nselect db_point(5, 6);\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let second_line = content.find("select").unwrap();
+    let third_line = content.rfind("select").unwrap();
+    let hints = workspace
+        .pull_inlay_hints(PullInlayHintsParams {
+            project_key,
+            path: path.clone(),
+            range: TextRange::new(
+                u32::try_from(second_line).unwrap().into(),
+                u32::try_from(third_line).unwrap().into(),
+            ),
+        })
+        .expect("Unable to pull inlay hints")
+        .hints;
+
+    let offset_of = |needle: &str| u32::try_from(content.find(needle).unwrap()).unwrap().into();
+    assert_eq!(
+        hints,
+        vec![
+            InlayHint {
+                offset: offset_of("1, y"),
+                label: "x:".into(),
+                kind: InlayHintKind::Parameter,
+            },
+            InlayHint {
+                offset: offset_of("3, 4"),
+                label: "a:".into(),
+                kind: InlayHintKind::Parameter,
+            },
+            InlayHint {
+                offset: offset_of("4)"),
+                label: "b:".into(),
+                kind: InlayHintKind::Parameter,
+            },
+        ]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_semantic_tokens(test_db: PgPool) {
+    test_db
+        .execute("create table db_items (id int, label text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create type file_mood as enum ('up', 'down');\n\
+        create table file_items (id int, mood file_mood);\n\
+        select id from file_items where mood = 'up';\n\
+        create function by_id(item_id int) returns text language sql \
+        as 'select label from public.db_items where id = item_id';\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let tokens = |range: Option<TextRange>| {
+        workspace
+            .pull_semantic_tokens(PullSemanticTokensParams {
+                project_key,
+                path: path.clone(),
+                range,
+            })
+            .expect("Unable to pull semantic tokens")
+            .tokens
+            .into_iter()
+            .map(|token| (&content[token.range], token.kind))
+            .collect::<Vec<_>>()
+    };
+
+    // The table and the enum created in the file, and the body of the SQL function.
+    assert_eq!(
+        tokens(None),
+        vec![
+            ("id", SemanticTokenKind::Property),
+            ("file_items", SemanticTokenKind::Class),
+            ("mood", SemanticTokenKind::Property),
+            ("'up'", SemanticTokenKind::EnumMember),
+            ("label", SemanticTokenKind::Property),
+            ("public", SemanticTokenKind::Namespace),
+            ("db_items", SemanticTokenKind::Class),
+            ("id", SemanticTokenKind::Property),
+            ("item_id", SemanticTokenKind::Parameter),
+        ]
+    );
+
+    // Only the statements that overlap the range.
+    let select = content.find("select id").unwrap();
+    assert_eq!(
+        tokens(Some(TextRange::new(
+            u32::try_from(select).unwrap().into(),
+            u32::try_from(select + 1).unwrap().into(),
+        ))),
+        vec![
+            ("id", SemanticTokenKind::Property),
+            ("file_items", SemanticTokenKind::Class),
+            ("mood", SemanticTokenKind::Property),
+            ("'up'", SemanticTokenKind::EnumMember),
+        ]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_hover_shows_resolved_references(test_db: PgPool) {
+    test_db
+        .execute(
+            "create function db_pick(i int) returns int language sql as 'select i';
+             create function db_pick(t text) returns text language sql as 'select t';
+             create table hover_items (id int, label text);
+             create table hover_tags (id int, label text);",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create function file_pick(i int) returns int language sql as 'select i';\n\
+        create function file_pick(t text) returns text language sql as 'select t';\n\
+        select db_pick(1), file_pick('a'::text);\n\
+        create function item_label(item_id int) returns text language sql\n\
+        as 'select label from hover_items where id = item_id';\n\
+        select t.label from hover_items i join hover_tags t on t.id = i.id;\n\
+        select label as ambiguous from hover_items, hover_tags;\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let hover = |needle: &str| {
+        let offset = content.find(needle).expect("needle in content") + 2;
+        workspace
+            .on_hover(OnHoverParams {
+                project_key,
+                path: path.clone(),
+                position: u32::try_from(offset).unwrap().into(),
+            })
+            .expect("Unable to hover")
+            .markdown_blocks
+    };
+
+    // Only the overload the call resolves to.
+    let blocks = hover("db_pick(1)");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.db_pick(i integer) → integer"));
+
+    // Functions created earlier in the file.
+    let blocks = hover("file_pick('a'");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+
+    // A column in the body of a SQL function.
+    let blocks = hover("label from hover_items");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.hover_items.label"));
+
+    // The column of the joined table, by its alias.
+    let blocks = hover("label from hover_items i");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.hover_tags.label"));
+
+    // Without a unique reference, hover falls back to the columns with the hovered name.
+    let blocks = hover("label as ambiguous");
+    assert_eq!(blocks.len(), 2, "{blocks:?}");
+}
+
+/// `DO`, `CALL`, and statements that don't parse have effects the catalog can't follow. The linter
+/// treats everything after them as unknown, but hints, tokens, and hover keep working.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_editor_features_after_unmodelled_statements(test_db: PgPool) {
+    test_db
+        .execute("create procedure db_proc(p int, label text) language sql as 'select 1';")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create type file_mood as enum ('up', 'down');\n\
+        create table file_items (id int, mood file_mood);\n\
+        create function file_point(a int, b int) returns int language sql as 'select a + b';\n\
+        create table broken (id int,);\n\
+        do $$ begin raise notice 'x'; end $$;\n\
+        call db_proc(1, 'x');\n\
+        select file_point(2, 3) from file_items where mood = 'up';\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let call = content.find("call").unwrap();
+    let range = TextRange::new(
+        u32::try_from(call).unwrap().into(),
+        pgls_text_size::TextSize::of(content),
+    );
+    let hints = workspace
+        .pull_inlay_hints(PullInlayHintsParams {
+            project_key,
+            path: path.clone(),
+            range,
+        })
+        .expect("Unable to pull inlay hints")
+        .hints
+        .into_iter()
+        .map(|hint| (usize::from(hint.offset), hint.label))
+        .collect::<Vec<_>>();
+    let offset_of = |needle: &str| content.find(needle).unwrap();
+    assert_eq!(
+        hints,
+        vec![
+            (offset_of("1, 'x'"), "p:".to_string()),
+            (offset_of("'x');"), "label:".to_string()),
+            (offset_of("2, 3"), "a:".to_string()),
+            (offset_of("3)"), "b:".to_string()),
+        ]
+    );
+
+    let tokens = workspace
+        .pull_semantic_tokens(PullSemanticTokensParams {
+            project_key,
+            path: path.clone(),
+            range: Some(range),
+        })
+        .expect("Unable to pull semantic tokens")
+        .tokens
+        .into_iter()
+        .map(|token| (&content[token.range], token.kind))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        tokens,
+        vec![
+            ("db_proc", SemanticTokenKind::Function),
+            ("file_point", SemanticTokenKind::Function),
+            ("file_items", SemanticTokenKind::Class),
+            ("mood", SemanticTokenKind::Property),
+            ("'up'", SemanticTokenKind::EnumMember),
+        ]
+    );
+
+    let blocks = workspace
+        .on_hover(OnHoverParams {
+            project_key,
+            path: path.clone(),
+            position: u32::try_from(offset_of("db_proc") + 2).unwrap().into(),
+        })
+        .expect("Unable to hover")
+        .markdown_blocks;
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.db_proc"), "{blocks:?}");
+}
+
+/// Hover shows the objects as the statement sees them: created earlier in the file, changed by
+/// the file, or unchanged in the database, also after the file changes.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn hover_follows_the_ddl_before_the_statement(test_db: PgPool) {
+    test_db
+        .execute(
+            "create table hover_db_items (id int);
+             create table hover_db_tags (id int);",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let statements = "alter table hover_db_items add column extra int;\n\
+        select id from hover_file_items;\n\
+        select extra from hover_db_items;\n\
+        select id from hover_db_tags;\n";
+    let hover = |content: &str, version: i32, needle: &str| {
+        if version == 1 {
+            workspace.open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version,
+            })
+        } else {
+            workspace.change_file(crate::workspace::ChangeFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version,
+            })
+        }
+        .expect("Unable to update test file");
+        let offset = content.find(needle).expect("needle in content") + 2;
+        let blocks = workspace
+            .on_hover(OnHoverParams {
+                project_key,
+                path: path.clone(),
+                position: u32::try_from(offset).unwrap().into(),
+            })
+            .expect("Unable to hover")
+            .markdown_blocks;
+        assert_eq!(blocks.len(), 1, "{blocks:?}");
+        blocks.into_iter().next().unwrap()
+    };
+
+    let content = format!("create table hover_file_items (id int);\n{statements}");
+    let block = hover(&content, 1, "hover_file_items;");
+    assert!(block.contains("- id: int4"), "{block}");
+    assert!(!block.contains("- name"), "{block}");
+    // A table of the database that the file changed.
+    let block = hover(&content, 1, "hover_db_items;");
+    assert!(block.contains("- extra: int4"), "{block}");
+    // A table of the database that the file didn't change.
+    let block = hover(&content, 1, "hover_db_tags;");
+    assert!(block.contains("public.hover_db_tags"), "{block}");
+
+    // The statements before the hovered one changed.
+    let content = format!("create table hover_file_items (id int, name text);\n{statements}");
+    let block = hover(&content, 2, "hover_file_items;");
+    assert!(block.contains("- name: text"), "{block}");
+}
+
+/// Hover and code actions on a file with thousands of statements, on a thread with the 2 MiB
+/// stack of the language server's tokio workers. They used to recurse once per statement before
+/// or after the cursor and overflow the stack, which aborts the server.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = format!(
+        "create table long_file_items (id int);\n{}",
+        "select id from long_file_items;\n".repeat(5_000)
+    );
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let first = u32::try_from(content.find("id from").unwrap()).unwrap();
+    let last = u32::try_from(content.rfind("id from").unwrap()).unwrap();
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn_scoped(scope, || {
+                for position in [first, last] {
+                    let blocks = workspace
+                        .on_hover(OnHoverParams {
+                            project_key,
+                            path: path.clone(),
+                            position: position.into(),
+                        })
+                        .expect("Unable to hover")
+                        .markdown_blocks;
+                    assert_eq!(blocks.len(), 1, "{blocks:?}");
+                    assert!(
+                        blocks[0].contains("public.long_file_items.id"),
+                        "{blocks:?}"
+                    );
+
+                    let actions = workspace
+                        .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                            project_key,
+                            path: path.clone(),
+                            cursor_position: position.into(),
+                            only: vec![],
+                            skip: vec![],
+                        })
+                        .expect("Unable to pull code actions")
+                        .actions;
+                    let executes: Vec<_> = actions
+                        .iter()
+                        .filter(|action| action.title.starts_with("Execute Statement"))
+                        .collect();
+                    assert_eq!(executes.len(), 1, "{actions:#?}");
+                }
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    });
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_code_actions_expand_star(test_db: PgPool) {
+    test_db
+        .execute(r#"create table star_items (id int, "Label" text);"#)
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create table star_tags (id int, item_id int, \"select\" text);\n\
+        select * from star_items i join star_tags t on t.item_id = i.id;\n\
+        select t.* from star_tags t where id > 0;\n\
+        create function all_items() returns setof star_items language sql\n\
+        as 'select * from star_items';\n\
+        create table größen (größe int, \"Ölstand\" int, \"Café\" int);\n\
+        select * from größen;\n\
+        select count(*) /* * */ from größen;\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let expand_actions = |needle: &str| {
+        let offset = content.find(needle).expect("needle in content");
+        workspace
+            .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                project_key,
+                path: path.clone(),
+                cursor_position: u32::try_from(offset).unwrap().into(),
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull code actions")
+            .actions
+            .into_iter()
+            .filter_map(|action| match action.kind {
+                CodeActionKind::Edit(edit) if edit.rule.is_none() => Some((action.title, edit)),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+    };
+    let range_of = |needle: &str| {
+        let start = content.find(needle).expect("needle in content");
+        TextRange::at(
+            u32::try_from(start).unwrap().into(),
+            u32::try_from(needle.len()).unwrap().into(),
+        )
+    };
+
+    // The columns of a table of the database and of one created in the file, qualified since
+    // there are two FROM items.
+    let actions = expand_actions("* from star_items");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    let (title, edit) = &actions[0];
+    assert_eq!(title, "Expand `*` into its columns");
+    assert_eq!(
+        edit.category,
+        ActionCategory::Refactor(RefactorKind::Rewrite)
+    );
+    assert_eq!(
+        edit.edits,
+        vec![TextEdit {
+            range: range_of("*"),
+            new_text: r#"i.id, i."Label", t.id, t.item_id, t."select""#.into(),
+        }]
+    );
+
+    // `t.*`, with the cursor on its qualifier.
+    let actions = expand_actions("t.* from");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    assert_eq!(actions[0].0, "Expand `t.*` into its columns");
+    assert_eq!(
+        actions[0].1.edits,
+        vec![TextEdit {
+            range: range_of("t.*"),
+            new_text: r#"t.id, t.item_id, t."select""#.into(),
+        }]
+    );
+
+    // In the body of a SQL function.
+    let actions = expand_actions("* from star_items'");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    assert_eq!(
+        actions[0].1.edits,
+        vec![TextEdit {
+            range: TextRange::at(range_of("* from star_items'").start(), 1.into()),
+            new_text: r#"id, "Label""#.into(),
+        }]
+    );
+
+    // Names that aren't ASCII aren't quoted, unless they have upper case ASCII letters.
+    let actions = expand_actions("* from größen;");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    assert_eq!(actions[0].1.edits[0].new_text, r#"größe, Ölstand, "Café""#);
+
+    // Nothing to expand elsewhere.
+    assert!(expand_actions("where id").is_empty());
+    assert!(expand_actions("*) /*").is_empty());
+    assert!(expand_actions("* */").is_empty());
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Dbmate),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("20250301120000_migration.sql");
+    let content = "-- migrate:up\n\
+        create function up_point(x int, y int) returns int language sql as 'select x + y';\n\
+        -- migrate:down\n\
+        create function down_point(a int, b int) returns int language sql as 'select a + b';\n\
+        select up_point(1, 2), down_point(3, 4);\n\
+        -- migrate:up\n\
+        select up_point(5, 6), down_point(7, 8);\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let hints = workspace
+        .pull_inlay_hints(PullInlayHintsParams {
+            project_key,
+            path: path.clone(),
+            range: TextRange::new(0.into(), u32::try_from(content.len()).unwrap().into()),
+        })
+        .expect("Unable to pull inlay hints")
+        .hints;
+
+    // The down section sees the up section before it, and its own changes don't carry into the
+    // next up section.
+    let labels: Vec<_> = hints
+        .iter()
+        .map(|hint| {
+            let offset = usize::from(hint.offset);
+            format!("{}{}", hint.label, &content[offset..offset + 1])
+        })
+        .collect();
+    assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
+}
+
+#[test]
+fn test_section_marker_problems_are_reported() {
+    let content =
+        "create table t (id int);\n-- migrate:up\nselect 1;\n-- Migrate:Down\nselect 2;\n";
+    let categories = migration_diagnostics(SectionMarkers::Dbmate, None, content);
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "migrations/sectionMarkers")
+            .count(),
+        2,
+        "{categories:?}"
+    );
+}
+
+#[test]
+fn test_non_transactional_statement_in_a_function_body() {
+    // A function runs in the transaction of the statement that calls it.
+    let categories = migration_diagnostics(
+        SectionMarkers::Dbmate,
+        None,
+        "-- migrate:up transaction:false\ncreate function clean_up() returns void language sql as $$ vacuum users $$;\n",
+    );
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "lint/banNonTransactionalStatementInTransaction")
+            .count(),
+        1,
+        "{categories:?}"
+    );
+}
+
+/// The edit of the action that suppresses `rule` at `cursor`, and the lint diagnostics of `rule`
+/// that are left once it is applied.
+fn suppress(content: &str, cursor: usize, rule: &str) -> (TextEdit, usize) {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let actions = workspace
+        .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+            project_key,
+            path: path.clone(),
+            cursor_position: u32::try_from(cursor).unwrap().into(),
+            only: vec![rule.parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull code actions")
+        .actions;
+    let edit = actions
+        .into_iter()
+        .find_map(|action| match action.kind {
+            CodeActionKind::Edit(edit) if action.title.starts_with("Suppress rule") => {
+                Some(edit.edits.into_iter().next().unwrap())
+            }
+            _ => None,
+        })
+        .expect("expected a suppression action");
+
+    let mut suppressed = content.to_string();
+    suppressed.replace_range(std::ops::Range::<usize>::from(edit.range), &edit.new_text);
+    let path = PgLSPath::new("suppressed.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: suppressed,
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let left = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![rule.parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == format!("lint/{rule}"))
+        })
+        .count();
+    (edit, left)
+}
+
+#[test]
+fn test_suppression_goes_above_the_statement() {
+    // The diagnostic is on the third line of the statement.
+    let long = "a".repeat(70);
+    let content =
+        format!("select 1;\n  create table users (\n    id bigint,\n    {long} text\n  );\n");
+    let (edit, left) = suppress(
+        &content,
+        content.find(&long).unwrap() + 1,
+        "identifierTooLong",
+    );
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::empty(10.into()),
+            new_text: "  -- pgls-ignore identifierTooLong\n".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn test_suppression_of_a_statement_in_a_function_body() {
+    let content =
+        "create function drop_users() returns void language sql\nas $$\n  drop table users;\n$$;\n";
+    let (edit, left) = suppress(content, content.find("drop table").unwrap(), "banDropTable");
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::empty(0.into()),
+            new_text: "-- pgls-ignore banDropTable\n".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn test_suppression_of_a_statement_in_the_middle_of_a_line() {
+    let content = "  select 1; drop table users;\n";
+    let (edit, left) = suppress(content, content.find("drop").unwrap(), "banDropTable");
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::new(11.into(), 12.into()),
+            new_text: "\n  -- pgls-ignore banDropTable\n  ".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn test_suppression_keeps_crlf_line_endings() {
+    let content = "select 1;\r\ndrop table users;\r\n";
+    let (edit, left) = suppress(content, 13, "banDropTable");
+    assert_eq!(edit.new_text, "-- pgls-ignore banDropTable\r\n");
+    assert_eq!(left, 0);
+}
+
+/// A project of a workspace, set up like the language server does it.
+struct TestProject {
+    workspace: Rc<WorkspaceServer>,
+    project_key: ProjectKey,
+}
+
+impl TestProject {
+    /// A project at `root`, with the configuration file at or above it as its root settings and
+    /// every configuration file below it as nested settings. Returns the folders of the nested
+    /// settings.
+    fn new(fs: &DynRef<'_, dyn FileSystem>, root: &Path) -> (Self, Vec<PathBuf>) {
+        let project = Self::without_nested_configurations(fs, root);
+        let directories = project.apply_nested_configurations(fs, root);
+        (project, directories)
+    }
+
+    /// A project at `root`, with the configuration file at or above it as its root settings.
+    fn without_nested_configurations(fs: &DynRef<'_, dyn FileSystem>, root: &Path) -> Self {
+        let workspace = WorkspaceServer::new();
+        let project_key = workspace
+            .register_project_folder(RegisterProjectFolderParams {
+                path: Some(root.to_path_buf()),
+            })
+            .unwrap();
+        workspace
+            .update_settings(UpdateSettingsParams {
+                project_key,
+                configuration: load_configuration(
+                    fs,
+                    ConfigurationPathHint::FromWorkspace(root.to_path_buf()),
+                )
+                .unwrap()
+                .configuration,
+                gitignore_matches: vec![],
+                vcs_base_path: None,
+                workspace_directory: Some(root.to_path_buf()),
+            })
+            .unwrap();
+
+        Self {
+            workspace: Rc::new(workspace),
+            project_key,
+        }
+    }
+
+    /// Applies the configuration files the search finds. Returns their folders and whether the
+    /// search was incomplete.
+    fn search(
+        &self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        search: NestedConfigurationSearch,
+    ) -> (Vec<PathBuf>, Option<IncompleteSearch>) {
+        let nested = apply_nested_configurations(
+            &*self.workspace,
+            fs,
+            self.project_key,
+            search,
+            None,
+            |c| c,
+        )
+        .unwrap();
+        let directories = nested
+            .configurations
+            .into_iter()
+            .map(|nested| nested.directory)
+            .collect();
+        (directories, nested.incomplete)
+    }
+
+    /// Another project of the same workspace.
+    fn other(&self, project_key: ProjectKey) -> Self {
+        Self {
+            workspace: Rc::clone(&self.workspace),
+            project_key,
+        }
+    }
+
+    /// Applies the configuration files below `root`, which have to load. Returns their folders.
+    fn apply_nested_configurations(
+        &self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        root: &Path,
+    ) -> Vec<PathBuf> {
+        apply_nested_configurations(
+            &*self.workspace,
+            fs,
+            self.project_key,
+            NestedConfigurationSearch::new(root),
+            None,
+            |configuration| configuration,
+        )
+        .unwrap()
+        .configurations
+        .into_iter()
+        .map(|nested| {
+            assert!(nested.result.is_ok(), "{:?}", nested.result);
+            nested.directory
+        })
+        .collect()
+    }
+
+    /// The severities of the `banDropColumn` diagnostics of a file with a `DROP COLUMN`.
+    fn severities(&self, path: impl AsRef<Path>) -> Vec<Severity> {
+        self.severities_of(path, "alter table users drop column name;")
+    }
+
+    /// The severities of the `banDropColumn` diagnostics of a file with the given content.
+    fn severities_of(&self, path: impl AsRef<Path>, content: &str) -> Vec<Severity> {
+        let path = PgLSPath::new(path.as_ref());
+        self.workspace
+            .open_file(OpenFileParams {
+                project_key: self.project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+
+        self.workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key: self.project_key,
+                path,
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| {
+                diagnostic
+                    .category()
+                    .is_some_and(|category| category.name() == "lint/banDropColumn")
+            })
+            .map(|diagnostic| diagnostic.severity())
+            .collect()
+    }
+
+    fn is_ignored(&self, path: impl AsRef<Path>) -> bool {
+        self.workspace
+            .is_path_ignored(IsPathIgnoredParams {
+                project_key: self.project_key,
+                pgls_path: PgLSPath::new(path.as_ref()),
+            })
+            .unwrap()
+    }
+}
+
+/// The files settings of the configuration file at or above `root`.
+fn root_files(fs: &DynRef<'_, dyn FileSystem>, root: &str) -> Arc<FilesSettings> {
+    let configuration = load_configuration(
+        fs,
+        ConfigurationPathHint::FromWorkspace(PathBuf::from(root)),
+    )
+    .unwrap()
+    .configuration;
+    Arc::new(
+        FilesSettings::from_configuration(&configuration, Some(PathBuf::from(root)), None, &[])
+            .unwrap(),
+    )
+}
+
+/// A memory file system with a configuration file in each of the given folders.
+fn file_system_with_configurations(configurations: &[(&str, &str)]) -> MemoryFileSystem {
+    let mut fs = MemoryFileSystem::default();
+    for (directory, configuration) in configurations {
+        fs.insert(
+            Path::new(directory).join(ConfigName::pgls_jsonc()),
+            *configuration,
+        );
+    }
+    fs
+}
+
+#[test]
+fn files_use_the_nearest_configuration_file() {
+    let fs = file_system_with_configurations(&[
+        ("/repo", r#"{ "files": { "ignore": ["legacy"] } }"#),
+        ("/repo/db1", r#"{ "linter": { "enabled": false } }"#),
+        (
+            "/repo/db2",
+            r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        ("/repo/db2/nested", r#"{ "linter": { "enabled": false } }"#),
+        // Inside a directory the root project ignores.
+        ("/repo/legacy", r#"{ "linter": { "enabled": false } }"#),
+        // Never looked at.
+        (
+            "/repo/node_modules/pkg",
+            r#"{ "linter": { "enabled": false } }"#,
+        ),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let (project, directories) = TestProject::new(&fs, Path::new("/repo"));
+    assert_eq!(
+        directories,
+        [
+            PathBuf::from("/repo/db1"),
+            PathBuf::from("/repo/db2"),
+            PathBuf::from("/repo/db2/nested"),
+        ]
+    );
+
+    assert_eq!(project.severities("/repo/a.sql"), [Severity::Warning]);
+    assert_eq!(project.severities("/repo/db1/a.sql"), []);
+    assert_eq!(project.severities("/repo/db2/sub/a.sql"), [Severity::Error]);
+    assert_eq!(project.severities("/repo/db2/nested/a.sql"), []);
+    assert_eq!(
+        project.severities("/repo/node_modules/pkg/a.sql"),
+        [Severity::Warning]
+    );
+    // A relative path is relative to the root of the project, like the paths of the CLI.
+    assert_eq!(project.severities("db2/a.sql"), [Severity::Error]);
+    assert!(project.is_ignored("/repo/legacy/a.sql"));
+}
+
+/// The search doesn't descend into the folders that the root configuration ignores, except below
+/// a nested configuration file: its settings decide there, so the configuration files below it
+/// are still found.
+#[test]
+fn the_search_skips_the_folders_the_root_configuration_ignores() {
+    let fs = file_system_with_configurations(&[
+        (
+            "/repo",
+            r#"{ "files": { "ignore": ["legacy", "db1/generated"] } }"#,
+        ),
+        ("/repo/legacy/app", "{}"),
+        ("/repo/db1", "{}"),
+        (
+            "/repo/db1/generated",
+            r#"{ "linter": { "enabled": false } }"#,
+        ),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let (directories, incomplete) = project.search(
+        &fs,
+        NestedConfigurationSearch {
+            root_files: Some(root_files(&fs, "/repo")),
+            ..NestedConfigurationSearch::new("/repo")
+        },
+    );
+    assert_eq!(
+        directories,
+        [
+            PathBuf::from("/repo/db1"),
+            PathBuf::from("/repo/db1/generated")
+        ]
+    );
+    assert_eq!(incomplete, None);
+    assert_eq!(project.severities("/repo/db1/generated/a.sql"), []);
+}
+
+/// The home directory and the filesystem roots hold unrelated projects, so their configuration
+/// files are not applied, and the search says so.
+#[test]
+fn the_search_skips_the_home_directory() {
+    let mut fs = file_system_with_configurations(&[(
+        "/home/alice/project",
+        r#"{ "linter": { "enabled": false } }"#,
+    )]);
+    fs.set_home_directory("/home/alice");
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/home/alice"));
+    let (directories, incomplete) =
+        project.search(&fs, NestedConfigurationSearch::new("/home/alice"));
+    assert_eq!(directories, Vec::<PathBuf>::new());
+    assert_eq!(
+        incomplete,
+        Some(IncompleteSearch::NotAProjectFolder(PathBuf::from(
+            "/home/alice"
+        )))
+    );
+    assert_eq!(
+        project.severities("/home/alice/project/a.sql"),
+        [Severity::Warning]
+    );
+
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/"));
+    let (directories, incomplete) = project.search(&fs, NestedConfigurationSearch::new("/"));
+    assert_eq!(directories, Vec::<PathBuf>::new());
+    assert_eq!(
+        incomplete,
+        Some(IncompleteSearch::NotAProjectFolder(PathBuf::from("/")))
+    );
+}
+
+/// A search for some paths, like the CLI's, only finds the configuration files on the way to
+/// each path and below the paths that are folders.
+#[test]
+fn the_search_for_paths_only_looks_at_their_folders() {
+    let mut fs = file_system_with_configurations(&[
+        ("/repo", "{}"),
+        ("/repo/db1", "{}"),
+        ("/repo/db1/sub", "{}"),
+        ("/repo/db2", "{}"),
+        ("/repo/db2/nested", "{}"),
+        ("/repo/db3", "{ this is not json"),
+    ]);
+    fs.insert(PathBuf::from("/repo/db1/sub/a.sql"), "select 1;");
+    fs.insert(PathBuf::from("/repo/db2/b.sql"), "select 1;");
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let (directories, incomplete) = project.search(
+        &fs,
+        NestedConfigurationSearch {
+            paths: Some(vec![
+                PathBuf::from("db1/sub/a.sql"),
+                PathBuf::from("/repo/db1/sub/b.sql"),
+                PathBuf::from("/repo/db2"),
+                PathBuf::from("/elsewhere/c.sql"),
+            ]),
+            ..NestedConfigurationSearch::new("/repo")
+        },
+    );
+    assert_eq!(
+        directories,
+        [
+            PathBuf::from("/repo/db1"),
+            PathBuf::from("/repo/db2"),
+            PathBuf::from("/repo/db1/sub"),
+            PathBuf::from("/repo/db2/nested"),
+        ]
+    );
+    assert_eq!(incomplete, None);
+}
+
+/// The search stops at its depth limit and says so.
+#[test]
+fn the_search_reports_its_depth_limit() {
+    let deep = format!(
+        "/repo/{}",
+        ["d"; FindFiles::DEFAULT_MAX_DEPTH + 1].join("/")
+    );
+    let fs =
+        file_system_with_configurations(&[("/repo", "{}"), ("/repo/db1", "{}"), (&deep, "{}")]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let (directories, incomplete) = project.search(&fs, NestedConfigurationSearch::new("/repo"));
+    assert_eq!(directories, [PathBuf::from("/repo/db1")]);
+    assert_eq!(
+        incomplete,
+        Some(IncompleteSearch::LimitReached(PathBuf::from("/repo")))
+    );
+}
+
+/// A change of a configuration file only reloads the configuration if the search looks at its
+/// folder.
+#[test]
+fn configuration_changes_in_skipped_folders_are_ignored() {
+    let fs = file_system_with_configurations(&[
+        (
+            "/repo",
+            r#"{ "files": { "ignore": ["legacy", "db1/generated"] } }"#,
+        ),
+        ("/repo/db1", "{}"),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let root_files = root_files(&fs, "/repo");
+    let is_searched = |directory: &str| {
+        is_searched_for_configuration(
+            &fs,
+            Path::new("/repo"),
+            Some(&root_files),
+            Path::new(directory),
+        )
+    };
+
+    assert!(is_searched("/repo"));
+    assert!(is_searched("/repo/db2"));
+    assert!(is_searched("/repo/db1/generated"));
+    assert!(!is_searched("/repo/legacy"));
+    assert!(!is_searched("/repo/legacy/app"));
+    assert!(!is_searched("/repo/node_modules/pkg"));
+    assert!(!is_searched("/repo/.git"));
+    assert!(!is_searched("/elsewhere"));
+}
+
+/// Applying the nested configuration files again replaces the ones from before, so a deleted
+/// configuration file no longer applies.
+#[test]
+fn nested_settings_replace_the_previous_ones() {
+    let mut fs = file_system_with_configurations(&[
+        ("/repo", "{}"),
+        ("/repo/db1", r#"{ "linter": { "enabled": false } }"#),
+    ]);
+    fs.remove(&Path::new("/repo/db1").join(ConfigName::pgls_jsonc()));
+    let without_db1: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let with_db1: DynRef<'_, dyn FileSystem> =
+        DynRef::Owned(Box::new(file_system_with_configurations(&[
+            ("/repo", "{}"),
+            ("/repo/db1", r#"{ "linter": { "enabled": false } }"#),
+        ])));
+
+    let (project, _) = TestProject::new(&with_db1, Path::new("/repo"));
+    assert_eq!(project.severities("/repo/db1/a.sql"), []);
+
+    assert_eq!(
+        project.apply_nested_configurations(&without_db1, Path::new("/repo")),
+        Vec::<PathBuf>::new()
+    );
+    assert_eq!(project.severities("/repo/db1/a.sql"), [Severity::Warning]);
+}
+
+/// The files below a configuration file that cannot be applied use the defaults, not the settings
+/// above it, which could point at another database.
+#[test]
+fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
+    let fs = file_system_with_configurations(&[
+        (
+            "/repo",
+            r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        ("/repo/broken", r#"{ "files": { "ignore": ["[invalid"] } }"#),
+        ("/repo/unreadable", r#"{ "linter": "#),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let nested = apply_nested_configurations(
+        &*project.workspace,
+        &fs,
+        project.project_key,
+        NestedConfigurationSearch::new("/repo"),
+        None,
+        |configuration| configuration,
+    )
+    .unwrap()
+    .configurations;
+    let failed: Vec<_> = nested
+        .iter()
+        .filter(|nested| nested.result.is_err())
+        .map(|nested| nested.directory.clone())
+        .collect();
+    assert_eq!(
+        failed,
+        [
+            PathBuf::from("/repo/broken"),
+            PathBuf::from("/repo/unreadable")
+        ]
+    );
+
+    assert_eq!(project.severities("/repo/a.sql"), [Severity::Error]);
+    assert_eq!(
+        project.severities("/repo/broken/a.sql"),
+        [Severity::Warning]
+    );
+    assert_eq!(
+        project.severities("/repo/unreadable/a.sql"),
+        [Severity::Warning]
+    );
+}
+
+/// Each project has its own nested settings, even when the folder of one is below the other, as
+/// with nested workspace folders. Unregistering a project removes its nested settings with it.
+#[test]
+fn projects_have_their_own_nested_settings() {
+    let fs = file_system_with_configurations(&[
+        ("/outer", "{}"),
+        ("/outer/inner", r#"{ "linter": { "enabled": false } }"#),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let (outer, directories) = TestProject::new(&fs, Path::new("/outer"));
+    assert_eq!(directories, [PathBuf::from("/outer/inner")]);
+
+    let inner = outer.other(
+        outer
+            .workspace
+            .register_project_folder(RegisterProjectFolderParams {
+                path: Some(PathBuf::from("/outer/inner")),
+            })
+            .unwrap(),
+    );
+    inner
+        .workspace
+        .update_settings(UpdateSettingsParams {
+            project_key: inner.project_key,
+            configuration: serde_json::from_str(
+                r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+            )
+            .unwrap(),
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+        })
+        .unwrap();
+
+    // The same file, by the project that the client says it belongs to.
+    assert_eq!(outer.severities("/outer/inner/a.sql"), []);
+    assert_eq!(inner.severities("/outer/inner/a.sql"), [Severity::Error]);
+
+    outer
+        .workspace
+        .unregister_project_folder(UnregisterProjectFolderParams {
+            path: PgLSPath::new("/outer"),
+        })
+        .unwrap();
+    assert_eq!(inner.severities("/outer/inner/a.sql"), [Severity::Error]);
+    assert!(matches!(
+        outer
+            .workspace
+            .update_nested_settings(UpdateNestedSettingsParams {
+                project_key: outer.project_key,
+                nested: vec![],
+            }),
+        Err(WorkspaceError::NoProject(_))
+    ));
+}
+
+/// Registering a folder again reuses its project instead of adding one that shadows it.
+#[test]
+fn registering_a_project_folder_again_reuses_its_project() {
+    let workspace = WorkspaceServer::new();
+    let register = |path: &str| {
+        workspace
+            .register_project_folder(RegisterProjectFolderParams {
+                path: Some(PathBuf::from(path)),
+            })
+            .unwrap()
+    };
+
+    let first = register("/one");
+    let second = register("/two");
+    assert_ne!(first, second);
+    assert_eq!(register("/one"), first);
+}
+
+#[test]
+fn updating_the_settings_of_an_unknown_project_fails() {
+    let workspace = WorkspaceServer::new();
+    let result = workspace.update_settings(UpdateSettingsParams {
+        project_key: ProjectKey::default(),
+        configuration: PartialConfiguration::init(),
+        gitignore_matches: vec![],
+        vcs_base_path: None,
+        workspace_directory: None,
+    });
+    assert!(matches!(result, Err(WorkspaceError::NoProject(_))));
+}
+
+/// The user configuration only applies to the files without a project configuration at or above
+/// them, as the root settings. Nested configurations never merge it implicitly, but can extend it,
+/// and its directory is not a nested configuration even when it is below the root.
+#[test]
+fn nested_configurations_do_not_merge_the_user_configuration() {
+    let home = PathBuf::from("/home/alice");
+    let user_config_directory = home
+        .join("Library")
+        .join("Application Support")
+        .join("postgres-language-server");
+
+    let mut fs = MemoryFileSystem::default();
+    fs.set_home_directory(home.clone());
+    fs.set_user_config_directories(vec![user_config_directory.clone()]);
+    fs.insert(
+        user_config_directory.join(ConfigName::pgls_jsonc()),
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    );
+    fs.insert(home.join("repo/db").join(ConfigName::pgls_jsonc()), "{}");
+    fs.insert(
+        home.join("repo/shared").join(ConfigName::pgls_jsonc()),
+        r#"{ "extends": ["~/Library/Application Support/postgres-language-server/postgres-language-server.jsonc"] }"#,
+    );
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    // The workspace has no project configuration.
+    let root = home.join("repo");
+    let loaded =
+        load_configuration(&fs, ConfigurationPathHint::FromWorkspace(root.clone())).unwrap();
+    assert_eq!(
+        loaded.file_path(),
+        Some(
+            user_config_directory
+                .join(ConfigName::pgls_jsonc())
+                .as_path()
+        )
+    );
+
+    let (project, directories) = TestProject::new(&fs, &root);
+    assert_eq!(
+        directories,
+        [home.join("repo/db"), home.join("repo/shared")]
+    );
+
+    // No project configuration: the user configuration applies.
+    assert_eq!(
+        project.severities(home.join("repo/a.sql")),
+        [Severity::Error]
+    );
+    // A nested configuration does not merge it, unless it extends it.
+    assert_eq!(
+        project.severities(home.join("repo/db/a.sql")),
+        [Severity::Warning]
+    );
+    assert_eq!(
+        project.severities(home.join("repo/shared/a.sql")),
+        [Severity::Error]
+    );
+}
+
+/// A user configuration directory below the workspace, e.g. with `XDG_CONFIG_HOME` pointing into
+/// it, holds the user configuration, not a nested one.
+#[test]
+fn the_user_configuration_directories_are_not_nested_configurations() {
+    let mut fs = file_system_with_configurations(&[
+        ("/repo", "{}"),
+        (
+            "/repo/config/postgres-language-server",
+            r#"{ "linter": { "enabled": false } }"#,
+        ),
+    ]);
+    fs.set_user_config_directories(vec![PathBuf::from("/repo/config/postgres-language-server")]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let (project, directories) = TestProject::new(&fs, Path::new("/repo"));
+    assert_eq!(directories, Vec::<PathBuf>::new());
+    assert_eq!(
+        project.severities("/repo/config/postgres-language-server/a.sql"),
+        [Severity::Warning]
+    );
+}
+
+/// The migrations settings of a file come from its nearest configuration file: the section markers,
+/// `lintDown`, and the migrations directory, which is relative to the nested configuration file.
+#[test]
+fn nested_configurations_have_their_own_migrations_settings() {
+    const DBMATE_DROPS: &str = r#"-- migrate:up
+ALTER TABLE users DROP COLUMN name;
+
+-- migrate:down
+ALTER TABLE users DROP COLUMN email;
+"#;
+
+    let mut fs = MemoryFileSystem::default();
+    fs.insert(Path::new("/repo").join(ConfigName::pgls_jsonc()), "{}");
+    fs.insert(
+        Path::new("/repo/db").join(ConfigName::pgls_jsonc()),
+        r#"{
+            "migrations": {
+                "migrationsDir": "migrations",
+                "sectionMarkers": "dbmate",
+                "lintDown": false,
+                "after": 20240101000000
+            }
+        }"#,
+    );
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let (project, directories) = TestProject::new(&fs, Path::new("/repo"));
+    assert_eq!(directories, [PathBuf::from("/repo/db")]);
+
+    // The nested configuration skips the down section.
+    assert_eq!(
+        project.severities_of("/repo/db/migrations/20250301120000_drop.sql", DBMATE_DROPS),
+        [Severity::Warning]
+    );
+    // The root configuration has no section markers, so both drops are checked.
+    assert_eq!(
+        project.severities_of("/repo/migrations/20250301120000_drop.sql", DBMATE_DROPS),
+        [Severity::Warning, Severity::Warning]
+    );
+
+    // `after` applies to the migrations directory of the nested configuration only.
+    assert!(project.is_ignored("/repo/db/migrations/20230101000000_old.sql"));
+    assert!(!project.is_ignored("/repo/db/20230101000000_old.sql"));
+    assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
 }

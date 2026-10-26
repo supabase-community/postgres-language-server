@@ -39,25 +39,26 @@ where active;
 select *
 from users
 where exists (
-    select 1
-    from memberships
-    where memberships.user_id = users.id and
-      memberships.organization_id = 42
-  );
+  select 1
+  from memberships
+  where memberships.user_id = users.id and
+    memberships.organization_id = 42
+);
 
-select case when users.status = 'active'
-      then 'currently an active member'
-    when users.status = 'pending'
-      then 'waiting for approval'
-    else 'inactive'
-  end
+select case
+         when users.status = 'active'
+           then 'currently an active member'
+         when users.status = 'pending'
+           then 'waiting for approval'
+         else 'inactive'
+       end
 from users;
 
 select json_build_object(
-    'identifier', users.id,
-    'display_name', users.name,
-    'email_address', users.email
-  )
+  'identifier', users.id,
+  'display_name', users.name,
+  'email_address', users.email
+)
 from users;
 
 select first_really_long_column_name_here + second_really_long_column_name_here + third_long_column

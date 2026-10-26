@@ -9,8 +9,16 @@ refresh materialized view my_view;
 ```
 
 # Diagnostics
-lint/requireConcurrentRefreshMatview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireConcurrentRefreshMatview  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × REFRESH MATERIALIZED VIEW without CONCURRENTLY blocks all reads.
   
   i Use REFRESH MATERIALIZED VIEW CONCURRENTLY to allow reads during the refresh. This requires a unique index on the view.
+  
+
+
+## Fix (unsafe): Add CONCURRENTLY
+```
+-- expect_lint/requireConcurrentRefreshMatview
+refresh materialized view concurrently my_view;
+```

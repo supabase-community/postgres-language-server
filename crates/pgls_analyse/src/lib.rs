@@ -13,6 +13,6 @@ pub use crate::categories::{
 };
 pub use crate::filter::{AnalysisFilter, GroupKey, RuleFilter, RuleKey};
 pub use crate::metadata::{
-    AppliesTo, GroupCategory, RuleGroup, RuleMeta, RuleMetadata, RuleSource,
+    Applicability, AppliesTo, FixKind, GroupCategory, RuleGroup, RuleMeta, RuleMetadata, RuleSource,
 };
 pub use crate::registry::{MetadataRegistry, RegistryVisitor};

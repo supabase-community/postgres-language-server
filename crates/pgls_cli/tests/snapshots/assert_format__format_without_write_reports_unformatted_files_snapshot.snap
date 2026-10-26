@@ -4,12 +4,12 @@ expression: "run_format(&[FORMATTED_PATH, UNFORMATTED_PATH])"
 ---
 status: failure
 stdout:
-Processed 2 files in <duration>. No fixes applied.
+Processed 2 files in <duration>.
 Found 1 error.
 stderr:
 tests/fixtures/format/unformatted.sql format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Statement could be formatted using `--write`
+  × Statement at line 1 could be formatted using `--write`
   
   - SELECT·a,b·FROM·t;
   + select·a,·b·from·t;

@@ -1,7 +1,9 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
-use pgls_analyse::{RuleSource, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix};
+use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
+use pgls_catalog::{CatalogView, RelationKind};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::protobuf::Token;
 
 declare_lint_rule! {
     /// Creating indexes non-concurrently can lock the table for writes.
@@ -9,6 +11,12 @@ declare_lint_rule! {
     /// When creating an index on an existing table, using CREATE INDEX without CONCURRENTLY will lock the table
     /// against writes for the duration of the index build. This can cause downtime in production systems.
     /// Use CREATE INDEX CONCURRENTLY to build the index without blocking concurrent operations.
+    ///
+    /// The fix adds `CONCURRENTLY` where the statement surely runs outside a transaction block, and
+    /// not on partitioned tables, which Postgres can't index concurrently. Without migration
+    /// section markers, we don't know whether the migration tool runs the file in a transaction: a
+    /// file with more than one statement gets no fix, and the fix is unsafe in a file with a single
+    /// statement.
     ///
     /// ## Examples
     ///
@@ -28,6 +36,7 @@ declare_lint_rule! {
         version: "0.15.0",
         name: "requireConcurrentIndexCreation",
         severity: Severity::Warning,
+        fix_kind: FixKind::Safe,
         recommended: false,
         applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Squawk("require-concurrent-index-creation")],
@@ -70,10 +79,32 @@ impl LinterRule for RequireConcurrentIndexCreation {
                 },
             )
             .detail(None, "Use CREATE INDEX CONCURRENTLY to avoid blocking concurrent operations on the table.")
+            .maybe_fix(add_concurrently(ctx, stmt)),
         );
 
         diagnostics
     }
+}
+
+/// `CREATE INDEX CONCURRENTLY` can't run in a transaction block, and not on a partitioned
+/// table.
+fn add_concurrently(
+    ctx: &LinterRuleContext<RequireConcurrentIndexCreation>,
+    stmt: &pgls_query::protobuf::IndexStmt,
+) -> Option<RuleFix> {
+    let relation = stmt.relation.as_ref()?;
+    let schema = Some(relation.schemaname.as_str()).filter(|schema| !schema.is_empty());
+    let is_partitioned = ctx
+        .catalog()
+        .relation(schema, &relation.relname, ctx.session().search_path())
+        .found()
+        .is_some_and(|relation| relation.kind == RelationKind::PartitionedTable);
+    if is_partitioned {
+        return None;
+    }
+    let tokens = ctx.tokens()?;
+    let index = tokens.find(Token::Index)?;
+    fix::add_concurrently(ctx, &tokens, index)
 }
 
 fn is_table_created_in_file(file_context: &crate::AnalysedFileContext, table_name: &str) -> bool {

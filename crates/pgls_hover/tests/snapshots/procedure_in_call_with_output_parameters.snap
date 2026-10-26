@@ -1,0 +1,24 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+call hover_out(1, null)
+            ↑ hovered here
+```
+
+# Hover Results
+### `public.hover_out(IN a integer, OUT b integer) → void`  
+```plain  
+Procedure - Security INVOKER  
+```  
+---    
+```sql  
+
+CREATE OR REPLACE PROCEDURE public.hover_out(IN a integer, OUT b integer)
+ LANGUAGE plpgsql
+AS $procedure$ begin b := a; end $procedure$
+
+  
+```

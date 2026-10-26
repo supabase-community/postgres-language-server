@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropExtension
+drop extension if exists hstore;
+
+```
+
+# Diagnostics
+lint/banDropExtension ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping an extension may break existing clients.
+  
+  i Dropping an extension also removes its functions, types, and other objects.
+  
+  i Update clients to no longer use the objects of the extension before dropping it.

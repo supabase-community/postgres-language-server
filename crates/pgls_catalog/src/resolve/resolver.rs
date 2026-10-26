@@ -1,13 +1,23 @@
 //! The state of name resolution: the catalog, the names in scope, and the findings so far.
 
+use std::mem::Discriminant;
+
 use pgls_text_size::{TextRange, TextSize};
+use rustc_hash::FxHashSet;
+
+use pgls_query::{
+    NodeEnum,
+    protobuf::{self, CoercionForm, FuncCall},
+};
 
 use super::{
-    Finding, FindingKind, FunctionContext, FunctionParam,
+    Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
     scope::{Cte, Level},
     span,
 };
 use crate::lookup::{CatalogView, Lookup, Origin};
+use crate::typing::TypeId;
+use crate::{FunctionInfo, TypeKind};
 
 pub(super) struct Resolver<'a> {
     pub catalog: &'a dyn CatalogView,
@@ -23,6 +33,10 @@ pub(super) struct Resolver<'a> {
     /// The common table expressions in scope, innermost last.
     pub ctes: Vec<Cte>,
     pub output: crate::typing::QueryColumns,
+    /// The references resolved so far, when they are being collected.
+    pub references: Option<Vec<Reference>>,
+    /// The location and kind of each reference in `references`.
+    recorded: FxHashSet<(i32, Discriminant<Reference>)>,
 }
 
 impl<'a> Resolver<'a> {
@@ -42,6 +56,8 @@ impl<'a> Resolver<'a> {
             levels: Vec::new(),
             ctes: Vec::new(),
             output: None,
+            references: None,
+            recorded: FxHashSet::default(),
         }
     }
 
@@ -64,10 +80,16 @@ impl<'a> Resolver<'a> {
 
     /// The parameter of the SQL function with this name.
     pub fn function_param(&self, name: &str) -> Option<&'a FunctionParam> {
+        let index = self.function_param_index(name)?;
+        self.function?.params.get(index)
+    }
+
+    /// The index of the parameter of the SQL function with this name.
+    pub fn function_param_index(&self, name: &str) -> Option<usize> {
         self.function?
             .params
             .iter()
-            .find(|param| param.name.as_deref() == Some(name))
+            .position(|param| param.name.as_deref() == Some(name))
     }
 
     /// SQL function bodies are only checked against the database if their parameters have
@@ -88,6 +110,126 @@ impl<'a> Resolver<'a> {
                 _ => self.database_only = false,
             }
         }
+    }
+
+    /// Whether references are being collected.
+    pub fn collects_references(&self) -> bool {
+        self.references.is_some()
+    }
+
+    /// Records a reference, when references are being collected.
+    pub fn record(&mut self, reference: Reference) {
+        let Some(references) = self.references.as_mut() else {
+            return;
+        };
+        // Some expressions are resolved more than once, e.g. VALUES rows in INSERT.
+        if self
+            .recorded
+            .insert((reference.location(), std::mem::discriminant(&reference)))
+        {
+            references.push(reference);
+        }
+    }
+
+    /// Records that `call` resolves to `function`, when references are being collected.
+    pub fn record_call(&mut self, call: &FuncCall, function: &FunctionInfo) {
+        if !self.collects_references() {
+            return;
+        }
+        // SQL syntax like EXTRACT or TRIM doesn't pass the arguments in order.
+        if call.funcformat() == CoercionForm::CoerceSqlSyntax {
+            return;
+        }
+        let Some(signature) = function.signature.as_ref() else {
+            return;
+        };
+        let parameters = &signature.arguments;
+        let has_names = call
+            .args
+            .iter()
+            .any(|arg| matches!(arg.node, Some(NodeEnum::NamedArgExpr(_))));
+        // Without `VARIADIC` and named arguments, the arguments from the variadic parameter on
+        // are its elements.
+        let expanded = !call.func_variadic && !has_names && signature.variadic_element.is_some();
+        let mut arguments = Vec::with_capacity(call.args.len());
+        for (i, arg) in call.args.iter().enumerate() {
+            let (parameter, named) = match arg.node.as_ref() {
+                Some(NodeEnum::NamedArgExpr(named)) => (
+                    parameters
+                        .iter()
+                        .position(|param| param.name.as_deref() == Some(named.name.as_str())),
+                    true,
+                ),
+                _ if expanded => (Some(i.min(parameters.len().saturating_sub(1))), false),
+                _ => (Some(i), false),
+            };
+            let Some(parameter) = parameter.filter(|&parameter| parameter < parameters.len())
+            else {
+                return;
+            };
+            arguments.push(ResolvedCallArgument { parameter, named });
+        }
+        for (arg, argument) in call.args.iter().zip(&arguments) {
+            let value = match arg.node.as_ref() {
+                Some(NodeEnum::NamedArgExpr(named)) => {
+                    named.arg.as_deref().and_then(|arg| arg.node.as_ref())
+                }
+                value => value,
+            };
+            let is_variadic = expanded && argument.parameter + 1 == parameters.len();
+            let target = if is_variadic {
+                signature.variadic_element.as_ref()
+            } else {
+                parameters[argument.parameter].ty.as_ref()
+            };
+            if let Some(target) = target {
+                self.record_enum_literal(value, target);
+            }
+        }
+        self.record(Reference::Function {
+            location: call.location,
+            span: self.name_span(call.location),
+            function: function.clone(),
+            arguments,
+        });
+    }
+
+    /// Records that the parameter `index` of the SQL function is referenced at `location`, when
+    /// references are being collected.
+    pub fn record_parameter(&mut self, index: usize, location: i32) {
+        if !self.collects_references() {
+            return;
+        }
+        self.record(Reference::Parameter {
+            location,
+            span: self.name_span(location),
+            index,
+        });
+    }
+
+    /// Records `node` if it is a string literal that is coerced to `target`, and `target` is an
+    /// enum type.
+    pub fn record_enum_literal(&mut self, node: Option<&NodeEnum>, target: &TypeId) {
+        if !self.collects_references() {
+            return;
+        }
+        let Some(NodeEnum::AConst(constant)) = node else {
+            return;
+        };
+        if !matches!(constant.val, Some(protobuf::a_const::Val::Sval(_))) {
+            return;
+        }
+        let Lookup::Found(type_info) = self.catalog.type_by_id(target) else {
+            return;
+        };
+        if type_info.kind != Some(TypeKind::Enum) {
+            return;
+        }
+        self.record(Reference::EnumLiteral {
+            location: constant.location,
+            span: self.literal_span(constant.location),
+            type_info,
+        });
     }
 
     /// Marks the statement as depending on something that is not an unchanged database object.
@@ -121,6 +263,17 @@ impl<'a> Resolver<'a> {
         self.span_to(location, span::reference_end)
     }
 
+    /// The span of the (possibly qualified) type name starting at `location`, with all the words
+    /// of multi-word types like `double precision`.
+    pub fn type_name_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::type_name_end)
+    }
+
+    /// The span of the `*` or `t.*` starting at `location`.
+    pub fn star_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::star_end)
+    }
+
     /// The span of the operator token starting at `location`.
     pub fn operator_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::operator_end)
@@ -128,6 +281,11 @@ impl<'a> Resolver<'a> {
 
     pub fn cast_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::cast_end)
+    }
+
+    /// The span of the string constant starting at `location`.
+    pub fn literal_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::literal_end)
     }
 
     /// The span of the first token of an expression starting at `location`.

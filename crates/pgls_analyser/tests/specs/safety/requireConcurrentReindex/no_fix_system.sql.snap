@@ -1,0 +1,18 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- REINDEX SYSTEM doesn't support CONCURRENTLY, so there is no fix
+-- expect_lint/requireConcurrentReindex
+reindex system postgres;
+
+```
+
+# Diagnostics
+lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REINDEX without CONCURRENTLY blocks all table access.
+  
+  i Use REINDEX CONCURRENTLY to rebuild the index without blocking reads and writes.

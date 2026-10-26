@@ -10,8 +10,17 @@ DROP INDEX CONCURRENTLY users_email_idx;
 ```
 
 # Diagnostics
-lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferRobustStmts  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Concurrent drop should use IF EXISTS.
   
   i Add IF EXISTS to make the migration re-runnable if it fails.
+  
+
+
+## Fix (unsafe): Add IF EXISTS
+```
+-- expect_lint/preferRobustStmts
+DROP INDEX CONCURRENTLY IF EXISTS users_email_idx;
+
+```

@@ -44,10 +44,11 @@ nav:
       - Type Checking: features/type_checking.md
       - Formatting: features/formatting.md
       - PL/pgSQL Support: features/plpgsql.md
-      - Autocompletion & Hover: features/editor_features.md
+      - Editor Features: features/editor_features.md
   - Guides:
       - Use in your IDE: guides/ide_setup.md
       - Checking Migrations: guides/checking_migrations.md
+      - Formatting Declarative Schemas: guides/formatting_declarative_schemas.md
       - Configure database connection: guides/configure_database.md
       - Suppressions: guides/suppressions.md
       - Integrate with VCS: guides/vcs_integration.md

@@ -20,6 +20,20 @@ docker-compose up -d
 nix develop && docker-compose up -d
 ```
 
+### Running Commands as an Agent
+Building `pgls_query` needs libclang, and codegen needs nightly `rustfmt`, `taplo` and `bun`. Outside the Nix shell, builds fail with `Unable to find libclang`. The flake provides all of these and sets `LIBCLANG_PATH`. In a non-interactive shell, `nix develop` alone just opens a subshell, so wrap each command instead:
+
+```bash
+nix develop -c cargo build -p pgls_analyser
+nix develop -c just gen-lint
+nix develop -c bash -c 'cargo clippy --all-targets --all-features && cargo test -p pgls_analyser'
+```
+
+- The first `nix develop` downloads the toolchain and takes a few minutes; give it a generous timeout. Later runs start in seconds.
+- `just format`, which `just gen-lint` ends with, runs `bun oxfmt`. In a fresh checkout or worktree, run `nix develop -c bun install --frozen-lockfile` first, otherwise it fails with `Script not found "oxfmt"` and leaves the generated TS files unformatted.
+- Tests that use `sqlx::test` need the database from `docker-compose up -d` (see `DATABASE_URL` in `.env`).
+- A worktree's `target/` takes about 6 GB after building every test. When several worktrees build at once, `CARGO_INCREMENTAL=0` saves about 2 GB more per worktree, at the cost of slower rebuilds. Don't point several worktrees at one `CARGO_TARGET_DIR`: the artifacts of the workspace crates have the same names in every worktree, so the builds overwrite each other.
+
 ### Building and Testing
 ```bash
 # Run all tests
@@ -90,6 +104,7 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 **Features:**
 - `pgls_completions` - Autocompletion engine
 - `pgls_hover` - Hover information provider
+- `pgls_semantic_tokens` - Semantic highlighting of resolved names
 - `pgls_analyser` & `pgls_analyse` - Linting and analysis framework
 - `pgls_typecheck` - EXPLAIN fallback for typecheck
 - `pgls_catalog` - Database snapshot, the file's DDL on top of it, name resolution, and type inference
@@ -131,7 +146,20 @@ The type rules in `pgls_catalog::typing` and `pgls_catalog::resolve` port Postgr
 The project uses `insta` for snapshot testing. Update snapshots with:
 ```bash
 cargo insta review
+# or accept all new and changed snapshots without the interactive review:
+INSTA_UPDATE=always cargo test -p pgls_analyser --test rules_tests
 ```
+
+### Lint Rules
+`crates/pgls_analyser/CONTRIBUTING.md` explains how to write a rule. Things that are easy to miss:
+- `just new-lintrule` runs the whole of `just gen-lint` for every rule. To scaffold several rules, run `cargo run -p xtask_codegen -- new-lintrule --category=lint --group=<group> --name=<ruleName> --severity=<info|warn|error>` for each, then `just gen-lint` once.
+- New rules keep `version: "next"`; the release workflow replaces it with the released version.
+- A spec file under `tests/specs/<group>/<ruleName>/` lists one `-- expect_lint/<ruleName>` line per expected diagnostic, or `-- expect_no_diagnostics`. Only the count per rule is checked, not which statement the line is above.
+- Every `expect_diagnostic` snippet in a rule's doc comment must produce exactly one diagnostic. `docs_codegen`, which runs as part of `just gen-lint`, fails otherwise.
+- The vendored libpg_query is Postgres 17, so syntax that is new in Postgres 18 has no AST nodes yet.
+- The parser truncates identifiers to 63 bytes. For the source text as written, scan the statement with `pgls_query::scan`.
+- `ctx.stmt().iter()` walks every nested node of a statement (CTEs, subqueries, `ON CONFLICT`, ...) as a `NodeRef`.
+- To see the AST of a statement, print `pgls_query::parse(sql)?.into_root()` with `{:#?}`, e.g. from a throwaway test.
 
 ## Configuration Files
 
@@ -151,6 +179,9 @@ cargo insta review
 
 ### Code Quality Guidelines
 **IMPORTANT**: Always run `cargo clippy --all-targets --all-features` and fix all warnings after making code changes. Clippy warnings must be resolved before committing code to maintain code quality standards.
+
+### Engineering Rules
+**IMPORTANT**: Follow the "Engineering rules" in `CONTRIBUTING.md`. In short: no recursion whose depth grows with the input (per statement, file or config); a named limit (`*_max`, unit last) on every loop, walk, queue and cache over external input, logged when hit; no `unwrap`/`expect`/indexing on data from the client, database, file system or config; paired `debug_assert!`s where ranges cross a boundary (statement → file offsets → LSP positions, fix edits → document); coalesce external events; set stack sizes, timeouts, pool sizes and recursion limits explicitly; state the cost and a 20k-statement timing for work on the request path; turn "Not covered" lists into issues.
 
 ### Git Commit and PR Guidelines
 **IMPORTANT**: NEVER add "Claude" or any AI assistant name to commit messages or pull request descriptions. Commits and PRs should appear as authored by the human developer only.

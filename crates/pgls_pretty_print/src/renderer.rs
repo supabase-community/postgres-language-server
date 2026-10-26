@@ -44,13 +44,24 @@ impl Default for RenderConfig {
     }
 }
 
+/// The column continuation lines align with, from `AlignStart`.
+struct Alignment {
+    column: usize,
+    /// The indent level when the alignment started.
+    indent_level: usize,
+}
+
 pub struct Renderer<W: Write> {
     config: RenderConfig,
     writer: W,
     current_line_length: usize,
     indent_level: usize,
+    /// Open alignments, innermost last.
+    alignments: Vec<Alignment>,
     at_line_start: bool,
-    after_line_comment: bool,
+    /// A space written after the last text. It is only written out once more text follows on the
+    /// same line, so a line never ends in whitespace.
+    pending_space: bool,
 }
 
 impl<W: Write> Renderer<W> {
@@ -60,8 +71,9 @@ impl<W: Write> Renderer<W> {
             writer,
             current_line_length: 0,
             indent_level: 0,
+            alignments: Vec::new(),
             at_line_start: true,
-            after_line_comment: false,
+            pending_space: false,
         }
     }
 
@@ -86,9 +98,8 @@ impl<W: Write> Renderer<W> {
                     self.handle_line(line_type)?;
                     i += 1;
                 }
-                LayoutEvent::Comment { text, line_comment } => {
+                LayoutEvent::Comment { text, .. } => {
                     self.write_text(text)?;
-                    self.after_line_comment = *line_comment;
                     i += 1;
                 }
                 LayoutEvent::GroupStart { .. } => {
@@ -108,6 +119,14 @@ impl<W: Write> Renderer<W> {
                     self.indent_level = self.indent_level.saturating_sub(1);
                     i += 1;
                 }
+                LayoutEvent::AlignStart => {
+                    self.start_alignment();
+                    i += 1;
+                }
+                LayoutEvent::AlignEnd => {
+                    self.alignments.pop();
+                    i += 1;
+                }
             }
         }
         Ok(())
@@ -121,7 +140,14 @@ impl<W: Write> Renderer<W> {
         trailing_width: usize,
     ) -> Result<(), std::fmt::Error> {
         if let Some(single_line) = self.single_line_if_fits(group_events, trailing_width) {
-            self.write_text(&single_line)?;
+            // A space that ends the group waits for the next text, like any other space.
+            let text = single_line.trim_end_matches(' ');
+            if !text.is_empty() {
+                self.write_text(text)?;
+            }
+            if text.len() < single_line.len() {
+                self.write_space()?;
+            }
             return Ok(());
         }
 
@@ -146,7 +172,9 @@ impl<W: Write> Renderer<W> {
                 LayoutEvent::GroupStart { .. }
                 | LayoutEvent::GroupEnd
                 | LayoutEvent::IndentStart
-                | LayoutEvent::IndentEnd => {}
+                | LayoutEvent::IndentEnd
+                | LayoutEvent::AlignStart
+                | LayoutEvent::AlignEnd => {}
                 LayoutEvent::Line(_) | LayoutEvent::Comment { .. } => return width,
             }
         }
@@ -159,10 +187,31 @@ impl<W: Write> Renderer<W> {
     /// made right after a break must account for the pending indentation themselves.
     fn effective_line_length(&self) -> usize {
         if self.at_line_start {
-            self.indent_level * self.config.indent_size
+            self.indentation_width()
         } else {
             self.current_line_length
         }
+    }
+
+    /// Continuation lines start at the column of the innermost alignment, plus one indent for
+    /// every level opened since. Without an alignment they start at the indent level.
+    fn indentation_width(&self) -> usize {
+        let indent = self.indent_level * self.config.indent_size;
+        match self.alignments.last() {
+            Some(alignment) => (alignment.column + indent)
+                .saturating_sub(alignment.indent_level * self.config.indent_size),
+            None => indent,
+        }
+    }
+
+    /// The column is kept with the indent level it was taken at, not as an offset from that
+    /// level's indent: the text on the line can start left of it, `select case` with the select
+    /// list already one level in for instance.
+    fn start_alignment(&mut self) {
+        self.alignments.push(Alignment {
+            column: self.effective_line_length(),
+            indent_level: self.indent_level,
+        });
     }
 
     fn render_events_with_breaks(
@@ -203,9 +252,8 @@ impl<W: Write> Renderer<W> {
                     }
                     i += 1;
                 }
-                LayoutEvent::Comment { text, line_comment } => {
+                LayoutEvent::Comment { text, .. } => {
                     self.write_text(text)?;
-                    self.after_line_comment = *line_comment;
                     i += 1;
                 }
                 LayoutEvent::GroupStart { .. } => {
@@ -226,6 +274,14 @@ impl<W: Write> Renderer<W> {
                     self.indent_level = self.indent_level.saturating_sub(1);
                     i += 1;
                 }
+                LayoutEvent::AlignStart => {
+                    self.start_alignment();
+                    i += 1;
+                }
+                LayoutEvent::AlignEnd => {
+                    self.alignments.pop();
+                    i += 1;
+                }
             }
         }
         Ok(())
@@ -233,7 +289,8 @@ impl<W: Write> Renderer<W> {
 
     /// The group on one line, if it can be collapsed and fits on the current line followed by
     /// `trailing_width` columns that cannot move to the next line. Only the first line of a text
-    /// spanning several lines, a function body for instance, sits on the current one.
+    /// spanning several lines, a function body for instance, sits on the current one, and what
+    /// follows the text has to fit on its last line.
     ///
     /// Measuring stops as soon as the line is full, so a large group that cannot fit is not
     /// rendered in full for every level it is nested in.
@@ -242,20 +299,27 @@ impl<W: Write> Renderer<W> {
         group_events: &[LayoutEvent],
         trailing_width: usize,
     ) -> Option<String> {
-        let available = self
+        let mut available = self
             .config
             .max_line_length
             .saturating_sub(self.effective_line_length());
         let mut buffer = String::new();
-        // Set once the text reaches a line break, after which the width no longer matters.
-        let mut first_line_fits = false;
+        // Where the line being measured starts in `buffer`. After a text spanning several lines,
+        // that is its last line, which starts at the left margin; the lines in between are the
+        // text's own.
+        let mut line_start = 0;
 
         for event in group_events {
             match event {
                 LayoutEvent::Token(token) => buffer.push_str(&token.render(&self.config)),
+                // Two spaces in a row collapse, as in `write_space`.
                 LayoutEvent::Space
                 | LayoutEvent::Line(LineType::SoftOrSpace)
-                | LayoutEvent::Line(LineType::Fill) => buffer.push(' '),
+                | LayoutEvent::Line(LineType::Fill) => {
+                    if !buffer.ends_with(' ') {
+                        buffer.push(' ');
+                    }
+                }
                 // Collapsing would push code behind a `--` comment or flatten a multi-line block
                 // comment into the surrounding expression.
                 LayoutEvent::Line(LineType::Hard) => return None,
@@ -269,18 +333,20 @@ impl<W: Write> Renderer<W> {
                 | LayoutEvent::GroupStart { .. }
                 | LayoutEvent::GroupEnd
                 | LayoutEvent::IndentStart
-                | LayoutEvent::IndentEnd => {}
+                | LayoutEvent::IndentEnd
+                | LayoutEvent::AlignStart
+                | LayoutEvent::AlignEnd => {}
             }
 
-            if !first_line_fits {
-                match buffer.split_once('\n') {
-                    Some((first_line, _)) if first_line.len() <= available => {
-                        first_line_fits = true;
-                    }
-                    Some(_) => return None,
-                    None if buffer.len() + trailing_width > available => return None,
-                    None => {}
+            if let Some(last_break) = buffer[line_start..].rfind('\n') {
+                if line_start == 0 && buffer.find('\n').is_some_and(|first| first > available) {
+                    return None;
                 }
+                line_start += last_break + 1;
+                available = self.config.max_line_length;
+            }
+            if buffer.len() - line_start + trailing_width > available {
+                return None;
             }
         }
 
@@ -349,7 +415,10 @@ impl<W: Write> Renderer<W> {
                 LayoutEvent::GroupStart { .. } => depth += 1,
                 LayoutEvent::GroupEnd if depth == 0 => return Some((length, false)),
                 LayoutEvent::GroupEnd => depth -= 1,
-                LayoutEvent::IndentStart | LayoutEvent::IndentEnd => {}
+                LayoutEvent::IndentStart
+                | LayoutEvent::IndentEnd
+                | LayoutEvent::AlignStart
+                | LayoutEvent::AlignEnd => {}
             }
         }
 
@@ -374,10 +443,11 @@ impl<W: Write> Renderer<W> {
     }
 
     fn write_text(&mut self, text: &str) -> Result<(), std::fmt::Error> {
-        self.after_line_comment = false;
         if self.at_line_start {
             self.write_indentation()?;
             self.at_line_start = false;
+        } else if std::mem::take(&mut self.pending_space) {
+            write!(self.writer, " ")?;
         }
 
         write!(self.writer, "{text}")?;
@@ -390,16 +460,21 @@ impl<W: Write> Renderer<W> {
         Ok(())
     }
 
+    /// Two spaces in a row, from a space next to a line that stayed flat for instance, are
+    /// written as one.
     fn write_space(&mut self) -> Result<(), std::fmt::Error> {
-        if !self.at_line_start {
-            write!(self.writer, " ")?;
+        if !self.at_line_start && !self.pending_space {
+            self.pending_space = true;
             self.current_line_length += 1;
         }
         Ok(())
     }
 
+    /// Ends the current line. A line that has no text yet is not ended again: two breaks in a
+    /// row, around an empty list for instance, would otherwise print a blank line.
     fn write_line_break(&mut self) -> Result<(), std::fmt::Error> {
-        if self.at_line_start && self.after_line_comment {
+        self.pending_space = false;
+        if self.at_line_start {
             return Ok(());
         }
         writeln!(self.writer)?;
@@ -411,14 +486,21 @@ impl<W: Write> Renderer<W> {
     fn write_indentation(&mut self) -> Result<(), std::fmt::Error> {
         let indent_str = match self.config.indent_style {
             IndentStyle::Spaces => {
-                let spaces = " ".repeat(self.indent_level * self.config.indent_size);
+                let spaces = " ".repeat(self.indentation_width());
                 self.current_line_length += spaces.len();
                 spaces
             }
+            // One tab per indent level and spaces for the rest of an alignment. The columns only
+            // line up when the editor's tab width equals `indent_size`.
             IndentStyle::Tabs => {
-                let tabs = "\t".repeat(self.indent_level);
-                self.current_line_length += self.indent_level * self.config.indent_size; // Approximate
-                tabs
+                let width = self.indentation_width();
+                let tabs = match self.config.indent_size {
+                    0 => self.indent_level,
+                    size => self.indent_level.min(width / size),
+                };
+                let spaces = width - tabs * self.config.indent_size;
+                self.current_line_length += width;
+                "\t".repeat(tabs) + &" ".repeat(spaces)
             }
         };
         write!(self.writer, "{indent_str}")?;

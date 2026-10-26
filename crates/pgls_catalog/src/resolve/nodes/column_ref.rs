@@ -3,8 +3,8 @@ use pgls_query::{NodeEnum, protobuf::ColumnRef};
 use super::{Resolver, string::string_values};
 use crate::lookup::Lookup;
 use crate::resolve::{
-    FindingKind,
-    scope::{ColumnLookup, find_column, find_item, has_opaque_items},
+    FindingKind, Reference,
+    scope::{ColumnLookup, Item, find_column, find_column_item, find_item, has_opaque_items},
 };
 
 /// Reports a column reference that matches no column, or columns of several FROM items, and a
@@ -41,9 +41,10 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
                         && item.name.as_deref() == Some(relation.as_str())
                 })
             });
-            if item.is_some_and(|item| item.has_column(name) == Some(false))
-                && !may_be_function_call(r, name)
-            {
+            let reference = column_reference(r, item, name, n.location);
+            let missing = item.is_some_and(|item| item.has_column(name) == Some(false));
+            record(r, reference);
+            if missing && !may_be_function_call(r, name) {
                 r.report(
                     FindingKind::UnknownColumn {
                         relation: Some(format!("{schema}.{relation}")),
@@ -59,7 +60,11 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
 
 fn resolve_unqualified_column(r: &mut Resolver, name: &str, location: i32) {
     match find_column(&r.levels, name) {
-        ColumnLookup::Found | ColumnLookup::Unknown => {}
+        ColumnLookup::Found => {
+            let reference = column_reference(r, find_column_item(&r.levels, name), name, location);
+            record(r, reference);
+        }
+        ColumnLookup::Unknown => {}
         ColumnLookup::Ambiguous(candidates) => r.report(
             FindingKind::AmbiguousColumn {
                 column: name.to_owned(),
@@ -70,7 +75,15 @@ fn resolve_unqualified_column(r: &mut Resolver, name: &str, location: i32) {
         ColumnLookup::NotFound => {
             // A whole-row reference to a FROM item, or a parameter of the SQL function.
             let is_item = find_item(&r.levels, name).is_some();
-            if is_item || r.function_param(name).is_some() || has_opaque_items(&r.levels) {
+            let opaque = has_opaque_items(&r.levels);
+            if let Some(index) = r.function_param_index(name) {
+                // A column of an item with unknown columns would take precedence.
+                if !is_item && !opaque {
+                    r.record_parameter(index, location);
+                }
+                return;
+            }
+            if is_item || opaque {
                 return;
             }
             r.report(
@@ -86,7 +99,10 @@ fn resolve_unqualified_column(r: &mut Resolver, name: &str, location: i32) {
 
 fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, location: i32) {
     if let Some(item) = find_item(&r.levels, qualifier) {
-        if item.has_column(name) == Some(false) && !may_be_function_call(r, name) {
+        let reference = column_reference(r, Some(item), name, location);
+        let missing = item.has_column(name) == Some(false);
+        record(r, reference);
+        if missing && !may_be_function_call(r, name) {
             r.report(
                 FindingKind::UnknownColumn {
                     relation: Some(qualifier.to_owned()),
@@ -107,6 +123,9 @@ fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, locat
     if let Some(function) = r.function {
         // `function_name.parameter`
         if function.function_name == qualifier {
+            if let Some(index) = r.function_param_index(name) {
+                r.record_parameter(index, location);
+            }
             return;
         }
         // A field of a composite parameter.
@@ -144,6 +163,32 @@ fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, locat
         },
         location,
     );
+}
+
+/// The reference to the column `name` of `item`, if references are collected and the source of
+/// the column is known.
+fn column_reference(
+    r: &Resolver,
+    item: Option<&Item>,
+    name: &str,
+    location: i32,
+) -> Option<Reference> {
+    if !r.collects_references() {
+        return None;
+    }
+    let (source, column) = item?.column_source(name)?;
+    Some(Reference::Column {
+        location,
+        span: r.name_span(location),
+        source,
+        column,
+    })
+}
+
+fn record(r: &mut Resolver, reference: Option<Reference>) {
+    if let Some(reference) = reference {
+        r.record(reference);
+    }
 }
 
 /// Postgres reads `t.name` as the function call `name(t)` when `t` has no column `name`

@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropSequence
+drop sequence if exists order_number_seq cascade;
+
+```
+
+# Diagnostics
+lint/banDropSequence ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a sequence may break existing clients.
+  
+  i Clients that still call nextval() on the sequence fail, and rolling back the application does not restore it.
+  
+  i Update your application code to stop using the sequence, then drop it in a later migration.

@@ -11,6 +11,8 @@ Place a comment above the statement that causes the diagnostic:
 drop table users;
 ```
 
+The comment applies to the whole statement, including diagnostics on its later lines and in the bodies of the functions it creates. A comment inside a statement applies to the line below it.
+
 The accepted specifiers are:
 
 - `lint` — all lint rules.
