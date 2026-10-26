@@ -1577,7 +1577,7 @@
 <tr>
 <td><code>layout</code></td>
 <td><code>"fit"</code></td>
-<td>How a statement is laid out: <code>"fit"</code> breaks only past the line width, <code>"expanded"</code> always breaks between clauses</td>
+<td>How a statement is laid out: <code>"fit"</code> breaks only past the line width, <code>"expanded"</code> always breaks between clauses, between select list items, before every <code>AND</code>/<code>OR</code> and before every <code>CASE</code> branch (see below)</td>
 </tr>
 <tr>
 <td><code>valuesRowLayout</code></td>
@@ -1620,6 +1620,20 @@ tuple starts on its own indented line, even when the rows fit within <code>lineW
 <p>The expressions inside each tuple stay on one line when they fit. This option
 applies to <code>INSERT</code>, standalone <code>VALUES</code>, and <code>VALUES</code> in subqueries and CTEs,
 independently of <code>layout</code> and <code>clauseBodyStyle</code>.</p>
+<p><code>layout: "expanded"</code> puts every clause, every select list item and every
+operand of an <code>AND</code>/<code>OR</code> chain on its own line, even when the statement would
+fit on one. A subquery made of a select list alone, such as
+<code>(select auth.uid())</code>, and the condition of a <code>CHECK</code> constraint have no
+clauses to break between, so they follow the line width instead:</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span>
+<span class="w">  </span><span class="n">id</span><span class="p">,</span>
+<span class="w">  </span><span class="n">name</span>
+<span class="k">from</span>
+<span class="w">  </span><span class="n">users</span>
+<span class="k">where</span>
+<span class="w">  </span><span class="n">active</span><span class="w"> </span><span class="k">and</span>
+<span class="w">  </span><span class="n">organization_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">select</span><span class="w"> </span><span class="n">auth</span><span class="p">.</span><span class="n">uid</span><span class="p">());</span>
+</code></pre></div>
 <p>With <code>layout: "expanded"</code>, a <code>CASE</code> expression puts every <code>WHEN</code> and <code>ELSE</code>
 on its own line, one indent level in from where <code>CASE</code> starts, <code>THEN</code> one
 level further in, and <code>END</code> back under <code>CASE</code>. This holds wherever the <code>CASE</code>

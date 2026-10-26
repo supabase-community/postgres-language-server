@@ -1277,33 +1277,33 @@
   The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (<code>-- migrate:up</code>, <code>-- migrate:down</code>), "goose" (<code>-- +goose Up</code>, <code>-- +goose Down</code>) or "none". Default: "none".
 - <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>false</code>, the down sections of migration files are not linted. Default: <code>true</code>.
-- <strong><code>--line-width</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--line-width</code></strong>=<em><code>NUMBER</code></em> &mdash; 
   Maximum line width before breaking. Default: 100.
-- <strong><code>--indent-size</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--indent-size</code></strong>=<em><code>NUMBER</code></em> &mdash; 
   Number of spaces (or tab width) for indentation. Default: 2.
-- <strong><code>--indent-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--indent-style</code></strong>=<em><code>&lt;spaces|tabs&gt;</code></em> &mdash; 
   Indentation style: "spaces" or "tabs". Default: "spaces".
-- <strong><code>--keyword-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--keyword-case</code></strong>=<em><code>&lt;upper|lower&gt;</code></em> &mdash; 
   Keyword casing: "upper" or "lower". Default: "lower".
-- <strong><code>--constant-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--constant-case</code></strong>=<em><code>&lt;upper|lower&gt;</code></em> &mdash; 
   Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-- <strong><code>--type-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--type-case</code></strong>=<em><code>&lt;upper|lower&gt;</code></em> &mdash; 
   Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-- <strong><code>--comma-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--comma-style</code></strong>=<em><code>&lt;trailing|leading&gt;</code></em> &mdash; 
   Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-- <strong><code>--logical-operator-placement</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--logical-operator-placement</code></strong>=<em><code>&lt;trailing|leading&gt;</code></em> &mdash; 
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
-- <strong><code>--layout</code></strong>=<em><code>ARG</code></em> &mdash; 
-  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
-- <strong><code>--values-row-layout</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--layout</code></strong>=<em><code>&lt;fit|expanded&gt;</code></em> &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+- <strong><code>--values-row-layout</code></strong>=<em><code>&lt;fit|expanded&gt;</code></em> &mdash; 
   How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
-- <strong><code>--cast-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--cast-style</code></strong>=<em><code>&lt;cast|operator&gt;</code></em> &mdash; 
   How an explicit cast is spelled: "cast" for <code>CAST(x AS t)</code>, "operator" for <code>x::t</code>. Default: "cast".
-- <strong><code>--clause-body-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--clause-body-style</code></strong>=<em><code>&lt;break|compact&gt;</code></em> &mdash; 
   Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
-- <strong><code>--isolate-semicolon</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--isolate-semicolon</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>true</code>, the terminating semicolon goes on its own line when the statement spans several lines. Default: <code>false</code>.
-- <strong><code>--skip-fn-bodies</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--skip-fn-bodies</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>true</code>, skip formatting of SQL function bodies (keep them verbatim). Default: <code>false</code>.
 - <strong><code>--search_path</code></strong>=<em><code>ARG</code></em> &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_<em>"]. If not specified, defaults to ["public"].
@@ -1384,33 +1384,33 @@
   The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (<code>-- migrate:up</code>, <code>-- migrate:down</code>), "goose" (<code>-- +goose Up</code>, <code>-- +goose Down</code>) or "none". Default: "none".
 - <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>false</code>, the down sections of migration files are not linted. Default: <code>true</code>.
-- <strong><code>--line-width</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--line-width</code></strong>=<em><code>NUMBER</code></em> &mdash; 
   Maximum line width before breaking. Default: 100.
-- <strong><code>--indent-size</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--indent-size</code></strong>=<em><code>NUMBER</code></em> &mdash; 
   Number of spaces (or tab width) for indentation. Default: 2.
-- <strong><code>--indent-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--indent-style</code></strong>=<em><code>&lt;spaces|tabs&gt;</code></em> &mdash; 
   Indentation style: "spaces" or "tabs". Default: "spaces".
-- <strong><code>--keyword-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--keyword-case</code></strong>=<em><code>&lt;upper|lower&gt;</code></em> &mdash; 
   Keyword casing: "upper" or "lower". Default: "lower".
-- <strong><code>--constant-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--constant-case</code></strong>=<em><code>&lt;upper|lower&gt;</code></em> &mdash; 
   Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-- <strong><code>--type-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--type-case</code></strong>=<em><code>&lt;upper|lower&gt;</code></em> &mdash; 
   Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-- <strong><code>--comma-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--comma-style</code></strong>=<em><code>&lt;trailing|leading&gt;</code></em> &mdash; 
   Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-- <strong><code>--logical-operator-placement</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--logical-operator-placement</code></strong>=<em><code>&lt;trailing|leading&gt;</code></em> &mdash; 
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
-- <strong><code>--layout</code></strong>=<em><code>ARG</code></em> &mdash; 
-  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
-- <strong><code>--values-row-layout</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--layout</code></strong>=<em><code>&lt;fit|expanded&gt;</code></em> &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+- <strong><code>--values-row-layout</code></strong>=<em><code>&lt;fit|expanded&gt;</code></em> &mdash; 
   How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
-- <strong><code>--cast-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--cast-style</code></strong>=<em><code>&lt;cast|operator&gt;</code></em> &mdash; 
   How an explicit cast is spelled: "cast" for <code>CAST(x AS t)</code>, "operator" for <code>x::t</code>. Default: "cast".
-- <strong><code>--clause-body-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--clause-body-style</code></strong>=<em><code>&lt;break|compact&gt;</code></em> &mdash; 
   Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
-- <strong><code>--isolate-semicolon</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--isolate-semicolon</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>true</code>, the terminating semicolon goes on its own line when the statement spans several lines. Default: <code>false</code>.
-- <strong><code>--skip-fn-bodies</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--skip-fn-bodies</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>true</code>, skip formatting of SQL function bodies (keep them verbatim). Default: <code>false</code>.
 - <strong><code>--search_path</code></strong>=<em><code>ARG</code></em> &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_<em>"]. If not specified, defaults to ["public"].
@@ -1508,33 +1508,33 @@
   The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (<code>-- migrate:up</code>, <code>-- migrate:down</code>), "goose" (<code>-- +goose Up</code>, <code>-- +goose Down</code>) or "none". Default: "none".
 - <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>false</code>, the down sections of migration files are not linted. Default: <code>true</code>.
-- <strong><code>--line-width</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--line-width</code></strong>=<em><code>NUMBER</code></em> &mdash; 
   Maximum line width before breaking. Default: 100.
-- <strong><code>--indent-size</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--indent-size</code></strong>=<em><code>NUMBER</code></em> &mdash; 
   Number of spaces (or tab width) for indentation. Default: 2.
-- <strong><code>--indent-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--indent-style</code></strong>=<em><code>&lt;spaces|tabs&gt;</code></em> &mdash; 
   Indentation style: "spaces" or "tabs". Default: "spaces".
-- <strong><code>--keyword-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--keyword-case</code></strong>=<em><code>&lt;upper|lower&gt;</code></em> &mdash; 
   Keyword casing: "upper" or "lower". Default: "lower".
-- <strong><code>--constant-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--constant-case</code></strong>=<em><code>&lt;upper|lower&gt;</code></em> &mdash; 
   Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-- <strong><code>--type-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--type-case</code></strong>=<em><code>&lt;upper|lower&gt;</code></em> &mdash; 
   Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-- <strong><code>--comma-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--comma-style</code></strong>=<em><code>&lt;trailing|leading&gt;</code></em> &mdash; 
   Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-- <strong><code>--logical-operator-placement</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--logical-operator-placement</code></strong>=<em><code>&lt;trailing|leading&gt;</code></em> &mdash; 
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
-- <strong><code>--layout</code></strong>=<em><code>ARG</code></em> &mdash; 
-  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
-- <strong><code>--values-row-layout</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--layout</code></strong>=<em><code>&lt;fit|expanded&gt;</code></em> &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+- <strong><code>--values-row-layout</code></strong>=<em><code>&lt;fit|expanded&gt;</code></em> &mdash; 
   How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
-- <strong><code>--cast-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--cast-style</code></strong>=<em><code>&lt;cast|operator&gt;</code></em> &mdash; 
   How an explicit cast is spelled: "cast" for <code>CAST(x AS t)</code>, "operator" for <code>x::t</code>. Default: "cast".
-- <strong><code>--clause-body-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--clause-body-style</code></strong>=<em><code>&lt;break|compact&gt;</code></em> &mdash; 
   Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
-- <strong><code>--isolate-semicolon</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--isolate-semicolon</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>true</code>, the terminating semicolon goes on its own line when the statement spans several lines. Default: <code>false</code>.
-- <strong><code>--skip-fn-bodies</code></strong>=<em><code>ARG</code></em> &mdash; 
+- <strong><code>--skip-fn-bodies</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>true</code>, skip formatting of SQL function bodies (keep them verbatim). Default: <code>false</code>.
 - <strong><code>--search_path</code></strong>=<em><code>ARG</code></em> &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_<em>"]. If not specified, defaults to ["public"].
