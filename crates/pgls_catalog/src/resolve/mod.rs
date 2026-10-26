@@ -208,8 +208,9 @@ pub enum Reference {
     Type {
         /// The location of the type name in the statement.
         location: i32,
-        /// The span of the (possibly qualified) type name, without modifiers like `(10)` or `[]`.
-        /// For multi-word types like `double precision`, only the first word.
+        /// The span of the (possibly qualified) type name, with every word of multi-word types
+        /// like `double precision`, and without modifiers like `(10)` or `[]`. The precision of
+        /// `timestamp(3) with time zone` is inside the span.
         span: Option<TextRange>,
         type_info: crate::TypeInfo,
     },
@@ -234,6 +235,25 @@ pub enum Reference {
         span: Option<TextRange>,
         type_info: crate::TypeInfo,
     },
+    /// A `*` or `t.*` in a select list or RETURNING list whose columns are all known, and each
+    /// can be referenced by a name that resolves to it.
+    Star {
+        /// The location of the `*`, or of the qualifier of `t.*`.
+        location: i32,
+        /// The span of the `*`, including its qualifier.
+        span: Option<TextRange>,
+        /// The columns that the `*` expands to, in order.
+        columns: Vec<StarColumn>,
+    },
+}
+
+/// A column that a `*` expands to, and the name that references it from where the `*` is.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StarColumn {
+    /// The qualifier of the column, e.g. `["u"]` for `u.name`. Empty if the column name alone
+    /// references it.
+    pub qualifier: Vec<String>,
+    pub name: String,
 }
 
 impl Reference {
@@ -244,7 +264,8 @@ impl Reference {
             | Self::Relation { location, .. }
             | Self::Type { location, .. }
             | Self::Parameter { location, .. }
-            | Self::EnumLiteral { location, .. } => *location,
+            | Self::EnumLiteral { location, .. }
+            | Self::Star { location, .. } => *location,
         }
     }
 
@@ -255,7 +276,8 @@ impl Reference {
             | Self::Relation { span, .. }
             | Self::Type { span, .. }
             | Self::Parameter { span, .. }
-            | Self::EnumLiteral { span, .. } => *span,
+            | Self::EnumLiteral { span, .. }
+            | Self::Star { span, .. } => *span,
         }
     }
 }

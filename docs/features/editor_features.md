@@ -73,6 +73,20 @@ Objects in `pg_catalog` and `information_schema` carry the `defaultLibrary` modi
 
 String literals are enum values only where the enum type is certain: casts (`'active'::status`), comparisons with an enum column or value (`=`, `<>`, `IN`, `BETWEEN`, `IS DISTINCT FROM`, `NULLIF`), arguments of function parameters with the enum type, and values assigned to enum columns in `INSERT ... VALUES`, `UPDATE ... SET`, and `ON CONFLICT DO UPDATE SET`.
 
+## Expand `*`
+
+With the cursor on a `*` or `t.*` in a select list or `RETURNING` list, the refactor code action "Expand `*` into its columns" replaces it with the columns it stands for:
+
+```sql
+select * from users u join posts p on p.user_id = u.id;
+-- becomes
+select u.id, u.name, p.id, p.user_id, p.title from users u join posts p on p.user_id = u.id;
+```
+
+Columns are qualified with the name or alias of their table when there are several in `FROM`, and quoted where needed. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for joins with `USING` or `NATURAL`, tables whose columns are unknown, or sources with two columns of the same name.
+
+Like hover, it requires a database connection.
+
 ## Turning Features Off
 
 Inlay hints and semantic highlighting are on by default. Turn them off for a project in `postgres-language-server.jsonc`:

@@ -1,3 +1,15 @@
+/// Whether `byte` can continue an unquoted identifier. Postgres treats every byte with the high
+/// bit set as a letter, so this covers every non-ASCII character in UTF-8.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332-L333
+fn is_identifier_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || !byte.is_ascii()
+}
+
+/// Whether `byte` can start an unquoted identifier.
+fn is_identifier_start(byte: u8) -> bool {
+    byte.is_ascii_alphabetic() || byte == b'_' || !byte.is_ascii()
+}
+
 pub(super) fn reference_end(sql: &str, start: usize) -> Option<usize> {
     let bytes = sql.as_bytes();
     if start >= bytes.len() {
@@ -24,9 +36,7 @@ pub(super) fn reference_end(sql: &str, start: usize) -> Option<usize> {
             }
         } else {
             let token_start = cursor;
-            while cursor < bytes.len()
-                && (bytes[cursor].is_ascii_alphanumeric() || matches!(bytes[cursor], b'_' | b'$'))
-            {
+            while cursor < bytes.len() && is_identifier_byte(bytes[cursor]) {
                 cursor += 1;
             }
             if cursor == token_start {
@@ -50,6 +60,86 @@ pub(super) fn reference_end(sql: &str, start: usize) -> Option<usize> {
     Some(cursor)
 }
 
+/// The end of the type name starting at `start`, with all the words of the SQL-standard
+/// multi-word types like `double precision`, `character varying`, or `timestamp with time zone`.
+/// Modifiers are left out, except the precision of `time` and `timestamp`, which can come
+/// before `with time zone`.
+pub(super) fn type_name_end(sql: &str, start: usize) -> Option<usize> {
+    let end = reference_end(sql, start)?;
+    // The end after `word`, if it is the next word after `cursor`.
+    let word_end = |cursor: usize, word: &str| {
+        let next = sql.len() - sql.get(cursor..)?.trim_start().len();
+        let after = next + word.len();
+        let is_word = sql.get(next..after)?.eq_ignore_ascii_case(word)
+            && sql.as_bytes().get(after).is_none_or(|&byte| {
+                !(byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || byte >= 0x80)
+            });
+        is_word.then_some(after)
+    };
+    let words = |cursor: usize, words: &[&str]| {
+        words
+            .iter()
+            .try_fold(cursor, |cursor, word| word_end(cursor, word))
+    };
+    let first = sql[start..end].to_ascii_lowercase();
+    let end = match first.as_str() {
+        "double" => word_end(end, "precision").unwrap_or(end),
+        "character" | "char" | "nchar" | "bit" => word_end(end, "varying").unwrap_or(end),
+        "national" => {
+            let end = word_end(end, "character")
+                .or_else(|| word_end(end, "char"))
+                .unwrap_or(end);
+            word_end(end, "varying").unwrap_or(end)
+        }
+        "time" | "timestamp" => {
+            let rest = sql[end..].trim_start();
+            let precision = rest
+                .starts_with('(')
+                .then(|| rest.find(')'))
+                .flatten()
+                .map_or(end, |close| sql.len() - rest.len() + close + 1);
+            words(precision, &["with", "time", "zone"])
+                .or_else(|| words(precision, &["without", "time", "zone"]))
+                .unwrap_or(end)
+        }
+        _ => end,
+    };
+    Some(end)
+}
+
+/// The end of `*`, or of a qualified `t.*` or `"s"."t".*`, starting at `start`.
+pub(super) fn star_end(sql: &str, start: usize) -> Option<usize> {
+    let bytes = sql.as_bytes();
+    let mut cursor = start;
+    loop {
+        match *bytes.get(cursor)? {
+            b'*' => return Some(cursor + 1),
+            b'.' => cursor += 1,
+            byte if byte.is_ascii_whitespace() => cursor += 1,
+            b'"' => {
+                cursor += 1;
+                loop {
+                    if *bytes.get(cursor)? == b'"' {
+                        cursor += 1;
+                        if bytes.get(cursor) != Some(&b'"') {
+                            break;
+                        }
+                    }
+                    cursor += 1;
+                }
+            }
+            byte if byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || byte >= 0x80 => {
+                while bytes.get(cursor).is_some_and(|byte| {
+                    byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || *byte >= 0x80
+                }) {
+                    cursor += 1;
+                }
+            }
+            _ => return None,
+        }
+    }
+}
+
 pub(super) fn token_end(sql: &str, start: usize) -> Option<usize> {
     let bytes = sql.as_bytes();
     let mut cursor = start;
@@ -57,10 +147,8 @@ pub(super) fn token_end(sql: &str, start: usize) -> Option<usize> {
         cursor += 1;
     }
     let first = *bytes.get(cursor)?;
-    if first.is_ascii_alphabetic() || first == b'_' {
-        while cursor < bytes.len()
-            && (bytes[cursor].is_ascii_alphanumeric() || bytes[cursor] == b'_')
-        {
+    if is_identifier_start(first) {
+        while cursor < bytes.len() && is_identifier_byte(bytes[cursor]) {
             cursor += 1;
         }
         return Some(cursor);
@@ -70,8 +158,8 @@ pub(super) fn token_end(sql: &str, start: usize) -> Option<usize> {
     }
     while cursor < bytes.len()
         && !bytes[cursor].is_ascii_whitespace()
-        && !bytes[cursor].is_ascii_alphanumeric()
-        && !matches!(bytes[cursor], b'_' | b'(' | b')' | b',' | b';')
+        && !is_identifier_byte(bytes[cursor])
+        && !matches!(bytes[cursor], b'(' | b')' | b',' | b';')
     {
         cursor += 1;
     }
@@ -207,7 +295,9 @@ pub(super) fn operator_end(sql: &str, start: usize) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::{cast_end, literal_end, operator_end, reference_end};
+    use super::{
+        cast_end, literal_end, operator_end, reference_end, star_end, token_end, type_name_end,
+    };
 
     fn text(sql: &str, start: usize, end: Option<usize>) -> &str {
         &sql[start..end.expect("span")]
@@ -240,6 +330,33 @@ mod tests {
     }
 
     #[test]
+    fn type_name_spans_cover_every_word() {
+        let cases = [
+            ("int8[]", "int8"),
+            ("pg_catalog.int4)", "pg_catalog.int4"),
+            ("double precision, x", "double precision"),
+            ("DOUBLE\n  PRECISION", "DOUBLE\n  PRECISION"),
+            ("character varying(10)", "character varying"),
+            ("character(10)", "character"),
+            ("bit varying", "bit varying"),
+            ("national character varying", "national character varying"),
+            ("timestamp with time zone 'now'", "timestamp with time zone"),
+            (
+                "timestamp(3) without time zone",
+                "timestamp(3) without time zone",
+            ),
+            ("timestamp(3)", "timestamp"),
+            ("time with x", "time"),
+            ("timestamptz", "timestamptz"),
+            ("double precisionx", "double"),
+            ("\"double\" precision", "\"double\""),
+        ];
+        for (sql, expected) in cases {
+            assert_eq!(text(sql, 0, type_name_end(sql, 0)), expected, "{sql}");
+        }
+    }
+
+    #[test]
     fn literal_spans_cover_the_whole_constant() {
         let cases = [
             ("'happy'", "'happy'"),
@@ -256,5 +373,33 @@ mod tests {
         }
         assert_eq!(literal_end("x", 0), None);
         assert_eq!(literal_end("'open", 0), None);
+    }
+
+    #[test]
+    fn star_spans_cover_the_qualifier() {
+        let sql = r#"select *, t.*, "My ""T""" . *, s.t.* from t"#;
+        let start = sql.find('*').unwrap();
+        assert_eq!(text(sql, start, star_end(sql, start)), "*");
+        let start = sql.find("t.*").unwrap();
+        assert_eq!(text(sql, start, star_end(sql, start)), "t.*");
+        let start = sql.find("\"My").unwrap();
+        assert_eq!(text(sql, start, star_end(sql, start)), r#""My ""T""" . *"#);
+        let start = sql.find("s.t").unwrap();
+        assert_eq!(text(sql, start, star_end(sql, start)), "s.t.*");
+    }
+
+    #[test]
+    fn non_ascii_identifiers() {
+        let sql = "select größe, élan, café.öl, \"Ölstand\", x::straße from t";
+        for name in ["größe", "élan", "café.öl", "\"Ölstand\""] {
+            let start = sql.find(name).unwrap();
+            assert_eq!(text(sql, start, reference_end(sql, start)), name);
+            assert_eq!(
+                text(sql, start, token_end(sql, start)),
+                name.split('.').next().unwrap()
+            );
+        }
+        let start = sql.find("::").unwrap();
+        assert_eq!(text(sql, start, cast_end(sql, start)), "::straße");
     }
 }

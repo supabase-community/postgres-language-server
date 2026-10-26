@@ -41,7 +41,13 @@ pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
     });
 
     if let Some(hovered_node) = HoveredNode::get(&ctx) {
-        if let Some(item) = resolved_hoverable(&hovered_node, params.references, params.snapshot) {
+        if let Some(item) = resolved_hoverable(
+            &hovered_node,
+            params.references,
+            params.snapshot,
+            params.stmt_sql,
+            params.position,
+        ) {
             return format_hover_markdown(&item, params.snapshot)
                 .ok()
                 .map(|markdown| vec![markdown]);
