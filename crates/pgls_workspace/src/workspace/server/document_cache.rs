@@ -15,10 +15,12 @@ use crate::workspace::ProjectKey;
 
 mod parse;
 mod tree;
+mod walk;
 
 pub(crate) use parse::ParseResult;
 use parse::PgQueryStore;
 use tree::TreeSitterStore;
+pub(crate) use walk::{ContentChange, ResolvedStatement, WalkCache};
 
 /// What the caches of a document depend on besides its text.
 #[derive(Clone)]
@@ -71,6 +73,7 @@ pub(crate) struct DocumentCache {
 struct KeyedCaches {
     key: Option<CacheKey>,
     analysis: Option<Arc<DocumentAnalysis>>,
+    walk: WalkCache,
 }
 
 impl DocumentCache {
@@ -104,6 +107,12 @@ impl DocumentCache {
         self.keyed.lock().unwrap().analysis.clone()
     }
 
+    /// The number of resolved statements and walk checkpoints, whatever their key.
+    #[cfg(test)]
+    pub(crate) fn walk_size(&self) -> (usize, usize) {
+        self.keyed.lock().unwrap().walk.len()
+    }
+
     /// The caches for `key`, emptied first if they were for another key.
     fn keyed(&self, key: &CacheKey) -> std::sync::MutexGuard<'_, KeyedCaches> {
         let mut keyed = self.keyed.lock().unwrap();
@@ -116,10 +125,18 @@ impl DocumentCache {
         keyed
     }
 
-    /// Drops what the new content of the document invalidates, see [`Self::retain_statements`]
-    /// for the statements.
-    pub(crate) fn content_changed(&mut self) {
-        self.keyed.get_mut().unwrap().analysis = None;
+    /// Runs `f` on what the walks over the document left for `key`. It is not held while
+    /// walking, so that requests on the same document don't wait for each other.
+    pub(crate) fn with_walk<R>(&self, key: &CacheKey, f: impl FnOnce(&mut WalkCache) -> R) -> R {
+        f(&mut self.keyed(key).walk)
+    }
+
+    /// Drops what `change` invalidates, see [`WalkCache::content_changed`], and the analysis.
+    /// [`Self::retain_statements`] drops what was cached for the statements.
+    pub(crate) fn content_changed(&mut self, change: ContentChange) {
+        let keyed = self.keyed.get_mut().unwrap();
+        keyed.analysis = None;
+        keyed.walk.content_changed(change);
     }
 
     /// The tree of the statement `id`, or why it doesn't parse.

@@ -1,7 +1,5 @@
 use std::{
-    borrow::Borrow,
     collections::HashMap,
-    hash::{DefaultHasher, Hash, Hasher},
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
     sync::{
@@ -26,9 +24,8 @@ use futures::{StreamExt, TryStreamExt, stream};
 use pgls_analyse::{
     ActionCategory, AnalysisFilter, Applicability, RuleCategories, SUPPRESSION_ACTION_CATEGORY,
 };
-use pgls_analyser::{LinterDiagnostic, MigrationSection, RuleFix, WalkParams};
-use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
-use pgls_catalog::{Catalog, CatalogBase, Origin, Session};
+use pgls_analyser::{LinterDiagnostic, MigrationSection, RuleFix};
+use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
 use pgls_lexer::convert_to_positional_params_with_metadata;
 use std::borrow::Cow;
@@ -64,7 +61,7 @@ use crate::{
         semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    workspace::{AnalyserDiagnosticsMapper, WithCSTMapper},
+    workspace::WithCSTMapper,
 };
 
 use super::{
@@ -95,6 +92,7 @@ mod sql_function;
 #[cfg(feature = "db")]
 mod statement_execution;
 mod statement_identifier;
+mod walk;
 
 pub struct WorkspaceServer {
     /// global settings object for this workspace
@@ -108,23 +106,16 @@ pub struct WorkspaceServer {
     /// The indexed database snapshot the catalog starts from
     catalog_base: Mutex<Option<Arc<CatalogBase>>>,
 
-    /// The last snapshot built for completions and hover
-    snapshot_before: Mutex<Option<SnapshotBefore>>,
-
     /// Incremented whenever the settings change, see [`CacheKey`].
     settings_version: AtomicU64,
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
-}
 
-/// A database snapshot with the changes of the statements before a statement.
-struct SnapshotBefore {
-    /// The database snapshot it is built from.
-    base: Arc<Snapshot>,
-    /// The text that the statement sees.
-    key: u64,
-    snapshot: Arc<Snapshot>,
+    /// The statements that the editor walks visited, to test that they resume from
+    /// checkpoints.
+    #[cfg(test)]
+    walked_statements: std::sync::atomic::AtomicUsize,
 }
 
 /// The `Workspace` object is long-lived, so we want it to be able to cross
@@ -150,9 +141,10 @@ impl WorkspaceServer {
             documents: RwLock::new(HashMap::new()),
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
-            snapshot_before: Mutex::default(),
             settings_version: AtomicU64::default(),
             connection: ConnectionManager::new(),
+            #[cfg(test)]
+            walked_statements: Default::default(),
         }
     }
 
@@ -164,8 +156,9 @@ impl WorkspaceServer {
             documents: RwLock::new(HashMap::new()),
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
-            snapshot_before: Mutex::default(),
             settings_version: AtomicU64::default(),
+            #[cfg(test)]
+            walked_statements: Default::default(),
         }
     }
 
@@ -325,6 +318,7 @@ impl WorkspaceServer {
     /// ones of the file.
     fn refactor_code_actions(
         &self,
+        project_key: ProjectKey,
         settings: Option<&Settings>,
         doc: &Document,
         position: TextSize,
@@ -349,246 +343,12 @@ impl WorkspaceServer {
         let Some(snapshot) = snapshot else {
             return Vec::new();
         };
-        let (stmt_start, references) = self.references_at(settings, doc, &snapshot, position);
+        let request = self.editor_request(project_key, settings, snapshot);
+        let (stmt_start, references) = self.references_at(&request, doc, position);
         references
             .iter()
             .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
             .collect()
-    }
-
-    /// Walks the statements of `doc` that start before `end` like the analyser does, see
-    /// [`pgls_analyser::walk_statements`]. `visit` gets every parsed statement, except those with
-    /// identifier parameters, with the catalog and the session as they are before it. `settings`
-    /// are the ones of the file. Returns the catalog as a statement at `end` sees it.
-    fn walk_statements(
-        &self,
-        settings: Option<&Settings>,
-        doc: &Document,
-        snapshot: &Arc<Snapshot>,
-        end: TextSize,
-        mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
-    ) -> Catalog {
-        let (search_path, sections) = settings
-            .map(|settings| {
-                (
-                    settings.typecheck.search_path.clone(),
-                    document_sections(settings, doc),
-                )
-            })
-            .unwrap_or_default();
-        let mut stmts = Vec::new();
-        let mut unparsable = Vec::new();
-        for (stmt, _, skipped) in doc.iter(AnalyserDiagnosticsMapper) {
-            let Some(start) = stmt
-                .as_ref()
-                .map(|stmt| stmt.range.start())
-                .or_else(|| skipped.as_ref().map(|skipped| skipped.range.start()))
-            else {
-                continue;
-            };
-            if start >= end {
-                break;
-            }
-            stmts.extend(stmt);
-            unparsable.extend(skipped);
-        }
-
-        pgls_analyser::walk_statements(
-            WalkParams {
-                stmts: &stmts,
-                unparsable: &unparsable,
-                catalog_base: Some(self.catalog_base(snapshot)),
-                search_path: &snapshot.expand_search_path(&search_path),
-                sections: &sections,
-                end,
-                // Editor features show what names most likely refer to, so a `DO` block or a
-                // statement that doesn't parse doesn't turn them off for the rest of the file.
-                best_effort: true,
-            },
-            |stmt, file_context| {
-                // The names of statements with identifier parameters like `:name` are
-                // placeholders.
-                if !stmt.has_identifier_parameters {
-                    visit(stmt, file_context.catalog(), file_context.session());
-                }
-            },
-        )
-    }
-
-    /// For hover on the statement `id` at `range`: the references whose span contains
-    /// `position`, and the database snapshot as the statement sees it.
-    fn hover_references(
-        &self,
-        settings: Option<&Settings>,
-        doc: &Document,
-        id: &StatementId,
-        range: TextRange,
-        position: TextSize,
-        snapshot: Arc<Snapshot>,
-    ) -> (Vec<Reference>, Arc<Snapshot>) {
-        let search_path = settings
-            .map(|settings| settings.typecheck.search_path.clone())
-            .unwrap_or_default();
-        let mut found = None;
-        let catalog = self.walk_statements(
-            settings,
-            doc,
-            &snapshot,
-            position + TextSize::from(1),
-            |stmt, catalog, session| {
-                let Some(sql) = stmt.sql.as_deref() else {
-                    return;
-                };
-                if stmt.range != range {
-                    return;
-                }
-                let position = stmt.statement_offset(position);
-                let (references, others): (Vec<_>, Vec<_>) = resolve(ResolveParams {
-                    stmt: &stmt.root,
-                    catalog,
-                    search_path: session.search_path(),
-                    function: stmt.function.as_ref(),
-                    sql: Some(sql),
-                    collect_references: true,
-                })
-                .references
-                .into_iter()
-                .partition(|reference| {
-                    reference
-                        .span()
-                        .is_some_and(|span| span.contains_inclusive(position))
-                });
-                // Objects that the file didn't change are the same in the database snapshot.
-                let snapshot = if in_database(&references, &others) {
-                    Arc::clone(&snapshot)
-                } else {
-                    self.snapshot_before(
-                        doc,
-                        id,
-                        range,
-                        Arc::clone(&snapshot),
-                        &search_path,
-                        || catalog,
-                    )
-                };
-                found = Some((references, snapshot));
-            },
-        );
-        // A statement that doesn't parse is not visited. It changes nothing, so it sees the
-        // catalog after the walk.
-        found.unwrap_or_else(|| {
-            (
-                Vec::new(),
-                self.snapshot_before(doc, id, range, snapshot, &search_path, || catalog),
-            )
-        })
-    }
-
-    /// The references whose span contains `position`, in the innermost statement at `position`
-    /// (the body of a SQL function rather than its `CREATE FUNCTION`). Their spans are relative
-    /// to the start of that statement, which is returned with them. Empty if the statement's
-    /// text isn't the source text, like a function body with escaped quotes, since the spans
-    /// would then not point into the document.
-    fn references_at(
-        &self,
-        settings: Option<&Settings>,
-        doc: &Document,
-        snapshot: &Arc<Snapshot>,
-        position: TextSize,
-    ) -> (TextSize, Vec<Reference>) {
-        let mut innermost: Option<(TextRange, bool, Vec<Reference>)> = None;
-        self.walk_statements(
-            settings,
-            doc,
-            snapshot,
-            position + TextSize::from(1),
-            |stmt, catalog, session| {
-                let Some(sql) = stmt.sql.as_deref() else {
-                    return;
-                };
-                if !stmt.range.contains(position)
-                    || innermost
-                        .as_ref()
-                        .is_some_and(|(range, ..)| !range.contains_range(stmt.range))
-                {
-                    return;
-                }
-                let references = resolve(ResolveParams {
-                    stmt: &stmt.root,
-                    catalog,
-                    search_path: session.search_path(),
-                    function: stmt.function.as_ref(),
-                    sql: Some(sql),
-                    collect_references: true,
-                })
-                .references;
-                innermost = Some((stmt.range, stmt.offsets.is_verbatim(), references));
-            },
-        );
-        let Some((range, true, references)) = innermost else {
-            return (TextSize::default(), Vec::new());
-        };
-        let position = position - range.start();
-        let references = references
-            .into_iter()
-            .filter(|reference| {
-                reference
-                    .span()
-                    .is_some_and(|span| span.contains_inclusive(position))
-            })
-            .collect();
-        (range.start(), references)
-    }
-
-    /// The indexed database snapshot, built once per snapshot.
-    fn catalog_base(&self, snapshot: &Arc<Snapshot>) -> Arc<CatalogBase> {
-        let mut cached = self.catalog_base.lock().unwrap();
-        if let Some(base) = cached.as_ref().filter(|base| base.is_built_from(snapshot)) {
-            return Arc::clone(base);
-        }
-        let base = Arc::new(CatalogBase::new(Arc::clone(snapshot)));
-        *cached = Some(Arc::clone(&base));
-        base
-    }
-
-    /// The database snapshot as the statement `id` at `range` sees it: with the objects that the
-    /// statements before it create, change, or drop. `catalog` returns the catalog that the
-    /// statement sees, and is only called when the snapshot is not cached.
-    fn snapshot_before<C: Borrow<Catalog>>(
-        &self,
-        doc: &Document,
-        id: &StatementId,
-        range: TextRange,
-        snapshot: Arc<Snapshot>,
-        search_path: &[String],
-        catalog: impl FnOnce() -> C,
-    ) -> Arc<Snapshot> {
-        // The statement sees the text before it, and the body of a SQL function also sees its
-        // `CREATE FUNCTION`. Files with other settings can see another search path.
-        let mut hasher = DefaultHasher::new();
-        doc.get_document_content()[..usize::from(range.start())].hash(&mut hasher);
-        id.parent_content().hash(&mut hasher);
-        search_path.hash(&mut hasher);
-        let key = hasher.finish();
-
-        let mut cached = self.snapshot_before.lock().unwrap();
-        if let Some(cached) = cached.as_ref()
-            && cached.key == key
-            && Arc::ptr_eq(&cached.base, &snapshot)
-        {
-            return Arc::clone(&cached.snapshot);
-        }
-
-        let result = catalog()
-            .borrow()
-            .snapshot()
-            .unwrap_or_else(|| Arc::clone(&snapshot));
-        *cached = Some(SnapshotBefore {
-            base: snapshot,
-            key,
-            snapshot: Arc::clone(&result),
-        });
-        result
     }
 
     /// Diagnostics from the database: EXPLAIN for top-level statements whose references are all
@@ -812,8 +572,6 @@ impl Workspace for WorkspaceServer {
                 params.vcs_base_path,
                 params.gitignore_matches.as_slice(),
             )?;
-        // The search path and the migration sections change what a statement sees.
-        *self.snapshot_before.lock().unwrap() = None;
 
         Ok(())
     }
@@ -882,8 +640,6 @@ impl Workspace for WorkspaceServer {
         self.workspaces_mut()
             .as_mut()
             .set_nested_settings(params.project_key, nested);
-        // The search path and the migration sections change what a statement sees.
-        *self.snapshot_before.lock().unwrap() = None;
         Ok(result)
     }
 
@@ -988,7 +744,12 @@ impl Workspace for WorkspaceServer {
 
         actions.splice(
             0..0,
-            self.refactor_code_actions(settings, parser, params.cursor_position),
+            self.refactor_code_actions(
+                params.project_key,
+                settings,
+                parser,
+                params.cursor_position,
+            ),
         );
 
         if let Some(settings) = settings {
@@ -1517,14 +1278,10 @@ impl Workspace for WorkspaceServer {
             .ok_or(WorkspaceError::not_found())?;
 
         let settings = self.workspaces();
-        let search_path = settings
-            .settings_for(params.project_key, params.path.as_path())
-            .map(|settings| settings.typecheck.search_path.clone())
-            .unwrap_or_default();
+        let settings = settings.settings_for(params.project_key, params.path.as_path());
 
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
-            .settings_for(params.project_key, params.path.as_path())
             .and_then(|settings| {
                 self.connection
                     .with_pool(&settings.db, |pool| self.snapshot.load(pool))
@@ -1548,23 +1305,8 @@ impl Workspace for WorkspaceServer {
             }
             Some((stmt, cst)) => {
                 let position = stmt.statement_offset(params.position);
-                let range = stmt.range;
-                let snapshot = self.snapshot_before(
-                    parsed_doc,
-                    &stmt.id,
-                    range,
-                    Arc::clone(&snapshot),
-                    &search_path,
-                    || {
-                        self.walk_statements(
-                            settings.settings_for(params.project_key, params.path.as_path()),
-                            parsed_doc,
-                            &snapshot,
-                            range.start(),
-                            |_, _, _| {},
-                        )
-                    },
-                );
+                let request = self.editor_request(params.project_key, settings, snapshot);
+                let snapshot = self.snapshot_before(&request, parsed_doc, &stmt);
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
@@ -1614,14 +1356,9 @@ impl Workspace for WorkspaceServer {
         match doc.iter_at(WithCSTMapper, params.position).last() {
             Some((stmt, ts_tree)) => {
                 let position_in_stmt = stmt.statement_offset(params.position);
-                let (references, snapshot) = self.hover_references(
-                    settings,
-                    doc,
-                    &stmt.id,
-                    stmt.range,
-                    params.position,
-                    snapshot,
-                );
+                let request = self.editor_request(params.project_key, settings, snapshot);
+                let (references, snapshot) =
+                    self.hover_references(&request, doc, &stmt, params.position);
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,
@@ -1676,36 +1413,28 @@ impl Workspace for WorkspaceServer {
             return Ok(PullInlayHintsResult::default());
         };
 
+        let request = self.editor_request(params.project_key, settings, snapshot);
         let mut hints = Vec::new();
-        self.walk_statements(
-            settings,
-            doc,
-            &snapshot,
-            params.range.end(),
-            |stmt, catalog, session| {
+        for statements in self.resolved_statements(&request, doc, params.range) {
+            for resolved in statements.iter() {
+                let stmt = &resolved.stmt;
                 let Some(sql) = stmt.sql.as_deref() else {
-                    return;
+                    continue;
                 };
                 if stmt.range.intersect(params.range).is_none() {
-                    return;
+                    continue;
                 }
                 hints.extend(
-                    pgls_inlay_hints::inlay_hints(pgls_inlay_hints::InlayHintsParams {
-                        stmt: &stmt.root,
-                        sql,
-                        catalog,
-                        search_path: session.search_path(),
-                        function: stmt.function.as_ref(),
-                    })
-                    .into_iter()
-                    .map(|hint| InlayHint {
-                        offset: stmt.document_offset(hint.offset),
-                        label: hint.label,
-                        kind: hint.kind.into(),
-                    }),
+                    pgls_inlay_hints::inlay_hints_of_references(&resolved.references, sql)
+                        .into_iter()
+                        .map(|hint| InlayHint {
+                            offset: stmt.document_offset(hint.offset),
+                            label: hint.label,
+                            kind: hint.kind.into(),
+                        }),
                 );
-            },
-        );
+            }
+        }
 
         hints.sort_by_key(|hint| hint.offset);
         Ok(PullInlayHintsResult { hints })
@@ -1752,38 +1481,28 @@ impl Workspace for WorkspaceServer {
         let range = params
             .range
             .unwrap_or_else(|| TextRange::up_to(TextSize::of(doc.get_document_content())));
+        let request = self.editor_request(params.project_key, settings, snapshot);
         let mut tokens = Vec::new();
-        self.walk_statements(
-            settings,
-            doc,
-            &snapshot,
-            range.end(),
-            |stmt, catalog, session| {
+        for statements in self.resolved_statements(&request, doc, range) {
+            for resolved in statements.iter() {
+                let stmt = &resolved.stmt;
                 let Some(sql) = stmt.sql.as_deref() else {
-                    return;
+                    continue;
                 };
                 if stmt.range.intersect(range).is_none() {
-                    return;
+                    continue;
                 }
                 tokens.extend(
-                    pgls_semantic_tokens::semantic_tokens(
-                        pgls_semantic_tokens::SemanticTokensParams {
-                            stmt: &stmt.root,
-                            sql,
-                            catalog,
-                            search_path: session.search_path(),
-                            function: stmt.function.as_ref(),
-                        },
-                    )
-                    .into_iter()
-                    .map(|token| SemanticToken {
-                        range: stmt.document_range(token.range),
-                        kind: token.kind.into(),
-                        default_library: token.default_library,
-                    }),
+                    pgls_semantic_tokens::semantic_tokens_of_references(&resolved.references, sql)
+                        .into_iter()
+                        .map(|token| SemanticToken {
+                            range: stmt.document_range(token.range),
+                            kind: token.kind.into(),
+                            default_library: token.default_library,
+                        }),
                 );
-            },
-        );
+            }
+        }
 
         // The body of a SQL function is a statement of its own, inside its `CREATE FUNCTION`.
         tokens.sort_by_key(|token| (token.range.start(), token.range.end()));
@@ -1797,41 +1516,6 @@ impl Workspace for WorkspaceServer {
         });
         Ok(PullSemanticTokensResult { tokens })
     }
-}
-
-/// Whether hover finds what `references` resolve to in the database snapshot: objects that the
-/// file didn't change, and columns of CTEs and subqueries. `others` are the other references of
-/// the statement.
-fn in_database(references: &[Reference], others: &[Reference]) -> bool {
-    // The statement references each relation that it takes columns from.
-    let unchanged_relation = |schema: &str, name: &str| {
-        references.iter().chain(others).any(|reference| {
-            matches!(
-                reference,
-                Reference::Relation { relation, .. }
-                    if relation.schema == schema
-                        && relation.name == name
-                        && relation.origin == Origin::Database
-            )
-        })
-    };
-    !references.is_empty()
-        && references.iter().all(|reference| match reference {
-            Reference::Relation { relation, .. } => relation.origin == Origin::Database,
-            Reference::Function { function, .. } => function.origin == Origin::Database,
-            Reference::Column {
-                source: ColumnSource::Relation { schema, name },
-                ..
-            } => unchanged_relation(schema, name),
-            Reference::Column { .. } => true,
-            Reference::Type { type_info, .. } | Reference::EnumLiteral { type_info, .. } => {
-                type_info.origin == Origin::Database
-            }
-            // Parameters belong to a function of the file.
-            Reference::Parameter { .. } => false,
-            // The columns of a `*` can come from objects that the file changed.
-            Reference::Star { .. } => false,
-        })
 }
 
 /// The migration sections of `doc`, like the up and down migrations of dbmate and goose.

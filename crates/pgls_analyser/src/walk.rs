@@ -30,12 +30,65 @@ pub struct WalkParams<'a> {
     /// like a `DO` block, see [`Catalog::best_effort`]. Editor features show what names most
     /// likely refer to; lint only reports what is certain.
     pub best_effort: bool,
+    /// Resumes a walk where it stopped instead of starting at the beginning of the file. The
+    /// statements are then those from [`WalkState::at`] on.
+    pub from: Option<WalkState>,
+    /// The starts of top-level statements where to record the state of the walk, in file
+    /// order, see [`Walk::checkpoints`].
+    pub checkpoints: &'a [TextSize],
+}
+
+/// The state of a walk before a top-level statement: the catalog and the session after the
+/// statements before it. It only depends on the text before the statement, the section the
+/// statement is in, and the parameters of the walk other than the statements.
+#[derive(Clone)]
+pub struct WalkState {
+    at: TextSize,
+    /// The start of the migration section that `at` is in, or zero before the first section.
+    section_start: TextSize,
+    catalog: Catalog,
+    session: Session,
+    /// In a down section, the catalog after the up sections before it.
+    up_catalog: Option<Catalog>,
+}
+
+impl WalkState {
+    /// The start of the statement before which the walk stopped.
+    pub fn at(&self) -> TextSize {
+        self.at
+    }
+
+    /// Whether `sections` put the statement at [`Self::at`] in the section it was in when the
+    /// walk stopped. A marker inserted right before the statement changes that, even though the
+    /// text before the statement's old start is the same.
+    pub fn fits(&self, sections: &[MigrationSection]) -> bool {
+        section_start(sections, self.at) == self.section_start
+    }
+}
+
+/// The start of the section that `offset` is in, or zero before the first section.
+fn section_start(sections: &[MigrationSection], offset: TextSize) -> TextSize {
+    sections
+        .iter()
+        .take_while(|section| section.range.start() <= offset)
+        .last()
+        .map_or(TextSize::from(0), |section| section.range.start())
+}
+
+pub struct Walk {
+    /// The catalog as a statement at [`WalkParams::end`] sees it.
+    pub catalog: Catalog,
+    /// The state of the walk at each of [`WalkParams::checkpoints`] that it got to: before the
+    /// first statement that starts at or after it. Resuming from it walks like walking from the
+    /// start of the file, as long as the text before it doesn't change.
+    pub checkpoints: Vec<WalkState>,
 }
 
 /// Walks the statements like the database runs them: the catalog and the session follow the
 /// statements, so that each statement sees the objects that the statements before it create,
 /// change or drop. `visit` gets each statement with the file context as it is before it.
-/// Returns the catalog as a statement at [`WalkParams::end`] sees it.
+/// Returns the catalog as a statement at [`WalkParams::end`] sees it, and the states at the
+/// checkpoints.
 ///
 /// - Each migration section runs in a session and transaction of its own. A down section runs
 ///   after the up sections before it, and its changes don't carry into the next section.
@@ -51,7 +104,7 @@ pub struct WalkParams<'a> {
 pub fn walk_statements(
     params: WalkParams<'_>,
     mut visit: impl FnMut(&AnalysableStatement, &AnalysedFileContext),
-) -> Catalog {
+) -> Walk {
     let roots: Vec<&pgls_query::NodeEnum> = params.stmts.iter().map(|s| &*s.root).collect();
 
     // The catalog after the up sections so far.
@@ -60,23 +113,51 @@ pub fn walk_statements(
         catalog = catalog.best_effort();
     }
     let mut unparsable = params.unparsable.iter().peekable();
+    let mut from = params.from;
+    // The walk can't record the states before where it resumes.
+    let resumes_at = from.as_ref().map_or(TextSize::from(0), WalkState::at);
+    let mut checkpoint_at = params
+        .checkpoints
+        .iter()
+        .copied()
+        .filter(|at| *at >= resumes_at)
+        .peekable();
+    let mut checkpoints = Vec::new();
     for unit in migration_units(params.stmts, params.sections) {
         if unit.start >= params.end {
             break;
         }
+        if from.as_ref().is_some_and(|from| unit.end <= from.at) {
+            continue;
+        }
         let is_down = unit
             .section
             .is_some_and(|section| section.direction == Direction::Down);
-        let unit_catalog = if is_down {
-            catalog.clone()
-        } else {
-            std::mem::replace(&mut catalog, Catalog::new(None))
+        let (unit_catalog, session) = match from.take() {
+            Some(from) => {
+                debug_assert_eq!(
+                    from.section_start, unit.start,
+                    "the state fits the sections"
+                );
+                if let Some(up_catalog) = from.up_catalog {
+                    catalog = up_catalog;
+                }
+                (from.catalog, from.session)
+            }
+            None => {
+                let unit_catalog = if is_down {
+                    catalog.clone()
+                } else {
+                    std::mem::replace(&mut catalog, Catalog::new(None))
+                };
+                // Each section runs in a session and transaction of its own.
+                let session = Session::new(params.search_path.to_vec()).with_transaction_mode(
+                    unit.section
+                        .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
+                );
+                (unit_catalog, session)
+            }
         };
-        // Each section runs in a session and transaction of its own.
-        let session = Session::new(params.search_path.to_vec()).with_transaction_mode(
-            unit.section
-                .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-        );
         let stmts = &params.stmts[unit.stmts.clone()];
         let unit_range = TextRange::new(unit.start, unit.end);
         let last_end = params
@@ -122,10 +203,22 @@ pub fn walk_statements(
                 )
                 .with_stmt_count(stmt_count(unit_range));
         let mut implicit_block = None;
+        let state =
+            |at: TextSize, file_context: &AnalysedFileContext, catalog: &Catalog| WalkState {
+                at,
+                section_start: unit.start,
+                catalog: file_context.catalog().clone(),
+                session: file_context.session().clone(),
+                up_catalog: is_down.then(|| catalog.clone()),
+            };
 
         for stmt in stmts {
             if stmt.range.start() >= params.end {
                 break;
+            }
+            while let Some(at) = checkpoint_at.next_if(|at| stmt.range.start() >= *at) {
+                skip_unparsable(&mut unparsable, at, &mut file_context);
+                checkpoints.push(state(at, &file_context, &catalog));
             }
             let runs = stmt.function.is_none();
             if runs {
@@ -156,16 +249,26 @@ pub fn walk_statements(
             file_context.next(runs, !placeholders);
         }
 
+        while let Some(at) = checkpoint_at.next_if(|at| *at < unit.end && *at <= params.end) {
+            skip_unparsable(&mut unparsable, at, &mut file_context);
+            checkpoints.push(state(at, &file_context, &catalog));
+        }
         skip_unparsable(&mut unparsable, unit.end.min(params.end), &mut file_context);
         // The section that contains `end` decides what a statement there sees.
         if params.end < unit.end {
-            return file_context.into_catalog();
+            return Walk {
+                catalog: file_context.into_catalog(),
+                checkpoints,
+            };
         }
         if !is_down {
             catalog = file_context.into_catalog();
         }
     }
-    catalog
+    Walk {
+        catalog,
+        checkpoints,
+    }
 }
 
 /// Moves past the statements that don't parse and start before `before`. Those that may have

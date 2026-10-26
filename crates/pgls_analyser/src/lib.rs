@@ -27,7 +27,7 @@ pub use linter_registry::{
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use migration::{Direction, MigrationSection};
 use walk::is_plain_query;
-pub use walk::{WalkParams, walk_statements};
+pub use walk::{Walk, WalkParams, WalkState, walk_statements};
 
 // For convenience in macros and rule files - keep these shorter names
 pub use LinterDiagnostic as RuleDiagnostic;
@@ -251,6 +251,8 @@ impl<'a> Analyser<'a> {
             sections: &params.sections,
             end: TextSize::from(u32::MAX),
             best_effort: false,
+            from: None,
+            checkpoints: &[],
         };
         walk_statements(walk, |stmt, file_context| {
             let root = &*stmt.root;
