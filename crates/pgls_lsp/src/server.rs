@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::Notify;
 use tokio::task::spawn_blocking;
-use tower_lsp_server::jsonrpc::Result as LspResult;
+use tower_lsp_server::jsonrpc::{self, Result as LspResult};
 use tower_lsp_server::{ClientSocket, ls_types::*};
 use tower_lsp_server::{LanguageServer, LspService, Server};
 use tracing::{Instrument, error, info};
@@ -236,7 +236,10 @@ impl LanguageServer for LSPServer {
         match handlers::code_actions::execute_command(&self.session, params).await {
             // we'll inform the client within `code_actions::execute_command`
             Ok(_) => LspResult::Ok(None),
-            Err(err) => LspResult::Err(into_lsp_error(err)),
+            Err(err) => LspResult::Err(
+                err.downcast::<jsonrpc::Error>()
+                    .unwrap_or_else(into_lsp_error),
+            ),
         }
     }
 
