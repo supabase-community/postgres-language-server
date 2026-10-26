@@ -8,7 +8,7 @@ use std::{
 };
 
 #[cfg(feature = "db")]
-use crate::features::code_actions::execute_statement::execution;
+use crate::features::code_actions::execute_statement::{execution, running::RunningStatements};
 use analyser::AnalyserVisitorBuilder;
 #[cfg(feature = "db")]
 use async_helper::run_async;
@@ -115,13 +115,7 @@ pub struct WorkspaceServer {
 
     /// The statements that are being executed, to cancel them
     #[cfg(feature = "db")]
-    running_statements: Mutex<Vec<RunningStatement>>,
-}
-
-#[cfg(feature = "db")]
-struct RunningStatement {
-    params: ExecuteStatementParams,
-    cancel: futures::channel::oneshot::Sender<()>,
+    running_statements: RunningStatements,
 }
 
 /// A database snapshot with the changes of the statements before a statement.
@@ -158,7 +152,7 @@ impl WorkspaceServer {
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
             connection: ConnectionManager::new(),
-            running_statements: Mutex::default(),
+            running_statements: RunningStatements::default(),
         }
     }
 
@@ -1153,20 +1147,9 @@ impl Workspace for WorkspaceServer {
             });
         };
 
-        // The language server has no data to send, and nowhere to put the data it receives.
-        if let pgls_query::NodeEnum::CopyStmt(copy) = &ast
-            && copy.filename.is_empty()
-            && !copy.is_program
-        {
-            let copy = if copy.is_from {
-                "COPY ... FROM STDIN"
-            } else {
-                "COPY ... TO STDOUT"
-            };
+        if let Some(message) = execution::refusal(&ast) {
             return Ok(ExecuteStatementResult {
-                message: format!(
-                    "`{copy}` can't be executed from the editor. Use `\\copy` in psql, or a file on the database server."
-                ),
+                message,
                 ..Default::default()
             });
         }
@@ -1196,14 +1179,7 @@ impl Workspace for WorkspaceServer {
             is_query: execution::is_query(&ast),
             timeout: db.statement_timeout,
         };
-        let (cancel, cancelled) = futures::channel::oneshot::channel();
-        self.running_statements
-            .lock()
-            .unwrap()
-            .push(RunningStatement {
-                params: params.clone(),
-                cancel,
-            });
+        let (_running, cancelled) = self.running_statements.start(&params);
 
         let result = self.connection.with_pools(&db, |pools| {
             let statement_pools = pools.clone();
@@ -1218,12 +1194,6 @@ impl Workspace for WorkspaceServer {
             }
             Ok(result)
         });
-
-        // The execution is over once it dropped the receiver.
-        self.running_statements
-            .lock()
-            .unwrap()
-            .retain(|running| !running.cancel.is_canceled());
 
         let Some(result) = result else {
             return Ok(no_connection);
@@ -1258,18 +1228,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<(), WorkspaceError> {
-        let cancelled = self
-            .running_statements
-            .lock()
-            .unwrap()
-            .extract_if(.., |running| {
-                running.params.path == params.path
-                    && running.params.statement_id == params.statement_id
-            })
-            .collect::<Vec<_>>();
-        for running in cancelled {
-            let _ = running.cancel.send(());
-        }
+        self.running_statements.cancel(&params);
         Ok(())
     }
 

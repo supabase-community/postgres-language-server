@@ -2460,7 +2460,7 @@ async fn execute_statement_can_be_cancelled(test_db: PgPool) {
         "{:?}",
         start.elapsed()
     );
-    assert!(workspace.running_statements.lock().unwrap().is_empty());
+    assert!(workspace.running_statements.is_empty());
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

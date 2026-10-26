@@ -10,6 +10,8 @@ use crate::workspace::{DefaultMapper, Document, StatementId};
 pub(crate) mod execution;
 #[cfg(feature = "db")]
 mod notices;
+#[cfg(feature = "db")]
+pub(crate) mod running;
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]

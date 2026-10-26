@@ -49,6 +49,26 @@ pub(crate) fn is_query(ast: &NodeEnum) -> bool {
         })
 }
 
+/// Why `ast` isn't executed, if it isn't: `COPY ... FROM STDIN` and `COPY ... TO STDOUT` exchange
+/// data with the client, but the language server has no data to send, and nowhere to put the data
+/// it receives.
+pub(crate) fn refusal(ast: &NodeEnum) -> Option<String> {
+    let NodeEnum::CopyStmt(copy) = ast else {
+        return None;
+    };
+    if !copy.filename.is_empty() || copy.is_program {
+        return None;
+    }
+    let copy = if copy.is_from {
+        "COPY ... FROM STDIN"
+    } else {
+        "COPY ... TO STDOUT"
+    };
+    Some(format!(
+        "`{copy}` can't be executed from the editor. Use `\\copy` in psql, or a file on the database server."
+    ))
+}
+
 /// Whether executing `ast` may change the schema, i.e. it does more than reading or writing rows.
 pub(crate) fn may_change_schema(ast: &NodeEnum) -> bool {
     match ast {
