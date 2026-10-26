@@ -711,7 +711,7 @@ create table atest6 (
 
 grant select (one), insert (two), update (three) on table atest5 to regress_priv_user4;
 
-grant all (one) on table atest5 to regress_priv_user3;
+grant all privileges (one) on table atest5 to regress_priv_user3;
 
 select unnest(pg_get_acl(cast('pg_class' as regclass), cast(cast('atest5' as regclass) as oid), 1));
 
@@ -876,7 +876,7 @@ on conflict on constraint atest5_four_key do update set three = 3;
 
 set session authorization regress_priv_user1;
 
-revoke all (one) on table atest5 from regress_priv_user4;
+revoke all privileges (one) on table atest5 from regress_priv_user4;
 
 grant select (one, two, blue) on table atest6 to regress_priv_user4;
 
@@ -1052,7 +1052,7 @@ grant delete on table atest5 to regress_priv_user3;
 
 grant select (two) on table atest5 to regress_priv_user3;
 
-revoke all (one) on table atest5 from regress_priv_user3;
+revoke all privileges (one) on table atest5 from regress_priv_user3;
 
 grant select (one) on table atest5 to regress_priv_user4;
 

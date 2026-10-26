@@ -28,11 +28,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     if n.privileges.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else {
-        emit_grant_list(e, &n.privileges, |e, node| {
-            if let Some(pgls_query::NodeEnum::AccessPriv(priv_node)) = &node.node {
-                emit_privilege(e, priv_node);
-            }
-        });
+        emit_grant_list(e, &n.privileges, emit_node);
     }
 
     // The clauses after the privileges continue the statement, so a broken one indents them.
