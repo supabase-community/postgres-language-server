@@ -10,6 +10,8 @@
 //!
 //! [`pg_parse_query`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/tcop/postgres.c#L604
 
+use std::borrow::Cow;
+
 use pgls_query::protobuf::{CreateFunctionStmt, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
@@ -35,6 +37,23 @@ pub struct EmbeddedStatement {
 pub struct OffsetMap {
     /// In ascending order, and they don't overlap.
     escapes: Vec<Escape>,
+    /// How the source quotes the statement.
+    quoting: Quoting,
+}
+
+/// How the source quotes the text of a statement. Text inserted into the statement has to be
+/// written the same way, see [`OffsetMap::escape`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Quoting {
+    /// Not quoted: a top-level statement, or a `$$`, `BEGIN ATOMIC` or `RETURN` body.
+    #[default]
+    None,
+    /// In a `'...'` constant, which writes `'` as `''`.
+    String,
+    /// In an `E'...'` constant, which also writes `\` as `\\`.
+    EscapeString,
+    /// In a `U&'...'` constant, which also writes its escape character twice.
+    UnicodeString(u8),
 }
 
 /// An escape in the source, and the bytes of the statement it stands for.
@@ -70,6 +89,34 @@ impl OffsetMap {
     /// edits apply to both.
     pub fn is_verbatim(&self) -> bool {
         self.escapes.is_empty()
+    }
+
+    /// How the source quotes the statement.
+    pub fn quoting(&self) -> Quoting {
+        self.quoting
+    }
+
+    /// How `text` is written in the source when it is inserted into the statement: in a string
+    /// constant, `'` is written twice, and so are `\` in an `E'...'` constant and the escape
+    /// character in a `U&'...'` constant.
+    pub fn escape<'a>(&self, text: &'a str) -> Cow<'a, str> {
+        let doubled = |c: char| match self.quoting {
+            Quoting::None => false,
+            Quoting::String => c == '\'',
+            Quoting::EscapeString => matches!(c, '\'' | '\\'),
+            Quoting::UnicodeString(escape) => c == '\'' || c == char::from(escape),
+        };
+        if !text.chars().any(doubled) {
+            return Cow::Borrowed(text);
+        }
+        let mut escaped = String::with_capacity(text.len() + 2);
+        for c in text.chars() {
+            if doubled(c) {
+                escaped.push(c);
+            }
+            escaped.push(c);
+        }
+        Cow::Owned(escaped)
     }
 
     /// The offset in the source of `offset` in the statement. An offset inside the bytes that an
@@ -123,6 +170,7 @@ impl OffsetMap {
                     source: escape.source - source_start,
                 })
                 .collect(),
+            quoting: self.quoting,
         }
     }
 }
@@ -323,15 +371,15 @@ fn string_constant(
             offsets: OffsetMap::default(),
         });
     }
-    let (prefix, escapes) = match (text.as_bytes(), unicode_escape) {
-        ([b'u' | b'U', b'&', b'\'', ..], Some(escape)) => (2, Escapes::Unicode(escape)),
-        ([b'e' | b'E', b'\'', ..], None) => (1, Escapes::Backslash),
-        ([b'\'', ..], None) => (0, Escapes::None),
+    let (prefix, quoting) = match (text.as_bytes(), unicode_escape) {
+        ([b'u' | b'U', b'&', b'\'', ..], Some(escape)) => (2, Quoting::UnicodeString(escape)),
+        ([b'e' | b'E', b'\'', ..], None) => (1, Quoting::EscapeString),
+        ([b'\'', ..], None) => (0, Quoting::String),
         // `B'...'` and `X'...'`.
         _ => return None,
     };
     let inner = text.get(prefix + 1..)?.strip_suffix('\'')?;
-    let (unescaped, offsets) = unescape(inner, escapes)?;
+    let (unescaped, offsets) = unescape(inner, quoting)?;
     if unescaped != value {
         return None;
     }
@@ -345,17 +393,6 @@ fn string_constant(
     })
 }
 
-/// The escapes of a string constant besides `''`.
-#[derive(Debug, Clone, Copy)]
-enum Escapes {
-    /// `'...'`.
-    None,
-    /// `E'...'`.
-    Backslash,
-    /// `U&'...'`, with its escape character.
-    Unicode(u8),
-}
-
 /// The value of the inside of a string constant, and where its escapes are. The escapes of
 /// `E'...'` strings are read like the `xe` rules of Postgres' lexer ([`scan.l`]), those of
 /// `U&'...'` strings like [`str_udeescape`]. `None` if a quote ends the constant before its end,
@@ -364,17 +401,20 @@ enum Escapes {
 ///
 /// [`scan.l`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L262
 /// [`str_udeescape`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parser.c#L372
-fn unescape(inner: &str, escapes: Escapes) -> Option<(String, OffsetMap)> {
+fn unescape(inner: &str, quoting: Quoting) -> Option<(String, OffsetMap)> {
     let bytes = inner.as_bytes();
     let mut value = Vec::with_capacity(bytes.len());
-    let mut offsets = OffsetMap::default();
+    let mut offsets = OffsetMap {
+        quoting,
+        ..OffsetMap::default()
+    };
     let mut cursor = 0;
     while let Some(&byte) = bytes.get(cursor) {
-        let (decoded, len): (Vec<u8>, usize) = match (byte, escapes) {
+        let (decoded, len): (Vec<u8>, usize) = match (byte, quoting) {
             (b'\'', _) if bytes.get(cursor + 1) == Some(&b'\'') => (vec![b'\''], 2),
             (b'\'', _) => return None,
-            (b'\\', Escapes::Backslash) => escape_sequence(bytes.get(cursor..)?)?,
-            (_, Escapes::Unicode(escape)) if byte == escape => {
+            (b'\\', Quoting::EscapeString) => escape_sequence(bytes.get(cursor..)?)?,
+            (_, Quoting::UnicodeString(escape)) if byte == escape => {
                 unicode_escape(bytes.get(cursor..)?, escape)?
             }
             _ => {
@@ -590,7 +630,7 @@ fn return_body(tokens: &[ScanToken], sql: &str) -> Option<EmbeddedStatement> {
 mod tests {
     use pgls_text_size::{TextRange, TextSize};
 
-    use super::{Escapes, OffsetMap, sql_function_body, unescape};
+    use super::{OffsetMap, Quoting, sql_function_body, unescape};
 
     /// The statements of the body: their text in `input`, and the text that is parsed.
     fn bodies(input: &str) -> Vec<(&str, String)> {
@@ -709,7 +749,7 @@ mod tests {
 
     #[test]
     fn unescapes_like_postgres() {
-        let value = |inner: &str| unescape(inner, Escapes::Backslash).map(|(value, _)| value);
+        let value = |inner: &str| unescape(inner, Quoting::EscapeString).map(|(value, _)| value);
         assert_eq!(value(r"a\tb\x41\101\q\\"), Some("a\tbAAq\\".to_string()));
         assert_eq!(value(r"\U0001F600 é"), Some("\u{1F600} \u{e9}".to_string()));
         assert_eq!(value(r"\xc3\xa9"), Some("\u{e9}".to_string()));
@@ -719,7 +759,7 @@ mod tests {
         assert_eq!(value("a'\n'b"), None);
         // Without backslash escapes, backslashes are themselves.
         assert_eq!(
-            unescape(r"a\n''", Escapes::None).map(|(value, _)| value),
+            unescape(r"a\n''", Quoting::String).map(|(value, _)| value),
             Some(r"a\n'".to_string())
         );
     }
@@ -760,7 +800,7 @@ mod tests {
     #[test]
     fn unescapes_unicode_like_postgres() {
         let value = |inner: &str, escape: u8| {
-            unescape(inner, Escapes::Unicode(escape)).map(|(value, _)| value)
+            unescape(inner, Quoting::UnicodeString(escape)).map(|(value, _)| value)
         };
         assert_eq!(
             value(r"a\0041\+000042\\''", b'\\'),
@@ -781,6 +821,46 @@ mod tests {
         assert_eq!(value(r"\DE00", b'\\'), None);
         assert_eq!(value(r"\0000", b'\\'), None);
         assert_eq!(value(r"\+110000", b'\\'), None);
+    }
+
+    #[test]
+    fn inserted_text_is_escaped_like_the_body() {
+        let quoting = |input: &str| {
+            let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+            let [body] = sql_function_body(&ast, input).try_into().unwrap();
+            body.offsets
+        };
+        let text = r"it's a\b!";
+        let escaped = |input: &str| quoting(input).escape(text).into_owned();
+        assert_eq!(
+            escaped("create function f() returns int language sql as $$ select 1 $$"),
+            text
+        );
+        assert_eq!(
+            escaped("create function f() returns int language sql as 'select 1'"),
+            r"it''s a\b!"
+        );
+        assert_eq!(
+            escaped("create function f() returns int language sql as E'select 1'"),
+            r"it''s a\\b!"
+        );
+        assert_eq!(
+            escaped("create function f() returns int language sql as U&'select 1'"),
+            r"it''s a\\b!"
+        );
+        assert_eq!(
+            escaped("create function f() returns int language sql as U&'select 1' uescape '!'"),
+            r"it''s a\b!!"
+        );
+        assert_eq!(
+            escaped("create function f(p int) returns int language sql return p"),
+            text
+        );
+        // Each statement of a body keeps its quoting.
+        let input = "create function f() returns int language sql as E'select 1; select 2'";
+        let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+        let [_, second] = sql_function_body(&ast, input).try_into().unwrap();
+        assert_eq!(second.offsets.quoting(), Quoting::EscapeString);
     }
 
     #[test]
