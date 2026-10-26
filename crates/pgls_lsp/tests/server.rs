@@ -11,6 +11,7 @@ use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_configuration::StringSet;
 use pgls_configuration::database::PartialDatabaseConfiguration;
+use pgls_configuration::migrations::{PartialMigrationsConfiguration, SectionMarkers};
 use pgls_fs::{ConfigName, MemoryFileSystem, OsFileSystem};
 use pgls_lsp::LSPServer;
 use pgls_lsp::ServerFactory;
@@ -149,6 +150,15 @@ impl Server {
         self.initialize_with_root(url!("")).await
     }
 
+    /// Like [Server::initialize], with the given client capabilities
+    async fn initialize_with_capabilities(
+        &mut self,
+        capabilities: ClientCapabilities,
+    ) -> Result<()> {
+        self.initialize_with_options(url!(""), None, capabilities)
+            .await
+    }
+
     /// Like [Server::initialize], with the workspace root at `root_uri`
     async fn initialize_with_root(&mut self, root_uri: Uri) -> Result<()> {
         self.initialize_with_folders(root_uri, None).await
@@ -156,12 +166,24 @@ impl Server {
 
     /// Like [Server::initialize], with the workspace root at `root_uri` and the given workspace
     /// folders
-    // The `root_path` field is deprecated, but we still need to specify it
-    #[allow(deprecated)]
     async fn initialize_with_folders(
         &mut self,
         root_uri: Uri,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
+    ) -> Result<()> {
+        self.initialize_with_options(root_uri, workspace_folders, ClientCapabilities::default())
+            .await
+    }
+
+    /// Like [Server::initialize], with the workspace root at `root_uri`, the given workspace
+    /// folders and the given client capabilities
+    // The `root_path` field is deprecated, but we still need to specify it
+    #[allow(deprecated)]
+    async fn initialize_with_options(
+        &mut self,
+        root_uri: Uri,
+        workspace_folders: Option<Vec<WorkspaceFolder>>,
+        capabilities: ClientCapabilities,
     ) -> Result<()> {
         let _res: InitializeResult = self
             .request(
@@ -172,7 +194,7 @@ impl Server {
                     root_path: None,
                     root_uri: Some(root_uri),
                     initialization_options: None,
-                    capabilities: ClientCapabilities::default(),
+                    capabilities,
                     trace: None,
                     workspace_folders,
                     client_info: None,
@@ -3095,6 +3117,154 @@ async fn test_crash_on_delete_character() -> Result<()> {
 
     assert!(result.is_ok());
 
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            host: Some(test_db.connect_options().get_host().to_string()),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Dbmate),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    // The client supports versioned edits.
+    server
+        .initialize_with_capabilities(lsp::ClientCapabilities {
+            workspace: Some(lsp::WorkspaceClientCapabilities {
+                workspace_edit: Some(lsp::WorkspaceEditClientCapabilities {
+                    document_changes: Some(true),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        })
+        .await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    // The section runs outside a transaction, so adding `CONCURRENTLY` is a safe fix.
+    let doc_url = url!("test.sql");
+    server
+        .open_named_document(
+            "-- migrate:up transaction:false\nreindex index my_index;\n",
+            doc_url.clone(),
+            "sql",
+        )
+        .await?;
+
+    let code_actions = async |server: &mut Server, only: Vec<lsp::CodeActionKind>| {
+        let response = server
+            .request::<CodeActionParams, CodeActionResponse>(
+                "textDocument/codeAction",
+                "_code_action",
+                CodeActionParams {
+                    text_document: TextDocumentIdentifier {
+                        uri: doc_url.clone(),
+                    },
+                    range: Range {
+                        start: Position::new(0, 0),
+                        end: Position::new(0, 0),
+                    },
+                    context: CodeActionContext {
+                        only: Some(only),
+                        ..Default::default()
+                    },
+                    partial_result_params: PartialResultParams::default(),
+                    work_done_progress_params: WorkDoneProgressParams::default(),
+                },
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        response
+            .into_iter()
+            .filter_map(|action| match action {
+                lsp::CodeActionOrCommand::CodeAction(action) => Some(action),
+                lsp::CodeActionOrCommand::Command(_) => None,
+            })
+            .collect::<Vec<_>>()
+    };
+
+    // On save, editors ask for `source.fixAll.pgls`, or for one of its parents.
+    for only in ["source.fixAll.pgls", "source.fixAll", "source"] {
+        let actions = code_actions(&mut server, vec![lsp::CodeActionKind::from(only)]).await;
+        let fix_all = actions
+            .iter()
+            .find(|action| action.title == "Apply all safe fixes")
+            .unwrap_or_else(|| panic!("expected a fix-all action for {only}: {actions:#?}"));
+        assert_eq!(
+            fix_all.kind,
+            Some(lsp::CodeActionKind::from("source.fixAll.pgls"))
+        );
+        let Some(lsp::DocumentChanges::Edits(changes)) = fix_all
+            .edit
+            .as_ref()
+            .and_then(|edit| edit.document_changes.as_ref())
+        else {
+            panic!("expected versioned edits: {fix_all:#?}");
+        };
+        assert_eq!(changes.len(), 1);
+        assert_eq!(changes[0].text_document.uri, doc_url);
+        assert_eq!(changes[0].text_document.version, Some(0));
+        let [lsp::OneOf::Left(edit)] = changes[0].edits.as_slice() else {
+            panic!("expected one text edit: {changes:#?}");
+        };
+        assert_eq!(edit.range.start.line, 1);
+        assert_eq!(edit.range.end.line, 1);
+        let mut line = "reindex index my_index;".to_string();
+        line.replace_range(
+            edit.range.start.character as usize..edit.range.end.character as usize,
+            &edit.new_text,
+        );
+        assert_eq!(line.to_lowercase(), "reindex index concurrently my_index;");
+    }
+
+    // Quick fixes don't come with the fix-all action.
+    let actions = code_actions(&mut server, vec![lsp::CodeActionKind::QUICKFIX]).await;
+    assert!(
+        actions
+            .iter()
+            .all(|action| action.title != "Apply all safe fixes"),
+        "{actions:#?}"
+    );
+
+    server.shutdown().await?;
     reader.abort();
 
     Ok(())
