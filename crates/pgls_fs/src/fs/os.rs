@@ -1,5 +1,8 @@
 //! Implementation of the [FileSystem] and related traits for the underlying OS filesystem
-use super::{BoxedTraversal, ErrorKind, File, FileSystemDiagnostic};
+use super::{
+    BoxedTraversal, ErrorKind, File, FileSystemDiagnostic, FindFiles, FoundFiles,
+    SKIPPED_DIRECTORIES, skips_directory,
+};
 use crate::fs::OpenOptions;
 use crate::{
     FileSystem, PgLSPath, dir,
@@ -11,6 +14,8 @@ use rayon::{Scope, scope};
 use std::fs::{DirEntry, FileType};
 use std::panic::AssertUnwindSafe;
 use std::process::Command;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     env, fs,
     io::{self, ErrorKind as IoErrorKind, Read, Seek, Write},
@@ -144,6 +149,69 @@ impl FileSystem for OsFileSystem {
         path: &Path,
     ) -> Result<Resolution, ResolveError> {
         self.configuration_resolver.resolve(path, specifier)
+    }
+
+    fn find_files(&self, root: &Path, search: &FindFiles) -> FoundFiles {
+        let file_names: Vec<String> = search.file_names.iter().map(|&name| name.into()).collect();
+        let truncated = Arc::new(AtomicBool::new(false));
+        let filter = {
+            let root = root.to_path_buf();
+            let skip_directory = search.skip_directory.clone();
+            let max_depth = search.max_depth;
+            let file_names = file_names.clone();
+            let truncated = Arc::clone(&truncated);
+            move |entry: &ignore::DirEntry| {
+                if !entry
+                    .file_type()
+                    .is_some_and(|file_type| file_type.is_dir())
+                    || entry.depth() == 0
+                {
+                    return true;
+                }
+                if entry
+                    .file_name()
+                    .to_str()
+                    .is_some_and(|name| SKIPPED_DIRECTORIES.contains(&name))
+                {
+                    return false;
+                }
+                if entry.depth() > max_depth {
+                    truncated.store(true, Ordering::Relaxed);
+                    return false;
+                }
+                !skips_directory(skip_directory.as_ref(), &root, entry.path(), |directory| {
+                    file_names.iter().any(|name| directory.join(name).is_file())
+                })
+            }
+        };
+
+        let mut files = Vec::new();
+        let walk = ignore::WalkBuilder::new(root)
+            .hidden(true)
+            .require_git(false)
+            .filter_entry(filter)
+            .build();
+        for (index, entry) in walk.filter_map(Result::ok).enumerate() {
+            if index >= search.max_entries {
+                truncated.store(true, Ordering::Relaxed);
+                break;
+            }
+            let is_match = entry
+                .file_type()
+                .is_some_and(|file_type| file_type.is_file())
+                && entry
+                    .file_name()
+                    .to_str()
+                    .is_some_and(|name| file_names.iter().any(|file_name| file_name == name));
+            if is_match {
+                files.push(entry.into_path());
+            }
+        }
+
+        FoundFiles {
+            files,
+            truncated: truncated.load(Ordering::Relaxed),
+        }
     }
 }
 

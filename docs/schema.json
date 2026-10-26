@@ -1039,7 +1039,7 @@
           ]
         },
         "banConcurrentIndexCreationInTransaction": {
-          "description": "Concurrent index creation is not allowed within a transaction.",
+          "description": "Concurrent index operations are not allowed within a transaction.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1238,6 +1238,17 @@
         },
         "banDuplicateColumnAssignments": {
           "description": "A column is assigned or declared more than once.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banNonTransactionalStatementInTransaction": {
+          "description": "Statements that Postgres can't run inside a transaction block.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -2824,14 +2835,14 @@
           ]
         },
         {
-          "description": "`-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section without a transaction.",
+          "description": "`-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section without a transaction, but still as one query.",
           "type": "string",
           "enum": [
             "dbmate"
           ]
         },
         {
-          "description": "`-- +goose Up` and `-- +goose Down` of goose. `-- +goose NO TRANSACTION` runs the file without a transaction.",
+          "description": "`-- +goose Up` and `-- +goose Down` of goose. `-- +goose NO TRANSACTION` runs the file without a transaction, statement by statement.",
           "type": "string",
           "enum": [
             "goose"

@@ -252,6 +252,10 @@ fn def_elem_is_enabled(def: &protobuf::DefElem, name: &str) -> bool {
         Some(arg) => match &arg.node {
             Some(NodeEnum::Integer(i)) => i.ival != 0,
             Some(NodeEnum::Boolean(b)) => b.boolval,
+            // `(CONCURRENTLY false)`, like [`defGetBoolean`](https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/define.c#L94).
+            Some(NodeEnum::String(s)) => !["false", "off"]
+                .iter()
+                .any(|value| s.sval.eq_ignore_ascii_case(value)),
             _ => true,
         },
         None => true,
