@@ -10,4 +10,4 @@ Files created
   - postgres-language-server.jsonc
     Your project configuration.
 
-Supabase project detected: the database connection is set to the local Supabase database at 127.0.0.1:6543.
+Supabase project detected in supabase: the database connection is set to the local Supabase database at 127.0.0.1:6543, and the migrations to supabase/migrations.
