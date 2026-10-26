@@ -259,23 +259,57 @@ impl From<VcsDiagnostic> for WorkspaceError {
 pub struct DatabaseConnectionError {
     pub(crate) message: String,
     pub(crate) code: Option<String>,
+    /// Whether the database could not be reached or refused the connection, as opposed to a
+    /// query failing on a working connection. Only a connection failure puts the connection into
+    /// the reconnect backoff.
+    #[serde(default)]
+    pub(crate) connection_failure: bool,
 }
 
 #[cfg(feature = "db")]
 impl From<sqlx::Error> for WorkspaceError {
     fn from(err: sqlx::Error) -> Self {
+        let connection_failure = is_connection_failure(&err);
         let db_err = err.as_database_error();
         if let Some(db_err) = db_err {
             Self::DatabaseConnectionError(DatabaseConnectionError {
                 message: db_err.message().to_string(),
                 code: db_err.code().map(|c| c.to_string()),
+                connection_failure,
             })
         } else {
             Self::DatabaseConnectionError(DatabaseConnectionError {
                 message: err.to_string(),
                 code: None,
+                connection_failure,
             })
         }
+    }
+}
+
+/// Whether `err` means that the database could not be reached or refused the connection.
+///
+/// Any other error, such as a syntax error, a division by zero, or a missing permission, comes
+/// from a query on a working connection.
+#[cfg(feature = "db")]
+pub(crate) fn is_connection_failure(err: &sqlx::Error) -> bool {
+    match err {
+        sqlx::Error::Configuration(_)
+        | sqlx::Error::Io(_)
+        | sqlx::Error::Tls(_)
+        | sqlx::Error::Protocol(_)
+        | sqlx::Error::PoolTimedOut
+        | sqlx::Error::PoolClosed
+        | sqlx::Error::WorkerCrashed => true,
+        sqlx::Error::Database(err) => err.code().is_some_and(|code| {
+            // Class 08 is a connection exception and class 28 a failed authentication. 3D000:
+            // the database does not exist, 53300: too many connections, 57P03: the server is
+            // starting up or shutting down.
+            code.starts_with("08")
+                || code.starts_with("28")
+                || matches!(code.as_ref(), "3D000" | "53300" | "57P03")
+        }),
+        _ => false,
     }
 }
 

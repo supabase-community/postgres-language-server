@@ -235,9 +235,12 @@ impl ConnectionManager {
     ) {
         match result {
             Ok(_) => self.clear_failure(key),
-            Err(err @ WorkspaceError::DatabaseConnectionError(error)) => {
+            Err(err @ WorkspaceError::DatabaseConnectionError(error))
+                if error.connection_failure =>
+            {
                 self.record_failure(key, settings_fingerprint, error, &err.to_string());
             }
+            // A query that fails, e.g. on a division by zero, says nothing about the connection.
             Err(_) => {}
         }
     }
@@ -398,6 +401,7 @@ mod tests {
         DatabaseConnectionError {
             message: "password authentication failed".to_string(),
             code: Some("28P01".to_string()),
+            connection_failure: true,
         }
     }
 
@@ -420,5 +424,25 @@ mod tests {
             Some(Err(WorkspaceError::DatabaseConnectionError(error)))
                 if error.message == "password authentication failed"
         ));
+    }
+
+    #[test]
+    fn only_connection_failures_start_the_backoff() {
+        let manager = ConnectionManager::new();
+        let settings = settings();
+
+        let query_error = manager.with_pool(&settings, |_| {
+            Err::<(), _>(WorkspaceError::from(sqlx::Error::ColumnNotFound(
+                "id".to_string(),
+            )))
+        });
+        assert!(matches!(query_error, Some(Err(_))));
+        assert!(manager.with_pool(&settings, |_| Ok(())).is_some());
+
+        let connection_failure = manager.with_pool(&settings, |_| {
+            Err::<(), _>(WorkspaceError::from(sqlx::Error::PoolTimedOut))
+        });
+        assert!(matches!(connection_failure, Some(Err(_))));
+        assert!(manager.with_pool(&settings, |_| Ok(())).is_none());
     }
 }

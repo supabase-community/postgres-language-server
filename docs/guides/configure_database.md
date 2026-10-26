@@ -64,7 +64,7 @@ When a database is configured (`host` or `connectionString`, or `PGHOST` or `DAT
 
 To check without a database, disable the connection with `--disable-db` or `"disableConnection": true` (see [Disabling Database Features](#disabling-database-features)).
 
-The language server keeps working without the database when the connection fails, and retries it in the background.
+The language server keeps working without the database when the connection fails, and retries it in the background. A query that fails, such as an executed statement that divides by zero, does not count as a failed connection.
 
 An invalid `connectionString` (or `DATABASE_URL`), such as one with a non-numeric port, disables the database connection instead of stopping the language server, which shows a warning. `postgres-language-server check` reports it as a `database/connection` error, like a failed connection.
 
@@ -143,7 +143,7 @@ The language server runs the statement with the LSP command `pgls.executeStateme
 - At most 100 rows are returned. `truncated` is `true` if the statement returned more.
 - `rowsAffected` is set instead of `columns` and `rows` for statements that return no rows, such as `insert` without `returning` or `create table`. For example: `{ "message": "Successfully executed statement. Rows affected: 2", "columns": [], "rows": [], "truncated": false, "rowsAffected": 2 }`.
 - If the statement is not executed, for example because statement execution is disabled, only `message` is meaningful: `columns` and `rows` are empty and `rowsAffected` is not set.
-- If Postgres rejects the statement, the command fails with a JSON-RPC error carrying the Postgres error message.
+- If Postgres rejects the statement, `error` holds the Postgres error: its `message`, the SQLSTATE `code`, and `detail` and `hint` if Postgres sent them. `position` is the LSP position of the error in the document, if Postgres reported one. For example: `{ "message": "Statement failed: column \"nme\" does not exist", "columns": [], "rows": [], "truncated": false, "error": { "message": "column \"nme\" does not exist", "code": "42703", "position": { "line": 3, "character": 7 } } }`. Only a failed connection makes the command fail with a JSON-RPC error.
 
 ## Disabling Database Features
 

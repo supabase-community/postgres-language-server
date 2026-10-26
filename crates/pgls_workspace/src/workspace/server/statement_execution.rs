@@ -1,19 +1,37 @@
 use futures::TryStreamExt;
+use pgls_text_size::TextSize;
 use sqlx::{
     Column, Either, Executor, PgPool, Row, Statement, ValueRef,
-    postgres::{PgColumn, PgRow},
+    postgres::{PgColumn, PgDatabaseError, PgErrorPosition, PgRow},
 };
 
-use crate::features::code_actions::{EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementResult};
+use crate::diagnostics::is_connection_failure;
+use crate::features::code_actions::{
+    EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementResult,
+};
 
 /// Executes `sql` and collects the rows it returns, if any.
 ///
 /// The statement runs over the simple query protocol, so Postgres sends every value in its text
-/// representation and no type needs decoding.
+/// representation and no type needs decoding. An error that Postgres raises for the statement is
+/// part of the result, with its position relative to `sql`. Only a failed connection is an error.
 pub(super) async fn execute_statement(
     pool: &PgPool,
     sql: &str,
 ) -> Result<ExecuteStatementResult, sqlx::Error> {
+    match collect_result(pool, sql).await {
+        Err(err) if !is_connection_failure(&err) => match err
+            .as_database_error()
+            .and_then(|err| err.try_downcast_ref::<PgDatabaseError>())
+        {
+            Some(err) => Ok(rejected(err, sql)),
+            None => Err(err),
+        },
+        result => result,
+    }
+}
+
+async fn collect_result(pool: &PgPool, sql: &str) -> Result<ExecuteStatementResult, sqlx::Error> {
     let mut columns = None;
     let mut rows = Vec::new();
     let mut rows_affected = 0;
@@ -58,7 +76,7 @@ pub(super) async fn execute_statement(
             columns,
             rows,
             truncated,
-            rows_affected: None,
+            ..Default::default()
         },
         None => ExecuteStatementResult {
             message: format!("Successfully executed statement. Rows affected: {rows_affected}"),
@@ -66,6 +84,33 @@ pub(super) async fn execute_statement(
             ..Default::default()
         },
     })
+}
+
+fn rejected(err: &PgDatabaseError, sql: &str) -> ExecuteStatementResult {
+    // Postgres counts the characters from 1, and points one past the end for an error at the end
+    // of the input.
+    let position = match err.position() {
+        Some(PgErrorPosition::Original(position)) => position.checked_sub(1).and_then(|index| {
+            sql.char_indices()
+                .map(|(offset, _)| offset)
+                .chain([sql.len()])
+                .nth(index)
+                .and_then(|offset| TextSize::try_from(offset).ok())
+        }),
+        _ => None,
+    };
+
+    ExecuteStatementResult {
+        message: format!("Statement failed: {}", err.message()),
+        error: Some(ExecuteStatementError {
+            message: err.message().to_string(),
+            code: err.code().to_string(),
+            detail: err.detail().map(str::to_string),
+            hint: err.hint().map(str::to_string),
+            position,
+        }),
+        ..Default::default()
+    }
 }
 
 fn column_names(columns: &[PgColumn]) -> Vec<String> {

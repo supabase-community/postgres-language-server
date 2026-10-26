@@ -1257,7 +1257,7 @@ impl Workspace for WorkspaceServer {
             });
         };
 
-        let (_id, _range, content, ast) = stmt.unwrap();
+        let (_id, range, content, ast) = stmt.unwrap();
 
         if ast.is_none() {
             return Ok(ExecuteStatementResult {
@@ -1291,7 +1291,15 @@ impl Workspace for WorkspaceServer {
             return Ok(no_connection);
         };
 
-        result
+        let mut result = result?;
+        if let Some(position) = result
+            .error
+            .as_mut()
+            .and_then(|error| error.position.as_mut())
+        {
+            *position += range.start();
+        }
+        Ok(result)
     }
 
     #[cfg(not(feature = "db"))]
