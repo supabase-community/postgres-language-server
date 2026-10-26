@@ -21,7 +21,7 @@ use pgls_workspace::configuration::{
 use pgls_workspace::features;
 use pgls_workspace::settings::FilesSettings;
 use pgls_workspace::workspace::{
-    ProjectKey, RegisterProjectFolderParams, UnregisterProjectFolderParams,
+    FindProjectParams, ProjectKey, RegisterProjectFolderParams, UnregisterProjectFolderParams,
 };
 use pgls_workspace::{DynRef, WorkspaceError};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -115,7 +115,8 @@ pub(crate) struct Session {
     workspace_folders: RwLock<Option<Vec<PathBuf>>>,
 
     /// The projects of the workspace by their folder, deepest first: one per workspace folder, or
-    /// one for the root. A document belongs to the project of the deepest folder that contains it.
+    /// one for the root. The workspace finds the project of a document; these are the folders to
+    /// unregister when they are removed.
     projects: RwLock<Vec<(PathBuf, ProjectKey)>>,
 
     /// The project of the files outside every workspace folder, once one was opened.
@@ -759,17 +760,25 @@ impl Session {
     }
 
     /// The project that the file at `path` belongs to: the one of the deepest workspace folder
-    /// that contains it. A file outside every workspace folder belongs to a project without a
-    /// folder, which has the default settings, so that it never gets the settings (and the
-    /// database) of an unrelated folder. Without workspace folders or a root, or with a
-    /// configuration file chosen by the user, the only project applies to every file. Before the
-    /// configuration is loaded, the key of no project, for which the workspace only reports what
-    /// needs no settings.
+    /// that contains it, which the workspace looks up. A file outside every workspace folder
+    /// belongs to a project without a folder, which has the default settings, so that it never
+    /// gets the settings (and the database) of an unrelated folder. Without workspace folders or a
+    /// root, or with a configuration file chosen by the user, the only project applies to every
+    /// file. Before the configuration is loaded, the key of no project, for which the workspace
+    /// only reports what needs no settings.
     pub(crate) fn project_key(&self, path: &Path) -> ProjectKey {
-        let projects = self.projects.read();
-        if let Some((_, key)) = projects.iter().find(|(folder, _)| path.starts_with(folder)) {
-            return *key;
+        match self.workspace.find_project(FindProjectParams {
+            path: PgLSPath::new(path),
+        }) {
+            Ok(Some(key)) => return key,
+            Ok(None) => {}
+            Err(error) => error!(
+                "Failed to find the project of {}: {}",
+                path.display(),
+                error
+            ),
         }
+        let projects = self.projects.read();
         let Some((_, only_project)) = projects.last() else {
             return ProjectKey::default();
         };

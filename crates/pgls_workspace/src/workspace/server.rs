@@ -71,9 +71,10 @@ use crate::{
 };
 
 use super::{
-    GetFileContentParams, IsPathIgnoredParams, NestedSettingsError, OpenFileParams, ProjectKey,
-    RegisterProjectFolderParams, ServerInfo, UnregisterProjectFolderParams,
-    UpdateNestedSettingsParams, UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
+    FindProjectParams, GetFileContentParams, IsPathIgnoredParams, NestedSettingsError,
+    OpenFileParams, ProjectKey, RegisterProjectFolderParams, ServerInfo,
+    UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
+    UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
@@ -915,6 +916,16 @@ impl Workspace for WorkspaceServer {
         debug!("Register the project {:?}, known as {:?}", path, existing);
 
         Ok(existing.unwrap_or_else(|| self.register_project(path)))
+    }
+
+    fn find_project(
+        &self,
+        params: FindProjectParams,
+    ) -> Result<Option<ProjectKey>, WorkspaceError> {
+        Ok(self
+            .workspaces()
+            .as_ref()
+            .find_project(params.path.as_path()))
     }
 
     fn unregister_project_folder(
