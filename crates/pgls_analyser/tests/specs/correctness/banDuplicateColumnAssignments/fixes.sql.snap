@@ -20,7 +20,7 @@ update users set tags[1] = 'a', tags = '{}';
 ```
 
 # Diagnostics
-lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/banDuplicateColumnAssignments  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Multiple assignments to column name.
   
@@ -47,7 +47,7 @@ update users set tags[1] = 'a', tags = '{}';
 
 ```
 
-lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/banDuplicateColumnAssignments  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Multiple assignments to column name.
   

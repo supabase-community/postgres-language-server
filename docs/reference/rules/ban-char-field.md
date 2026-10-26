@@ -26,7 +26,7 @@ CREATE TABLE "core_bar" (
 ```
 
 ```sh
-code-block.sql:1:1 lint/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banCharField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! CHAR type is discouraged due to space padding behavior.
   

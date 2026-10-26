@@ -27,7 +27,7 @@ update users set name = 'a', name = 'b';
 ```
 
 ```sh
-code-block.sql:1:30 lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:30 lint/banDuplicateColumnAssignments  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Multiple assignments to column name.
   

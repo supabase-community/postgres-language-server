@@ -14,7 +14,7 @@ create table public.accounts (
 ```
 
 # Diagnostics
-lint/identifierTooLong ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/identifierTooLong  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Identifier Customer Subscription Billing Cycle Adjustments History Archive Id is longer than 63 bytes.
   
@@ -35,7 +35,7 @@ create table public.accounts (
 
 ```
 
-lint/identifierTooLong ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/identifierTooLong  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Identifier customer_subscription_billing_cycle_adjustments_history_archive_note is longer than 63 bytes.
   

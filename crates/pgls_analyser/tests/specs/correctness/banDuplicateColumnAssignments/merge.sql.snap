@@ -13,7 +13,7 @@ when not matched then insert (id, id) values (new_users.id, 1);
 ```
 
 # Diagnostics
-lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/banDuplicateColumnAssignments  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Multiple assignments to column name.
   

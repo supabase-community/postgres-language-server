@@ -26,7 +26,7 @@ reindex index my_index;
 ```
 
 ```sh
-code-block.sql:1:1 lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireConcurrentReindex  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! REINDEX without CONCURRENTLY blocks all table access.
   

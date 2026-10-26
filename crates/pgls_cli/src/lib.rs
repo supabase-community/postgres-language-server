@@ -116,6 +116,8 @@ impl<'app> CliSession<'app> {
                 since,
                 fix,
                 unsafe_,
+                only,
+                skip,
             } => check::check(
                 self,
                 &cli_options,
@@ -128,6 +130,8 @@ impl<'app> CliSession<'app> {
                     since,
                     fix,
                     unsafe_,
+                    only,
+                    skip,
                 },
             ),
             PgLSCommand::Format {

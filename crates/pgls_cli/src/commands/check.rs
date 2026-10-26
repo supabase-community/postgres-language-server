@@ -8,7 +8,7 @@ use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
 use crate::{ExecutionConfig, ExecutionMode, VcsTargeting};
-use pgls_configuration::PartialConfiguration;
+use pgls_configuration::{PartialConfiguration, RuleSelector};
 use pgls_diagnostics::{Error, category};
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
@@ -25,6 +25,8 @@ pub struct CheckArgs {
     pub since: Option<String>,
     pub fix: bool,
     pub unsafe_: bool,
+    pub only: Vec<RuleSelector>,
+    pub skip: Vec<RuleSelector>,
 }
 
 pub fn check(
@@ -60,7 +62,12 @@ pub fn check(
         (true, false) => Some(FixFileMode::SafeFixes),
         (false, false) => None,
     };
-    let mode = ExecutionMode::Check { vcs, fix };
+    let mode = ExecutionMode::Check {
+        vcs,
+        fix,
+        only: args.only.clone(),
+        skip: args.skip.clone(),
+    };
     let execution = ExecutionConfig::new(mode, max_diagnostics);
 
     if let Some(stdin_path) = args.stdin_file_path.as_deref() {

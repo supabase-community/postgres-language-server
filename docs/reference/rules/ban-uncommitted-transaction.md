@@ -25,7 +25,7 @@ create table users (id bigint);
 ```
 
 ```sh
-code-block.sql:1:1 lint/banUncommittedTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banUncommittedTransaction  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Transaction is never committed or rolled back.
   

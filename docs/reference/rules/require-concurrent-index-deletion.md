@@ -27,7 +27,7 @@ DROP INDEX IF EXISTS users_email_idx;
 ```
 
 ```sh
-code-block.sql:1:1 lint/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireConcurrentIndexDeletion  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping an index non-concurrently blocks reads and writes to the table.
   
