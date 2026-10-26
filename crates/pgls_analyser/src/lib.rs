@@ -188,10 +188,6 @@ impl<'a> Analyser<'a> {
         let mut result = AnalysisResult::default();
 
         let mut typecheck = params.typecheck && params.catalog_base.is_some();
-        let snapshot = params
-            .catalog_base
-            .as_ref()
-            .map(|base| base.snapshot().as_ref());
         let roots: Vec<pgls_query::NodeEnum> =
             params.stmts.iter().map(|s| s.root.clone()).collect();
 
@@ -308,7 +304,6 @@ impl<'a> Analyser<'a> {
                     options: self.options,
                     analysed_file_context: &file_context,
                     statement: &statement,
-                    snapshot,
                 };
                 for rule in &rules {
                     if rule.group == TYPECHECK_GROUP && !typecheck_statement {
