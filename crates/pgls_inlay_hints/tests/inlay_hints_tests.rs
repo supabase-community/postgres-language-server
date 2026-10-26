@@ -15,6 +15,8 @@ const SETUP: &str = r#"
     create function amb(a int, b text) returns int language sql as 'select 1';
     create function amb(c text, d int) returns int language sql as 'select 1';
     create table points (x int, y int);
+    create function measure(größe int, ö int) returns int language sql as 'select 1';
+    create table sizes (größe int, Ö int);
 "#;
 
 struct Fixture {
@@ -107,6 +109,16 @@ async fn arguments_named_like_the_parameter_get_no_hints(test_db: PgPool) {
     assert_eq!(
         f.hinted("select make_point(p.x, \"y\") from points p"),
         "select make_point(p.x, \"y\") from points p"
+    );
+}
+
+/// Postgres only folds ASCII letters in unquoted identifiers, so `Ö` is not `ö`.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn non_ascii_arguments_named_like_the_parameter(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.hinted("select measure(größe, Ö) from sizes"),
+        "select measure(größe, ö: Ö) from sizes"
     );
 }
 

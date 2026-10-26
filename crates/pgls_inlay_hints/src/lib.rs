@@ -196,20 +196,24 @@ fn is_reference_to(sql: &str, tokens: &[ScanToken], name: &str) -> bool {
             .is_some_and(|last| normalize_identifier(last) == name)
 }
 
+/// Postgres treats every non-ASCII character as a letter in identifiers.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332-L333
 fn is_identifier(text: &str) -> bool {
     text.starts_with('"')
         || text
             .chars()
-            .all(|c| c.is_alphanumeric() || c == '_' || c == '$')
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$' || !c.is_ascii())
 }
 
-/// The name an identifier refers to: unquoted identifiers are folded to lower case.
+/// The name an identifier refers to: unquoted identifiers are folded to lower case. In UTF-8
+/// databases, Postgres only folds ASCII letters.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scansup.c#L46
 fn normalize_identifier(text: &str) -> String {
     match text
         .strip_prefix('"')
         .and_then(|text| text.strip_suffix('"'))
     {
         Some(quoted) => quoted.replace("\"\"", "\""),
-        None => text.to_lowercase(),
+        None => text.to_ascii_lowercase(),
     }
 }
