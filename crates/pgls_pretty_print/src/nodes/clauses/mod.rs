@@ -4,6 +4,7 @@
 pub(crate) mod filter;
 pub(crate) mod function_options;
 pub(crate) mod grant;
+pub(crate) mod json;
 pub(crate) mod modifiers;
 pub(crate) mod object_type;
 pub(crate) mod options;

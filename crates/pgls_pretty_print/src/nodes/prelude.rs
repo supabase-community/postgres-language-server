@@ -16,6 +16,7 @@ pub(super) use super::{emit_node, emit_node_enum};
 pub(super) use super::clauses::filter::*;
 pub(super) use super::clauses::function_options::*;
 pub(super) use super::clauses::grant::*;
+pub(super) use super::clauses::json::*;
 pub(super) use super::clauses::modifiers::*;
 pub(super) use super::clauses::object_type::*;
 pub(super) use super::clauses::options::*;

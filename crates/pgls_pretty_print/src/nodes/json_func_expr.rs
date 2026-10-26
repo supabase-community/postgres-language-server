@@ -1,47 +1,6 @@
-use pgls_query::protobuf::{JsonBehavior, JsonBehaviorType, JsonFuncExpr};
+use pgls_query::protobuf::JsonFuncExpr;
 
 use super::prelude::*;
-
-fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) {
-    match behavior.btype() {
-        JsonBehaviorType::JsonBehaviorError => {
-            e.token(TokenKind::ERROR_KW);
-        }
-        JsonBehaviorType::JsonBehaviorNull => {
-            e.token(TokenKind::NULL_KW);
-        }
-        JsonBehaviorType::JsonBehaviorTrue => {
-            e.token(TokenKind::TRUE_KW);
-        }
-        JsonBehaviorType::JsonBehaviorFalse => {
-            e.token(TokenKind::FALSE_KW);
-        }
-        JsonBehaviorType::JsonBehaviorEmpty => {
-            e.token(TokenKind::EMPTY_KW);
-        }
-        JsonBehaviorType::JsonBehaviorEmptyArray => {
-            e.token(TokenKind::EMPTY_KW);
-            e.space();
-            e.token(TokenKind::ARRAY_KW);
-        }
-        JsonBehaviorType::JsonBehaviorEmptyObject => {
-            e.token(TokenKind::EMPTY_KW);
-            e.space();
-            e.token(TokenKind::OBJECT_KW);
-        }
-        JsonBehaviorType::JsonBehaviorUnknown => {
-            e.token(TokenKind::UNKNOWN_KW);
-        }
-        JsonBehaviorType::JsonBehaviorDefault => {
-            e.token(TokenKind::DEFAULT_KW);
-            if let Some(ref expr) = behavior.expr {
-                e.space();
-                emit_node(e, expr);
-            }
-        }
-        _ => {}
-    }
-}
 
 pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
     e.group_start();
@@ -76,7 +35,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
             emit_node(e, raw_expr);
         }
         if let Some(ref format) = context.format {
-            super::json_value_expr::emit_json_format(e, format);
+            emit_json_format_clause(e, format);
         }
     }
 
@@ -101,7 +60,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
     // RETURNING clause; JSON_EXISTS has none.
     if !is_exists && let Some(ref output) = n.output {
         e.line(LineType::SoftOrSpace);
-        super::json_value_expr::emit_json_output(e, output, &mut false);
+        emit_json_output_clause(e, output, &mut false);
     }
 
     if is_query {
@@ -158,7 +117,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
     // ON EMPTY clause; JSON_EXISTS has none.
     if !is_exists && let Some(ref on_empty) = n.on_empty {
         e.line(LineType::SoftOrSpace);
-        emit_json_behavior(e, on_empty);
+        emit_json_behavior_keywords(e, on_empty);
         e.space();
         e.token(TokenKind::ON_KW);
         e.space();
@@ -168,7 +127,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
     // ON ERROR clause
     if let Some(ref on_error) = n.on_error {
         e.line(LineType::SoftOrSpace);
-        emit_json_behavior(e, on_error);
+        emit_json_behavior_keywords(e, on_error);
         e.space();
         e.token(TokenKind::ON_KW);
         e.space();

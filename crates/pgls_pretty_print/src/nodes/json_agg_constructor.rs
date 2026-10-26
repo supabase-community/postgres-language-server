@@ -1,6 +1,5 @@
 use pgls_query::protobuf::JsonAggConstructor;
 
-use super::json_value_expr::emit_json_output;
 use super::prelude::*;
 
 pub(super) fn emit_json_agg_constructor(e: &mut EventEmitter, n: &JsonAggConstructor) {
@@ -28,7 +27,7 @@ pub(super) fn emit_json_agg_tail(
     mut has_content: bool,
 ) {
     if let Some(ref output) = constructor.output {
-        emit_json_output(e, output, &mut has_content);
+        emit_json_output_clause(e, output, &mut has_content);
     }
 
     if let Some(ref filter) = constructor.agg_filter {

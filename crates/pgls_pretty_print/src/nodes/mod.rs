@@ -158,19 +158,29 @@ mod integer;
 mod into_clause;
 mod join_expr;
 mod json_agg_constructor;
+mod json_argument;
+mod json_array_agg;
 mod json_array_constructor;
+mod json_array_query_constructor;
+mod json_behavior;
 mod json_constructor_expr;
 mod json_expr;
+mod json_format;
 mod json_func_expr;
 mod json_is_predicate;
 mod json_key_value;
+mod json_object_agg;
 mod json_object_constructor;
+mod json_output;
 mod json_parse_expr;
+mod json_returning;
 mod json_scalar_expr;
 mod json_serialize_expr;
 mod json_table;
+mod json_table_column;
 mod json_table_path;
 mod json_table_path_scan;
+mod json_table_path_spec;
 mod json_table_sibling_join;
 mod json_value_expr;
 mod list;
@@ -417,28 +427,31 @@ use integer::emit_integer;
 use into_clause::emit_into_clause;
 use join_expr::emit_join_expr;
 use json_agg_constructor::emit_json_agg_constructor;
-use json_array_constructor::{
-    emit_json_array_agg, emit_json_array_constructor, emit_json_array_query_constructor,
-};
+use json_argument::emit_json_argument;
+use json_array_agg::emit_json_array_agg;
+use json_array_constructor::emit_json_array_constructor;
+use json_array_query_constructor::emit_json_array_query_constructor;
+use json_behavior::emit_json_behavior;
 use json_constructor_expr::emit_json_constructor_expr;
 use json_expr::emit_json_expr;
+use json_format::emit_json_format;
 use json_func_expr::emit_json_func_expr;
 use json_is_predicate::emit_json_is_predicate;
 use json_key_value::emit_json_key_value;
-use json_object_constructor::{emit_json_object_agg, emit_json_object_constructor};
+use json_object_agg::emit_json_object_agg;
+use json_object_constructor::emit_json_object_constructor;
+use json_output::emit_json_output;
 use json_parse_expr::emit_json_parse_expr;
+use json_returning::emit_json_returning;
 use json_scalar_expr::emit_json_scalar_expr;
 use json_serialize_expr::emit_json_serialize_expr;
-use json_table::{
-    emit_json_argument, emit_json_behavior, emit_json_table, emit_json_table_column,
-    emit_json_table_path_spec,
-};
+use json_table::emit_json_table;
+use json_table_column::emit_json_table_column;
 use json_table_path::emit_json_table_path;
 use json_table_path_scan::emit_json_table_path_scan;
+use json_table_path_spec::emit_json_table_path_spec;
 use json_table_sibling_join::emit_json_table_sibling_join;
-use json_value_expr::{
-    emit_json_format_node, emit_json_output_node, emit_json_returning_node, emit_json_value_expr,
-};
+use json_value_expr::emit_json_value_expr;
 use list::emit_list;
 use listen_stmt::emit_listen_stmt;
 use load_stmt::emit_load_stmt;
@@ -802,9 +815,9 @@ pub(crate) fn emit_node_enum(e: &mut EventEmitter, node: &NodeEnum) {
         NodeEnum::JsonBehavior(n) => emit_json_behavior(e, n),
         NodeEnum::JsonAggConstructor(n) => emit_json_agg_constructor(e, n),
         NodeEnum::JsonExpr(n) => emit_json_expr(e, n),
-        NodeEnum::JsonFormat(n) => emit_json_format_node(e, n),
-        NodeEnum::JsonOutput(n) => emit_json_output_node(e, n),
-        NodeEnum::JsonReturning(n) => emit_json_returning_node(e, n),
+        NodeEnum::JsonFormat(n) => emit_json_format(e, n),
+        NodeEnum::JsonOutput(n) => emit_json_output(e, n),
+        NodeEnum::JsonReturning(n) => emit_json_returning(e, n),
         NodeEnum::JsonConstructorExpr(n) => emit_json_constructor_expr(e, n),
         NodeEnum::JsonObjectConstructor(n) => emit_json_object_constructor(e, n),
         NodeEnum::JsonArrayConstructor(n) => emit_json_array_constructor(e, n),

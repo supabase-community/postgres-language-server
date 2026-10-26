@@ -1,6 +1,5 @@
 use pgls_query::protobuf::JsonScalarExpr;
 
-use super::json_value_expr::emit_json_output;
 use super::prelude::*;
 
 pub(super) fn emit_json_scalar_expr(e: &mut EventEmitter, n: &JsonScalarExpr) {
@@ -17,7 +16,7 @@ pub(super) fn emit_json_scalar_expr(e: &mut EventEmitter, n: &JsonScalarExpr) {
     }
 
     if let Some(ref output) = n.output {
-        emit_json_output(e, output, &mut has_content);
+        emit_json_output_clause(e, output, &mut has_content);
     }
 
     e.token(TokenKind::R_PAREN);
