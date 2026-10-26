@@ -398,7 +398,7 @@ macro_rules! workspace_method {
 }
 
 /// Returns a list of signature for all the methods in the [Workspace] trait
-pub fn methods() -> [WorkspaceMethod; 11] {
+pub fn methods() -> [WorkspaceMethod; 12] {
     [
         workspace_method!(is_path_ignored),
         workspace_method!(register_project_folder),
@@ -408,6 +408,7 @@ pub fn methods() -> [WorkspaceMethod; 11] {
         workspace_method!(fix_file),
         workspace_method!(get_completions),
         workspace_method!(update_settings),
+        workspace_method!(check_database_connection),
         workspace_method!(open_file),
         workspace_method!(change_file),
         workspace_method!(close_file),
