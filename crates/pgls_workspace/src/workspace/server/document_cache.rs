@@ -73,15 +73,25 @@ pub(crate) struct StaleEntries {
 
 /// The stack of the thread that drops [`StaleEntries`]. Dropping a statement's tree is recursive
 /// like parsing it, so this is the stack that the CLI gives its workers for parsing.
+#[cfg(not(target_family = "wasm"))]
 const DROP_THREAD_STACK_BYTES: usize = 8 * 1024 * 1024;
 
 impl StaleEntries {
     /// Drops the entries on a thread of its own, so that the edit doesn't wait for it. If the
-    /// thread can't be started, they are dropped right away.
+    /// thread can't be started, and in WebAssembly, which has no threads, they are dropped right
+    /// away.
     pub(crate) fn drop_in_background(self) {
         if self.analysis.is_none() && self.walk.is_empty() {
             return;
         }
+        #[cfg(target_family = "wasm")]
+        drop(self);
+        #[cfg(not(target_family = "wasm"))]
+        self.drop_on_thread();
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    fn drop_on_thread(self) {
         let spawned = std::thread::Builder::new()
             .name("pgls-cache-drop".into())
             .stack_size(DROP_THREAD_STACK_BYTES)
