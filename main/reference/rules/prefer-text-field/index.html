@@ -1255,7 +1255,7 @@ VALIDATE call.</p>
 <span class="w">    </span><span class="ss">"alpha"</span><span class="w"> </span><span class="nb">varchar</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
 <span class="p">);</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferTextField<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferTextField<span class="w">  </span>FIXABLE<span class="w">  </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>Changing<span class="w"> </span>the<span class="w"> </span>size<span class="w"> </span>of<span class="w"> </span>a<span class="w"> </span>varchar<span class="w"> </span>field<span class="w"> </span>requires<span class="w"> </span>an<span class="w"> </span>ACCESS<span class="w"> </span>EXCLUSIVE<span class="w"> </span>lock.
 
@@ -1271,7 +1271,7 @@ VALIDATE call.</p>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="ss">"core_bar"</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="ss">"kind"</span><span class="w"> </span><span class="k">TYPE</span><span class="w"> </span><span class="nb">varchar</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="ss">"kind"</span><span class="p">::</span><span class="nb">varchar</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferTextField<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferTextField<span class="w">  </span>FIXABLE<span class="w">  </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>Changing<span class="w"> </span>the<span class="w"> </span>size<span class="w"> </span>of<span class="w"> </span>a<span class="w"> </span>varchar<span class="w"> </span>field<span class="w"> </span>requires<span class="w"> </span>an<span class="w"> </span>ACCESS<span class="w"> </span>EXCLUSIVE<span class="w"> </span>lock.
 

@@ -1256,7 +1256,7 @@ statement.</p>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">users_email_idx</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="p">(</span><span class="n">email</span><span class="p">);</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/requireConcurrentIndexCreation<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/requireConcurrentIndexCreation<span class="w">  </span>FIXABLE<span class="w">  </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>Creating<span class="w"> </span>an<span class="w"> </span>index<span class="w"> </span>non-concurrently<span class="w"> </span>blocks<span class="w"> </span>writes<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>table.
 

@@ -1251,7 +1251,7 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">users_email_idx</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="p">(</span><span class="n">email</span><span class="p">);</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferRobustStmts<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferRobustStmts<span class="w">  </span>FIXABLE<span class="w">  </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>Concurrent<span class="w"> </span>index<span class="w"> </span>creation<span class="w"> </span>should<span class="w"> </span>use<span class="w"> </span>IF<span class="w"> </span>NOT<span class="w"> </span>EXISTS.
 
@@ -1263,7 +1263,7 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">DROP</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">users_email_idx</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferRobustStmts<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferRobustStmts<span class="w">  </span>FIXABLE<span class="w">  </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>Concurrent<span class="w"> </span>drop<span class="w"> </span>should<span class="w"> </span>use<span class="w"> </span>IF<span class="w"> </span>EXISTS.
 
@@ -1275,7 +1275,7 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">int</span><span class="p">);</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferRobustStmts<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferRobustStmts<span class="w">  </span>FIXABLE<span class="w">  </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>CREATE<span class="w"> </span>TABLE<span class="w"> </span>should<span class="w"> </span>use<span class="w"> </span>IF<span class="w"> </span>NOT<span class="w"> </span>EXISTS.
 
@@ -1287,7 +1287,7 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">DROP</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">users</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferRobustStmts<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/preferRobustStmts<span class="w">  </span>FIXABLE<span class="w">  </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>DROP<span class="w"> </span>TABLE<span class="w"> </span>should<span class="w"> </span>use<span class="w"> </span>IF<span class="w"> </span>EXISTS.
 

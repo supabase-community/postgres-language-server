@@ -1251,7 +1251,7 @@ Note: concurrent refresh requires a unique index on the materialized view.</p>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">refresh</span><span class="w"> </span><span class="n">materialized</span><span class="w"> </span><span class="k">view</span><span class="w"> </span><span class="n">my_view</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/requireConcurrentRefreshMatview<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/requireConcurrentRefreshMatview<span class="w">  </span>FIXABLE<span class="w">  </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>REFRESH<span class="w"> </span>MATERIALIZED<span class="w"> </span>VIEW<span class="w"> </span>without<span class="w"> </span>CONCURRENTLY<span class="w"> </span>blocks<span class="w"> </span>all<span class="w"> </span>reads.
 

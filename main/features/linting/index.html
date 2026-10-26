@@ -1412,6 +1412,12 @@ postgres-language-server<span class="w"> </span>check<span class="w"> </span>mig
 <div class="highlight"><pre><span></span><code>postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>migrations/
 postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>--unsafe<span class="w"> </span>migrations/
 </code></pre></div>
+<p>Diagnostics with a fix are tagged <code>FIXABLE</code>. The summary says how many diagnostics have a fix, and with <code>--fix</code>, how many unsafe fixes it skipped. <code>--only</code> and <code>--skip</code> limit the check, and the fixes, to some rules or groups:</p>
+<div class="highlight"><pre><span></span><code>postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>--only<span class="o">=</span>requireConcurrentIndexCreation<span class="w"> </span>migrations/
+</code></pre></div>
+<p>With <code>--stdin-file-path</code>, <code>check</code> reads the SQL from stdin and prints it to stdout, with the fixes applied if <code>--fix</code> is set. The diagnostics go to stderr:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>migration.sql<span class="w"> </span><span class="p">|</span><span class="w"> </span>postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>--unsafe<span class="w"> </span>--stdin-file-path<span class="o">=</span>migration.sql
+</code></pre></div>
 <p>The <a href="../../reference/rules/">rules reference</a> marks the rules with a fix with 🔧, and the page of each rule says whether its fix is safe. Most rules with fixes, like <code>requireConcurrentIndexCreation</code>, <code>preferRobustStmts</code> or <code>preferTimestamptz</code>, aren't in the recommended preset (✅), so enable them first:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"linter"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
