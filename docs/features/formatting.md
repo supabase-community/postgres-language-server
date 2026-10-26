@@ -94,8 +94,10 @@ where
 With `layout: "expanded"`, a `CASE` expression puts every `WHEN` and `ELSE`
 on its own line, one indent level in from where `CASE` starts, `THEN` one
 level further in, and `END` back under `CASE`. This holds wherever the `CASE`
-starts, after a leading comma or `THEN` for instance. A `WHEN` condition that
-breaks continues one level in from `WHEN`:
+starts, after a leading comma for instance. A `CASE` nested as the result of a
+`THEN` or `ELSE` is indented from that line instead, with `END` under `THEN` or
+`ELSE`, so that deep nesting doesn't run past the line width. A `WHEN`
+condition that breaks continues one level in from `WHEN`:
 
 ```sql
 select
