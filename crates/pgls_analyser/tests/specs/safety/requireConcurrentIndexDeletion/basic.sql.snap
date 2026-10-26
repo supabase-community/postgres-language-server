@@ -17,7 +17,7 @@ lint/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━�
   
 
 
-## Fix (safe): Add CONCURRENTLY
+## Fix (unsafe): Add CONCURRENTLY
 ```
 -- expect_lint/requireConcurrentIndexDeletion
 DROP INDEX CONCURRENTLY IF EXISTS users_email_idx;

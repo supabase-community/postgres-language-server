@@ -17,7 +17,7 @@ lint/requireConcurrentIndexCreation ━━━━━━━━━━━━━━�
   
 
 
-## Fix (safe): Add CONCURRENTLY
+## Fix (unsafe): Add CONCURRENTLY
 ```
 -- expect_lint/requireConcurrentIndexCreation
 CREATE INDEX CONCURRENTLY users_email_idx ON users (email);

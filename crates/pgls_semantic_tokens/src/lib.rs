@@ -150,6 +150,9 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                     Some(type_info.schema.as_str()),
                 );
             }
+            // A `*` is not a name, and its qualifier is a table or alias that has a reference of
+            // its own where it is defined.
+            Reference::Star { .. } => {}
         }
     }
 

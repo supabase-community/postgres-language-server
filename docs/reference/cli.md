@@ -137,33 +137,33 @@ Lints your database schema.
   The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
-- **`    --line-width`**=_`ARG`_ &mdash; 
+- **`    --line-width`**=_`NUMBER`_ &mdash; 
   Maximum line width before breaking. Default: 100.
-- **`    --indent-size`**=_`ARG`_ &mdash; 
+- **`    --indent-size`**=_`NUMBER`_ &mdash; 
   Number of spaces (or tab width) for indentation. Default: 2.
-- **`    --indent-style`**=_`ARG`_ &mdash; 
+- **`    --indent-style`**=_`<spaces|tabs>`_ &mdash; 
   Indentation style: "spaces" or "tabs". Default: "spaces".
-- **`    --keyword-case`**=_`ARG`_ &mdash; 
+- **`    --keyword-case`**=_`<upper|lower>`_ &mdash; 
   Keyword casing: "upper" or "lower". Default: "lower".
-- **`    --constant-case`**=_`ARG`_ &mdash; 
+- **`    --constant-case`**=_`<upper|lower>`_ &mdash; 
   Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-- **`    --type-case`**=_`ARG`_ &mdash; 
+- **`    --type-case`**=_`<upper|lower>`_ &mdash; 
   Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-- **`    --comma-style`**=_`ARG`_ &mdash; 
+- **`    --comma-style`**=_`<trailing|leading>`_ &mdash; 
   Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-- **`    --logical-operator-placement`**=_`ARG`_ &mdash; 
+- **`    --logical-operator-placement`**=_`<trailing|leading>`_ &mdash; 
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
-- **`    --layout`**=_`ARG`_ &mdash; 
-  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
-- **`    --values-row-layout`**=_`ARG`_ &mdash; 
+- **`    --layout`**=_`<fit|expanded>`_ &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+- **`    --values-row-layout`**=_`<fit|expanded>`_ &mdash; 
   How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
-- **`    --cast-style`**=_`ARG`_ &mdash; 
+- **`    --cast-style`**=_`<cast|operator>`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
-- **`    --clause-body-style`**=_`ARG`_ &mdash; 
+- **`    --clause-body-style`**=_`<break|compact>`_ &mdash; 
   Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
-- **`    --isolate-semicolon`**=_`ARG`_ &mdash; 
+- **`    --isolate-semicolon`**=_`<true|false>`_ &mdash; 
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
-- **`    --skip-fn-bodies`**=_`ARG`_ &mdash; 
+- **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
 - **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
@@ -263,33 +263,33 @@ Runs everything to the requested files.
   The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
-- **`    --line-width`**=_`ARG`_ &mdash; 
+- **`    --line-width`**=_`NUMBER`_ &mdash; 
   Maximum line width before breaking. Default: 100.
-- **`    --indent-size`**=_`ARG`_ &mdash; 
+- **`    --indent-size`**=_`NUMBER`_ &mdash; 
   Number of spaces (or tab width) for indentation. Default: 2.
-- **`    --indent-style`**=_`ARG`_ &mdash; 
+- **`    --indent-style`**=_`<spaces|tabs>`_ &mdash; 
   Indentation style: "spaces" or "tabs". Default: "spaces".
-- **`    --keyword-case`**=_`ARG`_ &mdash; 
+- **`    --keyword-case`**=_`<upper|lower>`_ &mdash; 
   Keyword casing: "upper" or "lower". Default: "lower".
-- **`    --constant-case`**=_`ARG`_ &mdash; 
+- **`    --constant-case`**=_`<upper|lower>`_ &mdash; 
   Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-- **`    --type-case`**=_`ARG`_ &mdash; 
+- **`    --type-case`**=_`<upper|lower>`_ &mdash; 
   Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-- **`    --comma-style`**=_`ARG`_ &mdash; 
+- **`    --comma-style`**=_`<trailing|leading>`_ &mdash; 
   Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-- **`    --logical-operator-placement`**=_`ARG`_ &mdash; 
+- **`    --logical-operator-placement`**=_`<trailing|leading>`_ &mdash; 
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
-- **`    --layout`**=_`ARG`_ &mdash; 
-  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
-- **`    --values-row-layout`**=_`ARG`_ &mdash; 
+- **`    --layout`**=_`<fit|expanded>`_ &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+- **`    --values-row-layout`**=_`<fit|expanded>`_ &mdash; 
   How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
-- **`    --cast-style`**=_`ARG`_ &mdash; 
+- **`    --cast-style`**=_`<cast|operator>`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
-- **`    --clause-body-style`**=_`ARG`_ &mdash; 
+- **`    --clause-body-style`**=_`<break|compact>`_ &mdash; 
   Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
-- **`    --isolate-semicolon`**=_`ARG`_ &mdash; 
+- **`    --isolate-semicolon`**=_`<true|false>`_ &mdash; 
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
-- **`    --skip-fn-bodies`**=_`ARG`_ &mdash; 
+- **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
 - **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
@@ -411,33 +411,33 @@ Formats the requested files.
   The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
-- **`    --line-width`**=_`ARG`_ &mdash; 
+- **`    --line-width`**=_`NUMBER`_ &mdash; 
   Maximum line width before breaking. Default: 100.
-- **`    --indent-size`**=_`ARG`_ &mdash; 
+- **`    --indent-size`**=_`NUMBER`_ &mdash; 
   Number of spaces (or tab width) for indentation. Default: 2.
-- **`    --indent-style`**=_`ARG`_ &mdash; 
+- **`    --indent-style`**=_`<spaces|tabs>`_ &mdash; 
   Indentation style: "spaces" or "tabs". Default: "spaces".
-- **`    --keyword-case`**=_`ARG`_ &mdash; 
+- **`    --keyword-case`**=_`<upper|lower>`_ &mdash; 
   Keyword casing: "upper" or "lower". Default: "lower".
-- **`    --constant-case`**=_`ARG`_ &mdash; 
+- **`    --constant-case`**=_`<upper|lower>`_ &mdash; 
   Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-- **`    --type-case`**=_`ARG`_ &mdash; 
+- **`    --type-case`**=_`<upper|lower>`_ &mdash; 
   Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-- **`    --comma-style`**=_`ARG`_ &mdash; 
+- **`    --comma-style`**=_`<trailing|leading>`_ &mdash; 
   Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-- **`    --logical-operator-placement`**=_`ARG`_ &mdash; 
+- **`    --logical-operator-placement`**=_`<trailing|leading>`_ &mdash; 
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
-- **`    --layout`**=_`ARG`_ &mdash; 
-  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
-- **`    --values-row-layout`**=_`ARG`_ &mdash; 
+- **`    --layout`**=_`<fit|expanded>`_ &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+- **`    --values-row-layout`**=_`<fit|expanded>`_ &mdash; 
   How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
-- **`    --cast-style`**=_`ARG`_ &mdash; 
+- **`    --cast-style`**=_`<cast|operator>`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
-- **`    --clause-body-style`**=_`ARG`_ &mdash; 
+- **`    --clause-body-style`**=_`<break|compact>`_ &mdash; 
   Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
-- **`    --isolate-semicolon`**=_`ARG`_ &mdash; 
+- **`    --isolate-semicolon`**=_`<true|false>`_ &mdash; 
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
-- **`    --skip-fn-bodies`**=_`ARG`_ &mdash; 
+- **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
 - **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].

@@ -1,10 +1,12 @@
 ---
 source: crates/pgls_analyser/tests/postgres_regress.rs
-expression: "report(&version, analysed, &rejected, &artefacts)"
+expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_16_15: 41492 statements, 1692 findings on statements Postgres rejected
+REL_16_15: 41492 statements and 360 in SQL function bodies, 1699 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
+banDuplicateColumnAssignments 42601: 1
+banDuplicateColumnAssignments 42701: 2
 functionArgumentMismatch 42725: 5
 functionArgumentMismatch 42883: 4
 functionReturnTypeMismatch 42P13: 5
@@ -16,12 +18,12 @@ operatorTypeMismatch 42883: 9
 unknownColumn 42703: 38
 unknownColumn 42P01: 3
 unknownFunction 42704: 4
-unknownFunction 42883: 96
+unknownFunction 42883: 97
 unknownFunction 42P01: 19
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
 unknownRelation 42501: 1
-unknownRelation 42P01: 1386
+unknownRelation 42P01: 1389
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -230,6 +232,7 @@ brin_multi.sql:48:1 42P01 unknownRelation
 char.sql:71:1 42P01 unknownRelation
 char.sql:73:1 42P01 unknownRelation
 cluster.sql:253:1 42P01 unknownRelation
+compression.sql:50:1 (body) 42883 unknownFunction
 compression.sql:138:1 42883 unknownFunction
 create_am.sql:49:1 42P01 unknownRelation
 create_am.sql:53:1 42P01 unknownRelation
@@ -243,6 +246,7 @@ create_index_spgist.sql:5:1 42P01 unknownRelation
 create_index_spgist.sql:19:1 42P01 unknownRelation
 create_table.sql:53:1 42P01 unknownRelation
 create_table.sql:54:1 42P01 unknownRelation
+create_table.sql:530:1 42701 banDuplicateColumnAssignments
 delete.sql:16:1 42P01 missingFromClauseEntry
 encoding.sql:257:1 42703 unknownColumn
 equivclass.sql:259:1 42P01 unknownRelation
@@ -1330,6 +1334,7 @@ select_implicit.sql:129:1 42702 ambiguousColumn
 select_implicit.sql:140:1 42702 ambiguousColumn
 select_into.sql:5:1 42P01 unknownRelation
 select_into.sql:12:1 42P01 unknownRelation
+select_into.sql:90:1 (body) 42P01 unknownRelation
 select_into.sql:97:1 42P01 unknownRelation
 select_parallel.sql:17:1 42P01 unknownRelation
 select_parallel.sql:19:1 42P01 unknownRelation
@@ -1478,6 +1483,7 @@ transactions.sql:202:3 42703 unknownColumn
 triggers.sql:710:1 42703 unknownColumn
 tsrf.sql:70:1 42P01 unknownRelation
 tsrf.sql:71:1 42P01 unknownRelation
+typed_table.sql:41:1 42701 banDuplicateColumnAssignments
 union.sql:47:1 42P01 unknownRelation
 union.sql:47:1 42P01 unknownRelation
 union.sql:52:1 42P01 unknownRelation
@@ -1585,6 +1591,7 @@ union.sql:538:1 42P01 unknownRelation
 union.sql:538:1 42P01 unknownRelation
 updatable_views.sql:1741:46 42P01 missingFromClauseEntry
 updatable_views.sql:1741:46 42P01 missingFromClauseEntry
+update.sql:59:1 42601 banDuplicateColumnAssignments
 update.sql:86:1 42P01 missingFromClauseEntry
 varchar.sql:66:1 42P01 unknownRelation
 varchar.sql:68:1 42P01 unknownRelation
@@ -1666,6 +1673,8 @@ window.sql:385:1 42P01 unknownRelation
 window.sql:389:1 42P01 unknownRelation
 window.sql:393:1 42P01 unknownRelation
 window.sql:397:1 42P01 unknownRelation
+window.sql:518:1 (body) 42P01 unknownRelation
+window.sql:538:1 (body) 42P01 unknownRelation
 window.sql:556:1 42P01 unknownRelation
 window.sql:560:1 42P01 unknownRelation
 window.sql:564:1 42P01 unknownRelation

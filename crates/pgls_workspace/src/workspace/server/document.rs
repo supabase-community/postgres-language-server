@@ -2,14 +2,13 @@ use std::sync::Arc;
 
 use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
-use pgls_query_ext::diagnostics::SyntaxDiagnostic;
+use pgls_query_ext::{diagnostics::SyntaxDiagnostic, utils::sql_function_body};
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
 
 use super::{
     annotation::AnnotationStore,
     pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
-    sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
 };
@@ -31,9 +30,8 @@ impl Document {
         let cst_db = TreeSitterStore::new();
         let ast_db = PgQueryStore::new();
         let annotation_db = AnnotationStore::new();
-        let suppressions = Suppressions::from(content.as_str());
-
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
+        let suppressions = Suppressions::from(content.as_str()).with_statements(ranges.clone());
 
         Document {
             ranges,
@@ -53,13 +51,19 @@ impl Document {
 
         let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
 
+        self.suppressions =
+            Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
         self.ranges = ranges;
         self.diagnostics = diagnostics;
-        self.suppressions = Suppressions::from(self.content.as_str());
     }
 
     pub fn suppressions(&self) -> &Suppressions {
         &self.suppressions
+    }
+
+    /// The ranges of the top-level statements, in file order.
+    pub fn statement_ranges(&self) -> &[TextRange] {
+        &self.ranges
     }
 
     pub fn get_document_content(&self) -> &str {
@@ -90,6 +94,27 @@ impl Document {
         F: StatementFilter<'a>,
     {
         ParseIterator::new(self, mapper, filter)
+    }
+
+    /// The statements that contain `position`, outermost first: the top-level statement, and the
+    /// body of a SQL function if `position` is in it. Unlike filtering all statements with a
+    /// [`CursorPositionFilter`], this doesn't look at the other statements of the document.
+    pub fn iter_at<'a, M>(
+        &'a self,
+        mapper: M,
+        position: TextSize,
+    ) -> ParseIterator<'a, M, CursorPositionFilter>
+    where
+        M: StatementMapper<'a>,
+    {
+        // The ranges are ordered and don't overlap, so only the first one that ends after
+        // `position` can contain it.
+        let first = self.ranges.partition_point(|range| range.end() <= position);
+        let ranges = &self.ranges[first..self.ranges.len().min(first + 1)];
+        ParseIterator {
+            ranges: ranges.iter(),
+            ..ParseIterator::new(self, mapper, CursorPositionFilter::new(position))
+        }
     }
 
     #[allow(dead_code)]
@@ -136,34 +161,34 @@ where
     type Item = M::Output;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // First check if we have any pending sub-statements to process
-        if let Some((id, range, content)) = self.pending_sub_statements.pop() {
-            if self.filter.predicate(&id, &range, content.as_str()) {
-                return Some(self.mapper.map(self.parser, id, range));
+        // A loop rather than recursion: the filter can skip thousands of statements in a row.
+        loop {
+            // First check if we have any pending sub-statements to process
+            if let Some((id, range, content)) = self.pending_sub_statements.pop() {
+                if self.filter.predicate(&id, &range, content.as_str()) {
+                    return Some(self.mapper.map(self.parser, id, range));
+                }
+                continue;
             }
-            // If the sub-statement doesn't pass the filter, continue to the next item
-            return self.next();
-        }
 
-        // Process the next top-level statement
-        let next_range = self.ranges.next();
-
-        if let Some(range) = next_range {
-            // If we should include sub-statements and this statement has an AST
-
+            // Process the next top-level statement
+            let range = self.ranges.next()?;
             let content = &self.parser.content[*range];
             let root_id = StatementId::new(content);
 
             if let Ok(ast) = self.parser.ast_db.get_or_cache_ast(&root_id).as_ref() {
-                // Check if this is a SQL function definition with a body
-                if let Some(sub_statement) = get_sql_fn_body(ast, content) {
-                    // Add sub-statements to our pending queue
-                    self.pending_sub_statements.push((
-                        root_id.create_child(&sub_statement.body),
-                        // adjust range to document
-                        sub_statement.range + range.start(),
-                        sub_statement.body.clone(),
-                    ));
+                // The statements of a SQL function body follow the function. They are pushed in
+                // reverse, so that they are popped in order.
+                if let Some(body) = sql_function_body(ast, content) {
+                    let body_start = range.start() + body.range.start();
+                    for statement in body.statements().into_iter().rev() {
+                        let text = &body.body[statement];
+                        self.pending_sub_statements.push((
+                            root_id.create_child(text),
+                            statement + body_start,
+                            text.to_owned(),
+                        ));
+                    }
                 }
             }
 
@@ -171,12 +196,7 @@ where
             if self.filter.predicate(&root_id, range, content) {
                 return Some(self.mapper.map(self.parser, root_id, *range));
             }
-
-            // If the current statement doesn't pass the filter, try the next one
-            return self.next();
         }
-
-        None
     }
 }
 
@@ -231,7 +251,6 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
         TextRange,
         Option<pgls_query::NodeEnum>,
         Arc<tree_sitter::Tree>,
-        Option<SQLFunctionSignature>,
     );
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
@@ -244,15 +263,7 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
 
         let cst_result = parser.cst_db.get_or_cache_tree(&id);
 
-        let sql_fn_sig = id.parent().and_then(|root| {
-            let ast_option = parser.ast_db.get_or_cache_ast(&root).as_ref().clone().ok();
-
-            let ast_option = ast_option.as_ref()?;
-
-            get_sql_fn_signature(ast_option)
-        });
-
-        (id.clone(), range, ast_option, cst_result, sql_fn_sig)
+        (id.clone(), range, ast_option, cst_result)
     }
 }
 
@@ -291,8 +302,10 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
         // Statements in the body of a SQL function can reference its parameters.
         let function = id.parent().and_then(|root| {
             let parent = parser.ast_db.get_or_cache_ast(&root);
-            let signature = get_sql_fn_signature(parent.as_ref().as_ref().ok()?)?;
-            Some(function_context(signature))
+            let Ok(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) = parent.as_ref() else {
+                return None;
+            };
+            pgls_catalog::resolve::FunctionContext::from_create_function(create_fn)
         });
 
         (
@@ -310,22 +323,6 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
         )
     }
 }
-fn function_context(signature: SQLFunctionSignature) -> pgls_catalog::resolve::FunctionContext {
-    pgls_catalog::resolve::FunctionContext {
-        function_name: signature.name,
-        params: signature
-            .args
-            .into_iter()
-            .map(|arg| pgls_catalog::resolve::FunctionParam {
-                name: arg.name,
-                type_schema: arg.type_.schema,
-                type_name: arg.type_.name,
-                is_array: arg.type_.is_array,
-            })
-            .collect(),
-    }
-}
-
 pub struct WithCSTMapper;
 impl<'a> StatementMapper<'a> for WithCSTMapper {
     type Output = (StatementId, TextRange, Arc<tree_sitter::Tree>);
@@ -465,6 +462,69 @@ mod tests {
 
         assert_eq!(stmts.len(), 2);
         assert_eq!(stmts[1].2, "select $1 + $2;");
+    }
+
+    #[test]
+    fn sql_function_body_sees_the_parameters() {
+        let input =
+            "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT a + $2;' LANGUAGE sql;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+        assert_eq!(results.len(), 2);
+        assert!(results[0].0.as_ref().unwrap().function.is_none());
+        let body = results[1].0.as_ref().unwrap();
+        assert_eq!(body.sql.as_deref(), Some("SELECT a + $2;"));
+        let function = body.function.as_ref().unwrap();
+        assert_eq!(function.function_name, "add");
+        assert_eq!(
+            function
+                .params
+                .iter()
+                .map(|param| param.name.as_deref())
+                .collect::<Vec<_>>(),
+            [Some("a"), Some("b")]
+        );
+    }
+
+    #[test]
+    fn sql_function_body_with_several_statements() {
+        let input = "create function f(a int) returns int language sql as $$\n  insert into t values (a);\n  select a;\n$$;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+        assert_eq!(results.len(), 3);
+        for (statement, syntax_error, _) in &results[1..] {
+            assert!(syntax_error.is_none(), "{syntax_error:?}");
+            let statement = statement.as_ref().unwrap();
+            assert!(statement.function.is_some());
+            assert_eq!(
+                Some(&input[statement.range]),
+                statement.sql.as_deref(),
+                "the range is the statement's range in the document"
+            );
+        }
+        assert_eq!(
+            results[1].0.as_ref().unwrap().sql.as_deref(),
+            Some("insert into t values (a);")
+        );
+        assert_eq!(
+            results[2].0.as_ref().unwrap().sql.as_deref(),
+            Some("select a;")
+        );
+    }
+
+    #[test]
+    fn empty_sql_function_body_has_no_syntax_error() {
+        let input = "create function f() returns void language sql as $$ $$;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+        assert_eq!(results.len(), 1);
+        assert!(results[0].1.is_none());
     }
 
     #[test]
@@ -610,14 +670,11 @@ $$ LANGUAGE plpgsql;";
         let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (_id, _range, ast, cst, sql_fn_sig) = &results[0];
+        let (_id, _range, ast, cst) = &results[0];
 
         // Should have both AST and CST
         assert!(ast.is_some());
         assert_eq!(cst.root_node().kind(), "program");
-
-        // Should not have SQL function signature for top-level statement
-        assert!(sql_fn_sig.is_none());
     }
 
     #[test]
@@ -630,16 +687,9 @@ $$ LANGUAGE plpgsql;";
         assert_eq!(results.len(), 2);
 
         // Check the function body
-        let (_id, _range, ast, _cst, sql_fn_sig) = &results[1];
+        let (_id, _range, ast, _cst) = &results[1];
         assert_eq!(_id.content(), "SELECT $1 + $2;");
         assert!(ast.is_some());
-        assert!(sql_fn_sig.is_some());
-
-        let sig = sql_fn_sig.as_ref().unwrap();
-        assert_eq!(sig.name, "add");
-        assert_eq!(sig.args.len(), 2);
-        assert_eq!(sig.args[0].name, Some("a".to_string()));
-        assert_eq!(sig.args[1].name, Some("b".to_string()));
     }
 
     #[test]
@@ -700,6 +750,41 @@ $$ LANGUAGE plpgsql;";
             .collect::<Vec<_>>();
         assert_eq!(results2.len(), 1);
         assert_eq!(results2[0].2, "INSERT INTO users VALUES (1);");
+    }
+
+    #[test]
+    fn iter_at_yields_the_statements_at_the_position() {
+        let input =
+            "select 1;\ncreate function f() returns int language sql as 'select 2;';\nselect 3;";
+        let d = Document::new(input.to_string(), 1);
+        let at = |needle: &str| {
+            let position = TextSize::try_from(input.find(needle).unwrap()).unwrap();
+            d.iter_at(DefaultMapper, position)
+                .map(|(_, _, sql)| sql)
+                .collect::<Vec<_>>()
+        };
+
+        assert_eq!(at("1;"), ["select 1;"]);
+        // The `CREATE FUNCTION`, then its body.
+        assert_eq!(
+            at("2;"),
+            [
+                "create function f() returns int language sql as 'select 2;';",
+                "select 2;"
+            ]
+        );
+        assert_eq!(
+            at("returns"),
+            ["create function f() returns int language sql as 'select 2;';"]
+        );
+        assert_eq!(at("select 3"), ["select 3;"]);
+        // Between two statements, and past the end.
+        assert!(at("\ncreate").is_empty());
+        assert!(
+            d.iter_at(DefaultMapper, TextSize::of(input))
+                .next()
+                .is_none()
+        );
     }
 
     #[test]
