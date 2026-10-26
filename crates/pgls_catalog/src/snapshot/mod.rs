@@ -180,13 +180,6 @@ impl Snapshot {
             .collect()
     }
 
-    pub fn find_types(&self, name: &str, schema: Option<&str>) -> Vec<&PostgresType> {
-        self.types
-            .iter()
-            .filter(|t| t.name == name && schema.is_none_or(|s| s == t.schema))
-            .collect()
-    }
-
     pub fn find_functions(&self, name: &str, schema: Option<&str>) -> Vec<&Function> {
         self.functions
             .iter()
