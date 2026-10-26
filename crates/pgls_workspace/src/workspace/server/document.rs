@@ -1019,7 +1019,8 @@ $$ LANGUAGE plpgsql;";
             let end = (at + below(20)).min(content.len());
             let inserted = snippets[below(snippets.len())];
             content = format!("{}{inserted}{}", &content[..at], &content[end..]);
-            d.update_content(content.clone(), version);
+            d.update_content(content.clone(), version)
+                .drop_in_background();
 
             let whole = pgls_statement_splitter::split(&content);
             assert_eq!(d.split, whole, "{content}");
