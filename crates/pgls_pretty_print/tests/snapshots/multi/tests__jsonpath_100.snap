@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/jsonpath.sql
-snapshot_kind: text
 ---
 select cast('' as jsonpath);
 
@@ -458,11 +457,10 @@ select
   errinfo.hint
 from
   unnest(
-    array[cast('$ ? (@ like_regex "pattern" flag "smixq")' as text),
-    '$ ? (@ like_regex "pattern" flag "a")',
-    '@ + 1',
-    '00',
-    '1a']
+    array[
+      cast('$ ? (@ like_regex "pattern" flag "smixq")' as text),
+      '$ ? (@ like_regex "pattern" flag "a")', '@ + 1', '00', '1a'
+    ]
   )
   as str,
   lateral pg_input_error_info(str, 'jsonpath') as errinfo;

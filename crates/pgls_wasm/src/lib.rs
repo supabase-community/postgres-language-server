@@ -35,7 +35,7 @@ use pgls_workspace::features::diagnostics::PullFileDiagnosticsParams;
 use pgls_workspace::features::format::PullFileFormattingParams;
 use pgls_workspace::features::on_hover::OnHoverParams;
 use pgls_workspace::workspace::{
-    ChangeFileParams, CloseFileParams, OpenFileParams, RegisterProjectFolderParams,
+    ChangeFileParams, CloseFileParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams,
     UpdateSettingsParams,
 };
 use serde::{Deserialize, Serialize};
@@ -204,6 +204,8 @@ impl MemoryFs {
 /// Backed by `pgls_workspace::WorkspaceServer` for full linting capabilities.
 pub struct Workspace {
     inner: pgls_workspace::workspace::server::WorkspaceServer,
+    /// The project that every file belongs to
+    project_key: ProjectKey,
     fs: MemoryFs,
 }
 
@@ -218,14 +220,14 @@ impl Workspace {
     pub fn new() -> Self {
         let inner = pgls_workspace::workspace::server::WorkspaceServer::new();
 
-        // Register a project folder to enable workspace features
-        let _ = inner.register_project_folder(RegisterProjectFolderParams {
-            path: None,
-            set_as_current_workspace: true,
-        });
+        // Register a project without a folder, which every file belongs to
+        let project_key = inner
+            .register_project_folder(RegisterProjectFolderParams { path: None })
+            .unwrap_or_default();
 
         Self {
             inner,
+            project_key,
             fs: MemoryFs::new(),
         }
     }
@@ -262,6 +264,7 @@ impl Workspace {
         // Also open in the inner workspace
         let pgls_path = PgLSPath::new(PathBuf::from(path));
         let _ = self.inner.open_file(OpenFileParams {
+            project_key: self.project_key,
             path: pgls_path.clone(),
             content: content.into(),
             version: 0,
@@ -269,6 +272,7 @@ impl Workspace {
 
         // Update the content
         let _ = self.inner.change_file(ChangeFileParams {
+            project_key: self.project_key,
             path: pgls_path,
             content: content.into(),
             version: 1,
@@ -283,7 +287,10 @@ impl Workspace {
         self.fs.remove(path);
 
         let pgls_path = PgLSPath::new(PathBuf::from(path));
-        let _ = self.inner.close_file(CloseFileParams { path: pgls_path });
+        let _ = self.inner.close_file(CloseFileParams {
+            project_key: self.project_key,
+            path: pgls_path,
+        });
     }
 
     /// Read a file's content.
@@ -312,6 +319,7 @@ impl Workspace {
         let result = self
             .inner
             .pull_file_diagnostics(PullFileDiagnosticsParams {
+                project_key: self.project_key,
                 path: pgls_path,
                 categories: RuleCategories::all(),
                 max_diagnostics: 100,
@@ -391,6 +399,7 @@ impl Workspace {
         let pgls_path = PgLSPath::new(PathBuf::from(FORMAT_SQL_PATH));
         self.inner
             .open_file(OpenFileParams {
+                project_key: self.project_key,
                 path: pgls_path.clone(),
                 content: sql.into(),
                 version: 0,
@@ -399,7 +408,10 @@ impl Workspace {
 
         let result = self.format_open_document(pgls_path.clone(), options_json);
 
-        let _ = self.inner.close_file(CloseFileParams { path: pgls_path });
+        let _ = self.inner.close_file(CloseFileParams {
+            project_key: self.project_key,
+            path: pgls_path,
+        });
 
         result
     }
@@ -417,6 +429,7 @@ impl Workspace {
 
         self.inner
             .update_settings(UpdateSettingsParams {
+                project_key: self.project_key,
                 configuration: PartialConfiguration {
                     format: Some(format),
                     ..Default::default()
@@ -431,7 +444,11 @@ impl Workspace {
 
         let result = self
             .inner
-            .pull_file_formatting(PullFileFormattingParams { path, range: None })
+            .pull_file_formatting(PullFileFormattingParams {
+                project_key: self.project_key,
+                path,
+                range: None,
+            })
             .map_err(|e| WasmError::Internal(format!("Format failed: {e}")))?;
 
         Ok(FormatResult {
@@ -462,6 +479,7 @@ impl Workspace {
         let result = self
             .inner
             .get_completions(GetCompletionsParams {
+                project_key: self.project_key,
                 path: pgls_path,
                 position: TextSize::from(offset),
             })
@@ -509,6 +527,7 @@ impl Workspace {
         let result = self
             .inner
             .on_hover(OnHoverParams {
+                project_key: self.project_key,
                 path: pgls_path,
                 position: TextSize::from(offset),
             })

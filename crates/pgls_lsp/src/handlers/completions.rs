@@ -16,16 +16,18 @@ pub fn get_completions(
 ) -> Result<ls_types::CompletionResponse, LspError> {
     let url = params.text_document_position.text_document.uri;
     let path = session.file_path(&url)?;
+    let project_key = session.project_key(&path);
 
     let doc = session.document(&url)?;
     let encoding = adapters::negotiated_encoding(session.client_capabilities().unwrap());
 
     let position = get_cursor_position(session, &url, params.text_document_position.position)?;
 
-    let completion_result = match session
-        .workspace
-        .get_completions(GetCompletionsParams { path, position })
-    {
+    let completion_result = match session.workspace.get_completions(GetCompletionsParams {
+        project_key,
+        path,
+        position,
+    }) {
         Ok(result) => result,
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => {

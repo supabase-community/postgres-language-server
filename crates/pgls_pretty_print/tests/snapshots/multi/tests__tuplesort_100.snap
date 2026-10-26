@@ -415,12 +415,8 @@ select
   percentile_disc(0.01) within group (order by id),
   percentile_disc(0.8) within group (order by abort_increasing),
   percentile_disc(0.2) within group (order by cast(id as text)),
-  rank(
-    '00000000-0000-0000-0000-000000000000',
-    '2',
-    '2'
-  )
-  within group (order by noabort_increasing, id, cast(id as text))
+  rank('00000000-0000-0000-0000-000000000000', '2', '2')
+    within group (order by noabort_increasing, id, cast(id as text))
 from
   (select * from abbrev_abort_uuids union all select null, null, null, null, null) as s;
 
@@ -436,12 +432,8 @@ select
   percentile_disc(0.01) within group (order by id),
   percentile_disc(0.8) within group (order by abort_increasing),
   percentile_disc(0.2) within group (order by cast(id as text)),
-  rank(
-    '00000000-0000-0000-0000-000000000000',
-    '2',
-    '2'
-  )
-  within group (order by noabort_increasing, id, cast(id as text))
+  rank('00000000-0000-0000-0000-000000000000', '2', '2')
+    within group (order by noabort_increasing, id, cast(id as text))
 from
   (select * from abbrev_abort_uuids union all select null, null, null, null, null) as s;
 

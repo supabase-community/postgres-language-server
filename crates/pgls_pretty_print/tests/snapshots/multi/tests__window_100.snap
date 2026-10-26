@@ -440,7 +440,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between current row and unbounded following),
+  sum(unique1) over (rows between current row and unbounded following),
   unique1,
   four
 from
@@ -449,7 +449,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 2 following),
+  sum(unique1) over (rows between 2 preceding and 2 following),
   unique1,
   four
 from
@@ -458,7 +458,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 2 following),
+  sum(unique1) over (rows between 2 preceding and 2 following),
   unique1,
   four
 from
@@ -467,7 +467,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 2 following exclude current row),
+  sum(unique1) over (rows between 2 preceding and 2 following exclude current row),
   unique1,
   four
 from
@@ -476,7 +476,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 2 following exclude group),
+  sum(unique1) over (rows between 2 preceding and 2 following exclude group),
   unique1,
   four
 from
@@ -485,7 +485,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 2 following exclude ties),
+  sum(unique1) over (rows between 2 preceding and 2 following exclude ties),
   unique1,
   four
 from
@@ -562,7 +562,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 1 preceding),
+  sum(unique1) over (rows between 2 preceding and 1 preceding),
   unique1,
   four
 from
@@ -571,7 +571,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 1 following and 3 following),
+  sum(unique1) over (rows between 1 following and 3 following),
   unique1,
   four
 from
@@ -580,7 +580,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between unbounded preceding and 1 following),
+  sum(unique1) over (rows between unbounded preceding and 1 following),
   unique1,
   four
 from
@@ -662,8 +662,7 @@ window
 select
   sum(unique1) over (
     order by unique1
-    rows 
-    (select unique1 from tenk1 order by unique1 limit 1) + 1 preceding
+    rows (select unique1 from tenk1 order by unique1 limit 1) + 1 preceding
   ),
   unique1
 from
@@ -1210,7 +1209,7 @@ window
   );
 
 select
-  sum(unique1) over ( rows between x preceding and x following),
+  sum(unique1) over (rows between x preceding and x following),
   unique1,
   four
 from
@@ -1238,7 +1237,7 @@ select * from unbounded_syntax_test1a(2);
 select * from unbounded_syntax_test1b(2);
 
 select
-  sum(unique1) over ( rows between unbounded preceding and unbounded following),
+  sum(unique1) over (rows between unbounded preceding and unbounded following),
   unique1,
   four
 from
@@ -1278,7 +1277,7 @@ immutable
 return x;
 
 select
-  sum(unique1) over ( rows between 1 preceding and 1 following),
+  sum(unique1) over (rows between 1 preceding and 1 following),
   unique1,
   four
 from
@@ -1287,7 +1286,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between unbounded(1) preceding and unbounded(1) following),
+  sum(unique1) over (rows between unbounded(1) preceding and unbounded(1) following),
   unique1,
   four
 from
@@ -1296,7 +1295,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between unbounded.x preceding and unbounded.x following),
+  sum(unique1) over (rows between unbounded.x preceding and unbounded.x following),
   unique1,
   four
 from
@@ -2280,7 +2279,6 @@ from
 
 select
   sum(salary) over (
-
     range between
     cast('1 year' as interval) preceding
     and
@@ -2634,9 +2632,7 @@ window
     1 following
   );
 
-with
-cte (x)
-as (
+with cte (x) as (
   select 1 union all select 1 union all select 1 union all select * from generate_series(5, 49, 2)
 )
 select
@@ -2653,9 +2649,7 @@ window
     1 following
   );
 
-with
-cte (x)
-as (
+with cte (x) as (
   select 1 union all select 1 union all select 1 union all select * from generate_series(5, 49, 2)
 )
 select
@@ -2672,9 +2666,7 @@ window
     1 following
   );
 
-with
-cte (x)
-as (
+with cte (x) as (
   select 1 union all select 1 union all select 1 union all select * from generate_series(5, 49, 2)
 )
 select
@@ -2812,8 +2804,7 @@ select
   sum(salary),
   row_number() over (order by depname),
   sum(sum(salary) filter (where enroll_date > '2007-01-01'))
-  filter (where
-    depname <> 'sales') over (order by depname desc) as filtered_sum,
+    filter (where depname <> 'sales') over (order by depname desc) as filtered_sum,
   depname
 from
   empsalary
@@ -3593,10 +3584,8 @@ create aggregate sum_int_randomrestart (
   minvfunc = sum_int_randrestart_minvfunc
 );
 
-with
-vs as (select i, cast(random() * 100 as int4) as v from generate_series(1, 100) as i),
-sum_following
-as (
+with vs as (select i, cast(random() * 100 as int4) as v from generate_series(1, 100) as i),
+sum_following as (
   select
     i,
     sum(v) over (order by i desc rows between unbounded preceding and current row) as s
@@ -3650,10 +3639,10 @@ from
 
 select
   x,
-  avg(x) over ( rows between current row and 1 following) as curr_next_avg,
-  avg(x) over ( rows between 1 preceding and current row) as prev_curr_avg,
-  sum(x) over ( rows between current row and 1 following) as curr_next_sum,
-  sum(x) over ( rows between 1 preceding and current row) as prev_curr_sum
+  avg(x) over (rows between current row and 1 following) as curr_next_avg,
+  avg(x) over (rows between 1 preceding and current row) as prev_curr_avg,
+  sum(x) over (rows between current row and 1 following) as curr_next_sum,
+  sum(x) over (rows between 1 preceding and current row) as prev_curr_sum
 from
   (
     values
@@ -3672,7 +3661,7 @@ from
 
 select
   x,
-  avg(x) over ( rows between current row and 2 following)
+  avg(x) over (rows between current row and 2 following)
 from
   (
     values
@@ -3686,7 +3675,7 @@ from
 
 select
   x,
-  sum(x) over ( rows between current row and 2 following)
+  sum(x) over (rows between current row and 2 following)
 from
   (
     values
