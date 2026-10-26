@@ -1,0 +1,23 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- dbmate sends a section to Postgres as one query, which runs in a transaction block if it has
+-- more than one statement, so the lock is held until the end of the section.
+-- section: up transaction:false
+ALTER TABLE books ADD COLUMN isbn text;
+-- expect_lint/runningStatementWhileHoldingAccessExclusive
+UPDATE books SET isbn = '';
+
+```
+
+# Diagnostics
+lint/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Running statement while holding ACCESS EXCLUSIVE lock.
+  
+  i This blocks all access to the table for the duration of this statement.
+  
+  i Run this statement in a separate transaction to minimize lock duration.

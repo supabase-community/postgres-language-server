@@ -132,7 +132,7 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
     let Some(shape) = shape else {
         return;
     };
-    let Some(found) = output_columns(r, n, &params, last) else {
+    let Some(found) = output_columns(r, n, last) else {
         return;
     };
     if let Some(mismatch) = compare(r, &shape, &found) {
@@ -208,6 +208,40 @@ fn compare(r: &Resolver, shape: &Shape, found: &[Option<Type>]) -> Option<Return
             }
             None
         }
+    }
+}
+
+impl FunctionContext {
+    /// The function `n` creates, with the parameters its body sees: the input parameters, by
+    /// name and as `$n` ([`get_func_input_arg_names`] in [`prepare_sql_fn_parse_info`]). `OUT`
+    /// and `RETURNS TABLE` columns only describe the result, so they are not in scope and don't
+    /// count for `$n`: `$1` in `f(OUT x int, a text)` is `a`. `INOUT` and `VARIADIC` parameters
+    /// are inputs. `None` if a parameter can't be read.
+    ///
+    /// [`get_func_input_arg_names`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/fmgr/funcapi.c#L1522
+    /// [`prepare_sql_fn_parse_info`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L251
+    pub fn from_create_function(n: &CreateFunctionStmt) -> Option<Self> {
+        let mut params = Vec::new();
+        for param in &n.parameters {
+            let Some(NodeEnum::FunctionParameter(param)) = &param.node else {
+                return None;
+            };
+            if matches!(param.mode(), Mode::FuncParamOut | Mode::FuncParamTable) {
+                continue;
+            }
+            let type_name = param.arg_type.as_ref()?;
+            let mut names = string_values(&type_name.names)?;
+            params.push(FunctionParam {
+                name: (!param.name.is_empty()).then(|| param.name.clone()),
+                type_name: names.pop()?,
+                type_schema: names.pop(),
+                is_array: !type_name.array_bounds.is_empty(),
+            });
+        }
+        Some(FunctionContext {
+            function_name: string_values(&n.funcname)?.pop()?,
+            params,
+        })
     }
 }
 
@@ -402,26 +436,9 @@ fn type_id(r: &Resolver, name: &str) -> Option<TypeId> {
 fn output_columns(
     r: &Resolver,
     n: &CreateFunctionStmt,
-    params: &[&FunctionParameter],
     last: &NodeEnum,
 ) -> Option<Vec<Option<Type>>> {
-    let function = FunctionContext {
-        function_name: string_values(&n.funcname)?.pop()?,
-        params: params
-            .iter()
-            .filter(|param| !matches!(param.mode(), Mode::FuncParamOut | Mode::FuncParamTable))
-            .map(|param| {
-                let type_name = param.arg_type.as_ref()?;
-                let mut names = string_values(&type_name.names)?;
-                Some(FunctionParam {
-                    name: (!param.name.is_empty()).then(|| param.name.clone()),
-                    type_name: names.pop()?,
-                    type_schema: names.pop(),
-                    is_array: !type_name.array_bounds.is_empty(),
-                })
-            })
-            .collect::<Option<_>>()?,
-    };
+    let function = FunctionContext::from_create_function(n)?;
     // The body is resolved on its own, and its findings are reported for its statements.
     let mut body = Resolver::new(r.catalog, r.search_path, Some(&function), None);
     let columns = resolve_node_enum(&mut body, last)?;

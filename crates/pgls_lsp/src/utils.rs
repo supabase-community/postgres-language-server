@@ -2,10 +2,6 @@ use crate::adapters::from_lsp::text_range;
 use crate::adapters::line_index::LineIndex;
 use crate::adapters::{PositionEncoding, to_lsp};
 use anyhow::{Context, Result, ensure};
-use pgls_console::MarkupBuf;
-use pgls_console::fmt::Termcolor;
-use pgls_console::fmt::{self, Formatter};
-use pgls_diagnostics::termcolor::NoColor;
 use pgls_diagnostics::{Diagnostic, DiagnosticTags, Location, PrintDescription, Severity, Visit};
 use pgls_text_size::{TextRange, TextSize};
 use std::any::Any;
@@ -74,7 +70,7 @@ pub(crate) fn diagnostic_to_lsp<D: Diagnostic>(
         related_information: &mut related_information,
     };
 
-    diagnostic.advices(&mut visitor).unwrap();
+    diagnostic.advices(&mut visitor)?;
 
     let tags = diagnostic.tags();
     let tags = {
@@ -139,18 +135,6 @@ impl Visit for RelatedInformationVisitor<'_> {
 
         Ok(())
     }
-}
-
-/// Convert a piece of markup into a String
-#[allow(unused)]
-fn print_markup(markup: &MarkupBuf) -> String {
-    let mut message = Termcolor(NoColor::new(Vec::new()));
-    fmt::Display::fmt(markup, &mut Formatter::new(&mut message))
-        // SAFETY: Writing to a memory buffer should never fail
-        .unwrap();
-
-    // SAFETY: Printing uncolored markup never generates non UTF-8 byte sequences
-    String::from_utf8(message.0.into_inner()).unwrap()
 }
 
 /// Helper to create a [tower_lsp_server::jsonrpc::Error] from a message

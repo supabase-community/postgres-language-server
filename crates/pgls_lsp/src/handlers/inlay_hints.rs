@@ -17,14 +17,16 @@ pub(crate) fn inlay_hints(
 ) -> Result<Option<Vec<ls_types::InlayHint>>, LspError> {
     let url = params.text_document.uri;
     let path = session.file_path(&url)?;
+    let project_key = session.project_key(&path);
     let doc = session.document(&url)?;
     let encoding = session.position_encoding();
     let range = from_lsp::text_range(&doc.line_index, params.range, encoding)?;
 
-    let result = match session
-        .workspace
-        .pull_inlay_hints(PullInlayHintsParams { path, range })
-    {
+    let result = match session.workspace.pull_inlay_hints(PullInlayHintsParams {
+        project_key,
+        path,
+        range,
+    }) {
         Ok(result) => result,
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => {
@@ -35,12 +37,16 @@ pub(crate) fn inlay_hints(
         },
     };
 
+    // A hint that can't be placed is left out rather than failing the whole response.
     let hints = result
         .hints
         .into_iter()
-        .map(|hint| {
-            Ok(ls_types::InlayHint {
-                position: to_lsp::position(&doc.line_index, hint.offset, encoding)?,
+        .filter_map(|hint| {
+            let position = to_lsp::position(&doc.line_index, hint.offset, encoding)
+                .inspect_err(|error| tracing::warn!("Skipping an inlay hint: {error}"))
+                .ok()?;
+            Some(ls_types::InlayHint {
+                position,
                 label: ls_types::InlayHintLabel::String(hint.label),
                 kind: Some(match hint.kind {
                     InlayHintKind::Parameter => ls_types::InlayHintKind::PARAMETER,
@@ -52,7 +58,7 @@ pub(crate) fn inlay_hints(
                 data: None,
             })
         })
-        .collect::<anyhow::Result<Vec<_>>>()?;
+        .collect();
 
     Ok(Some(hints))
 }

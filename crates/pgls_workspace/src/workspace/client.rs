@@ -96,7 +96,7 @@ where
         &self,
         params: crate::features::code_actions::CodeActionsParams,
     ) -> Result<crate::features::code_actions::CodeActionsResult, WorkspaceError> {
-        self.request("pgls/code_actions", params)
+        self.request("pgls/pull_code_actions", params)
     }
 
     fn fix_file(
@@ -141,6 +141,13 @@ where
 
     fn update_settings(&self, params: super::UpdateSettingsParams) -> Result<(), WorkspaceError> {
         self.request("pgls/update_settings", params)
+    }
+
+    fn update_nested_settings(
+        &self,
+        params: super::UpdateNestedSettingsParams,
+    ) -> Result<super::UpdateNestedSettingsResult, WorkspaceError> {
+        self.request("pgls/update_nested_settings", params)
     }
 
     fn is_path_ignored(&self, params: IsPathIgnoredParams) -> Result<bool, WorkspaceError> {

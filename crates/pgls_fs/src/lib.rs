@@ -11,5 +11,6 @@ pub use path::PgLSPath;
 
 pub use fs::{
     AutoSearchResult, ConfigName, ErrorEntry, File, FileSystem, FileSystemDiagnostic,
-    FileSystemExt, MemoryFileSystem, OpenOptions, OsFileSystem, TraversalContext, TraversalScope,
+    FileSystemExt, FindFiles, FoundFiles, MemoryFileSystem, OpenOptions, OsFileSystem,
+    SKIPPED_DIRECTORIES, SkipDirectory, TraversalContext, TraversalScope,
 };
