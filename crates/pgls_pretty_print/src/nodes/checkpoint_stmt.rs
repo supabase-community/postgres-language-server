@@ -1,8 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::CheckPointStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_checkpoint_stmt(e: &mut EventEmitter, _n: &CheckPointStmt) {
     e.group_start(GroupKind::CheckPointStmt);

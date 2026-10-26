@@ -1,11 +1,6 @@
-use pgls_query::{NodeEnum, protobuf::CollateClause};
+use pgls_query::protobuf::CollateClause;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
-
-use super::node_list::emit_dot_separated_list_with;
+use super::prelude::*;
 
 pub(super) fn emit_collate_clause(e: &mut EventEmitter, n: &CollateClause) {
     e.group_start(GroupKind::CollateClause);
@@ -27,7 +22,7 @@ pub(super) fn emit_collate_clause(e: &mut EventEmitter, n: &CollateClause) {
         if needs_parens {
             e.token(TokenKind::L_PAREN);
         }
-        super::emit_node(arg, e);
+        emit_node(arg, e);
         if needs_parens {
             e.token(TokenKind::R_PAREN);
         }
@@ -41,7 +36,7 @@ pub(super) fn emit_collate_clause(e: &mut EventEmitter, n: &CollateClause) {
     // Must quote to preserve case (PostgreSQL lowercases unquoted identifiers)
     emit_dot_separated_list_with(e, &n.collname, |node, e| {
         if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
-            super::emit_string_identifier(e, s);
+            emit_string_identifier(e, s);
         }
     });
 

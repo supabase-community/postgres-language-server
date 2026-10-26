@@ -1,10 +1,7 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::JsonScalarExpr;
 
 use super::json_value_expr::emit_json_output;
+use super::prelude::*;
 
 pub(super) fn emit_json_scalar_expr(e: &mut EventEmitter, n: &JsonScalarExpr) {
     e.group_start(GroupKind::JsonScalarExpr);
@@ -15,7 +12,7 @@ pub(super) fn emit_json_scalar_expr(e: &mut EventEmitter, n: &JsonScalarExpr) {
     let mut has_content = false;
 
     if let Some(ref expr) = n.expr {
-        super::emit_node(expr, e);
+        emit_node(expr, e);
         has_content = true;
     }
 

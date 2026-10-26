@@ -1,18 +1,16 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::{
     JsonEncoding, JsonFormat, JsonFormatType, JsonOutput, JsonReturning, JsonValueExpr,
 };
+
+use super::prelude::*;
 
 pub(super) fn emit_json_value_expr(e: &mut EventEmitter, n: &JsonValueExpr) {
     e.group_start(GroupKind::JsonValueExpr);
 
     if let Some(ref raw_expr) = n.raw_expr {
-        super::emit_node(raw_expr, e);
+        emit_node(raw_expr, e);
     } else if let Some(ref formatted_expr) = n.formatted_expr {
-        super::emit_node(formatted_expr, e);
+        emit_node(formatted_expr, e);
     }
 
     if let Some(ref format) = n.format {
@@ -94,7 +92,7 @@ fn emit_json_format_with_prefix(e: &mut EventEmitter, format: &JsonFormat, prefi
             }
             e.token(TokenKind::FORMAT_KW);
             e.space();
-            super::emit_keyword(e, "jsonb");
+            emit_keyword(e, "jsonb");
             wrote_any = true;
         }
         JsonFormatType::Undefined | JsonFormatType::JsFormatDefault => {}
@@ -135,5 +133,5 @@ fn emit_encoding(e: &mut EventEmitter, label: &str, needs_space: bool) {
     }
     e.token(TokenKind::ENCODING_KW);
     e.space();
-    super::emit_keyword(e, label);
+    emit_keyword(e, label);
 }

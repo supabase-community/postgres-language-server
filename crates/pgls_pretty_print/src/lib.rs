@@ -1,51 +1,25 @@
 mod codegen;
-pub mod comments;
-pub mod emitter;
+mod comments;
+mod config;
+mod emitter;
 mod identifiers;
-pub mod nodes;
-pub mod normalize;
-pub mod renderer;
+mod nodes;
+mod normalize;
+mod renderer;
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
-pub use crate::codegen::token_kind::TokenKind;
-pub use crate::comments::{AttachedComments, Comment, attach_comments};
-pub use crate::normalize::normalize_ast;
-pub use crate::renderer::{IndentStyle, KeywordCase, RenderConfig};
 use pgls_query::NodeEnum;
 use thiserror::Error;
 
-/// How a statement is laid out across lines.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub enum Layout {
-    /// Break only when a line would exceed the line width.
-    #[default]
-    Fit,
-    /// Always break between the clauses of a statement, whatever the width. The line width then
-    /// only governs breaking inside a clause.
-    Expanded,
-}
-
-/// How an explicit cast is spelled.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub enum CastStyle {
-    /// `CAST(expr AS type)`.
-    #[default]
-    Cast,
-    /// `expr::type`.
-    Operator,
-}
-
-/// Where the body of a clause starts.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub enum ClauseBodyStyle {
-    /// The body starts on the line after the keyword.
-    #[default]
-    Break,
-    /// The first element of the body stays on the keyword line: `FROM plan`. A select list of a
-    /// single item stays on the SELECT line: `SELECT 1`.
-    Compact,
-}
+pub(crate) use crate::codegen::token_kind::TokenKind;
+use crate::comments::AttachedComments;
+pub(crate) use crate::comments::Comment;
+pub use crate::config::{
+    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout,
+    LogicalOperatorPlacement,
+};
+pub use crate::normalize::normalize_ast;
 
 /// Error type for formatting operations.
 #[derive(Debug, Error)]
@@ -76,113 +50,6 @@ pub enum FormatError {
         "Formatter: comment layout did not stabilize after {passes} passes, the statement was left as written"
     )]
     NonIdempotentCommentLayout { passes: usize },
-}
-
-/// Configuration for the SQL formatter.
-/// Where a comma sits when a list breaks across lines.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub enum CommaStyle {
-    /// `a,` at the end of the line.
-    #[default]
-    Trailing,
-    /// `, a` at the start of the continuation line.
-    Leading,
-}
-
-/// Where a boolean operator sits when a condition breaks across lines.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub enum LogicalOperatorPlacement {
-    /// `a = 1 AND` at the end of the line.
-    #[default]
-    Trailing,
-    /// `AND a = 1` at the start of the continuation line.
-    Leading,
-}
-
-#[derive(Debug, Clone)]
-pub struct FormatConfig {
-    /// Maximum line width before breaking. Default: 100.
-    pub line_width: usize,
-    /// Number of spaces (or tab width) for indentation. Default: 2.
-    pub indent_size: usize,
-    /// Whether to use spaces or tabs for indentation. Default: Spaces.
-    pub indent_style: IndentStyle,
-    /// Casing for SQL keywords (SELECT, FROM, WHERE). Default: Lower.
-    pub keyword_case: KeywordCase,
-    /// Casing for constants (NULL, TRUE, FALSE). Default: Lower.
-    pub constant_case: KeywordCase,
-    /// Casing for data types (text, varchar, int). Default: Lower.
-    pub type_case: KeywordCase,
-    /// Where a comma sits when a list breaks. Default: Trailing.
-    pub comma_style: CommaStyle,
-    /// Where a boolean operator sits when a condition breaks. Default: Trailing.
-    pub logical_operator_placement: LogicalOperatorPlacement,
-    /// How a statement is laid out across lines. Default: Fit.
-    pub layout: Layout,
-    /// How VALUES rows are laid out: fit within the line width or one row per line.
-    /// Default: Fit.
-    pub values_row_layout: Layout,
-    /// How an explicit cast is spelled. Default: Cast.
-    pub cast_style: CastStyle,
-    /// Where the body of a clause starts. Default: Break.
-    pub clause_body_style: ClauseBodyStyle,
-    /// Put the terminating semicolon on its own line when the statement spans several lines.
-    /// Default: false.
-    pub isolate_semicolon: bool,
-    /// Function names mapped to the number of adjacent arguments in one logical group.
-    pub function_argument_groups: BTreeMap<String, usize>,
-}
-
-impl Default for FormatConfig {
-    fn default() -> Self {
-        Self {
-            line_width: 100,
-            indent_size: 2,
-            indent_style: IndentStyle::Spaces,
-            keyword_case: KeywordCase::default(),
-            constant_case: KeywordCase::default(),
-            type_case: KeywordCase::default(),
-            comma_style: CommaStyle::default(),
-            logical_operator_placement: LogicalOperatorPlacement::default(),
-            layout: Layout::default(),
-            values_row_layout: Layout::default(),
-            cast_style: CastStyle::default(),
-            clause_body_style: ClauseBodyStyle::default(),
-            isolate_semicolon: false,
-            function_argument_groups: BTreeMap::new(),
-        }
-    }
-}
-
-impl From<FormatConfig> for RenderConfig {
-    fn from(config: FormatConfig) -> Self {
-        let FormatConfig {
-            line_width,
-            indent_size,
-            indent_style,
-            keyword_case,
-            constant_case,
-            type_case,
-            comma_style: _,
-            logical_operator_placement: _,
-            layout: _,
-            values_row_layout: _,
-            cast_style: _,
-            clause_body_style: _,
-            isolate_semicolon,
-            function_argument_groups: _,
-        } = config;
-
-        Self {
-            max_line_length: line_width,
-            indent_size,
-            indent_style,
-            keyword_case,
-            constant_case,
-            type_case,
-            isolate_semicolon,
-        }
-    }
 }
 
 /// Result of formatting a SQL statement.
@@ -273,36 +140,12 @@ fn format_statement_once(
         });
     }
 
-    let mut emitter = emitter::EventEmitter::with_comments(
-        config.clone(),
-        attached.leading_by_location,
-        attached.trailing_by_location,
-    );
-    emitter.set_truncated_identifiers(identifiers::truncated_identifiers(sql));
-    nodes::emit_statement(&mut emitter, ast);
-    let pending = emitter.pending_comments();
-    if pending > 0 {
-        return Err(FormatError::UnplaceableComment { count: pending });
-    }
-
-    // Render to string
-    let render_config = RenderConfig {
-        max_line_length: config.line_width,
-        indent_size: config.indent_size,
-        indent_style: config.indent_style.clone(),
-        keyword_case: config.keyword_case.clone(),
-        constant_case: config.constant_case.clone(),
-        type_case: config.type_case.clone(),
-        isolate_semicolon: config.isolate_semicolon,
-    };
-
-    let mut output = String::new();
-    let mut renderer = renderer::Renderer::new(&mut output, render_config);
-    renderer
-        .render(emitter.events)
-        .map_err(|e| FormatError::RenderError {
-            message: e.to_string(),
-        })?;
+    let output = render(
+        ast,
+        config,
+        attached,
+        identifiers::truncated_identifiers(sql),
+    )?;
 
     // BETA: Verify formatted output parses to semantically equivalent AST
     let parsed_output = pgls_query::parse(&output).map_err(|e| FormatError::ParseError {
@@ -328,6 +171,43 @@ fn format_statement_once(
     }
 
     Ok(FormatResult { formatted: output })
+}
+
+/// Formats a statement without its comments and without checking that the output means the same,
+/// for tests that check the output themselves.
+pub fn format_statement_unchecked(
+    ast: &NodeEnum,
+    config: &FormatConfig,
+) -> Result<String, FormatError> {
+    render(ast, config, AttachedComments::default(), Default::default())
+}
+
+/// Emits the layout events of a statement and renders them.
+fn render(
+    ast: &NodeEnum,
+    config: &FormatConfig,
+    attached: AttachedComments,
+    truncated_identifiers: std::collections::HashMap<String, String>,
+) -> Result<String, FormatError> {
+    let mut emitter = emitter::EventEmitter::with_comments(
+        config.clone(),
+        attached.leading_by_location,
+        attached.trailing_by_location,
+    );
+    emitter.set_truncated_identifiers(truncated_identifiers);
+    nodes::emit_statement(&mut emitter, ast);
+    let pending = emitter.pending_comments();
+    if pending > 0 {
+        return Err(FormatError::UnplaceableComment { count: pending });
+    }
+
+    let mut output = String::new();
+    renderer::Renderer::new(&mut output, renderer::RenderConfig::from(config))
+        .render(emitter.events)
+        .map_err(|e| FormatError::RenderError {
+            message: e.to_string(),
+        })?;
+    Ok(output)
 }
 
 #[cfg(test)]

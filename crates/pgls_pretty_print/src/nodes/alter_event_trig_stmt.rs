@@ -1,6 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::protobuf::AlterEventTrigStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_event_trig_stmt(e: &mut EventEmitter, n: &AlterEventTrigStmt) {
     e.group_start(GroupKind::AlterEventTrigStmt);
@@ -13,7 +13,7 @@ pub(super) fn emit_alter_event_trig_stmt(e: &mut EventEmitter, n: &AlterEventTri
     e.space();
 
     if !n.trigname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.trigname);
+        emit_identifier_maybe_quoted(e, &n.trigname);
     }
 
     e.space();

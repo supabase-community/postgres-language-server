@@ -1,9 +1,6 @@
 use pgls_query::protobuf::DropTableSpaceStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_drop_table_space_stmt(e: &mut EventEmitter, n: &DropTableSpaceStmt) {
     e.group_start(GroupKind::DropTableSpaceStmt);
@@ -21,7 +18,7 @@ pub(super) fn emit_drop_table_space_stmt(e: &mut EventEmitter, n: &DropTableSpac
 
     if !n.tablespacename.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.tablespacename);
+        emit_identifier_maybe_quoted(e, &n.tablespacename);
     }
 
     e.group_end();

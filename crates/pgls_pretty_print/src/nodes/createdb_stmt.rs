@@ -1,11 +1,6 @@
 use pgls_query::protobuf::CreatedbStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
-
-use super::node_list::emit_space_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_createdb_stmt(e: &mut EventEmitter, n: &CreatedbStmt) {
     e.group_start(GroupKind::CreatedbStmt);
@@ -16,7 +11,7 @@ pub(super) fn emit_createdb_stmt(e: &mut EventEmitter, n: &CreatedbStmt) {
 
     if !n.dbname.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.dbname);
+        emit_identifier_maybe_quoted(e, &n.dbname);
     }
 
     // Emit database options (WITH CONNECTION LIMIT, ENCODING, etc.)
@@ -24,7 +19,7 @@ pub(super) fn emit_createdb_stmt(e: &mut EventEmitter, n: &CreatedbStmt) {
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_space_separated_list(e, &n.options, super::emit_node);
+        emit_space_separated_list(e, &n.options, emit_node);
     }
 
     e.group_end();

@@ -7,6 +7,9 @@ macro_rules! assert_node_variant {
     };
 }
 
+mod prelude;
+mod utils;
+
 mod a_array_expr;
 mod a_const;
 mod a_expr;
@@ -177,7 +180,6 @@ mod min_max_expr;
 mod multi_assign_ref;
 mod named_arg_expr;
 mod next_value_expr;
-mod node_list;
 mod notify_stmt;
 mod null_test;
 mod object_with_args;
@@ -491,10 +493,7 @@ use sort_by::emit_sort_by;
 use sort_group_clause::emit_sort_group_clause;
 use sql_value_function::emit_sql_value_function;
 use stats_elem::emit_stats_elem;
-use string::{
-    emit_body_literal, emit_identifier, emit_identifier_maybe_quoted, emit_keyword, emit_keywords,
-    emit_string, emit_string_identifier, emit_string_literal,
-};
+use string::emit_string;
 use sub_link::emit_sub_link;
 use sub_plan::{emit_alternative_sub_plan, emit_sub_plan};
 use subscripting_ref::emit_subscripting_ref;
@@ -527,16 +526,7 @@ use xml_serialize::emit_xml_serialize;
 use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::{NodeEnum, protobuf::Node};
 
-fn is_window_expression(node: &Node) -> bool {
-    match node.node.as_ref() {
-        Some(NodeEnum::FuncCall(call)) => call.over.is_some(),
-        Some(NodeEnum::AExpr(expr)) => {
-            expr.lexpr.as_deref().is_some_and(is_window_expression)
-                || expr.rexpr.as_deref().is_some_and(is_window_expression)
-        }
-        _ => false,
-    }
-}
+use utils::comments::emit_node_with;
 
 /// Emits a top-level statement followed by the `;` that terminates it.
 ///
@@ -547,248 +537,18 @@ fn is_window_expression(node: &Node) -> bool {
 ///
 /// The terminator goes in a group around the statement, so that `isolate_semicolon` puts it on
 /// its own line exactly when the statement breaks.
-pub fn emit_statement(e: &mut EventEmitter, stmt: &NodeEnum) {
+pub(crate) fn emit_statement(e: &mut EventEmitter, stmt: &NodeEnum) {
     e.group_start(GroupKind::RawStmt);
     emit_node_enum(stmt, e);
     e.token(crate::TokenKind::SEMICOLON);
     e.group_end();
 }
 
-pub fn emit_node(node: &Node, e: &mut EventEmitter) {
+pub(crate) fn emit_node(node: &Node, e: &mut EventEmitter) {
     emit_node_with(node, e, emit_node_enum);
 }
 
-pub(super) fn emit_node_with(
-    node: &Node,
-    e: &mut EventEmitter,
-    emit: impl FnOnce(&NodeEnum, &mut EventEmitter),
-) {
-    let location = node
-        .node
-        .as_ref()
-        .and_then(|inner| crate::codegen::node_location::node_location(&inner.to_ref()));
-
-    if let Some(location) = location {
-        e.take_leading_comments_at(location);
-    }
-
-    if let Some(ref inner) = node.node {
-        emit(inner, e)
-    }
-
-    if let Some(location) = location {
-        e.take_trailing_comments_at(location);
-    }
-}
-
-/// Emits `body` with the comments attached to `location`, the way `emit_node` does for a child
-/// reached as a `Node`.
-///
-/// A parent that reaches a child through a typed emitter, `emit_range_var` for instance, never
-/// goes through `emit_node`. Without this helper the comments attached to that child stay in the
-/// emitter map and the whole statement is refused rather than reformatted.
-pub(super) fn emit_with_comments_at(
-    e: &mut EventEmitter,
-    location: i32,
-    body: impl FnOnce(&mut EventEmitter),
-) {
-    // Negative locations are dropped when the comment maps are built, so they hold nothing.
-    if location < 0 {
-        body(e);
-        return;
-    }
-
-    e.take_leading_comments_at(location);
-    body(e);
-    e.take_trailing_comments_at(location);
-}
-
-/// Opens the argument list of a call whose arguments the emitter writes itself: `(`, and when the
-/// call doesn't fit, a break and one more level of indent.
-pub(super) fn open_call_arguments(e: &mut EventEmitter) {
-    use crate::TokenKind;
-    use crate::emitter::LineType;
-
-    e.token(TokenKind::L_PAREN);
-    e.indent_start();
-    e.line(LineType::Soft);
-}
-
-/// Closes an argument list opened with `open_call_arguments`, with `)` back on the call's indent.
-pub(super) fn close_call_arguments(e: &mut EventEmitter) {
-    use crate::TokenKind;
-    use crate::emitter::LineType;
-
-    e.indent_end();
-    e.line(LineType::Soft);
-    e.token(TokenKind::R_PAREN);
-}
-
-/// Emits the comments written before `keyword` whose node is `node`, the expression the parent
-/// writes after the keyword. Call it right before the break that precedes the keyword.
-///
-/// The comments are attached to `node` because the keyword has no node of its own. Without this,
-/// `then 'x' /* why */ else 'y'` would come out as `else /* why */ 'y'`.
-pub(super) fn emit_comments_before_keyword(e: &mut EventEmitter, keyword: &str, node: &Node) {
-    if let Some(location) = node
-        .node
-        .as_ref()
-        .and_then(crate::comments::first_node_location)
-    {
-        e.take_comments_before_keyword_at(location, keyword);
-    }
-}
-
-pub(super) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
-    use crate::ClauseBodyStyle;
-    use crate::emitter::LineType;
-
-    // Compact keeps the condition on the keyword line. The indent stays in both cases so that the
-    // condition's own continuation lines, the second AND of a chain for instance, sit under it.
-    match e.config().clause_body_style {
-        ClauseBodyStyle::Compact => {
-            e.space();
-            emit_condition_on_keyword_line(e, clause);
-        }
-        ClauseBodyStyle::Break => {
-            e.line(LineType::SoftOrSpace);
-            e.indent_start();
-            emit_node(clause, e);
-            e.indent_end();
-        }
-    }
-}
-
-/// Emits a condition that starts on its keyword's line, `where` or `on`, indenting its
-/// continuation lines.
-///
-/// A condition that only breaks inside the parentheses of a subquery, `exists (...)` or
-/// `a = (...)`, has no continuation lines of its own. Indenting it would put the subquery two
-/// levels in and the closing parenthesis one level in, so it keeps the keyword's indent and closes
-/// under the keyword.
-pub(super) fn emit_condition_on_keyword_line(e: &mut EventEmitter, condition: &Node) {
-    if breaks_only_inside_a_subquery(condition) {
-        emit_node(condition, e);
-    } else {
-        e.indent_start();
-        emit_node(condition, e);
-        e.indent_end();
-    }
-}
-
-/// Whether a select item without an alias, which would continue on a line of its own, is written as
-/// a name or keyword followed by
-/// parentheses that hold everything that can break: a function call, `coalesce(...)`, `cast(...)`,
-/// a subquery, ...
-pub(super) fn breaks_only_inside_its_parentheses(e: &EventEmitter, item: &Node) -> bool {
-    let Some(NodeEnum::ResTarget(target)) = item.node.as_ref() else {
-        return false;
-    };
-    if !target.name.is_empty() || !target.indirection.is_empty() {
-        return false;
-    }
-    let Some(value) = target.val.as_deref() else {
-        return false;
-    };
-    match value.node.as_ref() {
-        // FILTER, WITHIN GROUP and OVER continue the call on lines of their own.
-        Some(NodeEnum::FuncCall(call)) => {
-            call.agg_filter.is_none() && call.over.is_none() && !call.agg_within_group
-        }
-        Some(NodeEnum::CoalesceExpr(_) | NodeEnum::MinMaxExpr(_) | NodeEnum::XmlSerialize(_)) => {
-            true
-        }
-        Some(NodeEnum::TypeCast(_)) => matches!(e.config().cast_style, crate::CastStyle::Cast),
-        Some(NodeEnum::SubLink(_)) => breaks_only_inside_a_subquery(value),
-        _ => false,
-    }
-}
-
-fn breaks_only_inside_a_subquery(node: &Node) -> bool {
-    use pgls_query::protobuf::{AExprKind, BoolExprType, SubLinkType};
-
-    match node.node.as_ref() {
-        Some(NodeEnum::SubLink(sub_link)) => {
-            sub_link.sub_link_type != SubLinkType::MultiexprSublink as i32
-        }
-        Some(NodeEnum::AExpr(expr)) => {
-            expr.kind() == AExprKind::AexprOp
-                && expr.lexpr.as_deref().is_some_and(is_simple_operand)
-                && expr.rexpr.as_deref().is_some_and(|rexpr| {
-                    matches!(
-                        rexpr.node.as_ref(),
-                        Some(NodeEnum::SubLink(sub_link))
-                            if sub_link.sub_link_type == SubLinkType::ExprSublink as i32
-                                || sub_link.sub_link_type == SubLinkType::ArraySublink as i32
-                    )
-                })
-        }
-        Some(NodeEnum::BoolExpr(expr)) => {
-            expr.boolop() == BoolExprType::NotExpr
-                && matches!(expr.args.as_slice(), [arg] if breaks_only_inside_a_subquery(arg))
-        }
-        _ => false,
-    }
-}
-
-/// A column reference, parameter or constant, which never breaks.
-fn is_simple_operand(node: &Node) -> bool {
-    matches!(
-        node.node.as_ref(),
-        Some(NodeEnum::ColumnRef(_) | NodeEnum::ParamRef(_) | NodeEnum::AConst(_))
-    )
-}
-
-/// Emits a condition wrapped in parentheses, such as the `USING (...)` of a policy.
-///
-/// It stays on the keyword line when it fits. Otherwise the condition breaks onto its own lines,
-/// indented like a WHERE condition, and the closing parenthesis returns to the keyword's indent.
-pub(super) fn emit_parenthesized_condition(
-    e: &mut EventEmitter,
-    kind: GroupKind,
-    condition: &Node,
-) {
-    emit_parenthesized_condition_with(e, kind, condition, emit_node_enum);
-}
-
-/// Like `emit_parenthesized_condition`, with `emit` emitting the condition itself.
-pub(super) fn emit_parenthesized_condition_with(
-    e: &mut EventEmitter,
-    kind: GroupKind,
-    condition: &Node,
-    emit: impl FnOnce(&NodeEnum, &mut EventEmitter),
-) {
-    use crate::TokenKind;
-    use crate::emitter::LineType;
-
-    e.group_start(kind);
-    e.token(TokenKind::L_PAREN);
-    e.indent_start();
-    e.line(LineType::Soft);
-    emit_node_with(condition, e, emit);
-    e.indent_end();
-    e.line(LineType::Soft);
-    e.token(TokenKind::R_PAREN);
-    e.group_end();
-}
-
-/// Emits the break that separates a statement clause from the previous one.
-///
-/// In expanded layout it is a `Hard` line, which `try_single_line` refuses to collapse, so the
-/// break propagates to every enclosing group and the whole statement opens up. That propagation is
-/// why expanded layout needs no renderer change.
-#[allow(dead_code)] // Consumed by the clause emitters introduced in task 3.
-pub(super) fn emit_layout_break(e: &mut EventEmitter) {
-    use crate::Layout;
-    use crate::emitter::LineType;
-
-    match e.config().layout {
-        Layout::Expanded => e.line(LineType::Hard),
-        Layout::Fit => e.line(LineType::SoftOrSpace),
-    }
-}
-
-pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
+pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
     match &node {
         NodeEnum::RawStmt(n) => emit_raw_stmt(e, n),
         NodeEnum::SelectStmt(n) => emit_select_stmt(e, n),
@@ -1067,9 +827,8 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
 
 #[cfg(test)]
 mod tests {
-    use crate::emitter::{EventEmitter, LayoutEvent, LineType};
-    use crate::{Comment, FormatConfig, Layout, TokenKind, attach_comments};
-    use std::collections::HashMap;
+    use crate::comments::attach_comments;
+    use crate::emitter::{EventEmitter, LayoutEvent};
 
     #[test]
     fn a_comment_attached_to_a_node_is_emitted_before_it() {
@@ -1098,53 +857,5 @@ mod tests {
             comments[0],
             LayoutEvent::Comment { text, line_comment: true } if text == "-- pick the magic value"
         ));
-    }
-
-    #[test]
-    fn a_typed_child_emitter_consumes_the_comments_of_its_location() {
-        let comment = Comment {
-            text: "-- note".to_string(),
-            line_comment: true,
-            own_line: true,
-            after_separator: false,
-            before_keyword: None,
-        };
-        let leading = HashMap::from([(7, vec![comment])]);
-        let mut e = EventEmitter::with_comments(Default::default(), leading, HashMap::new());
-
-        super::emit_with_comments_at(&mut e, 7, |e| e.token(TokenKind::ONLY_KW));
-
-        assert_eq!(e.pending_comments(), 0);
-        assert!(e.events.iter().any(|event| matches!(
-            event,
-            LayoutEvent::Comment { text, .. } if text == "-- note"
-        )));
-    }
-
-    #[test]
-    fn a_negative_location_never_carries_a_comment() {
-        let mut e = EventEmitter::new(Default::default());
-
-        super::emit_with_comments_at(&mut e, -1, |e| e.token(TokenKind::ONLY_KW));
-
-        assert_eq!(e.events, vec![LayoutEvent::Token(TokenKind::ONLY_KW)]);
-    }
-
-    #[test]
-    fn fit_layout_emits_a_soft_or_space_break() {
-        let mut e = EventEmitter::new(FormatConfig::default());
-        super::emit_layout_break(&mut e);
-        assert_eq!(e.events, vec![LayoutEvent::Line(LineType::SoftOrSpace)]);
-    }
-
-    #[test]
-    fn expanded_layout_emits_a_hard_break() {
-        let config = FormatConfig {
-            layout: Layout::Expanded,
-            ..Default::default()
-        };
-        let mut e = EventEmitter::new(config);
-        super::emit_layout_break(&mut e);
-        assert_eq!(e.events, vec![LayoutEvent::Line(LineType::Hard)]);
     }
 }

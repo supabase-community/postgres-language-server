@@ -1,9 +1,6 @@
 use pgls_query::protobuf::VariableShowStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_variable_show_stmt(e: &mut EventEmitter, n: &VariableShowStmt) {
     e.group_start(GroupKind::VariableShowStmt);
@@ -12,7 +9,7 @@ pub(super) fn emit_variable_show_stmt(e: &mut EventEmitter, n: &VariableShowStmt
 
     if !n.name.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.name);
+        emit_identifier_maybe_quoted(e, &n.name);
     }
 
     e.group_end();

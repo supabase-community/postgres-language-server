@@ -1,6 +1,6 @@
 use pgls_query::protobuf::{Param, ParamKind};
 
-use crate::emitter::{EventEmitter, GroupKind};
+use super::prelude::*;
 
 pub(super) fn emit_param(e: &mut EventEmitter, n: &Param) {
     e.group_start(GroupKind::Param);
@@ -14,7 +14,7 @@ pub(super) fn emit_param(e: &mut EventEmitter, n: &Param) {
     };
 
     let repr = format!("param#{}:{}", kind, n.paramid);
-    super::emit_identifier(e, &repr);
+    emit_identifier(e, &repr);
 
     e.group_end();
 }

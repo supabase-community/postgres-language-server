@@ -1,9 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::{CmdType, MergeAction, MergeMatchKind, MergeWhenClause, OverridingKind};
 
+use super::prelude::*;
 use super::res_target::emit_set_clause_list;
 
 pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenClause) {
@@ -42,7 +39,7 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
     if let Some(ref cond) = clause.condition {
         e.space();
         e.token(TokenKind::AND_KW);
-        super::emit_clause_condition(e, cond);
+        emit_clause_condition(e, cond);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -67,16 +64,12 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
                 e.token(TokenKind::L_PAREN);
                 e.line(LineType::Soft);
                 e.indent_start();
-                super::node_list::emit_comma_separated_list(
-                    e,
-                    &clause.target_list,
-                    |node, emitter| {
-                        let target = assert_node_variant!(ResTarget, node);
-                        if !target.name.is_empty() {
-                            super::emit_identifier_maybe_quoted(emitter, &target.name);
-                        }
-                    },
-                );
+                emit_comma_separated_list(e, &clause.target_list, |node, emitter| {
+                    let target = assert_node_variant!(ResTarget, node);
+                    if !target.name.is_empty() {
+                        emit_identifier_maybe_quoted(emitter, &target.name);
+                    }
+                });
                 e.indent_end();
                 e.line(LineType::Soft);
                 e.token(TokenKind::R_PAREN);
@@ -112,7 +105,7 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
                 e.token(TokenKind::L_PAREN);
                 e.line(LineType::Soft);
                 e.indent_start();
-                super::node_list::emit_comma_separated_list(e, &clause.values, super::emit_node);
+                emit_comma_separated_list(e, &clause.values, emit_node);
                 e.indent_end();
                 e.line(LineType::Soft);
                 e.token(TokenKind::R_PAREN);
@@ -160,19 +153,19 @@ pub(super) fn emit_merge_action(e: &mut EventEmitter, action: &MergeAction) {
         _ => "other",
     };
 
-    super::emit_identifier(e, &format!("merge_action#{match_kind}_{command}"));
+    emit_identifier(e, &format!("merge_action#{match_kind}_{command}"));
 
     if let Some(ref qual) = action.qual {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, qual);
+        emit_clause_condition(e, qual);
     }
 
     if !action.target_list.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("TARGET_LIST".to_string()));
         e.space();
-        super::node_list::emit_comma_separated_list(e, &action.target_list, super::emit_node);
+        emit_comma_separated_list(e, &action.target_list, emit_node);
     }
 
     e.group_end();

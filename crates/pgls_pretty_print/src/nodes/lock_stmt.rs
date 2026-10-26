@@ -1,11 +1,6 @@
 use pgls_query::protobuf::LockStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::emit_node;
+use super::prelude::*;
 
 pub(super) fn emit_lock_stmt(e: &mut EventEmitter, n: &LockStmt) {
     e.group_start(GroupKind::LockStmt);
@@ -16,7 +11,7 @@ pub(super) fn emit_lock_stmt(e: &mut EventEmitter, n: &LockStmt) {
     e.space();
 
     // Emit table list
-    super::node_list::emit_comma_separated_list(e, &n.relations, emit_node);
+    emit_comma_separated_list(e, &n.relations, emit_node);
 
     // Lock mode - mapping from AccessExclusiveLock enum (1-8)
     // 1: AccessShareLock -> ACCESS SHARE
@@ -42,7 +37,7 @@ pub(super) fn emit_lock_stmt(e: &mut EventEmitter, n: &LockStmt) {
             8 => "ACCESS EXCLUSIVE",
             _ => "ACCESS EXCLUSIVE", // default
         };
-        super::emit_keywords(e, mode_str);
+        emit_keywords(e, mode_str);
         e.space();
         e.token(TokenKind::MODE_KW);
     }

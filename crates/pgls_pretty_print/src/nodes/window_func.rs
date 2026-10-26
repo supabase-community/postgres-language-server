@@ -1,10 +1,6 @@
 use pgls_query::protobuf::WindowFunc;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
-};
+use super::prelude::*;
 
 /// Emit a WindowFunc (planner window function node)
 /// These are internal planner representations with function OIDs
@@ -25,7 +21,7 @@ pub(super) fn emit_window_func(e: &mut EventEmitter, n: &WindowFunc) {
     if n.winstar {
         e.token(TokenKind::IDENT("*".to_string()));
     } else if !n.args.is_empty() {
-        emit_comma_separated_list(e, &n.args, super::emit_node);
+        emit_comma_separated_list(e, &n.args, emit_node);
     }
 
     e.token(TokenKind::R_PAREN);
@@ -36,7 +32,7 @@ pub(super) fn emit_window_func(e: &mut EventEmitter, n: &WindowFunc) {
         e.space();
         e.token(TokenKind::L_PAREN);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, filter);
+        emit_clause_condition(e, filter);
         e.token(TokenKind::R_PAREN);
     }
 

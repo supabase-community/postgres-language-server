@@ -1,9 +1,6 @@
 use pgls_query::protobuf::CurrentOfExpr;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_current_of_expr(e: &mut EventEmitter, n: &CurrentOfExpr) {
     e.group_start(GroupKind::CurrentOfExpr);
@@ -14,7 +11,7 @@ pub(super) fn emit_current_of_expr(e: &mut EventEmitter, n: &CurrentOfExpr) {
 
     if !n.cursor_name.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.cursor_name);
+        emit_identifier_maybe_quoted(e, &n.cursor_name);
     }
 
     e.group_end();

@@ -1,20 +1,17 @@
 use pgls_query::protobuf::{CommonTableExpr, CteMaterialize};
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-
-use super::node_list::emit_parenthesized_list;
+use super::prelude::*;
 
 pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) {
     e.group_start(GroupKind::CommonTableExpr);
 
     // CTE name
-    super::emit_identifier_maybe_quoted(e, &n.ctename);
+    emit_identifier_maybe_quoted(e, &n.ctename);
 
     // Optional column aliases
     if !n.aliascolnames.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.aliascolnames, super::emit_node);
+        emit_parenthesized_list(e, &n.aliascolnames, emit_node);
     }
 
     // `name as (` stays on one line; a body that doesn't fit breaks after the parenthesis.
@@ -45,7 +42,7 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
     e.line(LineType::Soft);
 
     if let Some(ref query) = n.ctequery {
-        super::emit_node(query, e);
+        emit_node(query, e);
     }
 
     e.indent_end();

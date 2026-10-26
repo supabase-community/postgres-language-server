@@ -1,9 +1,6 @@
-use super::node_list::{emit_comma_separated_list, emit_dot_separated_list};
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::CreateOpClassStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_op_class_stmt(e: &mut EventEmitter, n: &CreateOpClassStmt) {
     e.group_start(GroupKind::CreateOpClassStmt);
@@ -39,7 +36,7 @@ pub(super) fn emit_create_op_class_stmt(e: &mut EventEmitter, n: &CreateOpClassS
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::USING_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.amname);
+    emit_identifier_maybe_quoted(e, &n.amname);
 
     // FAMILY
     if !n.opfamilyname.is_empty() {
@@ -54,7 +51,7 @@ pub(super) fn emit_create_op_class_stmt(e: &mut EventEmitter, n: &CreateOpClassS
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::AS_KW);
         e.space();
-        emit_comma_separated_list(e, &n.items, super::emit_node);
+        emit_comma_separated_list(e, &n.items, emit_node);
     }
 
     e.indent_end();

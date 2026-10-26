@@ -1,10 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::{InsertStmt, OverridingKind};
 
-use super::node_list::{emit_comma_separated_list, emit_comma_separated_list_with_layout_break};
+use super::prelude::*;
 use super::res_target::emit_column_name;
 
 pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
@@ -39,7 +35,7 @@ pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
             if let Some(pgls_query::NodeEnum::ResTarget(res_target)) = node.node.as_ref() {
                 emit_column_name(e, res_target);
             } else {
-                super::emit_node(node, e);
+                emit_node(node, e);
             }
         });
 
@@ -71,8 +67,8 @@ pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
 
     // Emit VALUES or SELECT or DEFAULT VALUES
     if let Some(ref select_stmt) = n.select_stmt {
-        super::emit_layout_break(e);
-        super::emit_node(select_stmt, e);
+        emit_layout_break(e);
+        emit_node(select_stmt, e);
     } else {
         // No select_stmt means DEFAULT VALUES
         e.line(LineType::SoftOrSpace);
@@ -87,10 +83,10 @@ pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
     }
 
     if !n.returning_list.is_empty() {
-        super::emit_layout_break(e);
+        emit_layout_break(e);
         e.token(TokenKind::RETURNING_KW);
         e.space();
-        emit_comma_separated_list(e, &n.returning_list, super::emit_node);
+        emit_comma_separated_list(e, &n.returning_list, emit_node);
     }
 
     e.group_end();

@@ -1,12 +1,6 @@
-use super::node_list::{emit_comma_separated_list, emit_dot_separated_list};
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::{
-    NodeEnum,
-    protobuf::{AlterTsConfigType, AlterTsConfigurationStmt, Node},
-};
+use pgls_query::protobuf::{AlterTsConfigType, AlterTsConfigurationStmt};
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTsConfigurationStmt) {
     e.group_start(GroupKind::AlterTsconfigurationStmt);
@@ -46,7 +40,7 @@ pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTs
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FOR_KW);
         e.space();
-        emit_comma_separated_list(e, &n.tokentype, super::emit_node);
+        emit_comma_separated_list(e, &n.tokentype, emit_node);
     }
 
     if n.replace {
@@ -75,6 +69,6 @@ pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTs
 fn emit_dictionary(node: &Node, e: &mut EventEmitter) {
     match node.node.as_ref() {
         Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
-        _ => super::emit_node(node, e),
+        _ => emit_node(node, e),
     }
 }

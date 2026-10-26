@@ -1,10 +1,6 @@
-use pgls_query::protobuf::Node;
 use pgls_query::protobuf::{DistinctExpr, NullIfExpr, OpExpr};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 /// Emit an OpExpr (planner operator node)
 /// These are internal planner representations with operator OIDs
@@ -15,12 +11,12 @@ pub(super) fn emit_op_expr(e: &mut EventEmitter, n: &OpExpr) {
     // OpExpr represents binary operators in the planner
     // Without a pg_operator lookup, we use a generic fallback
     if n.args.len() == 2 {
-        super::emit_node(&n.args[0], e);
+        emit_node(&n.args[0], e);
         e.space();
         // opno is the operator OID - we don't have the symbol
         e.token(TokenKind::IDENT(format!("op#{}", n.opno)));
         e.space();
-        super::emit_node(&n.args[1], e);
+        emit_node(&n.args[1], e);
     } else {
         // Fallback for unexpected arg counts
         emit_args_as_sequence(e, &n.args, n.opno);
@@ -35,7 +31,7 @@ pub(super) fn emit_distinct_expr(e: &mut EventEmitter, n: &DistinctExpr) {
 
     // DistinctExpr is planner form of IS DISTINCT FROM
     if n.args.len() == 2 {
-        super::emit_node(&n.args[0], e);
+        emit_node(&n.args[0], e);
         e.space();
         e.token(TokenKind::IS_KW);
         e.space();
@@ -43,7 +39,7 @@ pub(super) fn emit_distinct_expr(e: &mut EventEmitter, n: &DistinctExpr) {
         e.space();
         e.token(TokenKind::FROM_KW);
         e.space();
-        super::emit_node(&n.args[1], e);
+        emit_node(&n.args[1], e);
     } else {
         emit_args_as_sequence(e, &n.args, n.opno);
     }
@@ -59,10 +55,10 @@ pub(super) fn emit_null_if_expr(e: &mut EventEmitter, n: &NullIfExpr) {
     e.token(TokenKind::NULLIF_KW);
     e.token(TokenKind::L_PAREN);
     if n.args.len() >= 2 {
-        super::emit_node(&n.args[0], e);
+        emit_node(&n.args[0], e);
         e.token(TokenKind::COMMA);
         e.space();
-        super::emit_node(&n.args[1], e);
+        emit_node(&n.args[1], e);
     } else {
         emit_args_as_sequence(e, &n.args, n.opno);
     }
@@ -80,15 +76,15 @@ fn emit_args_as_sequence(e: &mut EventEmitter, args: &[Node], opno: u32) {
     if args.len() == 1 {
         e.token(TokenKind::IDENT(format!("op#{opno}")));
         e.space();
-        super::emit_node(&args[0], e);
+        emit_node(&args[0], e);
         return;
     }
 
-    super::emit_node(&args[0], e);
+    emit_node(&args[0], e);
     for arg in &args[1..] {
         e.space();
         e.token(TokenKind::IDENT(format!("op#{opno}")));
         e.space();
-        super::emit_node(arg, e);
+        emit_node(arg, e);
     }
 }

@@ -1,9 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
-};
-use pgls_query::{NodeEnum, protobuf::CreatePublicationStmt};
+use pgls_query::protobuf::CreatePublicationStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePublicationStmt) {
     e.group_start(GroupKind::CreatePublicationStmt);
@@ -12,7 +9,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
     e.space();
     e.token(TokenKind::PUBLICATION_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.pubname);
+    emit_identifier_maybe_quoted(e, &n.pubname);
 
     if n.for_all_tables {
         e.space();
@@ -42,7 +39,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
                             // Handle column list
                             if !relation.columns.is_empty() {
                                 e.space();
-                                emit_parenthesized_list(e, &relation.columns, super::emit_node);
+                                emit_parenthesized_list(e, &relation.columns, emit_node);
                             }
                             // Handle WHERE clause
                             if let Some(ref where_clause) = relation.where_clause {
@@ -50,7 +47,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
                                 e.token(TokenKind::WHERE_KW);
                                 e.space();
                                 e.token(TokenKind::L_PAREN);
-                                super::emit_node(where_clause, e);
+                                emit_node(where_clause, e);
                                 e.token(TokenKind::R_PAREN);
                             }
                         }
@@ -64,7 +61,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
                         e.token(TokenKind::SCHEMA_KW);
                         e.space();
                         if !obj.name.is_empty() {
-                            super::emit_identifier_maybe_quoted(e, &obj.name);
+                            emit_identifier_maybe_quoted(e, &obj.name);
                         }
                     }
                     3 => {
@@ -87,7 +84,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, super::emit_node);
+        emit_parenthesized_list(e, &n.options, emit_node);
     }
 
     e.group_end();

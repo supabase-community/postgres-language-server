@@ -1,9 +1,6 @@
 use pgls_query::protobuf::CreateAmStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
     e.group_start(GroupKind::CreateAmStmt);
@@ -16,7 +13,7 @@ pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
 
     if !n.amname.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.amname);
+        emit_identifier_maybe_quoted(e, &n.amname);
     }
 
     // TYPE
@@ -37,7 +34,7 @@ pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::HANDLER_KW);
         e.space();
-        super::node_list::emit_dot_separated_list(e, &n.handler_name);
+        emit_dot_separated_list(e, &n.handler_name);
     }
 
     e.group_end();

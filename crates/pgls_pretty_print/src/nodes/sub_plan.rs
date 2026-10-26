@@ -1,9 +1,6 @@
 use pgls_query::protobuf::{AlternativeSubPlan, SubPlan};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 /// Emit a SubPlan (planner subquery node)
 /// These are internal planner representations
@@ -14,9 +11,9 @@ pub(super) fn emit_sub_plan(e: &mut EventEmitter, n: &SubPlan) {
     // SubPlan is the planner's representation of subqueries
     // Emit the test expression if available, otherwise a placeholder
     if let Some(testexpr) = n.testexpr.as_deref() {
-        super::emit_node(testexpr, e);
+        emit_node(testexpr, e);
     } else if let Some(first_arg) = n.args.first() {
-        super::emit_node(first_arg, e);
+        emit_node(first_arg, e);
     } else if !n.plan_name.is_empty() {
         e.token(TokenKind::IDENT(n.plan_name.clone()));
     } else {
@@ -37,7 +34,7 @@ pub(super) fn emit_alternative_sub_plan(e: &mut EventEmitter, n: &AlternativeSub
     if let Some(first) = n.subplans.first()
         && let Some(inner) = first.node.as_ref()
     {
-        super::emit_node_enum(inner, e);
+        emit_node_enum(inner, e);
     }
 
     e.group_end();

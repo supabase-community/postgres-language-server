@@ -1,9 +1,6 @@
 use pgls_query::protobuf::PartitionSpec;
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
-
-use super::node_list::emit_parenthesized_list;
+use super::prelude::*;
 
 pub(super) fn emit_partition_spec(e: &mut EventEmitter, n: &PartitionSpec) {
     e.group_start(GroupKind::PartitionSpec);
@@ -16,15 +13,15 @@ pub(super) fn emit_partition_spec(e: &mut EventEmitter, n: &PartitionSpec) {
     // Emit partition strategy
     // PartitionStrategy: Undefined = 0, List = 1, Range = 2, Hash = 3
     match n.strategy {
-        1 => super::emit_keyword(e, "list"),
+        1 => emit_keyword(e, "list"),
         2 => e.token(TokenKind::RANGE_KW),
-        3 => super::emit_keyword(e, "hash"),
+        3 => emit_keyword(e, "hash"),
         _ => {}
     }
 
     // Emit partition parameters (columns/expressions)
     if !n.part_params.is_empty() {
-        emit_parenthesized_list(e, &n.part_params, super::emit_node);
+        emit_parenthesized_list(e, &n.part_params, emit_node);
     }
 
     e.group_end();

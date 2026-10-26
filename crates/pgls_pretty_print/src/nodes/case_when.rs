@@ -1,9 +1,6 @@
 use pgls_query::protobuf::CaseWhen;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
     e.group_start(GroupKind::CaseWhen);
@@ -15,7 +12,7 @@ pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
     if let Some(ref expr) = n.expr {
         e.space();
         e.indent_start();
-        super::emit_node(expr, e);
+        emit_node(expr, e);
         e.indent_end();
     }
 
@@ -24,9 +21,9 @@ pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
         e.indent_start();
     }
     if let Some(ref result) = n.result {
-        super::emit_comments_before_keyword(e, "then", result);
+        emit_comments_before_keyword(e, "then", result);
     }
-    super::emit_layout_break(e);
+    emit_layout_break(e);
     e.token(TokenKind::THEN_KW);
 
     if let Some(ref result) = n.result {

@@ -1,9 +1,6 @@
 use pgls_query::protobuf::RefreshMatViewStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_refresh_matview_stmt(e: &mut EventEmitter, n: &RefreshMatViewStmt) {
     e.group_start(GroupKind::RefreshMatViewStmt);

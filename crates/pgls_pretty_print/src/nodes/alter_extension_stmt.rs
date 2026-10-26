@@ -1,8 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterExtensionStmt;
 
-use super::node_list::emit_comma_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_alter_extension_stmt(e: &mut EventEmitter, n: &AlterExtensionStmt) {
     e.group_start(GroupKind::AlterExtensionStmt);
@@ -13,7 +11,7 @@ pub(super) fn emit_alter_extension_stmt(e: &mut EventEmitter, n: &AlterExtension
     e.space();
 
     if !n.extname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.extname);
+        emit_identifier_maybe_quoted(e, &n.extname);
     }
 
     if !n.options.is_empty() {
@@ -41,16 +39,16 @@ pub(super) fn emit_alter_extension_stmt(e: &mut EventEmitter, n: &AlterExtension
                         e.space();
                         // Version must be a string literal (quoted)
                         if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                            super::emit_string_literal(e, s);
+                            emit_string_literal(e, s);
                         } else {
-                            super::emit_node(arg, e);
+                            emit_node(arg, e);
                         }
                     }
                 }
             }
         } else {
             // For other options, emit as comma-separated list
-            emit_comma_separated_list(e, &n.options, super::emit_node);
+            emit_comma_separated_list(e, &n.options, emit_node);
         }
     }
 

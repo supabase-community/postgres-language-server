@@ -1,11 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{
-        emit_comma_separated_list, emit_dot_separated_list, emit_parenthesized_list,
-    },
-};
-use pgls_query::{NodeEnum, protobuf::CreateStatsStmt};
+use pgls_query::protobuf::CreateStatsStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) {
     e.group_start(GroupKind::CreateStatsStmt);
@@ -56,7 +51,7 @@ pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) 
     e.space();
 
     // Relations (tables or subselects)
-    emit_comma_separated_list(e, &n.relations, super::emit_node);
+    emit_comma_separated_list(e, &n.relations, emit_node);
 
     e.group_end();
 }

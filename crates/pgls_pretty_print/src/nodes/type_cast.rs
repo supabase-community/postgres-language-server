@@ -1,11 +1,9 @@
-use crate::{
-    CastStyle, TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::{
-    Node, NodeEnum,
-    protobuf::{AExprKind, TypeCast, a_const::Val},
-};
+use pgls_query::protobuf::a_const::Val;
+use pgls_query::protobuf::{AExprKind, TypeCast};
+
+use crate::CastStyle;
+
+use super::prelude::*;
 
 pub(super) fn emit_type_cast(e: &mut EventEmitter, n: &TypeCast) {
     e.group_start(GroupKind::TypeCast);
@@ -32,11 +30,11 @@ pub(super) fn emit_type_cast_call(e: &mut EventEmitter, n: &TypeCast) {
 /// line one level in, broken before `as` only when it doesn't fit there either.
 fn emit_cast_call(e: &mut EventEmitter, n: &TypeCast) {
     e.token(TokenKind::CAST_KW);
-    super::open_call_arguments(e);
+    open_call_arguments(e);
     e.group_start(GroupKind::List);
 
     if let Some(ref arg) = n.arg {
-        super::emit_node(arg, e);
+        emit_node(arg, e);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -48,7 +46,7 @@ fn emit_cast_call(e: &mut EventEmitter, n: &TypeCast) {
     }
 
     e.group_end();
-    super::close_call_arguments(e);
+    close_call_arguments(e);
 }
 
 fn emit_operator_cast(e: &mut EventEmitter, n: &TypeCast) {
@@ -57,10 +55,10 @@ fn emit_operator_cast(e: &mut EventEmitter, n: &TypeCast) {
         // primary expression has to be parenthesised: `a + b::int` would cast b alone.
         if needs_parentheses(arg) {
             e.token(TokenKind::L_PAREN);
-            super::emit_node(arg, e);
+            emit_node(arg, e);
             e.token(TokenKind::R_PAREN);
         } else {
-            super::emit_node(arg, e);
+            emit_node(arg, e);
         }
     }
 

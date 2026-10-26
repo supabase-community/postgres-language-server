@@ -1,8 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::protobuf::AlterOpFamilyStmt;
 
-use super::node_list::emit_dot_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyStmt) {
     e.group_start(GroupKind::AlterOpFamilyStmt);
@@ -23,7 +21,7 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
     e.space();
 
     if !n.amname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.amname);
+        emit_identifier_maybe_quoted(e, &n.amname);
     }
 
     // Use indent and soft line break for ADD/DROP clause
@@ -48,7 +46,7 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
                 e.token(TokenKind::COMMA);
                 e.line(crate::emitter::LineType::SoftOrSpace);
             }
-            super::emit_node(item, e);
+            emit_node(item, e);
         }
     }
 

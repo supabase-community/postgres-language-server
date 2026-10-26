@@ -1,16 +1,13 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_dot_separated_list, emit_parenthesized_list},
-};
 use pgls_query::protobuf::RangeTableSample;
+
+use super::prelude::*;
 
 pub(super) fn emit_range_table_sample(e: &mut EventEmitter, n: &RangeTableSample) {
     e.group_start(GroupKind::RangeTableSample);
 
     // Relation (table)
     if let Some(ref relation) = n.relation {
-        super::emit_node(relation, e);
+        emit_node(relation, e);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -23,7 +20,7 @@ pub(super) fn emit_range_table_sample(e: &mut EventEmitter, n: &RangeTableSample
     // Arguments for the sampling method
     if !n.args.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.args, super::emit_node);
+        emit_parenthesized_list(e, &n.args, emit_node);
     }
 
     // REPEATABLE clause
@@ -32,7 +29,7 @@ pub(super) fn emit_range_table_sample(e: &mut EventEmitter, n: &RangeTableSample
         e.token(TokenKind::REPEATABLE_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
-        super::emit_node(repeatable, e);
+        emit_node(repeatable, e);
         e.token(TokenKind::R_PAREN);
     }
 

@@ -1,9 +1,6 @@
-use super::node_list::emit_dot_separated_list;
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::AlterStatsStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
     e.group_start(GroupKind::AlterStatsStmt);
@@ -31,7 +28,7 @@ pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
         e.space();
         e.token(TokenKind::STATISTICS_KW);
         e.space();
-        super::emit_node(target, e);
+        emit_node(target, e);
     }
 
     e.group_end();

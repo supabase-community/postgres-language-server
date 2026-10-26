@@ -1,9 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
-};
 use pgls_query::protobuf::{XmlExpr, XmlOptionType};
+
+use super::prelude::*;
 
 pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
     e.group_start(GroupKind::XmlExpr);
@@ -22,43 +19,43 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
         1 => {
             // XMLCONCAT
             e.token(TokenKind::XMLCONCAT_KW);
-            emit_parenthesized_list(e, &n.args, super::emit_node);
+            emit_parenthesized_list(e, &n.args, emit_node);
         }
         2 => {
             // XMLELEMENT
             e.token(TokenKind::XMLELEMENT_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             e.token(TokenKind::NAME_KW);
             e.space();
             // Names with special characters need quoting
-            super::emit_identifier_maybe_quoted(e, &n.name);
+            emit_identifier_maybe_quoted(e, &n.name);
 
             // Named args represent XML attributes (XMLATTRIBUTES)
             if !n.named_args.is_empty() {
                 e.token(TokenKind::COMMA);
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::XMLATTRIBUTES_KW);
-                emit_parenthesized_list(e, &n.named_args, super::emit_node);
+                emit_parenthesized_list(e, &n.named_args, emit_node);
             }
 
             // Args represent content
             if !n.args.is_empty() {
                 e.token(TokenKind::COMMA);
                 e.line(LineType::SoftOrSpace);
-                emit_comma_separated_list(e, &n.args, super::emit_node);
+                emit_comma_separated_list(e, &n.args, emit_node);
             }
 
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         3 => {
             // XMLFOREST
             e.token(TokenKind::XMLFOREST_KW);
-            emit_parenthesized_list(e, &n.named_args, super::emit_node);
+            emit_parenthesized_list(e, &n.named_args, emit_node);
         }
         4 => {
             // XMLPARSE
             e.token(TokenKind::XMLPARSE_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             // XmlOptionType: XmloptionDocument=1, XmloptionContent=2
             match n.xmloption() {
                 XmlOptionType::XmloptionDocument => {
@@ -70,33 +67,33 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             }
             e.space();
             if !n.args.is_empty() {
-                super::emit_node(&n.args[0], e);
+                emit_node(&n.args[0], e);
             }
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         5 => {
             // XMLPI
             e.token(TokenKind::XMLPI_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             e.token(TokenKind::NAME_KW);
             e.space();
             // Names with special characters need quoting
-            super::emit_identifier_maybe_quoted(e, &n.name);
+            emit_identifier_maybe_quoted(e, &n.name);
 
             if !n.args.is_empty() {
                 e.token(TokenKind::COMMA);
                 e.line(LineType::SoftOrSpace);
-                super::emit_node(&n.args[0], e);
+                emit_node(&n.args[0], e);
             }
 
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         6 => {
             // XMLROOT
             e.token(TokenKind::XMLROOT_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             if !n.args.is_empty() {
-                super::emit_node(&n.args[0], e);
+                emit_node(&n.args[0], e);
             }
             e.token(TokenKind::COMMA);
             e.line(LineType::SoftOrSpace);
@@ -110,10 +107,10 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
                         e.space();
                         e.token(TokenKind::VALUE_KW);
                     } else {
-                        super::emit_node(&n.args[1], e);
+                        emit_node(&n.args[1], e);
                     }
                 } else {
-                    super::emit_node(&n.args[1], e);
+                    emit_node(&n.args[1], e);
                 }
             }
             // Handle standalone option if there's a 3rd arg
@@ -154,13 +151,13 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
                     _ => {}
                 }
             }
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         7 => {
             // XMLSERIALIZE - this is handled by XmlSerialize node, not XmlExpr
             // But we'll handle it here just in case
             e.token(TokenKind::XMLSERIALIZE_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             match n.xmloption() {
                 XmlOptionType::XmloptionDocument => {
                     e.token(TokenKind::DOCUMENT_KW);
@@ -171,14 +168,14 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             }
             e.space();
             if !n.args.is_empty() {
-                emit_comma_separated_list(e, &n.args, super::emit_node);
+                emit_comma_separated_list(e, &n.args, emit_node);
             }
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         8 => {
             // IS DOCUMENT - expr IS DOCUMENT
             if !n.args.is_empty() {
-                super::emit_node(&n.args[0], e);
+                emit_node(&n.args[0], e);
             }
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::IS_KW);
@@ -188,11 +185,11 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
         _ => {
             // Unknown/Undefined XML operation - emit XMLCOMMENT as fallback
             e.token(TokenKind::IDENT("xmlcomment".to_string()));
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             if !n.args.is_empty() {
-                super::emit_node(&n.args[0], e);
+                emit_node(&n.args[0], e);
             }
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
     }
 

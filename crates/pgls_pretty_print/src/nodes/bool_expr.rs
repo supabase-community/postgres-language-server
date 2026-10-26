@@ -1,10 +1,8 @@
 use pgls_query::protobuf::{BoolExpr, BoolExprType};
-use pgls_query::{Node, NodeEnum};
 
-use crate::{
-    LogicalOperatorPlacement, TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use crate::LogicalOperatorPlacement;
+
+use super::prelude::*;
 
 pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
     e.group_start(GroupKind::BoolExpr);
@@ -53,7 +51,7 @@ fn emit_variadic_operands(
         if let Some(NodeEnum::BoolExpr(nested)) = arg.node.as_ref()
             && nested.boolop() == parent_kind
         {
-            super::emit_with_comments_at(e, nested.location, |e| {
+            emit_with_comments_at(e, nested.location, |e| {
                 emit_variadic_operands(e, nested, keyword, is_first);
             });
             continue;
@@ -71,7 +69,7 @@ fn emit_variadic_operands(
                 // The break opportunity sits before the keyword, so a broken condition reads
                 // "\n\tAND b = 2" while a single line one still reads "a = 1 AND b = 2".
                 if matches!(e.config().layout, crate::Layout::Expanded) {
-                    super::emit_layout_break(e);
+                    emit_layout_break(e);
                 } else {
                     e.line(LineType::SoftOrSpace);
                 }
@@ -81,7 +79,7 @@ fn emit_variadic_operands(
                 e.space();
                 e.token(keyword.clone());
                 if matches!(e.config().layout, crate::Layout::Expanded) {
-                    super::emit_layout_break(e);
+                    emit_layout_break(e);
                 } else {
                     e.line(LineType::SoftOrSpace);
                 }
@@ -119,13 +117,13 @@ fn emit_bool_operand(e: &mut EventEmitter, node: &Node, parent_kind: BoolExprTyp
             e.token(TokenKind::L_PAREN);
             e.indent_start();
             e.line(LineType::Soft);
-            super::emit_node(node, e);
+            emit_node(node, e);
             e.indent_end();
             e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
             e.group_end();
         } else {
-            super::emit_node(node, e);
+            emit_node(node, e);
         }
     });
 }

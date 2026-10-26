@@ -1,9 +1,6 @@
 use pgls_query::protobuf::DeclareCursorStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 // Cursor option flags from PostgreSQL's parsenodes.h
 // These are defined as (1 << n) where n starts from 0
@@ -22,7 +19,7 @@ pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorSt
     // Cursor name
     if !n.portalname.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.portalname);
+        emit_identifier_maybe_quoted(e, &n.portalname);
     }
 
     // Cursor options
@@ -65,7 +62,7 @@ pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorSt
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FOR_KW);
         e.space();
-        super::emit_node(query, e);
+        emit_node(query, e);
     }
 
     e.group_end();

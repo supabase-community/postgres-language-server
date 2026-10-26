@@ -1,6 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::{AlterExtensionContentsStmt, ObjectType};
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_extension_contents_stmt(
     e: &mut EventEmitter,
@@ -14,7 +14,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
     e.space();
 
     if !n.extname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.extname);
+        emit_identifier_maybe_quoted(e, &n.extname);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -40,7 +40,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
 
     // Object name
     if let Some(ref object) = n.object {
-        super::emit_node(object, e);
+        emit_node(object, e);
     }
 
     e.group_end();

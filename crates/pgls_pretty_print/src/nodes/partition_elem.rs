@@ -1,20 +1,17 @@
 use pgls_query::protobuf::PartitionElem;
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
-
-use super::node_list::emit_dot_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_partition_elem(e: &mut EventEmitter, n: &PartitionElem) {
     e.group_start(GroupKind::PartitionElem);
 
     // Emit column name if present
     if !n.name.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.name);
+        emit_identifier_maybe_quoted(e, &n.name);
     } else if let Some(ref expr) = n.expr {
         // Emit expression wrapped in parentheses (required by PostgreSQL syntax)
         e.token(TokenKind::L_PAREN);
-        super::emit_node(expr, e);
+        emit_node(expr, e);
         e.token(TokenKind::R_PAREN);
     }
 

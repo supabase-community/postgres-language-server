@@ -1,12 +1,6 @@
 use pgls_query::protobuf::{AExpr, AExprKind};
-use pgls_query::{Node, NodeEnum};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::emit_fill_comma_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_a_expr(e: &mut EventEmitter, n: &AExpr) {
     if let Some(location) = n
@@ -44,13 +38,13 @@ pub(super) fn emit_a_expr(e: &mut EventEmitter, n: &AExpr) {
 fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
     if n.name.is_empty() {
         if let Some(ref lexpr) = n.lexpr {
-            super::emit_node(lexpr, e);
+            emit_node(lexpr, e);
         }
         if let Some(ref rexpr) = n.rexpr {
             if n.lexpr.is_some() {
                 e.space();
             }
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
         return;
     }
@@ -65,8 +59,7 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                 // Keep the operator attached to the left-hand side and allow the
                 // right-hand side to wrap underneath when the expression exceeds
                 // the line width.
-                let grouped_suffix =
-                    super::is_window_expression(lexpr) || super::is_window_expression(rexpr);
+                let grouped_suffix = is_window_expression(lexpr) || is_window_expression(rexpr);
                 if grouped_suffix {
                     e.group_start(GroupKind::List);
                 }
@@ -154,7 +147,7 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
 // expr op ANY (subquery)
 fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -172,7 +165,7 @@ fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::L_PAREN);
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 
     e.token(TokenKind::R_PAREN);
@@ -181,7 +174,7 @@ fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
 // expr op ALL (subquery)
 fn emit_aexpr_op_all(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -199,7 +192,7 @@ fn emit_aexpr_op_all(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::L_PAREN);
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 
     e.token(TokenKind::R_PAREN);
@@ -265,14 +258,14 @@ fn emit_aexpr_nullif(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::L_PAREN);
 
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
     }
 
     e.token(TokenKind::COMMA);
     e.space();
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 
     e.token(TokenKind::R_PAREN);
@@ -281,7 +274,7 @@ fn emit_aexpr_nullif(e: &mut EventEmitter, n: &AExpr) {
 // expr IN (values)
 fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -301,13 +294,13 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
     // We need to wrap it in parentheses for IN clause
     if let Some(ref rexpr) = n.rexpr {
         match rexpr.node.as_ref() {
-            Some(NodeEnum::SubLink(_)) => super::emit_node(rexpr, e),
+            Some(NodeEnum::SubLink(_)) => emit_node(rexpr, e),
             Some(NodeEnum::List(list)) => {
                 e.token(TokenKind::L_PAREN);
                 e.indent_start();
                 e.line(LineType::Soft);
                 e.group_start(GroupKind::List);
-                emit_fill_comma_separated_list(e, &list.items, super::emit_node);
+                emit_fill_comma_separated_list(e, &list.items, emit_node);
                 e.group_end();
                 e.indent_end();
                 e.line(LineType::Soft);
@@ -317,7 +310,7 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
                 e.token(TokenKind::L_PAREN);
                 e.indent_start();
                 e.line(LineType::Soft);
-                super::emit_node(rexpr, e);
+                emit_node(rexpr, e);
                 e.indent_end();
                 e.line(LineType::Soft);
                 e.token(TokenKind::R_PAREN);
@@ -329,7 +322,7 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
 // expr LIKE pattern [ESCAPE escape]
 fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -347,14 +340,14 @@ fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 }
 
 // expr ILIKE pattern [ESCAPE escape]
 fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -372,14 +365,14 @@ fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 }
 
 // expr SIMILAR TO pattern [ESCAPE escape]
 fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -407,26 +400,26 @@ fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
             }) {
                 // Emit just the pattern (first argument)
                 if !func.args.is_empty() {
-                    super::emit_node(&func.args[0], e);
+                    emit_node(&func.args[0], e);
                 }
                 // If there's a second argument, it's the ESCAPE character
                 if func.args.len() >= 2 {
                     e.space();
                     e.token(TokenKind::ESCAPE_KW);
                     e.space();
-                    super::emit_node(&func.args[1], e);
+                    emit_node(&func.args[1], e);
                 }
                 return;
             }
         // Fallback for other patterns
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 }
 
 // expr BETWEEN expr2 AND expr3
 fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -437,16 +430,16 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
             if !list.items.is_empty() {
-                super::emit_node(&list.items[0], e);
+                emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                super::emit_node(&list.items[1], e);
+                emit_node(&list.items[1], e);
             }
         } else {
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
     }
 }
@@ -454,7 +447,7 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
 // expr NOT BETWEEN expr2 AND expr3
 fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -467,16 +460,16 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
             if !list.items.is_empty() {
-                super::emit_node(&list.items[0], e);
+                emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                super::emit_node(&list.items[1], e);
+                emit_node(&list.items[1], e);
             }
         } else {
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
     }
 }
@@ -484,7 +477,7 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
 // expr BETWEEN SYMMETRIC expr2 AND expr3
 fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -497,16 +490,16 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
             if !list.items.is_empty() {
-                super::emit_node(&list.items[0], e);
+                emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                super::emit_node(&list.items[1], e);
+                emit_node(&list.items[1], e);
             }
         } else {
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
     }
 }
@@ -514,7 +507,7 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
 // expr NOT BETWEEN SYMMETRIC expr2 AND expr3
 fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -529,16 +522,16 @@ fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
             if !list.items.is_empty() {
-                super::emit_node(&list.items[0], e);
+                emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                super::emit_node(&list.items[1], e);
+                emit_node(&list.items[1], e);
             }
         } else {
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
     }
 }
@@ -568,7 +561,7 @@ fn emit_qualified_operator(e: &mut EventEmitter, name: &[Node]) {
 fn emit_operator_part(e: &mut EventEmitter, node: &Node) {
     match node.node.as_ref() {
         Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-        _ => super::emit_node(node, e),
+        _ => emit_node(node, e),
     }
 }
 
@@ -692,10 +685,10 @@ fn emit_operand_with_parens(
 ) {
     if needs_parentheses(node, parent, side) {
         e.token(TokenKind::L_PAREN);
-        super::emit_node(node, e);
+        emit_node(node, e);
         e.token(TokenKind::R_PAREN);
     } else {
-        super::emit_node(node, e);
+        emit_node(node, e);
     }
 }
 

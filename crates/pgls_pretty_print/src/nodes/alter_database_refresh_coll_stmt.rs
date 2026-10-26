@@ -1,6 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterDatabaseRefreshCollStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_database_refresh_coll_stmt(
     e: &mut EventEmitter,
@@ -14,7 +14,7 @@ pub(super) fn emit_alter_database_refresh_coll_stmt(
     e.space();
 
     if !n.dbname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.dbname);
+        emit_identifier_maybe_quoted(e, &n.dbname);
     }
 
     e.line(LineType::SoftOrSpace);

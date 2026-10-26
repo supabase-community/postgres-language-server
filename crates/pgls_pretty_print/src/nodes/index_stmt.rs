@@ -1,10 +1,6 @@
 use pgls_query::protobuf::IndexStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_parenthesized_list,
-};
+use super::prelude::*;
 
 pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
     e.group_start(GroupKind::IndexStmt);
@@ -40,7 +36,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
     // Index name
     if !n.idxname.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.idxname);
+        emit_identifier_maybe_quoted(e, &n.idxname);
     }
 
     e.indent_start();
@@ -58,7 +54,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.access_method);
+        emit_identifier_maybe_quoted(e, &n.access_method);
     }
 
     e.indent_end();
@@ -67,7 +63,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
     // Index columns/expressions
     if !n.index_params.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.index_params, super::emit_node);
+        emit_parenthesized_list(e, &n.index_params, emit_node);
     }
 
     if n.nulls_not_distinct {
@@ -84,31 +80,31 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::INCLUDE_KW);
         e.space();
-        emit_parenthesized_list(e, &n.index_including_params, super::emit_node);
+        emit_parenthesized_list(e, &n.index_including_params, emit_node);
     }
 
     // WITH options
     if !n.options.is_empty() {
-        super::emit_layout_break(e);
+        emit_layout_break(e);
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, super::emit_node);
+        emit_parenthesized_list(e, &n.options, emit_node);
     }
 
     // TABLESPACE
     if !n.table_space.is_empty() {
-        super::emit_layout_break(e);
+        emit_layout_break(e);
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.table_space);
+        emit_identifier_maybe_quoted(e, &n.table_space);
     }
 
     // WHERE clause (partial index), kept on its keyword line when it fits there
     if let Some(ref where_clause) = n.where_clause {
-        super::emit_layout_break(e);
+        emit_layout_break(e);
         e.group_start(GroupKind::IndexStmt);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, where_clause);
+        emit_clause_condition(e, where_clause);
         e.group_end();
     }
 

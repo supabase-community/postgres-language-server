@@ -1,9 +1,6 @@
 use pgls_query::protobuf::FetchStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
     e.group_start(GroupKind::FetchStmt);
@@ -88,7 +85,7 @@ pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FROM_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.portalname);
+        emit_identifier_maybe_quoted(e, &n.portalname);
     }
 
     e.group_end();
