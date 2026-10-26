@@ -177,15 +177,18 @@ where
             let root_id = StatementId::new(content);
 
             if let Ok(ast) = self.parser.ast_db.get_or_cache_ast(&root_id).as_ref() {
-                // Check if this is a SQL function definition with a body
-                if let Some(sub_statement) = sql_function_body(ast, content) {
-                    // Add sub-statements to our pending queue
-                    self.pending_sub_statements.push((
-                        root_id.create_child(&sub_statement.body),
-                        // adjust range to document
-                        sub_statement.range + range.start(),
-                        sub_statement.body.clone(),
-                    ));
+                // The statements of a SQL function body follow the function. They are pushed in
+                // reverse, so that they are popped in order.
+                if let Some(body) = sql_function_body(ast, content) {
+                    let body_start = range.start() + body.range.start();
+                    for statement in body.statements().into_iter().rev() {
+                        let text = &body.body[statement];
+                        self.pending_sub_statements.push((
+                            root_id.create_child(text),
+                            statement + body_start,
+                            text.to_owned(),
+                        ));
+                    }
                 }
             }
 
@@ -483,6 +486,45 @@ mod tests {
                 .collect::<Vec<_>>(),
             [Some("a"), Some("b")]
         );
+    }
+
+    #[test]
+    fn sql_function_body_with_several_statements() {
+        let input = "create function f(a int) returns int language sql as $$\n  insert into t values (a);\n  select a;\n$$;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+        assert_eq!(results.len(), 3);
+        for (statement, syntax_error, _) in &results[1..] {
+            assert!(syntax_error.is_none(), "{syntax_error:?}");
+            let statement = statement.as_ref().unwrap();
+            assert!(statement.function.is_some());
+            assert_eq!(
+                Some(&input[statement.range]),
+                statement.sql.as_deref(),
+                "the range is the statement's range in the document"
+            );
+        }
+        assert_eq!(
+            results[1].0.as_ref().unwrap().sql.as_deref(),
+            Some("insert into t values (a);")
+        );
+        assert_eq!(
+            results[2].0.as_ref().unwrap().sql.as_deref(),
+            Some("select a;")
+        );
+    }
+
+    #[test]
+    fn empty_sql_function_body_has_no_syntax_error() {
+        let input = "create function f() returns void language sql as $$ $$;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+        assert_eq!(results.len(), 1);
+        assert!(results[0].1.is_none());
     }
 
     #[test]
