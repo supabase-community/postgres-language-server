@@ -1506,8 +1506,8 @@
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Only names that resolve to exactly one object get a hover from the resolver, an inlay hint, or a token. Ambiguous calls, unknown objects, and constructs the resolver doesn't model are skipped.</li>
-<li>After a <code>DO</code> block, <code>CALL</code>, <code>EXECUTE</code>, or a statement that doesn't parse, the rest of the file gets no function hints, function tokens, or enum tokens, because their effects on the schema are unknown. Relations and columns still resolve.</li>
-<li><code>CALL proc(...)</code> gets no hints, tokens, or resolved hover.</li>
+<li>The effects of <code>DO</code> blocks, <code>CALL</code>, <code>EXECUTE</code>, and statements that don't parse on the schema are unknown. The statements after them are resolved as if they changed nothing, so an object a <code>DO</code> block creates is not known, and one it drops still is.</li>
+<li><code>CALL</code> of a procedure with output parameters gets no hints, tokens, or resolved hover.</li>
 <li>Statements in <code>BEGIN ATOMIC</code> function bodies and in <code>'...'</code>-quoted bodies that contain <code>''</code> are not resolved. <code>$$</code>-quoted bodies are. PL/pgSQL bodies are not covered.</li>
 <li>No tokens for roles, for schemas outside qualified names, for DDL (column types in <code>create table</code>, function signatures), for CTE names, or for table aliases. Tokens that span several lines are skipped.</li>
 <li>Each request resolves the file up to the visible range. On very long files, like schema dumps with thousands of statements, hints and tokens take longer to appear.</li>
