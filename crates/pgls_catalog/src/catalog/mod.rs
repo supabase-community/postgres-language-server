@@ -31,15 +31,23 @@ pub use base::CatalogBase;
 /// `(schema, name)` of a catalog object.
 type Key = (String, String);
 
-/// The state of an object that the file changed.
+/// The state of an object that the file changed. Objects are shared between clones of the
+/// catalog, like the checkpoints of the editor walk and savepoints, and copied when one of them
+/// changes.
 #[derive(Debug, Clone)]
 enum Entry<T> {
     /// Created or altered by the file.
-    Defined(T),
+    Defined(Arc<T>),
     /// Dropped (or renamed away) by the file.
     Dropped,
     /// Changed by the file in a way the catalog can't follow.
     Unknown,
+}
+
+impl<T> Entry<T> {
+    fn defined(value: T) -> Self {
+        Self::Defined(Arc::new(value))
+    }
 }
 
 /// The catalog as seen by a statement: the database snapshot plus the changes made by the
@@ -64,6 +72,9 @@ pub struct Catalog {
     /// Set once the file ran a statement with effects the catalog can't model (`DO`, `CALL`,
     /// `CREATE EXTENSION` of a new extension, ...). From then on, nothing is known to be missing.
     tainted: bool,
+    /// Whether lookups ignore [`Catalog::tainted`], for editor features. See
+    /// [`Catalog::best_effort`].
+    best_effort: bool,
     casts_incomplete: bool,
     operators_incomplete: bool,
     /// The catalog at the start of each open transaction and savepoint, restored on
@@ -92,6 +103,7 @@ impl Catalog {
             children: FxHashMap::default(),
             database_columns_changed: false,
             tainted: false,
+            best_effort: false,
             casts_incomplete: false,
             operators_incomplete: false,
             savepoints: Vec::new(),
@@ -120,9 +132,25 @@ impl Catalog {
         self.tainted = true;
     }
 
+    /// A catalog for editor features like hover and semantic tokens, which show what a name most
+    /// likely refers to rather than reporting errors. Statements whose effects the catalog can't
+    /// follow (`DO`, `CALL`, a statement that doesn't parse, ...) don't make its lookups unknown:
+    /// it keeps answering from the database and the statements it could follow. It still only
+    /// finds objects that exist there. Never use it for findings, which must be certain.
+    pub fn best_effort(mut self) -> Self {
+        self.best_effort = true;
+        self
+    }
+
+    /// Whether lookups have to treat what they don't find as unknown, because the file ran a
+    /// statement the catalog can't model.
+    fn lookups_tainted(&self) -> bool {
+        self.tainted && !self.best_effort
+    }
+
     /// The result of a lookup that found nothing.
     fn not_found<T>(&self) -> Lookup<T> {
-        if self.base.is_none() || self.tainted {
+        if self.base.is_none() || self.lookups_tainted() {
             Lookup::Unknown
         } else {
             Lookup::Missing
@@ -138,7 +166,7 @@ impl Catalog {
 
     fn entry_lookup<T: Clone>(&self, entry: &Entry<T>) -> Lookup<T> {
         match entry {
-            Entry::Defined(value) => Lookup::Found(value.clone()),
+            Entry::Defined(value) => Lookup::Found(T::clone(value)),
             Entry::Dropped => self.not_found(),
             Entry::Unknown => Lookup::Unknown,
         }
@@ -372,7 +400,7 @@ impl CatalogView for Catalog {
                 .values()
                 .find_map(|entry| match entry {
                     Entry::Defined(info) if info.id == Some(TypeId::File(*id)) => {
-                        Some(info.clone())
+                        Some(TypeInfo::clone(info))
                     }
                     _ => None,
                 })
@@ -385,7 +413,7 @@ impl CatalogView for Catalog {
         let Some(base) = self.base.as_ref() else {
             return Lookup::Unknown;
         };
-        if self.tainted || self.casts_incomplete {
+        if self.lookups_tainted() || self.casts_incomplete {
             return Lookup::Unknown;
         }
         base.cast(source, target)
@@ -411,7 +439,7 @@ impl CatalogView for Catalog {
             None => function_search_path(search_path).collect(),
         };
         let mut items = Vec::new();
-        let mut complete = !self.tainted
+        let mut complete = !self.lookups_tainted()
             && self
                 .base
                 .as_ref()
@@ -460,7 +488,7 @@ impl CatalogView for Catalog {
             .collect();
         Candidates {
             items,
-            complete: !self.tainted
+            complete: !self.lookups_tainted()
                 && !self.operators_incomplete
                 && base.snapshot().typing_metadata,
         }

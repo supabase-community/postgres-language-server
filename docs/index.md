@@ -14,7 +14,7 @@ The language server is built on Postgres' own parser `libpg_query` to ensure 100
 
 The following features are available today:
 
-- [Autocompletion & Hover](features/editor_features.md)
+- [Autocompletion, Hover, Inlay Hints & Semantic Highlighting](features/editor_features.md)
 - [Syntax Diagnostics](features/syntax_diagnostics.md)
 - [Type Checking](features/type_checking.md)
 - [Formatting](features/formatting.md)

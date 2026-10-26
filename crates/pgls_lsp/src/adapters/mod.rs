@@ -32,20 +32,12 @@ pub fn get_cursor_position(
     url: &Uri,
     position: Position,
 ) -> anyhow::Result<TextSize> {
-    let client_capabilities = session
-        .client_capabilities()
-        .expect("Client capabilities not established for current session.");
-
     let line_index = session
         .document(url)
         .map(|doc| doc.line_index)
         .map_err(|_| anyhow::anyhow!("Document not found."))?;
 
-    let cursor_pos = from_lsp::offset(
-        &line_index,
-        position,
-        negotiated_encoding(client_capabilities),
-    )?;
+    let cursor_pos = from_lsp::offset(&line_index, position, session.position_encoding())?;
 
     Ok(cursor_pos)
 }
@@ -156,6 +148,28 @@ mod tests {
 
         let offset = line_index.offset(LineCol { line: 5, col: 0 });
         assert!(offset.is_none());
+    }
+
+    #[test]
+    fn out_of_range_positions_are_clamped() {
+        // No line break at the end: lines 0 and 1.
+        let line_index = LineIndex::new("abcde\nfg😀");
+        let at = |line, character| {
+            offset(
+                &line_index,
+                Position { line, character },
+                PositionEncoding::Wide(WideEncoding::Utf16),
+            )
+            .unwrap()
+        };
+        assert_eq!(at(0, 3), TextSize::from(3));
+        // Past the end of a line: the end of that line.
+        assert_eq!(at(0, 10), TextSize::from(5));
+        assert_eq!(at(1, 100), TextSize::from(12));
+        assert_eq!(at(1, u32::MAX), TextSize::from(12));
+        // Past the last line: the end of the text.
+        assert_eq!(at(2, 0), TextSize::from(12));
+        assert_eq!(at(u32::MAX, u32::MAX), TextSize::from(12));
     }
 
     #[test]

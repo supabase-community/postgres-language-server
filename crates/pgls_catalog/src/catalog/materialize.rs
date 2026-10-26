@@ -64,7 +64,7 @@ impl Catalog {
             match entry {
                 Entry::Defined(relation) => {
                     if let Some((table_id, class_kind)) = builder.define_relation(relation) {
-                        defined.push((table_id, class_kind, relation));
+                        defined.push((table_id, class_kind, relation.as_ref()));
                     }
                 }
                 Entry::Dropped => {
@@ -101,7 +101,7 @@ impl Catalog {
         for (key, entry) in &self.functions {
             match entry {
                 Entry::Defined(overloads) => {
-                    for function in overloads {
+                    for function in overloads.iter() {
                         if function.origin == Origin::File {
                             builder.add_function(key, function);
                         }
@@ -445,6 +445,7 @@ impl Builder {
                             FunctionArgumentMode::In => "in",
                             FunctionArgumentMode::InOut => "inout",
                             FunctionArgumentMode::Variadic => "variadic",
+                            FunctionArgumentMode::Out => "out",
                         }
                         .into(),
                         name: argument.name.clone().unwrap_or_default(),

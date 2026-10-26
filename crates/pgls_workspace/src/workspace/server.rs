@@ -1,59 +1,49 @@
 use std::{
     collections::HashMap,
-    fs,
-    hash::{DefaultHasher, Hash, Hasher},
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, RwLock},
+    sync::{
+        Arc, Mutex, RwLock,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 use analyser::AnalyserVisitorBuilder;
+use analysis::AnalysisRequest;
+#[cfg(feature = "db")]
+use analysis::DocumentAnalysis;
 #[cfg(feature = "db")]
 use async_helper::run_async;
 #[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
-use document::{
-    CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper, FormatStatementMapper,
-};
+use document::{DefaultMapper, Document, ExecuteStatementMapper};
+use document_cache::{CacheBudget, CacheKey};
+pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
+use pgls_analyse::{ActionCategory, AnalysisFilter, Applicability, SUPPRESSION_ACTION_CATEGORY};
+use pgls_analyser::{LinterDiagnostic, MigrationSection, RuleFix};
+use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
-use pg_query::convert_to_positional_params_with_metadata;
-use pgls_analyse::{
-    ActionCategory, AnalysisFilter, Applicability, RuleCategories, RuleCategoriesBuilder,
-    RuleFilter, SUPPRESSION_ACTION_CATEGORY,
-};
-#[cfg(feature = "db")]
-use pgls_analyser::StatementAnalysis;
-use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix,
-};
-use pgls_catalog::resolve::{Reference, ResolveParams, resolve};
-use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
+use pgls_lexer::convert_to_positional_params_with_metadata;
 use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
-use pgls_configuration::RuleSelector;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
 use pgls_workspace_macros::ignored_path;
 use snapshot_manager::SnapshotManager;
-#[cfg(feature = "db")]
-use sqlx::Executor;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use crate::{
     WorkspaceError,
-    configuration::to_analyser_rules,
     features::{
         code_actions::{
             CodeAction, CodeActionKind, CodeActionsParams, CodeActionsResult, CommandAction,
@@ -65,24 +55,25 @@ use crate::{
             CheckDatabaseConnectionParams, CheckDatabaseConnectionResult, PullDiagnosticsResult,
             PullFileDiagnosticsParams,
         },
-        format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
+        format::{PullFileFormattingParams, PullFormattingResult},
         inlay_hints::{InlayHint, PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
+        semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    workspace::{AnalyserDiagnosticsMapper, WithCSTandASTMapper},
+    workspace::WithCSTMapper,
 };
 
 use super::{
-    GetFileContentParams, IsPathIgnoredParams, OpenFileParams, ProjectKey,
-    RegisterProjectFolderParams, ServerInfo, UnregisterProjectFolderParams, UpdateSettingsParams,
-    Workspace,
+    GetFileContentParams, IsPathIgnoredParams, NestedSettingsError, OpenFileParams, ProjectKey,
+    RegisterProjectFolderParams, ServerInfo, UnregisterProjectFolderParams,
+    UpdateNestedSettingsParams, UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
 
 mod analyser;
-mod annotation;
+mod analysis;
 #[cfg(feature = "db")]
 mod async_helper;
 #[cfg(feature = "db")]
@@ -90,20 +81,26 @@ mod connection_key;
 #[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
+mod document_cache;
+mod expand_star;
+mod formatting;
 mod migration;
-mod pg_query;
 #[cfg(feature = "db")]
 mod pgpass;
 mod snapshot_manager;
 mod sql_function;
+#[cfg(feature = "db")]
+mod statement_execution;
 mod statement_identifier;
-mod tree_sitter;
+mod walk;
 
 pub struct WorkspaceServer {
     /// global settings object for this workspace
     settings: RwLock<WorkspaceSettings>,
 
-    documents: RwLock<HashMap<PgLSPath, Document>>,
+    /// The open documents. Requests work on an `Arc` of a document, so that an edit doesn't wait
+    /// for them; it copies the document if a request still uses it.
+    documents: RwLock<HashMap<PgLSPath, Arc<Document>>>,
 
     /// The database snapshots, loaded from a database connection or from JSON
     snapshot: SnapshotManager,
@@ -111,11 +108,20 @@ pub struct WorkspaceServer {
     /// The indexed database snapshot the catalog starts from
     catalog_base: Mutex<Option<Arc<CatalogBase>>>,
 
-    /// The last snapshot built for completions and hover, by the statements it includes
-    snapshot_before: Mutex<Option<(u64, Arc<Snapshot>)>>,
+    /// Incremented whenever the settings change, see [`CacheKey`].
+    settings_version: AtomicU64,
+
+    /// What the caches of the open documents keep together, see
+    /// [`DOCUMENT_CACHE_ENTRIES_MAX`].
+    document_caches: CacheBudget<PgLSPath>,
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
+
+    /// The statements that the editor walks visited, to test that they resume from
+    /// checkpoints.
+    #[cfg(test)]
+    walked_statements: std::sync::atomic::AtomicUsize,
 }
 
 /// The `Workspace` object is long-lived, so we want it to be able to cross
@@ -141,8 +147,11 @@ impl WorkspaceServer {
             documents: RwLock::new(HashMap::new()),
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
-            snapshot_before: Mutex::default(),
+            settings_version: AtomicU64::default(),
+            document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
             connection: ConnectionManager::new(),
+            #[cfg(test)]
+            walked_statements: Default::default(),
         }
     }
 
@@ -154,7 +163,10 @@ impl WorkspaceServer {
             documents: RwLock::new(HashMap::new()),
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
-            snapshot_before: Mutex::default(),
+            settings_version: AtomicU64::default(),
+            document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
+            #[cfg(test)]
+            walked_statements: Default::default(),
         }
     }
 
@@ -164,7 +176,96 @@ impl WorkspaceServer {
     }
 
     fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut<'_> {
-        WorkspaceSettingsHandleMut::new(&self.settings)
+        let handle = WorkspaceSettingsHandleMut::new(&self.settings);
+        // While the settings are locked, so that nothing is cached with the old settings under
+        // the new version.
+        self.settings_version.fetch_add(1, Ordering::Relaxed);
+        handle
+    }
+
+    /// What the caches of the open document at `path` hold, for tests of their memory.
+    #[doc(hidden)]
+    pub fn document_cache_stats(&self, path: &PgLSPath) -> Option<DocumentCacheStats> {
+        let documents = self.documents.read().unwrap();
+        documents.get(path).map(|doc| doc.cache_stats())
+    }
+
+    /// The open document at `path`. The lock of the documents is only held to look it up.
+    fn document(&self, path: &PgLSPath) -> Result<Arc<Document>, WorkspaceError> {
+        let documents = self.documents.read().unwrap();
+        documents
+            .get(path)
+            .cloned()
+            .ok_or_else(WorkspaceError::not_found)
+    }
+
+    /// Whether a request on `doc` should stop: the client cancelled it, or changed the document
+    /// at `path` while it was running, so its result would be outdated.
+    pub(super) fn should_stop<'a>(
+        &'a self,
+        path: &'a PgLSPath,
+        doc: &'a Document,
+    ) -> impl Fn() -> bool + 'a {
+        move || crate::cancellation::is_cancelled() || self.is_outdated(path, doc)
+    }
+
+    /// Whether `doc` is no longer the content of the document at `path`, e.g. because the client
+    /// changed it while a request was running.
+    pub(super) fn is_outdated(&self, path: &PgLSPath, doc: &Document) -> bool {
+        let documents = self.documents.read().unwrap();
+        documents
+            .get(path)
+            .is_none_or(|current| current.generation() != doc.generation())
+    }
+
+    /// Records what the caches of the document at `path` keep after a request, and drops the
+    /// caches of the least recently used other documents to stay within
+    /// [`DOCUMENT_CACHE_ENTRIES_MAX`]. The document of the request is never dropped, so a
+    /// single file larger than the budget stays cached while it is used.
+    fn charge_document_caches(&self, path: &PgLSPath, doc: &Document) {
+        let evicted = self.document_caches.record(path, doc.cache().usage());
+        if evicted.is_empty() {
+            return;
+        }
+        let documents = self.documents.read().unwrap();
+        for evicted in evicted {
+            if let Some(doc) = documents.get(&evicted) {
+                tracing::debug!(
+                    "Dropping the caches of {} to keep at most {} cache entries",
+                    evicted.display(),
+                    self.document_caches.max()
+                );
+                doc.cache().clear();
+            }
+        }
+    }
+
+    /// The database snapshot of the database in `settings`, if it is reachable or a snapshot was
+    /// loaded from JSON.
+    fn database_snapshot(&self, settings: &Settings) -> Option<Arc<Snapshot>> {
+        #[cfg(feature = "db")]
+        let snapshot = self
+            .connection
+            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+            .and_then(Result::ok);
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = {
+            let _ = settings;
+            self.snapshot.get()
+        };
+
+        snapshot
+    }
+
+    /// What the caches of a document of `project_key` depend on besides its text, when the
+    /// analysis starts from `snapshot`.
+    fn cache_key(&self, project_key: ProjectKey, snapshot: Option<&Arc<Snapshot>>) -> CacheKey {
+        CacheKey::new(
+            self.settings_version.load(Ordering::Relaxed),
+            project_key,
+            snapshot.map(|snapshot| self.catalog_base(snapshot)),
+        )
     }
 
     /// Load schema from JSON string.
@@ -196,177 +297,20 @@ impl WorkspaceServer {
         workspace_mut.insert_project(path.clone())
     }
 
-    /// Retrieves the current project path
-    fn get_current_project_path(&self) -> Option<PgLSPath> {
-        self.workspaces().path().cloned()
-    }
-
-    /// Sets the current project of the current workspace
-    fn set_current_project(&self, project_key: ProjectKey) {
-        let mut workspace = self.workspaces_mut();
-        let workspace_mut = workspace.as_mut();
-        workspace_mut.set_current_project(project_key);
-    }
-
-    /// Checks whether the current path belongs to the current project.
-    ///
-    /// If there's a match, and the match **isn't** the current project, it returns the new key.
-    fn path_belongs_to_current_workspace(&self, path: &PgLSPath) -> Option<ProjectKey> {
-        let workspaces = self.workspaces();
-        workspaces.as_ref().path_belongs_to_current_workspace(path)
-    }
-
-    fn is_ignored_by_migration_config(&self, path: &Path) -> bool {
-        let settings = self.workspaces();
-        let settings = settings.settings();
-        let Some(settings) = settings else {
-            return false;
-        };
-        settings
-            .migrations
-            .as_ref()
-            .and_then(|migration_settings| {
-                let ignore_before = migration_settings.after.as_ref()?;
-                let migrations_dir = migration_settings.path.as_ref()?;
-                let migration = migration::get_migration(path, migrations_dir)?;
-
-                Some(&migration.sequence_number <= ignore_before)
-            })
-            .unwrap_or(false)
-    }
-
-    /// Check whether a file is ignored in the top-level config `files.ignore`/`files.include`
-    fn is_ignored(&self, path: &Path) -> bool {
+    /// Check whether a file is ignored by the settings of its project that apply to it
+    fn is_ignored(&self, project_key: ProjectKey, path: &Path) -> bool {
         // Never ignore config files regardless `include`/`ignore`
         if self.is_config_file(path) {
             return false;
         }
 
+        let settings = self.workspaces();
+        let Some(settings) = settings.settings_for(project_key, path) else {
+            return false;
+        };
+
         // Apply top-level `include`/`ignore`
-        self.is_ignored_by_top_level_config(path) || self.is_ignored_by_migration_config(path)
-    }
-
-    /// Whether the file is a migration. Migration-only rules don't run on other files.
-    fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
-        match settings
-            .migrations
-            .as_ref()
-            .and_then(|migrations| migrations.path.as_ref())
-        {
-            Some(migrations_dir) if migration::is_in_migrations_dir(path, migrations_dir) => {
-                FileKind::Migration
-            }
-            Some(_) => FileKind::Other,
-            None => FileKind::Unknown,
-        }
-    }
-
-    /// Runs the lint and typecheck rules on a document. Returns the analysis, the syntax errors
-    /// of the statements, the disabled rules, and the migration sections that are not linted.
-    fn analyse_document(
-        &self,
-        settings: &Settings,
-        path: &PgLSPath,
-        doc: &Document,
-        categories: RuleCategories,
-        only: &[RuleSelector],
-        skip: &[RuleSelector],
-    ) -> (
-        AnalysisResult,
-        Vec<SyntaxDiagnostic>,
-        Vec<RuleFilter<'static>>,
-        Vec<TextRange>,
-    ) {
-        #[cfg(feature = "db")]
-        let snapshot = self
-            .connection
-            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
-            .and_then(Result::ok);
-
-        #[cfg(not(feature = "db"))]
-        let snapshot = self.snapshot.get();
-
-        /*
-         * Static analysis: the lint rules, and the typecheck rules when a database schema is
-         * available. The catalog starts from the database schema and follows the DDL of the
-         * file.
-         */
-        let typecheck = settings.typecheck.enabled && snapshot.is_some();
-        let search_path = match snapshot.as_deref() {
-            Some(snapshot) => snapshot.expand_search_path(&settings.typecheck.search_path),
-            None => settings.typecheck.search_path.clone(),
-        };
-        let catalog_base = snapshot
-            .as_ref()
-            .map(|snapshot| self.catalog_base(snapshot));
-
-        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
-            .with_linter_rules(only, skip)
-            .finish();
-
-        let options = LinterOptions {
-            rules: to_analyser_rules(settings),
-        };
-
-        let filter = AnalysisFilter {
-            categories,
-            enabled_rules: Some(enabled_rules.as_slice()),
-            disabled_rules: &disabled_rules,
-        };
-
-        let analyser = Analyser::new(AnalyserConfig {
-            options: &options,
-            filter,
-        });
-
-        /*
-         * Migration tools like dbmate and goose put the up and the down migration in one file.
-         * Each section is analysed as a migration of its own, and the down sections are only
-         * checked with `lintDown`. Syntax errors are reported everywhere.
-         */
-        let sections = document_sections(settings, doc);
-        let skipped_sections: Vec<TextRange> = sections
-            .iter()
-            .filter(|section| {
-                section.direction == Direction::Down
-                    && settings
-                        .migrations
-                        .as_ref()
-                        .is_some_and(|migrations| !migrations.lint_down)
-            })
-            .map(|section| section.range)
-            .collect();
-        let is_skipped = |range: TextRange| {
-            skipped_sections
-                .iter()
-                .any(|section| section.contains(range.start()))
-        };
-
-        let mut analysable_stmts = vec![];
-        let mut syntax_diagnostics = vec![];
-        let mut unparsable = vec![];
-        for (stmt, diagnostic, unparsable_stmt) in doc.iter(AnalyserDiagnosticsMapper) {
-            analysable_stmts.extend(stmt.filter(|stmt| !is_skipped(stmt.range)));
-            syntax_diagnostics.extend(diagnostic);
-            unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
-        }
-
-        let analysis = analyser.analyse(AnalyserParams {
-            stmts: analysable_stmts,
-            unparsable,
-            catalog_base,
-            search_path,
-            file_kind: self.file_kind(settings, path.as_path()),
-            sections,
-            typecheck,
-        });
-
-        (
-            analysis,
-            syntax_diagnostics,
-            disabled_rules,
-            skipped_sections,
-        )
+        settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
     }
 
     /// The fixes of the lint diagnostics at the cursor, and an action to suppress each of them.
@@ -376,15 +320,27 @@ impl WorkspaceServer {
         params: &CodeActionsParams,
         doc: &Document,
     ) -> Vec<CodeAction> {
-        let content = doc.get_document_content();
+        // Editors request code actions whenever the cursor moves. Without a rule selection,
+        // this is the analysis that the diagnostics of the last edit cached.
+        let should_stop = self.should_stop(&params.path, doc);
+        let Some(analysis) = self.analyse_document(
+            params.project_key,
+            settings,
+            &params.path,
+            doc,
+            AnalysisRequest::all(&params.only, &params.skip, &should_stop),
+        ) else {
+            return Vec::new();
+        };
+        let suppressions = doc.suppressions();
         let mut actions = Vec::new();
-        for diagnostic in
-            self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
-        {
+        for diagnostic in analysis.lint_diagnostics() {
             let Some(span) = diagnostic.location().span else {
                 continue;
             };
-            if !span.contains_inclusive(params.cursor_position) {
+            if !span.contains_inclusive(params.cursor_position)
+                || suppressions.is_suppressed(diagnostic)
+            {
                 continue;
             }
             let category = diagnostic.get_category_name();
@@ -394,7 +350,7 @@ impl WorkspaceServer {
                 actions.push(CodeAction {
                     title: fix.message.clone(),
                     kind: CodeActionKind::Edit(EditAction {
-                        rule: category.to_string(),
+                        rule: Some(category.to_string()),
                         category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
                         applicability: fix.applicability,
                         edits: fix
@@ -410,25 +366,13 @@ impl WorkspaceServer {
                 });
             }
 
-            // The comment goes on its own line above the line where the diagnostic starts,
-            // with the same indentation.
-            let line_start = content[..usize::from(span.start())]
-                .rfind('\n')
-                .map_or(0, |newline| newline + 1);
-            let indentation: String = content[line_start..]
-                .chars()
-                .take_while(|c| *c == ' ' || *c == '\t')
-                .collect();
             actions.push(CodeAction {
                 title: format!("Suppress rule {rule} for this statement"),
                 kind: CodeActionKind::Edit(EditAction {
-                    rule: category.to_string(),
+                    rule: Some(category.to_string()),
                     category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
                     applicability: Applicability::MaybeIncorrect,
-                    edits: vec![TextEdit {
-                        range: TextRange::empty(TextSize::try_from(line_start).unwrap()),
-                        new_text: format!("{indentation}-- pgls-ignore {rule}\n"),
-                    }],
+                    edits: vec![suppression_edit(doc, span.start(), rule)],
                 }),
                 disabled_reason: None,
             });
@@ -436,224 +380,42 @@ impl WorkspaceServer {
         actions
     }
 
-    /// The lint diagnostics of a document that are not suppressed.
-    fn lint_diagnostics(
+    /// The refactors offered at `position`: expanding a `*` into its columns. `settings` are the
+    /// ones of the file.
+    fn refactor_code_actions(
         &self,
-        settings: &Settings,
+        project_key: ProjectKey,
         path: &PgLSPath,
+        settings: Option<&Settings>,
         doc: &Document,
-        only: &[RuleSelector],
-        skip: &[RuleSelector],
-    ) -> Vec<LinterDiagnostic> {
-        let (analysis, _, _, _) = self.analyse_document(
-            settings,
-            path,
-            doc,
-            RuleCategoriesBuilder::default().all().build(),
-            only,
-            skip,
-        );
-        let suppressions = doc.suppressions();
-        analysis
-            .diagnostics
-            .into_iter()
-            .filter(|diagnostic| !suppressions.is_suppressed(diagnostic))
-            .collect()
-    }
-
-    /// Walks the statements of `doc` that start before `end` like the analyser does: the catalog
-    /// and the session follow the statements, so that each statement sees the objects created
-    /// earlier in the file. Each migration section gets a session of its own, and the changes of
-    /// a down section don't carry into the next section. `visit` gets every parsed statement with
-    /// the catalog and the session as they are before it.
-    fn walk_statements(
-        &self,
-        doc: &Document,
-        snapshot: &Arc<Snapshot>,
-        end: TextSize,
-        mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
-    ) {
-        let (search_path, sections) = self
-            .workspaces()
-            .settings()
-            .map(|settings| {
-                (
-                    settings.typecheck.search_path.clone(),
-                    document_sections(settings, doc),
-                )
-            })
-            .unwrap_or_default();
-        let search_path = snapshot.expand_search_path(&search_path);
-        let new_session = |section: Option<&MigrationSection>| {
-            Session::new(search_path.clone()).with_transaction_mode(
-                section.map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-            )
-        };
-
-        let mut catalog = Catalog::new(Some(self.catalog_base(snapshot)));
-        let mut session = new_session(None);
-        let mut section: Option<&MigrationSection> = None;
-        // The catalog after the up sections so far, while walking a down section.
-        let mut up_catalog: Option<Catalog> = None;
-        for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
-            let Some(start) = stmt.as_ref().map(|stmt| stmt.range.start()).or_else(|| {
-                unparsable
-                    .as_ref()
-                    .map(|unparsable| unparsable.range.start())
-            }) else {
-                continue;
-            };
-            if start >= end {
-                break;
-            }
-            let current = sections
-                .iter()
-                .find(|section| section.range.contains(start));
-            if current != section {
-                if let Some(up_catalog) = up_catalog.take() {
-                    catalog = up_catalog;
-                }
-                if current.is_some_and(|section| section.direction == Direction::Down) {
-                    up_catalog = Some(catalog.clone());
-                }
-                session = new_session(current);
-                section = current;
-            }
-
-            if let Some(unparsable) = unparsable {
-                if pgls_analyser::may_change_catalog(&unparsable.sql) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            let Some(stmt) = stmt else {
-                continue;
-            };
-            // The names of statements with identifier parameters like `:name` are placeholders.
-            if stmt.has_identifier_parameters {
-                if !pgls_analyser::is_plain_query(&stmt.root) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            visit(&stmt, &catalog, &session);
-            // Statements in the bodies of SQL functions are not executed.
-            if stmt.function.is_none() {
-                catalog.apply(&stmt.root, session.search_path());
-                session.apply(&stmt.root);
-            }
-        }
-    }
-
-    /// The references whose span contains `position`, in the innermost statement at `position`
-    /// (the body of a SQL function rather than its `CREATE FUNCTION`).
-    fn references_at(
-        &self,
-        doc: &Document,
-        snapshot: &Arc<Snapshot>,
         position: TextSize,
-    ) -> Vec<Reference> {
-        let mut innermost: Option<(TextRange, Vec<Reference>)> = None;
-        self.walk_statements(
-            doc,
-            snapshot,
-            position + TextSize::from(1),
-            |stmt, catalog, session| {
-                let Some(sql) = stmt.sql.as_deref() else {
-                    return;
-                };
-                if !stmt.range.contains(position)
-                    || innermost
-                        .as_ref()
-                        .is_some_and(|(range, _)| !range.contains_range(stmt.range))
-                {
-                    return;
-                }
-                let references = resolve(ResolveParams {
-                    stmt: &stmt.root,
-                    catalog,
-                    search_path: session.search_path(),
-                    function: stmt.function.as_ref(),
-                    sql: Some(sql),
-                    collect_references: true,
-                })
-                .references;
-                innermost = Some((stmt.range, references));
-            },
-        );
-        let Some((range, references)) = innermost else {
+    ) -> Vec<CodeAction> {
+        // Code actions are requested whenever the cursor moves, so don't resolve the file unless
+        // the cursor is on a `*` of a select list.
+        let content = doc.get_document_content();
+        if !expand_star::is_at_star(content, position) {
+            return Vec::new();
+        }
+
+        #[cfg(feature = "db")]
+        let snapshot = settings.and_then(|settings| {
+            self.connection
+                .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                .and_then(Result::ok)
+        });
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = self.snapshot.get();
+
+        let Some(snapshot) = snapshot else {
             return Vec::new();
         };
-        let position = position - range.start();
+        let request = self.editor_request(project_key, path, settings, snapshot);
+        let (stmt_start, references) = self.references_at(&request, doc, position);
         references
-            .into_iter()
-            .filter(|reference| {
-                reference
-                    .span()
-                    .is_some_and(|span| span.contains_inclusive(position))
-            })
+            .iter()
+            .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
             .collect()
-    }
-
-    /// The indexed database snapshot, built once per snapshot.
-    fn catalog_base(&self, snapshot: &Arc<Snapshot>) -> Arc<CatalogBase> {
-        let mut cached = self.catalog_base.lock().unwrap();
-        if let Some(base) = cached.as_ref().filter(|base| base.is_built_from(snapshot)) {
-            return Arc::clone(base);
-        }
-        let base = Arc::new(CatalogBase::new(Arc::clone(snapshot)));
-        *cached = Some(Arc::clone(&base));
-        base
-    }
-
-    /// The database snapshot as the statement at `statement_start` sees it: with the objects
-    /// that the statements before it create, change, or drop.
-    fn snapshot_before(
-        &self,
-        doc: &Document,
-        statement_start: TextSize,
-        snapshot: Arc<Snapshot>,
-    ) -> Arc<Snapshot> {
-        let statements: Vec<_> = doc
-            .iter(ExecuteStatementMapper)
-            .take_while(|(_, range, _, _)| range.end() <= statement_start)
-            .filter(|(id, _, _, _)| !id.is_child())
-            .filter_map(|(_, _, sql, ast)| Some((sql, ast?)))
-            .collect();
-        if statements.is_empty() {
-            return snapshot;
-        }
-
-        let search_path = self
-            .workspaces()
-            .settings()
-            .map(|settings| settings.typecheck.search_path.clone())
-            .unwrap_or_default();
-
-        let mut hasher = DefaultHasher::new();
-        Arc::as_ptr(&snapshot).hash(&mut hasher);
-        search_path.hash(&mut hasher);
-        for (sql, _) in &statements {
-            sql.hash(&mut hasher);
-        }
-        let key = hasher.finish();
-
-        let mut cached = self.snapshot_before.lock().unwrap();
-        if let Some((cached_key, cached_snapshot)) = cached.as_ref()
-            && *cached_key == key
-        {
-            return Arc::clone(cached_snapshot);
-        }
-
-        let mut catalog = Catalog::new(Some(self.catalog_base(&snapshot)));
-        let mut session = Session::new(snapshot.expand_search_path(&search_path));
-        for (_, ast) in &statements {
-            catalog.apply(ast, session.search_path());
-            session.apply(ast);
-        }
-        let result = catalog.snapshot().unwrap_or(snapshot);
-        *cached = Some((key, Arc::clone(&result)));
-        result
     }
 
     /// Diagnostics from the database: EXPLAIN for top-level statements whose references are all
@@ -665,8 +427,7 @@ impl WorkspaceServer {
         settings: &Settings,
         path: &PgLSPath,
         doc: &Document,
-        statements: &[StatementAnalysis],
-        skipped_sections: &[TextRange],
+        analysis: &DocumentAnalysis,
     ) -> Result<(Vec<SDiagnostic>, Vec<TextRange>), WorkspaceError> {
         let typecheck_enabled = settings.typecheck.enabled;
         let plpgsql_check = settings.plpgsql_check.clone();
@@ -678,13 +439,10 @@ impl WorkspaceServer {
             let snapshot = self.snapshot.load(pool)?;
             let input = doc
                 .iter(TypecheckDiagnosticsMapper)
-                .filter(|(_, range, ..)| {
-                    !skipped_sections
-                        .iter()
-                        .any(|section| section.contains(range.start()))
-                })
-                .map(|(id, range, ast, cst, _)| {
-                    let statement = statements
+                .filter(|(_, range, ..)| !analysis.is_skipped(range.start()))
+                .map(|(id, range, ast, cst)| {
+                    let statement = analysis
+                        .statements()
                         .iter()
                         .find(|statement| statement.range == range)
                         .cloned();
@@ -824,34 +582,21 @@ impl WorkspaceServer {
             .and_then(|s| s.to_str())
             .is_some_and(|file_name| ConfigName::file_names().contains(&file_name))
     }
+}
 
-    /// Check whether a file is ignored in the top-level config `files.ignore`/`files.include`
-    fn is_ignored_by_top_level_config(&self, path: &Path) -> bool {
-        let settings = self.workspaces();
-        let settings = settings.settings();
-        let Some(settings) = settings else {
-            return false;
-        };
+/// Check whether a file is a migration before `migrations.after`
+fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
+    settings
+        .migrations
+        .as_ref()
+        .and_then(|migration_settings| {
+            let ignore_before = migration_settings.after.as_ref()?;
+            let migrations_dir = migration_settings.path.as_ref()?;
+            let migration = migration::get_migration(path, migrations_dir)?;
 
-        let is_included = settings.files.included_files.is_empty()
-            || is_dir(path)
-            || settings.files.included_files.matches_path(path);
-        !is_included
-            || settings.files.ignored_files.matches_path(path)
-            || settings.files.git_ignore.as_ref().is_some_and(|ignore| {
-                // `matched_path_or_any_parents` panics if `source` is not under the gitignore root.
-                // This checks excludes absolute paths that are not a prefix of the base root.
-                if !path.has_root() || path.starts_with(ignore.path()) {
-                    // Because Postgres Language Server passes a list of paths,
-                    // we use `matched_path_or_any_parents` instead of `matched`.
-                    ignore
-                        .matched_path_or_any_parents(path, path.is_dir())
-                        .is_ignore()
-                } else {
-                    false
-                }
-            })
-    }
+            Some(&migration.sequence_number <= ignore_before)
+        })
+        .unwrap_or(false)
 }
 
 impl Workspace for WorkspaceServer {
@@ -859,33 +604,11 @@ impl Workspace for WorkspaceServer {
         &self,
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError> {
-        let current_project_path = self.get_current_project_path();
-        debug!(
-            "Compare the current project with the new one {:?} {:?} {:?}",
-            current_project_path,
-            params.path.as_ref(),
-            current_project_path.as_deref() != params.path.as_ref()
-        );
+        let path = params.path.unwrap_or_default();
+        let existing = self.workspaces().as_ref().get_project_key(&path);
+        debug!("Register the project {:?}, known as {:?}", path, existing);
 
-        let is_new_path = match (current_project_path.as_deref(), params.path.as_ref()) {
-            (Some(current_project_path), Some(params_path)) => current_project_path != params_path,
-            (Some(_), None) => {
-                // If the current project is set, but no path is provided, we assume it's a new project
-                true
-            }
-            _ => true,
-        };
-
-        if is_new_path {
-            let path = params.path.unwrap_or_default();
-            let key = self.register_project(path.clone());
-            if params.set_as_current_workspace {
-                self.set_current_project(key);
-            }
-            Ok(key)
-        } else {
-            Ok(self.workspaces().as_ref().get_current_project_key())
-        }
+        Ok(existing.unwrap_or_else(|| self.register_project(path)))
     }
 
     fn unregister_project_folder(
@@ -897,7 +620,7 @@ impl Workspace for WorkspaceServer {
         Ok(())
     }
 
-    /// Update the global settings for this workspace
+    /// Update the root settings of a project
     ///
     /// ## Panics
     /// This function may panic if the internal settings mutex has been poisoned
@@ -908,7 +631,8 @@ impl Workspace for WorkspaceServer {
 
         workspace
             .as_mut()
-            .get_current_settings_mut()
+            .get_settings_mut(params.project_key)
+            .ok_or_else(WorkspaceError::no_project)?
             .merge_with_configuration(
                 params.configuration,
                 params.workspace_directory,
@@ -919,29 +643,93 @@ impl Workspace for WorkspaceServer {
         Ok(())
     }
 
+    #[tracing::instrument(level = "trace", skip(self), err)]
+    fn update_nested_settings(
+        &self,
+        params: UpdateNestedSettingsParams,
+    ) -> Result<UpdateNestedSettingsResult, WorkspaceError> {
+        let mut entries = params.nested;
+        // The settings above a folder decide whether it is ignored, so start with the shallowest.
+        entries.sort_by(|a, b| {
+            (a.directory.components().count(), &a.directory)
+                .cmp(&(b.directory.components().count(), &b.directory))
+        });
+
+        let mut result = UpdateNestedSettingsResult::default();
+        let mut nested: Vec<(PathBuf, Settings)> = Vec::new();
+        {
+            let workspace = self.workspaces();
+            let workspace = workspace.as_ref();
+            let project_path = workspace
+                .get_project_path(params.project_key)
+                .ok_or_else(WorkspaceError::no_project)?;
+            let root = workspace
+                .get_settings(params.project_key)
+                .ok_or_else(WorkspaceError::no_project)?;
+
+            for entry in entries {
+                let directory = entry.directory;
+                if directory == project_path.as_path()
+                    || !directory.starts_with(project_path.as_path())
+                    || nested.iter().any(|(applied, _)| applied == &directory)
+                {
+                    continue;
+                }
+                let above = nested
+                    .iter()
+                    .rev()
+                    .find(|(applied, _)| directory.starts_with(applied))
+                    .map_or(root, |(_, settings)| settings);
+                if above.files.is_ignored(&directory) {
+                    continue;
+                }
+
+                // A configuration that cannot be applied falls back to the defaults rather than to
+                // the settings above it, which could point at another database.
+                let mut settings = Settings::default();
+                if let Err(error) = settings.merge_with_configuration(
+                    entry.configuration,
+                    Some(directory.clone()),
+                    entry.vcs_base_path,
+                    entry.gitignore_matches.as_slice(),
+                ) {
+                    result.errors.push(NestedSettingsError {
+                        directory: directory.clone(),
+                        message: error.to_string(),
+                    });
+                    settings = Settings::default();
+                }
+                result.applied.push(directory.clone());
+                nested.push((directory, settings));
+            }
+        }
+
+        self.workspaces_mut()
+            .as_mut()
+            .set_nested_settings(params.project_key, nested);
+        Ok(result)
+    }
+
     /// Add a new file to the workspace
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
         documents
             .entry(params.path.clone())
-            .or_insert_with(|| Document::new(params.content, params.version));
-
-        if let Some(project_key) = self.path_belongs_to_current_workspace(&params.path) {
-            self.set_current_project(project_key);
-        }
+            .or_insert_with(|| Arc::new(Document::new(params.content, params.version)));
 
         Ok(())
     }
 
     /// Remove a file from the workspace
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
         documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
+        self.document_caches.remove(&params.path);
 
         Ok(())
     }
@@ -951,20 +739,23 @@ impl Workspace for WorkspaceServer {
         path = params.path.as_os_str().to_str(),
         version = params.version
     ), err)]
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
 
-        match documents.entry(params.path.clone()) {
+        let stale = match documents.entry(params.path.clone()) {
+            // A request that still works on the previous version keeps it. The copy shares the
+            // document's cache.
             std::collections::hash_map::Entry::Occupied(mut entry) => {
-                entry
-                    .get_mut()
-                    .update_content(params.content, params.version);
+                Arc::make_mut(entry.get_mut()).update_content(params.content, params.version)
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
-                entry.insert(Document::new(params.content, params.version));
+                entry.insert(Arc::new(Document::new(params.content, params.version)));
+                return Ok(());
             }
-        }
+        };
+        drop(documents);
+        stale.drop_in_background();
 
         Ok(())
     }
@@ -973,43 +764,34 @@ impl Workspace for WorkspaceServer {
         None
     }
 
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let document = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
         Ok(document.get_document_content().to_string())
     }
 
     fn is_path_ignored(&self, params: IsPathIgnoredParams) -> Result<bool, WorkspaceError> {
-        Ok(self.is_ignored(params.pgls_path.as_path()))
+        Ok(self.is_ignored(params.project_key, params.pgls_path.as_path()))
     }
 
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     fn pull_code_actions(
         &self,
         params: CodeActionsParams,
     ) -> Result<CodeActionsResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let parser = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
 
         let settings = self.workspaces();
-        let settings = settings.settings();
+        let settings = settings.settings_for(params.project_key, params.path.as_path());
 
         let disabled_reason = match settings {
-            Some(settings) if settings.db.allow_statement_executions => None,
-            Some(_) => Some("Statement execution is disabled in the settings.".into()),
+            Some(settings) => settings.db.statement_execution_disabled_reason(),
             None => Some("Statement execution not allowed against database.".into()),
         };
 
-        let mut actions: Vec<CodeAction> = parser
-            .iter_with_filter(
-                DefaultMapper,
-                CursorPositionFilter::new(params.cursor_position),
-            )
+        let mut actions: Vec<CodeAction> = doc
+            .iter_at(DefaultMapper, params.cursor_position)
             .map(|(stmt, _, txt)| {
                 let title = format!(
                     "Execute Statement: {}...",
@@ -1026,8 +808,19 @@ impl Workspace for WorkspaceServer {
             })
             .collect();
 
+        actions.splice(
+            0..0,
+            self.refactor_code_actions(
+                params.project_key,
+                &params.path,
+                settings,
+                doc,
+                params.cursor_position,
+            ),
+        );
+
         if let Some(settings) = settings {
-            let mut lint_actions = self.lint_code_actions(settings, &params, parser);
+            let mut lint_actions = self.lint_code_actions(settings, &params, doc);
             lint_actions.append(&mut actions);
             actions = lint_actions;
         }
@@ -1057,23 +850,24 @@ impl Workspace for WorkspaceServer {
             disabled_reason: invalidate_disabled_reason,
         });
 
+        self.charge_document_caches(&params.path, doc);
         Ok(CodeActionsResult { actions })
     }
 
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError> {
         /// Fixes can enable other fixes, e.g. `CONCURRENTLY` enables `IF NOT EXISTS`, and fixes
         /// that overlap are applied one after the other.
         const MAX_PASSES: usize = 10;
 
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+
+        let doc = &*document;
         let mut code = doc.get_document_content().to_string();
 
         let settings = self.workspaces();
-        let Some(settings) = settings.settings() else {
+        let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
+        else {
             return Ok(FixFileResult {
                 code,
                 fixes_applied: 0,
@@ -1083,10 +877,17 @@ impl Workspace for WorkspaceServer {
 
         let mut fixes_applied = 0;
         let mut skipped_suggested_fixes = 0;
+        let mut converged = false;
         for _ in 0..MAX_PASSES {
             let doc = Document::new(code.clone(), 0);
-            let diagnostics =
-                self.lint_diagnostics(settings, &params.path, &doc, &params.only, &params.skip);
+            let diagnostics = self.lint_diagnostics(
+                params.project_key,
+                settings,
+                &params.path,
+                &doc,
+                &params.only,
+                &params.skip,
+            );
 
             skipped_suggested_fixes = 0;
             let mut fixes: Vec<&RuleFix> = Vec::new();
@@ -1118,10 +919,17 @@ impl Workspace for WorkspaceServer {
                 applied += 1;
             }
             if applied == 0 {
+                converged = true;
                 break;
             }
             code = combined.apply(&code);
             fixes_applied += applied;
+        }
+        if !converged {
+            warn!(
+                path = ?params.path,
+                "Fixes still changed the file after {MAX_PASSES} passes, some may be left"
+            );
         }
 
         Ok(FixFileResult {
@@ -1132,56 +940,70 @@ impl Workspace for WorkspaceServer {
     }
 
     #[cfg(feature = "db")]
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     fn execute_statement(
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let parser = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
 
-        let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        let stmt = doc.find(params.statement_id, ExecuteStatementMapper);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
                 message: "Statement was not found in document.".into(),
+                ..Default::default()
             });
         };
 
-        let (_id, _range, content, ast) = stmt.unwrap();
+        let (_id, range, content, ast) = stmt.unwrap();
 
         if ast.is_none() {
             return Ok(ExecuteStatementResult {
                 message: "Statement is invalid.".into(),
+                ..Default::default()
             });
         };
 
         let settings = self.workspaces();
-        let Some(result) = settings.settings().and_then(|settings| {
-            self.connection.with_pool(&settings.db, |pool| {
-                let pool = pool.clone();
-                run_async(async move { pool.execute(sqlx::query(&content)).await })?
-                    .map_err(WorkspaceError::from)
-            })
-        }) else {
-            return Ok(ExecuteStatementResult {
-                message: "No database connection available.".into(),
-            });
+        let no_connection = ExecuteStatementResult {
+            message: "No database connection available.".into(),
+            ..Default::default()
         };
-        let result = result?;
+        let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
+        else {
+            return Ok(no_connection);
+        };
 
-        Ok(ExecuteStatementResult {
-            message: format!(
-                "Successfully executed statement. Rows affected: {}",
-                result.rows_affected()
-            ),
-        })
+        if let Some(reason) = settings.db.statement_execution_disabled_reason() {
+            return Ok(ExecuteStatementResult {
+                message: reason,
+                ..Default::default()
+            });
+        }
+
+        let Some(result) = self.connection.with_pools(&settings.db, |pools| {
+            let pool = pools.statement_pool.clone();
+            run_async(async move { statement_execution::execute_statement(&pool, &content).await })?
+                .map_err(WorkspaceError::from)
+        }) else {
+            return Ok(no_connection);
+        };
+
+        let mut result = result?;
+        if let Some(position) = result
+            .error
+            .as_mut()
+            .and_then(|error| error.position.as_mut())
+        {
+            *position += range.start();
+        }
+        Ok(result)
     }
 
     #[cfg(not(feature = "db"))]
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     #[allow(unused_variables)]
     fn execute_statement(
         &self,
@@ -1189,6 +1011,7 @@ impl Workspace for WorkspaceServer {
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
         Ok(ExecuteStatementResult {
             message: "Statement execution requires database support.".into(),
+            ..Default::default()
         })
     }
 
@@ -1200,15 +1023,8 @@ impl Workspace for WorkspaceServer {
             // so clearing the json schema keeps behavior consistent
             self.snapshot.clear_all();
         } else {
-            // Only clear current connection if one exists
-            let settings = self.workspaces();
-            if let Some(settings) = settings.settings() {
-                let _ = self.connection.with_pool(&settings.db, |pool| {
-                    self.snapshot.clear_connection(pool);
-                    Ok::<(), WorkspaceError>(())
-                });
-            }
-            // If no connection, nothing to clear - just return Ok
+            // Every project can have its own database, so clear the schemas of all connections
+            self.snapshot.clear_all_connections();
         }
         Ok(())
     }
@@ -1219,14 +1035,14 @@ impl Workspace for WorkspaceServer {
         Ok(())
     }
 
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     fn pull_file_diagnostics(
         &self,
         params: PullFileDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
         let settings = self.workspaces();
 
-        let settings = match settings.settings() {
+        let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
             Some(settings) => settings,
             None => {
                 // return an empty result if no settings are available
@@ -1238,10 +1054,9 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+
+        let doc = &*document;
 
         /*
          * The statements in the document might already have associated diagnostics,
@@ -1250,19 +1065,35 @@ impl Workspace for WorkspaceServer {
         let mut diagnostics: Vec<SDiagnostic> = doc.document_diagnostics().to_vec();
         let path = params.path.as_path().display().to_string();
 
-        let (analysis, syntax_diagnostics, disabled_rules, skipped_sections) = self
-            .analyse_document(
-                settings,
-                &params.path,
-                doc,
-                params.categories,
-                &params.only,
-                &params.skip,
+        if let Some(migrations) = &settings.migrations {
+            diagnostics.extend(
+                migration::section_marker_diagnostics(
+                    doc.get_document_content(),
+                    migrations.section_markers,
+                    &document_sections(settings, doc),
+                    doc.statement_ranges(),
+                )
+                .into_iter()
+                .map(|diagnostic| SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))),
             );
-        let is_skipped = |range: TextRange| {
-            skipped_sections
-                .iter()
-                .any(|section| section.contains(range.start()))
+        }
+
+        let should_stop = self.should_stop(&params.path, doc);
+        let Some(analysis) = self.analyse_document(
+            params.project_key,
+            settings,
+            &params.path,
+            doc,
+            AnalysisRequest {
+                categories: params.categories,
+                only: &params.only,
+                skip: &params.skip,
+                should_stop: &should_stop,
+            },
+        ) else {
+            // The document changed or the request was cancelled. The diagnostics would be
+            // outdated anyway.
+            return Ok(PullDiagnosticsResult::default());
         };
 
         /*
@@ -1272,20 +1103,15 @@ impl Workspace for WorkspaceServer {
          */
         #[cfg(feature = "db")]
         let plpgsql_checked = {
-            let (db_diagnostics, plpgsql_checked) = self.database_diagnostics(
-                settings,
-                &params.path,
-                doc,
-                &analysis.statements,
-                &skipped_sections,
-            )?;
+            let (db_diagnostics, plpgsql_checked) =
+                self.database_diagnostics(settings, &params.path, doc, &analysis)?;
             diagnostics.extend(db_diagnostics);
             plpgsql_checked
         };
         #[cfg(not(feature = "db"))]
         let plpgsql_checked: Vec<TextRange> = Vec::new();
 
-        for diagnostic in syntax_diagnostics {
+        for diagnostic in analysis.syntax_diagnostics() {
             // Ignore the syntax error if we already have more specialized diagnostics for the
             // same statement, e.g. from plpgsql_check for CREATE FUNCTION statements.
             let covered = diagnostics.iter().any(|d| {
@@ -1306,34 +1132,42 @@ impl Workspace for WorkspaceServer {
             if !covered && !checked {
                 diagnostics.push(SDiagnostic::new(
                     diagnostic
+                        .clone()
                         .with_file_path(path.clone())
                         .with_severity(Severity::Error),
                 ));
             }
         }
 
-        diagnostics.extend(analysis.diagnostics.into_iter().map(Error::from).map(|d| {
-            let severity = d
-                .category()
-                .and_then(|category| settings.get_severity_from_rule_code(category))
-                .unwrap_or(Severity::Warning);
+        diagnostics.extend(
+            analysis
+                .lint_diagnostics()
+                .iter()
+                .cloned()
+                .map(Error::from)
+                .map(|d| {
+                    let severity = d
+                        .category()
+                        .and_then(|category| settings.get_severity_from_rule_code(category))
+                        .unwrap_or(Severity::Warning);
 
-            let span = d.location().span;
-            SDiagnostic::new(
-                d.with_file_path(path.clone())
-                    .with_file_span(span)
-                    .with_severity(severity),
-            )
-        }));
+                    let span = d.location().span;
+                    SDiagnostic::new(
+                        d.with_file_path(path.clone())
+                            .with_file_span(span)
+                            .with_severity(severity),
+                    )
+                }),
+        );
 
         let suppressions = doc.suppressions();
 
         let disabled_suppression_errors =
-            suppressions.get_disabled_diagnostic_suppressions_as_errors(&disabled_rules);
+            suppressions.get_disabled_diagnostic_suppressions_as_errors(analysis.disabled_rules());
 
         let mut unused_suppression_errors =
             suppressions.get_unused_suppressions_as_errors(&diagnostics);
-        unused_suppression_errors.retain(|error| !is_skipped(error.span));
+        unused_suppression_errors.retain(|error| !analysis.is_skipped(error.span.start()));
 
         let suppression_errors: Vec<Error> = suppressions
             .diagnostics
@@ -1347,6 +1181,7 @@ impl Workspace for WorkspaceServer {
         diagnostics.retain(|d| !suppressions.is_suppressed(d));
         diagnostics.extend(suppression_errors.into_iter().map(SDiagnostic::new));
 
+        self.charge_document_caches(&params.path, doc);
         info!("Pulled {:?} diagnostic(s)", diagnostics.len());
         Ok(PullDiagnosticsResult {
             diagnostics,
@@ -1360,7 +1195,7 @@ impl Workspace for WorkspaceServer {
         params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
         let settings = self.workspaces();
-        let Some(settings) = settings.settings() else {
+        let Some(settings) = settings.settings(params.project_key) else {
             debug!("No settings available. Returning empty diagnostics.");
             return Ok(PullDiagnosticsResult::default());
         };
@@ -1423,14 +1258,14 @@ impl Workspace for WorkspaceServer {
         })
     }
 
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     fn pull_file_formatting(
         &self,
         params: PullFileFormattingParams,
     ) -> Result<PullFormattingResult, WorkspaceError> {
         let settings = self.workspaces();
 
-        let settings = match settings.settings() {
+        let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
             Some(settings) => settings,
             None => {
                 return Ok(PullFormattingResult::default());
@@ -1441,217 +1276,48 @@ impl Workspace for WorkspaceServer {
             return Ok(PullFormattingResult::default());
         }
 
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
 
-        let config = pgls_pretty_print::FormatConfig {
-            line_width: settings.formatter.line_width as usize,
-            indent_size: settings.formatter.indent_size as usize,
-            indent_style: settings.formatter.indent_style.into(),
-            keyword_case: settings.formatter.keyword_case.into(),
-            constant_case: settings.formatter.constant_case.into(),
-            type_case: settings.formatter.type_case.into(),
-            comma_style: settings.formatter.comma_style.into(),
-            logical_operator_placement: settings.formatter.logical_operator_placement.into(),
-            layout: settings.formatter.layout.into(),
-            values_row_layout: settings.formatter.values_row_layout.into(),
-            cast_style: settings.formatter.cast_style.into(),
-            clause_body_style: settings.formatter.clause_body_style.into(),
-            isolate_semicolon: settings.formatter.isolate_semicolon,
-            function_argument_groups: settings
-                .formatter
-                .function_argument_groups
-                .iter()
-                .map(|(name, size)| (name.to_lowercase(), usize::from(size.get())))
-                .collect(),
-        };
+        let doc = &*document;
 
-        let mut diagnostics = Vec::new();
-        let mut statements = Vec::new();
-        let mut formatted_output = String::new();
-        let path_str = params.path.as_path().display().to_string();
-
-        let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
-        let mut formatted_sql_fn_bodies = HashMap::new();
-
-        // Only format SQL function bodies if skip_fn_bodies is false
-        if !settings.formatter.skip_fn_bodies {
-            for (id, _stmt_range, text, ast_result) in &format_candidates {
-                if !id.is_child() {
-                    continue;
-                }
-
-                let Some(parent_id) = id.parent() else {
-                    continue;
-                };
-
-                let Ok(ast) = ast_result else {
-                    continue;
-                };
-
-                let Ok(result) = pgls_pretty_print::format_statement(ast, text, &config) else {
-                    continue;
-                };
-
-                let Some(formatted) = restore_named_parameters(text, &result.formatted, ast) else {
-                    continue;
-                };
-
-                formatted_sql_fn_bodies.insert(parent_id, formatted);
-            }
-        }
-
-        // Reconstruct the file by replacing each statement's source span with its
-        // formatted output while copying the gaps between statements (whitespace and
-        // standalone comments) verbatim. libpg_query drops comments from the AST, so
-        // anything that lives outside a statement's range would otherwise be lost.
-        let source = doc.get_document_content();
-        let mut last_end = 0usize;
-
-        // Formatting a range leaves everything outside its statements as written.
-        let collapses_blank_lines = params.range.is_none();
-
-        for (id, stmt_range, text, ast_result) in format_candidates {
-            if id.is_child() {
-                continue;
-            }
-
-            let stmt_start = usize::from(stmt_range.start());
-            let stmt_end = usize::from(stmt_range.end());
-
-            // Preserve the standalone comments that precede this statement, with at most one
-            // blank line between statements and none before the first.
-            let gap = &source[last_end..stmt_start];
-            if collapses_blank_lines {
-                let gap = collapse_blank_lines(gap);
-                formatted_output.push_str(if last_end == 0 {
-                    gap.trim_start()
-                } else {
-                    &gap
-                });
-            } else {
-                formatted_output.push_str(gap);
-            }
-            last_end = stmt_end;
-
-            // Leave statements outside the requested range untouched.
-            if let Some(filter_range) = params.range
-                && stmt_range.intersect(filter_range).is_none()
-            {
-                formatted_output.push_str(&text);
-                continue;
-            }
-
-            match ast_result {
-                Ok(ast) => {
-                    let mut ast = ast;
-                    if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
-                        sql_function::set_formatted_sql_fn_body(&mut ast, formatted_sql_fn_body);
-                    }
-
-                    match pgls_pretty_print::format_statement(&ast, &text, &config) {
-                        Ok(result) => {
-                            match restore_named_parameters(&text, &result.formatted, &ast) {
-                                Some(formatted) => {
-                                    if text != formatted {
-                                        statements.push(StatementFormatResult {
-                                            original: text.clone(),
-                                            formatted: formatted.clone(),
-                                            range: stmt_range,
-                                        });
-                                    }
-                                    formatted_output.push_str(&formatted);
-                                }
-                                None => {
-                                    diagnostics.push(SDiagnostic::new(
-                                        pgls_diagnostics::Error::from(
-                                            WorkspaceError::format_error(
-                                                "Named parameters could not be restored after \
-                                                 formatting, the statement was left untouched"
-                                                    .to_string(),
-                                            ),
-                                        )
-                                        .with_file_path(&path_str)
-                                        .with_file_span(stmt_range),
-                                    ));
-
-                                    formatted_output.push_str(&text);
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            diagnostics.push(SDiagnostic::new(
-                                pgls_diagnostics::Error::from(WorkspaceError::format_error(
-                                    err.to_string(),
-                                ))
-                                .with_file_path(&path_str)
-                                .with_file_span(stmt_range),
-                            ));
-
-                            formatted_output.push_str(&text);
-                        }
-                    }
-                }
-                Err(syntax_err) => {
-                    diagnostics.push(SDiagnostic::new(
-                        pgls_diagnostics::Error::from(syntax_err).with_file_path(&path_str),
-                    ));
-
-                    formatted_output.push_str(&text);
-                }
-            }
-        }
-
-        // Preserve any trailing text or comments after the last statement, without blank lines
-        // at the end of the file but with its final line break.
-        let rest = &source[last_end..];
-        if collapses_blank_lines {
-            let rest = collapse_blank_lines(rest);
-            let rest = if last_end == 0 {
-                rest.trim()
-            } else {
-                rest.trim_end()
-            };
-            formatted_output.push_str(rest);
-            if source.ends_with('\n') && !formatted_output.is_empty() {
-                formatted_output.push('\n');
-            }
-        } else {
-            formatted_output.push_str(rest);
-        }
-
-        Ok(PullFormattingResult {
-            original: doc.get_document_content().to_string(),
-            formatted: formatted_output,
-            statements,
-            diagnostics,
-        })
+        let result = formatting::format_document(
+            doc,
+            &settings.formatter,
+            params.range,
+            &params.path.as_path().display().to_string(),
+        );
+        self.charge_document_caches(&params.path, doc);
+        Ok(result)
     }
 
     #[cfg(feature = "db")]
     fn check_database_connection(
         &self,
-        _params: CheckDatabaseConnectionParams,
+        params: CheckDatabaseConnectionParams,
     ) -> Result<CheckDatabaseConnectionResult, WorkspaceError> {
+        // Every configuration file of the project can have its own database, so check all of them.
         let settings = self.workspaces();
-        let Some(settings) = settings.settings() else {
-            return Ok(CheckDatabaseConnectionResult::default());
-        };
-
-        let result = self
-            .connection
-            .try_with_pool(&settings.db, |pool| self.snapshot.load(pool).map(|_| ()));
-        match result {
-            None | Some(Ok(())) => Ok(CheckDatabaseConnectionResult::default()),
-            Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
-                Ok(CheckDatabaseConnectionResult {
-                    error: Some(err.to_string()),
-                })
+        for settings in settings.as_ref().get_all_settings(params.project_key) {
+            if let Some(error) = &settings.db.connection_string_error {
+                return Ok(CheckDatabaseConnectionResult {
+                    error: Some(error.clone()),
+                });
             }
-            Some(Err(err)) => Err(err),
+
+            let result = self
+                .connection
+                .try_with_pool(&settings.db, |pool| self.snapshot.load(pool).map(|_| ()));
+            match result {
+                None | Some(Ok(())) => {}
+                Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
+                    return Ok(CheckDatabaseConnectionResult {
+                        error: Some(err.to_string()),
+                    });
+                }
+                Some(Err(err)) => return Err(err),
+            }
         }
+        Ok(CheckDatabaseConnectionResult::default())
     }
 
     #[cfg(not(feature = "db"))]
@@ -1671,7 +1337,7 @@ impl Workspace for WorkspaceServer {
         Ok(PullDiagnosticsResult::default())
     }
 
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "debug", skip_all, fields(
         path = params.path.as_os_str().to_str(),
         position = params.position.to_string()
@@ -1680,15 +1346,14 @@ impl Workspace for WorkspaceServer {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let parsed_doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
+
+        let settings = self.workspaces();
+        let settings = settings.settings_for(params.project_key, params.path.as_path());
 
         #[cfg(feature = "db")]
-        let Some(snapshot) = self
-            .workspaces()
-            .settings()
+        let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
                     .with_pool(&settings.db, |pool| self.snapshot.load(pool))
@@ -1705,42 +1370,44 @@ impl Workspace for WorkspaceServer {
             return Ok(CompletionsResult::default());
         };
 
-        match get_statement_for_completions(parsed_doc, params.position) {
+        match get_statement_for_completions(doc, params.position) {
             None => {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
             }
-            Some((id, range, cst)) => {
-                let position = params.position - range.start();
-                let snapshot = self.snapshot_before(parsed_doc, range.start(), snapshot);
+            Some((stmt, cst)) => {
+                let position = stmt.statement_offset(params.position);
+                let request =
+                    self.editor_request(params.project_key, &params.path, settings, snapshot);
+                let snapshot = self.snapshot_before(&request, doc, &stmt);
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
                     schema: snapshot.as_ref(),
                     tree: &cst,
-                    text: id.content().to_string(),
+                    text: stmt.id.content().to_string(),
                 });
 
-                Ok(CompletionsResult::with_offset(items, range.start()))
+                self.charge_document_caches(&params.path, doc);
+                Ok(CompletionsResult::in_document(items, &stmt))
             }
         }
     }
 
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "debug", skip_all, fields(
         path = params.path.as_os_str().to_str(),
         position = params.position.to_string()
     ), err)]
     fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
+
+        let settings = self.workspaces();
+        let settings = settings.settings_for(params.project_key, params.path.as_path());
 
         #[cfg(feature = "db")]
-        let Some(snapshot) = self
-            .workspaces()
-            .settings()
+        let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
                     .with_pool(&settings.db, |pool| self.snapshot.load(pool))
@@ -1758,35 +1425,31 @@ impl Workspace for WorkspaceServer {
         };
 
         // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
-        match doc
-            .iter_with_filter(
-                WithCSTandASTMapper,
-                CursorPositionFilter::new(params.position),
-            )
-            .last()
-        {
-            Some((stmt_id, range, ts_tree, maybe_ast)) => {
-                let position_in_stmt = params.position - range.start();
-                let references = self.references_at(doc, &snapshot, params.position);
-                let snapshot = self.snapshot_before(doc, range.start(), snapshot);
+        match doc.iter_at(WithCSTMapper, params.position).last() {
+            Some((stmt, ts_tree)) => {
+                let position_in_stmt = stmt.statement_offset(params.position);
+                let request =
+                    self.editor_request(params.project_key, &params.path, settings, snapshot);
+                let (references, snapshot) =
+                    self.hover_references(&request, doc, &stmt, params.position);
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,
                     snapshot: &snapshot,
-                    ast: maybe_ast.as_ref(),
                     position: position_in_stmt,
-                    stmt_sql: stmt_id.content(),
+                    stmt_sql: stmt.id.content(),
                     references: &references,
                 })
                 .unwrap_or_default();
 
+                self.charge_document_caches(&params.path, doc);
                 Ok(OnHoverResult { markdown_blocks })
             }
             None => Ok(OnHoverResult::default()),
         }
     }
 
-    #[ignored_path(path=&params.path)]
+    #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "debug", skip_all, fields(
         path = params.path.as_os_str().to_str(),
         range = ?params.range
@@ -1795,15 +1458,17 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullInlayHintsParams,
     ) -> Result<PullInlayHintsResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
+
+        let settings = self.workspaces();
+        let settings = settings.settings_for(params.project_key, params.path.as_path());
+        if !settings.is_none_or(|settings| settings.inlay_hints.enabled) {
+            return Ok(PullInlayHintsResult::default());
+        }
 
         #[cfg(feature = "db")]
-        let Some(snapshot) = self
-            .workspaces()
-            .settings()
+        let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
                     .with_pool(&settings.db, |pool| self.snapshot.load(pool))
@@ -1820,38 +1485,108 @@ impl Workspace for WorkspaceServer {
             return Ok(PullInlayHintsResult::default());
         };
 
+        let request = self.editor_request(params.project_key, &params.path, settings, snapshot);
         let mut hints = Vec::new();
-        self.walk_statements(
-            doc,
-            &snapshot,
-            params.range.end(),
-            |stmt, catalog, session| {
+        for statements in self.resolved_statements(&request, doc, params.range) {
+            for resolved in statements.iter() {
+                let stmt = &resolved.stmt;
                 let Some(sql) = stmt.sql.as_deref() else {
-                    return;
+                    continue;
                 };
                 if stmt.range.intersect(params.range).is_none() {
-                    return;
+                    continue;
                 }
                 hints.extend(
-                    pgls_inlay_hints::inlay_hints(pgls_inlay_hints::InlayHintsParams {
-                        stmt: &stmt.root,
-                        sql,
-                        catalog,
-                        search_path: session.search_path(),
-                        function: stmt.function.as_ref(),
-                    })
-                    .into_iter()
-                    .map(|hint| InlayHint {
-                        offset: hint.offset + stmt.range.start(),
-                        label: hint.label,
-                        kind: hint.kind.into(),
-                    }),
+                    pgls_inlay_hints::inlay_hints_of_references(&resolved.references, sql)
+                        .into_iter()
+                        .map(|hint| InlayHint {
+                            offset: stmt.document_offset(hint.offset),
+                            label: hint.label,
+                            kind: hint.kind.into(),
+                        }),
                 );
-            },
-        );
+            }
+        }
 
         hints.sort_by_key(|hint| hint.offset);
+        self.charge_document_caches(&params.path, doc);
         Ok(PullInlayHintsResult { hints })
+    }
+
+    #[ignored_path(project=params.project_key, path=&params.path)]
+    #[tracing::instrument(level = "debug", skip_all, fields(
+        path = params.path.as_os_str().to_str(),
+        range = ?params.range
+    ), err)]
+    fn pull_semantic_tokens(
+        &self,
+        params: PullSemanticTokensParams,
+    ) -> Result<PullSemanticTokensResult, WorkspaceError> {
+        let document = self.document(&params.path)?;
+        let doc = &*document;
+
+        let settings = self.workspaces();
+        let settings = settings.settings_for(params.project_key, params.path.as_path());
+        if !settings.is_none_or(|settings| settings.semantic_tokens.enabled) {
+            return Ok(PullSemanticTokensResult::default());
+        }
+
+        #[cfg(feature = "db")]
+        let Some(snapshot) = settings
+            .and_then(|settings| {
+                self.connection
+                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+            })
+            .transpose()?
+        else {
+            tracing::debug!("No database connection available. Skipping semantic tokens.");
+            return Ok(PullSemanticTokensResult::default());
+        };
+
+        #[cfg(not(feature = "db"))]
+        let Some(snapshot) = self.snapshot.get() else {
+            tracing::debug!("No schema loaded. Skipping semantic tokens.");
+            return Ok(PullSemanticTokensResult::default());
+        };
+
+        let range = params
+            .range
+            .unwrap_or_else(|| TextRange::up_to(TextSize::of(doc.get_document_content())));
+        let request = self.editor_request(params.project_key, &params.path, settings, snapshot);
+        let mut tokens = Vec::new();
+        for statements in self.resolved_statements(&request, doc, range) {
+            for resolved in statements.iter() {
+                let stmt = &resolved.stmt;
+                let Some(sql) = stmt.sql.as_deref() else {
+                    continue;
+                };
+                if stmt.range.intersect(range).is_none() {
+                    continue;
+                }
+                tokens.extend(
+                    pgls_semantic_tokens::semantic_tokens_of_references(&resolved.references, sql)
+                        .into_iter()
+                        .map(|token| SemanticToken {
+                            range: stmt.document_range(token.range),
+                            kind: token.kind.into(),
+                            default_library: token.default_library,
+                        }),
+                );
+            }
+        }
+
+        // The body of a SQL function is a statement of its own, inside its `CREATE FUNCTION`.
+        tokens.sort_by_key(|token| (token.range.start(), token.range.end()));
+        let mut end = TextSize::default();
+        tokens.retain(|token| {
+            let keep = token.range.start() >= end;
+            if keep {
+                end = token.range.end();
+            }
+            keep
+        });
+        self.charge_document_caches(&params.path, doc);
+        Ok(PullSemanticTokensResult { tokens })
     }
 }
 
@@ -1865,96 +1600,46 @@ fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSectio
         })
 }
 
-/// Returns `true` if `path` is a directory or
-/// if it is a symlink that resolves to a directory.
-fn is_dir(path: &Path) -> bool {
-    path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
-}
+/// The edit that adds `-- pgls-ignore <rule>` on its own line above the statement at `offset`,
+/// with the statement's indentation and the file's line ending. Above the statement, the comment
+/// suppresses the rule for all of the statement, including the bodies of its functions.
+fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
+    let content = doc.get_document_content();
+    let start = doc
+        .statement_ranges()
+        .iter()
+        .find(|statement| statement.contains_inclusive(offset))
+        .map_or(offset, |statement| statement.start());
+    let line_ending = match content.find('\n') {
+        Some(newline) if content[..newline].ends_with('\r') => "\r\n",
+        _ => "\n",
+    };
 
-/// Keeps at most one blank line in `text`, which only holds whitespace and comments.
-fn collapse_blank_lines(text: &str) -> String {
-    let mut result = String::with_capacity(text.len());
-    // Line breaks since the last text that is not whitespace. Two make a blank line.
-    let mut line_breaks = 0;
-    for line in text.split_inclusive('\n') {
-        let is_blank = line.trim().is_empty();
-        let ends_line = line.ends_with('\n');
-        if is_blank && ends_line {
-            line_breaks += 1;
-            if line_breaks <= 2 {
-                result.push('\n');
-            }
-            continue;
+    let start = usize::from(start);
+    let line_start = content[..start]
+        .rfind('\n')
+        .map_or(0, |newline| newline + 1);
+    let before = &content[line_start..start];
+    let indentation: String = before
+        .chars()
+        .take_while(|c| *c == ' ' || *c == '\t')
+        .collect();
+    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
+    if before.trim().is_empty() {
+        TextEdit {
+            range: TextRange::empty(offset(line_start)),
+            new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
         }
-
-        result.push_str(line);
-        if !is_blank {
-            line_breaks = usize::from(ends_line);
-        }
-    }
-    result
-}
-
-/// Put psql named parameters back where the formatter printed their placeholders.
-///
-/// The parser only ever sees placeholders, so the printed statement carries `$1` or a bare
-/// identifier instead of `:'agen_code'` or `:raw_data`. Substitution happens on the token stream
-/// so that a `$1` inside a string literal is left alone, and the result is proven by converting it
-/// back and comparing the normalized ASTs: a statement that does not survive that round trip is
-/// reported as unrestorable and kept as it was written.
-fn restore_named_parameters(
-    original: &str,
-    formatted: &str,
-    original_ast: &pgls_query::NodeEnum,
-) -> Option<String> {
-    use pgls_lexer::{SyntaxKind, lex};
-
-    let conversion = pgls_lexer::convert_to_positional_params_with_metadata(original);
-
-    if conversion.identifier_replacements.is_empty() && conversion.value_replacements.is_empty() {
-        return Some(formatted.to_string());
-    }
-
-    if !conversion.restorable {
-        return None;
-    }
-
-    let lexed = lex(formatted);
-    let mut restored = String::with_capacity(formatted.len());
-
-    for (idx, kind) in lexed.tokens().enumerate() {
-        if kind == SyntaxKind::EOF {
-            break;
-        }
-
-        let text = lexed.text(idx);
-
-        let replacement = match kind {
-            SyntaxKind::IDENT => conversion.identifier_replacements.get(text),
-            SyntaxKind::POSITIONAL_PARAM => text
-                .trim_start_matches('$')
-                .parse::<usize>()
-                .ok()
-                .and_then(|index| conversion.value_replacements.get(&index)),
-            _ => None,
-        };
-
-        match replacement {
-            Some(source_text) => restored.push_str(source_text),
-            None => restored.push_str(text),
-        }
-    }
-
-    let reparsed = pgls_query::parse(&pgls_lexer::convert_to_positional_params(&restored)).ok()?;
-    let mut restored_ast = reparsed.into_root()?;
-    let mut expected_ast = original_ast.clone();
-    pgls_pretty_print::normalize_ast(&mut restored_ast);
-    pgls_pretty_print::normalize_ast(&mut expected_ast);
-
-    if restored_ast == expected_ast {
-        Some(restored)
     } else {
-        None
+        // The statement starts after another one on the same line, so it moves to a line of its
+        // own.
+        let previous_end = line_start + before.trim_end().len();
+        TextEdit {
+            range: TextRange::new(offset(previous_end), offset(start)),
+            new_text: format!(
+                "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
+            ),
+        }
     }
 }
 

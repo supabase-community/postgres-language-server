@@ -1,10 +1,9 @@
-use std::{
-    ops::Range,
-    sync::{Arc, LazyLock},
-};
+use std::sync::{Arc, LazyLock};
 
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
-use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode, resolve::FunctionContext};
+use pgls_catalog::{CatalogBase, resolve::FunctionContext};
+use pgls_diagnostics::DiagnosticTags;
+use pgls_query_ext::function_body::{EmbeddedStatement, OffsetMap};
 use pgls_text_size::{TextRange, TextSize};
 pub use registry::visit_registry;
 
@@ -17,6 +16,7 @@ mod linter_rule;
 mod migration;
 pub mod options;
 mod registry;
+mod walk;
 
 // Re-export linter-specific types
 pub use linter_context::{AnalysedFileContext, FileKind, LinterRuleContext, StatementContext};
@@ -26,6 +26,8 @@ pub use linter_registry::{
 };
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use migration::{Direction, MigrationSection};
+use walk::is_plain_query;
+pub use walk::{STOP_CHECK_INTERVAL, Walk, WalkParams, WalkState, walk_statements};
 
 // For convenience in macros and rule files - keep these shorter names
 pub use LinterDiagnostic as RuleDiagnostic;
@@ -77,7 +79,9 @@ pub fn replacement_of_removed_rule(name: &str) -> Option<&'static str> {
 
 #[derive(Debug)]
 pub struct AnalysableStatement {
-    pub root: pgls_query::NodeEnum,
+    /// Shared with the workspace's cache of parsed statements, so that analysing a file doesn't
+    /// copy every statement's tree.
+    pub root: Arc<pgls_query::NodeEnum>,
     pub range: TextRange,
     /// The statement text, used for precise spans of typecheck findings.
     pub sql: Option<String>,
@@ -87,17 +91,52 @@ pub struct AnalysableStatement {
     /// Set when identifiers of the statement are client-side parameters, like psql's
     /// `:schema.table`. The parsed names are placeholders, so the statement isn't typechecked.
     pub has_identifier_parameters: bool,
+    /// Where the text of the statement is in the file, when it is embedded in another statement
+    /// and its text is not the source text, like a function body with escaped quotes.
+    pub offsets: OffsetMap,
 }
 
 impl AnalysableStatement {
-    pub fn new(root: pgls_query::NodeEnum, range: TextRange) -> Self {
+    pub fn new(root: impl Into<Arc<pgls_query::NodeEnum>>, range: TextRange) -> Self {
         Self {
-            root,
+            root: root.into(),
             range,
             sql: None,
             function: None,
             has_identifier_parameters: false,
+            offsets: OffsetMap::default(),
         }
+    }
+
+    /// The statement `embedded`, like a statement of a SQL function body, in the statement that
+    /// starts at `parent_start` in the file. `root` is the parsed `embedded.sql`.
+    pub fn embedded(
+        root: impl Into<Arc<pgls_query::NodeEnum>>,
+        parent_start: TextSize,
+        embedded: &EmbeddedStatement,
+    ) -> Self {
+        Self {
+            offsets: embedded.offsets.clone(),
+            ..Self::new(root, embedded.range + parent_start).with_sql(embedded.sql.as_str())
+        }
+    }
+
+    /// The range in the file of `range` in the statement text.
+    pub fn document_range(&self, range: TextRange) -> TextRange {
+        self.offsets.range_to_source(range) + self.range.start()
+    }
+
+    /// The offset in the file of `offset` in the statement text.
+    pub fn document_offset(&self, offset: TextSize) -> TextSize {
+        self.offsets.to_source(offset) + self.range.start()
+    }
+
+    /// The offset in the statement text of `offset` in the file, which is in the statement's
+    /// range.
+    pub fn statement_offset(&self, offset: TextSize) -> TextSize {
+        debug_assert!(self.range.contains_inclusive(offset));
+        self.offsets
+            .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())
     }
 
     pub fn with_sql(mut self, sql: impl Into<String>) -> Self {
@@ -158,6 +197,9 @@ pub struct StatementAnalysis {
 pub struct AnalysisResult {
     pub diagnostics: Vec<LinterDiagnostic>,
     pub statements: Vec<StatementAnalysis>,
+    /// Set when [`Analyser::analyse_until`] stopped before the end, so the result covers only
+    /// the statements before that.
+    pub stopped: bool,
 }
 
 pub struct AnalyserConfig<'a> {
@@ -182,8 +224,19 @@ impl<'a> Analyser<'a> {
     }
 
     /// Runs the rules statement by statement, while the catalog and the session follow the
-    /// effects of the statements.
+    /// effects of the statements, see [`walk_statements`].
     pub fn analyse(&self, params: AnalyserParams) -> AnalysisResult {
+        self.analyse_until(params, &|| false)
+    }
+
+    /// Like [`Analyser::analyse`], but checks `should_stop` every [`STOP_CHECK_INTERVAL`]
+    /// statements and stops when it returns `true`, e.g. because the document changed or the
+    /// request was cancelled.
+    pub fn analyse_until(
+        &self,
+        params: AnalyserParams,
+        should_stop: &dyn Fn() -> bool,
+    ) -> AnalysisResult {
         let mut result = AnalysisResult::default();
 
         let mut typecheck = params.typecheck && params.catalog_base.is_some();
@@ -191,8 +244,6 @@ impl<'a> Analyser<'a> {
             .catalog_base
             .as_ref()
             .map(|base| base.snapshot().as_ref());
-        let roots: Vec<pgls_query::NodeEnum> =
-            params.stmts.iter().map(|s| s.root.clone()).collect();
 
         let rules: Vec<_> = self
             .registry
@@ -206,214 +257,128 @@ impl<'a> Analyser<'a> {
             })
             .collect();
 
-        // The catalog after the up sections so far. A down section runs after its up section,
-        // and its changes don't carry into the next section.
-        let mut catalog = Catalog::new(params.catalog_base.clone());
-        let mut unparsable = params.unparsable.iter().peekable();
-        for unit in migration_units(&params.stmts, &params.sections) {
-            let is_down = unit
-                .section
-                .is_some_and(|section| section.direction == Direction::Down);
-            let unit_catalog = if is_down {
-                catalog.clone()
-            } else {
-                std::mem::replace(&mut catalog, Catalog::new(None))
+        let walk = WalkParams {
+            stmts: &params.stmts,
+            unparsable: &params.unparsable,
+            catalog_base: params.catalog_base.clone(),
+            search_path: &params.search_path,
+            sections: &params.sections,
+            end: TextSize::from(u32::MAX),
+            best_effort: false,
+            from: None,
+            checkpoints: &[],
+            should_stop,
+        };
+        let walk = walk_statements(walk, |stmt, file_context| {
+            let root = &*stmt.root;
+            // The catalog can't follow statements on placeholder names, like `drop table :name`,
+            // so the rest of the file isn't typechecked.
+            if stmt.has_identifier_parameters && !is_plain_query(root) {
+                typecheck = false;
+            }
+            let typecheck_statement = typecheck && !stmt.has_identifier_parameters;
+
+            let statement =
+                StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
+            let mut has_typecheck_findings = false;
+
+            let rule_params = LinterRegistryRuleParams {
+                root,
+                options: self.options,
+                analysed_file_context: file_context,
+                statement: &statement,
+                snapshot,
             };
-            // Each section runs in a session and transaction of its own.
-            let session = Session::new(params.search_path.clone()).with_transaction_mode(
-                unit.section
-                    .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-            );
-            let mut file_context =
-                AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session);
-
-            for (stmt, root) in params.stmts[unit.stmts.clone()]
-                .iter()
-                .zip(&roots[unit.stmts.clone()])
-            {
-                while let Some(skipped) =
-                    unparsable.next_if(|skipped| skipped.range.start() < stmt.range.start())
-                {
-                    if may_change_catalog(&skipped.sql) {
-                        file_context.taint_catalog();
-                    }
+            for rule in &rules {
+                if rule.group == TYPECHECK_GROUP && !typecheck_statement {
+                    continue;
                 }
-                // The catalog and session can't follow statements on placeholder names, like
-                // `drop table :name`, so the rest of the file isn't typechecked.
-                if stmt.has_identifier_parameters && !is_plain_query(root) {
-                    typecheck = false;
-                }
-                let typecheck_statement = typecheck && !stmt.has_identifier_parameters;
+                let diagnostics = (rule.run)(&rule_params);
+                has_typecheck_findings |= rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
 
-                let statement =
-                    StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
-                let mut has_typecheck_findings = false;
-
-                let rule_params = LinterRegistryRuleParams {
-                    root,
-                    options: self.options,
-                    analysed_file_context: &file_context,
-                    statement: &statement,
-                    snapshot,
-                };
-                for rule in &rules {
-                    if rule.group == TYPECHECK_GROUP && !typecheck_statement {
-                        continue;
-                    }
-                    let diagnostics = (rule.run)(&rule_params);
-                    has_typecheck_findings |=
-                        rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
-
-                    result
-                        .diagnostics
-                        .extend(diagnostics.into_iter().map(|mut diagnostic| {
-                            diagnostic.span = Some(match diagnostic.span {
-                                Some(span) => span + stmt.range.start(),
-                                None => stmt.range,
-                            });
-                            // Fixes are computed on the statement text, which only matches the
-                            // source if it has the length of the statement range.
-                            let fix_matches_source = stmt
-                                .sql
-                                .as_ref()
-                                .is_some_and(|sql| TextSize::of(sql.as_str()) == stmt.range.len());
-                            if !fix_matches_source {
-                                diagnostic.fix = None;
-                            }
-                            if let Some(fix) = &mut diagnostic.fix {
-                                fix.shift(stmt.range.start());
-                            }
-                            diagnostic
-                        }));
-                }
-
-                let database_only = typecheck_statement
-                    && statement
-                        .resolution(&file_context)
-                        .is_some_and(|resolution| resolution.database_only);
-
-                result.statements.push(StatementAnalysis {
-                    range: stmt.range,
-                    database_only,
-                    has_typecheck_findings,
-                    search_path: file_context.session().search_path().to_vec(),
-                });
-
-                file_context.next(stmt.function.is_none());
+                result
+                    .diagnostics
+                    .extend(diagnostics.into_iter().map(|mut diagnostic| {
+                        diagnostic.span = Some(match diagnostic.span {
+                            Some(span) => stmt.document_range(span),
+                            None => stmt.range,
+                        });
+                        // Fixes are computed on the statement text, which only matches the source
+                        // if it is the source as written. A fix must keep the statement valid.
+                        let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
+                            stmt.offsets.is_verbatim()
+                                && TextSize::of(sql.as_str()) == stmt.range.len()
+                                && diagnostic
+                                    .fix
+                                    .as_ref()
+                                    .is_none_or(|fix| keeps_statement_valid(fix, sql))
+                        });
+                        if !fix_is_valid {
+                            diagnostic.fix = None;
+                        }
+                        if let Some(fix) = &mut diagnostic.fix {
+                            fix.shift(stmt.range.start());
+                            diagnostic.tags |= DiagnosticTags::FIXABLE;
+                        }
+                        diagnostic
+                    }));
             }
 
-            while let Some(skipped) = unparsable.next_if(|skipped| skipped.range.start() < unit.end)
-            {
-                if may_change_catalog(&skipped.sql) {
-                    file_context.taint_catalog();
-                }
-            }
-            if !is_down {
-                catalog = file_context.into_catalog();
-            }
-        }
+            let database_only = typecheck_statement
+                && statement
+                    .resolution(file_context)
+                    .is_some_and(|resolution| resolution.database_only);
+
+            result.statements.push(StatementAnalysis {
+                range: stmt.range,
+                database_only,
+                has_typecheck_findings,
+                search_path: file_context.session().search_path().to_vec(),
+            });
+        });
+        result.stopped = walk.stopped;
 
         result
     }
 }
 
-/// Statements that run together: those before the first section marker, then each section.
-struct MigrationUnit<'a> {
-    section: Option<&'a MigrationSection>,
-    /// The indices of the statements.
-    stmts: Range<usize>,
-    end: TextSize,
-}
-
-fn migration_units<'a>(
-    stmts: &[AnalysableStatement],
-    sections: &'a [MigrationSection],
-) -> Vec<MigrationUnit<'a>> {
-    let before_sections = sections
-        .first()
-        .map_or(TextSize::from(u32::MAX), |section| section.range.start());
-    let ends = std::iter::once((None, before_sections)).chain(
-        sections
-            .iter()
-            .map(|section| (Some(section), section.range.end())),
-    );
-
-    let mut first = 0;
-    ends.map(|(section, end)| {
-        let last = first + stmts[first..].partition_point(|stmt| stmt.range.start() < end);
-        let unit = MigrationUnit {
-            section,
-            stmts: first..last,
-            end,
-        };
-        first = last;
-        unit
-    })
-    .collect()
-}
-
-/// Whether a statement that doesn't parse may have changed the catalog. Queries, `COPY`,
-/// maintenance, cursors, prepared statements, comments and privileges can't create, drop or
-/// rename objects, unless they are `SELECT ... INTO` or `EXPLAIN ANALYZE CREATE TABLE AS`. For
-/// anything else we can't tell.
-pub fn may_change_catalog(sql: &str) -> bool {
-    use pgls_query::protobuf::Token;
-    let Ok(scan) = pgls_query::scan(sql) else {
+/// Whether the statement `sql` still parses with the fix applied. The edits are relative to the
+/// statement. A fix that also edits outside of the statement, e.g. to add a `COMMIT` after it,
+/// can't be checked on the statement alone and is kept.
+fn keeps_statement_valid(fix: &RuleFix, sql: &str) -> bool {
+    let len = TextSize::of(sql);
+    if fix.edits.iter().any(|edit| edit.range.end() > len) {
         return true;
-    };
-    let mut tokens = scan
-        .tokens
-        .iter()
-        .map(|token| token.token())
-        .filter(|token| !matches!(token, Token::SqlComment | Token::CComment | Token::Ascii40));
-    match tokens.next() {
-        Some(
-            Token::Insert
-            | Token::Update
-            | Token::DeleteP
-            | Token::Merge
-            | Token::Copy
-            | Token::Analyse
-            | Token::Analyze
-            | Token::Vacuum
-            | Token::Reindex
-            | Token::Cluster
-            | Token::Checkpoint
-            | Token::LockP
-            | Token::Listen
-            | Token::Notify
-            | Token::Unlisten
-            | Token::Show
-            | Token::Declare
-            | Token::Fetch
-            | Token::Move
-            | Token::Close
-            | Token::Prepare
-            | Token::Execute
-            | Token::Deallocate
-            | Token::Comment
-            | Token::Grant
-            | Token::Revoke,
-        ) => false,
-        Some(Token::Select | Token::With | Token::Values | Token::Table | Token::Explain) => {
-            tokens.any(|token| matches!(token, Token::Into | Token::Create))
-        }
-        _ => true,
     }
+    pgls_query::parse(&fix.apply(sql)).is_ok()
 }
 
-/// Whether the statement only reads or writes rows, without changing the catalog or the
-/// session.
-pub fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
-    use pgls_query::NodeEnum;
-    match root {
-        NodeEnum::SelectStmt(select) => select.into_clause.is_none(),
-        NodeEnum::InsertStmt(_)
-        | NodeEnum::UpdateStmt(_)
-        | NodeEnum::DeleteStmt(_)
-        | NodeEnum::MergeStmt(_) => true,
-        _ => false,
-    }
+#[cfg(test)]
+pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
+    let rule_filter = pgls_analyse::RuleFilter::Rule(group, rule);
+    let options = LinterOptions::default();
+    let analyser = Analyser::new(AnalyserConfig {
+        options: &options,
+        filter: AnalysisFilter {
+            enabled_rules: Some(std::slice::from_ref(&rule_filter)),
+            ..Default::default()
+        },
+    });
+    let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
+    let range = TextRange::up_to(TextSize::of(sql));
+    analyser
+        .run(AnalyserParams {
+            stmts: vec![AnalysableStatement::new(root, range).with_sql(sql)],
+            ..Default::default()
+        })
+        .iter()
+        .map(|diagnostic| {
+            let span = pgls_diagnostics::Diagnostic::location(diagnostic)
+                .span
+                .unwrap();
+            sql[span].to_owned()
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -431,7 +396,35 @@ mod tests {
     use pgls_text_size::TextRange;
     use termcolor::NoColor;
 
-    use crate::{AnalysableStatement, Analyser};
+    use crate::{AnalysableStatement, Analyser, RuleFix, keeps_statement_valid};
+
+    #[test]
+    fn fixes_must_keep_the_statement_valid() {
+        let sql = "create index users_email_idx on users (email)";
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        assert!(keeps_statement_valid(
+            &RuleFix::new("").insert(at(12), " concurrently"),
+            sql
+        ));
+        assert!(!keeps_statement_valid(
+            &RuleFix::new("").insert(at(12), " concurrently ("),
+            sql
+        ));
+        // At the end of the statement, the edit is checked with it.
+        assert!(keeps_statement_valid(
+            &RuleFix::new("").insert(at(45), " where email is not null"),
+            sql
+        ));
+        assert!(!keeps_statement_valid(
+            &RuleFix::new("").insert(at(45), " where"),
+            sql
+        ));
+        // After the statement, the fix can't be checked on the statement alone.
+        assert!(keeps_statement_valid(
+            &RuleFix::new("").insert(at(47), "\ncommit;"),
+            sql
+        ));
+    }
 
     #[ignore]
     #[test]
@@ -478,5 +471,45 @@ mod tests {
         println!("*******************");
 
         // assert_eq!(results, vec![]);
+    }
+
+    #[test]
+    fn analysis_stops_when_asked() {
+        const SQL: &str = "alter table test drop column id;";
+        let rule_filter = RuleFilter::Rule("destructive", "banDropColumn");
+        let filter = AnalysisFilter {
+            enabled_rules: Some(slice::from_ref(&rule_filter)),
+            ..Default::default()
+        };
+        let options = LinterOptions::default();
+        let analyser = Analyser::new(crate::AnalyserConfig {
+            options: &options,
+            filter,
+        });
+        let params = || crate::AnalyserParams {
+            stmts: (0..200u32)
+                .map(|i| {
+                    let start = i * 40;
+                    AnalysableStatement::new(
+                        pgls_query::parse(SQL).unwrap().into_root().unwrap(),
+                        TextRange::at(start.into(), u32::try_from(SQL.len()).unwrap().into()),
+                    )
+                })
+                .collect(),
+            ..Default::default()
+        };
+
+        let all = analyser.analyse(params());
+        assert!(!all.stopped);
+        assert_eq!(all.diagnostics.len(), 200);
+
+        // Asked to stop at the second check.
+        let checks = std::cell::Cell::new(0);
+        let stopped = analyser.analyse_until(params(), &|| {
+            checks.set(checks.get() + 1);
+            checks.get() == 2
+        });
+        assert!(stopped.stopped);
+        assert_eq!(stopped.diagnostics.len(), 127);
     }
 }

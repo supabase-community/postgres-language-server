@@ -2,13 +2,14 @@ use std::sync::Arc;
 
 use pgls_completions::CompletionItem;
 use pgls_fs::PgLSPath;
-use pgls_text_size::{TextRange, TextSize};
+use pgls_text_size::TextSize;
 
-use crate::workspace::{Document, GetCompletionsFilter, StatementId, WithCSTMapper};
+use crate::workspace::{DefaultMapper, Document, DocumentStatement, WithCSTMapper};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct GetCompletionsParams {
+    pub project_key: crate::workspace::ProjectKey,
     /// The File for which a completion is requested.
     pub path: PgLSPath,
     /// The Cursor position in the file for which a completion is requested.
@@ -22,10 +23,12 @@ pub struct CompletionsResult {
 }
 
 impl CompletionsResult {
-    pub fn with_offset(mut items: Vec<CompletionItem>, offset: TextSize) -> Self {
+    /// The completions of the statement `stmt`, whose ranges are relative to its text, with the
+    /// ranges in the document.
+    pub(crate) fn in_document(mut items: Vec<CompletionItem>, stmt: &DocumentStatement) -> Self {
         for item in &mut items {
             if let Some(text_edit) = &mut item.completion_text {
-                text_edit.range += offset;
+                text_edit.range = stmt.document_range(text_edit.range);
             }
         }
 
@@ -44,24 +47,20 @@ impl IntoIterator for CompletionsResult {
 pub(crate) fn get_statement_for_completions(
     doc: &Document,
     position: TextSize,
-) -> Option<(StatementId, TextRange, Arc<tree_sitter::Tree>)> {
-    let count = doc.count();
+) -> Option<(DocumentStatement, Arc<tree_sitter::Tree>)> {
+    // Only whether the document has no statement, one, or more matters.
+    let count = doc.iter(DefaultMapper).take(2).count();
     // no arms no cookies
     if count == 0 {
         return None;
     }
 
-    let mut eligible_statements = doc.iter_with_filter(
-        WithCSTMapper,
-        GetCompletionsFilter {
-            cursor_position: position,
-        },
-    );
+    let mut eligible_statements = doc.iter_for_completions(WithCSTMapper, position);
 
     if count == 1 {
         eligible_statements.next()
     } else {
-        let mut prev_stmt: Option<(StatementId, TextRange, Arc<tree_sitter::Tree>)> = None;
+        let mut prev_stmt: Option<(DocumentStatement, Arc<tree_sitter::Tree>)> = None;
 
         for current_stmt in eligible_statements {
             /*
@@ -73,8 +72,8 @@ pub(crate) fn get_statement_for_completions(
              * This is however ok if the current statement is a child of the previous one,
              * such as in CREATE FUNCTION bodies.
              */
-            if prev_stmt.is_some_and(|prev| {
-                current_stmt.1.contains(position) && !current_stmt.0.is_child_of(&prev.0)
+            if prev_stmt.is_some_and(|(prev, _)| {
+                current_stmt.0.range.contains(position) && !current_stmt.0.id.is_child_of(&prev.id)
             }) {
                 return None;
             }
@@ -90,7 +89,7 @@ pub(crate) fn get_statement_for_completions(
 mod tests {
     use pgls_text_size::TextSize;
 
-    use crate::workspace::Document;
+    use crate::workspace::{DefaultMapper, Document};
 
     use super::get_statement_for_completions;
 
@@ -124,10 +123,9 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (stmt, _, _) =
-            get_statement_for_completions(&doc, position).expect("Expected Statement");
+        let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.content(), "update users set email = 'myemail@com';")
+        assert_eq!(stmt.id.content(), "update users set email = 'myemail@com';")
     }
 
     #[test]
@@ -149,7 +147,7 @@ mod tests {
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
         // make sure these are parsed as two
-        assert_eq!(doc.count(), 2);
+        assert_eq!(doc.iter(DefaultMapper).count(), 2);
 
         assert!(get_statement_for_completions(&doc, position).is_none());
     }
@@ -163,10 +161,9 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (stmt, _, _) =
-            get_statement_for_completions(&doc, position).expect("Expected Statement");
+        let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.content(), "select * from          ;")
+        assert_eq!(stmt.id.content(), "select * from          ;")
     }
 
     #[test]
@@ -175,10 +172,9 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (stmt, _, _) =
-            get_statement_for_completions(&doc, position).expect("Expected Statement");
+        let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.content(), "select * from")
+        assert_eq!(stmt.id.content(), "select * from")
     }
 
     #[test]
@@ -199,10 +195,9 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql);
 
-        let (stmt, _, _) =
-            get_statement_for_completions(&doc, position).expect("Expected Statement");
+        let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.content().trim(), "select  from cool;")
+        assert_eq!(stmt.id.content().trim(), "select  from cool;")
     }
 
     #[test]
@@ -227,5 +222,41 @@ mod tests {
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
         assert!(get_statement_for_completions(&doc, position).is_none());
+    }
+
+    /// Looking only at the statements around the cursor finds the same statement as filtering
+    /// all statements of the document, at every position.
+    #[test]
+    fn finds_the_statement_like_a_filter_over_all_statements() {
+        use crate::workspace::{GetCompletionsFilter, WithCSTMapper};
+
+        let sql = "select 1;\nselect * from\nselect 2 select 3;\n\ncreate function f() returns int language sql as $$ select 4; select  $$;\ninsert into t values (1)\n\nupdate t set a = 1;select\n";
+        let doc = Document::new(sql.into(), 1);
+        for position in 0..=sql.len() {
+            let position = TextSize::new(position as u32);
+            let mut statements = doc.iter_with_filter(
+                WithCSTMapper,
+                GetCompletionsFilter {
+                    cursor_position: position,
+                },
+            );
+            // The lookup before it filtered all statements.
+            let mut expected: Option<(crate::workspace::DocumentStatement, _)> = None;
+            for current in statements.by_ref() {
+                if expected.as_ref().is_some_and(|(previous, _)| {
+                    current.0.range.contains(position) && !current.0.id.is_child_of(&previous.id)
+                }) {
+                    expected = None;
+                    break;
+                }
+                expected = Some(current);
+            }
+            assert_eq!(
+                get_statement_for_completions(&doc, position)
+                    .map(|(stmt, _)| (stmt.id, stmt.range)),
+                expected.map(|(stmt, _)| (stmt.id, stmt.range)),
+                "at {position:?}"
+            );
+        }
     }
 }

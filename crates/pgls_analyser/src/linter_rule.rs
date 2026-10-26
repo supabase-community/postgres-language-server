@@ -21,7 +21,7 @@ pub trait LinterRule: RuleMeta + Sized {
 }
 
 /// Diagnostic object returned by a single linter rule
-#[derive(Debug, Diagnostic, PartialEq)]
+#[derive(Clone, Debug, Diagnostic, PartialEq)]
 pub struct LinterDiagnostic {
     #[category]
     pub(crate) category: &'static Category,
@@ -45,7 +45,8 @@ pub struct LinterDiagnostic {
 pub struct RuleFix {
     /// What the fix does, e.g. "Add CONCURRENTLY".
     pub message: String,
-    /// Set by the analyser from the fix kind of the rule.
+    /// Set by the analyser from the fix kind of the rule, unless the rule marked the fix as
+    /// unsafe.
     pub applicability: Applicability,
     /// Non-overlapping edits, ordered by their position.
     pub edits: Vec<FixEdit>,
@@ -62,9 +63,15 @@ impl RuleFix {
     pub fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
-            applicability: Applicability::MaybeIncorrect,
+            applicability: Applicability::Always,
             edits: Vec::new(),
         }
+    }
+
+    /// Marks the fix as unsafe, even if the rule's fixes are safe in general.
+    pub fn unsafe_fix(mut self) -> Self {
+        self.applicability = Applicability::MaybeIncorrect;
+        self
     }
 
     /// Inserts `text` at `offset`.
@@ -114,7 +121,7 @@ impl RuleFix {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 /// It contains possible advices to show when printing a diagnostic that belong to the rule
 pub struct RuleAdvice {
     pub(crate) details: Vec<Detail>,
@@ -123,7 +130,7 @@ pub struct RuleAdvice {
     pub(crate) code_suggestion_list: Vec<CodeSuggestionAdvice<MarkupBuf>>,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SuggestionList {
     pub(crate) message: MarkupBuf,
     pub(crate) list: Vec<MarkupBuf>,
@@ -165,7 +172,7 @@ impl Advices for RuleAdvice {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Detail {
     pub log_category: LogCategory,
     pub message: MarkupBuf,

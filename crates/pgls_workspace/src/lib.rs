@@ -3,11 +3,11 @@ use std::ops::{Deref, DerefMut};
 use pgls_console::Console;
 use pgls_fs::{FileSystem, OsFileSystem};
 
+pub mod cancellation;
 pub mod configuration;
 pub mod diagnostics;
 pub mod dome;
 pub mod features;
-pub mod matcher;
 pub mod settings;
 pub mod workspace;
 

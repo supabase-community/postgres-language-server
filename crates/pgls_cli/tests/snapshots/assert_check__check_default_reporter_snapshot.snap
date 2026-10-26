@@ -1,11 +1,10 @@
 ---
-source: crates/pgt_cli/tests/assert_check.rs
+source: crates/pgls_cli/tests/assert_check.rs
 expression: "run_check(&[\"tests/fixtures/test.sql\"])"
-snapshot_kind: text
 ---
 status: failure
 stdout:
-Checked 1 file in <duration>. No fixes applied.
+Checked 1 file in <duration>.
 Found 1 error.
 stderr:
 tests/fixtures/test.sql:1:1 syntax ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

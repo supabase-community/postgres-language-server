@@ -22,3 +22,6 @@ tree-sitter.workspace             = true
 
 [dev-dependencies]
 pgls_test_utils.workspace = true
+
+[lints]
+workspace = true

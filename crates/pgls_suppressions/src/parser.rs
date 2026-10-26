@@ -40,6 +40,16 @@ impl<'a> SuppressionsParser<'a> {
     }
 
     pub fn parse(doc: &str) -> Suppressions {
+        // Every suppression comment contains `-ignore`. Most documents have none, and finding
+        // that out is much faster than looking at each line. Without line suppressions, the
+        // line index isn't needed either.
+        if !doc.contains("-ignore") {
+            return Suppressions::default();
+        }
+        Self::parse_lines(doc)
+    }
+
+    fn parse_lines(doc: &str) -> Suppressions {
         let mut parser = SuppressionsParser::new(doc);
 
         parser.parse_file_suppressions();
@@ -52,6 +62,7 @@ impl<'a> SuppressionsParser<'a> {
             range_suppressions: parser.range_suppressions,
             diagnostics: parser.diagnostics,
             line_index: parser.line_index,
+            statements: Vec::new(),
         }
     }
 
@@ -176,6 +187,33 @@ impl<'a> SuppressionsParser<'a> {
 
 #[cfg(test)]
 mod tests {
+    use super::SuppressionsParser;
+
+    #[test]
+    fn documents_without_suppressions_skip_the_lines() {
+        for doc in [
+            "",
+            "select 1;",
+            "-- a comment\nselect 1;\r\n\r\nselect 2;\n",
+            "-- pgls\n--ignore\nselect 1;",
+        ] {
+            let fast = SuppressionsParser::parse(doc);
+            let slow = SuppressionsParser::parse_lines(doc);
+            assert!(slow.file_suppressions.is_empty(), "{doc}");
+            assert!(slow.line_suppressions.is_empty(), "{doc}");
+            assert!(slow.range_suppressions.is_empty(), "{doc}");
+            assert!(slow.diagnostics.is_empty(), "{doc}");
+            if !doc.contains("-ignore") {
+                assert_eq!(
+                    format!("{fast:?}"),
+                    format!("{:?}", super::Suppressions::default())
+                );
+            } else {
+                assert_eq!(format!("{fast:?}"), format!("{slow:?}"));
+            }
+        }
+    }
+
     use super::*;
     use crate::suppression::{RuleSpecifier, SuppressionKind};
 

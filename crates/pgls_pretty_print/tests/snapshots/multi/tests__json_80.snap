@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/json.sql
-snapshot_kind: text
 ---
 select cast('""' as json);
 
@@ -56,8 +55,10 @@ select cast('1.3ex100' as json);
 select cast('[]' as json);
 
 select
-  cast('[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
-  as json);
+  cast(
+    '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
+    as json
+  );
 
 select cast('[1,2]' as json);
 
@@ -1119,26 +1120,28 @@ select
   rec
 from
   json_populate_record(
-    cast(row(
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      cast(row('x', 3, '2012-12-31 15:30:56') as jpop),
-      null
-    )
-    as jsrec),
+    cast(
+      row(
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        cast(row('x', 3, '2012-12-31 15:30:56') as jpop),
+        null
+      )
+      as jsrec
+    ),
     '{"rec": {"a": "abc", "c": "01.02.2003", "x": 43.2}}'
   )
   as q;
@@ -1564,8 +1567,10 @@ select
   c is null as c_is_null
 from
   json_to_record(
-    cast('{"a":1, "b":{"c":16, "d":2}, "x":8, "ca": ["1 2", 3], "ia": [[1,2],[3,4]], "r": {"a": "aaa", "b": 123}}'
-    as json)
+    cast(
+      '{"a":1, "b":{"c":16, "d":2}, "x":8, "ca": ["1 2", 3], "ia": [[1,2],[3,4]], "r": {"a": "aaa", "b": 123}}'
+      as json
+    )
   )
   as t
   (a int, b json, c text, x int, ca char(5)[], ia int[][], r jpop);
@@ -1646,22 +1651,28 @@ select json_strip_nulls('{"a": {"b": null, "c": null}, "d": {} }', true);
 
 select
   to_tsvector(
-    cast('{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
-    as json)
+    cast(
+      '{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
+      as json
+    )
   );
 
 select
   to_tsvector(
     'simple',
-    cast('{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
-    as json)
+    cast(
+      '{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
+      as json
+    )
   );
 
 select
   to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb ddd ccc", "b": ["the eee fff ggg"], "c": {"d": "hhh. iii"}}'
-    as json)
+    cast(
+      '{"a": "aaa in bbb ddd ccc", "b": ["the eee fff ggg"], "c": {"d": "hhh. iii"}}'
+      as json
+    )
   );
 
 select
@@ -1673,96 +1684,120 @@ select
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"all"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"key"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"string"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"numeric"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"boolean"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '["string", "numeric"]'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"all"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"key"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"string"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"numeric"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '"boolean"'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '["string", "numeric"]'
   );
 
@@ -1785,62 +1820,78 @@ select json_to_tsvector(cast('null' as json), '"all"');
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '""'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '{}'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '[]'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     'null'
   );
 
 select
   json_to_tsvector(
     'english',
-    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as json),
+    cast(
+      '{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+      as json
+    ),
     '["all", null]'
   );
 
 select
   ts_headline(
-    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
-    as json),
+    cast(
+      '{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
+      as json
+    ),
     tsquery('bbb & ddd & hhh')
   );
 
 select
   ts_headline(
     'english',
-    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff"}, "d": ["ggg hhh", "iii jjj"]}'
-    as json),
+    cast(
+      '{"a": "aaa bbb", "b": {"c": "ccc ddd fff"}, "d": ["ggg hhh", "iii jjj"]}'
+      as json
+    ),
     tsquery('bbb & ddd & hhh')
   );
 
 select
   ts_headline(
-    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
-    as json),
+    cast(
+      '{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
+      as json
+    ),
     tsquery('bbb & ddd & hhh'),
     'StartSel = <, StopSel = >'
   );
@@ -1848,8 +1899,10 @@ select
 select
   ts_headline(
     'english',
-    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
-    as json),
+    cast(
+      '{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
+      as json
+    ),
     tsquery('bbb & ddd & hhh'),
     'StartSel = <, StopSel = >'
   );

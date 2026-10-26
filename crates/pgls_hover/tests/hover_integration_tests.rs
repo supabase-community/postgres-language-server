@@ -62,7 +62,6 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
         position,
         snapshot: &snapshot,
         stmt_sql: &sql,
-        ast: ast.as_ref(),
         ts_tree: &tree,
         references: &references,
     })
@@ -775,6 +774,131 @@ async fn test_table_hover_resolved_by_search_path(test_db: PgPool) {
 
     test_hover_at_cursor(
         "table_resolved_by_search_path",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+const MIXED_CASE_TABLES: &str = r#"
+    create table "MyTable" (quoted_id int);
+    create table mytable (folded_id int);
+    create table "a""b" (escaped_id int);
+"#;
+
+// The statements don't parse, so hover finds the tables by name instead of by reference.
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_unquoted_name_is_downcased(test_db: PgPool) {
+    let query = format!(
+        "select * from MyTa{}ble where",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_unquoted_name_is_downcased",
+        query,
+        Some(MIXED_CASE_TABLES),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_quoted_name_keeps_its_case(test_db: PgPool) {
+    let query = format!(
+        r#"select * from "MyTa{}ble" where"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_quoted_name_keeps_its_case",
+        query,
+        Some(MIXED_CASE_TABLES),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_quoted_name_with_escaped_quote(test_db: PgPool) {
+    let query = format!(
+        r#"select * from "a""{}b" where"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_quoted_name_with_escaped_quote",
+        query,
+        Some(MIXED_CASE_TABLES),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_procedure_hover_in_call(test_db: PgPool) {
+    let setup = r#"
+        create procedure hover_proc(a int, b text) language sql as 'select 1';
+        create procedure hover_proc(a text) language sql as 'select 1';
+    "#;
+
+    let query = format!(
+        "call hover_p{}roc(1, 'x')",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("procedure_in_call", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_procedure_hover_in_call_with_output_parameters(test_db: PgPool) {
+    let setup = r#"
+        create procedure hover_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
+    "#;
+
+    let query = format!(
+        "call hover_o{}ut(1, null)",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "procedure_in_call_with_output_parameters",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_not_on_qualifier(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+    "#;
+
+    let query = format!(
+        "select {}u.name from hover_users u",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("column_not_on_qualifier", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_on_last_part_of_quoted_name(test_db: PgPool) {
+    let setup = r#"
+        create table "Hover.Users" ("Id" int primary key);
+    "#;
+
+    let query = format!(
+        r#"select "Hover.Users"."I{}d" from "Hover.Users""#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "column_on_last_part_of_quoted_name",
         query,
         Some(setup),
         &test_db,
