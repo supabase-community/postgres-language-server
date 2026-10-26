@@ -861,32 +861,55 @@ fn trim_trailing_newlines(mut value: String) -> String {
     value
 }
 
-#[test]
-fn check_fix_writes_safe_fixes() {
-    let dir = Path::new("tests/fixtures").join(format!("fix-{}", std::process::id()));
+/// Runs `check` with the given arguments on a file with `content`, with the test config plus the
+/// `config` entries, and returns the file afterwards.
+fn check_fixed(name: &str, config: &str, args: &[&str], content: &str) -> String {
+    let dir = Path::new("tests/fixtures").join(format!("{name}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
+    let mut base = std::fs::read_to_string(CONFIG_PATH).unwrap();
+    if !config.is_empty() {
+        base = format!("{},{config}}}", base.trim_end().strip_suffix('}').unwrap());
+    }
+    let config_path = dir.join("postgres-language-server.jsonc");
+    std::fs::write(&config_path, base).unwrap();
     let file = dir.join("migration.sql");
-    std::fs::write(&file, "reindex index my_index;\n").unwrap();
+    std::fs::write(&file, content).unwrap();
 
     let mut cmd = cargo_bin_cmd!("postgres-language-server");
-    let output = cmd
-        .args([
-            "check",
-            "--config-path",
-            CONFIG_PATH,
-            "--fix",
-            file.to_str().unwrap(),
-        ])
+    cmd.args(["check", "--config-path", config_path.to_str().unwrap()])
+        .args(args)
+        .arg(file.to_str().unwrap())
         .output()
         .expect("failed to run CLI");
 
     let fixed = std::fs::read_to_string(&file).unwrap();
     std::fs::remove_dir_all(&dir).unwrap();
+    fixed
+}
+
+#[test]
+fn check_fix_writes_safe_fixes() {
+    // The section runs outside a transaction, so adding `CONCURRENTLY` is safe.
+    let content = "-- migrate:up transaction:false\nreindex index my_index;\n";
     assert_eq!(
-        fixed,
-        "reindex index CONCURRENTLY my_index;\n",
-        "stdout: {}\nstderr: {}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
+        check_fixed(
+            "fix-safe",
+            r#""migrations": {"sectionMarkers": "dbmate"}"#,
+            &["--fix"],
+            content
+        ),
+        "-- migrate:up transaction:false\nreindex index CONCURRENTLY my_index;\n",
+    );
+}
+
+#[test]
+fn check_fix_without_section_markers_needs_unsafe() {
+    // Without section markers, we don't know whether the migration tool runs the file in a
+    // transaction, where `CONCURRENTLY` fails.
+    let content = "reindex index my_index;\n";
+    assert_eq!(check_fixed("fix-plain", "", &["--fix"], content), content);
+    assert_eq!(
+        check_fixed("fix-plain-unsafe", "", &["--fix", "--unsafe"], content),
+        "reindex index CONCURRENTLY my_index;\n"
     );
 }

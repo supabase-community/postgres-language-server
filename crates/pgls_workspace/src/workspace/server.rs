@@ -13,9 +13,7 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
-use document::{
-    CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper, FormatStatementMapper,
-};
+use document::{DefaultMapper, Document, ExecuteStatementMapper, FormatStatementMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 #[cfg(feature = "db")]
@@ -89,6 +87,7 @@ mod connection_key;
 #[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
+mod expand_star;
 mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
@@ -341,7 +340,6 @@ impl WorkspaceServer {
         params: &CodeActionsParams,
         doc: &Document,
     ) -> Vec<CodeAction> {
-        let content = doc.get_document_content();
         let mut actions = Vec::new();
         for diagnostic in
             self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
@@ -359,7 +357,7 @@ impl WorkspaceServer {
                 actions.push(CodeAction {
                     title: fix.message.clone(),
                     kind: CodeActionKind::Edit(EditAction {
-                        rule: category.to_string(),
+                        rule: Some(category.to_string()),
                         category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
                         applicability: fix.applicability,
                         edits: fix
@@ -375,30 +373,63 @@ impl WorkspaceServer {
                 });
             }
 
-            // The comment goes on its own line above the line where the diagnostic starts,
-            // with the same indentation.
-            let line_start = content[..usize::from(span.start())]
-                .rfind('\n')
-                .map_or(0, |newline| newline + 1);
-            let indentation: String = content[line_start..]
-                .chars()
-                .take_while(|c| *c == ' ' || *c == '\t')
-                .collect();
             actions.push(CodeAction {
                 title: format!("Suppress rule {rule} for this statement"),
                 kind: CodeActionKind::Edit(EditAction {
-                    rule: category.to_string(),
+                    rule: Some(category.to_string()),
                     category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
                     applicability: Applicability::MaybeIncorrect,
-                    edits: vec![TextEdit {
-                        range: TextRange::empty(TextSize::try_from(line_start).unwrap()),
-                        new_text: format!("{indentation}-- pgls-ignore {rule}\n"),
-                    }],
+                    edits: vec![suppression_edit(doc, span.start(), rule)],
                 }),
                 disabled_reason: None,
             });
         }
         actions
+    }
+
+    /// The refactors offered at `position`: expanding a `*` into its columns. `settings` are the
+    /// ones of the file.
+    fn refactor_code_actions(
+        &self,
+        settings: Option<&Settings>,
+        doc: &Document,
+        position: TextSize,
+    ) -> Vec<CodeAction> {
+        // Code actions are requested whenever the cursor moves, so don't resolve the file unless
+        // there is a `*` on the line.
+        let content = doc.get_document_content();
+        let bytes = content.as_bytes();
+        let offset = usize::from(position).min(bytes.len());
+        let line_start = bytes[..offset]
+            .iter()
+            .rposition(|byte| *byte == b'\n')
+            .map_or(0, |i| i + 1);
+        let line_end = bytes[offset..]
+            .iter()
+            .position(|byte| *byte == b'\n')
+            .map_or(bytes.len(), |i| offset + i);
+        if !bytes[line_start..line_end].contains(&b'*') {
+            return Vec::new();
+        }
+
+        #[cfg(feature = "db")]
+        let snapshot = settings.and_then(|settings| {
+            self.connection
+                .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                .and_then(Result::ok)
+        });
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = self.snapshot.get();
+
+        let Some(snapshot) = snapshot else {
+            return Vec::new();
+        };
+        let (stmt_start, references) = self.references_at(settings, doc, &snapshot, position);
+        references
+            .iter()
+            .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
+            .collect()
     }
 
     /// The lint diagnostics of a document that are not suppressed.
@@ -510,14 +541,15 @@ impl WorkspaceServer {
     }
 
     /// The references whose span contains `position`, in the innermost statement at `position`
-    /// (the body of a SQL function rather than its `CREATE FUNCTION`).
+    /// (the body of a SQL function rather than its `CREATE FUNCTION`). Their spans are relative
+    /// to the start of that statement, which is returned with them.
     fn references_at(
         &self,
         settings: Option<&Settings>,
         doc: &Document,
         snapshot: &Arc<Snapshot>,
         position: TextSize,
-    ) -> Vec<Reference> {
+    ) -> (TextSize, Vec<Reference>) {
         let mut innermost: Option<(TextRange, Vec<Reference>)> = None;
         self.walk_statements(
             settings,
@@ -548,17 +580,18 @@ impl WorkspaceServer {
             },
         );
         let Some((range, references)) = innermost else {
-            return Vec::new();
+            return (TextSize::default(), Vec::new());
         };
         let position = position - range.start();
-        references
+        let references = references
             .into_iter()
             .filter(|reference| {
                 reference
                     .span()
                     .is_some_and(|span| span.contains_inclusive(position))
             })
-            .collect()
+            .collect();
+        (range.start(), references)
     }
 
     /// The indexed database snapshot, built once per snapshot.
@@ -644,7 +677,7 @@ impl WorkspaceServer {
                         .iter()
                         .any(|section| section.contains(range.start()))
                 })
-                .map(|(id, range, ast, cst, _)| {
+                .map(|(id, range, ast, cst)| {
                     let statement = statements
                         .iter()
                         .find(|statement| statement.range == range)
@@ -996,10 +1029,7 @@ impl Workspace for WorkspaceServer {
         };
 
         let mut actions: Vec<CodeAction> = parser
-            .iter_with_filter(
-                DefaultMapper,
-                CursorPositionFilter::new(params.cursor_position),
-            )
+            .iter_at(DefaultMapper, params.cursor_position)
             .map(|(stmt, _, txt)| {
                 let title = format!(
                     "Execute Statement: {}...",
@@ -1015,6 +1045,11 @@ impl Workspace for WorkspaceServer {
                 }
             })
             .collect();
+
+        actions.splice(
+            0..0,
+            self.refactor_code_actions(settings, parser, params.cursor_position),
+        );
 
         if let Some(settings) = settings {
             let mut lint_actions = self.lint_code_actions(settings, &params, parser);
@@ -1755,16 +1790,10 @@ impl Workspace for WorkspaceServer {
         };
 
         // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
-        match doc
-            .iter_with_filter(
-                WithCSTandASTMapper,
-                CursorPositionFilter::new(params.position),
-            )
-            .last()
-        {
+        match doc.iter_at(WithCSTandASTMapper, params.position).last() {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
                 let position_in_stmt = params.position - range.start();
-                let references = self.references_at(settings, doc, &snapshot, params.position);
+                let (_, references) = self.references_at(settings, doc, &snapshot, params.position);
                 let snapshot = self.snapshot_before(doc, range.start(), snapshot, &search_path);
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
@@ -1862,6 +1891,49 @@ fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSectio
         .map_or_else(Vec::new, |migrations| {
             migration::migration_sections(doc.get_document_content(), migrations.section_markers)
         })
+}
+
+/// The edit that adds `-- pgls-ignore <rule>` on its own line above the statement at `offset`,
+/// with the statement's indentation and the file's line ending. Above the statement, the comment
+/// suppresses the rule for all of the statement, including the bodies of its functions.
+fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
+    let content = doc.get_document_content();
+    let start = doc
+        .statement_ranges()
+        .iter()
+        .find(|statement| statement.contains_inclusive(offset))
+        .map_or(offset, |statement| statement.start());
+    let line_ending = match content.find('\n') {
+        Some(newline) if content[..newline].ends_with('\r') => "\r\n",
+        _ => "\n",
+    };
+
+    let start = usize::from(start);
+    let line_start = content[..start]
+        .rfind('\n')
+        .map_or(0, |newline| newline + 1);
+    let before = &content[line_start..start];
+    let indentation: String = before
+        .chars()
+        .take_while(|c| *c == ' ' || *c == '\t')
+        .collect();
+    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
+    if before.trim().is_empty() {
+        TextEdit {
+            range: TextRange::empty(offset(line_start)),
+            new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
+        }
+    } else {
+        // The statement starts after another one on the same line, so it moves to a line of its
+        // own.
+        let previous_end = line_start + before.trim_end().len();
+        TextEdit {
+            range: TextRange::new(offset(previous_end), offset(start)),
+            new_text: format!(
+                "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
+            ),
+        }
+    }
 }
 
 /// Returns `true` if `path` is a directory or

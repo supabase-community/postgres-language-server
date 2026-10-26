@@ -105,7 +105,7 @@ pub(super) fn emit_options_def_elem(e: &mut EventEmitter, n: &DefElem) {
 }
 
 /// Emit role options for GRANT...WITH syntax
-/// Uses `NAME TRUE` / `NAME FALSE` syntax for INHERIT, SET, ADMIN
+/// Uses `NAME TRUE` / `NAME FALSE` syntax for INHERIT, SET, ADMIN, except `ADMIN OPTION`.
 pub(super) fn emit_grant_role_option(e: &mut EventEmitter, n: &DefElem) {
     e.group_start(GroupKind::DefElem);
 
@@ -128,7 +128,11 @@ pub(super) fn emit_grant_role_option(e: &mut EventEmitter, n: &DefElem) {
     // Emit TRUE or FALSE
     if let Some(val) = is_true {
         e.space();
-        if val {
+        // `admin option` and `admin true` parse the same, but Postgres 15 and older only accept
+        // `with admin option`.
+        if val && defname.eq_ignore_ascii_case("admin") {
+            e.token(TokenKind::OPTION_KW);
+        } else if val {
             e.token(TokenKind::TRUE_KW);
         } else {
             e.token(TokenKind::FALSE_KW);

@@ -1340,21 +1340,15 @@ from
 select
   (
     select
-      max(
-        (select i.unique2 from tenk1 as i where i.unique1 = o.unique1)
-      )
-      filter (where
-        o.unique1 < 10)
+      max((select i.unique2 from tenk1 as i where i.unique1 = o.unique1))
+        filter (where o.unique1 < 10)
   )
 from
   tenk1 as o;
 
 select
-  sum(
-    unique1
-  )
-  filter (where
-    unique1 in (select unique1 from onek where unique1 < 100))
+  sum(unique1)
+    filter (where unique1 in (select unique1 from onek where unique1 < 100))
 from
   tenk1;
 
@@ -1477,10 +1471,8 @@ from
   (values (1), (1), (2), (2), (3), (3), (4)) as v (x);
 
 select
-  percentile_disc(
-    array[0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]
-  )
-  within group (order by thousand)
+  percentile_disc(array[0, 0.1, 0.25, 0.5, 0.75, 0.9, 1])
+    within group (order by thousand)
 from
   tenk1;
 
@@ -1490,18 +1482,14 @@ from
   tenk1;
 
 select
-  percentile_disc(
-    array[array[null, 1, 0.5], array[0.75, 0.25, null]]
-  )
-  within group (order by thousand)
+  percentile_disc(array[array[null, 1, 0.5], array[0.75, 0.25, null]])
+    within group (order by thousand)
 from
   tenk1;
 
 select
-  percentile_cont(
-    array[0, 1, 0.25, 0.75, 0.5, 1, 0.3, 0.32, 0.35, 0.38, 0.4]
-  )
-  within group (order by x)
+  percentile_cont(array[0, 1, 0.25, 0.75, 0.5, 1, 0.3, 0.32, 0.35, 0.38, 0.4])
+    within group (order by x)
 from
   generate_series(1, 6) as x;
 
@@ -1553,10 +1541,8 @@ select rank(3) within group (order by stringu1, stringu2) from tenk1;
 select rank('fred') within group (order by x) from generate_series(1, 5) as x;
 
 select
-  rank(
-    cast('adam' as text) collate "C"
-  )
-  within group (order by x collate "POSIX")
+  rank(cast('adam' as text) collate "C")
+    within group (order by x collate "POSIX")
 from
   (values ('fred'), ('jim')) as v (x);
 
@@ -1576,12 +1562,9 @@ create view aggordview1
 as select
   ten,
   percentile_disc(0.5) within group (order by thousand) as p50,
-  percentile_disc(
-    0.5
-  )
-  within group (order by thousand)
-  filter (where
-    hundred = 1)
+  percentile_disc(0.5)
+    within group (order by thousand)
+    filter (where hundred = 1)
   as px,
   rank(5, 'AZZZZ', 50) within group (order by hundred, string4 desc, hundred)
 from

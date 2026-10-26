@@ -668,16 +668,7 @@ impl Session {
     }
 
     pub(crate) fn file_path(&self, url: &ls_types::Uri) -> Result<PgLSPath> {
-        let path_to_file = match url.to_file_path() {
-            None => {
-                // If we can't create a path, it's probably because the file doesn't exist.
-                // It can be a newly created file that it's not on disk
-                PathBuf::from(url.path().as_str())
-            }
-            Some(path) => path.into_owned(),
-        };
-
-        Ok(PgLSPath::new(path_to_file))
+        Ok(PgLSPath::new(document_path(url)))
     }
 
     /// True if the client supports dynamic registration of "workspace/didChangeConfiguration" requests
@@ -1244,9 +1235,70 @@ fn is_stale_diagnostics(captured_version: i32, current_version: i32) -> bool {
     captured_version != current_version
 }
 
+/// The path of the workspace document for `url`.
+///
+/// Only `file:` URIs are files. Documents of other schemes, like `untitled:` buffers, the `git:`
+/// side of a diff, or the cells of a notebook, are keyed by their whole URI. Their URI path is
+/// often the path of a file, or the same for every cell of a notebook. The workspace keys
+/// documents by path, so they would otherwise share the document of that file, and closing them
+/// would close it.
+fn document_path(url: &ls_types::Uri) -> PathBuf {
+    if !url.scheme().as_str().eq_ignore_ascii_case("file") {
+        return PathBuf::from(url.as_str());
+    }
+    match url.to_file_path() {
+        Some(path) => path.into_owned(),
+        // If we can't create a path, it's probably because the file doesn't exist.
+        // It can be a newly created file that it's not on disk
+        None => PathBuf::from(url.path().as_str()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::is_stale_diagnostics;
+    use std::path::Path;
+    use std::str::FromStr;
+
+    use tower_lsp_server::ls_types::Uri;
+
+    use super::{document_path, is_stale_diagnostics};
+
+    fn path(uri: &str) -> std::path::PathBuf {
+        document_path(&Uri::from_str(uri).expect("a valid URI"))
+    }
+
+    #[test]
+    fn file_uris_are_decoded_into_paths() {
+        let expected = if cfg!(windows) {
+            Path::new("c:/Users/a/My Project/café.sql")
+        } else {
+            Path::new("/c:/Users/a/My Project/café.sql")
+        };
+        assert_eq!(
+            path("file:///c%3A/Users/a/My%20Project/caf%C3%A9.sql"),
+            expected
+        );
+    }
+
+    #[test]
+    fn other_schemes_get_paths_of_their_own() {
+        let file = path("file:///workspace/a.sql");
+        let git = path("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D");
+        assert_ne!(git, file);
+        assert_eq!(
+            git,
+            Path::new("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D")
+        );
+        assert_ne!(
+            path("vscode-notebook-cell:/workspace/nb.ipynb#W0sZmlsZQ%3D%3D"),
+            path("vscode-notebook-cell:/workspace/nb.ipynb#W1sZmlsZQ%3D%3D"),
+        );
+        // Not a relative path with its first character stripped on Windows.
+        assert_eq!(
+            path("untitled:Untitled-1"),
+            Path::new("untitled:Untitled-1")
+        );
+    }
 
     #[test]
     fn stale_diagnostics_are_detected_by_version() {

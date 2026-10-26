@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n    c.oid::bigint as \"id!\",\n    n.nspname as \"schema!\",\n    c.relname as \"name!\",\n    t.relname as \"table_name!\"\nFROM pg_catalog.pg_class c\nJOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace\nJOIN pg_catalog.pg_index i ON i.indexrelid = c.oid\nJOIN pg_catalog.pg_class t ON t.oid = i.indrelid\nWHERE c.relkind = 'i'\n  AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')\n",
+  "query": "SELECT\n    c.oid::bigint as \"id!\",\n    n.nspname as \"schema!\",\n    c.relname as \"name!\",\n    t.relname as \"table_name!\"\nFROM pg_catalog.pg_class c\nJOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace\nJOIN pg_catalog.pg_index i ON i.indexrelid = c.oid\nJOIN pg_catalog.pg_class t ON t.oid = i.indrelid\n-- i: indexes, I: partitioned indexes\nWHERE c.relkind IN ('i', 'I')\n  AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')\n",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "4f7d0241b0c52b2d6742b441e9ac98d80b50a02c30a54b30611ca40b99d51ab7"
+  "hash": "bddc6d0f9db88df40f3be136f6368c50d38ae3dee2151011284da3bd64207626"
 }

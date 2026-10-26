@@ -7,5 +7,6 @@ FROM pg_catalog.pg_class c
 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
 JOIN pg_catalog.pg_index i ON i.indexrelid = c.oid
 JOIN pg_catalog.pg_class t ON t.oid = i.indrelid
-WHERE c.relkind = 'i'
+-- i: indexes, I: partitioned indexes
+WHERE c.relkind IN ('i', 'I')
   AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')

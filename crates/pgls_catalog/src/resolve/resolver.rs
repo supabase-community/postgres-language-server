@@ -1,6 +1,9 @@
 //! The state of name resolution: the catalog, the names in scope, and the findings so far.
 
+use std::mem::Discriminant;
+
 use pgls_text_size::{TextRange, TextSize};
+use rustc_hash::FxHashSet;
 
 use pgls_query::{
     NodeEnum,
@@ -31,6 +34,8 @@ pub(super) struct Resolver<'a> {
     pub output: crate::typing::QueryColumns,
     /// The references resolved so far, when they are being collected.
     pub references: Option<Vec<Reference>>,
+    /// The location and kind of each reference in `references`.
+    recorded: FxHashSet<(i32, Discriminant<Reference>)>,
 }
 
 impl<'a> Resolver<'a> {
@@ -51,6 +56,7 @@ impl<'a> Resolver<'a> {
             ctes: Vec::new(),
             output: None,
             references: None,
+            recorded: FxHashSet::default(),
         }
     }
 
@@ -110,11 +116,10 @@ impl<'a> Resolver<'a> {
             return;
         };
         // Some expressions are resolved more than once, e.g. VALUES rows in INSERT.
-        let known = references.iter().any(|known| {
-            known.location() == reference.location()
-                && std::mem::discriminant(known) == std::mem::discriminant(&reference)
-        });
-        if !known {
+        if self
+            .recorded
+            .insert((reference.location(), std::mem::discriminant(&reference)))
+        {
             references.push(reference);
         }
     }
@@ -194,6 +199,11 @@ impl<'a> Resolver<'a> {
     /// The span of the (possibly qualified) name starting at `location`.
     pub fn name_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::reference_end)
+    }
+
+    /// The span of the `*` or `t.*` starting at `location`.
+    pub fn star_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::star_end)
     }
 
     /// The span of the operator token starting at `location`.
