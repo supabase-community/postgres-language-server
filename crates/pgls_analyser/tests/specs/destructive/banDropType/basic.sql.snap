@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropType
+drop type order_status;
+
+```
+
+# Diagnostics
+lint/banDropType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a type may break existing clients.
+  
+  i Queries that still use it fail, and rolling back the application does not restore it.
+  
+  i Update your application code to no longer use it, then drop it in a later migration.

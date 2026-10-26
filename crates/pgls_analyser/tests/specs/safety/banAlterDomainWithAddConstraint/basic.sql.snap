@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterDomainWithAddConstraint
+alter domain positive_int add constraint positive_int_check check (value > 0);
+
+```
+
+# Diagnostics
+lint/banAlterDomainWithAddConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a constraint to a domain has poor support for online migrations.
+  
+  i Postgres validates every column that uses the domain, across all tables.
+  
+  i Use table and column constraints instead.

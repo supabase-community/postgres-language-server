@@ -1,0 +1,43 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/expanded_case_alignment.sql
+---
+select case
+           when a
+               then 1
+           else 2
+       end
+from t;
+
+select *
+from t
+    inner join
+        u
+    on case
+           when t.a
+               then t.b = u.b
+           else t.c = u.c
+       end;
+
+select
+    id,
+    case
+        when status = 'active' and
+            deleted_at is null
+            then 'live'
+        when status = 'archived'
+            then 'old'
+        else 'unknown'
+    end as state
+from accounts;
+
+select case kind
+           when 'a'
+               then case
+                   when x > 1
+                       then 'big'
+                   else 'small'
+               end
+           else 'other'
+       end
+from t;

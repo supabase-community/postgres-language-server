@@ -1,0 +1,28 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_inlay_hints"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_catalog             = { workspace = true }
+pgls_query.workspace     = true
+pgls_text_size.workspace = true
+
+[dev-dependencies]
+pgls_catalog              = { workspace = true, features = ["db"] }
+pgls_test_utils.workspace = true
+sqlx.workspace            = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

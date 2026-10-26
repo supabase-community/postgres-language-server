@@ -4,7 +4,7 @@ use pgls_query::{
 };
 
 use crate::emitter::{EventEmitter, GroupKind, LineType};
-use crate::{ClauseBodyStyle, Layout, TokenKind};
+use crate::{ClauseBodyStyle, Comment, Layout, TokenKind};
 
 use super::{
     node_list::{
@@ -169,7 +169,14 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             }
         };
 
+        let last_row = n.values_lists.last();
         emit_comma_separated_list_with_spacing(e, &n.values_lists, spacing, |row, e| {
+            // A line comment written after a row is attached to the row's last value. Emitted
+            // there, it would end up inside the parentheses and force the row to break, so it
+            // follows the closing parenthesis instead, and the comma when there is one.
+            let followed_by_comma = !last_row.is_some_and(|last| std::ptr::eq(last, row));
+            let comments_after_row = take_comments_after_row(e, row, followed_by_comma);
+
             // Wrap each row tuple in a group so it can break independently
             e.group_start(GroupKind::List);
             e.token(TokenKind::L_PAREN);
@@ -180,13 +187,11 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
             e.group_end();
+
+            e.emit_trailing_comments(comments_after_row);
         });
 
         e.indent_end();
-
-        if with_semicolon {
-            e.token(TokenKind::SEMICOLON);
-        }
     } else {
         e.token(TokenKind::SELECT_KW);
 
@@ -286,79 +291,107 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             }
             e.indent_end();
         }
+    }
 
-        // Emit ORDER BY clause if present
-        if !n.sort_clause.is_empty() {
-            super::emit_layout_break(e);
-            e.token(TokenKind::ORDER_KW);
-            e.space();
-            e.token(TokenKind::BY_KW);
-            e.space();
-            e.indent_start();
-            emit_comma_separated_list(e, &n.sort_clause, super::emit_node);
-            e.indent_end();
-        }
+    // ORDER BY, LIMIT and locking follow a select list and a VALUES list alike.
+    if !n.sort_clause.is_empty() {
+        super::emit_layout_break(e);
+        e.token(TokenKind::ORDER_KW);
+        e.space();
+        e.token(TokenKind::BY_KW);
+        e.space();
+        e.indent_start();
+        emit_comma_separated_list(e, &n.sort_clause, super::emit_node);
+        e.indent_end();
+    }
 
-        match n.limit_option() {
-            LimitOption::WithTies => {
-                if let Some(ref limit_offset) = n.limit_offset {
-                    super::emit_layout_break(e);
-                    e.token(TokenKind::OFFSET_KW);
-                    e.space();
-                    super::emit_node(limit_offset, e);
-                    e.space();
-                    e.token(TokenKind::ROWS_KW);
-                }
-
-                if let Some(ref limit_count) = n.limit_count {
-                    super::emit_layout_break(e);
-                    e.token(TokenKind::FETCH_KW);
-                    e.space();
-                    e.token(TokenKind::FIRST_KW);
-                    e.space();
-                    super::emit_node(limit_count, e);
-                    e.space();
-                    e.token(TokenKind::ROWS_KW);
-                    e.space();
-                    e.token(TokenKind::WITH_KW);
-                    e.space();
-                    emit_keyword(e, "TIES");
-                }
+    match n.limit_option() {
+        LimitOption::WithTies => {
+            if let Some(ref limit_offset) = n.limit_offset {
+                super::emit_layout_break(e);
+                e.token(TokenKind::OFFSET_KW);
+                e.space();
+                super::emit_node(limit_offset, e);
+                e.space();
+                e.token(TokenKind::ROWS_KW);
             }
-            _ => {
-                if let Some(ref limit_count) = n.limit_count {
-                    super::emit_layout_break(e);
-                    e.token(TokenKind::LIMIT_KW);
-                    e.space();
-                    super::emit_node(limit_count, e);
-                }
 
-                if let Some(ref limit_offset) = n.limit_offset {
-                    super::emit_layout_break(e);
-                    e.token(TokenKind::OFFSET_KW);
-                    e.space();
-                    super::emit_node(limit_offset, e);
-                }
+            if let Some(ref limit_count) = n.limit_count {
+                super::emit_layout_break(e);
+                e.token(TokenKind::FETCH_KW);
+                e.space();
+                e.token(TokenKind::FIRST_KW);
+                e.space();
+                super::emit_node(limit_count, e);
+                e.space();
+                e.token(TokenKind::ROWS_KW);
+                e.space();
+                e.token(TokenKind::WITH_KW);
+                e.space();
+                emit_keyword(e, "TIES");
             }
         }
-
-        if !n.locking_clause.is_empty() {
-            for locking in &n.locking_clause {
-                if let Some(pgls_query::NodeEnum::LockingClause(locking_clause)) =
-                    locking.node.as_ref()
-                {
-                    super::emit_layout_break(e);
-                    super::emit_locking_clause(e, locking_clause);
-                }
+        _ => {
+            if let Some(ref limit_count) = n.limit_count {
+                super::emit_layout_break(e);
+                e.token(TokenKind::LIMIT_KW);
+                e.space();
+                super::emit_node(limit_count, e);
             }
-        }
 
-        if with_semicolon {
-            e.token(TokenKind::SEMICOLON);
+            if let Some(ref limit_offset) = n.limit_offset {
+                super::emit_layout_break(e);
+                e.token(TokenKind::OFFSET_KW);
+                e.space();
+                super::emit_node(limit_offset, e);
+            }
         }
     }
 
+    if !n.locking_clause.is_empty() {
+        for locking in &n.locking_clause {
+            if let Some(pgls_query::NodeEnum::LockingClause(locking_clause)) = locking.node.as_ref()
+            {
+                super::emit_layout_break(e);
+                super::emit_locking_clause(e, locking_clause);
+            }
+        }
+    }
+
+    if with_semicolon {
+        e.token(TokenKind::SEMICOLON);
+    }
+
     e.group_end();
+}
+
+/// Removes the line comments written after `row`, which are attached to its last value, so that
+/// they can be emitted after the row. Between two rows, they follow the comma.
+fn take_comments_after_row(
+    e: &mut EventEmitter,
+    row: &Node,
+    followed_by_comma: bool,
+) -> Vec<Comment> {
+    let Some(location) = row
+        .node
+        .as_ref()
+        .and_then(crate::comments::last_node_location)
+    else {
+        return Vec::new();
+    };
+
+    let (mut after_row, inside): (Vec<_>, Vec<_>) = e
+        .remove_trailing_comments_at(location)
+        .into_iter()
+        .partition(|comment| comment.line_comment && !comment.own_line);
+    e.restore_trailing_comments_at(location, inside);
+
+    if followed_by_comma {
+        for comment in &mut after_row {
+            comment.after_separator = true;
+        }
+    }
+    after_row
 }
 
 fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {

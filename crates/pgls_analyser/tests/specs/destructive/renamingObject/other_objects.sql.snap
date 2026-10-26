@@ -1,0 +1,79 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/renamingObject
+alter type order_status rename value 'shipped' to 'dispatched';
+-- expect_lint/renamingObject
+alter table users rename constraint users_email_key to users_email_unique;
+-- expect_lint/renamingObject
+alter function calculate_total(int) rename to compute_total;
+-- expect_lint/renamingObject
+alter schema billing rename to invoicing;
+-- expect_lint/renamingObject
+alter index users_email_idx rename to users_email_index;
+-- expect_lint/renamingObject
+alter materialized view user_stats rename to account_stats;
+
+```
+
+# Diagnostics
+lint/renamingObject ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Renaming an enum value may break existing clients.
+  
+  i Clients that still use the old name fail after the rename.
+  
+  i Update clients to use the new name before renaming.
+  
+
+
+lint/renamingObject ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Renaming a constraint may break existing clients.
+  
+  i Clients that still use the old name fail after the rename.
+  
+  i Update clients to use the new name before renaming.
+  
+
+
+lint/renamingObject ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Renaming a function may break existing clients.
+  
+  i Clients that still use the old name fail after the rename.
+  
+  i Update clients to use the new name before renaming.
+  
+
+
+lint/renamingObject ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Renaming a schema may break existing clients.
+  
+  i Clients that still use the old name fail after the rename.
+  
+  i Update clients to use the new name before renaming.
+  
+
+
+lint/renamingObject ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Renaming an index may break existing clients.
+  
+  i Clients that still use the old name fail after the rename.
+  
+  i Update clients to use the new name before renaming.
+  
+
+
+lint/renamingObject ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Renaming a materialized view may break existing clients.
+  
+  i Clients that still use the old name fail after the rename.
+  
+  i Update clients to use the new name before renaming.

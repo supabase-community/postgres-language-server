@@ -1,6 +1,6 @@
 # banCharField
 
-**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Group** [`style`](../rules.md#style) · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/banCharField`
 
 **Sources**: inspired by [`squawk/ban-char-field`](https://squawkhq.com/docs/ban-char-field)
@@ -26,7 +26,7 @@ CREATE TABLE "core_bar" (
 ```
 
 ```sh
-code-block.sql:1:1 lint/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banCharField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! CHAR type is discouraged due to space padding behavior.
   

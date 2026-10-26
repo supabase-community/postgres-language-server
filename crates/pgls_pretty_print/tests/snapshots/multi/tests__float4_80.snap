@@ -206,9 +206,7 @@ create cast (xfloat4 as int) without function;
 
 create cast (int as xfloat4) without function;
 
-with
-testdata (bits)
-as (
+with testdata (bits) as (
   values
     (X'00000001'),
     (X'00000002'),
@@ -245,9 +243,7 @@ from
   )
   as s;
 
-with
-testdata (bits)
-as (
+with testdata (bits) as (
   values
     (X'00000000'),
     (X'00800000'),

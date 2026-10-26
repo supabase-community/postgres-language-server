@@ -1,6 +1,6 @@
 # preferJsonb
 
-**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Group** [`style`](../rules.md#style) · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/preferJsonb`
 
 **Sources**: inspired by [`eugene/E3`](https://kaveland.no/eugene/hints/E3/index.html)
@@ -33,7 +33,7 @@ CREATE TABLE users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferJsonb  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
   
@@ -56,7 +56,7 @@ ALTER TABLE users ADD COLUMN metadata json;
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferJsonb  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
   
@@ -76,7 +76,7 @@ ALTER TABLE users ALTER COLUMN data TYPE json;
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferJsonb  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
   

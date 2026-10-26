@@ -431,6 +431,40 @@ describe("LanguageServer API", () => {
     expect(notification?.params?.diagnostics?.length).toBeGreaterThan(0);
   });
 
+  test("codeAction returns the fixes and suppressions at the cursor", () => {
+    lsp.handleMessage({
+      jsonrpc: "2.0",
+      method: "textDocument/didOpen",
+      params: {
+        textDocument: {
+          uri: "file:///code-action.sql",
+          languageId: "sql",
+          version: 1,
+          text: "refresh materialized view user_stats;",
+        },
+      },
+    });
+
+    const messages = lsp.handleMessage({
+      jsonrpc: "2.0",
+      id: 10,
+      method: "textDocument/codeAction",
+      params: {
+        textDocument: { uri: "file:///code-action.sql" },
+        range: { start: { line: 0, character: 2 }, end: { line: 0, character: 2 } },
+        context: { diagnostics: [] },
+      },
+    });
+
+    expect(messages.length).toBe(1);
+    // @ts-expect-error - result is unknown type
+    const titles = messages[0].result.map((action) => action.title);
+    expect(titles).toEqual([
+      "Add CONCURRENTLY",
+      "Suppress rule requireConcurrentRefreshMatview for this statement",
+    ]);
+  });
+
   test("unknown method returns error", () => {
     const messages = lsp.handleMessage({
       jsonrpc: "2.0",

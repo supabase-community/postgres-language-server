@@ -1,0 +1,12 @@
+-- expect_no_diagnostics
+update users set name = 'b', email = 'c';
+update users set tags[1] = 'a', tags[2] = 'b';
+update users set address.street = 'a', address.city = 'b';
+insert into users (id, name) values (1, 'a');
+insert into users (tags[1], tags[2]) values ('a', 'b');
+create table users (id bigint, name text);
+create view user_ids (user_id, other_id) as select 1 as id, 2 as id;
+create view user_ids as select id from users union select id from users;
+create view all_users as select *, users.* from users;
+create view numbers as values (1, 2);
+select a.id, b.id from users a, users b;

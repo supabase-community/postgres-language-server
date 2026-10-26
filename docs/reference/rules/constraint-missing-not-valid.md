@@ -1,6 +1,6 @@
 # constraintMissingNotValid
 
-**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/constraintMissingNotValid`
 
 **Sources**: inspired by [`squawk/constraint-missing-not-valid`](https://squawkhq.com/docs/constraint-missing-not-valid)
@@ -23,7 +23,7 @@ ALTER TABLE distributors ADD CONSTRAINT distfk FOREIGN KEY (address) REFERENCES 
 ```
 
 ```sh
-code-block.sql:1:1 lint/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/constraintMissingNotValid  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
   

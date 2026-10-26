@@ -6,8 +6,11 @@ use pgls_query::{
 };
 
 use super::{
-    Resolver, from_clause::resolve_from_clause, res_target::target_list_columns, resolve_list,
-    resolve_node, with_clause::resolve_with_clause,
+    Resolver,
+    from_clause::resolve_from_clause,
+    res_target::{record_star_references, target_list_columns},
+    resolve_list, resolve_node,
+    with_clause::resolve_with_clause,
 };
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::scope::Columns;
@@ -136,6 +139,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     r.enter_level(level);
 
     resolve_list(r, &n.target_list);
+    record_star_references(r, &n.target_list);
     for node in n.where_clause.iter().chain(&n.having_clause) {
         resolve_node(r, node);
         if let Some(expr) = node.node.as_ref() {

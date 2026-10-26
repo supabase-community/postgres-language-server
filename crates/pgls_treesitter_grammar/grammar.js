@@ -3682,7 +3682,9 @@ module.exports = grammar({
         seq("`", $._identifier, "`"),
       ),
     _sql_parameter: (_) => /[:$@?][a-zA-Z_][0-9a-zA-Z_]*/,
-    _identifier: (_) => /[a-zA-Z_][0-9a-zA-Z_]*/,
+    // Postgres treats every non-ASCII character as a letter in identifiers.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332-L333
+    _identifier: (_) => /([a-zA-Z_]|[^\x00-\x7F])([0-9a-zA-Z_]|[^\x00-\x7F])*/,
 
     _anything: (_) => /\S+/,
   },

@@ -51,8 +51,8 @@ create domain public.email_address as text
   );
 
 alter domain public.email_address
-add constraint email_address_not_blank check (
-  value <> '' and
-  value is not null and
-  length(value) > 3
-) not valid;
+  add constraint email_address_not_blank check (
+    value <> '' and
+    value is not null and
+    length(value) > 3
+  ) not valid;

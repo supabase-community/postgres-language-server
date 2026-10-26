@@ -1,0 +1,26 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireConcurrentIndexCreation
+create unique index if not exists users_email_idx on users (lower(email));
+
+```
+
+# Diagnostics
+lint/requireConcurrentIndexCreation  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Creating an index non-concurrently blocks writes to the table.
+  
+  i Use CREATE INDEX CONCURRENTLY to avoid blocking concurrent operations on the table.
+  
+
+
+## Fix (unsafe): Add CONCURRENTLY
+```
+-- expect_lint/requireConcurrentIndexCreation
+create unique index concurrently if not exists users_email_idx on users (lower(email));
+
+```

@@ -1,6 +1,6 @@
 # preferTextField
 
-**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Group** [`style`](../rules.md#style) · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/preferTextField`
 
 **Sources**: inspired by [`squawk/prefer-text-field`](https://squawkhq.com/docs/prefer-text-field)
@@ -25,7 +25,7 @@ CREATE TABLE "core_bar" (
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
   
@@ -47,7 +47,7 @@ ALTER TABLE "core_bar" ALTER COLUMN "kind" TYPE varchar(1000) USING "kind"::varc
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
   

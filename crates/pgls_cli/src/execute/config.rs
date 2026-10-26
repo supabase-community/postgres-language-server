@@ -1,3 +1,5 @@
+use pgls_configuration::RuleSelector;
+use pgls_workspace::features::code_actions::FixFileMode;
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
     pub mode: ExecutionMode,
@@ -26,21 +28,32 @@ impl ExecutionConfig {
 
 #[derive(Debug, Clone)]
 pub enum ExecutionMode {
-    Check { vcs: VcsTargeting },
-    Format { write: bool, vcs: VcsTargeting },
+    Check {
+        vcs: VcsTargeting,
+        /// Which fixes to apply and write, if any.
+        fix: Option<FixFileMode>,
+        /// The rules to run, if not those of the configuration.
+        only: Vec<RuleSelector>,
+        /// The rules to skip.
+        skip: Vec<RuleSelector>,
+    },
+    Format {
+        write: bool,
+        vcs: VcsTargeting,
+    },
 }
 
 impl ExecutionMode {
     pub fn allows_writes(&self) -> bool {
         match self {
-            ExecutionMode::Check { .. } => false,
+            ExecutionMode::Check { fix, .. } => fix.is_some(),
             ExecutionMode::Format { write, .. } => *write,
         }
     }
 
     pub fn vcs(&self) -> &VcsTargeting {
         match self {
-            ExecutionMode::Check { vcs } => vcs,
+            ExecutionMode::Check { vcs, .. } => vcs,
             ExecutionMode::Format { vcs, .. } => vcs,
         }
     }

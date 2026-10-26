@@ -9,8 +9,16 @@ reindex index my_index;
 ```
 
 # Diagnostics
-lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireConcurrentReindex  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × REINDEX without CONCURRENTLY blocks all table access.
   
   i Use REINDEX CONCURRENTLY to rebuild the index without blocking reads and writes.
+  
+
+
+## Fix (unsafe): Add CONCURRENTLY
+```
+-- expect_lint/requireConcurrentReindex
+reindex index concurrently my_index;
+```

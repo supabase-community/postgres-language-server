@@ -137,33 +137,33 @@ Lints your database schema.
   The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
-- **`    --line-width`**=_`ARG`_ &mdash; 
+- **`    --line-width`**=_`NUMBER`_ &mdash; 
   Maximum line width before breaking. Default: 100.
-- **`    --indent-size`**=_`ARG`_ &mdash; 
+- **`    --indent-size`**=_`NUMBER`_ &mdash; 
   Number of spaces (or tab width) for indentation. Default: 2.
-- **`    --indent-style`**=_`ARG`_ &mdash; 
+- **`    --indent-style`**=_`<spaces|tabs>`_ &mdash; 
   Indentation style: "spaces" or "tabs". Default: "spaces".
-- **`    --keyword-case`**=_`ARG`_ &mdash; 
+- **`    --keyword-case`**=_`<upper|lower>`_ &mdash; 
   Keyword casing: "upper" or "lower". Default: "lower".
-- **`    --constant-case`**=_`ARG`_ &mdash; 
+- **`    --constant-case`**=_`<upper|lower>`_ &mdash; 
   Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-- **`    --type-case`**=_`ARG`_ &mdash; 
+- **`    --type-case`**=_`<upper|lower>`_ &mdash; 
   Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-- **`    --comma-style`**=_`ARG`_ &mdash; 
+- **`    --comma-style`**=_`<trailing|leading>`_ &mdash; 
   Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-- **`    --logical-operator-placement`**=_`ARG`_ &mdash; 
+- **`    --logical-operator-placement`**=_`<trailing|leading>`_ &mdash; 
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
-- **`    --layout`**=_`ARG`_ &mdash; 
-  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
-- **`    --values-row-layout`**=_`ARG`_ &mdash; 
+- **`    --layout`**=_`<fit|expanded>`_ &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+- **`    --values-row-layout`**=_`<fit|expanded>`_ &mdash; 
   How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
-- **`    --cast-style`**=_`ARG`_ &mdash; 
+- **`    --cast-style`**=_`<cast|operator>`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
-- **`    --clause-body-style`**=_`ARG`_ &mdash; 
+- **`    --clause-body-style`**=_`<break|compact>`_ &mdash; 
   Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
-- **`    --isolate-semicolon`**=_`ARG`_ &mdash; 
+- **`    --isolate-semicolon`**=_`<true|false>`_ &mdash; 
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
-- **`    --skip-fn-bodies`**=_`ARG`_ &mdash; 
+- **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
 - **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
@@ -179,7 +179,8 @@ Lints your database schema.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow_statement_executions_against`**=_`ARG`_
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
 - **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
@@ -238,7 +239,7 @@ Lints your database schema.
 
 Runs everything to the requested files.
 
-**Usage**: **`postgres-language-server`** **`check`** \[**`--staged`**\] \[**`--changed`**\] \[**`--since`**=_`REF`_\] \[_`PATH`_\]...
+**Usage**: **`postgres-language-server`** **`check`** \[**`--staged`**\] \[**`--changed`**\] \[**`--since`**=_`REF`_\] \[**`--fix`**\] \[**`--unsafe`**\] \[**`--only`**=_`<GROUP|RULE>`_\]... \[**`--skip`**=_`<GROUP|RULE>`_\]... \[_`PATH`_\]...
 
 **The configuration that is contained inside the configuration file.**
 - **`    --vcs-enabled`**=_`<true|false>`_ &mdash; 
@@ -263,33 +264,33 @@ Runs everything to the requested files.
   The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
-- **`    --line-width`**=_`ARG`_ &mdash; 
+- **`    --line-width`**=_`NUMBER`_ &mdash; 
   Maximum line width before breaking. Default: 100.
-- **`    --indent-size`**=_`ARG`_ &mdash; 
+- **`    --indent-size`**=_`NUMBER`_ &mdash; 
   Number of spaces (or tab width) for indentation. Default: 2.
-- **`    --indent-style`**=_`ARG`_ &mdash; 
+- **`    --indent-style`**=_`<spaces|tabs>`_ &mdash; 
   Indentation style: "spaces" or "tabs". Default: "spaces".
-- **`    --keyword-case`**=_`ARG`_ &mdash; 
+- **`    --keyword-case`**=_`<upper|lower>`_ &mdash; 
   Keyword casing: "upper" or "lower". Default: "lower".
-- **`    --constant-case`**=_`ARG`_ &mdash; 
+- **`    --constant-case`**=_`<upper|lower>`_ &mdash; 
   Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-- **`    --type-case`**=_`ARG`_ &mdash; 
+- **`    --type-case`**=_`<upper|lower>`_ &mdash; 
   Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-- **`    --comma-style`**=_`ARG`_ &mdash; 
+- **`    --comma-style`**=_`<trailing|leading>`_ &mdash; 
   Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-- **`    --logical-operator-placement`**=_`ARG`_ &mdash; 
+- **`    --logical-operator-placement`**=_`<trailing|leading>`_ &mdash; 
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
-- **`    --layout`**=_`ARG`_ &mdash; 
-  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
-- **`    --values-row-layout`**=_`ARG`_ &mdash; 
+- **`    --layout`**=_`<fit|expanded>`_ &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+- **`    --values-row-layout`**=_`<fit|expanded>`_ &mdash; 
   How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
-- **`    --cast-style`**=_`ARG`_ &mdash; 
+- **`    --cast-style`**=_`<cast|operator>`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
-- **`    --clause-body-style`**=_`ARG`_ &mdash; 
+- **`    --clause-body-style`**=_`<break|compact>`_ &mdash; 
   Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
-- **`    --isolate-semicolon`**=_`ARG`_ &mdash; 
+- **`    --isolate-semicolon`**=_`<true|false>`_ &mdash; 
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
-- **`    --skip-fn-bodies`**=_`ARG`_ &mdash; 
+- **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
 - **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
@@ -305,7 +306,8 @@ Runs everything to the requested files.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow_statement_executions_against`**=_`ARG`_
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
 - **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
@@ -363,17 +365,25 @@ Runs everything to the requested files.
 
 **Available options:**
 - **`    --stdin-file-path`**=_`PATH`_ &mdash; 
-  Use this option when you want to format code piped from `stdin`, and print the output to `stdout`.
+  Use this option when you want to check code piped from `stdin`. The code is printed to `stdout`, with the fixes applied if `--fix` is set, and the diagnostics to `stderr`.
 
-  The file doesn't need to exist on disk, what matters is the extension of the file. Based on the extension, we know how to check the code.
+  The file doesn't need to exist on disk. Its path is used to apply the configuration and to label the diagnostics.
 
-  Example: `echo 'let a;' | pgls_cli check --stdin-file-path=test.sql`
+  Example: `echo 'drop table users;' | postgres-language-server check --stdin-file-path=test.sql`
 - **`    --staged`** &mdash; 
   When set to true, only the files that have been staged (the ones prepared to be committed) will be linted. This option should be used when working locally.
 - **`    --changed`** &mdash; 
   When set to true, only the files that have been changed compared to your `defaultBranch` configuration will be linted. This option should be used in CI environments.
 - **`    --since`**=_`REF`_ &mdash; 
   Use this to specify the base branch to compare against when you're using the --changed flag and the `defaultBranch` is not set in your `postgres-language-server.jsonc`
+- **`    --fix`** &mdash; 
+  Apply the safe fixes of the lint rules and write the files.
+- **`    --unsafe`** &mdash; 
+  Also apply the unsafe fixes, which may change what a statement does. Implies `--fix`.
+- **`    --only`**=_`<GROUP|RULE>`_ &mdash; 
+  Only run the given lint rule or group, e.g. `--only=requireConcurrentIndexCreation` or `--only=style`, also if the configuration disables it. Can be repeated. With `--fix`, only its fixes are applied.
+- **`    --skip`**=_`<GROUP|RULE>`_ &mdash; 
+  Skip the given lint rule or group, e.g. `--skip=preferRobustStmts`. Can be repeated.
 - **`-h`**, **`--help`** &mdash; 
   Prints help information
 
@@ -407,33 +417,33 @@ Formats the requested files.
   The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
-- **`    --line-width`**=_`ARG`_ &mdash; 
+- **`    --line-width`**=_`NUMBER`_ &mdash; 
   Maximum line width before breaking. Default: 100.
-- **`    --indent-size`**=_`ARG`_ &mdash; 
+- **`    --indent-size`**=_`NUMBER`_ &mdash; 
   Number of spaces (or tab width) for indentation. Default: 2.
-- **`    --indent-style`**=_`ARG`_ &mdash; 
+- **`    --indent-style`**=_`<spaces|tabs>`_ &mdash; 
   Indentation style: "spaces" or "tabs". Default: "spaces".
-- **`    --keyword-case`**=_`ARG`_ &mdash; 
+- **`    --keyword-case`**=_`<upper|lower>`_ &mdash; 
   Keyword casing: "upper" or "lower". Default: "lower".
-- **`    --constant-case`**=_`ARG`_ &mdash; 
+- **`    --constant-case`**=_`<upper|lower>`_ &mdash; 
   Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-- **`    --type-case`**=_`ARG`_ &mdash; 
+- **`    --type-case`**=_`<upper|lower>`_ &mdash; 
   Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-- **`    --comma-style`**=_`ARG`_ &mdash; 
+- **`    --comma-style`**=_`<trailing|leading>`_ &mdash; 
   Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-- **`    --logical-operator-placement`**=_`ARG`_ &mdash; 
+- **`    --logical-operator-placement`**=_`<trailing|leading>`_ &mdash; 
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
-- **`    --layout`**=_`ARG`_ &mdash; 
-  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
-- **`    --values-row-layout`**=_`ARG`_ &mdash; 
+- **`    --layout`**=_`<fit|expanded>`_ &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+- **`    --values-row-layout`**=_`<fit|expanded>`_ &mdash; 
   How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
-- **`    --cast-style`**=_`ARG`_ &mdash; 
+- **`    --cast-style`**=_`<cast|operator>`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
-- **`    --clause-body-style`**=_`ARG`_ &mdash; 
+- **`    --clause-body-style`**=_`<break|compact>`_ &mdash; 
   Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
-- **`    --isolate-semicolon`**=_`ARG`_ &mdash; 
+- **`    --isolate-semicolon`**=_`<true|false>`_ &mdash; 
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
-- **`    --skip-fn-bodies`**=_`ARG`_ &mdash; 
+- **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
 - **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
@@ -449,7 +459,8 @@ Formats the requested files.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow_statement_executions_against`**=_`ARG`_
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
 - **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
