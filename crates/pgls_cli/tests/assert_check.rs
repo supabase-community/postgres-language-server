@@ -373,6 +373,151 @@ async fn check_reads_the_password_from_pgpassfile(test_db: PgPool) {
     assert!(output.contains("lint/unknownColumn"), "{output}");
 }
 
+/// Each file uses the nearest configuration file at or above it, below the working directory.
+#[cfg(target_os = "linux")]
+#[test]
+fn check_uses_the_nearest_configuration_file() {
+    let root = tempfile::tempdir().unwrap();
+    let write = |path: &str, content: &str| {
+        let path = root.path().join(path);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, content).unwrap();
+    };
+    write(
+        "postgres-language-server.jsonc",
+        r#"{ "db": { "disableConnection": true } }"#,
+    );
+    write(
+        "db1/postgres-language-server.jsonc",
+        r#"{ "db": { "disableConnection": true }, "linter": { "enabled": false } }"#,
+    );
+    write(
+        "db2/postgres-language-server.jsonc",
+        r#"{
+            "extends": ["../postgres-language-server.jsonc"],
+            "linter": { "rules": { "banDropColumn": "error" } }
+        }"#,
+    );
+    for file in ["a.sql", "db1/a.sql", "db2/schema/a.sql"] {
+        write(file, "alter table users drop column name;\n");
+    }
+
+    let check = |paths: &[&str]| {
+        let mut cmd = cargo_bin_cmd!("postgres-language-server");
+        for var in ["DATABASE_URL", "PGHOST", "PGPORT", "PGUSER", "PGDATABASE"] {
+            cmd.env_remove(var);
+        }
+        let output = cmd
+            .current_dir(root.path())
+            .args(["check", "--reporter", "github", "--log-level", "none"])
+            .args(paths)
+            .output()
+            .expect("failed to run CLI");
+        String::from_utf8_lossy(&output.stdout).into_owned()
+    };
+    let annotation =
+        |level: &str, file: &str| format!("::{level} title=lint/banDropColumn,file={file},");
+
+    // The traversal of the working directory passes absolute paths.
+    let stdout = check(&[]);
+    let absolute = |file: &str| root.path().join(file).display().to_string();
+    assert!(
+        stdout.contains(&annotation("warning", &absolute("a.sql"))),
+        "{stdout}"
+    );
+    assert!(!stdout.contains("db1/a.sql"), "{stdout}");
+    assert!(
+        stdout.contains(&annotation("error", &absolute("db2/schema/a.sql"))),
+        "{stdout}"
+    );
+
+    // Paths given as arguments are relative to the working directory.
+    let stdout = check(&["a.sql", "db1/a.sql", "db2/schema/a.sql"]);
+    assert!(stdout.contains(&annotation("warning", "a.sql")), "{stdout}");
+    assert!(!stdout.contains("db1/a.sql"), "{stdout}");
+    assert!(
+        stdout.contains(&annotation("error", "db2/schema/a.sql")),
+        "{stdout}"
+    );
+}
+
+/// Writes `files` below a new temporary directory.
+fn write_tree(files: &[(&str, &str)]) -> tempfile::TempDir {
+    let root = tempfile::tempdir().unwrap();
+    for (path, content) in files {
+        let path = root.path().join(path);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, content).unwrap();
+    }
+    root
+}
+
+/// Runs `check` in `cwd` with the GitHub reporter, without the connection settings of the
+/// environment but with `envs`. Returns whether it succeeded and its output.
+fn check_in(cwd: &Path, args: &[&str], envs: &[(&str, &str)]) -> (bool, String) {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    for var in [
+        "DATABASE_URL",
+        "PGHOST",
+        "PGPORT",
+        "PGUSER",
+        "PGPASSWORD",
+        "PGDATABASE",
+    ] {
+        cmd.env_remove(var);
+    }
+    cmd.env("PGPASSFILE", "/nonexistent/pgpass");
+    cmd.envs(envs.iter().copied());
+    let output = cmd
+        .current_dir(cwd)
+        .args(["check", "--reporter", "github", "--log-level", "none"])
+        .args(args)
+        .output()
+        .expect("failed to run CLI");
+    (
+        output.status.success(),
+        format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ),
+    )
+}
+
+/// `check` with paths only loads the configuration files on the way to them and below the folders
+/// among them, so a broken configuration file elsewhere doesn't matter.
+#[test]
+fn check_only_loads_the_configuration_files_of_its_paths() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        (
+            "tests/fixtures/broken/postgres-language-server.jsonc",
+            "{ this is not json",
+        ),
+        (
+            "db1/postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        ("a.sql", "select 1;\n"),
+        ("db1/schema/a.sql", "alter table users drop column name;\n"),
+    ]);
+
+    let (success, output) = check_in(root.path(), &["a.sql"], &[]);
+    assert!(success, "{output}");
+
+    for path in ["db1/schema/a.sql", "db1"] {
+        let (success, output) = check_in(root.path(), &[path], &[]);
+        assert!(!success, "{output}");
+        assert!(
+            output.contains("::error title=lint/banDropColumn"),
+            "the configuration of db1 doesn't apply to {path}:\n{output}"
+        );
+    }
+}
+
 /// Runs `check` with the database settings given in `args` only, without the connection
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]

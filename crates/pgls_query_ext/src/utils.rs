@@ -1,3 +1,5 @@
+use pgls_text_size::{TextRange, TextSize};
+
 /// Helper function to find a specific option value from function options
 pub fn find_option_value(
     create_fn: &pgls_query::protobuf::CreateFunctionStmt,
@@ -38,6 +40,33 @@ pub fn find_option_value(
                 None
             }
         })
+}
+
+/// The body of a `LANGUAGE sql` function, written as a string (`AS '...'` or `AS $$...$$`).
+#[derive(Debug, Clone)]
+pub struct SqlFunctionBody {
+    /// Where the body is in the statement.
+    pub range: TextRange,
+    pub body: String,
+}
+
+/// The body of `stmt` if it creates a `LANGUAGE sql` function with a string body. `None` for
+/// `BEGIN ATOMIC` and `RETURN` bodies, and for bodies whose text differs from the source, like
+/// `'...'` with doubled quotes.
+pub fn sql_function_body(stmt: &pgls_query::NodeEnum, sql: &str) -> Option<SqlFunctionBody> {
+    let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = stmt else {
+        return None;
+    };
+    if find_option_value(create_fn, "language")? != "sql" {
+        return None;
+    }
+    let body = find_option_value(create_fn, "as")?;
+    let start = sql.find(&body)?;
+    let range = TextRange::at(
+        TextSize::try_from(start).ok()?,
+        TextSize::try_from(body.len()).ok()?,
+    );
+    Some(SqlFunctionBody { range, body })
 }
 
 pub fn parse_name(nodes: &[pgls_query::protobuf::Node]) -> Option<(Option<String>, String)> {
