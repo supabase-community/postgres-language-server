@@ -3,3 +3,4 @@
 alter table users rename to accounts;
 alter table accounts rename column name to full_name;
 alter type order_status add value 'returned' after 'shipped';
+alter type address rename attribute zip to postal_code;

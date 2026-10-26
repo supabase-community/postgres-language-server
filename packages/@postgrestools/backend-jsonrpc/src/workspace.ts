@@ -2,6 +2,7 @@
 import type { Transport } from "./transport";
 export interface IsPathIgnoredParams {
   pgls_path: PgLSPath;
+  project_key: ProjectKey;
 }
 export interface PgLSPath {
   /**
@@ -14,24 +15,34 @@ export interface PgLSPath {
    */
   was_written: boolean;
 }
+/**
+ * Identifies a project of the workspace. [ProjectKey] is serialized like this.
+ */
+export interface ProjectKey {
+  idx: number;
+  version: number;
+}
 export type FileKind = FileKind2[];
 /**
  * The priority of the file
  */
 export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
 export interface RegisterProjectFolderParams {
+  /**
+   * The folder of the project. A project without a folder contains every path.
+   */
   path?: string;
-  setAsCurrentWorkspace: boolean;
 }
-export type ProjectKey = string;
 export interface GetFileContentParams {
   path: PgLSPath;
+  project_key: ProjectKey;
 }
 export interface PullFileDiagnosticsParams {
   categories: RuleCategories;
   max_diagnostics: number;
   only: RuleCode[];
   path: PgLSPath;
+  project_key: ProjectKey;
   skip: RuleCode[];
 }
 export type RuleCategories = RuleCategory[];
@@ -98,6 +109,7 @@ export type Category =
   | "lint/banDropType"
   | "lint/banDropView"
   | "lint/banDuplicateColumnAssignments"
+  | "lint/banNonTransactionalStatementInTransaction"
   | "lint/banSetSchema"
   | "lint/banTruncate"
   | "lint/banTruncateCascade"
@@ -203,6 +215,7 @@ export type Category =
   | "plpgsql_check"
   | "internalError/panic"
   | "syntax"
+  | "migrations/sectionMarkers"
   | "dummy"
   | "lint"
   | "splinter"
@@ -302,6 +315,102 @@ export interface BacktraceSymbol {
   lineno?: number;
   name?: string;
 }
+export interface CodeActionsParams {
+  cursor_position: TextSize;
+  only: RuleCode[];
+  path: PgLSPath;
+  project_key: ProjectKey;
+  skip: RuleCode[];
+}
+export interface CodeActionsResult {
+  actions: CodeAction[];
+}
+export interface CodeAction {
+  disabled_reason?: string;
+  kind: CodeActionKind;
+  title: string;
+}
+export type CodeActionKind =
+  | { Edit: EditAction }
+  | { Command: CommandAction }
+  | { EditAndCommand: [EditAction, CommandAction] };
+export interface EditAction {
+  applicability: Applicability;
+  category: ActionCategory;
+  /**
+   * Non-overlapping edits of the file, ordered by their position.
+   */
+  edits: TextEdit[];
+  /**
+   * The category of the diagnostic the action fixes or suppresses, e.g. `lint/banDropTable`. `None` for refactors.
+   */
+  rule?: string;
+}
+export interface CommandAction {
+  category: CommandActionCategory;
+}
+/**
+ * Whether a fix can be applied without reviewing it.
+ */
+export type Applicability = "always" | "maybeIncorrect";
+/**
+ * The category of a code action, this type maps directly to the [CodeActionKind] type in the Language Server Protocol specification
+
+[CodeActionKind]: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#codeActionKind
+ */
+export type ActionCategory =
+  | { QuickFix: string }
+  | { Refactor: RefactorKind }
+  | { Source: SourceActionKind }
+  | { Other: string };
+export type CommandActionCategory = "InvalidateSchemaCache" | { ExecuteStatement: StatementId };
+/**
+ * The sub-category of a refactor code action.
+
+[Check the LSP spec](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#codeActionKind) for more information:
+ */
+export type RefactorKind = "None" | "Extract" | "Inline" | "Rewrite" | { Other: string };
+/**
+ * The sub-category of a source code action
+ */
+export type SourceActionKind = "FixAll" | "None" | "OrganizeImports" | { Other: string };
+/**
+ * `StatementId` can represent IDs for nested statements.
+
+For example, an SQL function really consist of two statements; the function creation and the body:
+
+```sql create or replace function get_product_name(product_id INT) -- the root statement returns varchar as $$ select * from … -- the child statement $$ LANGUAGE plpgsql; ```
+
+For now, we only support SQL functions – no complex, nested statements.
+ */
+export type StatementId =
+  | { Root: { content: string } }
+  | { Child: { content: string; parent_content: string } };
+export interface FixFileParams {
+  fix_file_mode: FixFileMode;
+  only: RuleCode[];
+  path: PgLSPath;
+  project_key: ProjectKey;
+  skip: RuleCode[];
+}
+/**
+ * Which fixes `fix_file` applies.
+ */
+export type FixFileMode = "SafeFixes" | "SafeAndUnsafeFixes";
+export interface FixFileResult {
+  /**
+   * The content of the file with the fixes applied.
+   */
+  code: string;
+  /**
+   * The number of fixes that were applied.
+   */
+  fixes_applied: number;
+  /**
+   * The number of unsafe fixes that were not applied with [FixFileMode::SafeFixes].
+   */
+  skipped_suggested_fixes: number;
+}
 export interface GetCompletionsParams {
   /**
    * The File for which a completion is requested.
@@ -311,6 +420,7 @@ export interface GetCompletionsParams {
    * The Cursor position in the file for which a completion is requested.
    */
   position: TextSize;
+  project_key: ProjectKey;
 }
 export interface CompletionsResult {
   items: CompletionItem[];
@@ -351,6 +461,10 @@ export type CompletionItemKind =
 export interface UpdateSettingsParams {
   configuration: PartialConfiguration;
   gitignore_matches: string[];
+  /**
+   * The project whose root settings are updated.
+   */
+  project_key: ProjectKey;
   vcs_base_path?: string;
   workspace_directory?: string;
 }
@@ -379,6 +493,10 @@ export interface PartialConfiguration {
    */
   format?: PartialFormatConfiguration;
   /**
+   * The configuration for inlay hints in editors
+   */
+  inlayHints?: PartialInlayHintsConfiguration;
+  /**
    * The configuration for the linter
    */
   linter?: PartialLinterConfiguration;
@@ -394,6 +512,10 @@ export interface PartialConfiguration {
    * The configuration for type checking
    */
   plpgsqlCheck?: PartialPlPgSqlCheckConfiguration;
+  /**
+   * The configuration for semantic highlighting in editors
+   */
+  semanticTokens?: PartialSemanticTokensConfiguration;
   /**
    * The configuration for splinter
    */
@@ -512,7 +634,7 @@ export interface PartialFormatConfiguration {
    */
   keywordCase?: KeywordCase;
   /**
-   * How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
+   * How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
    */
   layout?: Layout;
   /**
@@ -535,6 +657,15 @@ export interface PartialFormatConfiguration {
    * How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
    */
   valuesRowLayout?: Layout;
+}
+/**
+ * The configuration for inlay hints.
+ */
+export interface PartialInlayHintsConfiguration {
+  /**
+   * if `false`, the language server sends no inlay hints. `true` by default
+   */
+  enabled?: boolean;
 }
 export interface PartialLinterConfiguration {
   /**
@@ -641,6 +772,15 @@ export interface PartialPlPgSqlCheckConfiguration {
    * Disable all warnings, overriding individual warning parameters. `false` by default.
    */
   withoutWarnings?: boolean;
+}
+/**
+ * The configuration for semantic highlighting.
+ */
+export interface PartialSemanticTokensConfiguration {
+  /**
+   * if `false`, the language server sends no semantic tokens, and editors keep the highlighting of their grammar. `true` by default
+   */
+  enabled?: boolean;
 }
 export interface PartialSplinterConfiguration {
   /**
@@ -827,7 +967,7 @@ export interface LinterRules {
    */
   banCharField?: RuleConfiguration_for_Null;
   /**
-   * Concurrent index creation is not allowed within a transaction.
+   * Concurrent index operations are not allowed within a transaction.
    */
   banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
   /**
@@ -902,6 +1042,10 @@ export interface LinterRules {
    * A column is assigned or declared more than once.
    */
   banDuplicateColumnAssignments?: RuleConfiguration_for_Null;
+  /**
+   * Statements that Postgres can't run inside a transaction block.
+   */
+  banNonTransactionalStatementInTransaction?: RuleConfiguration_for_Null;
   /**
    * Moving an object to another schema may break existing clients.
    */
@@ -1481,15 +1625,18 @@ Each pattern should be in the format `schema.object_name`, for example: - `"publ
 export interface OpenFileParams {
   content: string;
   path: PgLSPath;
+  project_key: ProjectKey;
   version: number;
 }
 export interface ChangeFileParams {
   content: string;
   path: PgLSPath;
+  project_key: ProjectKey;
   version: number;
 }
 export interface CloseFileParams {
   path: PgLSPath;
+  project_key: ProjectKey;
 }
 export type Configuration = PartialConfiguration;
 export interface Workspace {
@@ -1497,6 +1644,8 @@ export interface Workspace {
   registerProjectFolder(params: RegisterProjectFolderParams): Promise<ProjectKey>;
   getFileContent(params: GetFileContentParams): Promise<string>;
   pullFileDiagnostics(params: PullFileDiagnosticsParams): Promise<PullDiagnosticsResult>;
+  pullCodeActions(params: CodeActionsParams): Promise<CodeActionsResult>;
+  fixFile(params: FixFileParams): Promise<FixFileResult>;
   getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
   updateSettings(params: UpdateSettingsParams): Promise<void>;
   openFile(params: OpenFileParams): Promise<void>;
@@ -1517,6 +1666,12 @@ export function createWorkspace(transport: Transport): Workspace {
     },
     pullFileDiagnostics(params) {
       return transport.request("pgls/pull_file_diagnostics", params);
+    },
+    pullCodeActions(params) {
+      return transport.request("pgls/pull_code_actions", params);
+    },
+    fixFile(params) {
+      return transport.request("pgls/fix_file", params);
     },
     getCompletions(params) {
       return transport.request("pgls/get_completions", params);

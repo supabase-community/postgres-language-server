@@ -587,6 +587,21 @@ pub(super) fn emit_with_comments_at(
     e.take_trailing_comments_at(location);
 }
 
+/// Emits the comments written before `keyword` whose node is `node`, the expression the parent
+/// writes after the keyword. Call it right before the break that precedes the keyword.
+///
+/// The comments are attached to `node` because the keyword has no node of its own. Without this,
+/// `then 'x' /* why */ else 'y'` would come out as `else /* why */ 'y'`.
+pub(super) fn emit_comments_before_keyword(e: &mut EventEmitter, keyword: &str, node: &Node) {
+    if let Some(location) = node
+        .node
+        .as_ref()
+        .and_then(crate::comments::first_node_location)
+    {
+        e.take_comments_before_keyword_at(location, keyword);
+    }
+}
+
 pub(super) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
     use crate::ClauseBodyStyle;
     use crate::emitter::LineType;
@@ -971,6 +986,7 @@ mod tests {
             line_comment: true,
             own_line: true,
             after_separator: false,
+            before_keyword: None,
         };
         let leading = HashMap::from([(7, vec![comment])]);
         let mut e = EventEmitter::with_comments(Default::default(), leading, HashMap::new());

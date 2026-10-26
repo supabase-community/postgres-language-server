@@ -798,7 +798,7 @@ create foreign data wrapper dummy;
 
 create server s0 foreign data wrapper dummy;
 
-create foreign table ft1 ( c1 int not null ) server s0;
+create foreign table ft1 (c1 int not null) server s0;
 
 alter foreign table ft1
   add column c8 int default 0;

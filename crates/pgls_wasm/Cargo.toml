@@ -29,3 +29,6 @@ lsp-types   = "0.97"
 serde       = { workspace = true, features = ["derive"] }
 serde_json  = { workspace = true }
 tree-sitter = { workspace = true }
+
+[lints]
+workspace = true

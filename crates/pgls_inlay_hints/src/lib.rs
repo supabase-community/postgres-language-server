@@ -58,6 +58,20 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
             } => Some((location, function, arguments)),
             _ => None,
         })
+        // Only positional arguments for named parameters get hints. Skip the other calls, like
+        // those of most built-in functions, before scanning the statement.
+        .filter(|(_, function, arguments)| {
+            function.signature.as_ref().is_some_and(|signature| {
+                arguments.iter().any(|argument| {
+                    !argument.named
+                        && signature
+                            .arguments
+                            .get(argument.parameter)
+                            .and_then(|parameter| parameter.name.as_deref())
+                            .is_some_and(|name| !name.is_empty())
+                })
+            })
+        })
         .collect();
     if calls.is_empty() {
         return Vec::new();
@@ -118,7 +132,11 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
 /// The tokens of each argument of the call whose name starts at `location`, without a leading
 /// `DISTINCT` or `ALL` of an aggregate.
 fn argument_tokens(tokens: &[ScanToken], location: i32) -> Option<Vec<&[ScanToken]>> {
-    let name = tokens.iter().position(|token| token.start == location)?;
+    // The tokens are ordered by their start.
+    let name = tokens.partition_point(|token| token.start < location);
+    if tokens.get(name)?.start != location {
+        return None;
+    }
     // The name is at most `schema.name`.
     let open = name
         + tokens[name..]
@@ -178,9 +196,11 @@ fn is_reference_to(sql: &str, tokens: &[ScanToken], name: &str) -> bool {
             .is_some_and(|last| identifier_name(last) == name)
 }
 
+/// Postgres treats every non-ASCII character as a letter in identifiers.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332-L333
 fn is_identifier(text: &str) -> bool {
     text.starts_with('"')
         || text
             .chars()
-            .all(|c| c.is_alphanumeric() || c == '_' || c == '$')
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$' || !c.is_ascii())
 }

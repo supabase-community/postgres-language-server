@@ -72,3 +72,6 @@ path = "src/main.rs"
 [[bin]]
 name = "postgres-language-server"
 path = "src/main.rs"
+
+[lints]
+workspace = true

@@ -1,25 +1,22 @@
 use crate::capabilities::server_capabilities;
 use crate::handlers;
-use crate::session::{
-    CapabilitySet, CapabilityStatus, ClientInformation, Session, SessionHandle, SessionKey,
-};
+use crate::session::{ClientInformation, Session, SessionHandle, SessionKey};
 use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
+use parking_lot::Mutex;
 use pgls_configuration::database::PartialDatabaseConfiguration;
-use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
-use pgls_workspace::workspace::{RegisterProjectFolderParams, UnregisterProjectFolderParams};
+use pgls_fs::{FileSystem, OsFileSystem};
 use pgls_workspace::{DynRef, Workspace, workspace};
 use rustc_hash::FxHashMap;
-use serde_json::json;
 use std::panic::RefUnwindSafe;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::Notify;
 use tokio::task::spawn_blocking;
-use tower_lsp_server::jsonrpc::Result as LspResult;
+use tower_lsp_server::jsonrpc::{self, Result as LspResult};
 use tower_lsp_server::{ClientSocket, ls_types::*};
 use tower_lsp_server::{LanguageServer, LspService, Server};
 use tracing::{Instrument, error, info};
@@ -51,47 +48,6 @@ impl LSPServer {
             stop_on_disconnect,
             is_initialized,
         }
-    }
-
-    async fn setup_capabilities(&self) {
-        let mut capabilities = CapabilitySet::default();
-
-        capabilities.add_capability(
-            "pgls_did_change_extension_settings",
-            "workspace/didChangeConfiguration",
-            if self.session.can_register_did_change_configuration() {
-                CapabilityStatus::Enable(None)
-            } else {
-                CapabilityStatus::Disable
-            },
-        );
-
-        capabilities.add_capability(
-            "pgls_did_change_workspace_settings",
-            "workspace/didChangeWatchedFiles",
-            match self.session.base_path() {
-                Some(base_path) => {
-                    let watchers = ConfigName::file_names()
-                        .iter()
-                        .map(|config_name| FileSystemWatcher {
-                            glob_pattern: GlobPattern::String(format!(
-                                "{}/{}",
-                                base_path.display(),
-                                config_name
-                            )),
-                            kind: Some(WatchKind::all()),
-                        })
-                        .collect();
-
-                    CapabilityStatus::Enable(Some(json!(
-                        DidChangeWatchedFilesRegistrationOptions { watchers }
-                    )))
-                }
-                _ => CapabilityStatus::Disable,
-            },
-        );
-
-        self.session.register_capabilities(capabilities).await;
     }
 }
 
@@ -150,7 +106,7 @@ impl LanguageServer for LSPServer {
             .log_message(MessageType::INFO, msg)
             .await;
 
-        self.setup_capabilities().await;
+        self.session.setup_capabilities().await;
 
         // Diagnostics are disabled by default, so update them after fetching workspace config
         self.session.update_all_diagnostics().await;
@@ -164,41 +120,27 @@ impl LanguageServer for LSPServer {
     #[tracing::instrument(level = "info", skip_all)]
     async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
         handlers::configuration::did_change_configuration(&self.session, params).await;
-        self.setup_capabilities().await;
+        self.session.setup_capabilities().await;
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
-        let file_paths = params
-            .changes
-            .iter()
-            .map(|change| change.uri.to_file_path());
-        for file_path in file_paths {
-            match file_path {
-                Some(file_path) => {
-                    let base_path = self.session.base_path();
-                    if let Some(base_path) = base_path {
-                        let possible_config_json = file_path.strip_prefix(&base_path);
-                        if let Ok(watched_file) = possible_config_json
-                            && ConfigName::file_names()
-                                .contains(&&*watched_file.display().to_string())
-                        {
-                            self.session.reload_workspace_settings().await;
-                            self.setup_capabilities().await;
-                            // self.session.update_all_diagnostics().await;
-                            // for now we are only interested to the configuration file,
-                            // so it's OK to exist the loop
-                            break;
-                        }
+        let is_configuration_change =
+            params
+                .changes
+                .iter()
+                .any(|change| match change.uri.to_file_path() {
+                    Some(file_path) => self.session.is_configuration_change(&file_path),
+                    None => {
+                        error!(
+                            "The URI {:?} could not be parsed as a filesystem path",
+                            change.uri
+                        );
+                        false
                     }
-                }
-                None => {
-                    error!(
-                        "The Workspace root URI {file_path:?} could not be parsed as a filesystem path"
-                    );
-                    continue;
-                }
-            }
+                });
+        if is_configuration_change {
+            self.session.schedule_configuration_reload();
         }
     }
 
@@ -224,44 +166,29 @@ impl LanguageServer for LSPServer {
     }
 
     async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
-        for removed in &params.event.removed {
-            if let Ok(project_path) = self.session.file_path(&removed.uri) {
-                let result = self
-                    .session
-                    .workspace
-                    .unregister_project_folder(UnregisterProjectFolderParams { path: project_path })
-                    .map_err(into_lsp_error);
+        let paths = |folders: &[WorkspaceFolder]| -> Vec<PathBuf> {
+            folders
+                .iter()
+                .filter_map(|folder| {
+                    let path = folder.uri.to_file_path().map(|path| path.into_owned());
+                    if path.is_none() {
+                        error!(
+                            "The Workspace root URI {:?} could not be parsed as a filesystem path",
+                            folder.uri
+                        );
+                    }
+                    path
+                })
+                .collect()
+        };
+        self.session
+            .change_workspace_folders(paths(&params.event.added), &paths(&params.event.removed));
 
-                if let Err(err) = result {
-                    error!("Failed to remove project from the workspace: {}", err);
-                    self.session
-                        .client
-                        .log_message(MessageType::ERROR, err)
-                        .await;
-                }
-            }
-        }
-
-        for added in &params.event.added {
-            if let Ok(project_path) = self.session.file_path(&added.uri) {
-                let result = self
-                    .session
-                    .workspace
-                    .register_project_folder(RegisterProjectFolderParams {
-                        path: Some(project_path.to_path_buf()),
-                        set_as_current_workspace: true,
-                    })
-                    .map_err(into_lsp_error);
-
-                if let Err(err) = result {
-                    error!("Failed to add project to the workspace: {}", err);
-                    self.session
-                        .client
-                        .log_message(MessageType::ERROR, err)
-                        .await;
-                }
-            }
-        }
+        // Loading the configuration registers the projects of the new folders and unregisters the
+        // ones of the removed folders.
+        self.session.reload_workspace_settings().await;
+        self.session.setup_capabilities().await;
+        self.session.update_all_diagnostics().await;
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -278,6 +205,28 @@ impl LanguageServer for LSPServer {
     #[tracing::instrument(level = "trace", skip_all)]
     async fn inlay_hint(&self, params: InlayHintParams) -> LspResult<Option<Vec<InlayHint>>> {
         match handlers::inlay_hints::inlay_hints(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> LspResult<Option<SemanticTokensResult>> {
+        match handlers::semantic_tokens::semantic_tokens_full(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn semantic_tokens_range(
+        &self,
+        params: SemanticTokensRangeParams,
+    ) -> LspResult<Option<SemanticTokensRangeResult>> {
+        match handlers::semantic_tokens::semantic_tokens_range(&self.session, params) {
             Ok(result) => LspResult::Ok(result),
             Err(e) => LspResult::Err(into_lsp_error(e)),
         }
@@ -310,7 +259,10 @@ impl LanguageServer for LSPServer {
         match handlers::code_actions::execute_command(&self.session, params).await {
             // we'll inform the client within `code_actions::execute_command`
             Ok(_) => LspResult::Ok(None),
-            Err(err) => LspResult::Err(into_lsp_error(err)),
+            Err(err) => LspResult::Err(
+                err.downcast::<jsonrpc::Error>()
+                    .unwrap_or_else(into_lsp_error),
+            ),
         }
     }
 
@@ -339,16 +291,15 @@ impl LanguageServer for LSPServer {
 
 impl Drop for LSPServer {
     fn drop(&mut self) {
-        if let Ok(mut sessions) = self.sessions.lock() {
-            let _removed = sessions.remove(&self.session.key);
-            debug_assert!(_removed.is_some(), "Session did not exist.");
+        let mut sessions = self.sessions.lock();
+        let _removed = sessions.remove(&self.session.key);
+        debug_assert!(_removed.is_some(), "Session did not exist.");
 
-            if self.stop_on_disconnect
-                && sessions.is_empty()
-                && self.is_initialized.load(Ordering::Relaxed)
-            {
-                self.session.cancellation.notify_one();
-            }
+        if self.stop_on_disconnect
+            && sessions.is_empty()
+            && self.is_initialized.load(Ordering::Relaxed)
+        {
+            self.session.cancellation.notify_one();
         }
     }
 }
@@ -472,7 +423,7 @@ impl ServerFactory {
             }
             let handle = Arc::new(session);
 
-            let mut sessions = self.sessions.lock().unwrap();
+            let mut sessions = self.sessions.lock();
             sessions.insert(session_key, handle.clone());
 
             LSPServer::new(
@@ -510,15 +461,18 @@ impl ServerFactory {
 
         workspace_method!(builder, is_path_ignored);
         workspace_method!(builder, update_settings);
+        workspace_method!(builder, update_nested_settings);
         workspace_method!(builder, get_file_content);
         workspace_method!(builder, open_file);
         workspace_method!(builder, change_file);
         workspace_method!(builder, close_file);
         workspace_method!(builder, pull_file_diagnostics);
+        workspace_method!(builder, pull_code_actions);
         workspace_method!(builder, fix_file);
         workspace_method!(builder, check_database_connection);
         workspace_method!(builder, get_completions);
         workspace_method!(builder, pull_inlay_hints);
+        workspace_method!(builder, pull_semantic_tokens);
         workspace_method!(builder, register_project_folder);
         workspace_method!(builder, unregister_project_folder);
         workspace_method!(builder, invalidate_schema_cache);
@@ -565,16 +519,15 @@ mod tests {
     use crate::session::SessionHandle;
     use futures::StreamExt;
     use pgls_configuration::PartialConfiguration;
-    use pgls_fs::{OsFileSystem, PgLSPath};
+    use pgls_fs::{ConfigName, OsFileSystem, PgLSPath};
     use pgls_workspace::workspace::{IsPathIgnoredParams, OpenFileParams};
+    use serde_json::json;
     use std::future::ready;
     use std::path::Path;
     use tower_lsp_server::ls_types::Uri;
 
-    /// A session backed by a real working directory, so that reloading the configuration keeps
-    /// updating the settings of the *same* project. [`pgls_fs::MemoryFileSystem`] has no working
-    /// directory, which makes every reload register a fresh project with default settings and would
-    /// therefore hide whether a cleared override is really reset.
+    /// A session backed by a real working directory, whose project every configuration reload
+    /// updates.
     ///
     /// The caller owns the client socket so it can decide how to drain it; nothing drains it by
     /// default, and logging to a client that is never read would block a transition.
@@ -592,7 +545,6 @@ mod tests {
         let session = factory
             .sessions
             .lock()
-            .unwrap()
             .values()
             .next()
             .cloned()
@@ -614,6 +566,7 @@ mod tests {
         session
             .workspace
             .is_path_ignored(IsPathIgnoredParams {
+                project_key: session.project_key(path),
                 pgls_path: PgLSPath::new(path),
             })
             .expect("is_path_ignored")
@@ -668,6 +621,7 @@ mod tests {
         session
             .workspace
             .open_file(OpenFileParams {
+                project_key: session.project_key(&document),
                 path: PgLSPath::new(&document),
                 version: 0,
                 content: "select 1;".to_string(),
