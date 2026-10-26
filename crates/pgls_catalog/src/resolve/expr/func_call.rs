@@ -69,6 +69,45 @@ pub(super) fn infer_func_call(
     }
 }
 
+/// Records the procedure that `CALL` calls, and the references in its arguments, when references
+/// are being collected. Postgres' checks of `CALL` ([`transformCallStmt`]) are not ported, so the
+/// findings of the arguments are dropped and the statement never gets one. `CALL` passes an
+/// argument for the output parameters of a procedure too, usually `NULL`, which the signatures
+/// of procedures include.
+///
+/// [`transformCallStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L3253
+pub(in crate::resolve) fn resolve_procedure_call(
+    r: &mut Resolver<'_>,
+    n: &pgls_query::protobuf::FuncCall,
+) {
+    r.depends_on_file();
+    if !r.collects_references() {
+        return;
+    }
+    let findings = r.findings.len();
+    let args = call_args(r, n);
+    r.findings.truncate(findings);
+    let Some(names) = string_values(&n.funcname) else {
+        return;
+    };
+    let (schema, name) = match names.as_slice() {
+        [name] => (None, name.as_str()),
+        [schema, name] => (Some(schema.as_str()), name.as_str()),
+        _ => return,
+    };
+    if let Selection::Match(f) = select_function(
+        r.catalog,
+        schema,
+        name,
+        &args,
+        n.func_variadic,
+        r.search_path,
+    ) && f.function.kind == crate::FunctionKind::Procedure
+    {
+        r.record_call(n, &f.function);
+    }
+}
+
 /// The arguments of a call with their inferred types and names.
 pub(in crate::resolve) fn call_args(
     r: &mut Resolver<'_>,

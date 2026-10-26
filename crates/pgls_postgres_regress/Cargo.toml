@@ -28,3 +28,6 @@ record = ["dep:pgls_catalog", "dep:serde_json", "dep:sqlx", "dep:tokio"]
 [[bin]]
 name              = "record"
 required-features = ["record"]
+
+[lints]
+workspace = true

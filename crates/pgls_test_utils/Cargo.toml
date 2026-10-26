@@ -24,3 +24,6 @@ uuid   = { version = "1.11.0", features = ["v4"] }
 pgls_treesitter_grammar.workspace = true
 sqlx.workspace                    = true
 tree-sitter.workspace             = true
+
+[lints]
+workspace = true

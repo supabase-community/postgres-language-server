@@ -24,7 +24,7 @@ CREATE TABLE app.users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -49,7 +49,7 @@ CREATE TABLE app.accounts (
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -72,7 +72,7 @@ ALTER TABLE app.users ALTER COLUMN created_ts TYPE timestamp;
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   

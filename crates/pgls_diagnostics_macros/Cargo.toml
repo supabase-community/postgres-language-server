@@ -21,3 +21,6 @@ quote            = { workspace = true }
 syn              = { workspace = true }
 
 [dev-dependencies]
+
+[lints]
+workspace = true

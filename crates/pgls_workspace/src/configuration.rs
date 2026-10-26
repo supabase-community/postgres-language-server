@@ -1,3 +1,12 @@
+mod layers;
+mod project;
+
+pub use layers::{ConfigurationLayers, OverrideMode};
+pub use project::{
+    AppliedConfiguration, ConfigurationNotice, ConfigureProjectParams, ConfiguredProject,
+    VcsIntegration, configure_project,
+};
+
 use std::{
     ffi::OsStr,
     io::ErrorKind,
@@ -208,11 +217,10 @@ impl std::fmt::Display for IncompleteSearch {
 /// configuration directories are skipped even when they are below the root, and so is everything
 /// below the home directory or a filesystem root, which hold unrelated projects.
 ///
-/// The database settings of the `environment` (see [PartialDatabaseConfiguration::from_env])
-/// only fill in the connection options that a nested configuration file doesn't set itself, so
-/// that each file keeps its own database. `configure` then lays the layers of the caller, such as
-/// the arguments of the CLI, over each configuration file. Folders that the settings above them
-/// ignore are skipped.
+/// `layers` are laid over each configuration file like over the root configuration file, except
+/// that the environment only fills in the connection options that a nested configuration file
+/// doesn't set itself, so that each file keeps its own database (see
+/// [ConfigurationLayers::apply_nested]). Folders that the settings above them ignore are skipped.
 ///
 /// This walks the file system, so call it off the async runtime. Fails if the project is not
 /// registered.
@@ -221,8 +229,7 @@ pub fn apply_nested_configurations(
     fs: &DynRef<'_, dyn FileSystem>,
     project_key: ProjectKey,
     search: NestedConfigurationSearch,
-    environment: Option<&PartialDatabaseConfiguration>,
-    configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
+    layers: &ConfigurationLayers,
 ) -> Result<NestedConfigurations, WorkspaceError> {
     let NestedConfigurationSearch {
         root,
@@ -246,7 +253,7 @@ pub fn apply_nested_configurations(
     let nested = directories
         .into_iter()
         .map(
-            |directory| match load_nested_configuration(fs, &directory, environment, &configure) {
+            |directory| match load_nested_configuration(fs, &directory, layers) {
                 Ok((nested, extended)) => {
                     extended_files.insert(directory, extended);
                     nested
@@ -427,23 +434,13 @@ fn is_not_a_project_folder(fs: &DynRef<'_, dyn FileSystem>, folder: &Path) -> bo
 fn load_nested_configuration(
     fs: &DynRef<'_, dyn FileSystem>,
     directory: &Path,
-    environment: Option<&PartialDatabaseConfiguration>,
-    configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
+    layers: &ConfigurationLayers,
 ) -> Result<(NestedSettingsParams, Vec<PathBuf>), WorkspaceError> {
     let loaded = load_configuration(
         fs,
         ConfigurationPathHint::FromWorkspace(directory.to_path_buf()),
     )?;
-    let mut configuration = loaded.configuration;
-    if let Some(environment) = environment
-        .and_then(|environment| environment.for_nested_configuration(loaded.file_database.as_ref()))
-    {
-        configuration.merge_with(PartialConfiguration {
-            db: Some(environment),
-            ..Default::default()
-        });
-    }
-    let configuration = configure(configuration);
+    let configuration = layers.apply_nested(loaded.configuration, loaded.file_database.as_ref());
     let (vcs_base_path, gitignore_matches) =
         configuration.retrieve_gitignore_matches(fs, Some(directory))?;
     let nested = NestedSettingsParams {
@@ -553,7 +550,7 @@ fn load_user_config(
     Ok(None)
 }
 
-/// Creates a new configuration on file system
+/// Creates a new configuration file in `directory`, relative to the working directory.
 ///
 /// ## Errors
 ///
@@ -562,9 +559,10 @@ fn load_user_config(
 /// - the program doesn't have the write rights
 pub fn create_config(
     fs: &mut DynRef<dyn FileSystem>,
+    directory: &Path,
     configuration: &mut PartialConfiguration,
 ) -> Result<(), WorkspaceError> {
-    let path = PathBuf::from(ConfigName::pgls_jsonc());
+    let path = directory.join(ConfigName::pgls_jsonc());
 
     if fs.path_exists(&path) {
         return Err(ConfigurationDiagnostic::new_already_exists().into());
@@ -585,14 +583,18 @@ pub fn create_config(
         Path::new("./node_modules/@postgrestools/postgrestools/schema.json");
     let pgls_node_schema_path =
         Path::new("./node_modules/@postgres-language-server/cli/schema.json");
+    // The schema path is relative to the configuration file.
     if fs
-        .open_with_options(pgls_node_schema_path, OpenOptions::default().read(true))
+        .open_with_options(
+            &directory.join(pgls_node_schema_path),
+            OpenOptions::default().read(true),
+        )
         .is_ok()
     {
         configuration.schema = pgls_node_schema_path.to_str().map(String::from);
     } else if fs
         .open_with_options(
-            postgrestools_node_schema_path,
+            &directory.join(postgrestools_node_schema_path),
             OpenOptions::default().read(true),
         )
         .is_ok()
@@ -669,22 +671,14 @@ impl PartialConfigurationExt for PartialConfiguration {
     /// first. Relative paths in an extended file are relative to that file.
     ///
     /// If a configuration can't be resolved from the file system, extends itself, or is extended
-    /// more than [MAX_EXTENDS_DEPTH] levels deep, the operation will fail.
+    /// more than [EXTENDS_DEPTH_MAX] levels deep, the operation will fail.
     fn apply_extends(
         &mut self,
         fs: &DynRef<'_, dyn FileSystem>,
         file_path: &Path,
         external_resolution_base_path: &Path,
     ) -> Result<Vec<PathBuf>, WorkspaceError> {
-        let mut extended_files = Vec::new();
-        apply_extends_recursively(
-            self,
-            fs,
-            &mut vec![normalize_path(file_path)],
-            external_resolution_base_path,
-            &mut extended_files,
-        )?;
-        Ok(extended_files)
+        apply_extends_transitively(self, fs, file_path, external_resolution_base_path)
     }
 
     /// It attempts to deserialize all the configuration files that were specified in the `extends` property
@@ -808,75 +802,124 @@ impl PartialConfigurationExt for PartialConfiguration {
     }
 }
 
-/// How many levels deep configuration files can extend each other.
-const MAX_EXTENDS_DEPTH: usize = 10;
+/// How many levels deep configuration files can extend each other. A chain of a nested
+/// configuration, the root configuration and a shared or user configuration is three levels;
+/// ten leaves room for that and catches runaway chains that aren't cycles.
+const EXTENDS_DEPTH_MAX: usize = 10;
 
-/// Applies the `extends` of `configuration`, the last file of `chain`, and theirs, collecting the
-/// extended files.
-fn apply_extends_recursively(
+/// A configuration file whose `extends` [apply_extends_transitively] is applying.
+struct ExtendingFile {
+    path: PathBuf,
+    configuration: PartialConfiguration,
+    /// The files in its `extends` that are still to be applied, in order.
+    pending: std::vec::IntoIter<(PathBuf, PartialConfiguration)>,
+    /// The files in its `extends` that were applied, merged from left to right.
+    extended: Option<PartialConfiguration>,
+}
+
+impl ExtendingFile {
+    fn new(
+        path: PathBuf,
+        mut configuration: PartialConfiguration,
+        fs: &DynRef<'_, dyn FileSystem>,
+        external_resolution_base_path: &Path,
+    ) -> Result<Self, WorkspaceError> {
+        let pending = configuration
+            .deserialize_extends(
+                fs,
+                path.parent().unwrap_or(Path::new("")),
+                external_resolution_base_path,
+            )?
+            .into_iter();
+        Ok(Self {
+            path,
+            configuration,
+            pending,
+            extended: None,
+        })
+    }
+
+    /// The configuration over the files it extends.
+    fn finish(self) -> PartialConfiguration {
+        match self.extended {
+            Some(mut extended) => {
+                extended.merge_with(self.configuration);
+                extended
+            }
+            None => self.configuration,
+        }
+    }
+}
+
+/// Applies the `extends` of `configuration`, the file at `file_path`, and of the files it
+/// extends, depth first. Returns the extended files in the order they were found. Walks with a
+/// stack instead of recursing, so that the depth is [EXTENDS_DEPTH_MAX] and not the stack's.
+fn apply_extends_transitively(
     configuration: &mut PartialConfiguration,
     fs: &DynRef<'_, dyn FileSystem>,
-    chain: &mut Vec<PathBuf>,
+    file_path: &Path,
     external_resolution_base_path: &Path,
-    extended_files: &mut Vec<PathBuf>,
-) -> Result<(), WorkspaceError> {
-    let file_path = chain
-        .last()
-        .expect("the chain starts with the configuration file");
-    let mut configurations = Vec::new();
-    for (path, mut extended) in configuration.deserialize_extends(
+) -> Result<Vec<PathBuf>, WorkspaceError> {
+    let mut extended_files = Vec::new();
+    // The file and the files it extends that are being applied, each extending the one before.
+    let mut chain = vec![ExtendingFile::new(
+        normalize_path(file_path),
+        std::mem::take(configuration),
         fs,
-        file_path.parent().expect("file path should have a parent"),
         external_resolution_base_path,
-    )? {
-        let path = normalize_path(&path);
-        if chain.contains(&path) {
-            let cycle: Vec<_> = chain
-                .iter()
-                .chain(std::iter::once(&path))
-                .map(|file| file.display().to_string())
-                .collect();
-            return Err(ConfigurationDiagnostic::invalid_configuration(format!(
-                "The configuration files extend each other: {}",
-                cycle.join(" -> ")
-            ))
-            .into());
+    )?];
+    loop {
+        let next = chain.last_mut().and_then(|file| file.pending.next());
+        if let Some((path, extended)) = next {
+            let path = normalize_path(&path);
+            if chain.iter().any(|file| file.path == path) {
+                let cycle: Vec<_> = chain
+                    .iter()
+                    .map(|file| &file.path)
+                    .chain(std::iter::once(&path))
+                    .map(|file| file.display().to_string())
+                    .collect();
+                return Err(ConfigurationDiagnostic::invalid_configuration(format!(
+                    "The configuration files extend each other: {}",
+                    cycle.join(" -> ")
+                ))
+                .into());
+            }
+            if chain.len() > EXTENDS_DEPTH_MAX {
+                return Err(ConfigurationDiagnostic::invalid_configuration(format!(
+                    "The configuration files extend each other more than {EXTENDS_DEPTH_MAX} \
+                     levels deep, at {}",
+                    path.display()
+                ))
+                .into());
+            }
+            extended_files.push(path.clone());
+            chain.push(ExtendingFile::new(
+                path,
+                extended,
+                fs,
+                external_resolution_base_path,
+            )?);
+            continue;
         }
-        if chain.len() > MAX_EXTENDS_DEPTH {
-            return Err(ConfigurationDiagnostic::invalid_configuration(format!(
-                "The configuration files extend each other more than {MAX_EXTENDS_DEPTH} levels \
-                 deep, at {}",
-                path.display()
-            ))
-            .into());
+
+        let Some(file) = chain.pop() else {
+            break;
+        };
+        let finished = file.finish();
+        match chain.last_mut() {
+            // Later files in `extends` override earlier ones.
+            Some(extending) => match &mut extending.extended {
+                Some(extended) => extended.merge_with(finished),
+                None => extending.extended = Some(finished),
+            },
+            None => {
+                *configuration = finished;
+                break;
+            }
         }
-        extended_files.push(path.clone());
-        chain.push(path);
-        apply_extends_recursively(
-            &mut extended,
-            fs,
-            chain,
-            external_resolution_base_path,
-            extended_files,
-        )?;
-        chain.pop();
-        configurations.push(extended);
     }
-
-    let extended_configuration =
-        configurations
-            .into_iter()
-            .reduce(|mut previous_configuration, current_configuration| {
-                previous_configuration.merge_with(current_configuration);
-                previous_configuration
-            });
-    if let Some(mut extended_configuration) = extended_configuration {
-        // We swap them to avoid having to clone `configuration` to merge it.
-        std::mem::swap(configuration, &mut extended_configuration);
-        configuration.merge_with(extended_configuration)
-    }
-
-    Ok(())
+    Ok(extended_files)
 }
 
 /// Expands a leading `~` in a path to the home directory.
@@ -1045,6 +1088,45 @@ mod tests {
         );
     }
 
+    /// The files in `extends` apply from left to right, each over the files it extends itself.
+    #[test]
+    fn extends_applies_later_files_over_earlier_ones() {
+        let mut fs = file_system();
+        fs.insert(
+            project_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["./a.jsonc", "./b.jsonc"] }"#,
+        );
+        fs.insert(
+            project_directory().join("a.jsonc"),
+            r#"{ "extends": ["./a_base.jsonc"], "db": { "database": "a" } }"#,
+        );
+        fs.insert(
+            project_directory().join("a_base.jsonc"),
+            r#"{ "db": { "host": "a_base", "database": "a_base", "username": "a_base" } }"#,
+        );
+        fs.insert(
+            project_directory().join("b.jsonc"),
+            r#"{ "db": { "host": "b" } }"#,
+        );
+
+        let loaded = load(
+            fs,
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        );
+        let db = loaded.configuration.db.as_ref().unwrap();
+        assert_eq!(db.host.as_deref(), Some("b"));
+        assert_eq!(db.database.as_deref(), Some("a"));
+        assert_eq!(db.username.as_deref(), Some("a_base"));
+        assert_eq!(
+            loaded.extended_files,
+            [
+                project_directory().join("a.jsonc"),
+                project_directory().join("a_base.jsonc"),
+                project_directory().join("b.jsonc"),
+            ]
+        );
+    }
+
     #[test]
     fn extends_fails_on_a_cycle() {
         let mut fs = file_system();
@@ -1076,14 +1158,14 @@ mod tests {
             project_directory().join(ConfigName::pgls_jsonc()),
             r#"{ "extends": ["./0.jsonc"] }"#,
         );
-        for level in 0..=MAX_EXTENDS_DEPTH {
+        for level in 0..=EXTENDS_DEPTH_MAX {
             fs.insert(
                 project_directory().join(format!("{level}.jsonc")),
                 format!(r#"{{ "extends": ["./{}.jsonc"] }}"#, level + 1),
             );
         }
         fs.insert(
-            project_directory().join(format!("{}.jsonc", MAX_EXTENDS_DEPTH + 1)),
+            project_directory().join(format!("{}.jsonc", EXTENDS_DEPTH_MAX + 1)),
             "{}",
         );
 

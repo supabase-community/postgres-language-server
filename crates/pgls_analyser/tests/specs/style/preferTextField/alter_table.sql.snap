@@ -10,7 +10,7 @@ alter table users alter column name type varchar(100) collate "C";
 ```
 
 # Diagnostics
-lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
   

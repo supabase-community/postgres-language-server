@@ -24,6 +24,7 @@ use crate::{
         format::{PullFileFormattingParams, PullFormattingResult},
         inlay_hints::{PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
+        semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult},
     },
 };
 
@@ -152,6 +153,13 @@ pub struct NestedSettingsError {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
+pub struct FindProjectParams {
+    pub path: PgLSPath,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
 pub struct UnregisterProjectFolderParams {
     pub path: PgLSPath,
 }
@@ -208,12 +216,24 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         params: PullInlayHintsParams,
     ) -> Result<PullInlayHintsResult, WorkspaceError>;
 
+    /// The semantic tokens of the names that resolve to exactly one object, like tables,
+    /// columns, and functions, in the statements that overlap a range or the whole file.
+    fn pull_semantic_tokens(
+        &self,
+        params: PullSemanticTokensParams,
+    ) -> Result<PullSemanticTokensResult, WorkspaceError>;
+
     /// Register a project folder, or return the key of the project already registered for it.
     /// Every request about a file names the project that the file belongs to.
     fn register_project_folder(
         &self,
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError>;
+
+    /// The project that the file at `path` belongs to: the one of the deepest folder that contains
+    /// it. A project without a folder contains every path. `None` if no project contains it.
+    fn find_project(&self, params: FindProjectParams)
+    -> Result<Option<ProjectKey>, WorkspaceError>;
 
     /// Unregister a project folder. Its settings, including the nested ones, are deleted.
     fn unregister_project_folder(

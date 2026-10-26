@@ -4,7 +4,7 @@ expression: "run_check_without_db_env(&[\"--host\", opts.get_host(), \"--port\",
 ---
 status: failure
 stdout:
-Checked 1 file in <duration>. No fixes applied.
+Checked 1 file in <duration>.
 Found 1 error.
 stderr:
 database/connection ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
