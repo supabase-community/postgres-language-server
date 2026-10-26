@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    fs,
     hash::{DefaultHasher, Hash, Hasher},
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
@@ -207,8 +206,7 @@ impl WorkspaceServer {
         };
 
         // Apply top-level `include`/`ignore`
-        is_ignored_by_files_settings(settings, path)
-            || is_ignored_by_migration_settings(settings, path)
+        settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
     }
 
     /// Whether the file is a migration. Migration-only rules don't run on other files.
@@ -787,28 +785,6 @@ impl WorkspaceServer {
     }
 }
 
-/// Check whether a file is ignored by `files.ignore`/`files.include` or the VCS ignore file
-fn is_ignored_by_files_settings(settings: &Settings, path: &Path) -> bool {
-    let is_included = settings.files.included_files.is_empty()
-        || is_dir(path)
-        || settings.files.included_files.matches_path(path);
-    !is_included
-        || settings.files.ignored_files.matches_path(path)
-        || settings.files.git_ignore.as_ref().is_some_and(|ignore| {
-            // `matched_path_or_any_parents` panics if `source` is not under the gitignore root.
-            // This checks excludes absolute paths that are not a prefix of the base root.
-            if !path.has_root() || path.starts_with(ignore.path()) {
-                // Because Postgres Language Server passes a list of paths,
-                // we use `matched_path_or_any_parents` instead of `matched`.
-                ignore
-                    .matched_path_or_any_parents(path, path.is_dir())
-                    .is_ignore()
-            } else {
-                false
-            }
-        })
-}
-
 /// Check whether a file is a migration before `migrations.after`
 fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
     settings
@@ -905,7 +881,7 @@ impl Workspace for WorkspaceServer {
                     .rev()
                     .find(|(applied, _)| directory.starts_with(applied))
                     .map_or(root, |(_, settings)| settings);
-                if is_ignored_by_files_settings(above, &directory) {
+                if above.files.is_ignored(&directory) {
                     continue;
                 }
 
@@ -1879,10 +1855,6 @@ fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSectio
 
 /// Returns `true` if `path` is a directory or
 /// if it is a symlink that resolves to a directory.
-fn is_dir(path: &Path) -> bool {
-    path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
-}
-
 /// Keeps at most one blank line in `text`, which only holds whitespace and comments.
 fn collapse_blank_lines(text: &str) -> String {
     let mut result = String::with_capacity(text.len());
