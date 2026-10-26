@@ -480,6 +480,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#nested-configurations-monorepos" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Nested configurations / monorepos
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sharing-settings-with-extends" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1542,6 +1553,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#nested-configurations-monorepos" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Nested configurations / monorepos
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sharing-settings-with-extends" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1824,6 +1846,36 @@ individual fields. The URI takes precedence over any other connection fields.</p
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
+<h2 id="nested-configurations-monorepos">Nested configurations / monorepos<a class="headerlink" href="#nested-configurations-monorepos" title="Permanent link">&para;</a></h2>
+<p>A repository can hold more than one configuration file. Each file uses the nearest <code>postgres-language-server.jsonc</code> in its own folder or above it, so different folders can point at different databases or use different linter and formatter settings:</p>
+<div class="highlight"><pre><span></span><code>my-repo/
+├── postgres-language-server.jsonc      # applies to everything else
+└── src/
+    ├── db1/
+    │   ├── postgres-language-server.jsonc  # applies to src/db1/**
+    │   └── migrations/0001_init.sql
+    └── db2/
+        ├── postgres-language-server.jsonc  # applies to src/db2/**
+        └── schema.sql
+</code></pre></div>
+<p>The language server finds the configuration files below each workspace folder when it starts, and reloads them when one is created, changed, or deleted, or when a workspace folder is added or removed. Each workspace folder is a project of its own, so a file belongs to the deepest workspace folder that contains it. The <code>check</code> and <code>format</code> commands find the configuration files below the working directory.</p>
+<p>A nested configuration file inherits nothing from the configuration files above it: settings it does not set have their defaults. To share settings, extend the parent configuration explicitly; the nested file's own settings take precedence:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"../../postgres-language-server.jsonc"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"db"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"database"</span><span class="p">:</span><span class="w"> </span><span class="s2">"db1"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Paths in a nested configuration file, such as <code>migrations.migrationsDir</code>, are relative to its folder.</p>
+<p>The <a href="#where-the-configuration-is-loaded-from">user configuration</a> is a fallback for the workspace root only. When there is no configuration file at or above the root, it applies to the files that no nested configuration file covers. It is never merged into a nested configuration file. To use it there, extend it explicitly, for example with <code>"extends": ["~/.config/postgres-language-server/postgres-language-server.jsonc"]</code>.</p>
+<p>Things to keep in mind:</p>
+<ul>
+<li>Configuration files in hidden folders, <code>node_modules</code>, <code>target</code>, folders ignored by <code>.gitignore</code>, folders that the configuration above them ignores through <code>files.ignore</code> or <code>files.include</code>, and the user configuration directory are not loaded as nested configurations.</li>
+<li>The database connection of a project is only opened when a file of that project needs it. Projects that point at the same database share its connection and schema cache.</li>
+<li>When a configuration file is passed explicitly with <code>--config-path</code>, it applies to all files and nested configuration files are not looked up.</li>
+<li><code>dblint</code> uses the configuration of the working directory.</li>
+</ul>
 <h2 id="sharing-settings-with-extends">Sharing settings with <code>extends</code><a class="headerlink" href="#sharing-settings-with-extends" title="Permanent link">&para;</a></h2>
 <p><code>extends</code> lists other configuration files whose settings apply to this one, for example to share the linter setup between several projects of a monorepo:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
