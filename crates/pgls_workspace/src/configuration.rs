@@ -15,7 +15,13 @@ use pgls_console::markup;
 use pgls_env::PGLS_WEBSITE;
 use pgls_fs::{AutoSearchResult, ConfigName, FileSystem, OpenOptions};
 
-use crate::{DynRef, WorkspaceError, settings::Settings};
+use crate::{
+    DynRef, Workspace, WorkspaceError,
+    settings::Settings,
+    workspace::{
+        NestedSettingsParams, ProjectKey, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
+    },
+};
 
 /// Information regarding the configuration that was found.
 ///
@@ -98,6 +104,111 @@ pub fn load_configuration(
     let mut loaded = LoadedConfiguration::try_from_payload(config, fs)?;
     loaded.directory_path = Some(project_directory);
     Ok(loaded)
+}
+
+/// A configuration file in a folder below the root of a project.
+#[derive(Debug)]
+pub struct NestedConfiguration {
+    /// The folder of the configuration file. Its settings apply to the files below it.
+    pub directory: PathBuf,
+    /// Whether the configuration file was loaded and applied. The files below a configuration file
+    /// that could not be applied use the default settings.
+    pub result: Result<(), WorkspaceError>,
+}
+
+/// Applies every configuration file below `root` to the project as nested settings, so that each
+/// file uses the settings of the nearest configuration file. They replace the nested settings the
+/// project had before.
+///
+/// A nested configuration file inherits nothing from the configuration files above it unless it
+/// `extends` them, and the user configuration is never merged into it: that one only applies, as
+/// the root settings, to the files that have no project configuration at or above them. The user
+/// configuration directories are skipped even when they are below `root`, for example when the
+/// home directory is opened as a workspace.
+///
+/// `configure` lays the layers of the caller, such as the environment or the arguments of the
+/// CLI, over each configuration file. Folders that the settings above them ignore are skipped.
+///
+/// Returns the configuration files that apply. Fails if the project is not registered.
+pub fn apply_nested_configurations(
+    workspace: &dyn Workspace,
+    fs: &DynRef<'_, dyn FileSystem>,
+    project_key: ProjectKey,
+    root: &Path,
+    configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
+) -> Result<Vec<NestedConfiguration>, WorkspaceError> {
+    let user_config_directories = fs.user_config_directories();
+    let mut directories: Vec<PathBuf> = fs
+        .find_files(root, ConfigName::file_names().as_slice())
+        .into_iter()
+        .filter_map(|file_path| file_path.parent().map(PathBuf::from))
+        .filter(|directory| directory != root)
+        .filter(|directory| !user_config_directories.contains(directory))
+        .collect();
+    directories.sort();
+    directories.dedup();
+
+    let mut load_errors = Vec::new();
+    let nested = directories
+        .into_iter()
+        .map(|directory| {
+            load_nested_configuration(fs, &directory, &configure).unwrap_or_else(|error| {
+                load_errors.push((directory.clone(), error));
+                // Neither the configuration above it nor a part of the broken one applies.
+                NestedSettingsParams {
+                    directory,
+                    configuration: PartialConfiguration::default(),
+                    vcs_base_path: None,
+                    gitignore_matches: Vec::new(),
+                }
+            })
+        })
+        .collect();
+
+    let UpdateNestedSettingsResult { applied, errors } =
+        workspace.update_nested_settings(UpdateNestedSettingsParams {
+            project_key,
+            nested,
+        })?;
+
+    Ok(applied
+        .into_iter()
+        .map(|directory| {
+            let load_error = load_errors
+                .iter()
+                .position(|(failed, _)| failed == &directory)
+                .map(|index| load_errors.swap_remove(index).1);
+            let apply_error = errors
+                .iter()
+                .find(|error| error.directory == directory)
+                .map(|error| ConfigurationDiagnostic::invalid_configuration(&error.message).into());
+            let result = match load_error.or(apply_error) {
+                Some(error) => Err(error),
+                None => Ok(()),
+            };
+            NestedConfiguration { directory, result }
+        })
+        .collect())
+}
+
+fn load_nested_configuration(
+    fs: &DynRef<'_, dyn FileSystem>,
+    directory: &Path,
+    configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
+) -> Result<NestedSettingsParams, WorkspaceError> {
+    let loaded = load_configuration(
+        fs,
+        ConfigurationPathHint::FromWorkspace(directory.to_path_buf()),
+    )?;
+    let configuration = configure(loaded.configuration);
+    let (vcs_base_path, gitignore_matches) =
+        configuration.retrieve_gitignore_matches(fs, Some(directory))?;
+    Ok(NestedSettingsParams {
+        directory: directory.to_path_buf(),
+        configuration,
+        vcs_base_path,
+        gitignore_matches,
+    })
 }
 
 /// - [Result]: if an error occurred while loading the configuration file.

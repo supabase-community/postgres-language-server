@@ -192,6 +192,46 @@ individual fields. The URI takes precedence over any other connection fields.
 }
 ```
 
+## Nested configurations / monorepos
+
+A repository can hold more than one configuration file. Each file uses the nearest `postgres-language-server.jsonc` in its own folder or above it, so different folders can point at different databases or use different linter and formatter settings:
+
+```
+my-repo/
+├── postgres-language-server.jsonc      # applies to everything else
+└── src/
+    ├── db1/
+    │   ├── postgres-language-server.jsonc  # applies to src/db1/**
+    │   └── migrations/0001_init.sql
+    └── db2/
+        ├── postgres-language-server.jsonc  # applies to src/db2/**
+        └── schema.sql
+```
+
+The language server finds the configuration files below each workspace folder when it starts, and reloads them when one is created, changed, or deleted, or when a workspace folder is added or removed. Each workspace folder is a project of its own, so a file belongs to the deepest workspace folder that contains it. The `check` and `format` commands find the configuration files below the working directory.
+
+A nested configuration file inherits nothing from the configuration files above it: settings it does not set have their defaults. To share settings, [extend](#sharing-settings-with-extends) the parent configuration explicitly; the nested file's own settings take precedence:
+
+```json
+{
+  "extends": ["../../postgres-language-server.jsonc"],
+  "db": {
+    "database": "db1"
+  }
+}
+```
+
+Paths in a nested configuration file, such as `migrations.migrationsDir`, are relative to its folder.
+
+The [user configuration](#where-the-configuration-is-loaded-from) is a fallback for the workspace root only. When there is no configuration file at or above the root, it applies to the files that no nested configuration file covers. It is never merged into a nested configuration file. To use it there, extend it explicitly, for example with `"extends": ["~/.config/postgres-language-server/postgres-language-server.jsonc"]`.
+
+Things to keep in mind:
+
+- Configuration files in hidden folders, `node_modules`, `target`, folders ignored by `.gitignore`, folders that the configuration above them ignores through `files.ignore` or `files.include`, and the user configuration directory are not loaded as nested configurations.
+- The database connection of a project is only opened when a file of that project needs it. Projects that point at the same database share its connection and schema cache.
+- When a configuration file is passed explicitly with `--config-path`, it applies to all files and nested configuration files are not looked up.
+- `dblint` uses the configuration of the working directory.
+
 ## Specifying files to process
 
 You can control the files/folders to process using different strategies, either CLI, configuration and VCS.
