@@ -4,23 +4,62 @@
 //!   was cached for the statements it changed.
 //! - Per [`CacheKey`]: what also depends on the settings and the database, like the analysis of
 //!   the document. It is dropped when the key changes, and the analysis when the content does.
+//!
+//! All of it can be recomputed. [`DocumentCache::usage`] says how much a document keeps, and
+//! the workspace drops the caches of the least recently used documents when all of them keep more
+//! than [`DOCUMENT_CACHE_ENTRIES_MAX`], see [`CacheBudget`].
 
 use std::sync::{Arc, Mutex};
 
 use pgls_catalog::CatalogBase;
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::EmbeddedStatement};
 
+use rustc_hash::FxHashSet;
+
 use super::{StatementId, analysis::DocumentAnalysis};
 use crate::workspace::ProjectKey;
 
+mod budget;
 mod parse;
 mod tree;
 mod walk;
 
+pub(crate) use budget::CacheBudget;
 pub(crate) use parse::ParseResult;
 use parse::PgQueryStore;
 use tree::TreeSitterStore;
 pub(crate) use walk::{ContentChange, ResolvedStatement, WalkCache};
+
+/// The number of cache entries that all open documents keep together, beyond the document in
+/// use, see [`DocumentCache::usage`]. When they keep more, the caches of the least recently used
+/// documents are dropped, and recomputed when they are used again.
+///
+/// An entry is a statement's parse result or tree, or the references of a statement, and takes
+/// about 10 KB on average (measured on migration files with tables, indexes, SQL functions and
+/// queries), so this is about 200 MB. That keeps a few files of several thousand statements
+/// fully cached, so that switching between them doesn't parse them again. Without a limit, 20
+/// open files of 5,000 statements each kept 2.7 GB.
+pub const DOCUMENT_CACHE_ENTRIES_MAX: usize = 20_000;
+
+/// What a walk checkpoint counts as in [`DocumentCache::usage`]. It copies the maps of the
+/// objects that the file changed before it, about 100 bytes per object, so a checkpoint after
+/// the 5,000 tables of a 20,000-statement file takes about as much as 50 entries.
+const CHECKPOINT_ENTRIES: usize = 50;
+
+/// What the caches of an open document hold, for tests of their memory.
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DocumentCacheStats {
+    /// The distinct statements of the document, including the bodies of SQL functions. The
+    /// parse results and trees are keyed by the text of the statement.
+    pub statements: usize,
+    pub parse_results: usize,
+    pub trees: usize,
+    pub analysis: bool,
+    /// The statements whose references are kept, see [`WalkCache`].
+    pub resolved_statements: usize,
+    pub walk_checkpoints: usize,
+}
 
 /// What the caches of a document depend on besides its text.
 #[derive(Clone)]
@@ -101,16 +140,45 @@ impl DocumentCache {
         analysis
     }
 
+    /// How much the document keeps, in entries: one per parse result, tree and resolved
+    /// statement, see [`DOCUMENT_CACHE_ENTRIES_MAX`], and [`CHECKPOINT_ENTRIES`] per walk
+    /// checkpoint.
+    pub(crate) fn usage(&self) -> usize {
+        let (resolved, checkpoints) = self.keyed.lock().unwrap().walk.len();
+        self.parses.len() + self.trees.len() + resolved + checkpoints * CHECKPOINT_ENTRIES
+    }
+
+    /// Drops everything that is cached. It is recomputed when it is needed again.
+    pub(crate) fn clear(&self) {
+        self.parses.clear();
+        self.trees.clear();
+        *self.keyed.lock().unwrap() = KeyedCaches::default();
+    }
+
+    /// What the caches hold for a document with the top-level statements `statements`. The
+    /// statements of a function body are counted if they are cached.
+    pub(crate) fn stats(&self, statements: &FxHashSet<StatementId>) -> DocumentCacheStats {
+        let embedded: usize = statements
+            .iter()
+            .filter_map(|id| self.parses.cached_embedded_len(id))
+            .sum();
+        let statements = statements.len() + embedded;
+        let keyed = self.keyed.lock().unwrap();
+        let (resolved_statements, walk_checkpoints) = keyed.walk.len();
+        DocumentCacheStats {
+            statements,
+            parse_results: self.parses.len(),
+            trees: self.trees.len(),
+            analysis: keyed.analysis.is_some(),
+            resolved_statements,
+            walk_checkpoints,
+        }
+    }
+
     /// The cached analysis, whatever its key.
     #[cfg(test)]
     pub(crate) fn cached_analysis(&self) -> Option<Arc<DocumentAnalysis>> {
         self.keyed.lock().unwrap().analysis.clone()
-    }
-
-    /// The number of resolved statements and walk checkpoints, whatever their key.
-    #[cfg(test)]
-    pub(crate) fn walk_size(&self) -> (usize, usize) {
-        self.keyed.lock().unwrap().walk.len()
     }
 
     /// The caches for `key`, emptied first if they were for another key.

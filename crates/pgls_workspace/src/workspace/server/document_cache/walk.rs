@@ -132,7 +132,6 @@ impl WalkCache {
     }
 
     /// The number of resolved statements and checkpoints.
-    #[cfg(test)]
     pub(crate) fn len(&self) -> (usize, usize) {
         (
             self.resolved

@@ -2528,6 +2528,69 @@ fn test_no_concurrently_fix_in_a_transaction() {
     );
 }
 
+/// When the open documents together keep more than the budget, the caches of the least recently
+/// used ones are dropped, and recomputed when they are used again.
+#[test]
+fn document_caches_stay_within_the_budget() {
+    let (mut workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    // Each document keeps a parse result for each of its six statements.
+    workspace.document_caches = super::document_cache::CacheBudget::new(8);
+
+    let content = "drop table a;\ndrop table b;\ndrop table c;\nselect 1;\nselect 2;\nselect 3;\n";
+    let paths = [PgLSPath::new("a.sql"), PgLSPath::new("b.sql")];
+    for path in &paths {
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+    }
+    let diagnostics = |path: &PgLSPath| {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .len()
+    };
+    let cached = |path: &PgLSPath| {
+        let stats = workspace.document_cache_stats(path).unwrap();
+        (stats.parse_results, stats.analysis)
+    };
+
+    let expected = diagnostics(&paths[0]);
+    assert_eq!(expected, 3);
+    assert_eq!(cached(&paths[0]), (6, true));
+
+    // Both documents together keep 12 parse results, so the first one's caches are dropped.
+    assert_eq!(diagnostics(&paths[1]), expected);
+    assert_eq!(cached(&paths[0]), (0, false));
+    assert_eq!(cached(&paths[1]), (6, true));
+
+    // And recomputed when it is used again.
+    assert_eq!(diagnostics(&paths[0]), expected);
+    assert_eq!(cached(&paths[0]), (6, true));
+    assert_eq!(cached(&paths[1]), (0, false));
+
+    workspace
+        .close_file(crate::workspace::CloseFileParams {
+            project_key,
+            path: paths[0].clone(),
+        })
+        .expect("Unable to close test file");
+    assert_eq!(workspace.document_caches.total(), 0);
+}
+
 /// Code actions are requested on every cursor move. They reuse the analysis that the
 /// diagnostics made until the document or the settings change.
 #[test]
@@ -4805,8 +4868,13 @@ async fn walks_resume_from_checkpoints_before_the_edit(test_db: PgPool) {
     let (count, _) = walked(&|| hover(&marked, "checkpoint_early;"));
     assert_eq!(count, 2);
 
-    let documents = workspace.documents.read().unwrap();
-    assert!(documents.get(&path).unwrap().cache().walk_size().1 <= 4);
+    assert!(
+        workspace
+            .document_cache_stats(&path)
+            .unwrap()
+            .walk_checkpoints
+            <= 4
+    );
 }
 
 /// After edits anywhere in the file, hover and inlay hints that resume from checkpoints give
