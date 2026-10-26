@@ -73,6 +73,7 @@ fn semantic_tokens(
     range: Option<ls_types::Range>,
 ) -> Result<Option<SemanticTokens>, LspError> {
     let path = session.file_path(url)?;
+    let project_key = session.project_key(&path);
     let doc = session.document(url)?;
     let encoding = session.position_encoding();
     let range = range
@@ -81,8 +82,11 @@ fn semantic_tokens(
 
     let result = match session
         .workspace
-        .pull_semantic_tokens(PullSemanticTokensParams { path, range })
-    {
+        .pull_semantic_tokens(PullSemanticTokensParams {
+            project_key,
+            path,
+            range,
+        }) {
         Ok(result) => result,
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => return Ok(None),

@@ -59,3 +59,17 @@ The language server provides semantic tokens for the names that resolve to exact
 Objects in `pg_catalog` and `information_schema` carry the `defaultLibrary` modifier. Names follow Postgres' name resolution, including objects created earlier in the same file and statements in the bodies of SQL functions. Names that match no object or several get no token and keep the highlighting of your editor's grammar.
 
 Semantic highlighting requires a database connection. In VS Code, it is controlled by `editor.semanticHighlighting.enabled`.
+
+## Expand `*`
+
+With the cursor on a `*` or `t.*` in a select list or `RETURNING` list, the refactor code action "Expand `*` into its columns" replaces it with the columns it stands for:
+
+```sql
+select * from users u join posts p on p.user_id = u.id;
+-- becomes
+select u.id, u.name, p.id, p.user_id, p.title from users u join posts p on p.user_id = u.id;
+```
+
+Columns are qualified with the name or alias of their table when there are several in `FROM`, and quoted where needed. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for joins with `USING` or `NATURAL`, tables whose columns are unknown, or sources with two columns of the same name.
+
+Like hover, it requires a database connection.

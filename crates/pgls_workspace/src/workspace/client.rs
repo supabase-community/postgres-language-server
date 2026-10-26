@@ -143,6 +143,13 @@ where
         self.request("pgls/update_settings", params)
     }
 
+    fn update_nested_settings(
+        &self,
+        params: super::UpdateNestedSettingsParams,
+    ) -> Result<super::UpdateNestedSettingsResult, WorkspaceError> {
+        self.request("pgls/update_nested_settings", params)
+    }
+
     fn is_path_ignored(&self, params: IsPathIgnoredParams) -> Result<bool, WorkspaceError> {
         self.request("pgls/is_path_ignored", params)
     }

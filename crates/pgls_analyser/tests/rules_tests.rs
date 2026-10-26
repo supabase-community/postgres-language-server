@@ -116,19 +116,19 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
 
     let split = pgls_statement_splitter::split(&query);
 
-    // Statements that don't parse are passed on as such, like the workspace does.
+    // Statements that don't parse are passed on as such, like the workspace does. The body of a
+    // SQL function follows the function, with its parameters in scope.
     let mut stmts = Vec::new();
     let mut unparsable = Vec::new();
     for r in &split.ranges {
         let text = &query[*r];
         match pgls_query::parse(text) {
-            Ok(ast) => stmts.push(
-                AnalysableStatement::new(
-                    ast.into_root().expect("Failed to convert AST to root node"),
-                    *r,
-                )
-                .with_sql(text),
-            ),
+            Ok(ast) => {
+                let root = ast.into_root().expect("Failed to convert AST to root node");
+                let body = sql_function_body(&root, text, *r);
+                stmts.push(AnalysableStatement::new(root, *r).with_sql(text));
+                stmts.extend(body);
+            }
             Err(_) => unparsable.push(UnparsableStatement {
                 range: *r,
                 sql: text.to_owned(),
@@ -162,10 +162,30 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     expectation.assert(results.as_slice());
 }
 
+/// The statement in the body of a `LANGUAGE sql` function, as the workspace extracts it.
+fn sql_function_body(
+    root: &pgls_query::NodeEnum,
+    sql: &str,
+    range: TextRange,
+) -> Option<AnalysableStatement> {
+    let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = root else {
+        return None;
+    };
+    let body = pgls_query_ext::utils::sql_function_body(root, sql)?;
+    let body_root = pgls_query::parse(&body.body).ok()?.into_root()?;
+    Some(
+        AnalysableStatement::new(body_root, body.range + range.start())
+            .with_sql(body.body)
+            .with_function(pgls_catalog::resolve::FunctionContext::from_create_function(create_fn)),
+    )
+}
+
 /// The migration sections of the file, each starting at a `-- section: up` or
-/// `-- section: down transaction:false` line.
+/// `-- section: down transaction:false` line. Like dbmate, each section is sent to Postgres as
+/// one query, unless `queries:separate` follows, like goose without `StatementBegin`.
 fn migration_sections(query: &str) -> Vec<MigrationSection> {
     let mut sections: Vec<MigrationSection> = Vec::new();
+    let mut one_query = Vec::new();
     let mut offset = 0;
     for line in query.split_inclusive('\n') {
         let start = TextSize::from(offset as u32);
@@ -179,11 +199,15 @@ fn migration_sections(query: &str) -> Vec<MigrationSection> {
             Some("down") => Direction::Down,
             other => panic!("Unknown section direction `{other:?}`"),
         };
-        let transaction = match words.next() {
-            None => true,
-            Some("transaction:false") => false,
-            Some(other) => panic!("Unknown section option `{other}`"),
-        };
+        let mut transaction = true;
+        let mut separate = false;
+        for option in words {
+            match option {
+                "transaction:false" => transaction = false,
+                "queries:separate" => separate = true,
+                other => panic!("Unknown section option `{other}`"),
+            }
+        }
         if let Some(previous) = sections.last_mut() {
             previous.range = TextRange::new(previous.range.start(), start);
         }
@@ -191,7 +215,14 @@ fn migration_sections(query: &str) -> Vec<MigrationSection> {
             range: TextRange::new(start, TextSize::from(query.len() as u32)),
             direction,
             transaction,
+            queries: Vec::new(),
         });
+        one_query.push(!separate);
+    }
+    for (section, one_query) in sections.iter_mut().zip(one_query) {
+        if one_query {
+            section.queries = vec![section.range];
+        }
     }
     sections
 }
