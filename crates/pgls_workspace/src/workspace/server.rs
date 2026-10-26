@@ -35,6 +35,7 @@ use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
+use pgls_configuration::inlay_hints::ParameterNameHints;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
@@ -1969,9 +1970,16 @@ impl Workspace for WorkspaceServer {
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
-        if !settings.is_none_or(|settings| settings.inlay_hints.enabled) {
-            return Ok(PullInlayHintsResult::default());
-        }
+        let parameter_names = match settings.map_or(Some(ParameterNameHints::All), |settings| {
+            settings
+                .inlay_hints
+                .enabled
+                .then_some(settings.inlay_hints.parameter_names)
+        }) {
+            Some(ParameterNameHints::All) => pgls_inlay_hints::ParameterNameHints::All,
+            Some(ParameterNameHints::Literals) => pgls_inlay_hints::ParameterNameHints::Literals,
+            Some(ParameterNameHints::None) | None => return Ok(PullInlayHintsResult::default()),
+        };
 
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
@@ -2011,6 +2019,7 @@ impl Workspace for WorkspaceServer {
                         catalog,
                         search_path: session.search_path(),
                         function: stmt.function.as_ref(),
+                        parameter_names,
                     })
                     .into_iter()
                     .map(|hint| InlayHint {

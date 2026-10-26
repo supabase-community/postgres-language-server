@@ -98,6 +98,8 @@ Inlay hints and semantic highlighting are on by default. Turn them off for a pro
 }
 ```
 
+To keep the hints only where they help most, show parameter names for constant arguments only (`make_point(x: 1, y: 2)`, but not `make_point(a + 1, b)`) with `"inlayHints": { "parameterNames": "literals" }`. The other values are `"all"`, the default, and `"none"`.
+
 Without semantic tokens, your editor keeps the highlighting of its SQL grammar. Most editors can also turn these features off on their side, e.g. `editor.inlayHints.enabled` and `editor.semanticHighlighting.enabled` in VS Code.
 
 The language server asks the editor to request inlay hints and semantic tokens again when the configuration changes, when the schema cache is invalidated or a statement is executed, and when the database becomes reachable, if the editor supports these refreshes.
