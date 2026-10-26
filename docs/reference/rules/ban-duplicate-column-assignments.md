@@ -1,17 +1,18 @@
 # banDuplicateColumnAssignments
 
 **Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Since** `Unreleased`  
-**Diagnostic** `lint/banDuplicateColumnAssignments` · **Postgres error** `42601`
+**Diagnostic** `lint/banDuplicateColumnAssignments` · **Postgres error** `42601`, `42701`
 
 **Sources**: inspired by [`squawk/ban-duplicate-column-assignments`](https://squawkhq.com/docs/ban-duplicate-column-assignments)
 
 ## Description
 A column is assigned or declared more than once.
 
-Postgres rejects statements that assign the same column twice, like
-`update t set a = 1, a = 2` or `insert into t (a, a)`, with `42601 syntax_error`. It
-rejects tables and views that declare the same column twice with `42701  duplicate_column`. This includes view columns that get the same name from their
-expressions, like `select a.id, b.id`.
+Postgres rejects statements that assign the same column twice in a SET clause, like
+`update t set a = 1, a = 2`, with `42601 syntax_error`. It rejects column lists that name
+the same column twice, like `insert into t (a, a)`, and tables and views that declare the
+same column twice with `42701 duplicate_column`. This includes view columns that get the
+same name from their expressions, like `select a.id, b.id`.
 
 Assigning different elements or fields of the same column, like `set a[1] = 1, a[2] = 2`,
 is fine.

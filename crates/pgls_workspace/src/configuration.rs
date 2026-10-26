@@ -534,7 +534,7 @@ fn load_user_config(
     Ok(None)
 }
 
-/// Creates a new configuration on file system
+/// Creates a new configuration file in `directory`, relative to the working directory.
 ///
 /// ## Errors
 ///
@@ -543,9 +543,10 @@ fn load_user_config(
 /// - the program doesn't have the write rights
 pub fn create_config(
     fs: &mut DynRef<dyn FileSystem>,
+    directory: &Path,
     configuration: &mut PartialConfiguration,
 ) -> Result<(), WorkspaceError> {
-    let path = PathBuf::from(ConfigName::pgls_jsonc());
+    let path = directory.join(ConfigName::pgls_jsonc());
 
     if fs.path_exists(&path) {
         return Err(ConfigurationDiagnostic::new_already_exists().into());
@@ -566,14 +567,18 @@ pub fn create_config(
         Path::new("./node_modules/@postgrestools/postgrestools/schema.json");
     let pgls_node_schema_path =
         Path::new("./node_modules/@postgres-language-server/cli/schema.json");
+    // The schema path is relative to the configuration file.
     if fs
-        .open_with_options(pgls_node_schema_path, OpenOptions::default().read(true))
+        .open_with_options(
+            &directory.join(pgls_node_schema_path),
+            OpenOptions::default().read(true),
+        )
         .is_ok()
     {
         configuration.schema = pgls_node_schema_path.to_str().map(String::from);
     } else if fs
         .open_with_options(
-            postgrestools_node_schema_path,
+            &directory.join(postgrestools_node_schema_path),
             OpenOptions::default().read(true),
         )
         .is_ok()

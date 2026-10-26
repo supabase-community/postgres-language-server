@@ -28,12 +28,12 @@ use pgls_configuration::{
     splinter::SplinterConfiguration,
 };
 use pgls_fs::PgLSPath;
+use pgls_matcher::Matcher;
 #[cfg(feature = "db")]
 use sqlx::postgres::PgConnectOptions;
 
 use crate::{
     WorkspaceError,
-    matcher::Matcher,
     workspace::{ProjectKey, WorkspaceData},
 };
 

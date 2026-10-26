@@ -3,7 +3,7 @@
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
-use crate::RuleFix;
+use crate::{LinterRule, LinterRuleContext, RuleFix};
 
 /// The tokens of a statement, with offsets relative to the statement.
 #[derive(Clone, Copy)]
@@ -134,4 +134,23 @@ impl<'a> StatementTokens<'a> {
     pub fn insert_after(&self, index: usize, message: &str, text: &str) -> RuleFix {
         RuleFix::new(message).insert(self.range(index).end(), format!(" {text}"))
     }
+}
+
+/// A fix that inserts `CONCURRENTLY` after the token at `index`, for a statement that Postgres
+/// can't run in a transaction block. There is none in a transaction block. If we only assume that
+/// the statement runs outside of one, because we don't know the migration tool, the fix is unsafe.
+pub(crate) fn add_concurrently<R: LinterRule + 'static>(
+    ctx: &LinterRuleContext<R>,
+    tokens: &StatementTokens,
+    index: usize,
+) -> Option<RuleFix> {
+    if ctx.in_transaction() {
+        return None;
+    }
+    let fix = tokens.insert_after(index, "Add CONCURRENTLY", "CONCURRENTLY");
+    Some(if ctx.knows_transaction() {
+        fix
+    } else {
+        fix.unsafe_fix()
+    })
 }

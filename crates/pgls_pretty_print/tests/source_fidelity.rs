@@ -325,3 +325,26 @@ fn grant_role_with_admin_option_keeps_the_portable_spelling() {
         "grant r1 to u1 with inherit false, admin false, set true;"
     );
 }
+
+/// Postgres keeps the first 63 bytes of an identifier, and so does the AST. The formatter writes
+/// the name as it was written, not as the parser cut it down.
+#[test]
+fn identifiers_longer_than_postgres_keeps_are_written_in_full() {
+    let role = "a_role_name_that_is_definitely_way_too_long_for_anything_postgres_keeps";
+    assert_eq!(
+        format(&format!("GRANT SELECT ON t TO {role}")),
+        format!("grant select on table t to {role};")
+    );
+
+    let column = "A Quoted Column Name That Is Definitely Way Too Long For Anything Postgres Keeps";
+    assert_eq!(
+        format(&format!("SELECT \"{column}\" FROM t")),
+        format!("select \"{column}\" from t;")
+    );
+
+    let table = "an_unquoted_table_name_that_is_definitely_way_too_long_for_anything";
+    assert_eq!(
+        format(&format!("CREATE TABLE {table} (id int)")),
+        format!("create table {table} (id int);")
+    );
+}

@@ -77,11 +77,11 @@ create statistics tst on a from (select * from ext_stats_test) as foo;
 
 create statistics tst on a from ext_stats_test as s tablesample system (x);
 
-create statistics tst on a from xmltable( 'foo' passing 'bar' columns a text);
+create statistics tst on a from xmltable('foo' passing 'bar' columns a text);
 
 create statistics tst
 on a
-from json_table( cast('123' as jsonb), '$' columns (item int ) );
+from json_table(cast('123' as jsonb), '$' columns (item int));
 
 create function tftest(int)
 returns table (

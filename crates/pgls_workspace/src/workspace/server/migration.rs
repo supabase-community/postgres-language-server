@@ -76,6 +76,8 @@ fn parse_migration_name(name: &str) -> Option<Migration> {
 pub(crate) fn migration_sections(text: &str, markers: SectionMarkers) -> Vec<MigrationSection> {
     let mut sections: Vec<MigrationSection> = Vec::new();
     let mut no_transaction = false;
+    // The start of the open goose `StatementBegin` block.
+    let mut statement_begin = None;
     let mut offset = 0;
     for line in text.split_inclusive('\n') {
         let start = TextSize::from(offset as u32);
@@ -96,6 +98,22 @@ pub(crate) fn migration_sections(text: &str, markers: SectionMarkers) -> Vec<Mig
                     no_transaction = true;
                     None
                 }
+                Some(annotation) if annotation.eq_ignore_ascii_case("statementbegin") => {
+                    statement_begin = Some(start);
+                    None
+                }
+                Some(annotation) if annotation.eq_ignore_ascii_case("statementend") => {
+                    // goose sends the statements between `StatementBegin` and `StatementEnd`
+                    // to Postgres as one query.
+                    if let (Some(begin), Some(section)) =
+                        (statement_begin.take(), sections.last_mut())
+                    {
+                        section
+                            .queries
+                            .push(TextRange::new(begin, TextSize::from(offset as u32)));
+                    }
+                    None
+                }
                 _ => None,
             },
         };
@@ -104,19 +122,30 @@ pub(crate) fn migration_sections(text: &str, markers: SectionMarkers) -> Vec<Mig
             if let Some(previous) = sections.last_mut() {
                 previous.range = TextRange::new(previous.range.start(), start);
             }
+            let range = TextRange::new(start, TextSize::from(text.len() as u32));
             sections.push(MigrationSection {
-                range: TextRange::new(start, TextSize::from(text.len() as u32)),
+                range,
                 direction,
                 transaction,
+                queries: Vec::new(),
             });
         }
     }
 
-    // goose runs both directions of the file without a transaction.
-    if no_transaction {
-        for section in &mut sections {
-            section.transaction = false;
+    match markers {
+        // dbmate sends each section to Postgres as one query.
+        SectionMarkers::Dbmate => {
+            for section in &mut sections {
+                section.queries = vec![section.range];
+            }
         }
+        // goose runs both directions of the file without a transaction.
+        SectionMarkers::Goose if no_transaction => {
+            for section in &mut sections {
+                section.transaction = false;
+            }
+        }
+        _ => {}
     }
 
     sections
@@ -293,6 +322,44 @@ mod tests {
                     true
                 ),
                 ("-- +goose down\nselect 2;", Direction::Down, true),
+            ]
+        );
+    }
+
+    #[test]
+    fn queries_sent_at_once() {
+        let queries = |text, markers| {
+            migration_sections(text, markers)
+                .into_iter()
+                .map(|section| {
+                    section
+                        .queries
+                        .iter()
+                        .map(|query| &text[*query])
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>()
+        };
+        // dbmate sends each section as one query.
+        assert_eq!(
+            queries(
+                "-- migrate:up transaction:false\nselect 1;\nselect 2;\n-- migrate:down\nselect 3;\n",
+                SectionMarkers::Dbmate
+            ),
+            vec![
+                vec!["-- migrate:up transaction:false\nselect 1;\nselect 2;\n"],
+                vec!["-- migrate:down\nselect 3;\n"],
+            ]
+        );
+        // goose sends a `StatementBegin` block as one query, and the other statements one by one.
+        assert_eq!(
+            queries(
+                "-- +goose NO TRANSACTION\n-- +goose Up\nselect 1;\n-- +goose StatementBegin\nselect 2;\nselect 3;\n-- +goose StatementEnd\n-- +goose Down\nselect 4;\n",
+                SectionMarkers::Goose
+            ),
+            vec![
+                vec!["-- +goose StatementBegin\nselect 2;\nselect 3;\n-- +goose StatementEnd\n"],
+                vec![],
             ]
         );
     }

@@ -45,6 +45,8 @@ When you run `postgres-language-server init` in a directory that contains a `sup
 
 In a monorepo, run `init` at the root: if the root has no `supabase/config.toml`, `init` looks for one in the folders one or two levels below it, such as `apps/web/supabase/config.toml`, and uses it if there is exactly one. With several, it leaves the connection alone and lists them, so run `init` in the folder of the project you want instead.
 
+Run inside the `supabase/` folder itself (a folder named `supabase` with a `config.toml` that has a `[db]` section), `init` writes the configuration into the project folder above it, next to `supabase/`, so that it applies to the whole project and the editor finds it when it opens the project.
+
 ## Password file
 
 When neither the configuration, the connection string, nor `PGPASSWORD` provides a password, the password is looked up in the [password file](https://www.postgresql.org/docs/current/libpq-pgpass.html), the same way `psql` and other libpq clients do:
