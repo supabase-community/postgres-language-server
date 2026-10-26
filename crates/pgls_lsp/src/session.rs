@@ -27,6 +27,7 @@ use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::OnceLock;
 use std::sync::RwLock;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::{AtomicBool, AtomicU8};
@@ -115,6 +116,9 @@ pub(crate) struct Session {
     /// The projects of the workspace by their folder, deepest first: one per workspace folder, or
     /// one for the root. A document belongs to the project of the deepest folder that contains it.
     projects: RwLock<Vec<(PathBuf, ProjectKey)>>,
+
+    /// The project of the files outside every workspace folder, once one was opened.
+    folderless_project: OnceLock<ProjectKey>,
 
     /// The files settings of the root configuration of each project, by its folder. They decide
     /// which folders are searched for nested configuration files.
@@ -250,6 +254,7 @@ impl Session {
             client_overrides: RwLock::new(ClientOverrides::default()),
             workspace_folders: RwLock::default(),
             projects: RwLock::default(),
+            folderless_project: OnceLock::new(),
             root_files: parking_lot::RwLock::default(),
             reload_scheduled: AtomicBool::new(false),
             configuration_transition: tokio::sync::Mutex::new(()),
@@ -595,16 +600,7 @@ impl Session {
     }
 
     pub(crate) fn file_path(&self, url: &ls_types::Uri) -> Result<PgLSPath> {
-        let path_to_file = match url.to_file_path() {
-            None => {
-                // If we can't create a path, it's probably because the file doesn't exist.
-                // It can be a newly created file that it's not on disk
-                PathBuf::from(url.path().as_str())
-            }
-            Some(path) => path.into_owned(),
-        };
-
-        Ok(PgLSPath::new(path_to_file))
+        Ok(PgLSPath::new(document_path(url)))
     }
 
     /// True if the client supports dynamic registration of "workspace/didChangeConfiguration" requests
@@ -636,16 +632,33 @@ impl Session {
     }
 
     /// The project that the file at `path` belongs to: the one of the deepest workspace folder
-    /// that contains it, or else the one of the shallowest folder. Before the configuration is loaded, the key of no
-    /// project, for which the workspace only reports what needs no settings.
+    /// that contains it. A file outside every workspace folder belongs to a project without a
+    /// folder, which has the default settings, so that it never gets the settings (and the
+    /// database) of an unrelated folder. Without workspace folders or a root, or with a
+    /// configuration file chosen by the user, the only project applies to every file. Before the
+    /// configuration is loaded, the key of no project, for which the workspace only reports what
+    /// needs no settings.
     pub(crate) fn project_key(&self, path: &Path) -> ProjectKey {
         let projects = self.projects.read().unwrap();
-        projects
-            .iter()
-            .find(|(folder, _)| path.starts_with(folder))
-            .or_else(|| projects.last())
-            .map(|(_, key)| *key)
-            .unwrap_or_default()
+        if let Some((_, key)) = projects.iter().find(|(folder, _)| path.starts_with(folder)) {
+            return *key;
+        }
+        let Some((_, only_project)) = projects.last() else {
+            return ProjectKey::default();
+        };
+        if self.config_path.is_some()
+            || (self.get_workspace_folders().is_none() && self.base_path().is_none())
+        {
+            return *only_project;
+        }
+        *self.folderless_project.get_or_init(|| {
+            self.workspace
+                .register_project_folder(RegisterProjectFolderParams { path: None })
+                .unwrap_or_else(|error| {
+                    error!("Failed to register the project without a folder: {}", error);
+                    ProjectKey::default()
+                })
+        })
     }
 
     /// Returns the base path of the workspace on the filesystem if it has one
@@ -754,27 +767,14 @@ impl Session {
                 }
             };
         let folder = folder.unwrap_or_default();
-        let is_new = !self
-            .projects
-            .read()
-            .unwrap()
-            .iter()
-            .any(|(project, _)| project == &folder);
 
         let (status, root_files) = self
             .load_pgls_configuration_file(project_key, base_path)
             .await;
         if !matches!(status, ConfigurationStatus::Loaded) {
-            // A project keeps its settings while its configuration is broken, and a new one is
-            // only registered once its configuration loads.
-            if is_new {
-                let _ = self
-                    .workspace
-                    .unregister_project_folder(UnregisterProjectFolderParams {
-                        path: PgLSPath::new(&folder),
-                    });
-                return (None, status);
-            }
+            // A project keeps its settings while its configuration is broken, and a new one has
+            // the defaults. Either way its files never fall back to the settings of another
+            // folder, which could point at another database.
             return (Some((folder, project_key)), status);
         }
         let root_files = root_files.map(Arc::new);
@@ -793,26 +793,33 @@ impl Session {
         (project, status)
     }
 
-    /// Lays the layers of the session over a configuration file: the environment and the client
-    /// overrides.
+    /// Lays the layers of the session over the root configuration file: the environment and the
+    /// client overrides.
     fn configure(&self) -> impl Fn(PartialConfiguration) -> PartialConfiguration + '_ {
+        self.configure_with(self.env_config.as_ref())
+    }
+
+    /// Lays the layers of the session over a configuration file: `environment` and the client
+    /// overrides.
+    fn configure_with<'a>(
+        &'a self,
+        environment: Option<&'a PartialConfiguration>,
+    ) -> impl Fn(PartialConfiguration) -> PartialConfiguration + 'a {
         let (client_overrides, overridden_sections) = {
             let overrides = self.client_overrides.read().unwrap();
             (overrides.configuration().cloned(), overrides.sections())
         };
         move |configuration| {
-            let mut configuration = merge_layers(
-                configuration,
-                self.env_config.as_ref(),
-                client_overrides.as_ref(),
-            );
+            let mut configuration =
+                merge_layers(configuration, environment, client_overrides.as_ref());
             overridden_sections.materialize_defaults(&mut configuration);
             configuration
         }
     }
 
     /// Applies every configuration file below `root` to the project, with the same layers as the
-    /// root configuration. The folders that `root_files` ignores are not searched.
+    /// root configuration, except that the environment only fills in the connection options a
+    /// file doesn't set. The folders that `root_files` ignores are not searched.
     async fn load_nested_configuration_files(
         self: &Arc<Self>,
         project_key: ProjectKey,
@@ -830,7 +837,11 @@ impl Session {
                     root_files,
                     ..NestedConfigurationSearch::new(root)
                 },
-                session.configure(),
+                session
+                    .env_config
+                    .as_ref()
+                    .and_then(|environment| environment.db.as_ref()),
+                session.configure_with(None),
             )
         })
         .await;
@@ -1103,9 +1114,70 @@ fn is_stale_diagnostics(captured_version: i32, current_version: i32) -> bool {
     captured_version != current_version
 }
 
+/// The path of the workspace document for `url`.
+///
+/// Only `file:` URIs are files. Documents of other schemes, like `untitled:` buffers, the `git:`
+/// side of a diff, or the cells of a notebook, are keyed by their whole URI. Their URI path is
+/// often the path of a file, or the same for every cell of a notebook. The workspace keys
+/// documents by path, so they would otherwise share the document of that file, and closing them
+/// would close it.
+fn document_path(url: &ls_types::Uri) -> PathBuf {
+    if !url.scheme().as_str().eq_ignore_ascii_case("file") {
+        return PathBuf::from(url.as_str());
+    }
+    match url.to_file_path() {
+        Some(path) => path.into_owned(),
+        // If we can't create a path, it's probably because the file doesn't exist.
+        // It can be a newly created file that it's not on disk
+        None => PathBuf::from(url.path().as_str()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::is_stale_diagnostics;
+    use std::path::Path;
+    use std::str::FromStr;
+
+    use tower_lsp_server::ls_types::Uri;
+
+    use super::{document_path, is_stale_diagnostics};
+
+    fn path(uri: &str) -> std::path::PathBuf {
+        document_path(&Uri::from_str(uri).expect("a valid URI"))
+    }
+
+    #[test]
+    fn file_uris_are_decoded_into_paths() {
+        let expected = if cfg!(windows) {
+            Path::new("c:/Users/a/My Project/café.sql")
+        } else {
+            Path::new("/c:/Users/a/My Project/café.sql")
+        };
+        assert_eq!(
+            path("file:///c%3A/Users/a/My%20Project/caf%C3%A9.sql"),
+            expected
+        );
+    }
+
+    #[test]
+    fn other_schemes_get_paths_of_their_own() {
+        let file = path("file:///workspace/a.sql");
+        let git = path("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D");
+        assert_ne!(git, file);
+        assert_eq!(
+            git,
+            Path::new("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D")
+        );
+        assert_ne!(
+            path("vscode-notebook-cell:/workspace/nb.ipynb#W0sZmlsZQ%3D%3D"),
+            path("vscode-notebook-cell:/workspace/nb.ipynb#W1sZmlsZQ%3D%3D"),
+        );
+        // Not a relative path with its first character stripped on Windows.
+        assert_eq!(
+            path("untitled:Untitled-1"),
+            Path::new("untitled:Untitled-1")
+        );
+    }
 
     #[test]
     fn stale_diagnostics_are_detected_by_version() {
