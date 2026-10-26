@@ -13,7 +13,6 @@ version              = "0.0.0"
 
 [dependencies]
 globset = "0.4.16"
-lru     = "0.16.3"
 
 ignore                            = { workspace = true }
 json-strip-comments               = { workspace = true }
@@ -33,6 +32,7 @@ pgls_matcher                      = { workspace = true }
 pgls_pretty_print                 = { workspace = true }
 pgls_query                        = { workspace = true }
 pgls_query_ext                    = { workspace = true }
+pgls_semantic_tokens              = { workspace = true }
 pgls_statement_splitter           = { workspace = true }
 pgls_suppressions                 = { workspace = true }
 pgls_text_edit.workspace          = true
@@ -90,3 +90,6 @@ tokio           = { workspace = true }
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

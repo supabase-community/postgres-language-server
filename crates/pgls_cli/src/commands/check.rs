@@ -5,7 +5,7 @@ use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
 use crate::{ExecutionConfig, ExecutionMode};
-use pgls_configuration::PartialConfiguration;
+use pgls_configuration::{PartialConfiguration, RuleSelector};
 use pgls_diagnostics::{Error, category};
 use pgls_workspace::features::code_actions::FixFileMode;
 use pgls_workspace::features::diagnostics::CheckDatabaseConnectionParams;
@@ -15,6 +15,8 @@ pub struct CheckArgs {
     pub targets: FileTargets,
     pub fix: bool,
     pub unsafe_: bool,
+    pub only: Vec<RuleSelector>,
+    pub skip: Vec<RuleSelector>,
 }
 
 pub fn check(
@@ -24,13 +26,15 @@ pub fn check(
 ) -> Result<(), CliDiagnostic> {
     args.targets.validate()?;
 
-    let configuration = session.prepare_with_config(cli_options, args.configuration.clone())?;
-    session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
+    let configuration = session.configure_workspace(
+        cli_options,
+        args.configuration.clone(),
+        VcsIntegration::Enabled,
+    )?;
 
     let paths = args.targets.resolve_paths(session.fs(), &configuration)?;
     let configuration_errors = session.apply_nested_configurations(
         cli_options,
-        args.configuration.clone(),
         &args.targets.nested_configuration_paths(&paths),
     )?;
 
@@ -48,6 +52,8 @@ pub fn check(
     let mode = ExecutionMode::Check {
         vcs: args.targets.vcs(),
         fix,
+        only: args.only.clone(),
+        skip: args.skip.clone(),
     };
     let execution = ExecutionConfig::new(mode, max_diagnostics);
 

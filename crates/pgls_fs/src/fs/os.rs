@@ -103,6 +103,21 @@ impl FileSystem for OsFileSystem {
         path.is_symlink()
     }
 
+    /// On Windows without the `\\?\` prefix that [std::fs::canonicalize] adds, so that the path
+    /// compares with the paths of editors.
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+        let canonical = std::fs::canonicalize(path)?;
+        #[cfg(windows)]
+        let canonical = match canonical
+            .to_str()
+            .and_then(|canonical| canonical.strip_prefix(r"\\?\"))
+        {
+            Some(stripped) if !stripped.starts_with("UNC") => PathBuf::from(stripped),
+            _ => canonical,
+        };
+        Ok(canonical)
+    }
+
     fn get_changed_files(&self, base: &str) -> io::Result<Vec<String>> {
         let output = Command::new("git")
             .arg("diff")

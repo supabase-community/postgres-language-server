@@ -42,3 +42,6 @@ tower           = { version = "0.5.3", features = ["timeout", "util"] }
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

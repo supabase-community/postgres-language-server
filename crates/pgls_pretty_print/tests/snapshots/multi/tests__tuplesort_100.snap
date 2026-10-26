@@ -24,12 +24,16 @@ select
   cast('00000000-0000-0000-0000-' || to_char(g.i, '000000000000FM') as uuid) as abort_increasing,
   cast('00000000-0000-0000-0000-' || to_char(20000 - g.i, '000000000000FM') as uuid)
   as abort_decreasing,
-  cast(to_char(g.i % 10009, '00000000FM') || '-0000-0000-0000-' || to_char(g.i, '000000000000FM')
-  as uuid)
+  cast(
+    to_char(g.i % 10009, '00000000FM') || '-0000-0000-0000-' || to_char(g.i, '000000000000FM')
+    as uuid
+  )
   as noabort_increasing,
-  cast(to_char((20000 - g.i) % 10009, '00000000FM') || '-0000-0000-0000-' ||
-  to_char(20000 - g.i, '000000000000FM')
-  as uuid)
+  cast(
+    to_char((20000 - g.i) % 10009, '00000000FM') || '-0000-0000-0000-' ||
+    to_char(20000 - g.i, '000000000000FM')
+    as uuid
+  )
   as noabort_decreasing
 from
   generate_series(0, 20000, 1) as g (i);
@@ -415,12 +419,8 @@ select
   percentile_disc(0.01) within group (order by id),
   percentile_disc(0.8) within group (order by abort_increasing),
   percentile_disc(0.2) within group (order by cast(id as text)),
-  rank(
-    '00000000-0000-0000-0000-000000000000',
-    '2',
-    '2'
-  )
-  within group (order by noabort_increasing, id, cast(id as text))
+  rank('00000000-0000-0000-0000-000000000000', '2', '2')
+    within group (order by noabort_increasing, id, cast(id as text))
 from
   (select * from abbrev_abort_uuids union all select null, null, null, null, null) as s;
 
@@ -436,12 +436,8 @@ select
   percentile_disc(0.01) within group (order by id),
   percentile_disc(0.8) within group (order by abort_increasing),
   percentile_disc(0.2) within group (order by cast(id as text)),
-  rank(
-    '00000000-0000-0000-0000-000000000000',
-    '2',
-    '2'
-  )
-  within group (order by noabort_increasing, id, cast(id as text))
+  rank('00000000-0000-0000-0000-000000000000', '2', '2')
+    within group (order by noabort_increasing, id, cast(id as text))
 from
   (select * from abbrev_abort_uuids union all select null, null, null, null, null) as s;
 

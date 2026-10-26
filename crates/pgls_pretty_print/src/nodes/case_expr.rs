@@ -6,10 +6,28 @@ use crate::{
 };
 
 pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
+    emit_case_expr_impl(e, n, true);
+}
+
+/// Emits a branch result, `then <result>` or `else <result>`.
+///
+/// In expanded layout a CASE aligns its branches with the column it starts at. A CASE nested as a
+/// result would start after `then `, so every level would move the next one right by the keyword
+/// and two indents, and a few levels run past the line width. A nested CASE is therefore indented
+/// from the line of its THEN or ELSE instead: its branches one level in, `end` under `then`.
+pub(super) fn emit_case_result(e: &mut EventEmitter, result: &pgls_query::protobuf::Node) {
+    super::emit_node_with(result, e, |node, e| match node {
+        pgls_query::NodeEnum::CaseExpr(case) => emit_case_expr_impl(e, case, false),
+        node => super::emit_node_enum(node, e),
+    });
+}
+
+fn emit_case_expr_impl(e: &mut EventEmitter, n: &CaseExpr, align: bool) {
     e.group_start(GroupKind::CaseExpr);
 
     let expanded = matches!(e.config().layout, crate::Layout::Expanded);
-    if expanded {
+    let align = expanded && align;
+    if align {
         e.align_start();
     }
     e.token(TokenKind::CASE_KW);
@@ -31,17 +49,18 @@ pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
 
     // ELSE clause
     if let Some(ref defresult) = n.defresult {
+        super::emit_comments_before_keyword(e, "else", defresult);
         super::emit_layout_break(e);
         e.token(TokenKind::ELSE_KW);
         e.space();
-        super::emit_node(defresult, e);
+        emit_case_result(e, defresult);
     }
 
     e.indent_end();
     super::emit_layout_break(e);
     e.token(TokenKind::END_KW);
 
-    if expanded {
+    if align {
         e.align_end();
     }
     e.group_end();

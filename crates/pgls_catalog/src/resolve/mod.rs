@@ -204,6 +204,56 @@ pub enum Reference {
         span: Option<TextRange>,
         relation: crate::RelationInfo,
     },
+    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`.
+    Type {
+        /// The location of the type name in the statement.
+        location: i32,
+        /// The span of the (possibly qualified) type name, with every word of multi-word types
+        /// like `double precision`, and without modifiers like `(10)` or `[]`. The precision of
+        /// `timestamp(3) with time zone` is inside the span.
+        span: Option<TextRange>,
+        type_info: crate::TypeInfo,
+    },
+    /// A parameter of the SQL function whose body is resolved, by name (`id`, `fn.id`) or by
+    /// number (`$1`).
+    Parameter {
+        /// The location of the parameter reference in the statement.
+        location: i32,
+        /// The span of the whole parameter reference, including the function name qualifier.
+        span: Option<TextRange>,
+        /// The index of the parameter in [`FunctionContext::params`].
+        index: usize,
+    },
+    /// A string literal that is coerced to an enum type, like `'happy'` in `mood = 'happy'`.
+    /// Only recorded where the enum type is certain: casts, operators whose other operand is the
+    /// enum, function parameters of the enum type, and values assigned to enum columns in INSERT
+    /// and UPDATE.
+    EnumLiteral {
+        /// The location of the literal in the statement.
+        location: i32,
+        /// The span of the literal, including its quotes.
+        span: Option<TextRange>,
+        type_info: crate::TypeInfo,
+    },
+    /// A `*` or `t.*` in a select list or RETURNING list whose columns are all known, and each
+    /// can be referenced by a name that resolves to it.
+    Star {
+        /// The location of the `*`, or of the qualifier of `t.*`.
+        location: i32,
+        /// The span of the `*`, including its qualifier.
+        span: Option<TextRange>,
+        /// The columns that the `*` expands to, in order.
+        columns: Vec<StarColumn>,
+    },
+}
+
+/// A column that a `*` expands to, and the name that references it from where the `*` is.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StarColumn {
+    /// The qualifier of the column, e.g. `["u"]` for `u.name`. Empty if the column name alone
+    /// references it.
+    pub qualifier: Vec<String>,
+    pub name: String,
 }
 
 impl Reference {
@@ -211,7 +261,11 @@ impl Reference {
         match self {
             Self::Function { location, .. }
             | Self::Column { location, .. }
-            | Self::Relation { location, .. } => *location,
+            | Self::Relation { location, .. }
+            | Self::Type { location, .. }
+            | Self::Parameter { location, .. }
+            | Self::EnumLiteral { location, .. }
+            | Self::Star { location, .. } => *location,
         }
     }
 
@@ -219,7 +273,11 @@ impl Reference {
         match self {
             Self::Function { span, .. }
             | Self::Column { span, .. }
-            | Self::Relation { span, .. } => *span,
+            | Self::Relation { span, .. }
+            | Self::Type { span, .. }
+            | Self::Parameter { span, .. }
+            | Self::EnumLiteral { span, .. }
+            | Self::Star { span, .. } => *span,
         }
     }
 }

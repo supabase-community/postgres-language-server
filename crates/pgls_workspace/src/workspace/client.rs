@@ -8,8 +8,8 @@ use std::{
 };
 
 use super::{
-    CloseFileParams, GetFileContentParams, IsPathIgnoredParams, OpenFileParams, ProjectKey,
-    RegisterProjectFolderParams, UnregisterProjectFolderParams,
+    CloseFileParams, FindProjectParams, GetFileContentParams, IsPathIgnoredParams, OpenFileParams,
+    ProjectKey, RegisterProjectFolderParams, UnregisterProjectFolderParams,
 };
 
 pub struct WorkspaceClient<T> {
@@ -96,7 +96,7 @@ where
         &self,
         params: crate::features::code_actions::CodeActionsParams,
     ) -> Result<crate::features::code_actions::CodeActionsResult, WorkspaceError> {
-        self.request("pgls/code_actions", params)
+        self.request("pgls/pull_code_actions", params)
     }
 
     fn fix_file(
@@ -118,6 +118,13 @@ where
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError> {
         self.request("pgls/register_project_folder", params)
+    }
+
+    fn find_project(
+        &self,
+        params: FindProjectParams,
+    ) -> Result<Option<ProjectKey>, WorkspaceError> {
+        self.request("pgls/find_project", params)
     }
 
     fn unregister_project_folder(
@@ -209,6 +216,13 @@ where
         params: crate::features::inlay_hints::PullInlayHintsParams,
     ) -> Result<crate::features::inlay_hints::PullInlayHintsResult, WorkspaceError> {
         self.request("pgls/pull_inlay_hints", params)
+    }
+
+    fn pull_semantic_tokens(
+        &self,
+        params: crate::features::semantic_tokens::PullSemanticTokensParams,
+    ) -> Result<crate::features::semantic_tokens::PullSemanticTokensResult, WorkspaceError> {
+        self.request("pgls/pull_semantic_tokens", params)
     }
 
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {

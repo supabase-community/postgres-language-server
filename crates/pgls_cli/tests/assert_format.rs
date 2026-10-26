@@ -30,6 +30,50 @@ fn format_values_rows_from_cli_options() {
     .stdout("values\n  (1, 'one')\n  , (2, 'two');");
 }
 
+fn format_stdin_with_option(option: &str, value: &str) -> assert_cmd::assert::Assert {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    cmd.args([
+        "format",
+        "--config-path",
+        CONFIG_PATH,
+        "--log-level",
+        "none",
+        "--stdin-file-path",
+        "virtual.sql",
+        option,
+        value,
+    ])
+    .write_stdin("select 1;")
+    .assert()
+}
+
+#[test]
+fn format_option_errors_list_the_valid_values() {
+    let output = format_stdin_with_option("--clause-body-style", "foo")
+        .failure()
+        .get_output()
+        .clone();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("expected 'break' or 'compact'"), "{stderr}");
+
+    // The values-row layout shares its values with the layout, and the error doesn't name either.
+    let output = format_stdin_with_option("--values-row-layout", "foo")
+        .failure()
+        .get_output()
+        .clone();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("expected 'fit' or 'expanded'"), "{stderr}");
+    assert!(!stderr.contains("Layout"), "{stderr}");
+}
+
+#[test]
+fn format_rejects_a_zero_line_width_or_indent_size() {
+    for option in ["--line-width", "--indent-size"] {
+        format_stdin_with_option(option, "0").failure();
+        format_stdin_with_option(option, "1").success();
+    }
+}
+
 #[test]
 #[cfg_attr(
     target_os = "windows",

@@ -67,6 +67,10 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     /// Checks if the given path is a symlink
     fn path_is_symlink(&self, path: &Path) -> bool;
 
+    /// The absolute form of `path` with `.`, `..` and symlinks resolved. Fails if it doesn't
+    /// exist.
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
+
     /// This method accepts a directory path (`search_dir`) and a list of filenames (`file_names`),
     /// It looks for the files in the specified directory in the order they appear in the list.
     /// If a file is not found in the initial directory, the search may continue into the parent
@@ -444,6 +448,10 @@ where
 
     fn path_is_symlink(&self, path: &Path) -> bool {
         T::path_is_symlink(self, path)
+    }
+
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+        T::canonicalize(self, path)
     }
 
     fn get_changed_files(&self, base: &str) -> io::Result<Vec<String>> {
