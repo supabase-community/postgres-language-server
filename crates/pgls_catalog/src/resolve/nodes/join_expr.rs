@@ -1,9 +1,7 @@
 use pgls_query::protobuf::JoinExpr;
+use pgls_query_ext::utils::string_values;
 
-use super::{
-    Resolver, alias::apply_alias, from_clause::resolve_from_item, resolve_node,
-    string::string_values,
-};
+use super::{Resolver, alias::apply_alias, from_clause::resolve_from_item, resolve_node};
 use crate::{
     resolve::scope::{Item, Level},
     typing::{Selection, TypedColumn, select_common_type},

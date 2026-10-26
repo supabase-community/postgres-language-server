@@ -26,7 +26,7 @@ pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
         );
         item.typed_columns = cte.typed_columns.clone().map(|mut columns| {
             if let Some(alias) = alias
-                && let Some(names) = super::string::string_values(&alias.colnames)
+                && let Some(names) = pgls_query_ext::utils::string_values(&alias.colnames)
             {
                 for (column, name) in columns.iter_mut().zip(names) {
                     column.name = name;
@@ -61,10 +61,10 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
         columns: apply_alias(relation.columns, alias),
         typed_columns: relation.typed_columns.map(|mut columns| {
             if let Some(alias) = alias {
-                for (column, name) in columns.iter_mut().zip(
-                    crate::resolve::nodes::string::string_values(&alias.colnames)
-                        .unwrap_or_default(),
-                ) {
+                for (column, name) in columns
+                    .iter_mut()
+                    .zip(pgls_query_ext::utils::string_values(&alias.colnames).unwrap_or_default())
+                {
                     column.name = name;
                 }
             }

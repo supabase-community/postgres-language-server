@@ -2,6 +2,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::{QualifiedName, qualified_name};
 
 declare_lint_rule! {
     /// Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
@@ -162,7 +163,7 @@ fn is_safe_default_expr(
                     return false;
                 };
 
-                let Some((schema, name)) = pgls_query_ext::utils::parse_name(&fc.funcname) else {
+                let Some(QualifiedName { schema, name, .. }) = qualified_name(&fc.funcname) else {
                     return false;
                 };
 
@@ -179,8 +180,7 @@ fn is_safe_default_expr(
                     }
 
                     // check name and schema (if given)
-                    f.name.eq_ignore_ascii_case(&name)
-                        && schema.as_ref().is_none_or(|s| &f.schema == s)
+                    f.name.eq_ignore_ascii_case(name) && schema.is_none_or(|s| f.schema == s)
                 })
             }
             // everything else is potentially unsafe

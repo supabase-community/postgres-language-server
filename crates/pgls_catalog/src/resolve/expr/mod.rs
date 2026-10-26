@@ -36,6 +36,7 @@ use crate::{
 pub(super) use assignment::check_assignment;
 pub(super) use func_call::call_args;
 use pgls_query::{NodeEnum, protobuf};
+use pgls_query_ext::utils::{QualifiedName, qualified_name, string_value, string_values};
 
 fn named(r: &Resolver<'_>, name: &str) -> Option<Type> {
     match r.catalog.type_(Some("pg_catalog"), name, r.search_path) {
@@ -107,18 +108,6 @@ fn function_param_type(r: &Resolver<'_>, param: &crate::resolve::FunctionParam) 
     info.id.take().map(Type::Named)
 }
 
-fn string_value(node: &pgls_query::Node) -> Option<&str> {
-    match node.node.as_ref()? {
-        NodeEnum::String(s) => Some(&s.sval),
-        _ => None,
-    }
-}
-fn string_values(nodes: &[pgls_query::Node]) -> Option<Vec<String>> {
-    nodes
-        .iter()
-        .map(|n| string_value(n).map(str::to_owned))
-        .collect()
-}
 /// The common type of the arguments, if all their types are known ([`select_common_type`]).
 ///
 /// [`select_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1345

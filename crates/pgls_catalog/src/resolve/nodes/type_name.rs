@@ -1,6 +1,7 @@
 use pgls_query::protobuf::TypeName;
+use pgls_query_ext::utils::{QualifiedName, qualified_name};
 
-use super::{Resolver, string::string_values};
+use super::Resolver;
 use crate::lookup::Lookup;
 use crate::resolve::FindingKind;
 
@@ -24,18 +25,12 @@ pub(super) fn resolve_type_name(r: &mut Resolver, n: &TypeName) {
         r.depends_on_file();
         return;
     }
-    let Some(names) = string_values(&n.names) else {
+    if n.names.is_empty() {
+        return;
+    }
+    let Some(QualifiedName { schema, name, .. }) = qualified_name(&n.names) else {
         r.depends_on_file();
         return;
-    };
-    let (schema, name) = match names.as_slice() {
-        [] => return,
-        [name] => (None, name.as_str()),
-        [schema, name] => (Some(schema.as_str()), name.as_str()),
-        _ => {
-            r.depends_on_file();
-            return;
-        }
     };
     if let Some(schema) = schema
         && r.check_schema(schema, n.location)

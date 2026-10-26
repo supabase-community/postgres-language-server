@@ -2,8 +2,9 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CoercionForm, FuncCall},
 };
+use pgls_query_ext::utils::{QualifiedName, qualified_name, string_values};
 
-use super::{Resolver, resolve_list, resolve_node, string::string_values};
+use super::{Resolver, resolve_list, resolve_node};
 use crate::TypeKind;
 use crate::lookup::Lookup;
 use crate::resolve::{
@@ -28,17 +29,9 @@ pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
         return;
     }
 
-    let Some(names) = string_values(&n.funcname) else {
+    let Some(QualifiedName { schema, name, .. }) = qualified_name(&n.funcname) else {
         r.depends_on_file();
         return;
-    };
-    let (schema, name) = match names.as_slice() {
-        [name] => (None, name.as_str()),
-        [schema, name] => (Some(schema.as_str()), name.as_str()),
-        _ => {
-            r.depends_on_file();
-            return;
-        }
     };
     if let Some(schema) = schema
         && r.check_schema(schema, n.location)

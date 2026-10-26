@@ -76,7 +76,7 @@ impl PgQueryStore {
 
         let sql_body = pgls_query_ext::utils::find_option_value(create_fn, "as")?;
 
-        let start = statement.content().find(&sql_body)?;
+        let start = statement.content().find(sql_body)?;
         let end = start + sql_body.len();
 
         let range = TextRange::new(start.try_into().unwrap(), end.try_into().unwrap());

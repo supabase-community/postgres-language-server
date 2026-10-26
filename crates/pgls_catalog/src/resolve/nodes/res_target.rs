@@ -1,8 +1,9 @@
 //! Select lists, RETURNING lists, and the target columns of INSERT and UPDATE.
 
 use pgls_query::{Node, NodeEnum};
+use pgls_query_ext::utils::string_value;
 
-use super::{Resolver, resolve_list, string::string_value};
+use super::{Resolver, resolve_list};
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind,

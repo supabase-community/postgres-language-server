@@ -20,7 +20,6 @@ mod range_subselect;
 mod range_var;
 mod res_target;
 mod select_stmt;
-mod string;
 mod type_name;
 mod update_stmt;
 mod view_stmt;

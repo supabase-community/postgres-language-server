@@ -219,12 +219,7 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
             }
             _ => {}
         }
-        let names = string_values(&n.name)?;
-        let (schema, name) = match names.as_slice() {
-            [name] => (None, name.as_str()),
-            [schema, name] => (Some(schema.as_str()), name.as_str()),
-            _ => return None,
-        };
+        let QualifiedName { schema, name, .. } = qualified_name(&n.name)?;
         let right = infer_expr(r, n.rexpr.as_deref()?.node.as_ref()?)?;
         let (kind, left) = match n.lexpr.as_deref().and_then(|x| x.node.as_ref()) {
             Some(left) => (OperatorKind::Infix, Some(infer_expr(r, left)?)),

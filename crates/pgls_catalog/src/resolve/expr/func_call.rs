@@ -11,12 +11,7 @@ pub(super) fn infer_func_call(
     n: &pgls_query::protobuf::FuncCall,
 ) -> Option<Type> {
     {
-        let names = string_values(&n.funcname)?;
-        let (schema, name) = match names.as_slice() {
-            [name] => (None, name.as_str()),
-            [schema, name] => (Some(schema.as_str()), name.as_str()),
-            _ => return None,
-        };
+        let QualifiedName { schema, name, .. } = qualified_name(&n.funcname)?;
         if n.agg_star {
             return named(r, "int8");
         }
