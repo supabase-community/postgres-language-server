@@ -317,26 +317,75 @@ select * from tenk1 as a inner join my_gen_series(1, 1000) as g on a.unique1 = g
 
 select * from tenk1 as a inner join my_gen_series(1, 10) as g on a.unique1 = g;
 
-select explain_mask_costs('
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'') g(s);', true, true, false, true);
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
 
-select explain_mask_costs('
-SELECT * FROM generate_series(TIMESTAMP ''2024-02-01'', TIMESTAMP ''2024-03-01'', INTERVAL ''1 day'') g(s);', true, true, false, true);
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMP ''2024-02-01'', TIMESTAMP ''2024-03-01'', INTERVAL ''1 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
 
-select explain_mask_costs('
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'', ''UTC'') g(s);', true, true, false, true);
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'', ''UTC'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
 
-select explain_mask_costs('
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''7 day'') g(s);', true, true, false, true);
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''7 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
 
-select explain_mask_costs('
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''-1 day'') g(s);', true, true, false, true);
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''-1 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
 
-select explain_mask_costs('
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''1 day'') g(s);', true, true, false, true);
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''1 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
 
-select explain_mask_costs('
-SELECT * FROM generate_series(TIMESTAMPTZ ''-infinity'', TIMESTAMPTZ ''infinity'', INTERVAL ''1 day'') g(s);', false, true, false, true);
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''-infinity'', TIMESTAMPTZ ''infinity'', INTERVAL ''1 day'') g(s);',
+    false,
+    true,
+    false,
+    true
+  );
 
 select
   *
@@ -360,8 +409,15 @@ SELECT * FROM generate_series(25.0, 1.0, -1.0) g(s);', true, true, false, true);
 select explain_mask_costs('
 SELECT * FROM generate_series(25.0, 1.0, 1.0) g(s);', true, true, false, true);
 
-select explain_mask_costs('
-SELECT * FROM generate_series(''-infinity''::NUMERIC, ''infinity''::NUMERIC, 1.0) g(s);', false, true, false, true);
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(''-infinity''::NUMERIC, ''infinity''::NUMERIC, 1.0) g(s);',
+    false,
+    true,
+    false,
+    true
+  );
 
 select explain_mask_costs('
 SELECT * FROM generate_series(1.0, 25.0, ''NaN''::NUMERIC) g(s);', false, true, false, true);

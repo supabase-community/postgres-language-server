@@ -1,6 +1,6 @@
 # banUncommittedTransaction
 
-**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Migrations only** · **Since** `Unreleased`  
+**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Migrations only** · **Unsafe fix** · **Since** `Unreleased`  
 **Diagnostic** `lint/banUncommittedTransaction`
 
 **Sources**: inspired by [`squawk/ban-uncommitted-transaction`](https://squawkhq.com/docs/ban-uncommitted-transaction)
@@ -25,7 +25,7 @@ create table users (id bigint);
 ```
 
 ```sh
-code-block.sql:1:1 lint/banUncommittedTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banUncommittedTransaction  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Transaction is never committed or rolled back.
   

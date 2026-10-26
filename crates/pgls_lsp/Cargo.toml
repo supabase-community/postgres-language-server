@@ -14,6 +14,7 @@ version              = "0.0.0"
 [dependencies]
 anyhow                   = { workspace = true }
 futures                  = "0.3.31"
+parking_lot              = "0.12.3"
 pgls_analyse             = { workspace = true }
 pgls_completions         = { workspace = true }
 pgls_configuration       = { workspace = true }
@@ -41,3 +42,6 @@ tower           = { version = "0.5.3", features = ["timeout", "util"] }
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

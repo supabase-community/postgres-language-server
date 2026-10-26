@@ -384,6 +384,7 @@ impl Builder {
                             FunctionArgumentMode::In => "in",
                             FunctionArgumentMode::InOut => "inout",
                             FunctionArgumentMode::Variadic => "variadic",
+                            FunctionArgumentMode::Out => "out",
                         }
                         .into(),
                         name: argument.name.clone().unwrap_or_default(),

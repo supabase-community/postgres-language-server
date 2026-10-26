@@ -38,3 +38,6 @@ name    = "error_rewriting"
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

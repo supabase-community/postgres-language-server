@@ -1,0 +1,24 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+call hover_proc(1, 'x')
+            ↑ hovered here
+```
+
+# Hover Results
+### `public.hover_proc(IN a integer, IN b text) → void`  
+```plain  
+Procedure - Security INVOKER  
+```  
+---    
+```sql  
+
+CREATE OR REPLACE PROCEDURE public.hover_proc(IN a integer, IN b text)
+ LANGUAGE sql
+AS $procedure$select 1$procedure$
+
+  
+```

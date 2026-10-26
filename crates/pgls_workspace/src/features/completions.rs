@@ -9,6 +9,7 @@ use crate::workspace::{Document, GetCompletionsFilter, StatementId, WithCSTMappe
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct GetCompletionsParams {
+    pub project_key: crate::workspace::ProjectKey,
     /// The File for which a completion is requested.
     pub path: PgLSPath,
     /// The Cursor position in the file for which a completion is requested.

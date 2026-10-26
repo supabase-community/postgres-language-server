@@ -37,7 +37,7 @@ create table stuff (id int);
 alter table persons
   inherit stuff;
 
-create table personsx of person_type (myname with options not null );
+create table personsx of person_type (myname with options not null);
 
 create table persons2 of person_type
 (

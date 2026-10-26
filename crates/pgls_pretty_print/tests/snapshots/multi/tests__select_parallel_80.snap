@@ -236,20 +236,18 @@ select
 from
   tenk1
 where
-  hundred = any (cast((
-    select array_agg(i) from generate_series(1, 100, 15) as i
-  )
-  as int[]));
+  hundred = any (cast(
+    (select array_agg(i) from generate_series(1, 100, 15) as i) as int[]
+  ));
 
 select
   count(unique1)
 from
   tenk1
 where
-  hundred = any (cast((
-    select array_agg(i) from generate_series(1, 100, 15) as i
-  )
-  as int[]));
+  hundred = any (cast(
+    (select array_agg(i) from generate_series(1, 100, 15) as i) as int[]
+  ));
 
 select count(*) from tenk1 where thousand > 95;
 

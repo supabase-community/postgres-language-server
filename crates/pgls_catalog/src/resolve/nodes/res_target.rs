@@ -2,10 +2,13 @@
 
 use pgls_query::{Node, NodeEnum};
 
-use super::{Resolver, resolve_list, string::string_value};
+use super::{
+    Resolver, resolve_list,
+    string::{string_value, string_values},
+};
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
-    FindingKind,
+    FindingKind, Reference, StarColumn,
     scope::{Columns, Item, Level, find_item},
 };
 
@@ -51,11 +54,115 @@ pub(super) fn target_list_columns(r: &Resolver, targets: &[Node]) -> Columns {
     Some(columns)
 }
 
+/// Records the columns that each `*` and `t.*` of a select list or RETURNING list expands to,
+/// when references are collected. The FROM items of the list must be the innermost level.
+pub(super) fn record_star_references(r: &mut Resolver, targets: &[Node]) {
+    if !r.collects_references() {
+        return;
+    }
+    for target in targets {
+        let Some(NodeEnum::ResTarget(target)) = target.node.as_ref() else {
+            continue;
+        };
+        let Some(NodeEnum::ColumnRef(column)) = target.val.as_deref().and_then(|v| v.node.as_ref())
+        else {
+            continue;
+        };
+        let Some((last, qualifier)) = column.fields.split_last() else {
+            continue;
+        };
+        if !matches!(last.node, Some(NodeEnum::AStar(_))) {
+            continue;
+        }
+        let columns = string_values(qualifier).and_then(|qualifier| match qualifier.as_slice() {
+            [] => r.levels.last().and_then(star_columns),
+            [name] => find_item(&r.levels, name).and_then(|item| item_columns(item, &qualifier)),
+            [schema, name] => r
+                .levels
+                .iter()
+                .rev()
+                .find_map(|level| {
+                    level.items.iter().find(|item| {
+                        item.schema.as_deref() == Some(schema.as_str())
+                            && item.name.as_deref() == Some(name.as_str())
+                    })
+                })
+                .and_then(|item| item_columns(item, &qualifier)),
+            _ => None,
+        });
+        if let Some(columns) = columns {
+            r.record(Reference::Star {
+                location: column.location,
+                span: r.star_span(column.location),
+                columns,
+            });
+        }
+    }
+}
+
+/// The columns of `*`, like [`ExpandAllTables`]. A column is qualified with the name of its FROM
+/// item when there are several. `None` if a column is not known, or if a column name doesn't
+/// reference the column with certainty.
+///
+/// Columns merged by `JOIN ... USING` and `NATURAL` joins are not supported: they come first in
+/// the output of their join, which the level doesn't record, and the bare name of a merged
+/// column can be ambiguous.
+///
+/// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
+fn star_columns(level: &Level) -> Option<Vec<StarColumn>> {
+    if level.items.is_empty()
+        || level.has_natural_join
+        || level.has_opaque_items
+        || !level.merged_columns.is_empty()
+    {
+        return None;
+    }
+    if let [item] = level.items.as_slice() {
+        return item_columns(item, &[]);
+    }
+    let mut columns = Vec::new();
+    for (i, item) in level.items.iter().enumerate() {
+        let name = item.name.as_ref()?;
+        // The qualifier must reference only this item.
+        if level.items[..i]
+            .iter()
+            .any(|other| other.name.as_ref() == Some(name))
+        {
+            return None;
+        }
+        columns.extend(item_columns(item, std::slice::from_ref(name))?);
+    }
+    Some(columns)
+}
+
+/// The columns of `item`, qualified with `qualifier`. `None` if they are not known, or if two
+/// have the same name, which then doesn't reference either.
+fn item_columns(item: &Item, qualifier: &[String]) -> Option<Vec<StarColumn>> {
+    let names = item.columns.as_ref()?;
+    if names
+        .iter()
+        .enumerate()
+        .any(|(i, name)| names[..i].contains(name))
+    {
+        return None;
+    }
+    Some(
+        names
+            .iter()
+            .map(|name| StarColumn {
+                qualifier: qualifier.to_vec(),
+                name: name.clone(),
+            })
+            .collect(),
+    )
+}
+
 /// Resolves a RETURNING list against `level` and returns its columns.
 pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], mut level: Level) -> Columns {
     add_old_and_new(r, &mut level);
     r.enter_level(level);
     resolve_list(r, list);
+    record_star_references(r, list);
     let columns = target_list_columns(r, list);
     r.output = columns.as_ref().map(|names| {
         let mut typed = Vec::new();

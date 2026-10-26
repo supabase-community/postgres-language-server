@@ -25,3 +25,6 @@ ntest               = "0.9.3"
 [[bench]]
 harness = false
 name    = "splitter"
+
+[lints]
+workspace = true

@@ -87,3 +87,10 @@ fn test_6() {
 
     file_snapshot("test_6", sql);
 }
+
+#[test]
+fn quoted_identifier_with_escaped_quote() {
+    let sql = r#"select "a""b".id from "a""b";"#;
+
+    file_snapshot("quoted_identifier_with_escaped_quote", sql);
+}
