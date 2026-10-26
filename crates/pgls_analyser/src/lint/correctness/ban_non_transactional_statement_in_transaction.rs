@@ -12,10 +12,10 @@ declare_lint_rule! {
     /// `VACUUM`, `CREATE DATABASE`, `DROP DATABASE`, `ALTER DATABASE ... SET TABLESPACE`,
     /// `CREATE TABLESPACE`, `DROP TABLESPACE`, `ALTER SYSTEM`, `CLUSTER` without a table or on a
     /// partitioned table, `REINDEX SCHEMA`, `REINDEX SYSTEM`, `REINDEX DATABASE`, `REINDEX TABLE`
-    /// on a partitioned table, `DISCARD ALL`, `COMMIT PREPARED`, `ROLLBACK PREPARED`,
-    /// `CREATE SUBSCRIPTION` that creates a replication slot, and
-    /// `ALTER SUBSCRIPTION ... REFRESH PUBLICATION` fail in a transaction block and in the body
-    /// of a function. The statements with `CONCURRENTLY` are covered by
+    /// on a partitioned table, `REINDEX INDEX` on a partitioned index, `DISCARD ALL`,
+    /// `COMMIT PREPARED`, `ROLLBACK PREPARED`, `CREATE SUBSCRIPTION` that creates a replication
+    /// slot, and `ALTER SUBSCRIPTION ... REFRESH PUBLICATION` fail in a transaction block and in
+    /// the body of a function. The statements with `CONCURRENTLY` are covered by
     /// `banConcurrentIndexCreationInTransaction`.
     ///
     /// The rule only reports statements that surely run in a transaction block: between `BEGIN`
@@ -110,6 +110,10 @@ fn non_transactional_statement(
         ctx.catalog()
             .is_partitioned_table(relation, ctx.session().search_path())
     };
+    let is_partitioned_index = |index: &protobuf::RangeVar| {
+        ctx.catalog()
+            .is_partitioned_index_of(index, ctx.session().search_path())
+    };
     match ctx.stmt() {
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/vacuum.c#L523
         NodeEnum::VacuumStmt(stmt) if stmt.is_vacuumcmd => Some("VACUUM"),
@@ -140,6 +144,7 @@ fn non_transactional_statement(
             ReindexObjectType::ReindexObjectSchema => Some("REINDEX SCHEMA"),
             ReindexObjectType::ReindexObjectSystem => Some("REINDEX SYSTEM"),
             ReindexObjectType::ReindexObjectDatabase => Some("REINDEX DATABASE"),
+            // `ReindexPartitions`, for a partitioned table or index:
             // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/indexcmds.c#L3392
             ReindexObjectType::ReindexObjectTable
                 if stmt
@@ -148,6 +153,14 @@ fn non_transactional_statement(
                     .is_some_and(is_partitioned_table) =>
             {
                 Some("REINDEX TABLE")
+            }
+            ReindexObjectType::ReindexObjectIndex
+                if stmt
+                    .relation
+                    .as_ref()
+                    .is_some_and(is_partitioned_index) =>
+            {
+                Some("REINDEX INDEX")
             }
             _ => None,
         },
