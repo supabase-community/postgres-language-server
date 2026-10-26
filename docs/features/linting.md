@@ -68,10 +68,20 @@ See the [CLI Reference](../reference/cli.md) for more options, and check the gui
 
 Some rules can fix the issues they report. The fixes come in two kinds:
 
-- **Safe** fixes only do what the rule asks for, e.g. add `CONCURRENTLY` to `CREATE INDEX`. They are left out where Postgres would reject them. `CONCURRENTLY` can't run in a transaction block, and migration tools usually run a migration in one, so it is only added to a file with a single statement, or to a migration section that runs outside a transaction (`-- migrate:up transaction:false` for dbmate, `-- +goose NO TRANSACTION` for goose, see [Checking migrations](../guides/checking_migrations.md)).
+- **Safe** fixes only do what the rule asks for, e.g. add `CONCURRENTLY` to `REINDEX` (`requireConcurrentReindex`). They are left out where Postgres would reject them. `CONCURRENTLY` can't run in a transaction block or in a function body, so the safe fix only adds it where the statement surely runs outside a transaction: in a migration section without a transaction (`-- migrate:up transaction:false` for dbmate, if the statement is the only one of the section, or `-- +goose NO TRANSACTION` for goose, see [Checking migrations](../guides/checking_migrations.md)). Without section markers, we don't know whether the migration tool runs a file in a transaction. Migration tools usually do, so a file with more than one statement gets no fix, and adding `CONCURRENTLY` to a file with a single statement is an unsafe fix. It is never added on partitioned tables and system catalogs, which Postgres can't process concurrently.
 - **Unsafe** fixes may change what a statement does, e.g. swap the type of a column or add `NOT VALID` to a constraint. Review them before applying them.
 
 In the editor, the fixes are offered as quick fixes on the diagnostic, next to a quick fix that suppresses the rule for the statement with a `-- pgls-ignore <rule>` comment.
+
+The `source.fixAll.pgls` code action applies all safe fixes of a file. To run it on save in VS Code:
+
+```json
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.pgls": "explicit"
+  }
+}
+```
 
 On the command line, `check --fix` applies the safe fixes and writes the files. Add `--unsafe` to also apply the unsafe fixes:
 
@@ -80,4 +90,17 @@ postgres-language-server check --fix migrations/
 postgres-language-server check --fix --unsafe migrations/
 ```
 
-The documentation of each rule says whether it has a fix and whether the fix is safe.
+The [rules reference](../reference/rules.md) marks the rules with a fix with 🔧, and the page of each rule says whether its fix is safe. Most rules with fixes, like `requireConcurrentIndexCreation`, `preferRobustStmts` or `preferTimestamptz`, aren't in the recommended preset (✅), so enable them first:
+
+```json
+{
+  "linter": {
+    "rules": {
+      "requireConcurrentIndexCreation": "warn",
+      "requireConcurrentIndexDeletion": "warn"
+    }
+  }
+}
+```
+
+Rules marked 🛠 in the reference, like the `CONCURRENTLY` rules, only run on files in `migrations.migrationsDir` if it is set.

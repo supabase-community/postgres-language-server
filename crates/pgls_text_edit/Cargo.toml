@@ -25,3 +25,6 @@ serde  = ["dep:serde", "pgls_text_size/serde"]
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true
