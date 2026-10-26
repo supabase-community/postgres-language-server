@@ -4,5 +4,5 @@ expression: "run_check_with(&[\"--changed\", \"--since\", \"HEAD\", \"--log-leve
 ---
 status: success
 stdout:
-Checked 0 files in <duration>. No fixes applied.
+Checked 0 files in <duration>.
 stderr:
