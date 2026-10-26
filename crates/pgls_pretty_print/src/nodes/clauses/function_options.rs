@@ -2,8 +2,9 @@
 
 use crate::nodes::prelude::*;
 
-/// Returns the canonical order for a function option.
-/// Postgres's canonical order (as seen in pg_dump output) is:
+/// Where an option of CREATE FUNCTION or ALTER FUNCTION goes. The printer writes the options in
+/// this order, and the AST comparison sorts both sides by it. It is the order pg_dump uses:
+///
 /// 1. LANGUAGE
 /// 2. TRANSFORM
 /// 3. WINDOW
@@ -17,8 +18,6 @@ use crate::nodes::prelude::*;
 /// 11. SUPPORT (support)
 /// 12. SET options (set)
 /// 13. AS (function body)
-/// Where an option of CREATE FUNCTION or ALTER FUNCTION goes: the printer writes them in this
-/// order, and the AST comparison sorts both sides by it.
 pub(crate) fn function_option_order(defname: &str) -> usize {
     match defname.to_lowercase().as_str() {
         "language" => 0,
