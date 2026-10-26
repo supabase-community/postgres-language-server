@@ -224,6 +224,15 @@ impl<'a> Analyser<'a> {
                 unit.section
                     .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
             );
+            let stmts = &params.stmts[unit.stmts.clone()];
+            let end = params
+                .unparsable
+                .iter()
+                .filter(|skipped| skipped.range.start() < unit.range.end())
+                .map(|skipped| skipped.range.end())
+                .chain(stmts.last().map(|stmt| stmt.range.end()))
+                .max()
+                .unwrap_or_default();
             // The statements the unit runs, including those that don't parse, but not those in
             // function bodies.
             let stmt_count = |range: TextRange| {
@@ -253,6 +262,7 @@ impl<'a> Analyser<'a> {
                 .unwrap_or_default();
             let mut file_context =
                 AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
+                    .with_positions(stmts.iter().map(|stmt| stmt.range.start()).collect(), end)
                     .with_stmt_count(stmt_count(unit.range));
             let mut implicit_block = None;
 

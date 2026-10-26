@@ -1,0 +1,41 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The fix commits at the end of the section, not of the file.
+-- section: up transaction:false
+-- expect_lint/banUncommittedTransaction
+begin;
+create table users (id bigint);
+
+-- section: down transaction:false
+drop table users;
+
+```
+
+# Diagnostics
+lint/banUncommittedTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Transaction is never committed or rolled back.
+  
+  i Postgres rolls back the open transaction when the session ends, so its changes are not applied.
+  
+  i Add a COMMIT or ROLLBACK statement to complete the transaction.
+  
+
+
+## Fix (unsafe): Add COMMIT at the end
+```
+-- The fix commits at the end of the section, not of the file.
+-- section: up transaction:false
+-- expect_lint/banUncommittedTransaction
+begin;
+create table users (id bigint);
+commit;
+
+-- section: down transaction:false
+drop table users;
+
+```

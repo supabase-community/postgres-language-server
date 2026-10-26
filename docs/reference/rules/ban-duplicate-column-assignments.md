@@ -1,6 +1,6 @@
 # banDuplicateColumnAssignments
 
-**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Since** `Unreleased`  
+**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Unsafe fix** · **Since** `Unreleased`  
 **Diagnostic** `lint/banDuplicateColumnAssignments` · **Postgres error** `42601`, `42701`
 
 **Sources**: inspired by [`squawk/ban-duplicate-column-assignments`](https://squawkhq.com/docs/ban-duplicate-column-assignments)
