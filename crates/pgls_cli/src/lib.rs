@@ -250,6 +250,15 @@ impl<'app> CliSession<'app> {
             });
         }
 
+        if loaded_configuration.is_user_configuration
+            && let Some(file_path) = &loaded_configuration.file_path
+        {
+            // On stderr, so that it doesn't end up in the output of a reporter or of `format`.
+            self.console().error(markup! {
+                <Info>"Using the user configuration at "{file_path.display().to_string()}"\n"</Info>
+            });
+        }
+
         for deprecation in loaded_configuration.configuration.deprecations() {
             self.console().log(markup! {
                 <Warn>"Warning: "</Warn>{deprecation}"\n"
@@ -308,15 +317,19 @@ impl<'app> CliSession<'app> {
         let errors = nested
             .configurations
             .into_iter()
-            .filter_map(|NestedConfiguration { directory, result }| {
-                let error = result.err()?;
-                let file_path = ConfigName::file_names()
-                    .iter()
-                    .map(|file_name| directory.join(file_name))
-                    .find(|file_path| self.fs().path_is_file(file_path))
-                    .unwrap_or(directory);
-                Some(Error::from(error).with_file_path(file_path.display().to_string()))
-            })
+            .filter_map(
+                |NestedConfiguration {
+                     directory, result, ..
+                 }| {
+                    let error = result.err()?;
+                    let file_path = ConfigName::file_names()
+                        .iter()
+                        .map(|file_name| directory.join(file_name))
+                        .find(|file_path| self.fs().path_is_file(file_path))
+                        .unwrap_or(directory);
+                    Some(Error::from(error).with_file_path(file_path.display().to_string()))
+                },
+            )
             .collect();
         Ok(errors)
     }

@@ -24,7 +24,7 @@ use sqlx::Executor;
 use sqlx::PgPool;
 use std::any::type_name;
 use std::fmt::Display;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
@@ -155,7 +155,7 @@ impl Server {
         &mut self,
         capabilities: ClientCapabilities,
     ) -> Result<()> {
-        self.initialize_with_options(url!(""), None, capabilities)
+        self.initialize_with_options(Some(url!("")), None, capabilities)
             .await
     }
 
@@ -171,8 +171,12 @@ impl Server {
         root_uri: Uri,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
     ) -> Result<()> {
-        self.initialize_with_options(root_uri, workspace_folders, ClientCapabilities::default())
-            .await
+        self.initialize_with_options(
+            Some(root_uri),
+            workspace_folders,
+            ClientCapabilities::default(),
+        )
+        .await
     }
 
     /// Like [Server::initialize], with the workspace root at `root_uri`, the given workspace
@@ -181,7 +185,7 @@ impl Server {
     #[allow(deprecated)]
     async fn initialize_with_options(
         &mut self,
-        root_uri: Uri,
+        root_uri: Option<Uri>,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
         capabilities: ClientCapabilities,
     ) -> Result<()> {
@@ -192,7 +196,7 @@ impl Server {
                 InitializeParams {
                     process_id: None,
                     root_path: None,
-                    root_uri: Some(root_uri),
+                    root_uri,
                     initialization_options: None,
                     capabilities,
                     trace: None,
@@ -965,6 +969,101 @@ async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute("create table people (id int, name text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    server
+        .open_document("select 1;\nselect name, now() from public.people;\n")
+        .await?;
+
+    let tokens: Option<lsp::SemanticTokensResult> = server
+        .request(
+            "textDocument/semanticTokens/full",
+            "semantic_tokens",
+            lsp::SemanticTokensParams {
+                work_done_progress_params: WorkDoneProgressParams::default(),
+                partial_result_params: lsp::PartialResultParams::default(),
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+            },
+        )
+        .await?;
+
+    let Some(lsp::SemanticTokensResult::Tokens(tokens)) = tokens else {
+        bail!("expected semantic tokens, got {tokens:?}");
+    };
+    let token =
+        |delta_line, delta_start, length, token_type, token_modifiers_bitset| lsp::SemanticToken {
+            delta_line,
+            delta_start,
+            length,
+            token_type,
+            token_modifiers_bitset,
+        };
+    assert_eq!(
+        tokens.data,
+        vec![
+            // `name`, a property.
+            token(1, 7, 4, 2, 0),
+            // `now`, a function of `pg_catalog`.
+            token(0, 6, 3, 3, 1),
+            // `public`, a namespace, and `people`, a class.
+            token(0, 11, 6, 0, 0),
+            token(0, 7, 6, 1, 0),
+        ]
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1591,7 +1690,7 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     assert_eq!(fix.is_preferred, None);
     let edits = &fix.edit.as_ref().unwrap().changes.as_ref().unwrap()[&doc_url];
     assert_eq!(edits.len(), 1);
-    assert_eq!(edits[0].new_text, " CONCURRENTLY");
+    assert_eq!(edits[0].new_text, " concurrently");
     assert_eq!(edits[0].range.start, Position::new(0, 13));
 
     let suppression = actions
@@ -3957,6 +4056,281 @@ async fn files_never_get_the_settings_of_another_workspace_folder() -> Result<()
         open_and_check(&mut server, &mut receiver, document("elsewhere/a.sql")).await?,
         [lsp::DiagnosticSeverity::WARNING]
     );
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// Answers every request of the server and forwards the params of `client/registerCapability`.
+async fn registration_capturing_client_handler<I, O>(
+    mut stream: I,
+    mut sink: O,
+    mut registrations: Sender<Value>,
+) where
+    I: Stream<Item = jsonrpc::Request> + Unpin,
+    O: Sink<Response> + Unpin,
+{
+    while let Some(req) = stream.next().await {
+        if req.method() == "client/registerCapability"
+            && let Some(params) = req.params()
+        {
+            let _ = registrations.send(params.clone()).await;
+        }
+        if let Some(id) = req.id() {
+            sink.send(Response::from_ok(id.clone(), Value::Null))
+                .await
+                .ok();
+        }
+    }
+}
+
+/// The glob patterns of the next `workspace/didChangeWatchedFiles` registration, as strings or as
+/// `<baseUri> <pattern>` for relative patterns.
+async fn next_watched_files_registration(
+    registrations: &mut Receiver<Value>,
+) -> Result<Vec<String>> {
+    loop {
+        let registration = tokio::time::timeout(Duration::from_secs(5), registrations.next())
+            .await
+            .context("no client/registerCapability request")?
+            .context("the server closed the connection")?;
+        let watchers: Vec<Value> = registration["registrations"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|registration| registration["method"] == "workspace/didChangeWatchedFiles")
+            .flat_map(|registration| {
+                registration["registerOptions"]["watchers"]
+                    .as_array()
+                    .cloned()
+                    .unwrap_or_default()
+            })
+            .collect();
+        if watchers.is_empty() {
+            continue;
+        }
+        return Ok(watchers
+            .iter()
+            .map(|watcher| match &watcher["globPattern"] {
+                Value::String(glob) => glob.clone(),
+                relative => format!(
+                    "{} {}",
+                    relative["baseUri"].as_str().unwrap_or_default(),
+                    relative["pattern"].as_str().unwrap_or_default()
+                ),
+            })
+            .collect());
+    }
+}
+
+/// The server watches the configuration files below every workspace folder, also the ones added
+/// later, with relative patterns if the client supports them.
+#[tokio::test]
+async fn the_configuration_files_of_every_workspace_folder_are_watched() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    for folder in ["one", "two", "three"] {
+        std::fs::create_dir_all(root.path().join(folder))?;
+        std::fs::write(
+            root.path().join(folder).join(ConfigName::pgls_jsonc()),
+            "{}",
+        )?;
+    }
+    let folder = |name: &str| WorkspaceFolder {
+        uri: Uri::from_file_path(root.path().join(name)).unwrap(),
+        name: name.to_string(),
+    };
+    let glob = |name: &str| {
+        format!(
+            "{}/**/{}",
+            root.path()
+                .join(name)
+                .display()
+                .to_string()
+                .replace('\\', "/"),
+            ConfigName::pgls_jsonc()
+        )
+    };
+
+    for relative_patterns in [false, true] {
+        let factory = ServerFactory::default();
+        let (service, client) = factory
+            .create_with_fs(
+                None,
+                DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+            )
+            .into_inner();
+        let (stream, sink) = client.split();
+        let mut server = Server::new(service);
+        let (sender, mut registrations) = channel(CHANNEL_BUFFER_SIZE);
+        let reader = tokio::spawn(registration_capturing_client_handler(stream, sink, sender));
+
+        let capabilities = ClientCapabilities {
+            workspace: Some(lsp::WorkspaceClientCapabilities {
+                did_change_watched_files: Some(lsp::DidChangeWatchedFilesClientCapabilities {
+                    dynamic_registration: Some(true),
+                    relative_pattern_support: Some(relative_patterns),
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        // No root URI, only workspace folders.
+        server
+            .initialize_with_options(None, Some(vec![folder("one"), folder("two")]), capabilities)
+            .await?;
+        server.initialized().await?;
+
+        let expected = |name: &str| {
+            if relative_patterns {
+                format!(
+                    "{} **/{}",
+                    folder(name).uri.as_str(),
+                    ConfigName::pgls_jsonc()
+                )
+            } else {
+                glob(name)
+            }
+        };
+        let patterns = next_watched_files_registration(&mut registrations).await?;
+        for name in ["one", "two"] {
+            assert!(
+                patterns.contains(&expected(name)),
+                "folder `{name}` is not watched: {patterns:?}"
+            );
+        }
+
+        server
+            .notify(
+                "workspace/didChangeWorkspaceFolders",
+                lsp::DidChangeWorkspaceFoldersParams {
+                    event: lsp::WorkspaceFoldersChangeEvent {
+                        added: vec![folder("three")],
+                        removed: vec![folder("one")],
+                    },
+                },
+            )
+            .await?;
+        let patterns = next_watched_files_registration(&mut registrations).await?;
+        assert!(
+            patterns.contains(&expected("three")),
+            "the added folder is not watched: {patterns:?}"
+        );
+        assert!(
+            !patterns.contains(&expected("one")),
+            "the removed folder is still watched: {patterns:?}"
+        );
+
+        server.shutdown().await?;
+        reader.abort();
+    }
+    Ok(())
+}
+
+/// A change of a file that a configuration extends, here outside the workspace folder, reloads
+/// the configuration.
+#[tokio::test]
+async fn a_change_of_an_extended_file_reloads_the_configuration() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let workspace = root.path().join("workspace");
+    let shared = root.path().join("shared").join("base.jsonc");
+    std::fs::create_dir_all(&workspace)?;
+    std::fs::create_dir_all(shared.parent().unwrap())?;
+    std::fs::write(
+        workspace.join(ConfigName::pgls_jsonc()),
+        r#"{ "extends": ["../shared/base.jsonc"] }"#,
+    )?;
+    std::fs::write(&shared, "{}")?;
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(workspace.clone()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_root(Uri::from_file_path(&workspace).unwrap())
+        .await?;
+    server.initialized().await?;
+
+    let document = Uri::from_file_path(workspace.join("a.sql")).unwrap();
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document.clone()).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+
+    std::fs::write(
+        &shared,
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )?;
+    drain_notifications(&mut receiver);
+    server
+        .notify(
+            "workspace/didChangeWatchedFiles",
+            DidChangeWatchedFilesParams {
+                changes: vec![FileEvent {
+                    uri: Uri::from_file_path(&shared).unwrap(),
+                    typ: FileChangeType::CHANGED,
+                }],
+            },
+        )
+        .await?;
+    wait_for_severities(&mut receiver, &document, &[lsp::DiagnosticSeverity::ERROR]).await?;
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// The user configuration and the files a configuration extends are watched too.
+#[tokio::test]
+async fn the_user_configuration_and_extended_files_are_watched() -> Result<()> {
+    let user_config_directory = if cfg!(windows) {
+        PathBuf::from("z:\\config\\postgres-language-server")
+    } else {
+        PathBuf::from("/config/postgres-language-server")
+    };
+    let mut fs = MemoryFileSystem::default();
+    fs.set_user_config_directories(vec![user_config_directory.clone()]);
+    let workspace = url!("").to_file_path().unwrap().into_owned();
+    fs.insert(
+        workspace.join(ConfigName::pgls_jsonc()),
+        r#"{ "extends": ["../shared/base.jsonc"] }"#.to_string(),
+    );
+    let shared = workspace
+        .parent()
+        .unwrap()
+        .join("shared")
+        .join("base.jsonc");
+    fs.insert(shared.clone(), "{}".to_string());
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut registrations) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(registration_capturing_client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    let patterns = next_watched_files_registration(&mut registrations).await?;
+    let glob = |path: &Path| path.display().to_string().replace('\\', "/");
+    for file in [shared, user_config_directory.join(ConfigName::pgls_jsonc())] {
+        assert!(
+            patterns.contains(&glob(&file)),
+            "{} is not watched: {patterns:?}",
+            file.display()
+        );
+    }
 
     server.shutdown().await?;
     reader.abort();

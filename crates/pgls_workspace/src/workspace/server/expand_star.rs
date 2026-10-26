@@ -2,7 +2,7 @@
 
 use pgls_analyse::{ActionCategory, Applicability, RefactorKind};
 use pgls_catalog::resolve::{Reference, StarColumn};
-use pgls_query::protobuf::KeywordKind;
+use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::TextSize;
 
 use crate::features::code_actions::{CodeAction, CodeActionKind, EditAction, TextEdit};
@@ -40,6 +40,91 @@ pub(super) fn expand_star_action(
     })
 }
 
+/// Whether `position` is on a `*` that may stand for columns, or on its qualifier, as in
+/// `select *` or `select u.*`. The line of the cursor is scanned on its own: `*` in comments
+/// and strings, `count(*)`, and multiplications don't count. If the line doesn't scan, like
+/// a line inside a multi-line string, any `*` on it counts.
+pub(super) fn is_at_star(content: &str, position: TextSize) -> bool {
+    let offset = usize::from(position).min(content.len());
+    let line_start = content[..offset].rfind('\n').map_or(0, |i| i + 1);
+    let line_end = content[offset..]
+        .find('\n')
+        .map_or(content.len(), |i| offset + i);
+    is_at_star_in(&content[line_start..line_end], offset - line_start)
+}
+
+/// Whether `cursor` is on a `*` of a select list in `text`, a line or a string constant on it.
+fn is_at_star_in(text: &str, cursor: usize) -> bool {
+    if !text.contains('*') {
+        return false;
+    }
+    let Ok(scan) = pgls_query::scan(text) else {
+        return true;
+    };
+    // In the body of a function on one line, like `as 'select * from t'`.
+    if let Some([_, string]) = scan.tokens.windows(2).find(|pair| {
+        pair[0].token() == Token::As
+            && pair[1].token() == Token::Sconst
+            && usize::try_from(pair[1].start).is_ok_and(|start| start < cursor)
+            && usize::try_from(pair[1].end).is_ok_and(|end| cursor < end)
+    }) {
+        let (Ok(start), Ok(end)) = (usize::try_from(string.start), usize::try_from(string.end))
+        else {
+            return true;
+        };
+        let constant = &text[start..end];
+        let quote = if constant.starts_with('\'') {
+            1
+        } else if let Some(after_dollar) = constant.strip_prefix('$') {
+            after_dollar.find('$').map_or(1, |tag| tag + 2)
+        } else {
+            return false;
+        };
+        let inner = constant
+            .get(quote..constant.len().saturating_sub(quote))
+            .unwrap_or_default();
+        return cursor >= start + quote && is_at_star_in(inner, cursor - start - quote);
+    }
+    let tokens: Vec<&ScanToken> = scan
+        .tokens
+        .iter()
+        .filter(|token| !matches!(token.token(), Token::SqlComment | Token::CComment))
+        .collect();
+    tokens.iter().enumerate().any(|(i, star)| {
+        if star.token() != Token::Ascii42 {
+            return false;
+        }
+        // What comes before a `*` of a select list: nothing on this line, `SELECT`, `,`, `.`,
+        // `RETURNING`, `DISTINCT`, `ALL`, or the `)` of `DISTINCT ON (...)`.
+        let mut first = i;
+        while first >= 2
+            && tokens[first - 1].token() == Token::Ascii46
+            && is_name(tokens[first - 2])
+        {
+            first -= 2;
+        }
+        let star_like = first < i
+            || first == 0
+            || matches!(
+                tokens[first - 1].token(),
+                Token::Select
+                    | Token::Ascii44
+                    | Token::Returning
+                    | Token::Distinct
+                    | Token::All
+                    | Token::Ascii41
+            );
+        let start = usize::try_from(tokens[first].start).unwrap_or(usize::MAX);
+        let end = usize::try_from(star.end).unwrap_or(0);
+        star_like && (start..=end).contains(&cursor)
+    })
+}
+
+fn is_name(token: &ScanToken) -> bool {
+    matches!(token.token(), Token::Ident | Token::Uident)
+        || token.keyword_kind() != KeywordKind::NoKeyword
+}
+
 /// The columns as a select list, e.g. `u.id, u."Name"`.
 fn column_list(columns: &[StarColumn]) -> String {
     columns
@@ -57,16 +142,19 @@ fn column_list(columns: &[StarColumn]) -> String {
         .join(", ")
 }
 
-/// `name`, quoted unless it reads as the same name without quotes: lower case, and not a keyword
-/// other than an unreserved one.
+/// `name`, quoted unless it reads as the same name without quotes: no upper case ASCII letters,
+/// and not a keyword other than an unreserved one. Like Postgres' lexer, any character that isn't
+/// ASCII can be part of an unquoted name, and isn't folded to lower case ([`scan.l`]).
+///
+/// [`scan.l`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332
 fn quote_identifier(name: &str) -> String {
     let plain = name
         .chars()
         .next()
-        .is_some_and(|first| first.is_ascii_lowercase() || first == '_')
-        && name
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '_' | '$'));
+        .is_some_and(|first| first.is_ascii_lowercase() || first == '_' || !first.is_ascii())
+        && name.chars().all(|c| {
+            c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '_' | '$') || !c.is_ascii()
+        });
     let keyword = || {
         pgls_query::scan(name).map_or(true, |scan| {
             scan.tokens.first().is_none_or(|token| {
@@ -86,6 +174,8 @@ fn quote_identifier(name: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use pgls_text_size::TextSize;
+
     use super::{StarColumn, column_list, quote_identifier};
 
     #[test]
@@ -101,6 +191,42 @@ mod tests {
         assert_eq!(quote_identifier("select"), "\"select\"");
         assert_eq!(quote_identifier("between"), "\"between\"");
         assert_eq!(quote_identifier("left"), "\"left\"");
+        // Characters that aren't ASCII need no quotes, and aren't folded.
+        assert_eq!(quote_identifier("größe"), "größe");
+        assert_eq!(quote_identifier("Ölstand"), "Ölstand");
+        assert_eq!(quote_identifier("Café"), "\"Café\"");
+    }
+
+    #[test]
+    fn only_stars_of_select_lists_count() {
+        let at = |line: &str| {
+            let position = line.find('|').unwrap();
+            let content = line.replace('|', "");
+            super::is_at_star(&content, TextSize::try_from(position).unwrap())
+        };
+        assert!(at("select |* from users"));
+        assert!(at("select *| from users"));
+        assert!(at("select id, |* from users"));
+        assert!(at("select |u.* from users u"));
+        assert!(at("select public.us|ers.* from users"));
+        assert!(at("insert into t values (1) returning |*"));
+        assert!(at("  |*\n"));
+        assert!(!at("select * |from users"));
+        assert!(!at("select count(|*) from users"));
+        assert!(!at("select a |* b from t"));
+        assert!(!at("select 1 /* |comment */"));
+        assert!(!at("select '|*' from t"));
+        assert!(!at("select 1| -- *"));
+        // In the body of a function on the line.
+        assert!(at(
+            "create function f() returns setof t as 'select |* from t' language sql"
+        ));
+        assert!(at(
+            "create function f() returns setof t as $f$ select |* from t $f$"
+        ));
+        assert!(!at(
+            "create function f() returns setof t as 'select |count(*) from t'"
+        ));
     }
 
     #[test]

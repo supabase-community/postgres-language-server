@@ -593,6 +593,50 @@ fn the_environment_does_not_replace_the_database_of_a_nested_configuration() {
     }
 }
 
+/// Without a project configuration, `check` says that it uses the user configuration, on stderr
+/// so that it stays out of the reporters' output.
+#[cfg(unix)]
+#[test]
+fn check_announces_the_user_configuration() {
+    let root = write_tree(&[
+        (
+            "config/postgres-language-server/postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        ("project/a.sql", "select 1;\n"),
+    ]);
+    let config_home = root.path().join("config");
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .current_dir(root.path().join("project"))
+        .env("XDG_CONFIG_HOME", &config_home)
+        .args([
+            "check",
+            "--log-level",
+            "none",
+            "--reporter",
+            "json",
+            "a.sql",
+        ])
+        .output()
+        .expect("failed to run CLI");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let user_configuration = config_home
+        .join("postgres-language-server")
+        .join("postgres-language-server.jsonc");
+    assert!(
+        stderr.contains(&format!(
+            "Using the user configuration at {}",
+            user_configuration.display()
+        )),
+        "{stderr}"
+    );
+    assert!(
+        !String::from_utf8_lossy(&output.stdout).contains("user configuration"),
+        "the announcement ended up in the report"
+    );
+}
+
 /// Runs `check` with the database settings given in `args` only, without the connection
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]
@@ -854,7 +898,7 @@ fn check_fix_writes_safe_fixes() {
             &["--fix"],
             content
         ),
-        "-- migrate:up transaction:false\nreindex index CONCURRENTLY my_index;\n",
+        "-- migrate:up transaction:false\nreindex index concurrently my_index;\n",
     );
 }
 
@@ -866,6 +910,6 @@ fn check_fix_without_section_markers_needs_unsafe() {
     assert_eq!(check_fixed("fix-plain", "", &["--fix"], content), content);
     assert_eq!(
         check_fixed("fix-plain-unsafe", "", &["--fix", "--unsafe"], content),
-        "reindex index CONCURRENTLY my_index;\n"
+        "reindex index concurrently my_index;\n"
     );
 }
