@@ -1586,7 +1586,9 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
         .iter()
         .find(|action| action.title == "Add CONCURRENTLY")
         .expect("expected a fix for requireConcurrentReindex");
-    assert_eq!(fix.is_preferred, Some(true));
+    // Without section markers, we don't know whether the statement runs in a transaction, so
+    // the fix is unsafe.
+    assert_eq!(fix.is_preferred, None);
     let edits = &fix.edit.as_ref().unwrap().changes.as_ref().unwrap()[&doc_url];
     assert_eq!(edits.len(), 1);
     assert_eq!(edits[0].new_text, " CONCURRENTLY");

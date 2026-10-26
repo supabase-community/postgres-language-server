@@ -843,7 +843,7 @@ export interface LinterRules {
    */
   banCharField?: RuleConfiguration_for_Null;
   /**
-   * Concurrent index creation is not allowed within a transaction.
+   * Concurrent index operations are not allowed within a transaction.
    */
   banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
   /**

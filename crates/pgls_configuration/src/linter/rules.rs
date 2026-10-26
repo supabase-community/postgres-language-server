@@ -594,7 +594,7 @@ pub struct Rules {
     #[doc = "Using CHAR(n) or CHARACTER(n) types is discouraged."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_char_field: Option<RuleConfiguration<pgls_analyser::options::BanCharField>>,
-    #[doc = "Concurrent index creation is not allowed within a transaction."]
+    #[doc = "Concurrent index operations are not allowed within a transaction."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_concurrent_index_creation_in_transaction:
         Option<RuleConfiguration<pgls_analyser::options::BanConcurrentIndexCreationInTransaction>>,
