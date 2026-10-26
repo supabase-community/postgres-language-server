@@ -3557,7 +3557,7 @@ module.exports = grammar({
 
     _boolean: ($) => choice($.keyword_true, $.keyword_false),
 
-    _double_quote_string: (_) => /:?"[^"]*"/,
+    _double_quote_string: (_) => /:?"([^"]|"")*"/,
     // The norm specify that between two consecutive string must be a return,
     // but this is good enough.
     _single_quote_string: (_) =>
