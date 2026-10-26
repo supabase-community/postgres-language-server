@@ -107,7 +107,8 @@ fn semantic_tokens(
         ) else {
             continue;
         };
-        // Clients only support tokens on a single line by default.
+        // Clients only support tokens on a single line by default, and the workspace splits
+        // tokens that span several lines.
         if start.line != end.line {
             continue;
         }

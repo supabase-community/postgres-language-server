@@ -128,6 +128,11 @@ async fn enum_members(test_db: PgPool) {
         f.highlighted("select 'happy'::mood, 'happy'"),
         "select ['happy':enumMember]::[mood:type], 'happy'"
     );
+    // A constant continued on the next line gets a token per line.
+    assert_eq!(
+        f.highlighted("select current from users where current = 'ha'\n    'ppy'"),
+        "select [current:property] from [users:class] where [current:property] = ['ha':enumMember]\n    ['ppy':enumMember]"
+    );
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
