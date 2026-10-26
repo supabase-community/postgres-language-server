@@ -37,13 +37,13 @@ create table stuff (id int);
 alter table persons
   inherit stuff;
 
-create table personsx of person_type (myname with options not null );
+create table personsx of person_type (myname with options not null);
 
-create table persons2 of person_type (id with options primary key, unique (name) );
+create table persons2 of person_type (id with options primary key, unique (name));
 
-create table persons3 of person_type (primary key (id), name with options default '' );
+create table persons3 of person_type (primary key (id), name with options default '');
 
-create table persons4 of person_type (name with options not null, name with options default '' );
+create table persons4 of person_type (name with options not null, name with options default '');
 
 drop type person_type;
 
@@ -72,6 +72,6 @@ as $$ SELECT length($1.name) $$;
 
 select id, namelen(persons) from persons;
 
-create table persons2 of person_type (id with options primary key, unique (name) );
+create table persons2 of person_type (id with options primary key, unique (name));
 
-create table persons3 of person_type (primary key (id), name with options not null default '' );
+create table persons3 of person_type (primary key (id), name with options not null default '');

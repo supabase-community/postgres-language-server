@@ -48,7 +48,7 @@ create type addr_nsp.gencomptype as (a int);
 
 create type addr_nsp.genenum as enum ('one', 'two');
 
-create foreign table addr_nsp.genftable ( a int ) server addr_fserv;
+create foreign table addr_nsp.genftable (a int) server addr_fserv;
 
 create aggregate addr_nsp.genaggr (int4) (sfunc = int4pl, stype = int4);
 
@@ -229,9 +229,7 @@ select pg_get_object_address('subscription', '{one}', '{}');
 
 select pg_get_object_address('subscription', '{one,two}', '{}');
 
-with
-objects (type, name, args)
-as (
+with objects (type, name, args) as (
   values
     ('table', cast('{addr_nsp, gentable}' as text[]), cast('{}' as text[])),
     ('table', cast('{addr_nsp, parttable}' as text[]), cast('{}' as text[])),
@@ -312,9 +310,7 @@ drop owned by regress_addr_user;
 
 drop role regress_addr_user;
 
-with
-objects (classid, objid, objsubid)
-as (
+with objects (classid, objid, objsubid) as (
   values
     (cast('pg_class' as regclass), 0, 0),
     (cast('pg_class' as regclass), cast('pg_class' as regclass), 100),

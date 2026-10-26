@@ -45,7 +45,8 @@ pub struct LinterDiagnostic {
 pub struct RuleFix {
     /// What the fix does, e.g. "Add CONCURRENTLY".
     pub message: String,
-    /// Set by the analyser from the fix kind of the rule.
+    /// Set by the analyser from the fix kind of the rule, unless the rule marked the fix as
+    /// unsafe.
     pub applicability: Applicability,
     /// Non-overlapping edits, ordered by their position.
     pub edits: Vec<FixEdit>,
@@ -62,9 +63,15 @@ impl RuleFix {
     pub fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
-            applicability: Applicability::MaybeIncorrect,
+            applicability: Applicability::Always,
             edits: Vec::new(),
         }
+    }
+
+    /// Marks the fix as unsafe, even if the rule's fixes are safe in general.
+    pub fn unsafe_fix(mut self) -> Self {
+        self.applicability = Applicability::MaybeIncorrect;
+        self
     }
 
     /// Inserts `text` at `offset`.

@@ -74,6 +74,30 @@ The expressions inside each tuple stay on one line when they fit. This option
 applies to `INSERT`, standalone `VALUES`, and `VALUES` in subqueries and CTEs,
 independently of `layout` and `clauseBodyStyle`.
 
+With `layout: "expanded"`, a `CASE` expression puts every `WHEN` and `ELSE`
+on its own line, one indent level in from where `CASE` starts, `THEN` one
+level further in, and `END` back under `CASE`. This holds wherever the `CASE`
+starts, after a leading comma or `THEN` for instance. A `WHEN` condition that
+breaks continues one level in from `WHEN`:
+
+```sql
+select
+  id
+  , case
+      when status = 'active'
+        and deleted_at is null
+        then 'live'
+      else 'archived'
+    end as state
+from
+  accounts;
+```
+
+With `indentStyle: "tabs"`, the indent levels are written as tabs and the rest
+of an alignment, such as the two columns of `, ` before `case` above, as
+spaces. The columns only line up when the editor's tab width equals
+`indentSize`.
+
 With `clauseBodyStyle: "compact"`, the first relation stays on the `FROM` line
 and the condition on the `WHERE`, `HAVING`, or `ON` line. A select list of a
 single item stays on the `SELECT` line, while a list of several items still
