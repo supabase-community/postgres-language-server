@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{DropBehavior, GrantStmt, GrantTargetType, ObjectType};
+use pgls_query::protobuf::{GrantStmt, GrantTargetType, ObjectType};
 
 use super::prelude::*;
 
@@ -159,9 +159,8 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     }
 
     // CASCADE/RESTRICT (for revoke)
-    if !n.is_grant && matches!(n.behavior(), DropBehavior::DropCascade) {
-        e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::CASCADE_KW);
+    if !n.is_grant {
+        emit_drop_behavior(e, n.behavior(), Separator::SoftOrSpace, Restrict::Omitted);
     }
 
     e.indent_end();

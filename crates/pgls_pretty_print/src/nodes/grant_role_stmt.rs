@@ -79,23 +79,8 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
     }
 
     // CASCADE or RESTRICT (for REVOKE)
-    // DropBehavior: 0=Undefined (default, omit), 1=DropRestrict, 2=DropCascade
     if !n.is_grant {
-        match n.behavior {
-            1 => {
-                // DropRestrict - RESTRICT is the default, but emit for explicitness
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::RESTRICT_KW);
-            }
-            2 => {
-                // DropCascade
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::CASCADE_KW);
-            }
-            _ => {
-                // Undefined - don't emit anything (defaults to RESTRICT in PostgreSQL)
-            }
-        }
+        emit_drop_behavior(e, n.behavior(), Separator::SoftOrSpace, Restrict::Written);
     }
 
     e.indent_end();

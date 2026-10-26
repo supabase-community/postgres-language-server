@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{DropBehavior, DropStmt, ObjectType};
+use pgls_query::protobuf::{DropStmt, ObjectType};
 
 use super::prelude::*;
 
@@ -21,9 +21,7 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
     // IF EXISTS
     if n.missing_ok {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_exists(e);
     }
 
     // Object names - indent list when it breaks to multiple lines
@@ -69,11 +67,7 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
         e.indent_end();
     }
 
-    // CASCADE/RESTRICT
-    if n.behavior() == DropBehavior::DropCascade {
-        e.space();
-        e.token(TokenKind::CASCADE_KW);
-    }
+    emit_drop_behavior(e, n.behavior(), Separator::Space, Restrict::Omitted);
 
     e.group_end();
 }

@@ -37,11 +37,7 @@ pub(super) fn emit_alter_enum_stmt(e: &mut EventEmitter, n: &AlterEnumStmt) {
 
         if n.skip_if_new_val_exists {
             e.space();
-            e.token(TokenKind::IF_KW);
-            e.space();
-            e.token(TokenKind::NOT_KW);
-            e.space();
-            e.token(TokenKind::EXISTS_KW);
+            emit_if_not_exists(e);
         }
 
         if !n.new_val.is_empty() {

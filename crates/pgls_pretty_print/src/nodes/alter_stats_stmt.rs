@@ -12,9 +12,7 @@ pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
 
     // IF EXISTS
     if n.missing_ok {
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_exists(e);
         e.space();
     }
 

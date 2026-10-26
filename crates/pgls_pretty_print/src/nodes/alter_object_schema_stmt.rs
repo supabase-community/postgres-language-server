@@ -23,9 +23,7 @@ pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjec
     e.space();
 
     if n.missing_ok {
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_exists(e);
         e.space();
     }
 

@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{AlterTableCmd, AlterTableType, DropBehavior, ObjectType};
+use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ObjectType};
 
 use super::prelude::*;
 
@@ -28,11 +28,7 @@ pub(super) fn emit_alter_table_cmd_of(
             // the AST round trip guard refuses the whole statement rather than let it through.
             if cmd.missing_ok {
                 e.space();
-                e.token(TokenKind::IF_KW);
-                e.space();
-                e.token(TokenKind::NOT_KW);
-                e.space();
-                e.token(TokenKind::EXISTS_KW);
+                emit_if_not_exists(e);
             }
             if let Some(ref def) = cmd.def {
                 e.space();
@@ -40,12 +36,7 @@ pub(super) fn emit_alter_table_cmd_of(
                 emit_node(e, def);
                 e.indent_end();
             }
-            // Only ALTER TYPE ... ADD ATTRIBUTE accepts a drop behavior; it decides whether typed
-            // tables using the type are altered too.
-            if matches!(cmd.behavior(), DropBehavior::DropCascade) {
-                e.space();
-                e.token(TokenKind::CASCADE_KW);
-            }
+            emit_drop_behavior(e, cmd.behavior(), Separator::Space, Restrict::Omitted);
         }
         AlterTableType::AtDropColumn => {
             e.token(TokenKind::DROP_KW);
@@ -58,18 +49,13 @@ pub(super) fn emit_alter_table_cmd_of(
             }
             if cmd.missing_ok {
                 e.space();
-                e.token(TokenKind::IF_KW);
-                e.space();
-                e.token(TokenKind::EXISTS_KW);
+                emit_if_exists(e);
             }
             if !cmd.name.is_empty() {
                 e.space();
                 emit_identifier_maybe_quoted(e, &cmd.name);
             }
-            if matches!(cmd.behavior(), DropBehavior::DropCascade) {
-                e.space();
-                e.token(TokenKind::CASCADE_KW);
-            }
+            emit_drop_behavior(e, cmd.behavior(), Separator::Space, Restrict::Omitted);
         }
         AlterTableType::AtAlterColumnType => {
             e.token(TokenKind::ALTER_KW);
@@ -125,11 +111,7 @@ pub(super) fn emit_alter_table_cmd_of(
                     emit_node(e, raw_default);
                 }
             }
-            // Emit CASCADE/RESTRICT - behavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
-            if matches!(cmd.behavior(), DropBehavior::DropCascade) {
-                e.space();
-                e.token(TokenKind::CASCADE_KW);
-            }
+            emit_drop_behavior(e, cmd.behavior(), Separator::Space, Restrict::Omitted);
         }
         AlterTableType::AtColumnDefault => {
             e.token(TokenKind::ALTER_KW);
@@ -219,9 +201,7 @@ pub(super) fn emit_alter_table_cmd_of(
             e.token(TokenKind::EXPRESSION_KW);
             if cmd.missing_ok {
                 e.space();
-                e.token(TokenKind::IF_KW);
-                e.space();
-                e.token(TokenKind::EXISTS_KW);
+                emit_if_exists(e);
             }
         }
         AlterTableType::AtAddConstraint => {
@@ -237,19 +217,13 @@ pub(super) fn emit_alter_table_cmd_of(
             e.token(TokenKind::CONSTRAINT_KW);
             if cmd.missing_ok {
                 e.space();
-                e.token(TokenKind::IF_KW);
-                e.space();
-                e.token(TokenKind::EXISTS_KW);
+                emit_if_exists(e);
             }
             if !cmd.name.is_empty() {
                 e.space();
                 emit_identifier_maybe_quoted(e, &cmd.name);
             }
-            // behavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
-            if cmd.behavior == 2 {
-                e.space();
-                e.token(TokenKind::CASCADE_KW);
-            }
+            emit_drop_behavior(e, cmd.behavior(), Separator::Space, Restrict::Omitted);
         }
         AlterTableType::AtValidateConstraint => {
             e.token(TokenKind::VALIDATE_KW);
@@ -713,9 +687,7 @@ pub(super) fn emit_alter_table_cmd_of(
             e.token(TokenKind::IDENTITY_KW);
             if cmd.missing_ok {
                 e.space();
-                e.token(TokenKind::IF_KW);
-                e.space();
-                e.token(TokenKind::EXISTS_KW);
+                emit_if_exists(e);
             }
         }
         AlterTableType::AtAlterConstraint => {

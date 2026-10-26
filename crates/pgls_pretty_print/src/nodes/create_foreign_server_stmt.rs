@@ -12,11 +12,7 @@ pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateFo
     // Emit IF NOT EXISTS if present
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     // Emit server name
