@@ -47,6 +47,7 @@ serde                             = { workspace = true, features = ["derive"] }
 serde_json                        = { workspace = true, features = ["raw_value"] }
 slotmap                           = { workspace = true, features = ["serde"] }
 strum                             = { workspace = true }
+toml                              = { workspace = true }
 tracing                           = { workspace = true, features = ["attributes", "log"] }
 tree-sitter.workspace             = true
 
