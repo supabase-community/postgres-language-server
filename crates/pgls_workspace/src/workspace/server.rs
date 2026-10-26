@@ -1838,6 +1838,9 @@ impl Workspace for WorkspaceServer {
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
+        if !settings.is_none_or(|settings| settings.inlay_hints.enabled) {
+            return Ok(PullInlayHintsResult::default());
+        }
 
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
@@ -1908,6 +1911,9 @@ impl Workspace for WorkspaceServer {
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
+        if !settings.is_none_or(|settings| settings.semantic_tokens.enabled) {
+            return Ok(PullSemanticTokensResult::default());
+        }
 
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
