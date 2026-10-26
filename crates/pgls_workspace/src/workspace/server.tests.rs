@@ -2923,9 +2923,15 @@ impl TestProject {
         fs: &DynRef<'_, dyn FileSystem>,
         search: NestedConfigurationSearch,
     ) -> (Vec<PathBuf>, Option<IncompleteSearch>) {
-        let nested =
-            apply_nested_configurations(&*self.workspace, fs, self.project_key, search, |c| c)
-                .unwrap();
+        let nested = apply_nested_configurations(
+            &*self.workspace,
+            fs,
+            self.project_key,
+            search,
+            None,
+            |c| c,
+        )
+        .unwrap();
         let directories = nested
             .configurations
             .into_iter()
@@ -2953,6 +2959,7 @@ impl TestProject {
             fs,
             self.project_key,
             NestedConfigurationSearch::new(root),
+            None,
             |configuration| configuration,
         )
         .unwrap()
@@ -3294,6 +3301,7 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
         &fs,
         project.project_key,
         NestedConfigurationSearch::new("/repo"),
+        None,
         |configuration| configuration,
     )
     .unwrap()

@@ -27,6 +27,7 @@ use rustc_hash::FxHashMap;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::OnceLock;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::{AtomicBool, AtomicU8};
 use std::time::Duration;
@@ -114,6 +115,9 @@ pub(crate) struct Session {
     /// The projects of the workspace by their folder, deepest first: one per workspace folder, or
     /// one for the root. A document belongs to the project of the deepest folder that contains it.
     projects: RwLock<Vec<(PathBuf, ProjectKey)>>,
+
+    /// The project of the files outside every workspace folder, once one was opened.
+    folderless_project: OnceLock<ProjectKey>,
 
     /// The files settings of the root configuration of each project, by its folder. They decide
     /// which folders are searched for nested configuration files.
@@ -249,6 +253,7 @@ impl Session {
             client_overrides: RwLock::new(ClientOverrides::default()),
             workspace_folders: RwLock::default(),
             projects: RwLock::default(),
+            folderless_project: OnceLock::new(),
             root_files: parking_lot::RwLock::default(),
             reload_scheduled: AtomicBool::new(false),
             configuration_transition: tokio::sync::Mutex::new(()),
@@ -619,16 +624,33 @@ impl Session {
     }
 
     /// The project that the file at `path` belongs to: the one of the deepest workspace folder
-    /// that contains it, or else the one of the shallowest folder. Before the configuration is loaded, the key of no
-    /// project, for which the workspace only reports what needs no settings.
+    /// that contains it. A file outside every workspace folder belongs to a project without a
+    /// folder, which has the default settings, so that it never gets the settings (and the
+    /// database) of an unrelated folder. Without workspace folders or a root, or with a
+    /// configuration file chosen by the user, the only project applies to every file. Before the
+    /// configuration is loaded, the key of no project, for which the workspace only reports what
+    /// needs no settings.
     pub(crate) fn project_key(&self, path: &Path) -> ProjectKey {
         let projects = self.projects.read();
-        projects
-            .iter()
-            .find(|(folder, _)| path.starts_with(folder))
-            .or_else(|| projects.last())
-            .map(|(_, key)| *key)
-            .unwrap_or_default()
+        if let Some((_, key)) = projects.iter().find(|(folder, _)| path.starts_with(folder)) {
+            return *key;
+        }
+        let Some((_, only_project)) = projects.last() else {
+            return ProjectKey::default();
+        };
+        if self.config_path.is_some()
+            || (self.get_workspace_folders().is_none() && self.base_path().is_none())
+        {
+            return *only_project;
+        }
+        *self.folderless_project.get_or_init(|| {
+            self.workspace
+                .register_project_folder(RegisterProjectFolderParams { path: None })
+                .unwrap_or_else(|error| {
+                    error!("Failed to register the project without a folder: {}", error);
+                    ProjectKey::default()
+                })
+        })
     }
 
     /// Returns the base path of the workspace on the filesystem if it has one
@@ -737,26 +759,14 @@ impl Session {
                 }
             };
         let folder = folder.unwrap_or_default();
-        let is_new = !self
-            .projects
-            .read()
-            .iter()
-            .any(|(project, _)| project == &folder);
 
         let (status, root_files) = self
             .load_pgls_configuration_file(project_key, base_path)
             .await;
         if !matches!(status, ConfigurationStatus::Loaded) {
-            // A project keeps its settings while its configuration is broken, and a new one is
-            // only registered once its configuration loads.
-            if is_new {
-                let _ = self
-                    .workspace
-                    .unregister_project_folder(UnregisterProjectFolderParams {
-                        path: PgLSPath::new(&folder),
-                    });
-                return (None, status);
-            }
+            // A project keeps its settings while its configuration is broken, and a new one has
+            // the defaults. Either way its files never fall back to the settings of another
+            // folder, which could point at another database.
             return (Some((folder, project_key)), status);
         }
         let root_files = root_files.map(Arc::new);
@@ -775,26 +785,33 @@ impl Session {
         (project, status)
     }
 
-    /// Lays the layers of the session over a configuration file: the environment and the client
-    /// overrides.
+    /// Lays the layers of the session over the root configuration file: the environment and the
+    /// client overrides.
     fn configure(&self) -> impl Fn(PartialConfiguration) -> PartialConfiguration + '_ {
+        self.configure_with(self.env_config.as_ref())
+    }
+
+    /// Lays the layers of the session over a configuration file: `environment` and the client
+    /// overrides.
+    fn configure_with<'a>(
+        &'a self,
+        environment: Option<&'a PartialConfiguration>,
+    ) -> impl Fn(PartialConfiguration) -> PartialConfiguration + 'a {
         let (client_overrides, overridden_sections) = {
             let overrides = self.client_overrides.read();
             (overrides.configuration().cloned(), overrides.sections())
         };
         move |configuration| {
-            let mut configuration = merge_layers(
-                configuration,
-                self.env_config.as_ref(),
-                client_overrides.as_ref(),
-            );
+            let mut configuration =
+                merge_layers(configuration, environment, client_overrides.as_ref());
             overridden_sections.materialize_defaults(&mut configuration);
             configuration
         }
     }
 
     /// Applies every configuration file below `root` to the project, with the same layers as the
-    /// root configuration. The folders that `root_files` ignores are not searched.
+    /// root configuration, except that the environment only fills in the connection options a
+    /// file doesn't set. The folders that `root_files` ignores are not searched.
     async fn load_nested_configuration_files(
         self: &Arc<Self>,
         project_key: ProjectKey,
@@ -812,7 +829,11 @@ impl Session {
                     root_files,
                     ..NestedConfigurationSearch::new(root)
                 },
-                session.configure(),
+                session
+                    .env_config
+                    .as_ref()
+                    .and_then(|environment| environment.db.as_ref()),
+                session.configure_with(None),
             )
         })
         .await;
