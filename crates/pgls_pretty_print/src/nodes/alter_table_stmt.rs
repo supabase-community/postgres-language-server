@@ -9,24 +9,7 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
     e.space();
 
     // Emit object type (TABLE, INDEX, TYPE, etc.)
-    match n.objtype() {
-        ObjectType::ObjectTable => e.token(TokenKind::TABLE_KW),
-        ObjectType::ObjectIndex => e.token(TokenKind::INDEX_KW),
-        ObjectType::ObjectView => e.token(TokenKind::VIEW_KW),
-        ObjectType::ObjectMatview => {
-            e.token(TokenKind::MATERIALIZED_KW);
-            e.space();
-            e.token(TokenKind::VIEW_KW);
-        }
-        ObjectType::ObjectSequence => e.token(TokenKind::SEQUENCE_KW),
-        ObjectType::ObjectForeignTable => {
-            e.token(TokenKind::FOREIGN_KW);
-            e.space();
-            e.token(TokenKind::TABLE_KW);
-        }
-        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
-        _ => e.token(TokenKind::TABLE_KW), // Default to TABLE
-    }
+    emit_keywords(e, object_type_keywords(n.objtype()).unwrap_or("TABLE"));
 
     e.space();
 

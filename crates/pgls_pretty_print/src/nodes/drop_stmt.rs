@@ -10,7 +10,7 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
 
     // Object type - use typed enum accessor
     let object_type = n.remove_type();
-    emit_object_type_keywords(e, object_type);
+    emit_keywords(e, object_type_keywords(object_type).unwrap_or("TABLE"));
 
     // CONCURRENTLY for indexes
     if n.concurrent && object_type == ObjectType::ObjectIndex {
@@ -160,114 +160,4 @@ fn emit_drop_on_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) 
 
     // Fallback for unexpected structure
     emit_node(e, node);
-}
-
-/// Emit the object type keywords for DROP statements
-fn emit_object_type_keywords(e: &mut EventEmitter, object_type: ObjectType) {
-    match object_type {
-        ObjectType::ObjectTable => e.token(TokenKind::TABLE_KW),
-        ObjectType::ObjectSequence => e.token(TokenKind::SEQUENCE_KW),
-        ObjectType::ObjectView => e.token(TokenKind::VIEW_KW),
-        ObjectType::ObjectMatview => {
-            e.token(TokenKind::MATERIALIZED_KW);
-            e.space();
-            e.token(TokenKind::VIEW_KW);
-        }
-        ObjectType::ObjectForeignTable => {
-            e.token(TokenKind::FOREIGN_KW);
-            e.space();
-            e.token(TokenKind::TABLE_KW);
-        }
-        ObjectType::ObjectIndex => e.token(TokenKind::INDEX_KW),
-        ObjectType::ObjectDatabase => e.token(TokenKind::DATABASE_KW),
-        ObjectType::ObjectSchema => e.token(TokenKind::SCHEMA_KW),
-        ObjectType::ObjectTablespace => e.token(TokenKind::TABLESPACE_KW),
-        ObjectType::ObjectFunction => e.token(TokenKind::FUNCTION_KW),
-        ObjectType::ObjectProcedure => e.token(TokenKind::PROCEDURE_KW),
-        ObjectType::ObjectRoutine => e.token(TokenKind::ROUTINE_KW),
-        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
-        ObjectType::ObjectOperator => e.token(TokenKind::OPERATOR_KW),
-        ObjectType::ObjectAggregate => e.token(TokenKind::AGGREGATE_KW),
-        ObjectType::ObjectOpclass => {
-            e.token(TokenKind::OPERATOR_KW);
-            e.space();
-            e.token(TokenKind::CLASS_KW);
-        }
-        ObjectType::ObjectOpfamily => {
-            e.token(TokenKind::OPERATOR_KW);
-            e.space();
-            e.token(TokenKind::FAMILY_KW);
-        }
-        ObjectType::ObjectConversion => e.token(TokenKind::CONVERSION_KW),
-        ObjectType::ObjectCollation => e.token(TokenKind::COLLATION_KW),
-        ObjectType::ObjectDomain => e.token(TokenKind::DOMAIN_KW),
-        ObjectType::ObjectExtension => e.token(TokenKind::EXTENSION_KW),
-        ObjectType::ObjectLanguage => e.token(TokenKind::LANGUAGE_KW),
-        ObjectType::ObjectPublication => e.token(TokenKind::PUBLICATION_KW),
-        ObjectType::ObjectSubscription => e.token(TokenKind::SUBSCRIPTION_KW),
-        ObjectType::ObjectCast => e.token(TokenKind::CAST_KW),
-        ObjectType::ObjectFdw => {
-            e.token(TokenKind::FOREIGN_KW);
-            e.space();
-            e.token(TokenKind::DATA_KW);
-            e.space();
-            e.token(TokenKind::WRAPPER_KW);
-        }
-        ObjectType::ObjectForeignServer => e.token(TokenKind::SERVER_KW),
-        ObjectType::ObjectAccessMethod => {
-            e.token(TokenKind::ACCESS_KW);
-            e.space();
-            e.token(TokenKind::METHOD_KW);
-        }
-        ObjectType::ObjectLargeobject => {
-            e.token(TokenKind::LARGE_KW);
-            e.space();
-            e.token(TokenKind::OBJECT_KW);
-        }
-        ObjectType::ObjectTsparser => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::PARSER_KW);
-        }
-        ObjectType::ObjectTsdictionary => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::DICTIONARY_KW);
-        }
-        ObjectType::ObjectTstemplate => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::TEMPLATE_KW);
-        }
-        ObjectType::ObjectTsconfiguration => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::CONFIGURATION_KW);
-        }
-        ObjectType::ObjectStatisticExt => e.token(TokenKind::STATISTICS_KW),
-        ObjectType::ObjectPolicy => e.token(TokenKind::POLICY_KW),
-        ObjectType::ObjectRule => e.token(TokenKind::RULE_KW),
-        ObjectType::ObjectTrigger => e.token(TokenKind::TRIGGER_KW),
-        ObjectType::ObjectEventTrigger => {
-            e.token(TokenKind::EVENT_KW);
-            e.space();
-            e.token(TokenKind::TRIGGER_KW);
-        }
-        ObjectType::ObjectUserMapping => {
-            e.token(TokenKind::USER_KW);
-            e.space();
-            e.token(TokenKind::MAPPING_KW);
-        }
-        ObjectType::ObjectTransform => e.token(TokenKind::TRANSFORM_KW),
-        // Fallback for any unhandled object types
-        _ => e.token(TokenKind::TABLE_KW),
-    }
 }

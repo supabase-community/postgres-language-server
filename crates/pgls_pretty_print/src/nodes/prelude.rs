@@ -12,3 +12,6 @@ pub(super) use super::utils::lists::*;
 pub(super) use super::utils::predicates::*;
 pub(super) use super::utils::tokens::*;
 pub(super) use super::{emit_node, emit_node_enum};
+
+pub(super) use super::clauses::object_type::*;
+pub(super) use super::clauses::window_frame::*;
