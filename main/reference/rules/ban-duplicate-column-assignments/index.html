@@ -1246,21 +1246,22 @@
 <p>A column is assigned or declared more than once.</p>
 <p>Postgres rejects statements that assign the same column twice in a SET clause, like
 <code>update t set a = 1, a = 2</code>, with <code>42601 syntax_error</code>. It rejects column lists that name
-the same column twice, like <code>insert into t (a, a)</code>, and tables and views that declare the
-same column twice with <code>42701 duplicate_column</code>. This includes view columns that get the
-same name from their expressions, like <code>select a.id, b.id</code>.</p>
+the same column twice, like <code>insert into t (a, a)</code> or <code>copy t (a, a)</code>, tables, views and
+composite types that declare the same column twice, and <code>ALTER TABLE</code> commands that add
+the same column twice with <code>42701 duplicate_column</code>. This includes view columns that get
+the same name from their expressions, like <code>select a.id, b.id</code>.</p>
 <p>Assigning different elements or fields of the same column, like <code>set a[1] = 1, a[2] = 2</code>,
 is fine.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">update</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'a'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'b'</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/banDuplicateColumnAssignments<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:30<span class="w"> </span>lint/banDuplicateColumnAssignments<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>×<span class="w"> </span>Multiple<span class="w"> </span>assignments<span class="w"> </span>to<span class="w"> </span>column<span class="w"> </span>name.
 
 <span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>update<span class="w"> </span>users<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'a'</span>,<span class="w"> </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'b'</span><span class="p">;</span>
-<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">      </span>│<span class="w">                              </span>^^^^
 <span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
 
 <span class="w">  </span>i<span class="w"> </span>Postgres<span class="w"> </span>rejects<span class="w"> </span>statements<span class="w"> </span>that<span class="w"> </span>assign<span class="w"> </span>a<span class="w"> </span>column<span class="w"> </span>more<span class="w"> </span>than<span class="w"> </span>once.
@@ -1269,12 +1270,12 @@ is fine.</p>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="nb">text</span><span class="p">);</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/banDuplicateColumnAssignments<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:32<span class="w"> </span>lint/banDuplicateColumnAssignments<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>×<span class="w"> </span>Column<span class="w"> </span>id<span class="w"> </span>is<span class="w"> </span>specified<span class="w"> </span>more<span class="w"> </span>than<span class="w"> </span>once.
 
 <span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>create<span class="w"> </span>table<span class="w"> </span>users<span class="w"> </span><span class="o">(</span>id<span class="w"> </span>bigint,<span class="w"> </span>id<span class="w"> </span>text<span class="o">)</span><span class="p">;</span>
-<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">      </span>│<span class="w">                                </span>^^
 <span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
 
 <span class="w">  </span>i<span class="w"> </span>Postgres<span class="w"> </span>rejects<span class="w"> </span>relations<span class="w"> </span>with<span class="w"> </span>duplicate<span class="w"> </span>column<span class="w"> </span>names.
@@ -1283,12 +1284,12 @@ is fine.</p>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">create</span><span class="w"> </span><span class="k">view</span><span class="w"> </span><span class="n">user_ids</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/banDuplicateColumnAssignments<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:41<span class="w"> </span>lint/banDuplicateColumnAssignments<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>×<span class="w"> </span>Column<span class="w"> </span>id<span class="w"> </span>is<span class="w"> </span>specified<span class="w"> </span>more<span class="w"> </span>than<span class="w"> </span>once.
 
 <span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>create<span class="w"> </span>view<span class="w"> </span>user_ids<span class="w"> </span>as<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="m">1</span><span class="w"> </span>as<span class="w"> </span>id,<span class="w"> </span><span class="m">2</span><span class="w"> </span>as<span class="w"> </span>id<span class="p">;</span>
-<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">      </span>│<span class="w">                                         </span>^^^^^^^
 <span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
 
 <span class="w">  </span>i<span class="w"> </span>Postgres<span class="w"> </span>rejects<span class="w"> </span>relations<span class="w"> </span>with<span class="w"> </span>duplicate<span class="w"> </span>column<span class="w"> </span>names.

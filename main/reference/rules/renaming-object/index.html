@@ -1236,7 +1236,8 @@
 <p>Clients that still use the old name of a view, function, type, sequence, schema,
 constraint, role, or any other object fail after the rename. The same goes for enum values
 renamed with <code>ALTER TYPE ... RENAME VALUE</code>.</p>
-<p>Tables and columns are covered by <code>renamingTable</code> and <code>renamingColumn</code>.</p>
+<p>Tables are covered by <code>renamingTable</code>, and columns and the attributes of composite types by
+<code>renamingColumn</code>.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">alter</span><span class="w"> </span><span class="k">view</span><span class="w"> </span><span class="n">active_users</span><span class="w"> </span><span class="k">rename</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">enabled_users</span><span class="p">;</span>

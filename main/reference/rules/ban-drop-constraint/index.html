@@ -1241,12 +1241,12 @@ relies on a unique constraint, fails as soon as the constraint is gone.</p>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">alter</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="k">drop</span><span class="w"> </span><span class="k">constraint</span><span class="w"> </span><span class="n">users_email_key</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/banDropConstraint<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:19<span class="w"> </span>lint/banDropConstraint<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-<span class="w">  </span>!<span class="w"> </span>Dropping<span class="w"> </span>a<span class="w"> </span>constraint<span class="w"> </span>may<span class="w"> </span><span class="k">break</span><span class="w"> </span>existing<span class="w"> </span>clients.
+<span class="w">  </span>!<span class="w"> </span>Dropping<span class="w"> </span>constraint<span class="w"> </span>users_email_key<span class="w"> </span>may<span class="w"> </span><span class="k">break</span><span class="w"> </span>existing<span class="w"> </span>clients.
 
 <span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>alter<span class="w"> </span>table<span class="w"> </span>users<span class="w"> </span>drop<span class="w"> </span>constraint<span class="w"> </span>users_email_key<span class="p">;</span>
-<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">      </span>│<span class="w">                   </span>^^^^^^^^^^^^^^^
 <span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
 
 <span class="w">  </span>i<span class="w"> </span>Clients<span class="w"> </span>may<span class="w"> </span>depend<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>guarantee<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>constraint,<span class="w"> </span>e.g.<span class="w"> </span>as<span class="w"> </span>the<span class="w"> </span>arbiter<span class="w"> </span>of<span class="w"> </span>INSERT<span class="w"> </span>...<span class="w"> </span>ON<span class="w"> </span>CONFLICT.
@@ -1255,12 +1255,12 @@ relies on a unique constraint, fails as soon as the constraint is gone.</p>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">alter</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="n">positive_int</span><span class="w"> </span><span class="k">drop</span><span class="w"> </span><span class="k">constraint</span><span class="w"> </span><span class="n">positive_int_check</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/banDropConstraint<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:27<span class="w"> </span>lint/banDropConstraint<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-<span class="w">  </span>!<span class="w"> </span>Dropping<span class="w"> </span>a<span class="w"> </span>constraint<span class="w"> </span>may<span class="w"> </span><span class="k">break</span><span class="w"> </span>existing<span class="w"> </span>clients.
+<span class="w">  </span>!<span class="w"> </span>Dropping<span class="w"> </span>constraint<span class="w"> </span>positive_int_check<span class="w"> </span>may<span class="w"> </span><span class="k">break</span><span class="w"> </span>existing<span class="w"> </span>clients.
 
 <span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>alter<span class="w"> </span>domain<span class="w"> </span>positive_int<span class="w"> </span>drop<span class="w"> </span>constraint<span class="w"> </span>positive_int_check<span class="p">;</span>
-<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">      </span>│<span class="w">                           </span>^^^^^^^^^^^^^^^
 <span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
 
 <span class="w">  </span>i<span class="w"> </span>Clients<span class="w"> </span>may<span class="w"> </span>depend<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>guarantee<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>constraint,<span class="w"> </span>e.g.<span class="w"> </span>as<span class="w"> </span>the<span class="w"> </span>arbiter<span class="w"> </span>of<span class="w"> </span>INSERT<span class="w"> </span>...<span class="w"> </span>ON<span class="w"> </span>CONFLICT.

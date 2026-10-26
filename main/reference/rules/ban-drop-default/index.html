@@ -1252,12 +1252,12 @@ later migration.</p>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">alter</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="k">alter</span><span class="w"> </span><span class="k">column</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="k">drop</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/banDropDefault<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:43<span class="w"> </span>lint/banDropDefault<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-<span class="w">  </span>!<span class="w"> </span>Dropping<span class="w"> </span>a<span class="w"> </span>default<span class="w"> </span>may<span class="w"> </span><span class="k">break</span><span class="w"> </span>existing<span class="w"> </span>clients.
+<span class="w">  </span>!<span class="w"> </span>Dropping<span class="w"> </span>the<span class="w"> </span>default<span class="w"> </span>of<span class="w"> </span>column<span class="w"> </span>created_at<span class="w"> </span>may<span class="w"> </span><span class="k">break</span><span class="w"> </span>existing<span class="w"> </span>clients.
 
 <span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>alter<span class="w"> </span>table<span class="w"> </span>users<span class="w"> </span>alter<span class="w"> </span>column<span class="w"> </span>created_at<span class="w"> </span>drop<span class="w"> </span>default<span class="p">;</span>
-<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">      </span>│<span class="w">                                           </span>^^^^^^^^^^^^
 <span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
 
 <span class="w">  </span>i<span class="w"> </span>Inserts<span class="w"> </span>that<span class="w"> </span>omit<span class="w"> </span>the<span class="w"> </span>column<span class="w"> </span>fail<span class="w"> </span><span class="k">if</span><span class="w"> </span>it<span class="w"> </span>is<span class="w"> </span>NOT<span class="w"> </span>NULL,<span class="w"> </span>and<span class="w"> </span>write<span class="w"> </span>NULL<span class="w"> </span>otherwise.
@@ -1266,12 +1266,12 @@ later migration.</p>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">alter</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="k">drop</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/banDropDefault<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:21<span class="w"> </span>lint/banDropDefault<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-<span class="w">  </span>!<span class="w"> </span>Dropping<span class="w"> </span>a<span class="w"> </span>default<span class="w"> </span>may<span class="w"> </span><span class="k">break</span><span class="w"> </span>existing<span class="w"> </span>clients.
+<span class="w">  </span>!<span class="w"> </span>Dropping<span class="w"> </span>the<span class="w"> </span>default<span class="w"> </span>of<span class="w"> </span>domain<span class="w"> </span>status<span class="w"> </span>may<span class="w"> </span><span class="k">break</span><span class="w"> </span>existing<span class="w"> </span>clients.
 
 <span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>alter<span class="w"> </span>domain<span class="w"> </span>status<span class="w"> </span>drop<span class="w"> </span>default<span class="p">;</span>
-<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">      </span>│<span class="w">                     </span>^^^^^^^^^^^^
 <span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
 
 <span class="w">  </span>i<span class="w"> </span>Inserts<span class="w"> </span>that<span class="w"> </span>omit<span class="w"> </span>the<span class="w"> </span>column<span class="w"> </span>fail<span class="w"> </span><span class="k">if</span><span class="w"> </span>it<span class="w"> </span>is<span class="w"> </span>NOT<span class="w"> </span>NULL,<span class="w"> </span>and<span class="w"> </span>write<span class="w"> </span>NULL<span class="w"> </span>otherwise.

@@ -1246,37 +1246,42 @@
 <p>Table names in DDL should be schema-qualified.</p>
 <p>Without a schema, Postgres resolves the table through the <code>search_path</code>, which depends on
 the session that runs the migration. This makes it ambiguous which table a statement acts
-on. Temporary tables are not reported.</p>
-<p>The rule checks <code>CREATE TABLE</code>, <code>CREATE TABLE AS</code>, <code>ALTER TABLE</code>, and <code>DROP TABLE</code>.</p>
+on. Temporary tables, including the ones created earlier in the file, are not reported.</p>
+<p>The rule checks the statements that create, change, or drop a table:
+<code>CREATE [FOREIGN] TABLE</code>, <code>CREATE TABLE AS</code>, <code>SELECT INTO</code>, <code>ALTER [FOREIGN] TABLE</code>
+(including <code>RENAME</code> and <code>SET SCHEMA</code>), <code>CREATE INDEX</code>, and <code>DROP [FOREIGN] TABLE</code>. It also
+checks the tables these statements reference by name, like <code>REFERENCES</code>, <code>PARTITION OF</code>,
+<code>INHERITS</code>, <code>LIKE</code>, and <code>ATTACH PARTITION</code>. Queries, like the one of a view, are not
+checked.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">);</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/requireTableSchema<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:14<span class="w"> </span>lint/requireTableSchema<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>Table<span class="w"> </span>posts<span class="w"> </span>is<span class="w"> </span>not<span class="w"> </span>schema-qualified.
 
 <span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>create<span class="w"> </span>table<span class="w"> </span>posts<span class="w"> </span><span class="o">(</span>id<span class="w"> </span>bigint<span class="o">)</span><span class="p">;</span>
-<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">      </span>│<span class="w">              </span>^^^^^
 <span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
 
 <span class="w">  </span>i<span class="w"> </span>Without<span class="w"> </span>a<span class="w"> </span>schema,<span class="w"> </span>the<span class="w"> </span>table<span class="w"> </span>is<span class="w"> </span>resolved<span class="w"> </span>through<span class="w"> </span>the<span class="w"> </span>search_path<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>session<span class="w"> </span>that<span class="w"> </span>runs<span class="w"> </span>the<span class="w"> </span>statement.
 
-<span class="w">  </span>i<span class="w"> </span>Specify<span class="w"> </span>the<span class="w"> </span>schema,<span class="w"> </span>e.g.<span class="w"> </span>public.my_table.
+<span class="w">  </span>i<span class="w"> </span>Specify<span class="w"> </span>the<span class="w"> </span>schema,<span class="w"> </span>e.g.<span class="w"> </span>public.posts.
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">alter</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="k">add</span><span class="w"> </span><span class="k">column</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="nb">text</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/requireTableSchema<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code>code-block.sql:1:13<span class="w"> </span>lint/requireTableSchema<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <span class="w">  </span>!<span class="w"> </span>Table<span class="w"> </span>posts<span class="w"> </span>is<span class="w"> </span>not<span class="w"> </span>schema-qualified.
 
 <span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>alter<span class="w"> </span>table<span class="w"> </span>posts<span class="w"> </span>add<span class="w"> </span>column<span class="w"> </span>title<span class="w"> </span>text<span class="p">;</span>
-<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">      </span>│<span class="w">             </span>^^^^^
 <span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
 
 <span class="w">  </span>i<span class="w"> </span>Without<span class="w"> </span>a<span class="w"> </span>schema,<span class="w"> </span>the<span class="w"> </span>table<span class="w"> </span>is<span class="w"> </span>resolved<span class="w"> </span>through<span class="w"> </span>the<span class="w"> </span>search_path<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>session<span class="w"> </span>that<span class="w"> </span>runs<span class="w"> </span>the<span class="w"> </span>statement.
 
-<span class="w">  </span>i<span class="w"> </span>Specify<span class="w"> </span>the<span class="w"> </span>schema,<span class="w"> </span>e.g.<span class="w"> </span>public.my_table.
+<span class="w">  </span>i<span class="w"> </span>Specify<span class="w"> </span>the<span class="w"> </span>schema,<span class="w"> </span>e.g.<span class="w"> </span>public.posts.
 </code></pre></div>
 <h3 id="valid">Valid<a class="headerlink" href="#valid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">posts</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">);</span>
