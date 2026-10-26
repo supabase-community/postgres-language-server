@@ -675,16 +675,17 @@ impl Workspace for WorkspaceServer {
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
 
-        match documents.entry(params.path.clone()) {
-            std::collections::hash_map::Entry::Occupied(mut entry) => {
-                entry
-                    .get_mut()
-                    .update_content(params.content, params.version);
-            }
+        let stale = match documents.entry(params.path.clone()) {
+            std::collections::hash_map::Entry::Occupied(mut entry) => entry
+                .get_mut()
+                .update_content(params.content, params.version),
             std::collections::hash_map::Entry::Vacant(entry) => {
                 entry.insert(Document::new(params.content, params.version));
+                return Ok(());
             }
-        }
+        };
+        drop(documents);
+        stale.drop_in_background();
 
         Ok(())
     }
