@@ -272,6 +272,36 @@ fn check_fails_when_database_is_unreachable() {
 
 #[cfg(target_os = "linux")]
 #[test]
+fn check_fails_on_invalid_connection_string() {
+    let output = run_check_without_db_env(
+        &[
+            "--connection-string",
+            "postgres://postgres:hunter2@localhost:not-a-port/postgres",
+            UNKNOWN_COLUMN_PATH,
+        ],
+        &[],
+    );
+
+    assert!(!output.contains("hunter2"), "{output}");
+    assert_snapshot!(output);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn check_fails_on_invalid_database_url() {
+    let output = run_check_without_db_env(
+        &[UNKNOWN_COLUMN_PATH],
+        &[("DATABASE_URL", "host=localhost password=hunter2")],
+    );
+
+    assert!(output.starts_with("status: failure"), "{output}");
+    assert!(output.contains("database/connection"), "{output}");
+    assert!(output.contains("Invalid `db.connectionString`"), "{output}");
+    assert!(!output.contains("hunter2"), "{output}");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
 fn check_without_database_succeeds_with_disable_db() {
     let output = run_check_without_db_env(
         &[

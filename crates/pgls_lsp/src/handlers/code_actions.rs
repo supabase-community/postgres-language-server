@@ -326,10 +326,11 @@ pub async fn execute_command(
 
             session
                 .client
-                .show_message(MessageType::INFO, result.message)
+                .show_message(MessageType::INFO, &result.message)
                 .await;
 
-            Ok(None)
+            // The rows go back to the client, so editor extensions can render them as a table.
+            Ok(Some(serde_json::to_value(result)?))
         }
         "pgls.invalidateSchemaCache" => {
             session.workspace.invalidate_schema_cache(true)?;

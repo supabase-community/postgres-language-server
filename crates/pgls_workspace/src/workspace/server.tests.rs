@@ -19,7 +19,7 @@ use pgls_configuration::ConfigurationPathHint;
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_diagnostics::{Diagnostic, Severity};
 use pgls_fs::{ConfigName, FileSystem, FindFiles, MemoryFileSystem, PgLSPath};
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 use sqlx::{Executor, PgPool};
 
 use crate::{
@@ -29,7 +29,9 @@ use crate::{
         is_searched_for_configuration, load_configuration,
     },
     features::code_actions::{
-        CodeActionKind, ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
+        CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
+        EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementParams, ExecuteStatementResult, FixFileMode,
+        FixFileParams, TextEdit,
     },
     features::format::PullFileFormattingParams,
     features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
@@ -1981,6 +1983,251 @@ fn is_typecheck(diagnostic: &pgls_diagnostics::serde::Diagnostic) -> bool {
                 pgls_analyser::METADATA.group_of(rule) == Some(pgls_analyser::TYPECHECK_GROUP)
             })
     })
+}
+
+fn get_statement_execution_workspace(
+    test_db: &PgPool,
+    allow_statement_executions_against: &[String],
+) -> (WorkspaceServer, ProjectKey) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            host: Some(test_db.connect_options().get_host().to_string()),
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            allow_statement_executions_against: Some(StringSet::from_iter(
+                allow_statement_executions_against.iter().cloned(),
+            )),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    get_test_workspace(Some(conf)).expect("Unable to create test workspace")
+}
+
+/// Executes the single statement in `sql` through its code action, returning the action's
+/// disabled reason and the result.
+fn execute_sql(
+    workspace: &WorkspaceServer,
+    project_key: ProjectKey,
+    sql: &str,
+) -> (Option<String>, ExecuteStatementResult) {
+    let path = PgLSPath::new("execute.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: sql.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let action = workspace
+        .pull_code_actions(CodeActionsParams {
+            project_key,
+            path: path.clone(),
+            cursor_position: TextSize::new(0),
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull code actions")
+        .actions
+        .into_iter()
+        .find_map(|action| match action.kind {
+            CodeActionKind::Command(CommandAction {
+                category: CommandActionCategory::ExecuteStatement(statement_id),
+            }) => Some((action.disabled_reason, statement_id)),
+            _ => None,
+        });
+    let (disabled_reason, statement_id) =
+        action.expect("Did not find the execute statement action");
+
+    let result = workspace
+        .execute_statement(ExecuteStatementParams {
+            project_key,
+            path: path.clone(),
+            statement_id,
+        })
+        .expect("Unable to execute statement");
+
+    workspace
+        .close_file(crate::workspace::CloseFileParams { project_key, path })
+        .expect("Unable to close test file");
+
+    (disabled_reason, result)
+}
+
+fn allow_test_host(test_db: &PgPool) -> Vec<String> {
+    vec![format!("{}/*", test_db.connect_options().get_host())]
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool) {
+    let (workspace, project_key) = get_statement_execution_workspace(&test_db, &[]);
+
+    let (disabled_reason, result) = execute_sql(
+        &workspace,
+        project_key,
+        "create table not_created (id int);",
+    );
+
+    let host = test_db.connect_options().get_host().to_string();
+    let database = test_db
+        .connect_options()
+        .get_database()
+        .unwrap()
+        .to_string();
+    let reason = format!(
+        "Statement execution is disabled for `{host}/{database}`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"{host}/*\"]."
+    );
+    assert_eq!(disabled_reason.as_deref(), Some(reason.as_str()));
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: reason,
+            ..Default::default()
+        }
+    );
+
+    let table_exists: bool = sqlx::query_scalar(
+        "select exists (select 1 from pg_catalog.pg_tables where tablename = 'not_created')",
+    )
+    .fetch_one(&test_db)
+    .await
+    .unwrap();
+    assert!(!table_exists, "A disabled statement must not be executed");
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_ignores_invalid_patterns(test_db: PgPool) {
+    let mut patterns = vec!["local[host/*".to_string()];
+    patterns.extend(allow_test_host(&test_db));
+    let (workspace, project_key) = get_statement_execution_workspace(&test_db, &patterns);
+
+    let (disabled_reason, result) = execute_sql(&workspace, project_key, "select 1 as one;");
+
+    assert_eq!(disabled_reason, None);
+    assert_eq!(result.rows, [[Some("1".to_string())]]);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_returns_rows(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select 1 as id, null::text as name, array[1, 2] as numbers, interval '1 day' as span, '{\"a\": 1}'::jsonb as data
+         union all
+         select 2, 'two', null, null, null;",
+    );
+
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: "2 rows".into(),
+            columns: ["id", "name", "numbers", "span", "data"]
+                .map(String::from)
+                .into(),
+            rows: vec![
+                vec![
+                    Some("1".into()),
+                    None,
+                    Some("{1,2}".into()),
+                    Some("1 day".into()),
+                    Some("{\"a\": 1}".into()),
+                ],
+                vec![Some("2".into()), Some("two".into()), None, None, None],
+            ],
+            truncated: false,
+            rows_affected: None,
+        }
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_returns_columns_without_rows(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(&workspace, project_key, "select 1 as id where false;");
+
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: "0 rows".into(),
+            columns: vec!["id".into()],
+            ..Default::default()
+        }
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_truncates_rows(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select generate_series(1, 150) as n;",
+    );
+
+    assert!(result.truncated);
+    assert_eq!(result.rows.len(), EXECUTE_STATEMENT_MAX_ROWS);
+    assert_eq!(result.rows.last(), Some(&vec![Some("100".to_string())]));
+    assert_eq!(result.rows_affected, None);
+    assert_eq!(result.message, "Showing the first 100 rows (truncated).");
+
+    // The connection is still usable after the dropped rows.
+    let (_, result) = execute_sql(&workspace, project_key, "select 'next' as value;");
+    assert_eq!(result.rows, [[Some("next".to_string())]]);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_reports_rows_affected(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(&workspace, project_key, "create table executed (id int);");
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: "Successfully executed statement. Rows affected: 0".into(),
+            rows_affected: Some(0),
+            ..Default::default()
+        }
+    );
+
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "insert into executed values (1), (2);",
+    );
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: "Successfully executed statement. Rows affected: 2".into(),
+            rows_affected: Some(2),
+            ..Default::default()
+        }
+    );
+
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "delete from executed where id = 1 returning id;",
+    );
+    assert_eq!(result.columns, ["id"]);
+    assert_eq!(result.rows, [[Some("1".to_string())]]);
+    assert_eq!(result.rows_affected, None);
 }
 
 /// A workspace that reads the section markers of a migration tool.

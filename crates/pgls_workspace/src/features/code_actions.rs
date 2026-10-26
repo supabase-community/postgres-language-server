@@ -76,10 +76,33 @@ pub struct ExecuteStatementParams {
     pub path: PgLSPath,
 }
 
+/// The most rows an executed statement returns; the rest are dropped and the result is marked
+/// as truncated.
+pub const EXECUTE_STATEMENT_MAX_ROWS: usize = 100;
+
+/// The outcome of executing a statement.
+///
+/// A statement that returns rows (`select`, `values`, `returning`, `show`, `explain`, ...) fills
+/// `columns` and `rows`. Any other statement sets `rows_affected` instead.
 #[derive(Debug, serde::Serialize, serde::Deserialize, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
 pub struct ExecuteStatementResult {
+    /// A short summary for the user.
     pub message: String,
+    /// The names of the returned columns.
+    #[serde(default)]
+    pub columns: Vec<String>,
+    /// The returned rows, at most [`EXECUTE_STATEMENT_MAX_ROWS`]. Each value is in its Postgres
+    /// text representation, as `psql` shows it, and `null` for SQL `NULL`.
+    #[serde(default)]
+    pub rows: Vec<Vec<Option<String>>>,
+    /// Whether the statement returned more rows than `rows` holds.
+    #[serde(default)]
+    pub truncated: bool,
+    /// The number of rows affected, for a statement that returns no rows.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rows_affected: Option<u64>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

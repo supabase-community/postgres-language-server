@@ -45,8 +45,6 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_typecheck::TypecheckParams;
 use pgls_workspace_macros::ignored_path;
 use snapshot_manager::SnapshotManager;
-#[cfg(feature = "db")]
-use sqlx::Executor;
 use tracing::{debug, info, warn};
 
 use crate::{
@@ -96,6 +94,8 @@ mod pg_query;
 mod pgpass;
 mod snapshot_manager;
 mod sql_function;
+#[cfg(feature = "db")]
+mod statement_execution;
 mod statement_identifier;
 mod tree_sitter;
 
@@ -1094,8 +1094,7 @@ impl Workspace for WorkspaceServer {
         let settings = settings.settings_for(params.project_key, params.path.as_path());
 
         let disabled_reason = match settings {
-            Some(settings) if settings.db.allow_statement_executions => None,
-            Some(_) => Some("Statement execution is disabled in the settings.".into()),
+            Some(settings) => settings.db.statement_execution_disabled_reason(),
             None => Some("Statement execution not allowed against database.".into()),
         };
 
@@ -1252,6 +1251,7 @@ impl Workspace for WorkspaceServer {
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
                 message: "Statement was not found in document.".into(),
+                ..Default::default()
             });
         };
 
@@ -1260,32 +1260,36 @@ impl Workspace for WorkspaceServer {
         if ast.is_none() {
             return Ok(ExecuteStatementResult {
                 message: "Statement is invalid.".into(),
+                ..Default::default()
             });
         };
 
         let settings = self.workspaces();
-        let Some(result) = settings
-            .settings_for(params.project_key, params.path.as_path())
-            .and_then(|settings| {
-                self.connection.with_pool(&settings.db, |pool| {
-                    let pool = pool.clone();
-                    run_async(async move { pool.execute(sqlx::query(&content)).await })?
-                        .map_err(WorkspaceError::from)
-                })
-            })
-        else {
-            return Ok(ExecuteStatementResult {
-                message: "No database connection available.".into(),
-            });
+        let no_connection = ExecuteStatementResult {
+            message: "No database connection available.".into(),
+            ..Default::default()
         };
-        let result = result?;
+        let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
+        else {
+            return Ok(no_connection);
+        };
 
-        Ok(ExecuteStatementResult {
-            message: format!(
-                "Successfully executed statement. Rows affected: {}",
-                result.rows_affected()
-            ),
-        })
+        if let Some(reason) = settings.db.statement_execution_disabled_reason() {
+            return Ok(ExecuteStatementResult {
+                message: reason,
+                ..Default::default()
+            });
+        }
+
+        let Some(result) = self.connection.with_pool(&settings.db, |pool| {
+            let pool = pool.clone();
+            run_async(async move { statement_execution::execute_statement(&pool, &content).await })?
+                .map_err(WorkspaceError::from)
+        }) else {
+            return Ok(no_connection);
+        };
+
+        result
     }
 
     #[cfg(not(feature = "db"))]
@@ -1297,6 +1301,7 @@ impl Workspace for WorkspaceServer {
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
         Ok(ExecuteStatementResult {
             message: "Statement execution requires database support.".into(),
+            ..Default::default()
         })
     }
 
@@ -1763,6 +1768,12 @@ impl Workspace for WorkspaceServer {
         // Every configuration file of the project can have its own database, so check all of them.
         let settings = self.workspaces();
         for settings in settings.as_ref().get_all_settings(params.project_key) {
+            if let Some(error) = &settings.db.connection_string_error {
+                return Ok(CheckDatabaseConnectionResult {
+                    error: Some(error.clone()),
+                });
+            }
+
             let result = self
                 .connection
                 .try_with_pool(&settings.db, |pool| self.snapshot.load(pool).map(|_| ()));
