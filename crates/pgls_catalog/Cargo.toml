@@ -34,3 +34,6 @@ pgls_test_utils = { workspace = true }
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

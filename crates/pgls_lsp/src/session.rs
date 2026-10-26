@@ -6,6 +6,7 @@ use crate::utils;
 use anyhow::Result;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
+use parking_lot::{Mutex, RwLock};
 use pgls_analyse::RuleCategoriesBuilder;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
@@ -26,9 +27,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::Mutex;
 use std::sync::OnceLock;
-use std::sync::RwLock;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::{AtomicBool, AtomicU8};
 use std::time::Duration;
@@ -292,7 +291,7 @@ impl Session {
         root_uri: Option<Uri>,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
     ) {
-        *self.workspace_folders.write().unwrap() = workspace_folders.as_ref().map(|folders| {
+        *self.workspace_folders.write() = workspace_folders.as_ref().map(|folders| {
             folders
                 .iter()
                 .filter_map(|folder| {
@@ -433,7 +432,7 @@ impl Session {
         let Some(directory) = path.parent().filter(|_| is_configuration_file) else {
             return false;
         };
-        let projects = self.projects.read().unwrap();
+        let projects = self.projects.read();
         let Some((folder, _)) = projects
             .iter()
             .find(|(folder, _)| directory.starts_with(folder))
@@ -652,7 +651,7 @@ impl Session {
     /// one analysis run per keystroke.
     pub(crate) fn schedule_diagnostics(self: &Arc<Self>, url: ls_types::Uri) {
         // Cancel any pending task for this URL.
-        if let Some(handle) = self.diagnostic_debounce.lock().unwrap().remove(&url) {
+        if let Some(handle) = self.diagnostic_debounce.lock().remove(&url) {
             handle.abort();
         }
 
@@ -661,11 +660,7 @@ impl Session {
         let join_handle = tokio::spawn(async move {
             tokio::time::sleep(DIAGNOSTIC_DEBOUNCE).await;
             // Remove our own entry so stale handles don't accumulate.
-            session
-                .diagnostic_debounce
-                .lock()
-                .unwrap()
-                .remove(&url_clone);
+            session.diagnostic_debounce.lock().remove(&url_clone);
             if let Err(err) = session.update_diagnostics(url_clone).await {
                 error!("Failed to update diagnostics: {}", err);
             }
@@ -673,7 +668,6 @@ impl Session {
 
         self.diagnostic_debounce
             .lock()
-            .unwrap()
             .insert(url, join_handle.abort_handle());
     }
 
@@ -682,7 +676,7 @@ impl Session {
     /// Called from `did_close` to ensure no diagnostics are published after
     /// the document has been closed.
     pub(crate) fn cancel_pending_diagnostics(&self, url: &ls_types::Uri) {
-        if let Some(handle) = self.diagnostic_debounce.lock().unwrap().remove(url) {
+        if let Some(handle) = self.diagnostic_debounce.lock().remove(url) {
             handle.abort();
         }
     }
@@ -693,7 +687,6 @@ impl Session {
         let mut futures: FuturesUnordered<_> = self
             .documents
             .read()
-            .unwrap()
             .keys()
             .map(|url| self.update_diagnostics(url.clone()))
             .collect();
@@ -715,7 +708,6 @@ impl Session {
     pub(crate) fn document(&self, url: &ls_types::Uri) -> Result<Document, Error> {
         self.documents
             .read()
-            .unwrap()
             .get(url)
             .cloned()
             .ok_or_else(|| WorkspaceError::not_found().with_file_path(url.to_string()))
@@ -725,12 +717,12 @@ impl Session {
     ///
     /// Used by [`handlers::text_document] to synchronize documents with the client.
     pub(crate) fn insert_document(&self, url: ls_types::Uri, document: Document) {
-        self.documents.write().unwrap().insert(url, document);
+        self.documents.write().insert(url, document);
     }
 
     /// Remove the [`Document`] matching the provided [`ls_types::Uri`]
     pub(crate) fn remove_document(&self, url: &ls_types::Uri) {
-        self.documents.write().unwrap().remove(url);
+        self.documents.write().remove(url);
     }
 
     pub(crate) fn file_path(&self, url: &ls_types::Uri) -> Result<PgLSPath> {
@@ -749,12 +741,12 @@ impl Session {
 
     /// Get the current workspace folders
     pub(crate) fn get_workspace_folders(&self) -> Option<Vec<PathBuf>> {
-        self.workspace_folders.read().unwrap().clone()
+        self.workspace_folders.read().clone()
     }
 
     /// Applies a change of the workspace folders. The caller reloads the configuration.
     pub(crate) fn change_workspace_folders(&self, added: Vec<PathBuf>, removed: &[PathBuf]) {
-        let mut folders = self.workspace_folders.write().unwrap();
+        let mut folders = self.workspace_folders.write();
         // A client without workspace folders at the start used the root URI.
         let folders = folders.get_or_insert_with(|| self.base_path().into_iter().collect());
         folders.retain(|folder| !removed.contains(folder));
@@ -773,7 +765,7 @@ impl Session {
     /// configuration is loaded, the key of no project, for which the workspace only reports what
     /// needs no settings.
     pub(crate) fn project_key(&self, path: &Path) -> ProjectKey {
-        let projects = self.projects.read().unwrap();
+        let projects = self.projects.read();
         if let Some((_, key)) = projects.iter().find(|(folder, _)| path.starts_with(folder)) {
             return *key;
         }
@@ -852,7 +844,7 @@ impl Session {
         }
 
         // Unregister the projects of the workspace folders that were removed.
-        let previous = std::mem::take(&mut *self.projects.write().unwrap());
+        let previous = std::mem::take(&mut *self.projects.write());
         for (folder, _) in previous {
             if !projects.iter().any(|(project, _)| project == &folder) {
                 self.root_files.write().remove(&folder);
@@ -868,7 +860,7 @@ impl Session {
         }
 
         projects.sort_by_key(|(folder, _)| std::cmp::Reverse(folder.components().count()));
-        *self.projects.write().unwrap() = projects;
+        *self.projects.write() = projects;
         if !matches!(status, ConfigurationStatus::Loaded) {
             // A broken file can't tell what it extends, so keep watching what it did before.
             self.configuration_files.write().extend(previous_files);
@@ -945,7 +937,7 @@ impl Session {
         environment: Option<&'a PartialConfiguration>,
     ) -> impl Fn(PartialConfiguration) -> PartialConfiguration + 'a {
         let (client_overrides, overridden_sections) = {
-            let overrides = self.client_overrides.read().unwrap();
+            let overrides = self.client_overrides.read();
             (overrides.configuration().cloned(), overrides.sections())
         };
         move |configuration| {
@@ -1170,7 +1162,7 @@ impl Session {
         let _transition = self.configuration_transition.lock().await;
         #[cfg(test)]
         let _running = self.enter_transition();
-        self.client_overrides.write().unwrap().set(overrides);
+        self.client_overrides.write().set(overrides);
         // Everything from here on is synchronous work behind `.await`s that complete immediately, so
         // a transition only ever suspends when something makes the server wait. Yielding here in
         // tests turns that into a reliable suspension point, which is what lets the test suite
@@ -1185,11 +1177,7 @@ impl Session {
     /// Whether a client override layer is currently set.
     #[cfg(test)]
     pub(crate) fn has_client_overrides(&self) -> bool {
-        self.client_overrides
-            .read()
-            .unwrap()
-            .configuration()
-            .is_some()
+        self.client_overrides.read().configuration().is_some()
     }
 
     /// Reloads the configuration from disk, re-applying the sticky layers.
@@ -1227,6 +1215,10 @@ impl Session {
     }
 
     /// Retrieves information regarding the configuration status
+    #[expect(
+        clippy::unwrap_used,
+        reason = "only `set_configuration_status` writes the value, from a `ConfigurationStatus`"
+    )]
     pub(crate) fn configuration_status(&self) -> ConfigurationStatus {
         self.configuration_status
             .load(Ordering::Relaxed)
@@ -1251,11 +1243,10 @@ impl Session {
     }
 
     pub fn position_encoding(&self) -> PositionEncoding {
-        self.initialize_params
-            .get()
-            .map_or(PositionEncoding::Wide(WideEncoding::Utf16), |params| {
-                negotiated_encoding(&params.client_capabilities)
-            })
+        self.client_capabilities().map_or(
+            PositionEncoding::Wide(WideEncoding::Utf16),
+            negotiated_encoding,
+        )
     }
 }
 

@@ -2,6 +2,7 @@ use std::path::Path;
 
 use pgls_analyser::{Direction, MigrationSection};
 use pgls_configuration::migrations::SectionMarkers;
+use pgls_diagnostics::{Diagnostic, MessageAndDescription};
 use pgls_text_size::{TextRange, TextSize};
 
 #[derive(Debug)]
@@ -149,6 +150,93 @@ pub(crate) fn migration_sections(text: &str, markers: SectionMarkers) -> Vec<Mig
     }
 
     sections
+}
+
+/// A problem with the section markers of a migration file that makes the migration tool reject
+/// the file, or ignore a marker.
+#[derive(Debug, Diagnostic)]
+#[diagnostic(category = "migrations/sectionMarkers", severity = Warning)]
+pub(crate) struct SectionMarkerDiagnostic {
+    #[location(span)]
+    span: TextRange,
+    #[message]
+    #[description]
+    message: MessageAndDescription,
+}
+
+impl SectionMarkerDiagnostic {
+    fn new(span: TextRange, message: &str) -> Self {
+        Self {
+            span,
+            message: MessageAndDescription::from(message.to_string()),
+        }
+    }
+}
+
+/// The problems with the markers of a file with the given sections and statements:
+/// statements before the first marker, which the tools reject, and lines that look like markers
+/// but that the tools read as plain comments.
+pub(crate) fn section_marker_diagnostics(
+    text: &str,
+    markers: SectionMarkers,
+    sections: &[MigrationSection],
+    statements: &[TextRange],
+) -> Vec<SectionMarkerDiagnostic> {
+    let (tool, first_marker, ignored_marker) = match markers {
+        SectionMarkers::None => return Vec::new(),
+        SectionMarkers::Dbmate => (
+            "dbmate",
+            "-- migrate:up",
+            "dbmate only reads `-- migrate:up` and `-- migrate:down` in lowercase and at the start of the line, so this line is a plain comment.",
+        ),
+        SectionMarkers::Goose => (
+            "goose",
+            "-- +goose Up",
+            "goose only reads `-- +goose` annotations with `+goose` in lowercase, so this line is a plain comment.",
+        ),
+    };
+    let is_marker = |line: &str| match markers {
+        SectionMarkers::None => false,
+        SectionMarkers::Dbmate => dbmate_marker(line).is_some(),
+        SectionMarkers::Goose => goose_annotation(line).is_some(),
+    };
+
+    let mut diagnostics = Vec::new();
+    if let Some(first) = sections.first() {
+        let message = format!(
+            "{tool} rejects a migration with statements before the first `{first_marker}`."
+        );
+        diagnostics.extend(
+            statements
+                .iter()
+                .take_while(|statement| statement.start() < first.range.start())
+                .map(|statement| SectionMarkerDiagnostic::new(*statement, &message)),
+        );
+    }
+
+    let mut offset = 0;
+    for line in text.split_inclusive('\n') {
+        let start = TextSize::from(offset as u32);
+        offset += line.len();
+        let line = line.trim_end_matches(['\n', '\r']);
+        let looks_like_marker = || {
+            let trimmed = line.trim_start();
+            is_marker(trimmed) || is_marker(&trimmed.to_ascii_lowercase())
+        };
+        if !is_marker(line) && looks_like_marker() {
+            let span = TextRange::at(start, TextSize::of(line));
+            // goose fails on an annotation with leading whitespace instead of ignoring it, see
+            // https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L321
+            let message = if markers == SectionMarkers::Goose && line.contains("+goose") {
+                "goose rejects a migration with an annotation that doesn't start at the beginning of the line."
+            } else {
+                ignored_marker
+            };
+            diagnostics.push(SectionMarkerDiagnostic::new(span, message));
+        }
+    }
+    diagnostics.sort_by_key(|diagnostic| diagnostic.span.start());
+    diagnostics
 }
 
 /// `-- migrate:up` or `-- migrate:down` at the start of the line, with options like
@@ -362,6 +450,58 @@ mod tests {
                 vec![],
             ]
         );
+    }
+
+    fn marker_problems(text: &str, markers: SectionMarkers) -> Vec<(&str, String)> {
+        let sections = migration_sections(text, markers);
+        let statements: Vec<TextRange> = pgls_statement_splitter::split(text).ranges;
+        section_marker_diagnostics(text, markers, &sections, &statements)
+            .into_iter()
+            .map(|diagnostic| (&text[diagnostic.span], diagnostic.message.to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn statements_before_the_first_marker() {
+        let text =
+            "create table t (id int);\n-- migrate:up\nselect 1;\n-- migrate:down\nselect 2;\n";
+        assert_eq!(
+            marker_problems(text, SectionMarkers::Dbmate),
+            vec![(
+                "create table t (id int);",
+                "dbmate rejects a migration with statements before the first `-- migrate:up`."
+                    .to_string()
+            )]
+        );
+        let text = "select 1;\n-- +goose Up\nselect 2;\n";
+        assert_eq!(marker_problems(text, SectionMarkers::Goose).len(), 1);
+        // Without markers, the file is one migration.
+        assert!(marker_problems("select 1;\n", SectionMarkers::Dbmate).is_empty());
+    }
+
+    #[test]
+    fn lines_that_look_like_markers() {
+        let text = "-- migrate:up\nselect 1;\n-- Migrate:Down\n  -- migrate:down\nselect 2;\n-- migrate:upgrade\n";
+        let problems = marker_problems(text, SectionMarkers::Dbmate);
+        assert_eq!(
+            problems.iter().map(|(line, _)| *line).collect::<Vec<_>>(),
+            ["-- Migrate:Down", "  -- migrate:down"]
+        );
+        assert!(
+            problems[0]
+                .1
+                .starts_with("dbmate only reads `-- migrate:up`")
+        );
+
+        let text =
+            "-- +goose Up\nselect 1;\n-- +Goose Down\n  -- +goose StatementBegin\nselect 2;\n";
+        let problems = marker_problems(text, SectionMarkers::Goose);
+        assert_eq!(
+            problems.iter().map(|(line, _)| *line).collect::<Vec<_>>(),
+            ["-- +Goose Down", "  -- +goose StatementBegin"]
+        );
+        assert!(problems[0].1.ends_with("so this line is a plain comment."));
+        assert!(problems[1].1.starts_with("goose rejects a migration"));
     }
 
     #[test]

@@ -167,6 +167,7 @@ define_categories! {
     "plpgsql_check",
     "internalError/panic",
     "syntax",
+    "migrations/sectionMarkers",
     "dummy",
 
     // Lint groups start

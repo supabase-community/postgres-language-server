@@ -4,6 +4,7 @@ The rules of the Postgres Language Server, by group.
 
 - ✅ The rule is part of the recommended preset.
 - 🛠 The rule only runs on files inside the configured `migrations.migrationsDir`.
+- 🔧 The rule can fix the issues it reports. Its page says whether the fix is safe.
 - 🔌 The rule needs a database connection.
 
 [//]: # (BEGIN RULES_INDEX)
@@ -16,10 +17,10 @@ Code that fails at runtime for reasons other than names or types.
 | --- | --- |
 | [avoidAlterEnumAddValue](./rules/avoid-alter-enum-add-value.md) | `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older Postgres versions. |
 | [banConcurrentIndexCreationInTransaction](./rules/ban-concurrent-index-creation-in-transaction.md) ✅ | Concurrent index operations are not allowed within a transaction. |
-| [banDuplicateColumnAssignments](./rules/ban-duplicate-column-assignments.md) ✅ | A column is assigned or declared more than once. |
+| [banDuplicateColumnAssignments](./rules/ban-duplicate-column-assignments.md) ✅ 🔧 | A column is assigned or declared more than once. |
 | [banNonTransactionalStatementInTransaction](./rules/ban-non-transactional-statement-in-transaction.md) ✅ | Statements that Postgres can't run inside a transaction block. |
-| [banUncommittedTransaction](./rules/ban-uncommitted-transaction.md) ✅ 🛠 | A transaction is started but never committed or rolled back. |
-| [identifierTooLong](./rules/identifier-too-long.md) ✅ | Identifiers longer than 63 bytes are silently truncated. |
+| [banUncommittedTransaction](./rules/ban-uncommitted-transaction.md) ✅ 🛠 🔧 | A transaction is started but never committed or rolled back. |
+| [identifierTooLong](./rules/identifier-too-long.md) ✅ 🔧 | Identifiers longer than 63 bytes are silently truncated. |
 | [invalidDropTypeSignature](./rules/invalid-drop-type-signature.md) ✅ | `DROP TYPE` and `DROP DOMAIN` don't take a parameter list. |
 | [transactionNesting](./rules/transaction-nesting.md) | Detects problematic transaction nesting that could lead to unexpected behavior. |
 
@@ -75,16 +76,16 @@ Valid code that may be dangerous against a live database: locks, rewrites, or bl
 | [banCreateDomainWithConstraint](./rules/ban-create-domain-with-constraint.md) 🛠 | Domains with constraints have poor support for online migrations. |
 | [banDropTrigger](./rules/ban-drop-trigger.md) 🛠 | Dropping a trigger acquires an `ACCESS EXCLUSIVE` lock on the table. |
 | [banVacuumFull](./rules/ban-vacuum-full.md) ✅ 🛠 | `VACUUM FULL` rewrites the entire table and acquires an `ACCESS EXCLUSIVE` lock. |
-| [constraintMissingNotValid](./rules/constraint-missing-not-valid.md) 🛠 | Adding constraints without NOT VALID blocks all reads and writes. |
+| [constraintMissingNotValid](./rules/constraint-missing-not-valid.md) 🛠 🔧 | Adding constraints without NOT VALID blocks all reads and writes. |
 | [disallowUniqueConstraint](./rules/disallow-unique-constraint.md) 🛠 | Disallow adding a UNIQUE constraint without using an existing index. |
 | [lockTimeoutWarning](./rules/lock-timeout-warning.md) ✅ 🛠 | Taking a dangerous lock without setting a lock timeout can cause indefinite blocking. |
 | [multipleAlterTable](./rules/multiple-alter-table.md) ✅ 🛠 | Multiple ALTER TABLE statements on the same table should be combined into a single statement. |
-| [preferRobustStmts](./rules/prefer-robust-stmts.md) 🛠 | Prefer statements with guards for robustness in migrations. |
+| [preferRobustStmts](./rules/prefer-robust-stmts.md) 🛠 🔧 | Prefer statements with guards for robustness in migrations. |
 | [requireConcurrentDetachPartition](./rules/require-concurrent-detach-partition.md) ✅ 🛠 | Detaching a partition without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock. |
-| [requireConcurrentIndexCreation](./rules/require-concurrent-index-creation.md) 🛠 | Creating indexes non-concurrently can lock the table for writes. |
-| [requireConcurrentIndexDeletion](./rules/require-concurrent-index-deletion.md) 🛠 | Dropping indexes non-concurrently can lock the table for reads. |
-| [requireConcurrentRefreshMatview](./rules/require-concurrent-refresh-matview.md) ✅ 🛠 | `REFRESH MATERIALIZED VIEW` without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock. |
-| [requireConcurrentReindex](./rules/require-concurrent-reindex.md) ✅ 🛠 | `REINDEX` without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock on the table. |
+| [requireConcurrentIndexCreation](./rules/require-concurrent-index-creation.md) 🛠 🔧 | Creating indexes non-concurrently can lock the table for writes. |
+| [requireConcurrentIndexDeletion](./rules/require-concurrent-index-deletion.md) 🛠 🔧 | Dropping indexes non-concurrently can lock the table for reads. |
+| [requireConcurrentRefreshMatview](./rules/require-concurrent-refresh-matview.md) ✅ 🛠 🔧 | `REFRESH MATERIALIZED VIEW` without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock. |
+| [requireConcurrentReindex](./rules/require-concurrent-reindex.md) ✅ 🛠 🔧 | `REINDEX` without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock on the table. |
 | [requireIdleInTransactionTimeout](./rules/require-idle-in-transaction-timeout.md) 🛠 | Dangerous lock statements should be preceded by `SET idle_in_transaction_session_timeout`. |
 | [requireSeparateConstraintValidation](./rules/require-separate-constraint-validation.md) ✅ 🛠 | Validating a constraint in the same transaction it was added as `NOT VALID` defeats the purpose. |
 | [requireStatementTimeout](./rules/require-statement-timeout.md) 🛠 | Dangerous lock statements should be preceded by `SET statement_timeout`. |
@@ -96,13 +97,13 @@ Schema design preferences. Not enabled by the recommended preset.
 
 | Rule | Description |
 | --- | --- |
-| [banCharField](./rules/ban-char-field.md) | Using CHAR(n) or CHARACTER(n) types is discouraged. |
+| [banCharField](./rules/ban-char-field.md) 🔧 | Using CHAR(n) or CHARACTER(n) types is discouraged. |
 | [creatingEnum](./rules/creating-enum.md) | Creating enum types is not recommended for new applications. |
 | [preferBigInt](./rules/prefer-big-int.md) | Prefer BIGINT over smaller integer types. |
 | [preferIdentity](./rules/prefer-identity.md) | Prefer using IDENTITY columns over serial columns. |
-| [preferJsonb](./rules/prefer-jsonb.md) | Prefer JSONB over JSON types. |
-| [preferTextField](./rules/prefer-text-field.md) | Prefer using TEXT over VARCHAR(n) types. |
-| [preferTimestamptz](./rules/prefer-timestamptz.md) | Prefer TIMESTAMPTZ over TIMESTAMP types. |
+| [preferJsonb](./rules/prefer-jsonb.md) 🔧 | Prefer JSONB over JSON types. |
+| [preferTextField](./rules/prefer-text-field.md) 🔧 | Prefer using TEXT over VARCHAR(n) types. |
+| [preferTimestamptz](./rules/prefer-timestamptz.md) 🔧 | Prefer TIMESTAMPTZ over TIMESTAMP types. |
 | [requireEnumValueOrdering](./rules/require-enum-value-ordering.md) 🛠 | `ALTER TYPE ... ADD VALUE` without `BEFORE` or `AFTER` appends the value to the end of the enum. |
 | [requireTableSchema](./rules/require-table-schema.md) | Table names in DDL should be schema-qualified. |
 

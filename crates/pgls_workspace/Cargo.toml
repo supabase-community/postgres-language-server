@@ -13,7 +13,6 @@ version              = "0.0.0"
 
 [dependencies]
 globset = "0.4.16"
-lru     = "0.16.3"
 
 ignore                            = { workspace = true }
 json-strip-comments               = { workspace = true }
@@ -90,3 +89,6 @@ tempfile        = "3.15.0"
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

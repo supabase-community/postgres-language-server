@@ -73,8 +73,8 @@ pub fn get_actions(
                                 title: title.clone(),
                                 command: command_id,
                                 arguments: Some(vec![
-                                    serde_json::to_value(&stmt_id).unwrap(),
-                                    serde_json::to_value(&url).unwrap(),
+                                    serde_json::to_value(&stmt_id).ok()?,
+                                    serde_json::to_value(&url).ok()?,
                                 ]),
                             }
                         }),
@@ -199,7 +199,9 @@ fn fix_all_action(
     }
 
     // Replaces only what changed, so that the editor keeps the cursor and the folds.
-    let (range, new_text) = changed_range(&content, &fixed.code);
+    let Some((range, new_text)) = changed_range(&content, &fixed.code) else {
+        return Ok(None);
+    };
     let edit = ls_types::TextEdit {
         range: to_lsp::range(&doc.line_index, range, session.position_encoding())?,
         new_text: new_text.to_string(),
@@ -212,8 +214,9 @@ fn fix_all_action(
     }))
 }
 
-/// The range of `old` that differs from `new`, and the text that replaces it.
-fn changed_range<'a>(old: &str, new: &'a str) -> (TextRange, &'a str) {
+/// The range of `old` that differs from `new`, and the text that replaces it. `None` if `old` is
+/// too large for a `TextSize`.
+fn changed_range<'a>(old: &str, new: &'a str) -> Option<(TextRange, &'a str)> {
     let prefix = old
         .char_indices()
         .zip(new.chars())
@@ -226,11 +229,9 @@ fn changed_range<'a>(old: &str, new: &'a str) -> (TextRange, &'a str) {
         .take_while(|(a, b)| a == b)
         .map(|(a, _)| a.len_utf8())
         .sum::<usize>();
-    let size = |offset: usize| TextSize::try_from(offset).unwrap();
-    (
-        TextRange::new(size(prefix), size(old.len() - suffix)),
-        &new[prefix..new.len() - suffix],
-    )
+    let start = TextSize::try_from(prefix).ok()?;
+    let end = TextSize::try_from(old.len() - suffix).ok()?;
+    Some((TextRange::new(start, end), &new[prefix..new.len() - suffix]))
 }
 
 /// An edit of the document at `url`. If the client supports it, the edit names the version of
@@ -366,15 +367,15 @@ mod tests {
     fn changed_range_keeps_the_common_start_and_end() {
         assert_eq!(
             changed_range("drop index ä_idx;", "drop index concurrently ä_idx;"),
-            (TextRange::new(11.into(), 11.into()), "concurrently ")
+            Some((TextRange::new(11.into(), 11.into()), "concurrently "))
         );
         assert_eq!(
             changed_range("a", "a"),
-            (TextRange::new(1.into(), 1.into()), "")
+            Some((TextRange::new(1.into(), 1.into()), ""))
         );
         assert_eq!(
             changed_range("ab", "b"),
-            (TextRange::new(0.into(), 1.into()), "")
+            Some((TextRange::new(0.into(), 1.into()), ""))
         );
     }
 }
