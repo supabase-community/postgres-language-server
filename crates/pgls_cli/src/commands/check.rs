@@ -33,6 +33,7 @@ pub fn check(
 
     let configuration = session.prepare_with_config(cli_options, args.configuration.clone())?;
     session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
+    session.apply_nested_configurations(cli_options, args.configuration.clone())?;
 
     let paths = resolve_paths(session.fs(), &configuration, &args)?;
 
@@ -76,7 +77,9 @@ pub fn check(
 fn check_database_connection(session: &CliSession) -> Result<Option<Error>, CliDiagnostic> {
     let result = session
         .workspace()
-        .check_database_connection(CheckDatabaseConnectionParams::default())?;
+        .check_database_connection(CheckDatabaseConnectionParams {
+            project_key: session.project_key(),
+        })?;
     Ok(result
         .error
         .map(|message| Error::from(DatabaseUnavailable::new(message))))

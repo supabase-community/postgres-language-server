@@ -11,7 +11,7 @@ use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_configuration::StringSet;
 use pgls_configuration::database::PartialDatabaseConfiguration;
-use pgls_fs::MemoryFileSystem;
+use pgls_fs::{ConfigName, MemoryFileSystem, OsFileSystem};
 use pgls_lsp::LSPServer;
 use pgls_lsp::ServerFactory;
 use pgls_workspace::DynRef;
@@ -46,10 +46,10 @@ use tower_lsp_server::ls_types::WorkDoneProgressParams;
 use tower_lsp_server::ls_types::WorkspaceFolder;
 use tower_lsp_server::ls_types::{
     ClientCapabilities, DidChangeConfigurationParams, DidChangeTextDocumentParams,
-    DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    FileChangeType, FileEvent, InitializeResult, InitializedParams, PublishDiagnosticsParams,
-    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
-    VersionedTextDocumentIdentifier,
+    DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, FileChangeType, FileEvent, InitializeResult, InitializedParams,
+    PublishDiagnosticsParams, TextDocumentContentChangeEvent, TextDocumentIdentifier,
+    TextDocumentItem, Uri, VersionedTextDocumentIdentifier, WorkspaceFoldersChangeEvent,
 };
 use tower_lsp_server::{jsonrpc::Request, ls_types::InitializeParams};
 
@@ -144,9 +144,24 @@ impl Server {
     }
 
     /// Basic implementation of the `initialize` request for tests
+    async fn initialize(&mut self) -> Result<()> {
+        self.initialize_with_root(url!("")).await
+    }
+
+    /// Like [Server::initialize], with the workspace root at `root_uri`
+    async fn initialize_with_root(&mut self, root_uri: Uri) -> Result<()> {
+        self.initialize_with_folders(root_uri, None).await
+    }
+
+    /// Like [Server::initialize], with the workspace root at `root_uri` and the given workspace
+    /// folders
     // The `root_path` field is deprecated, but we still need to specify it
     #[allow(deprecated)]
-    async fn initialize(&mut self) -> Result<()> {
+    async fn initialize_with_folders(
+        &mut self,
+        root_uri: Uri,
+        workspace_folders: Option<Vec<WorkspaceFolder>>,
+    ) -> Result<()> {
         let _res: InitializeResult = self
             .request(
                 "initialize",
@@ -154,11 +169,11 @@ impl Server {
                 InitializeParams {
                     process_id: None,
                     root_path: None,
-                    root_uri: Some(url!("")),
+                    root_uri: Some(root_uri),
                     initialization_options: None,
                     capabilities: ClientCapabilities::default(),
                     trace: None,
-                    workspace_folders: None,
+                    workspace_folders,
                     client_info: None,
                     locale: None,
                     work_done_progress_params: Default::default(),
@@ -634,9 +649,6 @@ async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool
     server.initialize().await?;
     server.initialized().await?;
 
-    // The document is opened before the first transition: `textDocument/didOpen` picks the project
-    // a path belongs to, and with a file system that has no working directory every configuration
-    // reload registers another project under the same empty path.
     server.open_document(STATEMENT).await?;
 
     let options = test_db.connect_options();
@@ -3079,6 +3091,257 @@ async fn test_crash_on_delete_character() -> Result<()> {
 
     assert!(result.is_ok());
 
+    reader.abort();
+
+    Ok(())
+}
+
+/// Waits for the next diagnostics of the document at `uri`.
+async fn wait_for_diagnostics_of(
+    receiver: &mut Receiver<ServerNotification>,
+    uri: &Uri,
+) -> Result<Vec<lsp::Diagnostic>> {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let Some(ServerNotification::PublishDiagnostics(params)) = receiver.next().await else {
+                bail!("the server closed the connection");
+            };
+            if &params.uri == uri {
+                return Ok(params.diagnostics);
+            }
+        }
+    })
+    .await
+    .with_context(|| format!("timed out waiting for diagnostics of {}", uri.as_str()))?
+}
+
+/// The severities of the `banDropColumn` diagnostics.
+fn ban_drop_column_severities(diagnostics: &[lsp::Diagnostic]) -> Vec<lsp::DiagnosticSeverity> {
+    diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            matches!(
+                &diagnostic.code,
+                Some(lsp::NumberOrString::String(code)) if code == "lint/banDropColumn"
+            )
+        })
+        .filter_map(|diagnostic| diagnostic.severity)
+        .collect()
+}
+
+/// Opens a document that drops a column, and returns the severities of its `banDropColumn`
+/// diagnostics.
+async fn open_and_check(
+    server: &mut Server,
+    receiver: &mut Receiver<ServerNotification>,
+    uri: Uri,
+) -> Result<Vec<lsp::DiagnosticSeverity>> {
+    server
+        .open_named_document("alter table users drop column name;", uri.clone(), "sql")
+        .await?;
+    Ok(ban_drop_column_severities(
+        &wait_for_diagnostics_of(receiver, &uri).await?,
+    ))
+}
+
+/// A configuration file below the workspace root applies to the files in its directory, and the
+/// server picks up configuration files that are created or deleted while it runs.
+#[tokio::test]
+async fn nested_configuration_files_apply_to_their_directories() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let write_config = |directory: &str, content: &str| -> Result<()> {
+        let directory = root.path().join(directory);
+        std::fs::create_dir_all(&directory)?;
+        std::fs::write(directory.join(ConfigName::pgls_jsonc()), content)?;
+        Ok(())
+    };
+    write_config("", "{}")?;
+    write_config("db1", r#"{ "linter": { "enabled": false } }"#)?;
+    write_config(
+        "db2",
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )?;
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
+        .await?;
+    server.initialized().await?;
+
+    let document = |path: &str| Uri::from_file_path(root.path().join(path)).unwrap();
+
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("a.sql")).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("db1/a.sql")).await?,
+        []
+    );
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("db2/schema/a.sql")).await?,
+        [lsp::DiagnosticSeverity::ERROR]
+    );
+
+    // A configuration file created while the server runs.
+    write_config("db3", r#"{ "linter": { "enabled": false } }"#)?;
+    server
+        .notify(
+            "workspace/didChangeWatchedFiles",
+            DidChangeWatchedFilesParams {
+                changes: vec![FileEvent {
+                    uri: document("db3/postgres-language-server.jsonc"),
+                    typ: FileChangeType::CREATED,
+                }],
+            },
+        )
+        .await?;
+    drain_notifications(&mut receiver);
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("db3/a.sql")).await?,
+        []
+    );
+
+    // A deleted one no longer applies, and the open documents are checked again.
+    std::fs::remove_file(root.path().join("db1").join(ConfigName::pgls_jsonc()))?;
+    drain_notifications(&mut receiver);
+    server
+        .notify(
+            "workspace/didChangeWatchedFiles",
+            DidChangeWatchedFilesParams {
+                changes: vec![FileEvent {
+                    uri: document("db1/postgres-language-server.jsonc"),
+                    typ: FileChangeType::DELETED,
+                }],
+            },
+        )
+        .await?;
+    // Diagnostics published before the deletion can still be on their way.
+    let db1 = document("db1/a.sql");
+    let refreshed = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let diagnostics = wait_for_diagnostics_of(&mut receiver, &db1).await?;
+            if !ban_drop_column_severities(&diagnostics).is_empty() {
+                return Ok::<_, Error>(ban_drop_column_severities(&diagnostics));
+            }
+        }
+    })
+    .await
+    .context("the diagnostics were not refreshed after deleting the configuration file")??;
+    assert_eq!(refreshed, [lsp::DiagnosticSeverity::WARNING]);
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// Waits until the diagnostics of the document at `uri` have the given `banDropColumn` severities.
+async fn wait_for_severities(
+    receiver: &mut Receiver<ServerNotification>,
+    uri: &Uri,
+    expected: &[lsp::DiagnosticSeverity],
+) -> Result<()> {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let diagnostics = wait_for_diagnostics_of(receiver, uri).await?;
+            if ban_drop_column_severities(&diagnostics) == expected {
+                return Ok::<_, Error>(());
+            }
+        }
+    })
+    .await
+    .with_context(|| format!("the diagnostics of {} were not refreshed", uri.as_str()))?
+}
+
+/// A workspace folder added after the initialization gets its own project with its configuration,
+/// and a removed one no longer applies.
+#[tokio::test]
+async fn workspace_folders_can_be_added_and_removed() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    for (folder, configuration) in [
+        ("one", "{}"),
+        (
+            "two",
+            r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+    ] {
+        std::fs::create_dir_all(root.path().join(folder))?;
+        std::fs::write(
+            root.path().join(folder).join(ConfigName::pgls_jsonc()),
+            configuration,
+        )?;
+    }
+    let folder = |name: &str| WorkspaceFolder {
+        uri: Uri::from_file_path(root.path().join(name)).unwrap(),
+        name: name.to_string(),
+    };
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_folders(folder("one").uri, Some(vec![folder("one")]))
+        .await?;
+    server.initialized().await?;
+
+    // Outside of every workspace folder, the project of the shallowest one applies.
+    let document = Uri::from_file_path(root.path().join("two").join("a.sql")).unwrap();
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document.clone()).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+
+    let change = |added: Vec<WorkspaceFolder>, removed: Vec<WorkspaceFolder>| {
+        DidChangeWorkspaceFoldersParams {
+            event: WorkspaceFoldersChangeEvent { added, removed },
+        }
+    };
+
+    server
+        .notify(
+            "workspace/didChangeWorkspaceFolders",
+            change(vec![folder("two")], vec![]),
+        )
+        .await?;
+    wait_for_severities(&mut receiver, &document, &[lsp::DiagnosticSeverity::ERROR]).await?;
+
+    server
+        .notify(
+            "workspace/didChangeWorkspaceFolders",
+            change(vec![], vec![folder("two")]),
+        )
+        .await?;
+    wait_for_severities(
+        &mut receiver,
+        &document,
+        &[lsp::DiagnosticSeverity::WARNING],
+    )
+    .await?;
+
+    server.shutdown().await?;
     reader.abort();
 
     Ok(())
