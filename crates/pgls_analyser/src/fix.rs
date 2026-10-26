@@ -174,17 +174,22 @@ impl<'a> StatementTokens<'a> {
     }
 
     /// Replaces the text in `range` with `text`, but keeps the comments in it, e.g. to replace
-    /// `varchar /* name */ (255)` with `text /* name */`.
+    /// `varchar /* name */ (255)` with `text /* name */`. A `--` comment ends at the end of its
+    /// line, so it keeps a line break after it. Otherwise it would comment out the rest of the
+    /// line, e.g. a `NOT NULL` after the replaced type.
     pub fn replace_keeping_comments(&self, fix: RuleFix, range: TextRange, text: &str) -> RuleFix {
         let mut replacement = text.to_string();
         for comment in self.comments {
-            let comment = TextRange::new(
+            let comment_range = TextRange::new(
                 TextSize::from(comment.start as u32),
                 TextSize::from(comment.end as u32),
             );
-            if range.contains_range(comment) {
+            if range.contains_range(comment_range) {
                 replacement.push(' ');
-                replacement.push_str(&self.sql[comment]);
+                replacement.push_str(self.sql[comment_range].trim_end());
+                if comment.token() == Token::SqlComment {
+                    replacement.push('\n');
+                }
             }
         }
         fix.replace(range, replacement)
