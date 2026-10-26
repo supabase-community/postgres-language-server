@@ -259,6 +259,9 @@
         <loc>https://pg-language-server.com/main/reference/rules/ban-duplicate-column-assignments/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-non-transactional-statement-in-transaction/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/reference/rules/ban-set-schema/</loc>
       </url>
       <url>
