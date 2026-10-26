@@ -35,7 +35,7 @@ pub(super) fn emit_json_agg_tail(
         if has_content {
             e.line(LineType::SoftOrSpace);
         }
-        super::func_call::emit_filter_clause(e, filter);
+        emit_filter_clause(e, filter);
         has_content = true;
     }
 

@@ -25,7 +25,7 @@ pub(super) fn emit_update_stmt(e: &mut EventEmitter, n: &UpdateStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
-        super::res_target::emit_set_clause_list(e, &n.target_list);
+        emit_set_clause_list(e, &n.target_list);
     }
 
     if !n.from_clause.is_empty() {

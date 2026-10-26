@@ -132,7 +132,7 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
             // A clause that breaks onto its own line continues the call, one level in.
             e.indent_start();
             e.line(crate::emitter::LineType::SoftOrSpace);
-            super::func_call::emit_filter_clause(e, filter);
+            emit_filter_clause(e, filter);
             e.indent_end();
         }
 
