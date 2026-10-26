@@ -1,9 +1,0 @@
----
-source: crates/pgls_cli/tests/assert_check.rs
-assertion_line: 546
-expression: "run_check_with(&[\"--staged\", \"--log-level\", \"none\"], None, Some(repo.path()))"
----
-status: success
-stdout:
-Checked 0 files in <duration>.
-stderr:
