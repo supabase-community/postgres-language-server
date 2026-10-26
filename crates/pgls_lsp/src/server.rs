@@ -467,6 +467,7 @@ impl ServerFactory {
         workspace_method!(builder, pull_inlay_hints);
         workspace_method!(builder, pull_semantic_tokens);
         workspace_method!(builder, register_project_folder);
+        workspace_method!(builder, find_project);
         workspace_method!(builder, unregister_project_folder);
         workspace_method!(builder, invalidate_schema_cache);
 
