@@ -4372,6 +4372,72 @@ fn test_goose_envsub_expansions_are_analysed_as_parameters() {
 }
 
 #[test]
+fn test_goose_envsub_needs_the_goose_section_markers() {
+    // Other tools don't replace the expansions, so they stay syntax errors.
+    for section_markers in [SectionMarkers::None, SectionMarkers::Dbmate] {
+        let categories = migration_diagnostics(section_markers, None, GOOSE_ENVSUB);
+        assert_eq!(
+            categories
+                .iter()
+                .filter(|category| *category == "syntax")
+                .count(),
+            3,
+            "{section_markers:?}: {categories:?}"
+        );
+    }
+}
+
+#[test]
+fn test_goose_envsub_follows_settings_changes() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: GOOSE_ENVSUB.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let syntax_errors = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "syntax"))
+            .count()
+    };
+
+    assert_eq!(syntax_errors(), 3);
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: PartialConfiguration {
+                migrations: Some(PartialMigrationsConfiguration {
+                    section_markers: Some(SectionMarkers::Goose),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+        })
+        .expect("Unable to update the settings");
+    // Only the expansion after `ENVSUB OFF` is left.
+    assert_eq!(syntax_errors(), 1);
+}
+
+#[test]
 fn test_goose_envsub_expansions_stay_as_written() {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(
@@ -4380,11 +4446,13 @@ fn test_goose_envsub_expansions_stay_as_written() {
         )
         .unwrap(),
     );
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
     let content = "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SCHEMA}.events (id bigint, at timestamp);\ncreate table logs (at timestamp);\n";
     let path = PgLSPath::new("test.sql");
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -4393,6 +4461,7 @@ fn test_goose_envsub_expansions_stay_as_written() {
 
     let fixed = workspace
         .fix_file(FixFileParams {
+            project_key,
             path: path.clone(),
             fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
             only: vec![],
@@ -4400,15 +4469,17 @@ fn test_goose_envsub_expansions_stay_as_written() {
         })
         .expect("Unable to fix file")
         .code;
-    // The fixes apply around the expansion, which stays as written.
+    // The expansion stays as written. A fix is only offered if the fixed statement parses, and
+    // a statement with an expansion doesn't as written, so only the other statement is fixed.
     assert_eq!(
         fixed.to_lowercase(),
-        "-- +goose up\n-- +goose envsub on\ncreate table if not exists ${schema}.events (id bigint, at timestamptz);\ncreate table if not exists logs (at timestamptz);\n"
+        "-- +goose up\n-- +goose envsub on\ncreate table ${schema}.events (id bigint, at timestamp);\ncreate table if not exists logs (at timestamptz);\n"
     );
 
     // The formatter leaves the statement alone.
     let formatted = workspace
         .pull_file_formatting(PullFileFormattingParams {
+            project_key,
             path: path.clone(),
             range: None,
         })
@@ -4431,12 +4502,14 @@ fn test_no_fix_inside_a_goose_envsub_expansion() {
         )
         .unwrap(),
     );
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
     // `NOT VALID` would go after the last token of the constraint, inside `${PARENT}`.
     let content = "-- +goose Up\n-- +goose ENVSUB ON\nalter table orders add constraint orders_parent_fk foreign key (parent_id) references ${PARENT};\n";
     let path = PgLSPath::new("test.sql");
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -4444,6 +4517,7 @@ fn test_no_fix_inside_a_goose_envsub_expansion() {
         .expect("Unable to open test file");
     let fixed = workspace
         .fix_file(FixFileParams {
+            project_key,
             path,
             fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
             only: vec!["safety/constraintMissingNotValid".parse().unwrap()],

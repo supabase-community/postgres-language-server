@@ -7,7 +7,10 @@ use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
-use crate::{migrations::MigrationTool, workspace::ProjectKey};
+use crate::{
+    migrations::{MigrationTool, Preprocessed},
+    workspace::ProjectKey,
+};
 
 use super::{
     annotation::AnnotationStore,
@@ -18,6 +21,9 @@ use super::{
 
 pub struct Document {
     content: String,
+    /// What the migration tool replaces in the content before it runs it, see
+    /// [`MigrationTool::preprocess`]. Its text is what is split and parsed.
+    preprocessed: Option<Preprocessed>,
     version: i32,
     ranges: Vec<TextRange>,
     diagnostics: Vec<SDiagnostic>,
@@ -52,7 +58,9 @@ impl Document {
         let cst_db = TreeSitterStore::new();
         let ast_db = PgQueryStore::new();
         let annotation_db = AnnotationStore::new();
-        let (ranges, diagnostics) = split_with_diagnostics(&content, None);
+        let preprocessed = migration_tool.and_then(|tool| tool.preprocess(&content));
+        let (ranges, diagnostics) =
+            split_with_diagnostics(text(&content, preprocessed.as_ref()), None);
         let suppressions = Suppressions::from(content.as_str()).with_statements(ranges.clone());
         let migration_sections = sections_for(migration_tool, &content);
 
@@ -60,6 +68,7 @@ impl Document {
             ranges,
             diagnostics,
             content,
+            preprocessed,
             version,
             ast_db,
             cst_db,
@@ -75,25 +84,10 @@ impl Document {
         self.content = content;
         self.version = version;
         self.migration_sections = sections_for(self.migration_tool, &self.content);
-
-        let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
-
-        self.suppressions =
-            Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
-        self.ranges = ranges;
-        self.diagnostics = diagnostics;
-        // Keep what is cached for the statements that are still in the document. The bodies
-        // of SQL functions are kept with their function.
-        let statements: FxHashSet<&str> = self
-            .ranges
-            .iter()
-            .map(|range| &self.content[*range])
-            .collect();
-        let is_present =
-            |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
-        self.ast_db.retain(is_present);
-        self.cst_db.retain(is_present);
-        self.annotation_db.retain(is_present);
+        self.preprocessed = self
+            .migration_tool
+            .and_then(|tool| tool.preprocess(&self.content));
+        self.split();
     }
 
     /// Applies the migration tool of changed settings.
@@ -103,6 +97,31 @@ impl Document {
     ) {
         self.migration_tool = migration_tool;
         self.migration_sections = sections_for(migration_tool, &self.content);
+        let preprocessed = migration_tool.and_then(|tool| tool.preprocess(&self.content));
+        if preprocessed != self.preprocessed {
+            self.preprocessed = preprocessed;
+            self.split();
+        }
+    }
+
+    /// Splits the text into statements again, and keeps what is cached for the statements that
+    /// are still in it.
+    fn split(&mut self) {
+        let (ranges, diagnostics) = split_with_diagnostics(self.text(), None);
+
+        self.suppressions =
+            Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
+        self.ranges = ranges;
+        self.diagnostics = diagnostics;
+        // Keep what is cached for the statements that are still in the document. The bodies
+        // of SQL functions are kept with their function.
+        let text = text(&self.content, self.preprocessed.as_ref());
+        let statements: FxHashSet<&str> = self.ranges.iter().map(|range| &text[*range]).collect();
+        let is_present =
+            |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
+        self.ast_db.retain(is_present);
+        self.cst_db.retain(is_present);
+        self.annotation_db.retain(is_present);
     }
 
     pub(crate) fn project_key(&self) -> ProjectKey {
@@ -131,6 +150,20 @@ impl Document {
 
     pub fn get_document_content(&self) -> &str {
         &self.content
+    }
+
+    /// The text that is split and parsed: the content, with the placeholders of the migration
+    /// tool if it replaces parts of it. It has the length of the content.
+    fn text(&self) -> &str {
+        text(&self.content, self.preprocessed.as_ref())
+    }
+
+    /// Whether `range` overlaps a part of the content that the migration tool replaces, like a
+    /// goose `ENVSUB` expansion. Edits there would write the placeholder into the file.
+    pub fn touches_placeholder(&self, range: TextRange) -> bool {
+        self.preprocessed
+            .as_ref()
+            .is_some_and(|preprocessed| preprocessed.touches_placeholder(range))
     }
 
     pub fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
@@ -236,7 +269,7 @@ where
 
             // Process the next top-level statement
             let range = self.ranges.next()?;
-            let content = &self.parser.content[*range];
+            let content = &self.parser.text()[*range];
             let root_id = StatementId::new(content);
 
             if let Ok(ast) = self.parser.ast_db.get_or_cache_ast(&root_id).as_ref() {
@@ -481,6 +514,11 @@ impl StatementFilter<'_> for IdFilter {
     fn predicate(&self, id: &StatementId, _range: &TextRange, _content: &str) -> bool {
         *id == self.id
     }
+}
+
+/// See [`Document::text`].
+fn text<'a>(content: &'a str, preprocessed: Option<&'a Preprocessed>) -> &'a str {
+    preprocessed.map_or(content, |preprocessed| &preprocessed.text)
 }
 
 /// The migration sections of `content`, see [`MigrationTool::sections`].

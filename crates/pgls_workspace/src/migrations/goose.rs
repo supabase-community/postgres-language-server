@@ -2,10 +2,10 @@
 //! https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go
 
 use pgls_analyser::{Direction, MigrationSection};
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 
 use super::{
-    MigrationTool, SectionMarkerDiagnostic,
+    MigrationTool, Preprocessed, SectionMarkerDiagnostic,
     markers::{self, MarkerSyntax, SectionsBuilder, lines},
 };
 
@@ -77,6 +77,107 @@ impl MigrationTool for Goose {
     ) -> Vec<SectionMarkerDiagnostic> {
         markers::marker_diagnostics(&SYNTAX, text, sections, statements)
     }
+
+    /// Between `-- +goose ENVSUB ON` and `-- +goose ENVSUB OFF`, goose replaces `${NAME}`,
+    /// `${NAME:-default}` and the other braced forms of [interpolate] with environment variables
+    /// before it runs the SQL, see
+    /// https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L211
+    ///
+    /// We don't know their values, so each braced expansion becomes the named parameter `$NAME`,
+    /// padded with spaces to the same length. Named parameters are analysed like psql
+    /// variables: as values, or as identifiers that aren't typechecked. `$NAME` is a named
+    /// parameter already.
+    ///
+    /// [interpolate]: https://github.com/mfridman/interpolate/blob/v0.0.2/parser.go
+    fn preprocess(&self, text: &str) -> Option<Preprocessed> {
+        if !text.contains("+goose") {
+            return None;
+        }
+        let mut substituted = String::with_capacity(text.len());
+        let mut placeholders = Vec::new();
+        let mut envsub = false;
+        for (range, line) in lines(text) {
+            let annotation = annotation(line);
+            match annotation {
+                Some(annotation) if annotation.eq_ignore_ascii_case("envsub on") => envsub = true,
+                Some(annotation) if annotation.eq_ignore_ascii_case("envsub off") => envsub = false,
+                _ => {}
+            }
+            if envsub && annotation.is_none() {
+                substitute_line(
+                    &text[range],
+                    range.start(),
+                    &mut substituted,
+                    &mut placeholders,
+                );
+            } else {
+                substituted.push_str(&text[range]);
+            }
+        }
+        debug_assert_eq!(substituted.len(), text.len());
+        debug_assert!(placeholders.iter().all(|placeholder| {
+            text.get(usize::from(placeholder.start())..usize::from(placeholder.end()))
+                .is_some()
+        }));
+        (!placeholders.is_empty()).then_some(Preprocessed {
+            text: substituted,
+            placeholders,
+        })
+    }
+}
+
+/// Replaces the braced expansions of a line that starts at `start`, see [`Goose::preprocess`].
+fn substitute_line(line: &str, start: TextSize, out: &mut String, expansions: &mut Vec<TextRange>) {
+    let mut rest = line;
+    while let Some(dollar) = rest.find(['$', '\\']) {
+        let (before, from) = rest.split_at(dollar);
+        out.push_str(before);
+        // `\\`, `\$` and `$$` are escapes, and `$(` is left alone.
+        let escape = ["\\\\", "\\$", "$$", "$("]
+            .iter()
+            .find(|escape| from.starts_with(**escape));
+        if let Some(escape) = escape {
+            out.push_str(escape);
+            rest = &from[escape.len()..];
+            continue;
+        }
+        let Some(body) = from.strip_prefix("${") else {
+            out.push_str(&from[..1]);
+            rest = &from[1..];
+            continue;
+        };
+        // The expansion ends at the matching brace, defaults can hold expansions too.
+        let mut depth = 1;
+        let end = body.char_indices().find_map(|(index, c)| {
+            match c {
+                '{' => depth += 1,
+                '}' => depth -= 1,
+                _ => {}
+            }
+            (depth == 0).then_some(index)
+        });
+        let Some(end) = end else {
+            out.push_str(from);
+            return;
+        };
+        let expansion = &from[..end + 3];
+        let name: String = body
+            .chars()
+            .take_while(|c| c.is_alphanumeric() || *c == '_')
+            .collect();
+        let name = if name.starts_with(|c: char| c.is_alphabetic()) {
+            name
+        } else {
+            "e".to_string()
+        };
+        let placeholder = format!("${name}");
+        out.push_str(&placeholder);
+        out.push_str(&" ".repeat(expansion.len().saturating_sub(placeholder.len())));
+        let expansion_start = start + TextSize::of(&line[..line.len() - from.len()]);
+        expansions.push(TextRange::at(expansion_start, TextSize::of(expansion)));
+        rest = &from[expansion.len()..];
+    }
+    out.push_str(rest);
 }
 
 /// The annotation of a `-- +goose <annotation>` line. See
@@ -156,6 +257,28 @@ mod tests {
         );
         assert!(problems[0].1.ends_with("so this line is a plain comment."));
         assert!(problems[1].1.starts_with("goose rejects a migration"));
+    }
+
+    #[test]
+    fn goose_envsub_replaces_braced_expansions_with_named_parameters() {
+        let goose = migration_tool(SectionMarkers::Goose).unwrap();
+        let text = "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema ${SCHEMA};\ngrant usage on schema ${SCHEMA:-${FALLBACK}} to $ROLE, \\${KEPT}, $${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n";
+        let preprocessed = goose.preprocess(text).unwrap();
+        assert_eq!(preprocessed.text.len(), text.len());
+        assert_eq!(
+            preprocessed.text,
+            "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema $SCHEMA  ;\ngrant usage on schema $SCHEMA                to $ROLE, \\${KEPT}, $${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n"
+        );
+        assert_eq!(
+            preprocessed
+                .placeholders
+                .iter()
+                .map(|range| &text[*range])
+                .collect::<Vec<_>>(),
+            ["${SCHEMA}", "${SCHEMA:-${FALLBACK}}"]
+        );
+        assert!(goose.preprocess("-- +goose Up\nselect ${A};\n").is_none());
+        assert!(goose.preprocess("select 1;").is_none());
     }
 
     #[test]
