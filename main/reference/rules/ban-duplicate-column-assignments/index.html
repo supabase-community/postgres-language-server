@@ -1240,14 +1240,15 @@
 
 <h1 id="banduplicatecolumnassignments">banDuplicateColumnAssignments<a class="headerlink" href="#banduplicatecolumnassignments" title="Permanent link">&para;</a></h1>
 <p><strong>Group</strong> <a href="../../rules/#correctness"><code>correctness</code></a> · <strong>Recommended</strong> · <strong>Since</strong> <code>Unreleased</code><br />
-<strong>Diagnostic</strong> <code>lint/banDuplicateColumnAssignments</code> · <strong>Postgres error</strong> <code>42601</code></p>
+<strong>Diagnostic</strong> <code>lint/banDuplicateColumnAssignments</code> · <strong>Postgres error</strong> <code>42601</code>, <code>42701</code></p>
 <p><strong>Sources</strong>: inspired by <a href="https://squawkhq.com/docs/ban-duplicate-column-assignments"><code>squawk/ban-duplicate-column-assignments</code></a></p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>A column is assigned or declared more than once.</p>
-<p>Postgres rejects statements that assign the same column twice, like
-<code>update t set a = 1, a = 2</code> or <code>insert into t (a, a)</code>, with <code>42601 syntax_error</code>. It
-rejects tables and views that declare the same column twice with <code>42701  duplicate_column</code>. This includes view columns that get the same name from their
-expressions, like <code>select a.id, b.id</code>.</p>
+<p>Postgres rejects statements that assign the same column twice in a SET clause, like
+<code>update t set a = 1, a = 2</code>, with <code>42601 syntax_error</code>. It rejects column lists that name
+the same column twice, like <code>insert into t (a, a)</code>, and tables and views that declare the
+same column twice with <code>42701 duplicate_column</code>. This includes view columns that get the
+same name from their expressions, like <code>select a.id, b.id</code>.</p>
 <p>Assigning different elements or fields of the same column, like <code>set a[1] = 1, a[2] = 2</code>,
 is fine.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
