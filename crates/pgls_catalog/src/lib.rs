@@ -30,8 +30,8 @@ pub use catalog::{Catalog, CatalogBase};
 pub use identifier::identifier_name;
 pub use lookup::{
     Candidates, CastContext, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
-    FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, Lookup, OperatorInfo,
-    OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
+    FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
+    OperatorInfo, OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
 pub use session::{Session, TransactionMode, is_reindex_concurrent, is_vacuum_full};
 pub use snapshot::*;
