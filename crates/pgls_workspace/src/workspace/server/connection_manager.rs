@@ -71,9 +71,20 @@ fn connection_string_options(uri: &str) -> Result<PgConnectOptions, sqlx::Error>
     })
 }
 
+/// The connection pools of one database.
+#[derive(Clone)]
+pub(crate) struct DatabasePools {
+    /// The pool for the language server's own queries.
+    pub(crate) pool: PgPool,
+    /// The pool for the statements a user executes. Its connections never run the language
+    /// server's own queries, so the session state that a statement leaves behind can't leak into
+    /// them.
+    pub(crate) statement_pool: PgPool,
+}
+
 /// Cached connection pool with last access time
 struct CachedPool {
-    pool: PgPool,
+    pools: DatabasePools,
     settings_fingerprint: u64,
     last_accessed: Instant,
     idle_timeout: Duration,
@@ -101,11 +112,16 @@ impl ConnectionManager {
         }
     }
 
-    /// Get a connection pool for the given database settings.
-    /// If a pool already exists for these settings, it will be returned.
-    /// If not, a new pool will be created if connections are enabled.
-    /// Will also clean up idle connections that haven't been accessed for a while.
+    #[cfg(test)]
     pub(crate) fn get_pool(&self, settings: &DatabaseSettings) -> Option<PgPool> {
+        self.get_pools(settings).map(|pools| pools.pool)
+    }
+
+    /// Get the connection pools for the given database settings.
+    /// If pools already exist for these settings, they will be returned.
+    /// If not, new pools will be created if connections are enabled.
+    /// Will also clean up idle connections that haven't been accessed for a while.
+    pub(crate) fn get_pools(&self, settings: &DatabaseSettings) -> Option<DatabasePools> {
         let key = ConnectionKey::from(settings);
 
         if !settings.enable_connection {
@@ -123,7 +139,7 @@ impl ConnectionManager {
                 && let Some(cached_pool) = pools.get(&key)
                 && cached_pool.settings_fingerprint == settings_fingerprint
             {
-                return Some(cached_pool.pool.clone());
+                return Some(cached_pool.pools.clone());
             }
         }
 
@@ -140,7 +156,7 @@ impl ConnectionManager {
         // Double-check after acquiring write lock
         if let Some(cached_pool) = pools.get_mut(&key) {
             cached_pool.last_accessed = Instant::now();
-            return Some(cached_pool.pool.clone());
+            return Some(cached_pool.pools.clone());
         }
 
         // Clean up idle connections before creating new ones to avoid unbounded growth
@@ -178,13 +194,20 @@ impl ConnectionManager {
 
         let timeout = settings.conn_timeout_secs;
 
-        let pool = PoolOptions::<Postgres>::new()
-            .acquire_timeout(timeout)
-            .acquire_slow_threshold(Duration::from_secs(2))
-            .connect_lazy_with(config);
+        let pool_options = || {
+            PoolOptions::<Postgres>::new()
+                .acquire_timeout(timeout)
+                .acquire_slow_threshold(Duration::from_secs(2))
+        };
+        let database_pools = DatabasePools {
+            pool: pool_options().connect_lazy_with(config.clone()),
+            // Without cached prepared statements, `discard all` can reset the whole session after
+            // a statement.
+            statement_pool: pool_options().connect_lazy_with(config.statement_cache_capacity(0)),
+        };
 
         let cached_pool = CachedPool {
-            pool: pool.clone(),
+            pools: database_pools.clone(),
             settings_fingerprint,
             last_accessed: Instant::now(),
             // TODO: add this to the db settings, for now default to five minutes
@@ -193,7 +216,7 @@ impl ConnectionManager {
 
         pools.insert(key, cached_pool);
 
-        Some(pool)
+        Some(database_pools)
     }
 
     /// Like [`Self::with_pool`], but returns the error of a connection that failed recently
@@ -220,9 +243,18 @@ impl ConnectionManager {
         settings: &DatabaseSettings,
         operation: impl FnOnce(&PgPool) -> Result<T, WorkspaceError>,
     ) -> Option<Result<T, WorkspaceError>> {
-        let pool = self.get_pool(settings)?;
+        self.with_pools(settings, |pools| operation(&pools.pool))
+    }
+
+    /// Like [`Self::with_pool`], but passes the pool for executed statements as well.
+    pub(crate) fn with_pools<T>(
+        &self,
+        settings: &DatabaseSettings,
+        operation: impl FnOnce(&DatabasePools) -> Result<T, WorkspaceError>,
+    ) -> Option<Result<T, WorkspaceError>> {
+        let pools = self.get_pools(settings)?;
         let key = ConnectionKey::from(settings);
-        let result = operation(&pool);
+        let result = operation(&pools);
         self.record_result(&key, settings_fingerprint(settings), &result);
         Some(result)
     }
@@ -367,7 +399,7 @@ mod tests {
         assert_ne!(first_fingerprint, changed_fingerprint);
         assert_eq!(cached.settings_fingerprint, changed_fingerprint);
         assert_eq!(
-            cached.pool.connect_options().get_host(),
+            cached.pools.pool.connect_options().get_host(),
             pool.connect_options().get_host()
         );
         assert_eq!(pools.len(), 1);

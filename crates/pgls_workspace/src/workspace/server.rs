@@ -1283,8 +1283,8 @@ impl Workspace for WorkspaceServer {
             });
         }
 
-        let Some(result) = self.connection.with_pool(&settings.db, |pool| {
-            let pool = pool.clone();
+        let Some(result) = self.connection.with_pools(&settings.db, |pools| {
+            let pool = pools.statement_pool.clone();
             run_async(async move { statement_execution::execute_statement(&pool, &content).await })?
                 .map_err(WorkspaceError::from)
         }) else {
