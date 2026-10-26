@@ -373,6 +373,226 @@ async fn check_reads_the_password_from_pgpassfile(test_db: PgPool) {
     assert!(output.contains("lint/unknownColumn"), "{output}");
 }
 
+/// Each file uses the nearest configuration file at or above it, below the working directory.
+#[cfg(target_os = "linux")]
+#[test]
+fn check_uses_the_nearest_configuration_file() {
+    let root = tempfile::tempdir().unwrap();
+    let write = |path: &str, content: &str| {
+        let path = root.path().join(path);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, content).unwrap();
+    };
+    write(
+        "postgres-language-server.jsonc",
+        r#"{ "db": { "disableConnection": true } }"#,
+    );
+    write(
+        "db1/postgres-language-server.jsonc",
+        r#"{ "db": { "disableConnection": true }, "linter": { "enabled": false } }"#,
+    );
+    write(
+        "db2/postgres-language-server.jsonc",
+        r#"{
+            "extends": ["../postgres-language-server.jsonc"],
+            "linter": { "rules": { "banDropColumn": "error" } }
+        }"#,
+    );
+    for file in ["a.sql", "db1/a.sql", "db2/schema/a.sql"] {
+        write(file, "alter table users drop column name;\n");
+    }
+
+    let check = |paths: &[&str]| {
+        let mut cmd = cargo_bin_cmd!("postgres-language-server");
+        for var in ["DATABASE_URL", "PGHOST", "PGPORT", "PGUSER", "PGDATABASE"] {
+            cmd.env_remove(var);
+        }
+        let output = cmd
+            .current_dir(root.path())
+            .args(["check", "--reporter", "github", "--log-level", "none"])
+            .args(paths)
+            .output()
+            .expect("failed to run CLI");
+        String::from_utf8_lossy(&output.stdout).into_owned()
+    };
+    let annotation =
+        |level: &str, file: &str| format!("::{level} title=lint/banDropColumn,file={file},");
+
+    // The traversal of the working directory passes absolute paths.
+    let stdout = check(&[]);
+    let absolute = |file: &str| root.path().join(file).display().to_string();
+    assert!(
+        stdout.contains(&annotation("warning", &absolute("a.sql"))),
+        "{stdout}"
+    );
+    assert!(!stdout.contains("db1/a.sql"), "{stdout}");
+    assert!(
+        stdout.contains(&annotation("error", &absolute("db2/schema/a.sql"))),
+        "{stdout}"
+    );
+
+    // Paths given as arguments are relative to the working directory.
+    let stdout = check(&["a.sql", "db1/a.sql", "db2/schema/a.sql"]);
+    assert!(stdout.contains(&annotation("warning", "a.sql")), "{stdout}");
+    assert!(!stdout.contains("db1/a.sql"), "{stdout}");
+    assert!(
+        stdout.contains(&annotation("error", "db2/schema/a.sql")),
+        "{stdout}"
+    );
+}
+
+/// Writes `files` below a new temporary directory.
+fn write_tree(files: &[(&str, &str)]) -> tempfile::TempDir {
+    let root = tempfile::tempdir().unwrap();
+    for (path, content) in files {
+        let path = root.path().join(path);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, content).unwrap();
+    }
+    root
+}
+
+/// Runs `check` in `cwd` without the connection settings of the environment but with `envs`.
+/// Returns whether it succeeded and its output.
+fn check_in(cwd: &Path, args: &[&str], envs: &[(&str, &str)]) -> (bool, String) {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    for var in [
+        "DATABASE_URL",
+        "PGHOST",
+        "PGPORT",
+        "PGUSER",
+        "PGPASSWORD",
+        "PGDATABASE",
+    ] {
+        cmd.env_remove(var);
+    }
+    cmd.env("PGPASSFILE", "/nonexistent/pgpass");
+    cmd.envs(envs.iter().copied());
+    let output = cmd
+        .current_dir(cwd)
+        .args(["check", "--log-level", "none"])
+        .args(args)
+        .output()
+        .expect("failed to run CLI");
+    (
+        output.status.success(),
+        format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ),
+    )
+}
+
+/// `check` with paths only loads the configuration files on the way to them and below the folders
+/// among them, so a broken configuration file elsewhere doesn't matter.
+#[test]
+fn check_only_loads_the_configuration_files_of_its_paths() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        (
+            "tests/fixtures/broken/postgres-language-server.jsonc",
+            "{ this is not json",
+        ),
+        (
+            "db1/postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        ("a.sql", "select 1;\n"),
+        ("db1/schema/a.sql", "alter table users drop column name;\n"),
+    ]);
+
+    let (success, output) = check_in(root.path(), &["a.sql"], &[]);
+    assert!(success, "{output}");
+
+    for path in ["db1/schema/a.sql", "db1"] {
+        let (success, output) = check_in(root.path(), &["--reporter", "github", path], &[]);
+        assert!(!success, "{output}");
+        assert!(
+            output.contains("::error title=lint/banDropColumn"),
+            "the configuration of db1 doesn't apply to {path}:\n{output}"
+        );
+    }
+}
+
+/// A nested configuration file that can't be loaded is reported with its path, its folder uses
+/// the default settings, and the other files are still checked.
+#[test]
+fn check_reports_a_broken_nested_configuration_and_continues() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        (
+            "tests/fixtures/broken/postgres-language-server.jsonc",
+            "{ this is not json",
+        ),
+        ("a.sql", "alter table users drop column name;\n"),
+        (
+            "tests/fixtures/broken/b.sql",
+            "alter table users drop column name;\n",
+        ),
+    ]);
+
+    let (success, output) = check_in(root.path(), &[], &[]);
+    assert!(!success, "{output}");
+    assert!(
+        output.lines().any(|line| line.contains("broken")
+            && line.contains("postgres-language-server.jsonc")
+            && line.contains("configuration")),
+        "the broken configuration file is not named:\n{output}"
+    );
+
+    let (_, output) = check_in(root.path(), &["--reporter", "github"], &[]);
+    let level_of = |file: &str| {
+        output
+            .lines()
+            .find(|line| line.contains("title=lint/banDropColumn") && line.contains(file))
+            .and_then(|line| line.strip_prefix("::"))
+            .and_then(|line| line.split(' ').next())
+    };
+    assert_eq!(level_of("a.sql"), Some("error"), "{output}");
+    // The defaults, not the root configuration's `error`.
+    assert_eq!(level_of("b.sql"), Some("warning"), "{output}");
+}
+
+/// The database environment variables don't replace the database of a nested configuration file
+/// that sets one, so that `db1/` and `db2/` keep their own databases.
+#[cfg(target_os = "linux")]
+#[test]
+fn the_environment_does_not_replace_the_database_of_a_nested_configuration() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        (
+            "db1/postgres-language-server.jsonc",
+            r#"{ "db": { "host": "127.0.0.1", "port": 5432, "username": "postgres", "password": "postgres", "database": "nested_db_that_does_not_exist" } }"#,
+        ),
+        ("db1/a.sql", "select 1;\n"),
+    ]);
+
+    for envs in [
+        &[][..],
+        &[("PGDATABASE", "postgres")][..],
+        &[(
+            "DATABASE_URL",
+            "postgresql://postgres:postgres@127.0.0.1:5432/postgres",
+        )][..],
+    ] {
+        let (_, output) = check_in(root.path(), &["db1/a.sql"], envs);
+        assert!(
+            output.contains("nested_db_that_does_not_exist"),
+            "with {envs:?}, the nested configuration did not use its own database:\n{output}"
+        );
+    }
+}
+
 /// Runs `check` with the database settings given in `args` only, without the connection
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]
@@ -597,32 +817,55 @@ fn trim_trailing_newlines(mut value: String) -> String {
     value
 }
 
-#[test]
-fn check_fix_writes_safe_fixes() {
-    let dir = Path::new("tests/fixtures").join(format!("fix-{}", std::process::id()));
+/// Runs `check` with the given arguments on a file with `content`, with the test config plus the
+/// `config` entries, and returns the file afterwards.
+fn check_fixed(name: &str, config: &str, args: &[&str], content: &str) -> String {
+    let dir = Path::new("tests/fixtures").join(format!("{name}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
+    let mut base = std::fs::read_to_string(CONFIG_PATH).unwrap();
+    if !config.is_empty() {
+        base = format!("{},{config}}}", base.trim_end().strip_suffix('}').unwrap());
+    }
+    let config_path = dir.join("postgres-language-server.jsonc");
+    std::fs::write(&config_path, base).unwrap();
     let file = dir.join("migration.sql");
-    std::fs::write(&file, "reindex index my_index;\n").unwrap();
+    std::fs::write(&file, content).unwrap();
 
     let mut cmd = cargo_bin_cmd!("postgres-language-server");
-    let output = cmd
-        .args([
-            "check",
-            "--config-path",
-            CONFIG_PATH,
-            "--fix",
-            file.to_str().unwrap(),
-        ])
+    cmd.args(["check", "--config-path", config_path.to_str().unwrap()])
+        .args(args)
+        .arg(file.to_str().unwrap())
         .output()
         .expect("failed to run CLI");
 
     let fixed = std::fs::read_to_string(&file).unwrap();
     std::fs::remove_dir_all(&dir).unwrap();
+    fixed
+}
+
+#[test]
+fn check_fix_writes_safe_fixes() {
+    // The section runs outside a transaction, so adding `CONCURRENTLY` is safe.
+    let content = "-- migrate:up transaction:false\nreindex index my_index;\n";
     assert_eq!(
-        fixed,
-        "reindex index CONCURRENTLY my_index;\n",
-        "stdout: {}\nstderr: {}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
+        check_fixed(
+            "fix-safe",
+            r#""migrations": {"sectionMarkers": "dbmate"}"#,
+            &["--fix"],
+            content
+        ),
+        "-- migrate:up transaction:false\nreindex index CONCURRENTLY my_index;\n",
+    );
+}
+
+#[test]
+fn check_fix_without_section_markers_needs_unsafe() {
+    // Without section markers, we don't know whether the migration tool runs the file in a
+    // transaction, where `CONCURRENTLY` fails.
+    let content = "reindex index my_index;\n";
+    assert_eq!(check_fixed("fix-plain", "", &["--fix"], content), content);
+    assert_eq!(
+        check_fixed("fix-plain-unsafe", "", &["--fix", "--unsafe"], content),
+        "reindex index CONCURRENTLY my_index;\n"
     );
 }

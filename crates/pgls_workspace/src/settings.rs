@@ -28,12 +28,12 @@ use pgls_configuration::{
     splinter::SplinterConfiguration,
 };
 use pgls_fs::PgLSPath;
+use pgls_matcher::Matcher;
 #[cfg(feature = "db")]
 use sqlx::postgres::PgConnectOptions;
 
 use crate::{
     WorkspaceError,
-    matcher::Matcher,
     workspace::{ProjectKey, WorkspaceData},
 };
 
@@ -42,8 +42,27 @@ use crate::{
 pub struct ProjectData {
     /// The root path of the project. This path should be **absolute**.
     path: PgLSPath,
-    /// The settings of the project, usually inferred from the configuration file e.g. `biome.json`.
+    /// The settings of the project, usually inferred from the configuration file at or above its
+    /// root.
     settings: Settings,
+    /// The settings of the configuration files below the root, by their folder, deepest first.
+    nested: Vec<(PathBuf, Settings)>,
+}
+
+impl ProjectData {
+    /// The settings that apply to `path`: those of the deepest nested configuration file that
+    /// contains it, or else the root settings. A relative path is relative to the root.
+    fn settings_for(&self, path: &Path) -> &Settings {
+        let path = if path.is_relative() {
+            Cow::Owned(self.path.join(path))
+        } else {
+            Cow::Borrowed(path)
+        };
+        self.nested
+            .iter()
+            .find(|(directory, _)| path.starts_with(directory))
+            .map_or(&self.settings, |(_, settings)| settings)
+    }
 }
 
 #[derive(Debug, Default)]
@@ -51,116 +70,76 @@ pub struct ProjectData {
 pub struct WorkspaceSettings {
     /// The data of the projects
     data: WorkspaceData<ProjectData>,
-    /// The ID of the current project.
-    current_project: ProjectKey,
 }
 
 impl WorkspaceSettings {
-    pub fn get_current_project_key(&self) -> ProjectKey {
-        self.current_project
-    }
-
-    pub fn get_current_project_path(&self) -> Option<&PgLSPath> {
-        trace!("Current key {:?}", self.current_project);
-        self.data
-            .get(self.current_project)
-            .as_ref()
-            .map(|d| &d.path)
-    }
-
-    pub fn get_current_project_data_mut(&mut self) -> &mut ProjectData {
-        self.data
-            .get_mut(self.current_project)
-            .expect("Current project not configured")
-    }
-
-    /// Retrieves the settings of the current workspace folder
-    pub fn get_current_settings(&self) -> Option<&Settings> {
-        trace!("Current key {:?}", self.current_project);
-        let data = self.data.get(self.current_project);
-        if let Some(data) = data {
-            Some(&data.settings)
-        } else {
-            None
-        }
-    }
-
-    /// Retrieves a mutable reference of the settings of the current project
-    pub fn get_current_settings_mut(&mut self) -> &mut Settings {
-        &mut self
-            .data
-            .get_mut(self.current_project)
-            .expect("You must have at least one workspace.")
-            .settings
-    }
-
-    /// Register the current project using its unique key
-    pub fn register_current_project(&mut self, key: ProjectKey) {
-        self.current_project = key;
-    }
-
-    /// Insert a new project using its folder. Use [WorkspaceSettings::get_current_settings_mut] to retrieve
-    /// a mutable reference to its [Settings] and manipulate them.
+    /// Insert a new project using its folder. Use [WorkspaceSettings::get_settings_mut] to
+    /// retrieve a mutable reference to its [Settings] and manipulate them.
     pub fn insert_project(&mut self, workspace_path: impl Into<PathBuf>) -> ProjectKey {
         let path = PgLSPath::new(workspace_path.into());
         trace!("Insert workspace folder: {:?}", path);
         self.data.insert(ProjectData {
             path,
             settings: Settings::default(),
+            nested: Vec::new(),
         })
     }
 
-    /// Remove a project using its folder.
+    /// Remove a project, including its nested settings, using its folder.
     pub fn remove_project(&mut self, workspace_path: &Path) {
-        let keys_to_remove = {
-            let mut data = vec![];
-            let iter = self.data.iter();
-
-            for (key, path_to_settings) in iter {
-                if path_to_settings.path.as_path() == workspace_path {
-                    data.push(key)
-                }
-            }
-
-            data
-        };
-
-        for key in keys_to_remove {
-            self.data.remove(key)
+        if let Some(key) = self.get_project_key(workspace_path) {
+            self.data.remove(key);
         }
     }
 
-    /// Checks if the current path belongs to a registered project.
-    ///
-    /// If there's a match, and the match **isn't** the current project, it returns the new key.
-    pub fn path_belongs_to_current_workspace(&self, path: &PgLSPath) -> Option<ProjectKey> {
-        if self.data.is_empty() {
-            return None;
-        }
-        trace!("Current key: {:?}", self.current_project);
-        let iter = self.data.iter();
-        for (key, path_to_settings) in iter {
-            trace!(
-                "Workspace path {:?}, file path {:?}",
-                path_to_settings.path, path
-            );
-            trace!("Iter key: {:?}", key);
-            if key == self.current_project {
-                continue;
-            }
-            if path.strip_prefix(path_to_settings.path.as_path()).is_ok() {
-                trace!("Update workspace to {:?}", key);
-                return Some(key);
-            }
-        }
-        None
+    /// The project registered at exactly `path`.
+    pub fn get_project_key(&self, path: &Path) -> Option<ProjectKey> {
+        self.data
+            .iter()
+            .find(|(_, project)| project.path.as_path() == path)
+            .map(|(key, _)| key)
     }
 
-    /// Checks if the current path belongs to a registered project.
-    ///
-    /// If there's a match, and the match **isn't** the current project, the function will mark the match as the current project.
-    pub fn set_current_project(&mut self, new_key: ProjectKey) {
-        self.current_project = new_key;
+    /// The folder of a project.
+    pub fn get_project_path(&self, key: ProjectKey) -> Option<&PgLSPath> {
+        self.data.get(key).map(|project| &project.path)
+    }
+
+    /// The root settings of a project.
+    pub fn get_settings(&self, key: ProjectKey) -> Option<&Settings> {
+        self.data.get(key).map(|project| &project.settings)
+    }
+
+    /// The root settings of a project.
+    pub fn get_settings_mut(&mut self, key: ProjectKey) -> Option<&mut Settings> {
+        self.data.get_mut(key).map(|project| &mut project.settings)
+    }
+
+    /// The settings of a project that apply to `path`, so that a file uses the nearest
+    /// configuration file.
+    pub fn get_settings_for_path(&self, key: ProjectKey, path: &Path) -> Option<&Settings> {
+        self.data.get(key).map(|project| project.settings_for(path))
+    }
+
+    /// The root settings and the nested settings of a project.
+    pub fn get_all_settings(&self, key: ProjectKey) -> impl Iterator<Item = &Settings> {
+        self.data.get(key).into_iter().flat_map(|project| {
+            std::iter::once(&project.settings)
+                .chain(project.nested.iter().map(|(_, settings)| settings))
+        })
+    }
+
+    /// Replaces the settings of the configuration files below the root of a project.
+    pub fn set_nested_settings(&mut self, key: ProjectKey, mut nested: Vec<(PathBuf, Settings)>) {
+        nested.sort_by(|(a, _), (b, _)| {
+            b.components()
+                .count()
+                .cmp(&a.components().count())
+                .then_with(|| a.cmp(b))
+        });
+        if let Some(project) = self.data.get_mut(key) {
+            project.nested = nested;
+        }
     }
 }
 
@@ -176,12 +155,14 @@ impl<'a> WorkspaceSettingsHandle<'a> {
         }
     }
 
-    pub(crate) fn settings(&self) -> Option<&Settings> {
-        self.inner.get_current_settings()
+    /// The root settings of a project.
+    pub(crate) fn settings(&self, key: ProjectKey) -> Option<&Settings> {
+        self.inner.get_settings(key)
     }
 
-    pub(crate) fn path(&self) -> Option<&PgLSPath> {
-        self.inner.get_current_project_path()
+    /// The settings of a project that apply to the file at `path`.
+    pub(crate) fn settings_for(&self, key: ProjectKey, path: &Path) -> Option<&Settings> {
+        self.inner.get_settings_for_path(key, path)
     }
 }
 
@@ -927,6 +908,50 @@ pub(crate) const DEFAULT_FILE_SIZE_LIMIT: NonZeroU64 =
     // SAFETY: This constant is initialized with a non-zero value
     NonZeroU64::new(1024 * 1024).unwrap();
 
+impl FilesSettings {
+    /// The files settings of a configuration, without applying the rest of it.
+    pub fn from_configuration(
+        configuration: &PartialConfiguration,
+        working_directory: Option<PathBuf>,
+        vcs_path: Option<PathBuf>,
+        gitignore_matches: &[String],
+    ) -> Result<Self, WorkspaceError> {
+        Ok(to_file_settings(
+            working_directory,
+            configuration.files.clone().map(FilesConfiguration::from),
+            vcs_path,
+            gitignore_matches,
+        )?
+        .unwrap_or_default())
+    }
+
+    /// Whether a file is ignored by `files.ignore`/`files.include` or the VCS ignore file.
+    pub fn is_ignored(&self, path: &Path) -> bool {
+        let is_included = self.included_files.is_empty()
+            || is_dir(path)
+            || self.included_files.matches_path(path);
+        !is_included
+            || self.ignored_files.matches_path(path)
+            || self.git_ignore.as_ref().is_some_and(|ignore| {
+                // `matched_path_or_any_parents` panics if `source` is not under the gitignore root.
+                // This checks excludes absolute paths that are not a prefix of the base root.
+                if !path.has_root() || path.starts_with(ignore.path()) {
+                    // Because Postgres Language Server passes a list of paths,
+                    // we use `matched_path_or_any_parents` instead of `matched`.
+                    ignore
+                        .matched_path_or_any_parents(path, path.is_dir())
+                        .is_ignore()
+                } else {
+                    false
+                }
+            })
+    }
+}
+
+fn is_dir(path: &Path) -> bool {
+    path.is_dir() || (path.is_symlink() && std::fs::read_link(path).is_ok_and(|path| path.is_dir()))
+}
+
 impl Default for FilesSettings {
     fn default() -> Self {
         Self {
@@ -940,10 +965,93 @@ impl Default for FilesSettings {
 
 #[cfg(test)]
 mod tests {
+    use std::path::{Path, PathBuf};
+
     use pgls_configuration::StringSet;
     use pgls_configuration::database::PartialDatabaseConfiguration;
 
-    use super::DatabaseSettings;
+    use super::{DatabaseSettings, Settings, WorkspaceSettings};
+    use crate::workspace::ProjectKey;
+
+    fn with_linter(enabled: bool) -> Settings {
+        let mut settings = Settings::default();
+        settings.linter.enabled = enabled;
+        settings
+    }
+
+    /// The nested settings of the folder that contains the path, or else the root settings.
+    fn linter_enabled(settings: &WorkspaceSettings, key: ProjectKey, path: &str) -> bool {
+        settings
+            .get_settings_for_path(key, Path::new(path))
+            .unwrap()
+            .linter
+            .enabled
+    }
+
+    /// A file uses the deepest nested settings that contain it.
+    #[test]
+    fn a_path_uses_the_nearest_settings() {
+        let mut settings = WorkspaceSettings::default();
+        let key = settings.insert_project("/repo");
+        settings.get_settings_mut(key).unwrap().linter.enabled = false;
+        settings.set_nested_settings(
+            key,
+            vec![
+                (PathBuf::from("/repo/db1"), with_linter(true)),
+                (PathBuf::from("/repo/db1/legacy"), with_linter(false)),
+                (PathBuf::from("/repo/db10"), with_linter(true)),
+            ],
+        );
+
+        assert!(!linter_enabled(&settings, key, "/repo/a.sql"));
+        assert!(linter_enabled(&settings, key, "/repo/db1/a.sql"));
+        assert!(!linter_enabled(&settings, key, "/repo/db1/legacy/x/a.sql"));
+        assert!(linter_enabled(&settings, key, "/repo/db10/a.sql"));
+        assert!(!linter_enabled(&settings, key, "/repo/db2/a.sql"));
+        // A path outside of the project uses its root settings.
+        assert!(!linter_enabled(&settings, key, "/elsewhere/a.sql"));
+    }
+
+    #[test]
+    fn a_relative_path_is_relative_to_the_root_of_the_project() {
+        let mut settings = WorkspaceSettings::default();
+        let key = settings.insert_project("/repo");
+        settings.set_nested_settings(key, vec![(PathBuf::from("/repo/db"), with_linter(false))]);
+
+        assert!(!linter_enabled(&settings, key, "db/a.sql"));
+        assert!(linter_enabled(&settings, key, "a.sql"));
+    }
+
+    /// Projects are independent: each one has its own nested settings.
+    #[test]
+    fn projects_have_their_own_nested_settings() {
+        let mut settings = WorkspaceSettings::default();
+        let one = settings.insert_project("/one");
+        let two = settings.insert_project("/two");
+        settings.set_nested_settings(one, vec![(PathBuf::from("/one/db"), with_linter(false))]);
+
+        assert!(!linter_enabled(&settings, one, "/one/db/a.sql"));
+        assert!(linter_enabled(&settings, two, "/one/db/a.sql"));
+        assert_eq!(settings.get_all_settings(one).count(), 2);
+        assert_eq!(settings.get_all_settings(two).count(), 1);
+    }
+
+    #[test]
+    fn removing_a_project_removes_its_nested_settings() {
+        let mut settings = WorkspaceSettings::default();
+        let key = settings.insert_project("/repo");
+        settings.set_nested_settings(key, vec![(PathBuf::from("/repo/db"), with_linter(false))]);
+
+        settings.remove_project(Path::new("/repo"));
+
+        assert_eq!(settings.get_project_key(Path::new("/repo")), None);
+        assert_eq!(settings.get_all_settings(key).count(), 0);
+        assert!(
+            settings
+                .get_settings_for_path(key, Path::new("/repo/db/a.sql"))
+                .is_none()
+        );
+    }
 
     #[test]
     fn should_identify_allowed_statement_executions() {

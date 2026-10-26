@@ -1,0 +1,50 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- Postgres runs none of these in a transaction block.
+-- expect_lint/banConcurrentIndexCreationInTransaction
+DROP INDEX CONCURRENTLY users_email_idx;
+-- expect_lint/banConcurrentIndexCreationInTransaction
+REINDEX INDEX CONCURRENTLY users_name_idx;
+-- expect_lint/banConcurrentIndexCreationInTransaction
+REINDEX (CONCURRENTLY, VERBOSE) TABLE users;
+-- expect_lint/banConcurrentIndexCreationInTransaction
+ALTER TABLE events DETACH PARTITION events_2024 CONCURRENTLY;
+REINDEX (CONCURRENTLY false) TABLE users;
+REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats;
+
+```
+
+# Diagnostics
+lint/banConcurrentIndexCreationInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × DROP INDEX CONCURRENTLY cannot be used inside a transaction block.
+  
+  i Run DROP INDEX CONCURRENTLY outside of a transaction. Migration tools usually run in transactions, so you may need to run this statement in its own migration or manually.
+  
+
+
+lint/banConcurrentIndexCreationInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REINDEX CONCURRENTLY cannot be used inside a transaction block.
+  
+  i Run REINDEX CONCURRENTLY outside of a transaction. Migration tools usually run in transactions, so you may need to run this statement in its own migration or manually.
+  
+
+
+lint/banConcurrentIndexCreationInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REINDEX CONCURRENTLY cannot be used inside a transaction block.
+  
+  i Run REINDEX CONCURRENTLY outside of a transaction. Migration tools usually run in transactions, so you may need to run this statement in its own migration or manually.
+  
+
+
+lint/banConcurrentIndexCreationInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × DETACH PARTITION CONCURRENTLY cannot be used inside a transaction block.
+  
+  i Run DETACH PARTITION CONCURRENTLY outside of a transaction. Migration tools usually run in transactions, so you may need to run this statement in its own migration or manually.
