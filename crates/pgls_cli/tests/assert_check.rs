@@ -601,6 +601,41 @@ fn check_changed_fails_for_an_unknown_base() {
     assert!(output.contains("git diff failed"), "{output}");
 }
 
+/// A staged or changed file that can't be read fails the run, also when `--max-diagnostics 0`
+/// prints none of the diagnostics.
+#[test]
+fn check_fails_for_an_unreadable_staged_or_changed_file() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    std::fs::write(repo.path().join("invalid.sql"), b"select \xff\xfe;\n").unwrap();
+    git(repo.path(), &["add", "invalid.sql"]);
+    let (success, output) = check_in(repo.path(), &["--staged", "--max-diagnostics", "0"], &[]);
+    assert!(!success, "{output}");
+
+    git(
+        repo.path(),
+        &["commit", "--quiet", "--no-verify", "--message", "invalid"],
+    );
+    let (success, output) = check_in(
+        repo.path(),
+        &["--changed", "--since", "HEAD~1", "--max-diagnostics", "0"],
+        &[],
+    );
+    assert!(!success, "{output}");
+}
+
+/// The diagnostic limit only limits what is printed: the diagnostics that aren't printed still
+/// decide the exit code.
+#[test]
+fn diagnostics_that_are_not_printed_still_fail_the_run() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    let (success, output) = check_in(
+        repo.path(),
+        &["a.sql", "--max-diagnostics", "0", "--error-on-warnings"],
+        &[],
+    );
+    assert!(!success, "{output}");
+}
+
 /// Runs `check` in `cwd` without the connection settings of the environment but with `envs`.
 /// Returns whether it succeeded and its output.
 fn check_in(cwd: &Path, args: &[&str], envs: &[(&str, &str)]) -> (bool, String) {
