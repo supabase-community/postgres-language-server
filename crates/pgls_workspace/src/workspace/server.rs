@@ -7,6 +7,8 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
+#[cfg(feature = "db")]
+use crate::features::code_actions::execute_statement::execution;
 use analyser::AnalyserVisitorBuilder;
 #[cfg(feature = "db")]
 use async_helper::run_async;
@@ -14,24 +16,20 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
-use document::{DefaultMapper, Document, ExecuteStatementMapper, FormatStatementMapper};
+use document::{Document, ExecuteStatementMapper, FormatStatementMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 #[cfg(feature = "db")]
 use pg_query::convert_to_positional_params_with_metadata;
-use pgls_analyse::{
-    ActionCategory, AnalysisFilter, Applicability, RuleCategories, RuleCategoriesBuilder,
-    RuleFilter, SUPPRESSION_ACTION_CATEGORY,
-};
+use pgls_analyse::{AnalysisFilter, RuleCategories, RuleCategoriesBuilder, RuleFilter};
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix,
+    LinterDiagnostic, LinterOptions, MigrationSection,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
-use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
@@ -45,16 +43,15 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_typecheck::TypecheckParams;
 use pgls_workspace_macros::ignored_path;
 use snapshot_manager::SnapshotManager;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use crate::{
     WorkspaceError,
     configuration::to_analyser_rules,
     features::{
         code_actions::{
-            CodeAction, CodeActionKind, CodeActionsParams, CodeActionsResult, CommandAction,
-            CommandActionCategory, EditAction, ExecuteStatementParams, ExecuteStatementResult,
-            FixFileMode, FixFileParams, FixFileResult, TextEdit,
+            self, CodeAction, CodeActionsParams, CodeActionsResult, ExecuteStatementParams,
+            ExecuteStatementResult, FixFileParams, FixFileResult,
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{
@@ -87,15 +84,12 @@ mod connection_key;
 #[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
-mod expand_star;
 mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
 mod pgpass;
 mod snapshot_manager;
 mod sql_function;
-#[cfg(feature = "db")]
-mod statement_execution;
 mod statement_identifier;
 mod tree_sitter;
 
@@ -344,60 +338,6 @@ impl WorkspaceServer {
         )
     }
 
-    /// The fixes of the lint diagnostics at the cursor, and an action to suppress each of them.
-    fn lint_code_actions(
-        &self,
-        settings: &Settings,
-        params: &CodeActionsParams,
-        doc: &Document,
-    ) -> Vec<CodeAction> {
-        let mut actions = Vec::new();
-        for diagnostic in
-            self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
-        {
-            let Some(span) = diagnostic.location().span else {
-                continue;
-            };
-            if !span.contains_inclusive(params.cursor_position) {
-                continue;
-            }
-            let category = diagnostic.get_category_name();
-            let rule = category.strip_prefix("lint/").unwrap_or(category);
-
-            if let Some(fix) = diagnostic.get_fix() {
-                actions.push(CodeAction {
-                    title: fix.message.clone(),
-                    kind: CodeActionKind::Edit(EditAction {
-                        rule: Some(category.to_string()),
-                        category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
-                        applicability: fix.applicability,
-                        edits: fix
-                            .edits
-                            .iter()
-                            .map(|edit| TextEdit {
-                                range: edit.range,
-                                new_text: edit.replacement.clone(),
-                            })
-                            .collect(),
-                    }),
-                    disabled_reason: None,
-                });
-            }
-
-            actions.push(CodeAction {
-                title: format!("Suppress rule {rule} for this statement"),
-                kind: CodeActionKind::Edit(EditAction {
-                    rule: Some(category.to_string()),
-                    category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
-                    applicability: Applicability::MaybeIncorrect,
-                    edits: vec![suppression_edit(doc, span.start(), rule)],
-                }),
-                disabled_reason: None,
-            });
-        }
-        actions
-    }
-
     /// The refactors offered at `position`: expanding a `*` into its columns. `settings` are the
     /// ones of the file.
     fn refactor_code_actions(
@@ -409,7 +349,7 @@ impl WorkspaceServer {
         // Code actions are requested whenever the cursor moves, so don't resolve the file unless
         // the cursor is on a `*` of a select list.
         let content = doc.get_document_content();
-        if !expand_star::is_at_star(content, position) {
+        if !code_actions::expand_star::is_at_star(content, position) {
             return Vec::new();
         }
 
@@ -429,7 +369,9 @@ impl WorkspaceServer {
         let (stmt_start, references) = self.references_at(settings, doc, &snapshot, position);
         references
             .iter()
-            .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
+            .filter_map(|reference| {
+                code_actions::expand_star::expand_star_action(reference, content, stmt_start)
+            })
             .collect()
     }
 
@@ -1100,34 +1042,22 @@ impl Workspace for WorkspaceServer {
             None => Some("Statement execution not allowed against database.".into()),
         };
 
-        let mut actions: Vec<CodeAction> = parser
-            .iter_at(DefaultMapper, params.cursor_position)
-            .map(|(stmt, _, txt)| {
-                let title = format!(
-                    "Execute Statement: {}...",
-                    txt.chars().take(50).collect::<String>()
-                );
-
-                CodeAction {
-                    title,
-                    kind: CodeActionKind::Command(CommandAction {
-                        category: CommandActionCategory::ExecuteStatement(stmt),
-                    }),
-                    disabled_reason: disabled_reason.clone(),
-                }
-            })
-            .collect();
-
-        actions.splice(
-            0..0,
-            self.refactor_code_actions(settings, parser, params.cursor_position),
-        );
-
+        let mut actions = Vec::new();
         if let Some(settings) = settings {
-            let mut lint_actions = self.lint_code_actions(settings, &params, parser);
-            lint_actions.append(&mut actions);
-            actions = lint_actions;
+            let diagnostics =
+                self.lint_diagnostics(settings, &params.path, parser, &params.only, &params.skip);
+            actions.extend(code_actions::lint::lint_actions(
+                &diagnostics,
+                parser,
+                params.cursor_position,
+            ));
         }
+        actions.extend(self.refactor_code_actions(settings, parser, params.cursor_position));
+        actions.extend(code_actions::execute_statement::execute_statement_actions(
+            parser,
+            params.cursor_position,
+            disabled_reason,
+        ));
 
         #[cfg(feature = "db")]
         let invalidate_disabled_reason = match settings {
@@ -1146,28 +1076,20 @@ impl Workspace for WorkspaceServer {
         let invalidate_disabled_reason: Option<String> =
             Some("Database support not enabled.".into());
 
-        actions.push(CodeAction {
-            title: "Invalidate Schema Cache".into(),
-            kind: CodeActionKind::Command(CommandAction {
-                category: CommandActionCategory::InvalidateSchemaCache,
-            }),
-            disabled_reason: invalidate_disabled_reason,
-        });
+        actions.push(code_actions::schema_cache::invalidate_schema_cache_action(
+            invalidate_disabled_reason,
+        ));
 
         Ok(CodeActionsResult { actions })
     }
 
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError> {
-        /// Fixes can enable other fixes, e.g. `CONCURRENTLY` enables `IF NOT EXISTS`, and fixes
-        /// that overlap are applied one after the other.
-        const MAX_PASSES: usize = 10;
-
         let documents = self.documents.read().unwrap();
         let doc = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
-        let mut code = doc.get_document_content().to_string();
+        let code = doc.get_document_content().to_string();
 
         let settings = self.workspaces();
         let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
@@ -1179,62 +1101,12 @@ impl Workspace for WorkspaceServer {
             });
         };
 
-        let mut fixes_applied = 0;
-        let mut skipped_suggested_fixes = 0;
-        let mut converged = false;
-        for _ in 0..MAX_PASSES {
-            let doc = Document::new(code.clone(), 0);
-            let diagnostics =
-                self.lint_diagnostics(settings, &params.path, &doc, &params.only, &params.skip);
-
-            skipped_suggested_fixes = 0;
-            let mut fixes: Vec<&RuleFix> = Vec::new();
-            for fix in diagnostics.iter().filter_map(LinterDiagnostic::get_fix) {
-                if fix.applicability == Applicability::Always
-                    || params.fix_file_mode == FixFileMode::SafeAndUnsafeFixes
-                {
-                    fixes.push(fix);
-                } else {
-                    skipped_suggested_fixes += 1;
-                }
-            }
-            fixes.sort_by_key(|fix| fix.range().map(TextRange::start));
-
-            // Applies the fixes that don't touch the text of an earlier fix in this pass.
-            let mut combined = RuleFix::new("");
-            let mut applied = 0;
-            for fix in fixes {
-                let Some(range) = fix.range() else {
-                    continue;
-                };
-                if combined
-                    .range()
-                    .is_some_and(|previous| range.start() <= previous.end())
-                {
-                    continue;
-                }
-                combined.edits.extend(fix.edits.iter().cloned());
-                applied += 1;
-            }
-            if applied == 0 {
-                converged = true;
-                break;
-            }
-            code = combined.apply(&code);
-            fixes_applied += applied;
-        }
-        if !converged {
-            warn!(
-                path = ?params.path,
-                "Fixes still changed the file after {MAX_PASSES} passes, some may be left"
-            );
-        }
-
-        Ok(FixFileResult {
+        Ok(code_actions::lint::fix_file(
+            &params.path,
             code,
-            fixes_applied,
-            skipped_suggested_fixes,
-        })
+            params.fix_file_mode,
+            |doc| self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip),
+        ))
     }
 
     #[cfg(feature = "db")]
@@ -1285,7 +1157,7 @@ impl Workspace for WorkspaceServer {
 
         let Some(result) = self.connection.with_pools(&settings.db, |pools| {
             let pool = pools.statement_pool.clone();
-            run_async(async move { statement_execution::execute_statement(&pool, &content).await })?
+            run_async(async move { execution::execute_statement(&pool, &content).await })?
                 .map_err(WorkspaceError::from)
         }) else {
             return Ok(no_connection);
@@ -2157,49 +2029,6 @@ fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSectio
         .map_or_else(Vec::new, |migrations| {
             migration::migration_sections(doc.get_document_content(), migrations.section_markers)
         })
-}
-
-/// The edit that adds `-- pgls-ignore <rule>` on its own line above the statement at `offset`,
-/// with the statement's indentation and the file's line ending. Above the statement, the comment
-/// suppresses the rule for all of the statement, including the bodies of its functions.
-fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
-    let content = doc.get_document_content();
-    let start = doc
-        .statement_ranges()
-        .iter()
-        .find(|statement| statement.contains_inclusive(offset))
-        .map_or(offset, |statement| statement.start());
-    let line_ending = match content.find('\n') {
-        Some(newline) if content[..newline].ends_with('\r') => "\r\n",
-        _ => "\n",
-    };
-
-    let start = usize::from(start);
-    let line_start = content[..start]
-        .rfind('\n')
-        .map_or(0, |newline| newline + 1);
-    let before = &content[line_start..start];
-    let indentation: String = before
-        .chars()
-        .take_while(|c| *c == ' ' || *c == '\t')
-        .collect();
-    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
-    if before.trim().is_empty() {
-        TextEdit {
-            range: TextRange::empty(offset(line_start)),
-            new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
-        }
-    } else {
-        // The statement starts after another one on the same line, so it moves to a line of its
-        // own.
-        let previous_end = line_start + before.trim_end().len();
-        TextEdit {
-            range: TextRange::new(offset(previous_end), offset(start)),
-            new_text: format!(
-                "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
-            ),
-        }
-    }
 }
 
 /// Returns `true` if `path` is a directory or

@@ -1,8 +1,23 @@
+//! The code actions offered at the cursor, and the commands and fixes they run: lint fixes and
+//! suppressions (`lint`), expanding a `*` into its columns (`expand_star`), executing the
+//! statement (`execute_statement`), and invalidating the schema cache (`schema_cache`).
+
 use crate::workspace::StatementId;
 use pgls_analyse::{ActionCategory, Applicability};
 use pgls_configuration::RuleSelector;
 use pgls_fs::PgLSPath;
 use pgls_text_size::{TextRange, TextSize};
+
+pub(crate) mod execute_statement;
+pub(crate) mod expand_star;
+pub(crate) mod lint;
+pub(crate) mod schema_cache;
+
+pub use execute_statement::{
+    EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementParams,
+    ExecuteStatementResult,
+};
+pub use lint::{FixFileMode, FixFileParams, FixFileResult};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -66,93 +81,4 @@ pub struct CommandAction {
 pub enum CommandActionCategory {
     ExecuteStatement(StatementId),
     InvalidateSchemaCache,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-pub struct ExecuteStatementParams {
-    pub project_key: crate::workspace::ProjectKey,
-    pub statement_id: StatementId,
-    pub path: PgLSPath,
-}
-
-/// The most rows an executed statement returns; the rest are dropped and the result is marked
-/// as truncated.
-pub const EXECUTE_STATEMENT_MAX_ROWS: usize = 100;
-
-/// The outcome of executing a statement.
-///
-/// A statement that returns rows (`select`, `values`, `returning`, `show`, `explain`, ...) fills
-/// `columns` and `rows`. Any other statement sets `rows_affected` instead.
-#[derive(Debug, serde::Serialize, serde::Deserialize, Default, PartialEq, Eq)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[serde(rename_all = "camelCase")]
-pub struct ExecuteStatementResult {
-    /// A short summary for the user.
-    pub message: String,
-    /// The names of the returned columns.
-    #[serde(default)]
-    pub columns: Vec<String>,
-    /// The returned rows, at most [`EXECUTE_STATEMENT_MAX_ROWS`]. Each value is in its Postgres
-    /// text representation, as `psql` shows it, and `null` for SQL `NULL`.
-    #[serde(default)]
-    pub rows: Vec<Vec<Option<String>>>,
-    /// Whether the statement returned more rows than `rows` holds.
-    #[serde(default)]
-    pub truncated: bool,
-    /// The number of rows affected, for a statement that returns no rows.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rows_affected: Option<u64>,
-    /// Why Postgres rejected the statement, if it did.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub error: Option<ExecuteStatementError>,
-}
-
-/// An error that Postgres raised while executing a statement.
-#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[serde(rename_all = "camelCase")]
-pub struct ExecuteStatementError {
-    /// The primary error message, e.g. `division by zero`.
-    pub message: String,
-    /// The SQLSTATE error code, e.g. `22012`.
-    pub code: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub detail: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub hint: Option<String>,
-    /// The offset of the error in the document, if Postgres reported a position.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub position: Option<TextSize>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-pub struct FixFileParams {
-    pub project_key: crate::workspace::ProjectKey,
-    pub path: PgLSPath,
-    pub fix_file_mode: FixFileMode,
-    pub only: Vec<RuleSelector>,
-    pub skip: Vec<RuleSelector>,
-}
-
-/// Which fixes `fix_file` applies.
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-pub enum FixFileMode {
-    /// Only the fixes that are safe to apply.
-    SafeFixes,
-    /// The safe and the unsafe fixes.
-    SafeAndUnsafeFixes,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Default)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-pub struct FixFileResult {
-    /// The content of the file with the fixes applied.
-    pub code: String,
-    /// The number of fixes that were applied.
-    pub fixes_applied: u32,
-    /// The number of unsafe fixes that were not applied with [FixFileMode::SafeFixes].
-    pub skipped_suggested_fixes: u32,
 }
