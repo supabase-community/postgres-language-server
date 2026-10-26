@@ -379,9 +379,7 @@ select x || y from collate_test10;
 
 select x, y from collate_test10 order by x || y;
 
-with recursive
-foo (x)
-as (
+with recursive foo (x) as (
   select x from (values ('a' collate "en_US"), ('b')) as t (x)
   union all
   select (x || 'c') collate "de_DE" from foo where length(x) < 10

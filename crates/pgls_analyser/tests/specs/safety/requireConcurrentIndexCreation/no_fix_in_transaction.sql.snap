@@ -1,0 +1,20 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- CONCURRENTLY can't run in a transaction block, so there is no fix
+begin;
+-- expect_lint/requireConcurrentIndexCreation
+create index users_email_idx on users (email);
+commit;
+
+```
+
+# Diagnostics
+lint/requireConcurrentIndexCreation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Creating an index non-concurrently blocks writes to the table.
+  
+  i Use CREATE INDEX CONCURRENTLY to avoid blocking concurrent operations on the table.

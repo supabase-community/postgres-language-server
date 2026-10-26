@@ -72,6 +72,9 @@ Please update the list below with the rules that we need to migrate, and the one
 
 NEEDS FEATURES:
 
+NOT PORTED:
+- The opt-in rollback compatibility rules of Squawk (ban_add_column, ban_revoke, ban_drop_index, ban_set_default, ban_create_policy, ...), which report most schema changes.
+
 TODO:
 
 DONE:
@@ -102,5 +105,23 @@ DONE:
 - require_concurrent_index_deletion ✓ (ported from Squawk)
 - transaction_nesting ✓ (ported from Squawk)
 - prefer_robust_stmts ✓ (ported from Squawk - simplified version)
-
-
+- ban_alter_domain_with_add_constraint ✓ (ported from Squawk)
+- ban_alter_identity ✓ (ported from Squawk, only reports changes that break inserts)
+- ban_create_domain_with_constraint ✓ (ported from Squawk)
+- ban_drop_constraint ✓ (ported from Squawk, without `NOT ENFORCED` which needs Postgres 18 bindings)
+- ban_drop_default ✓ (ported from Squawk)
+- ban_drop_domain ✓ (ported from Squawk)
+- ban_drop_extension ✓ (ported from Squawk)
+- ban_drop_function ✓ (ported from Squawk)
+- ban_drop_generated_expression ✓ (ported from Squawk)
+- ban_drop_sequence ✓ (ported from Squawk)
+- ban_drop_type ✓ (ported from Squawk)
+- ban_drop_view ✓ (ported from Squawk)
+- ban_duplicate_column_assignments ✓ (ported from Squawk)
+- ban_set_schema ✓ (ported from Squawk)
+- ban_uncommitted_transaction ✓ (ported from Squawk)
+- identifier_too_long ✓ (ported from Squawk, reads the tokens because the parser truncates names)
+- renaming_object ✓ (ported from Squawk, without tables and columns)
+- require_enum_value_ordering ✓ (ported from Squawk)
+- require_table_schema ✓ (ported from Squawk)
+- ban_drop_schema, ban_drop_trigger, require_concurrent_reindex, require_concurrent_partition_detach, require_lock_timeout, require_statement_timeout, ban_disable_trigger, prefer_repack (already covered by rules ported from pgfence and Eugene)

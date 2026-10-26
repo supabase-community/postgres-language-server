@@ -1,0 +1,97 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDuplicateColumnAssignments
+update users set (name, email) = ('a', 'b'), name = 'c';
+-- expect_lint/banDuplicateColumnAssignments
+insert into users (id, name, id) values (1, 'a', 2);
+-- expect_lint/banDuplicateColumnAssignments
+insert into users (id, name) values (1, 'a') on conflict (id) do update set name = 'b', name = excluded.name;
+-- expect_lint/banDuplicateColumnAssignments
+with moved as (update users set name = 'a', name = 'b' returning id) select * from moved;
+-- expect_lint/banDuplicateColumnAssignments
+update users set tags[1] = 'a', tags = '{}';
+
+```
+
+# Diagnostics
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Multiple assignments to column name.
+  
+  i Postgres rejects statements that assign a column more than once.
+  
+  i Remove all but one of the assignments.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Multiple assignments to column id.
+  
+  i Postgres rejects statements that assign a column more than once.
+  
+  i Remove all but one of the assignments.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Multiple assignments to column name.
+  
+  i Postgres rejects statements that assign a column more than once.
+  
+  i Remove all but one of the assignments.
+  
+
+
+## Fix (unsafe): Keep only the last assignment to name
+```
+-- expect_lint/banDuplicateColumnAssignments
+update users set (name, email) = ('a', 'b'), name = 'c';
+-- expect_lint/banDuplicateColumnAssignments
+insert into users (id, name, id) values (1, 'a', 2);
+-- expect_lint/banDuplicateColumnAssignments
+insert into users (id, name) values (1, 'a') on conflict (id) do update set name = excluded.name;
+-- expect_lint/banDuplicateColumnAssignments
+with moved as (update users set name = 'a', name = 'b' returning id) select * from moved;
+-- expect_lint/banDuplicateColumnAssignments
+update users set tags[1] = 'a', tags = '{}';
+
+```
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Multiple assignments to column name.
+  
+  i Postgres rejects statements that assign a column more than once.
+  
+  i Remove all but one of the assignments.
+  
+
+
+## Fix (unsafe): Keep only the last assignment to name
+```
+-- expect_lint/banDuplicateColumnAssignments
+update users set (name, email) = ('a', 'b'), name = 'c';
+-- expect_lint/banDuplicateColumnAssignments
+insert into users (id, name, id) values (1, 'a', 2);
+-- expect_lint/banDuplicateColumnAssignments
+insert into users (id, name) values (1, 'a') on conflict (id) do update set name = 'b', name = excluded.name;
+-- expect_lint/banDuplicateColumnAssignments
+with moved as (update users set name = 'b' returning id) select * from moved;
+-- expect_lint/banDuplicateColumnAssignments
+update users set tags[1] = 'a', tags = '{}';
+
+```
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Multiple assignments to column tags.
+  
+  i Postgres rejects statements that assign a column more than once.
+  
+  i Remove all but one of the assignments.

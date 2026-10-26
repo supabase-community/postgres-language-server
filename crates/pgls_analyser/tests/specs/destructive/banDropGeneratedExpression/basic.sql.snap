@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropGeneratedExpression
+alter table line_items alter column total drop expression;
+
+```
+
+# Diagnostics
+lint/banDropGeneratedExpression ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping the expression of generated column total may break existing clients.
+  
+  i Postgres no longer computes the column, so inserts and updates that omit it write NULL.
+  
+  i Update clients to write the column themselves before dropping the expression.

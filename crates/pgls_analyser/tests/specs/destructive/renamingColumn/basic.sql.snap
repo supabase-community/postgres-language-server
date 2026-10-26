@@ -6,11 +6,22 @@ expression: snapshot
 ```
 -- expect_lint/renamingColumn
 ALTER TABLE users RENAME COLUMN name TO full_name;
+-- expect_lint/renamingColumn
+alter type address rename attribute zip to postal_code;
+
 ```
 
 # Diagnostics
 lint/renamingColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Renaming a column may break existing clients.
+  
+  i Consider creating a new column with the desired name and migrating data instead.
+  
+
+
+lint/renamingColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Renaming an attribute may break existing clients.
   
   i Consider creating a new column with the desired name and migrating data instead.

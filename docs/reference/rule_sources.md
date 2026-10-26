@@ -5,6 +5,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 
 - [ambiguousColumn](./rules/ambiguous-column.md) 
 - [assignmentTypeMismatch](./rules/assignment-type-mismatch.md) 
+- [banNonTransactionalStatementInTransaction](./rules/ban-non-transactional-statement-in-transaction.md) 
 - [functionArgumentMismatch](./rules/function-argument-mismatch.md) 
 - [functionReturnTypeMismatch](./rules/function-return-type-mismatch.md) 
 - [insertColumnMismatch](./rules/insert-column-mismatch.md) 
@@ -40,25 +41,44 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 | [adding-not-null-field](https://squawkhq.com/docs/adding-not-null-field) |[addingNotNullField](./rules/adding-not-null-field.md) |
 | [adding-required-field](https://squawkhq.com/docs/adding-required-field) |[addingRequiredField](./rules/adding-required-field.md) |
 | [adding-serial-primary-key-field](https://squawkhq.com/docs/adding-serial-primary-key-field) |[addingPrimaryKeyConstraint](./rules/adding-primary-key-constraint.md) |
+| [ban-alter-domain-with-add-constraint](https://squawkhq.com/docs/ban-alter-domain-with-add-constraint) |[banAlterDomainWithAddConstraint](./rules/ban-alter-domain-with-add-constraint.md) |
+| [ban-alter-identity](https://squawkhq.com/docs/ban-alter-identity) |[banAlterIdentity](./rules/ban-alter-identity.md) |
 | [ban-char-field](https://squawkhq.com/docs/ban-char-field) |[banCharField](./rules/ban-char-field.md) |
 | [ban-concurrent-index-creation-in-transaction](https://squawkhq.com/docs/ban-concurrent-index-creation-in-transaction) |[banConcurrentIndexCreationInTransaction](./rules/ban-concurrent-index-creation-in-transaction.md) |
+| [ban-create-domain-with-constraint](https://squawkhq.com/docs/ban-create-domain-with-constraint) |[banCreateDomainWithConstraint](./rules/ban-create-domain-with-constraint.md) |
 | [ban-drop-column](https://squawkhq.com/docs/ban-drop-column) |[banDropColumn](./rules/ban-drop-column.md) |
+| [ban-drop-constraint](https://squawkhq.com/docs/ban-drop-constraint) |[banDropConstraint](./rules/ban-drop-constraint.md) |
 | [ban-drop-database](https://squawkhq.com/docs/ban-drop-database) |[banDropDatabase](./rules/ban-drop-database.md) |
+| [ban-drop-default](https://squawkhq.com/docs/ban-drop-default) |[banDropDefault](./rules/ban-drop-default.md) |
+| [ban-drop-domain](https://squawkhq.com/docs/ban-drop-domain) |[banDropDomain](./rules/ban-drop-domain.md) |
+| [ban-drop-extension](https://squawkhq.com/docs/ban-drop-extension) |[banDropExtension](./rules/ban-drop-extension.md) |
+| [ban-drop-function](https://squawkhq.com/docs/ban-drop-function) |[banDropFunction](./rules/ban-drop-function.md) |
+| [ban-drop-generated-expression](https://squawkhq.com/docs/ban-drop-generated-expression) |[banDropGeneratedExpression](./rules/ban-drop-generated-expression.md) |
 | [ban-drop-not-null](https://squawkhq.com/docs/ban-drop-not-null) |[banDropNotNull](./rules/ban-drop-not-null.md) |
+| [ban-drop-sequence](https://squawkhq.com/docs/ban-drop-sequence) |[banDropSequence](./rules/ban-drop-sequence.md) |
 | [ban-drop-table](https://squawkhq.com/docs/ban-drop-table) |[banDropTable](./rules/ban-drop-table.md) |
+| [ban-drop-type](https://squawkhq.com/docs/ban-drop-type) |[banDropType](./rules/ban-drop-type.md) |
+| [ban-drop-view](https://squawkhq.com/docs/ban-drop-view) |[banDropView](./rules/ban-drop-view.md) |
+| [ban-duplicate-column-assignments](https://squawkhq.com/docs/ban-duplicate-column-assignments) |[banDuplicateColumnAssignments](./rules/ban-duplicate-column-assignments.md) |
+| [ban-set-schema](https://squawkhq.com/docs/ban-set-schema) |[banSetSchema](./rules/ban-set-schema.md) |
 | [ban-truncate-cascade](https://squawkhq.com/docs/ban-truncate-cascade) |[banTruncateCascade](./rules/ban-truncate-cascade.md) |
+| [ban-uncommitted-transaction](https://squawkhq.com/docs/ban-uncommitted-transaction) |[banUncommittedTransaction](./rules/ban-uncommitted-transaction.md) |
 | [changing-column-type](https://squawkhq.com/docs/changing-column-type) |[changingColumnType](./rules/changing-column-type.md) |
 | [constraint-missing-not-valid](https://squawkhq.com/docs/constraint-missing-not-valid) |[constraintMissingNotValid](./rules/constraint-missing-not-valid.md) |
 | [disallow-unique-constraint](https://squawkhq.com/docs/disallow-unique-constraint) |[disallowUniqueConstraint](./rules/disallow-unique-constraint.md) |
+| [identifier-too-long](https://squawkhq.com/docs/identifier-too-long) |[identifierTooLong](./rules/identifier-too-long.md) |
 | [prefer-big-int](https://squawkhq.com/docs/prefer-big-int) |[preferBigInt](./rules/prefer-big-int.md) |
 | [prefer-identity](https://squawkhq.com/docs/prefer-identity) |[preferIdentity](./rules/prefer-identity.md) |
 | [prefer-robust-stmts](https://squawkhq.com/docs/prefer-robust-stmts) |[preferRobustStmts](./rules/prefer-robust-stmts.md) |
 | [prefer-text-field](https://squawkhq.com/docs/prefer-text-field) |[preferTextField](./rules/prefer-text-field.md) |
 | [prefer-timestamptz](https://squawkhq.com/docs/prefer-timestamptz) |[preferTimestamptz](./rules/prefer-timestamptz.md) |
 | [renaming-column](https://squawkhq.com/docs/renaming-column) |[renamingColumn](./rules/renaming-column.md) |
+| [renaming-object](https://squawkhq.com/docs/renaming-object) |[renamingObject](./rules/renaming-object.md) |
 | [renaming-table](https://squawkhq.com/docs/renaming-table) |[renamingTable](./rules/renaming-table.md) |
 | [require-concurrent-index-creation](https://squawkhq.com/docs/require-concurrent-index-creation) |[requireConcurrentIndexCreation](./rules/require-concurrent-index-creation.md) |
 | [require-concurrent-index-deletion](https://squawkhq.com/docs/require-concurrent-index-deletion) |[requireConcurrentIndexDeletion](./rules/require-concurrent-index-deletion.md) |
+| [require-enum-value-ordering](https://squawkhq.com/docs/require-enum-value-ordering) |[requireEnumValueOrdering](./rules/require-enum-value-ordering.md) |
+| [require-table-schema](https://squawkhq.com/docs/require-table-schema) |[requireTableSchema](./rules/require-table-schema.md) |
 | [transaction-nesting](https://squawkhq.com/docs/transaction-nesting) |[transactionNesting](./rules/transaction-nesting.md) |
 
 ### pgfence

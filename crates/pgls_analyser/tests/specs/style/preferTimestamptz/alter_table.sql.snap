@@ -1,0 +1,28 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/preferTimestamptz
+alter table events alter column created_at type TIMESTAMP WITHOUT TIME ZONE using created_at;
+
+```
+
+# Diagnostics
+lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
+  
+  i TIMESTAMP WITHOUT TIME ZONE can lead to issues when dealing with time zones.
+  
+  i Use TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) instead.
+  
+
+
+## Fix (unsafe): Use TIMESTAMPTZ
+```
+-- expect_lint/preferTimestamptz
+alter table events alter column created_at type TIMESTAMPTZ using created_at;
+
+```

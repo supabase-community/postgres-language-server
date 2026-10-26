@@ -622,16 +622,16 @@ create view v1a
 as select * from (tt2 natural join tt3) as j;
 
 create view v2
-as select * from tt2 inner join tt3 using ( b, c) inner join tt4 using (b);
+as select * from tt2 inner join tt3 using (b, c) inner join tt4 using (b);
 
 create view v2a
 as select
   *
 from
-  (tt2 inner join tt3 using ( b, c) inner join tt4 using (b)) as j;
+  (tt2 inner join tt3 using (b, c) inner join tt4 using (b)) as j;
 
 create view v3
-as select * from tt2 inner join tt3 using ( b, c) full outer join tt4 using (b);
+as select * from tt2 inner join tt3 using (b, c) full outer join tt4 using (b);
 
 select pg_get_viewdef('v1', true);
 
@@ -916,8 +916,7 @@ begin;
 
 delete from pg_depend
 where
-  objid =
-  (
+  objid = (
     select
       oid
     from
@@ -950,8 +949,7 @@ begin;
 
 delete from pg_depend
 where
-  objid =
-  (
+  objid = (
     select
       oid
     from

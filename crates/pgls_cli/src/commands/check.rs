@@ -1,5 +1,8 @@
 use crate::cli_options::CliOptions;
-use crate::commands::{get_files_to_process_with_cli_options, read_stdin_payload};
+use crate::commands::{
+    get_files_to_process_with_cli_options, nested_configuration_paths, print_diagnostics,
+    read_stdin_payload,
+};
 use crate::diagnostics::DatabaseUnavailable;
 use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
@@ -9,6 +12,7 @@ use pgls_configuration::PartialConfiguration;
 use pgls_diagnostics::{Error, category};
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
+use pgls_workspace::features::code_actions::FixFileMode;
 use pgls_workspace::features::diagnostics::CheckDatabaseConnectionParams;
 use std::ffi::OsString;
 
@@ -19,6 +23,8 @@ pub struct CheckArgs {
     pub staged: bool,
     pub changed: bool,
     pub since: Option<String>,
+    pub fix: bool,
+    pub unsafe_: bool,
 }
 
 pub fn check(
@@ -32,6 +38,11 @@ pub fn check(
     session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
 
     let paths = resolve_paths(session.fs(), &configuration, &args)?;
+    let configuration_errors = session.apply_nested_configurations(
+        cli_options,
+        args.configuration.clone(),
+        &nested_configuration_paths(&args.stdin_file_path, &paths),
+    )?;
 
     let vcs = VcsTargeting {
         staged: args.staged,
@@ -44,16 +55,25 @@ pub fn check(
         u32::MAX
     };
 
-    let mode = ExecutionMode::Check { vcs };
+    let fix = match (args.fix, args.unsafe_) {
+        (_, true) => Some(FixFileMode::SafeAndUnsafeFixes),
+        (true, false) => Some(FixFileMode::SafeFixes),
+        (false, false) => None,
+    };
+    let mode = ExecutionMode::Check { vcs, fix };
     let execution = ExecutionConfig::new(mode, max_diagnostics);
 
     if let Some(stdin_path) = args.stdin_file_path.as_deref() {
+        print_diagnostics(session.console(), configuration_errors);
         let payload = read_stdin_payload(stdin_path, session.console(), "check")?;
         run_stdin(&mut session, &execution, payload)
     } else {
         let database_error = check_database_connection(&session)?;
         let mut report: Report = run_files(&mut session, &execution, paths)?;
         if let Some(error) = database_error {
+            report.prepend_diagnostic(error);
+        }
+        for error in configuration_errors.into_iter().rev() {
             report.prepend_diagnostic(error);
         }
 
@@ -68,7 +88,9 @@ pub fn check(
 fn check_database_connection(session: &CliSession) -> Result<Option<Error>, CliDiagnostic> {
     let result = session
         .workspace()
-        .check_database_connection(CheckDatabaseConnectionParams::default())?;
+        .check_database_connection(CheckDatabaseConnectionParams {
+            project_key: session.project_key(),
+        })?;
     Ok(result
         .error
         .map(|message| Error::from(DatabaseUnavailable::new(message))))

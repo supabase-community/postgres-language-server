@@ -8,6 +8,7 @@ use pgls_workspace::{WorkspaceError, features::completions::GetCompletionsParams
 use tower_lsp_server::ls_types::{
     self, CompletionItem, CompletionItemLabelDetails, InsertTextFormat, TextEdit,
 };
+use tracing::warn;
 
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn get_completions(
@@ -16,16 +17,18 @@ pub fn get_completions(
 ) -> Result<ls_types::CompletionResponse, LspError> {
     let url = params.text_document_position.text_document.uri;
     let path = session.file_path(&url)?;
+    let project_key = session.project_key(&path);
 
     let doc = session.document(&url)?;
-    let encoding = adapters::negotiated_encoding(session.client_capabilities().unwrap());
+    let encoding = session.position_encoding();
 
     let position = get_cursor_position(session, &url, params.text_document_position.position)?;
 
-    let completion_result = match session
-        .workspace
-        .get_completions(GetCompletionsParams { path, position })
-    {
+    let completion_result = match session.workspace.get_completions(GetCompletionsParams {
+        project_key,
+        path,
+        position,
+    }) {
         Ok(result) => result,
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => {
@@ -47,30 +50,43 @@ pub fn get_completions(
 
     let items: Vec<CompletionItem> = completion_result
         .into_iter()
-        .map(|i| CompletionItem {
-            label: i.label,
-            label_details: Some(CompletionItemLabelDetails {
-                description: Some(i.description),
-                detail: i
-                    .detail
-                    .map(|s| format!(" {s}"))
-                    .or(Some(format!(" {}", i.kind))),
-            }),
-            preselect: Some(i.preselected),
-            sort_text: Some(i.sort_text),
-            insert_text_format: if i.completion_text.as_ref().is_some_and(|c| c.is_snippet) {
-                Some(InsertTextFormat::SNIPPET)
+        .filter_map(|i| {
+            let insert_text_format = if i.completion_text.as_ref().is_some_and(|c| c.is_snippet) {
+                InsertTextFormat::SNIPPET
             } else {
-                Some(InsertTextFormat::PLAIN_TEXT)
-            },
-            text_edit: i.completion_text.map(|c| {
-                ls_types::CompletionTextEdit::Edit(TextEdit {
-                    new_text: c.text,
-                    range: adapters::to_lsp::range(&doc.line_index, c.range, encoding).unwrap(),
-                })
-            }),
-            kind: Some(to_lsp_types_completion_item_kind(i.kind)),
-            ..CompletionItem::default()
+                InsertTextFormat::PLAIN_TEXT
+            };
+            let text_edit = match i.completion_text {
+                Some(c) => match adapters::to_lsp::range(&doc.line_index, c.range, encoding) {
+                    Ok(range) => Some(ls_types::CompletionTextEdit::Edit(TextEdit {
+                        new_text: c.text,
+                        range,
+                    })),
+                    // Without its edit, the client would insert the label at the cursor instead
+                    // of replacing the range the item is for.
+                    Err(err) => {
+                        warn!("Skipping completion item {:?}: {err}", i.label);
+                        return None;
+                    }
+                },
+                None => None,
+            };
+            Some(CompletionItem {
+                label: i.label,
+                label_details: Some(CompletionItemLabelDetails {
+                    description: Some(i.description),
+                    detail: i
+                        .detail
+                        .map(|s| format!(" {s}"))
+                        .or(Some(format!(" {}", i.kind))),
+                }),
+                preselect: Some(i.preselected),
+                sort_text: Some(i.sort_text),
+                insert_text_format: Some(insert_text_format),
+                text_edit,
+                kind: Some(to_lsp_types_completion_item_kind(i.kind)),
+                ..CompletionItem::default()
+            })
         })
         .collect();
 

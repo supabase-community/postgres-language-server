@@ -23,6 +23,8 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
     // subtype field indicates the operation:
     // 'T' = SET DEFAULT, 'N' = DROP NOT NULL, 'O' = SET NOT NULL,
     // 'C' = ADD CONSTRAINT, 'X' = DROP CONSTRAINT, 'V' = VALIDATE CONSTRAINT
+    // The operation is a continuation of the statement, indented like ALTER TABLE's commands.
+    e.indent_start();
     e.line(LineType::SoftOrSpace);
     match n.subtype.as_str() {
         "T" => {
@@ -94,6 +96,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             // Unknown subtype
         }
     }
+    e.indent_end();
 
     e.token(TokenKind::SEMICOLON);
 

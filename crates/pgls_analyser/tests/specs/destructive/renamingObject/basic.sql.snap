@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/renamingObject
+alter view active_users rename to enabled_users;
+
+```
+
+# Diagnostics
+lint/renamingObject ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Renaming a view may break existing clients.
+  
+  i Clients that still use the old name fail after the rename.
+  
+  i Update clients to use the new name before renaming.

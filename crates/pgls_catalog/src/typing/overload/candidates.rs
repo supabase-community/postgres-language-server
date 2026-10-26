@@ -12,11 +12,15 @@ use crate::{FunctionInfo, OperatorInfo, OperatorKind};
 /// of which are named: expands variadic and default arguments, and hides functions with the same
 /// arguments later in the search path. Returns `None` when a candidate can't be evaluated.
 ///
+/// With `expand_variadic` unset, as for a call that marks its last argument `VARIADIC`, the
+/// variadic parameter takes the array itself.
+///
 /// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
 pub(super) fn expand_candidates(
     functions: Vec<FunctionInfo>,
     nargs: usize,
     names: &[String],
+    expand_variadic: bool,
 ) -> Option<Vec<Candidate<FunctionInfo>>> {
     // Candidates, and whether each expands variadic arguments.
     let mut expanded: Vec<(Candidate<FunctionInfo>, bool)> = Vec::new();
@@ -36,7 +40,7 @@ pub(super) fn expand_candidates(
 
         let mut variadic = false;
         let full: Vec<TypeId> = if names.is_empty() {
-            variadic = pronargs <= nargs && signature.variadic_element.is_some();
+            variadic = expand_variadic && pronargs <= nargs && signature.variadic_element.is_some();
             if pronargs != nargs && !variadic && !use_defaults {
                 continue;
             }
@@ -50,7 +54,7 @@ pub(super) fn expand_candidates(
             }
         } else {
             // Named arguments can't match the expanded variadic arguments.
-            if signature.variadic_element.is_some() {
+            if expand_variadic && signature.variadic_element.is_some() {
                 continue;
             }
             if pronargs != nargs && !use_defaults {

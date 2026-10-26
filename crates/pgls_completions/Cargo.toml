@@ -43,3 +43,6 @@ schema = ["dep:schemars"]
 [[bench]]
 harness = false
 name    = "sanitization"
+
+[lints]
+workspace = true

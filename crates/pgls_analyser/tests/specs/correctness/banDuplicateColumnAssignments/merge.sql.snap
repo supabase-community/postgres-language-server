@@ -1,0 +1,42 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDuplicateColumnAssignments
+-- expect_lint/banDuplicateColumnAssignments
+merge into users using new_users on users.id = new_users.id
+when matched then update set name = new_users.name, name = 'x'
+when not matched then insert (id, id) values (new_users.id, 1);
+
+```
+
+# Diagnostics
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Multiple assignments to column name.
+  
+  i Postgres rejects statements that assign a column more than once.
+  
+  i Remove all but one of the assignments.
+  
+
+
+## Fix (unsafe): Keep only the last assignment to name
+```
+-- expect_lint/banDuplicateColumnAssignments
+-- expect_lint/banDuplicateColumnAssignments
+merge into users using new_users on users.id = new_users.id
+when matched then update set name = 'x'
+when not matched then insert (id, id) values (new_users.id, 1);
+
+```
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Multiple assignments to column id.
+  
+  i Postgres rejects statements that assign a column more than once.
+  
+  i Remove all but one of the assignments.

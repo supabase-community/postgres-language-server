@@ -1,0 +1,14 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- renamingTable and renamingColumn cover these
+-- expect_no_diagnostics
+alter table users rename to accounts;
+alter table accounts rename column name to full_name;
+alter type order_status add value 'returned' after 'shipped';
+alter type address rename attribute zip to postal_code;
+
+```

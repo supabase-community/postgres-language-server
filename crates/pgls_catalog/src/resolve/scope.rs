@@ -1,6 +1,10 @@
 //! The names visible to an expression: FROM items grouped by query level, CTEs, and the
 //! parameters of the SQL function being resolved.
 
+use std::rc::Rc;
+
+use super::{ColumnSource, resolver::Resolver};
+use crate::ColumnInfo;
 use crate::typing::{Type, TypedColumn};
 
 /// Columns of an item in scope. `None` when they are not known.
@@ -27,6 +31,46 @@ pub(super) struct Item {
     pub typed_columns: TypedColumns,
     /// Whether the item has system columns (`ctid`, `xmin`, ...).
     pub has_system_columns: bool,
+    /// What the columns come from. Only set when references are collected.
+    pub source: Option<Rc<ItemSource>>,
+}
+
+/// What the columns of a FROM item come from.
+#[derive(Debug)]
+pub(super) struct ItemSource {
+    pub source: ColumnSource,
+    /// The columns as the source defines them, in the order of [`Item::columns`].
+    pub columns: Vec<ColumnInfo>,
+}
+
+impl ItemSource {
+    /// The source of a CTE or subquery with these output columns.
+    pub fn derived(
+        r: &Resolver,
+        source: ColumnSource,
+        names: &[String],
+        typed: Option<&[TypedColumn]>,
+    ) -> Self {
+        let typed = typed.filter(|typed| typed.len() == names.len());
+        let columns = names
+            .iter()
+            .enumerate()
+            .map(|(i, name)| {
+                let ty = typed.and_then(|typed| typed[i].ty.clone());
+                ColumnInfo {
+                    name: name.clone(),
+                    type_name: match &ty {
+                        Some(Type::Named(id)) => {
+                            r.catalog.type_by_id(id).found().map(|info| info.name)
+                        }
+                        _ => None,
+                    },
+                    ty,
+                }
+            })
+            .collect();
+        Self { source, columns }
+    }
 }
 
 impl Item {
@@ -37,7 +81,27 @@ impl Item {
             columns,
             typed_columns: None,
             has_system_columns: false,
+            source: None,
         }
+    }
+
+    /// Where the column with this name comes from, if the item has exactly one such column and
+    /// its source is known.
+    pub fn column_source(&self, column: &str) -> Option<(ColumnSource, ColumnInfo)> {
+        let source = self.source.as_deref()?;
+        let mut positions = self
+            .columns
+            .as_ref()?
+            .iter()
+            .enumerate()
+            .filter(|(_, name)| *name == column)
+            .map(|(position, _)| position);
+        let position = positions.next()?;
+        if positions.next().is_some() {
+            return None;
+        }
+        let info = source.columns.get(position)?;
+        Some((source.source.clone(), info.clone()))
     }
 
     /// Whether the item certainly has the column. `None` if its columns are not known.
@@ -222,6 +286,34 @@ pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
         }
     }
     ColumnLookup::NotFound
+}
+
+/// The item that an unqualified column certainly comes from, innermost level first. `None` if
+/// it is not known with certainty, or if it is an output column or a column merged by a join.
+pub(super) fn find_column_item<'a>(levels: &'a [Level], column: &str) -> Option<&'a Item> {
+    for (depth, level) in levels.iter().rev().enumerate() {
+        if depth == 0
+            && level.output_names_visible
+            && level.output_names.iter().any(|name| name == column)
+        {
+            return None;
+        }
+        if level.merged_columns.iter().any(|c| c == column) {
+            return None;
+        }
+        let mut found = None;
+        for item in &level.items {
+            match item.has_column(column) {
+                Some(true) if found.is_none() => found = Some(item),
+                Some(true) | None => return None,
+                Some(false) => {}
+            }
+        }
+        if found.is_some() {
+            return found;
+        }
+    }
+    None
 }
 
 /// Finds the item with this name, innermost level first.

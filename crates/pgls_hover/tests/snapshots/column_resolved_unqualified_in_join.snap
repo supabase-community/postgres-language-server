@@ -1,0 +1,21 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+assertion_line: 101
+expression: snapshot
+---
+# Input
+```sql
+select slug from hover_users u join hover_orgs o on o.id = u.id
+         ↑ hovered here
+```
+
+# Hover Results
+### `public.hover_orgs.slug`  
+```plain  
+text - nullable
+  
+```  
+---    
+```plain  
+  
+```

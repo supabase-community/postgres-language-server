@@ -1,0 +1,11 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- banDropDomain covers domains
+-- expect_no_diagnostics
+drop domain email;
+
+```

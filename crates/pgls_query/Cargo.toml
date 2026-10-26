@@ -31,3 +31,6 @@ which       = "6.0.0"
 
 [dev-dependencies]
 easy-parallel = "3.2.0"
+
+[lints]
+workspace = true

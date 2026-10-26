@@ -1,0 +1,4 @@
+-- expect_no_diagnostics
+create domain name_text as text collate "C";
+create domain status as text default 'active';
+create domain optional_text as text null;

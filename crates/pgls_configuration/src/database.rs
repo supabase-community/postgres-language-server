@@ -153,11 +153,88 @@ impl PartialDatabaseConfiguration {
             ..Default::default()
         })
     }
+
+    /// Whether it sets an option of the connection: the connection string, the host, port,
+    /// username, password or database.
+    pub fn sets_connection(&self) -> bool {
+        self.connection_string.is_some()
+            || self.host.is_some()
+            || self.port.is_some()
+            || self.username.is_some()
+            || self.password.is_some()
+            || self.database.is_some()
+    }
+
+    /// The part of this environment layer (see [Self::from_env]) that applies to a nested
+    /// configuration file whose own `db` section is `own`, without what it extends: the options
+    /// that the file doesn't set itself, and `DATABASE_URL` only if the file sets no connection
+    /// option, because the connection string takes precedence over the others.
+    pub fn for_nested_configuration(&self, own: Option<&Self>) -> Option<Self> {
+        let Some(own) = own.filter(|own| own.sets_connection()) else {
+            return Some(self.clone());
+        };
+        let layer = Self {
+            connection_string: None,
+            host: self.host.clone().filter(|_| own.host.is_none()),
+            port: self.port.filter(|_| own.port.is_none()),
+            username: self.username.clone().filter(|_| own.username.is_none()),
+            password: self.password.clone().filter(|_| own.password.is_none()),
+            database: self.database.clone().filter(|_| own.database.is_none()),
+            ..Default::default()
+        };
+        layer.sets_connection().then_some(layer)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::PartialDatabaseConfiguration;
+
+    #[test]
+    fn the_environment_only_fills_in_what_a_nested_configuration_does_not_set() {
+        let environment = PartialDatabaseConfiguration {
+            connection_string: Some("postgres://ci:5432/postgres".to_string()),
+            host: Some("ci".to_string()),
+            database: Some("postgres".to_string()),
+            ..Default::default()
+        };
+
+        // Without own connection options, the whole environment applies.
+        assert_eq!(
+            environment.for_nested_configuration(None),
+            Some(environment.clone())
+        );
+        let timeout_only = PartialDatabaseConfiguration {
+            conn_timeout_secs: Some(2),
+            ..Default::default()
+        };
+        assert_eq!(
+            environment.for_nested_configuration(Some(&timeout_only)),
+            Some(environment.clone())
+        );
+
+        // With some, the connection string doesn't, nor do the options the file sets.
+        let own_database = PartialDatabaseConfiguration {
+            database: Some("db1".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            environment.for_nested_configuration(Some(&own_database)),
+            Some(PartialDatabaseConfiguration {
+                host: Some("ci".to_string()),
+                ..Default::default()
+            })
+        );
+        let own_connection = PartialDatabaseConfiguration {
+            host: Some("localhost".to_string()),
+            database: Some("db1".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            environment.for_nested_configuration(Some(&own_connection)),
+            None
+        );
+    }
 
     #[test]
     fn partial_configuration_debug_redacts_database_secrets() {

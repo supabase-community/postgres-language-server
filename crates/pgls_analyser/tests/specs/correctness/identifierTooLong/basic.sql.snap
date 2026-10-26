@@ -1,0 +1,28 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/identifierTooLong
+create table customer_subscription_billing_cycle_adjustments_history_archives_v2 (id bigint);
+
+```
+
+# Diagnostics
+lint/identifierTooLong ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Identifier customer_subscription_billing_cycle_adjustments_history_archives_v2 is longer than 63 bytes.
+  
+  i Postgres truncates it to `customer_subscription_billing_cycle_adjustments_history_archive`.
+  
+  i Use a shorter name.
+  
+
+
+## Fix (safe): Use the truncated name `customer_subscription_billing_cycle_adjustments_history_archive`
+```
+-- expect_lint/identifierTooLong
+create table customer_subscription_billing_cycle_adjustments_history_archive (id bigint);
+
+```

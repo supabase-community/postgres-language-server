@@ -1,6 +1,6 @@
 use anyhow::{Result, bail};
 use convert_case::{Case, Casing};
-use pgls_analyse::{AnalysisFilter, AppliesTo, RuleFilter, RuleMetadata};
+use pgls_analyse::{AnalysisFilter, AppliesTo, FixKind, RuleFilter, RuleMetadata};
 use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig, LinterOptions};
 use pgls_console::StdDisplay;
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, PrintDiagnostic};
@@ -60,6 +60,11 @@ fn generate_rule_doc(
     }
     if meta.applies_to == AppliesTo::Migration {
         properties.push("**Migrations only**".to_string());
+    }
+    match meta.fix_kind {
+        FixKind::None => {}
+        FixKind::Safe => properties.push("**Safe fix**".to_string()),
+        FixKind::Unsafe => properties.push("**Unsafe fix**".to_string()),
     }
     if group == pgls_analyser::TYPECHECK_GROUP {
         properties.push("**Needs a database connection**".to_string());

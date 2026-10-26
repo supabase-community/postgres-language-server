@@ -1,0 +1,28 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/preferJsonb
+alter table users add column settings JSON default '{}';
+
+```
+
+# Diagnostics
+lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Prefer JSONB over JSON for better performance and functionality.
+  
+  i JSON stores exact text representation while JSONB stores parsed binary format. JSONB is faster for queries, supports indexing, and removes duplicate keys.
+  
+  i Consider using JSONB instead unless you specifically need to preserve formatting or duplicate keys.
+  
+
+
+## Fix (unsafe): Use JSONB
+```
+-- expect_lint/preferJsonb
+alter table users add column settings JSONB default '{}';
+
+```
