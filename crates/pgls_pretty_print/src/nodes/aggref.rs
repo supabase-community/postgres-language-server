@@ -6,7 +6,7 @@ use super::prelude::*;
 /// These are internal planner representations with function OIDs
 /// We emit a simple fallback representation
 pub(super) fn emit_aggref(e: &mut EventEmitter, n: &Aggref) {
-    e.group_start(GroupKind::Aggref);
+    e.group_start();
 
     // Aggref is the planner's representation of aggregate functions
     // Without access to pg_proc, we emit a placeholder with the OID
@@ -62,7 +62,7 @@ fn emit_node_sequence(e: &mut EventEmitter, nodes: &[Node], mut emitted_any: boo
             e.token(TokenKind::COMMA);
             e.line(LineType::SoftOrSpace);
         }
-        emit_node(node, e);
+        emit_node(e, node);
         emitted_any = true;
     }
 

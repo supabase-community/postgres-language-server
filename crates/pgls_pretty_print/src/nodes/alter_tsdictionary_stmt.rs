@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterTsDictionaryStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_tsdictionary_stmt(e: &mut EventEmitter, n: &AlterTsDictionaryStmt) {
-    e.group_start(GroupKind::AlterTsdictionaryStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

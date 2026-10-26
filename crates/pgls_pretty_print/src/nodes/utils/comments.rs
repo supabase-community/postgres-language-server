@@ -7,9 +7,9 @@ use crate::emitter::EventEmitter;
 /// Emits `node` with `emit` between the comments attached to its location, the way `emit_node`
 /// does with `emit_node_enum`.
 pub(crate) fn emit_node_with(
-    node: &Node,
     e: &mut EventEmitter,
-    emit: impl FnOnce(&NodeEnum, &mut EventEmitter),
+    node: &Node,
+    emit: impl FnOnce(&mut EventEmitter, &NodeEnum),
 ) {
     let location = node
         .node
@@ -21,7 +21,7 @@ pub(crate) fn emit_node_with(
     }
 
     if let Some(ref inner) = node.node {
-        emit(inner, e)
+        emit(e, inner)
     }
 
     if let Some(location) = location {

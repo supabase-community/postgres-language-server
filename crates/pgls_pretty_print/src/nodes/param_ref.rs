@@ -3,7 +3,7 @@ use pgls_query::protobuf::ParamRef;
 use super::prelude::*;
 
 pub(super) fn emit_param_ref(e: &mut EventEmitter, n: &ParamRef) {
-    e.group_start(GroupKind::ParamRef);
+    e.group_start();
 
     // Emit $1, $2, etc. - handle overflow as unsigned
     // n.number is i32, but PostgreSQL param numbers are always positive

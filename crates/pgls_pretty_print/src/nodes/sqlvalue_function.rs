@@ -3,7 +3,7 @@ use pgls_query::protobuf::{SqlValueFunction, SqlValueFunctionOp};
 use super::prelude::*;
 
 pub(super) fn emit_sqlvalue_function(e: &mut EventEmitter, n: &SqlValueFunction) {
-    e.group_start(GroupKind::SqlvalueFunction);
+    e.group_start();
 
     // Map function type to SQL keyword
     match n.op() {

@@ -3,7 +3,7 @@ use pgls_query::protobuf::ConstraintsSetStmt;
 use super::prelude::*;
 
 pub(super) fn emit_constraints_set_stmt(e: &mut EventEmitter, n: &ConstraintsSetStmt) {
-    e.group_start(GroupKind::ConstraintsSetStmt);
+    e.group_start();
 
     e.token(TokenKind::SET_KW);
     e.space();

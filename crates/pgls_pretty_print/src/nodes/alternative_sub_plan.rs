@@ -6,14 +6,14 @@ use super::prelude::*;
 /// These represent multiple subplan options for the planner
 /// We emit the first available subplan
 pub(super) fn emit_alternative_sub_plan(e: &mut EventEmitter, n: &AlternativeSubPlan) {
-    e.group_start(GroupKind::AlternativeSubPlan);
+    e.group_start();
 
     // AlternativeSubPlan contains multiple subplan choices
     // Emit the first one if available
     if let Some(first) = n.subplans.first()
         && let Some(inner) = first.node.as_ref()
     {
-        emit_node_enum(inner, e);
+        emit_node_enum(e, inner);
     }
 
     e.group_end();

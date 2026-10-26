@@ -5,7 +5,7 @@ use crate::Layout;
 use super::prelude::*;
 
 pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
-    e.group_start(GroupKind::SubLink);
+    e.group_start();
 
     match n.sub_link_type {
         x if x == SubLinkType::ExistsSublink as i32 => {
@@ -21,7 +21,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::AllSublink as i32 => {
             // expr op ALL(subquery)
             if let Some(ref testexpr) = n.testexpr {
-                emit_node(testexpr, e);
+                emit_node(e, testexpr);
                 e.space();
 
                 // Emit operator if present
@@ -42,7 +42,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::AnySublink as i32 => {
             // expr op ANY(subquery) - includes IN which is = ANY
             if let Some(ref testexpr) = n.testexpr {
-                emit_node(testexpr, e);
+                emit_node(e, testexpr);
                 e.space();
 
                 // Special case: empty oper_name means it's IN not = ANY
@@ -68,7 +68,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::RowcompareSublink as i32 => {
             // (expr list) op (subquery)
             if let Some(ref testexpr) = n.testexpr {
-                emit_node(testexpr, e);
+                emit_node(e, testexpr);
                 e.space();
 
                 if !n.oper_name.is_empty() {
@@ -148,7 +148,7 @@ fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
         });
     } else {
         // For other node types (e.g., VALUES), emit normally
-        emit_node(node, e);
+        emit_node(e, node);
     }
     e.indent_end();
     e.line(LineType::Soft);
@@ -184,7 +184,7 @@ fn emit_operator_from_list(e: &mut EventEmitter, oper_name: &[pgls_query::protob
         if let Some(pgls_query::NodeEnum::String(s)) = last.node.as_ref() {
             e.token(TokenKind::IDENT(s.sval.clone()));
         } else {
-            emit_node(last, e);
+            emit_node(e, last);
         }
     }
 }

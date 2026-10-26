@@ -3,7 +3,7 @@ use pgls_query::protobuf::RangeTableFuncCol;
 use super::prelude::*;
 
 pub(super) fn emit_range_table_func_col(e: &mut EventEmitter, col: &RangeTableFuncCol) {
-    e.group_start(GroupKind::RangeTableFuncCol);
+    e.group_start();
 
     if !col.colname.is_empty() {
         emit_identifier_maybe_quoted(e, &col.colname);
@@ -31,14 +31,14 @@ pub(super) fn emit_range_table_func_col(e: &mut EventEmitter, col: &RangeTableFu
         e.space();
         e.token(TokenKind::PATH_KW);
         e.space();
-        emit_node(expr, e);
+        emit_node(e, expr);
     }
 
     if let Some(expr) = col.coldefexpr.as_ref() {
         e.space();
         e.token(TokenKind::DEFAULT_KW);
         e.space();
-        emit_node(expr, e);
+        emit_node(e, expr);
     }
 
     if col.is_not_null {

@@ -3,13 +3,13 @@ use pgls_query::protobuf::{IndexElem, SortByDir, SortByNulls};
 use super::prelude::*;
 
 pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
-    e.group_start(GroupKind::IndexElem);
+    e.group_start();
 
     // Either a column name or an expression
     if let Some(ref expr) = n.expr {
         // Expressions in index definitions must be wrapped in parentheses
         e.token(TokenKind::L_PAREN);
-        emit_node(expr, e);
+        emit_node(e, expr);
         e.token(TokenKind::R_PAREN);
     } else if !n.name.is_empty() {
         emit_identifier_maybe_quoted(e, &n.name);
@@ -33,14 +33,14 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
 
         // Optional opclass options (e.g., tsvector_ops(siglen = 1000))
         if !n.opclassopts.is_empty() {
-            emit_parenthesized_list(e, &n.opclassopts, |node, emitter| {
+            emit_parenthesized_list(e, &n.opclassopts, |emitter, node| {
                 if let Some(pgls_query::NodeEnum::DefElem(def)) = node.node.as_ref() {
                     emitter.token(TokenKind::IDENT(def.defname.clone()));
                     if let Some(ref arg) = def.arg {
                         emitter.space();
                         emitter.token(TokenKind::IDENT("=".to_string()));
                         emitter.space();
-                        emit_node(arg, emitter);
+                        emit_node(emitter, arg);
                     }
                 }
             });

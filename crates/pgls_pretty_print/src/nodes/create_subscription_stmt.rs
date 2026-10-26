@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateSubscriptionStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_subscription_stmt(e: &mut EventEmitter, n: &CreateSubscriptionStmt) {
-    e.group_start(GroupKind::CreateSubscriptionStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -22,8 +22,8 @@ pub(super) fn emit_create_subscription_stmt(e: &mut EventEmitter, n: &CreateSubs
     e.line(LineType::SoftOrSpace);
     emit_keyword(e, "PUBLICATION");
     e.space();
-    e.group_start(GroupKind::List);
-    emit_comma_separated_list(e, &n.publication, |node, e| {
+    e.group_start();
+    emit_comma_separated_list(e, &n.publication, |e, node| {
         if let Some(NodeEnum::String(s)) = &node.node {
             emit_identifier_maybe_quoted(e, &s.sval);
         }

@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateForeignServerStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateForeignServerStmt) {
-    e.group_start(GroupKind::CreateForeignServerStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -61,7 +61,7 @@ pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateFo
         e.indent_start();
         emit_keyword(e, "OPTIONS");
         e.space();
-        emit_parenthesized_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |e, n| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });

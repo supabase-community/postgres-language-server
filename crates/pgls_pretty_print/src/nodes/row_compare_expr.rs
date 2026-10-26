@@ -3,7 +3,7 @@ use pgls_query::protobuf::{RowCompareExpr, RowCompareType};
 use super::prelude::*;
 
 pub(super) fn emit_row_compare_expr(e: &mut EventEmitter, n: &RowCompareExpr) {
-    e.group_start(GroupKind::RowCompareExpr);
+    e.group_start();
 
     emit_parenthesized_list(e, &n.largs, emit_node);
 

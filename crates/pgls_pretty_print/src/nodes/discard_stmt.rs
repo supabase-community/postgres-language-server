@@ -3,7 +3,7 @@ use pgls_query::protobuf::DiscardStmt;
 use super::prelude::*;
 
 pub(super) fn emit_discard_stmt(e: &mut EventEmitter, n: &DiscardStmt) {
-    e.group_start(GroupKind::DiscardStmt);
+    e.group_start();
 
     e.token(TokenKind::DISCARD_KW);
     e.space();

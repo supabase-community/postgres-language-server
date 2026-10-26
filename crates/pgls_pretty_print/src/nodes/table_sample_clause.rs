@@ -3,7 +3,7 @@ use pgls_query::protobuf::TableSampleClause;
 use super::prelude::*;
 
 pub(super) fn emit_table_sample_clause(e: &mut EventEmitter, clause: &TableSampleClause) {
-    e.group_start(GroupKind::TableSampleClause);
+    e.group_start();
 
     e.token(TokenKind::TABLESAMPLE_KW);
     e.space();
@@ -23,7 +23,7 @@ pub(super) fn emit_table_sample_clause(e: &mut EventEmitter, clause: &TableSampl
         e.token(TokenKind::REPEATABLE_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
-        emit_node(repeatable, e);
+        emit_node(e, repeatable);
         e.token(TokenKind::R_PAREN);
     }
 

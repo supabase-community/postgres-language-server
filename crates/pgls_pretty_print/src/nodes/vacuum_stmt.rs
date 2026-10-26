@@ -3,7 +3,7 @@ use pgls_query::protobuf::VacuumStmt;
 use super::prelude::*;
 
 pub(super) fn emit_vacuum_stmt(e: &mut EventEmitter, n: &VacuumStmt) {
-    e.group_start(GroupKind::VacuumStmt);
+    e.group_start();
 
     if n.is_vacuumcmd {
         e.token(TokenKind::VACUUM_KW);
@@ -14,17 +14,17 @@ pub(super) fn emit_vacuum_stmt(e: &mut EventEmitter, n: &VacuumStmt) {
     // Emit options if present
     if !n.options.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.options, |node, emitter| {
+        emit_parenthesized_list(e, &n.options, |emitter, node| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 // Emit option name
                 emit_keyword(emitter, &def.defname);
                 // Emit option value if present
                 if let Some(ref arg) = def.arg {
                     emitter.space();
-                    emit_node(arg, emitter);
+                    emit_node(emitter, arg);
                 }
             } else {
-                emit_node(node, emitter);
+                emit_node(emitter, node);
             }
         });
     }

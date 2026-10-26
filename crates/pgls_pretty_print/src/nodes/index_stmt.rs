@@ -3,12 +3,12 @@ use pgls_query::protobuf::IndexStmt;
 use super::prelude::*;
 
 pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
-    e.group_start(GroupKind::IndexStmt);
+    e.group_start();
 
     // The head, up to the opening parenthesis of the columns, stays on one line when it fits. The
     // columns break inside their parentheses, and the clauses after them each start a line when
     // they do not fit.
-    e.group_start(GroupKind::IndexStmt);
+    e.group_start();
     e.token(TokenKind::CREATE_KW);
     e.space();
 
@@ -102,7 +102,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
     // WHERE clause (partial index), kept on its keyword line when it fits there
     if let Some(ref where_clause) = n.where_clause {
         emit_layout_break(e);
-        e.group_start(GroupKind::IndexStmt);
+        e.group_start();
         e.token(TokenKind::WHERE_KW);
         emit_clause_condition(e, where_clause);
         e.group_end();

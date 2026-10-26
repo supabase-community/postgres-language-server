@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateSeqStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
-    e.group_start(GroupKind::CreateSeqStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -39,14 +39,14 @@ pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
     // Emit sequence options (AS type, INCREMENT BY, MINVALUE, MAXVALUE, START WITH, CACHE, CYCLE, etc.)
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_space_separated_list(e, &n.options, |opt, e| {
+        emit_space_separated_list(e, &n.options, |e, opt| {
             // Use specialized sequence option emission
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {
                 emit_with_comments_at(e, def_elem.location, |e| {
                     super::emit_sequence_option(e, def_elem);
                 });
             } else {
-                emit_node(opt, e);
+                emit_node(e, opt);
             }
         });
     }

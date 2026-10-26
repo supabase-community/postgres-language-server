@@ -6,7 +6,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
     e: &mut EventEmitter,
     n: &AlterExtensionContentsStmt,
 ) {
-    e.group_start(GroupKind::AlterExtensionContentsStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -40,7 +40,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
 
     // Object name
     if let Some(ref object) = n.object {
-        emit_node(object, e);
+        emit_node(e, object);
     }
 
     e.group_end();

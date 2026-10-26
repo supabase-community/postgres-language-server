@@ -6,7 +6,7 @@ use super::prelude::*;
 /// These are internal planner representations with function OIDs
 /// We emit a simple fallback representation
 pub(super) fn emit_window_func(e: &mut EventEmitter, n: &WindowFunc) {
-    e.group_start(GroupKind::WindowFunc);
+    e.group_start();
 
     // WindowFunc is the planner's representation of window functions
     // Without access to pg_proc, we emit a placeholder with the OID

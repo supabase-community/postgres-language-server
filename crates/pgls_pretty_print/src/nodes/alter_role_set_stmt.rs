@@ -4,7 +4,7 @@ use super::emit_role_spec;
 use super::prelude::*;
 
 pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStmt) {
-    e.group_start(GroupKind::AlterRoleSetStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

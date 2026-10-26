@@ -3,7 +3,7 @@ use pgls_query::protobuf::PartitionSpec;
 use super::prelude::*;
 
 pub(super) fn emit_partition_spec(e: &mut EventEmitter, n: &PartitionSpec) {
-    e.group_start(GroupKind::PartitionSpec);
+    e.group_start();
 
     e.token(TokenKind::PARTITION_KW);
     e.space();

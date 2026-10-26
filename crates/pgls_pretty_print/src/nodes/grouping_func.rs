@@ -3,7 +3,7 @@ use pgls_query::protobuf::GroupingFunc;
 use super::prelude::*;
 
 pub(super) fn emit_grouping_func(e: &mut EventEmitter, n: &GroupingFunc) {
-    e.group_start(GroupKind::GroupingFunc);
+    e.group_start();
 
     e.token(TokenKind::GROUPING_KW);
     e.token(TokenKind::L_PAREN);

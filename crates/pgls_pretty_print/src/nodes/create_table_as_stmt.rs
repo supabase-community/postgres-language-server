@@ -4,7 +4,7 @@ use super::emit_string;
 use super::prelude::*;
 
 pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsStmt) {
-    e.group_start(GroupKind::CreateTableAsStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -52,7 +52,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
 
             if !into.col_names.is_empty() {
                 e.space();
-                emit_parenthesized_list(e, &into.col_names, |node, e| {
+                emit_parenthesized_list(e, &into.col_names, |e, node| {
                     let string = assert_node_variant!(String, node);
                     emit_string(e, string);
                 });
@@ -72,14 +72,14 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
             e.space();
             e.token(TokenKind::WITH_KW);
             e.space();
-            emit_parenthesized_list(e, &into.options, |node, emitter| {
+            emit_parenthesized_list(e, &into.options, |emitter, node| {
                 if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                     emitter.token(TokenKind::IDENT(def.defname.to_lowercase()));
                     if let Some(ref arg) = def.arg {
                         emitter.space();
                         emitter.token(TokenKind::IDENT("=".to_string()));
                         emitter.space();
-                        emit_node(arg, emitter);
+                        emit_node(emitter, arg);
                     }
                 }
             });
@@ -149,7 +149,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
     emit_layout_break(e);
 
     if let Some(ref query) = n.query {
-        emit_node(query, e);
+        emit_node(e, query);
     }
 
     if !expanded {

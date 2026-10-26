@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreatedbStmt;
 use super::prelude::*;
 
 pub(super) fn emit_createdb_stmt(e: &mut EventEmitter, n: &CreatedbStmt) {
-    e.group_start(GroupKind::CreatedbStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();

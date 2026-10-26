@@ -5,7 +5,7 @@ use crate::CastStyle;
 use super::prelude::*;
 
 pub(super) fn emit_type_cast(e: &mut EventEmitter, n: &TypeCast) {
-    e.group_start(GroupKind::TypeCast);
+    e.group_start();
 
     match e.config().cast_style {
         CastStyle::Operator => emit_operator_cast(e, n),
@@ -20,7 +20,7 @@ pub(super) fn emit_type_cast(e: &mut EventEmitter, n: &TypeCast) {
 /// A cast in a `FROM` clause is a table function, and only the `CAST(...)` spelling is accepted
 /// there: `FROM (1 + 2)::int` is a syntax error.
 pub(super) fn emit_type_cast_call(e: &mut EventEmitter, n: &TypeCast) {
-    e.group_start(GroupKind::TypeCast);
+    e.group_start();
     emit_cast_call(e, n);
     e.group_end();
 }
@@ -30,10 +30,10 @@ pub(super) fn emit_type_cast_call(e: &mut EventEmitter, n: &TypeCast) {
 fn emit_cast_call(e: &mut EventEmitter, n: &TypeCast) {
     e.token(TokenKind::CAST_KW);
     open_call_arguments(e);
-    e.group_start(GroupKind::List);
+    e.group_start();
 
     if let Some(ref arg) = n.arg {
-        emit_node(arg, e);
+        emit_node(e, arg);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -54,10 +54,10 @@ fn emit_operator_cast(e: &mut EventEmitter, n: &TypeCast) {
         // primary expression has to be parenthesised: `a + b::int` would cast b alone.
         if needs_parentheses(arg, Position::Postfix) {
             e.token(TokenKind::L_PAREN);
-            emit_node(arg, e);
+            emit_node(e, arg);
             e.token(TokenKind::R_PAREN);
         } else {
-            emit_node(arg, e);
+            emit_node(e, arg);
         }
     }
 

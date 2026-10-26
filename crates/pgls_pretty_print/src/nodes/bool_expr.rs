@@ -5,7 +5,7 @@ use crate::LogicalOperatorPlacement;
 use super::prelude::*;
 
 pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
-    e.group_start(GroupKind::BoolExpr);
+    e.group_start();
 
     match n.boolop() {
         BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
@@ -113,17 +113,17 @@ fn emit_bool_operand(e: &mut EventEmitter, node: &Node, parent_kind: BoolExprTyp
             // The parentheses get their own group so that `or (a and b)` stays on one line when it
             // fits, even after the enclosing chain broke. Once it breaks, the operands go on their
             // own lines, indented, and the closing parenthesis returns to the operand's indent.
-            e.group_start(GroupKind::BoolExpr);
+            e.group_start();
             e.token(TokenKind::L_PAREN);
             e.indent_start();
             e.line(LineType::Soft);
-            emit_node(node, e);
+            emit_node(e, node);
             e.indent_end();
             e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
             e.group_end();
         } else {
-            emit_node(node, e);
+            emit_node(e, node);
         }
     });
 }

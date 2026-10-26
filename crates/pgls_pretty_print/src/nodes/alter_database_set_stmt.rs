@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterDatabaseSetStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_database_set_stmt(e: &mut EventEmitter, n: &AlterDatabaseSetStmt) {
-    e.group_start(GroupKind::AlterDatabaseSetStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

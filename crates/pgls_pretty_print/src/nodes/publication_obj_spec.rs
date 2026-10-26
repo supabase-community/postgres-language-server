@@ -3,7 +3,7 @@ use pgls_query::protobuf::PublicationObjSpec;
 use super::prelude::*;
 
 pub(super) fn emit_publication_obj_spec(e: &mut EventEmitter, n: &PublicationObjSpec) {
-    e.group_start(GroupKind::PublicationObjSpec);
+    e.group_start();
 
     // pubobjtype: 0=Undefined, 1=TABLE, 2=TABLES_IN_SCHEMA, 3=TABLES_IN_CUR_SCHEMA, 4=CONTINUATION
     match n.pubobjtype {

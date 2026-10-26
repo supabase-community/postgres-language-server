@@ -4,7 +4,7 @@ use super::emit_object_with_args;
 use super::prelude::*;
 
 pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionStmt) {
-    e.group_start(GroupKind::AlterFunctionStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

@@ -3,7 +3,7 @@ use pgls_query::protobuf::{PartitionRangeDatum, PartitionRangeDatumKind};
 use super::prelude::*;
 
 pub(super) fn emit_partition_range_datum(e: &mut EventEmitter, n: &PartitionRangeDatum) {
-    e.group_start(GroupKind::PartitionRangeDatum);
+    e.group_start();
 
     match n.kind() {
         PartitionRangeDatumKind::PartitionRangeDatumMinvalue => {
@@ -14,7 +14,7 @@ pub(super) fn emit_partition_range_datum(e: &mut EventEmitter, n: &PartitionRang
         }
         PartitionRangeDatumKind::PartitionRangeDatumValue => {
             if let Some(ref value) = n.value {
-                emit_node(value, e);
+                emit_node(e, value);
             }
         }
         PartitionRangeDatumKind::Undefined => {}

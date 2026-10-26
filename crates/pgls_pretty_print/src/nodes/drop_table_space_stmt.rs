@@ -3,7 +3,7 @@ use pgls_query::protobuf::DropTableSpaceStmt;
 use super::prelude::*;
 
 pub(super) fn emit_drop_table_space_stmt(e: &mut EventEmitter, n: &DropTableSpaceStmt) {
-    e.group_start(GroupKind::DropTableSpaceStmt);
+    e.group_start();
 
     e.token(TokenKind::DROP_KW);
     e.space();

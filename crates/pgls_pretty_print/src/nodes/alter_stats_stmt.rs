@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterStatsStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
-    e.group_start(GroupKind::AlterStatsStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -28,7 +28,7 @@ pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
         e.space();
         e.token(TokenKind::STATISTICS_KW);
         e.space();
-        emit_node(target, e);
+        emit_node(e, target);
     }
 
     e.group_end();

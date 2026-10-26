@@ -4,7 +4,7 @@
 pub(super) use pgls_query::{Node, NodeEnum};
 
 pub(super) use crate::TokenKind;
-pub(super) use crate::emitter::{EventEmitter, GroupKind, LineType};
+pub(super) use crate::emitter::{EventEmitter, LineType};
 
 pub(super) use super::utils::comments::*;
 pub(super) use super::utils::layout::*;

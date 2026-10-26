@@ -4,7 +4,7 @@ use super::prelude::*;
 
 /// Emit a SET statement argument
 /// Special handling: AConst with string values should be emitted as unquoted identifiers
-fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
+fn emit_set_arg(e: &mut EventEmitter, node: &Node) {
     if let Some(NodeEnum::AConst(a_const)) = &node.node
         && let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val
     {
@@ -13,7 +13,7 @@ fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
         // its quotes: unquoted, `SET datestyle = German` would set `german`.
         let val = &s.sval;
         if !needs_quoting(val) {
-            e.group_start(GroupKind::String);
+            e.group_start();
             e.token(TokenKind::IDENT(val.clone()));
             e.group_end();
             return;
@@ -22,7 +22,7 @@ fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
 
     // For all other cases (numbers, actual string literals with special chars, etc.),
     // use the normal emission
-    emit_node(node, e);
+    emit_node(e, node);
 }
 
 /// Emit a dot-separated variable name, quoting parts that need it
@@ -42,7 +42,7 @@ fn emit_variable_name(e: &mut EventEmitter, name: &str) {
 }
 
 pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) {
-    e.group_start(GroupKind::VariableSetStmt);
+    e.group_start();
     emit_variable_set_stmt_inner(e, n);
     e.group_end();
 }
@@ -224,7 +224,7 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
             e.space();
             // The snapshot id is in args as a string
             if !n.args.is_empty() {
-                emit_node(&n.args[0], e);
+                emit_node(e, &n.args[0]);
             }
         } else {
             // SET TRANSACTION
@@ -341,7 +341,7 @@ fn emit_transaction_option(e: &mut EventEmitter, def: &pgls_query::protobuf::Def
             emit_keyword(e, &def.defname);
             if let Some(ref arg) = def.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
     }

@@ -3,11 +3,11 @@ use pgls_query::protobuf::NullTest;
 use super::prelude::*;
 
 pub(super) fn emit_null_test(e: &mut EventEmitter, n: &NullTest) {
-    e.group_start(GroupKind::NullTest);
+    e.group_start();
 
     // Emit the expression being tested
     if let Some(ref arg) = n.arg {
-        emit_node(arg, e);
+        emit_node(e, arg);
     }
 
     e.space();

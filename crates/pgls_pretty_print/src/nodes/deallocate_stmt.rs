@@ -3,7 +3,7 @@ use pgls_query::protobuf::DeallocateStmt;
 use super::prelude::*;
 
 pub(super) fn emit_deallocate_stmt(e: &mut EventEmitter, n: &DeallocateStmt) {
-    e.group_start(GroupKind::DeallocateStmt);
+    e.group_start();
 
     e.token(TokenKind::DEALLOCATE_KW);
     e.space();

@@ -3,7 +3,7 @@ use pgls_query::protobuf::UnlistenStmt;
 use super::prelude::*;
 
 pub(super) fn emit_unlisten_stmt(e: &mut EventEmitter, n: &UnlistenStmt) {
-    e.group_start(GroupKind::UnlistenStmt);
+    e.group_start();
 
     e.token(TokenKind::UNLISTEN_KW);
     e.space();

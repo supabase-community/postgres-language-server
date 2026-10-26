@@ -3,7 +3,7 @@ use pgls_query::protobuf::InferClause;
 use super::prelude::*;
 
 pub(super) fn emit_infer_clause(e: &mut EventEmitter, n: &InferClause) {
-    e.group_start(GroupKind::InferClause);
+    e.group_start();
 
     if !n.conname.is_empty() {
         e.token(TokenKind::ON_KW);

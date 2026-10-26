@@ -6,7 +6,7 @@ pub(super) fn emit_alter_table_space_options_stmt(
     e: &mut EventEmitter,
     n: &AlterTableSpaceOptionsStmt,
 ) {
-    e.group_start(GroupKind::AlterTableSpaceOptionsStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

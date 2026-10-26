@@ -3,7 +3,7 @@ use pgls_query::protobuf::CteCycleClause;
 use super::prelude::*;
 
 pub(super) fn emit_ctecycle_clause(e: &mut EventEmitter, n: &CteCycleClause) {
-    e.group_start(GroupKind::CtecycleClause);
+    e.group_start();
 
     e.token(TokenKind::CYCLE_KW);
 
@@ -23,14 +23,14 @@ pub(super) fn emit_ctecycle_clause(e: &mut EventEmitter, n: &CteCycleClause) {
         e.space();
         e.token(TokenKind::TO_KW);
         e.space();
-        emit_node(value, e);
+        emit_node(e, value);
     }
 
     if let Some(ref default_value) = n.cycle_mark_default {
         e.space();
         e.token(TokenKind::DEFAULT_KW);
         e.space();
-        emit_node(default_value, e);
+        emit_node(e, default_value);
     }
 
     if !n.cycle_path_column.is_empty() {

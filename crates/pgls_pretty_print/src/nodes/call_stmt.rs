@@ -3,7 +3,7 @@ use pgls_query::protobuf::CallStmt;
 use super::prelude::*;
 
 pub(super) fn emit_call_stmt(e: &mut EventEmitter, n: &CallStmt) {
-    e.group_start(GroupKind::CallStmt);
+    e.group_start();
 
     e.token(TokenKind::CALL_KW);
 

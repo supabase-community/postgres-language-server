@@ -3,7 +3,7 @@ use pgls_query::protobuf::{MinMaxExpr, MinMaxOp};
 use super::prelude::*;
 
 pub(super) fn emit_min_max_expr(e: &mut EventEmitter, n: &MinMaxExpr) {
-    e.group_start(GroupKind::MinMaxExpr);
+    e.group_start();
 
     // MinMaxOp: 0 = GREATEST, 1 = LEAST
     match n.op() {
