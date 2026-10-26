@@ -29,7 +29,7 @@ use pgls_configuration::{
     semantic_tokens::SemanticTokensConfiguration,
     splinter::SplinterConfiguration,
 };
-use pgls_fs::{PgLSPath, normalize_path, real_path};
+use pgls_fs::{PgLSPath, normalize_path};
 use pgls_matcher::Matcher;
 #[cfg(feature = "db")]
 use sqlx::postgres::PgConnectOptions;
@@ -54,6 +54,16 @@ pub struct ProjectData {
 }
 
 impl ProjectData {
+    /// If `path` is below the root of the project, directly or through its real path, the number
+    /// of components of the folder it is below. A project without a folder contains every path.
+    fn depth_of(&self, path: &Path) -> Option<usize> {
+        let path = normalize_path(path);
+        let folder = std::iter::once(self.path.as_path())
+            .chain(self.real_path.as_deref())
+            .find(|folder| path.starts_with(folder))?;
+        Some(folder.components().count())
+    }
+
     /// `path` as a path below the root of the project, if it is one: relative to the root if it is
     /// relative, without `.` and `..`, and with the root as it was registered if the path goes
     /// through its real path instead, as when the folder was opened through a symlink.
@@ -94,13 +104,20 @@ impl WorkspaceSettings {
     pub fn insert_project(&mut self, workspace_path: impl Into<PathBuf>) -> ProjectKey {
         let path = PgLSPath::new(workspace_path.into());
         trace!("Insert workspace folder: {:?}", path);
-        let real_path = real_path(path.as_path());
         self.data.insert(ProjectData {
             path,
             settings: Settings::default(),
             nested: Vec::new(),
-            real_path,
+            real_path: None,
         })
+    }
+
+    /// Sets the folder of a project with symlinks resolved, if it differs from the folder, so
+    /// that the paths below it belong to the project too.
+    pub fn set_real_path(&mut self, key: ProjectKey, real_path: Option<PathBuf>) {
+        if let Some(project) = self.data.get_mut(key) {
+            project.real_path = real_path.filter(|real_path| real_path != project.path.as_path());
+        }
     }
 
     /// Remove a project, including its nested settings, using its folder.
@@ -118,13 +135,13 @@ impl WorkspaceSettings {
             .map(|(key, _)| key)
     }
 
-    /// The project of the deepest folder that contains `path`. A project without a folder contains
-    /// every path.
+    /// The project of the deepest folder that contains `path`, directly or through the real path
+    /// of the folder. A project without a folder contains every path.
     pub fn find_project(&self, path: &Path) -> Option<ProjectKey> {
         self.data
             .iter()
-            .filter(|(_, project)| path.starts_with(project.path.as_path()))
-            .max_by_key(|(_, project)| project.path.components().count())
+            .filter_map(|(key, project)| Some((key, project.depth_of(path)?)))
+            .max_by_key(|(_, depth)| *depth)
             .map(|(key, _)| key)
     }
 

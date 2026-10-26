@@ -222,7 +222,10 @@ impl Workspace {
 
         // Register a project without a folder, which every file belongs to
         let project_key = inner
-            .register_project_folder(RegisterProjectFolderParams { path: None })
+            .register_project_folder(RegisterProjectFolderParams {
+                path: None,
+                real_path: None,
+            })
             .unwrap_or_default();
 
         Self {

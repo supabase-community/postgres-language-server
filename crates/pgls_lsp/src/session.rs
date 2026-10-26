@@ -788,7 +788,10 @@ impl Session {
         }
         *self.folderless_project.get_or_init(|| {
             self.workspace
-                .register_project_folder(RegisterProjectFolderParams { path: None })
+                .register_project_folder(RegisterProjectFolderParams {
+                    path: None,
+                    real_path: None,
+                })
                 .unwrap_or_else(|error| {
                     error!("Failed to register the project without a folder: {}", error);
                     ProjectKey::default()

@@ -203,13 +203,6 @@ impl WorkspaceServer {
         self.snapshot.get()
     }
 
-    /// Register a new project in the current workspace
-    fn register_project(&self, path: PathBuf) -> ProjectKey {
-        let mut workspace = self.workspaces_mut();
-        let workspace_mut = workspace.as_mut();
-        workspace_mut.insert_project(path.clone())
-    }
-
     /// Check whether a file is ignored by the settings of its project that apply to it
     fn is_ignored(&self, project_key: ProjectKey, path: &Path) -> bool {
         // Never ignore config files regardless `include`/`ignore`
@@ -915,10 +908,14 @@ impl Workspace for WorkspaceServer {
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError> {
         let path = params.path.unwrap_or_default();
-        let existing = self.workspaces().as_ref().get_project_key(&path);
+        let mut workspace = self.workspaces_mut();
+        let workspace = workspace.as_mut();
+        let existing = workspace.get_project_key(&path);
         debug!("Register the project {:?}, known as {:?}", path, existing);
 
-        Ok(existing.unwrap_or_else(|| self.register_project(path)))
+        let key = existing.unwrap_or_else(|| workspace.insert_project(path));
+        workspace.set_real_path(key, params.real_path);
+        Ok(key)
     }
 
     fn find_project(
