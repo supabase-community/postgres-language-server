@@ -20,9 +20,7 @@ pub(super) fn emit_publication_table(e: &mut EventEmitter, n: &PublicationTable)
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::emit_clause_condition(e, where_clause);
-        e.token(TokenKind::R_PAREN);
+        super::emit_parenthesized_condition(e, GroupKind::PublicationTable, where_clause);
     }
 
     e.group_end();

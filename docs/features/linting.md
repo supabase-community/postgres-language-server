@@ -73,6 +73,16 @@ Some rules can fix the issues they report. The fixes come in two kinds:
 
 In the editor, the fixes are offered as quick fixes on the diagnostic, next to a quick fix that suppresses the rule for the statement with a `-- pgls-ignore <rule>` comment.
 
+The `source.fixAll.pgls` code action applies all safe fixes of a file. To run it on save in VS Code:
+
+```json
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.pgls": "explicit"
+  }
+}
+```
+
 On the command line, `check --fix` applies the safe fixes and writes the files. Add `--unsafe` to also apply the unsafe fixes:
 
 ```sh

@@ -7,6 +7,7 @@ use pgls_text_size::{TextRange, TextSize};
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct CodeActionsParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub path: PgLSPath,
     pub cursor_position: TextSize,
     pub only: Vec<RuleSelector>,
@@ -69,6 +70,7 @@ pub enum CommandActionCategory {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ExecuteStatementParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub statement_id: StatementId,
     pub path: PgLSPath,
 }
@@ -82,6 +84,7 @@ pub struct ExecuteStatementResult {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FixFileParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub path: PgLSPath,
     pub fix_file_mode: FixFileMode,
     pub only: Vec<RuleSelector>,

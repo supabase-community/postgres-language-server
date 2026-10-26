@@ -1,0 +1,9 @@
+create policy members_only on documents using (organization_id = (select organization_id from memberships where user_id = auth.uid()));
+
+select * from documents as d where d.owner_id = (select m.user_id from memberships as m where m.organization_id = d.organization_id limit 1);
+
+select * from documents where tags = array(select tag from document_tags where document_tags.document_id = documents.id order by tag);
+
+select * from t where a = (select coalesce((select max(x) from y where y.id = t.id and y.kind = 'some kind of value'), 0));
+
+select * from t where a = (select 1);
