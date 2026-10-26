@@ -19,7 +19,7 @@ from orders
 order by customer_id
   , created_at desc;
 
-select id , name from users;
+select id, name from users;
 
 select id into temporary table active_user_ids from users where active;
 
