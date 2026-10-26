@@ -210,6 +210,20 @@ fn spans_cover_the_reference() {
 }
 
 #[test]
+fn spans_cover_non_ascii_names() {
+    let sql = "select größe from users";
+    let resolution = resolve_after("", sql, None);
+    assert_eq!(
+        resolution
+            .findings
+            .iter()
+            .map(|finding| &sql[finding.span.unwrap()])
+            .collect::<Vec<_>>(),
+        ["größe"]
+    );
+}
+
+#[test]
 fn columns() {
     assert_eq!(
         findings("select email from users"),
@@ -487,6 +501,53 @@ fn unknown_objects_are_silent() {
     // XMLTABLE items are not modelled.
     assert_valid(
         "select t.anything from xmltable('/a' passing '<a/>' columns x int path 'x') as t",
+    );
+}
+
+#[test]
+fn function_context_has_the_input_parameters() {
+    let context = |sql: &str| {
+        let Some(NodeEnum::CreateFunctionStmt(n)) = pgls_query::parse(sql).unwrap().into_root()
+        else {
+            panic!("not a CREATE FUNCTION: {sql}");
+        };
+        FunctionContext::from_create_function(&n).unwrap()
+    };
+    let param =
+        |name: Option<&str>, type_schema: Option<&str>, type_name: &str, is_array| FunctionParam {
+            name: name.map(Into::into),
+            type_schema: type_schema.map(Into::into),
+            type_name: type_name.into(),
+            is_array,
+        };
+
+    let add = context(
+        "create function public.add(a integer[], int) returns int language sql as 'select 1'",
+    );
+    assert_eq!(add.function_name, "add");
+    assert_eq!(
+        add.params,
+        [
+            param(Some("a"), Some("pg_catalog"), "int4", true),
+            param(None, Some("pg_catalog"), "int4", false),
+        ]
+    );
+    // `OUT` and `RETURNS TABLE` columns are not in scope, and don't count for `$n`.
+    assert_eq!(
+        context("create function f(p bigint) returns table(id bigint) language sql as 'select 1'")
+            .params,
+        [param(Some("p"), Some("pg_catalog"), "int8", false)]
+    );
+    assert_eq!(
+        context(
+            "create function f(out x int, a text, inout b int, variadic c int[]) language sql as 'select 1, 2'"
+        )
+        .params,
+        [
+            param(Some("a"), None, "text", false),
+            param(Some("b"), Some("pg_catalog"), "int4", false),
+            param(Some("c"), Some("pg_catalog"), "int4", true),
+        ]
     );
 }
 

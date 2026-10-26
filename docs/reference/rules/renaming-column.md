@@ -9,6 +9,7 @@
 Renaming columns may break existing queries and application code.
 
 Renaming a column that is being used by an existing application or query can cause unexpected downtime.
+This includes the attributes of composite types, renamed with `ALTER TYPE ... RENAME ATTRIBUTE`.
 Consider creating a new column instead and migrating the data, then dropping the old column after ensuring
 no dependencies exist.
 

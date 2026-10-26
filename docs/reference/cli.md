@@ -179,7 +179,8 @@ Lints your database schema.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow_statement_executions_against`**=_`ARG`_
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
 - **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
@@ -238,7 +239,7 @@ Lints your database schema.
 
 Runs everything to the requested files.
 
-**Usage**: **`postgres-language-server`** **`check`** \[**`--staged`**\] \[**`--changed`**\] \[**`--since`**=_`REF`_\] \[**`--fix`**\] \[**`--unsafe`**\] \[_`PATH`_\]...
+**Usage**: **`postgres-language-server`** **`check`** \[**`--staged`**\] \[**`--changed`**\] \[**`--since`**=_`REF`_\] \[**`--fix`**\] \[**`--unsafe`**\] \[**`--only`**=_`<GROUP|RULE>`_\]... \[**`--skip`**=_`<GROUP|RULE>`_\]... \[_`PATH`_\]...
 
 **The configuration that is contained inside the configuration file.**
 - **`    --vcs-enabled`**=_`<true|false>`_ &mdash; 
@@ -305,7 +306,8 @@ Runs everything to the requested files.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow_statement_executions_against`**=_`ARG`_
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
 - **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
@@ -363,11 +365,11 @@ Runs everything to the requested files.
 
 **Available options:**
 - **`    --stdin-file-path`**=_`PATH`_ &mdash; 
-  Use this option when you want to format code piped from `stdin`, and print the output to `stdout`.
+  Use this option when you want to check code piped from `stdin`. The code is printed to `stdout`, with the fixes applied if `--fix` is set, and the diagnostics to `stderr`.
 
-  The file doesn't need to exist on disk, what matters is the extension of the file. Based on the extension, we know how to check the code.
+  The file doesn't need to exist on disk. Its path is used to apply the configuration and to label the diagnostics.
 
-  Example: `echo 'let a;' | pgls_cli check --stdin-file-path=test.sql`
+  Example: `echo 'drop table users;' | postgres-language-server check --stdin-file-path=test.sql`
 - **`    --staged`** &mdash; 
   When set to true, only the files that have been staged (the ones prepared to be committed) will be linted. This option should be used when working locally.
 - **`    --changed`** &mdash; 
@@ -378,6 +380,10 @@ Runs everything to the requested files.
   Apply the safe fixes of the lint rules and write the files.
 - **`    --unsafe`** &mdash; 
   Also apply the unsafe fixes, which may change what a statement does. Implies `--fix`.
+- **`    --only`**=_`<GROUP|RULE>`_ &mdash; 
+  Only run the given lint rule or group, e.g. `--only=requireConcurrentIndexCreation` or `--only=style`, also if the configuration disables it. Can be repeated. With `--fix`, only its fixes are applied.
+- **`    --skip`**=_`<GROUP|RULE>`_ &mdash; 
+  Skip the given lint rule or group, e.g. `--skip=preferRobustStmts`. Can be repeated.
 - **`-h`**, **`--help`** &mdash; 
   Prints help information
 
@@ -453,7 +459,8 @@ Formats the requested files.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow_statement_executions_against`**=_`ARG`_
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
 - **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    

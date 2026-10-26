@@ -24,6 +24,7 @@ use crate::{
         format::{PullFileFormattingParams, PullFormattingResult},
         inlay_hints::{PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
+        semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult},
     },
 };
 
@@ -36,6 +37,7 @@ pub(crate) use server::document::*;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct OpenFileParams {
+    pub project_key: ProjectKey,
     pub path: PgLSPath,
     pub content: String,
     pub version: i32,
@@ -44,12 +46,14 @@ pub struct OpenFileParams {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct CloseFileParams {
+    pub project_key: ProjectKey,
     pub path: PgLSPath,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ChangeFileParams {
+    pub project_key: ProjectKey,
     pub path: PgLSPath,
     pub version: i32,
     pub content: String,
@@ -58,12 +62,15 @@ pub struct ChangeFileParams {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct IsPathIgnoredParams {
+    pub project_key: ProjectKey,
     pub pgls_path: PgLSPath,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct UpdateSettingsParams {
+    /// The project whose root settings are updated.
+    pub project_key: ProjectKey,
     pub configuration: PartialConfiguration,
     pub vcs_base_path: Option<PathBuf>,
     pub gitignore_matches: Vec<String>,
@@ -73,6 +80,7 @@ pub struct UpdateSettingsParams {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct GetFileContentParams {
+    pub project_key: ProjectKey,
     pub path: PgLSPath,
 }
 
@@ -91,8 +99,49 @@ pub struct ServerInfo {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct RegisterProjectFolderParams {
+    /// The folder of the project. A project without a folder contains every path.
     pub path: Option<PathBuf>,
-    pub set_as_current_workspace: bool,
+}
+
+/// The configuration file of a folder below the root of a project.
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct NestedSettingsParams {
+    /// The folder of the configuration file. Its settings apply to the files below it.
+    pub directory: PathBuf,
+    pub configuration: PartialConfiguration,
+    pub vcs_base_path: Option<PathBuf>,
+    pub gitignore_matches: Vec<String>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateNestedSettingsParams {
+    pub project_key: ProjectKey,
+    /// Every configuration file below the root of the project. They replace the previous ones.
+    pub nested: Vec<NestedSettingsParams>,
+}
+
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateNestedSettingsResult {
+    /// The folders whose settings now apply. The others are ignored by the settings above them,
+    /// or are not below the root of the project.
+    pub applied: Vec<PathBuf>,
+    /// The folders whose configuration could not be applied, with the reason. Their files use
+    /// the default settings, never the ones of the configuration above them.
+    pub errors: Vec<NestedSettingsError>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct NestedSettingsError {
+    pub directory: PathBuf,
+    pub message: String,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -154,20 +203,35 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         params: PullInlayHintsParams,
     ) -> Result<PullInlayHintsResult, WorkspaceError>;
 
-    /// Register a possible workspace project folder. Returns the key of said project. Use this key when you want to switch to different projects.
+    /// The semantic tokens of the names that resolve to exactly one object, like tables,
+    /// columns, and functions, in the statements that overlap a range or the whole file.
+    fn pull_semantic_tokens(
+        &self,
+        params: PullSemanticTokensParams,
+    ) -> Result<PullSemanticTokensResult, WorkspaceError>;
+
+    /// Register a project folder, or return the key of the project already registered for it.
+    /// Every request about a file names the project that the file belongs to.
     fn register_project_folder(
         &self,
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError>;
 
-    /// Unregister a workspace project folder. The settings that belong to that project are deleted.
+    /// Unregister a project folder. Its settings, including the nested ones, are deleted.
     fn unregister_project_folder(
         &self,
         params: UnregisterProjectFolderParams,
     ) -> Result<(), WorkspaceError>;
 
-    /// Update the global settings for this workspace
+    /// Update the root settings of a project
     fn update_settings(&self, params: UpdateSettingsParams) -> Result<(), WorkspaceError>;
+
+    /// Replace the settings of the configuration files below the root of a project. A file uses
+    /// the settings of the deepest of them that contains it, or else the root settings.
+    fn update_nested_settings(
+        &self,
+        params: UpdateNestedSettingsParams,
+    ) -> Result<UpdateNestedSettingsResult, WorkspaceError>;
 
     /// Add a new file to the workspace
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError>;
@@ -200,7 +264,8 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
     /// Invalidate the schema cache.
     ///
     /// # Arguments
-    /// * `all` - If true, clears all cached schemas. If false, clears only the current connection's cache.
+    /// * `all` - If true, clears all cached schemas. If false, clears the schemas loaded from a
+    ///   database connection, but keeps one set from JSON.
     ///
     /// The schema will be reloaded lazily on the next operation that requires it.
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError>;
@@ -229,18 +294,30 @@ where
 /// automatically on drop
 pub struct FileGuard<'app, W: Workspace + ?Sized> {
     workspace: &'app W,
+    project_key: ProjectKey,
     path: PgLSPath,
 }
 
 impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
     pub fn open(workspace: &'app W, params: OpenFileParams) -> Result<Self, WorkspaceError> {
+        let project_key = params.project_key;
         let path = params.path.clone();
         workspace.open_file(params)?;
-        Ok(Self { workspace, path })
+        Ok(Self {
+            workspace,
+            project_key,
+            path,
+        })
+    }
+
+    /// The project that the file belongs to
+    pub fn project_key(&self) -> ProjectKey {
+        self.project_key
     }
 
     pub fn change_file(&self, version: i32, content: String) -> Result<(), WorkspaceError> {
         self.workspace.change_file(ChangeFileParams {
+            project_key: self.project_key,
             path: self.path.clone(),
             version,
             content,
@@ -249,6 +326,7 @@ impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
 
     pub fn get_file_content(&self) -> Result<String, WorkspaceError> {
         self.workspace.get_file_content(GetFileContentParams {
+            project_key: self.project_key,
             path: self.path.clone(),
         })
     }
@@ -262,6 +340,7 @@ impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
         self.workspace
             .pull_file_diagnostics(PullFileDiagnosticsParams {
+                project_key: self.project_key,
                 path: self.path.clone(),
                 categories,
                 max_diagnostics,
@@ -282,6 +361,7 @@ impl<W: Workspace + ?Sized> Drop for FileGuard<'_, W> {
     fn drop(&mut self) {
         self.workspace
             .close_file(CloseFileParams {
+                project_key: self.project_key,
                 path: self.path.clone(),
             })
             // `close_file` can only error if the file was already closed, in
@@ -295,6 +375,15 @@ new_key_type! {
     pub struct ProjectKey;
 }
 
+/// Identifies a project of the workspace. [ProjectKey] is serialized like this.
+#[cfg(feature = "schema")]
+#[derive(JsonSchema)]
+#[allow(dead_code)]
+struct SerializedProjectKey {
+    idx: u32,
+    version: u32,
+}
+
 #[cfg(feature = "schema")]
 impl JsonSchema for ProjectKey {
     fn schema_name() -> String {
@@ -302,7 +391,7 @@ impl JsonSchema for ProjectKey {
     }
 
     fn json_schema(generator: &mut SchemaGenerator) -> Schema {
-        <String>::json_schema(generator)
+        SerializedProjectKey::json_schema(generator)
     }
 }
 
