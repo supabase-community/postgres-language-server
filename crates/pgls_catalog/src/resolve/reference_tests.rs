@@ -367,6 +367,25 @@ async fn star_references(test_db: PgPool) {
     );
 }
 
+/// The rows of `INSERT ... VALUES` are resolved more than once, and each reference is only
+/// recorded once.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn references_are_recorded_once(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "insert into posts (id, user_id) values (pick(1), 2), (3, pick(4))"
+        ),
+        [
+            "posts => relation public.posts",
+            "pick => function public.pick(integer) <- i",
+            "pick => function public.pick(integer) <- i",
+        ]
+    );
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn references_are_only_collected_on_request(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
