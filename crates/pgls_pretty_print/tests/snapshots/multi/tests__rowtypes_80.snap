@@ -687,9 +687,7 @@ from
   )
   as r (a, b);
 
-with
-r (a, b)
-as materialized (
+with r (a, b) as materialized (
   values
     (1, row(1, 2)),
     (1, row(null, null)),
@@ -705,9 +703,7 @@ select
 from
   r;
 
-with
-r (a, b)
-as materialized (
+with r (a, b) as materialized (
   values
     (1, row(1, 2)),
     (1, row(null, null)),
