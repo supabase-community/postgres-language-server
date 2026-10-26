@@ -648,6 +648,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#expand" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Expand <code>*</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1310,6 +1321,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#expand" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Expand <code>*</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1360,6 +1382,14 @@
 <h2 id="inlay-hints">Inlay Hints<a class="headerlink" href="#inlay-hints" title="Permanent link">&para;</a></h2>
 <p>Function calls show the names of the parameters their positional arguments are passed to, as in <code>make_point(x: 1, y: 2)</code>. Hints are only shown when the call resolves to exactly one function, including functions created earlier in the same file. Named arguments (<code>f(a =&gt; 1)</code>), unnamed parameters, and arguments that already carry the parameter's name (<code>f(t.x)</code> for the parameter <code>x</code>) get no hint. Of the elements passed to a <code>VARIADIC</code> parameter, only the first is labelled.</p>
 <p>Inlay hints require a database connection. Enable them in your editor, e.g. with <code>editor.inlayHints.enabled</code> in VS Code.</p>
+<h2 id="expand">Expand <code>*</code><a class="headerlink" href="#expand" title="Permanent link">&para;</a></h2>
+<p>With the cursor on a <code>*</code> or <code>t.*</code> in a select list or <code>RETURNING</code> list, the refactor code action "Expand <code>*</code> into its columns" replaces it with the columns it stands for:</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+<span class="c1">-- becomes</span>
+<span class="k">select</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+</code></pre></div>
+<p>Columns are qualified with the name or alias of their table when there are several in <code>FROM</code>, and quoted where needed. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for joins with <code>USING</code> or <code>NATURAL</code>, tables whose columns are unknown, or sources with two columns of the same name.</p>
+<p>Like hover, it requires a database connection.</p>
 
 
 
