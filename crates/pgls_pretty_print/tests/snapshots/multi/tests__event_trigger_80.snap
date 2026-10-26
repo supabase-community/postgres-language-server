@@ -305,7 +305,10 @@ $$;
 
 create event trigger regress_event_trigger_drop_objects
 on sql_drop
-when tag in ('drop table', 'drop function', 'drop view', 'drop owned', 'drop schema', 'alter table')
+when tag in (
+  'drop table', 'drop function', 'drop view', 'drop owned', 'drop schema',
+  'alter table'
+)
 execute function test_evtrig_dropped_objects();
 
 alter table schema_one.table_one

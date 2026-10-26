@@ -166,10 +166,15 @@ select
 select xmlroot('<?xml version="1.1" standalone="yes"?><foo/>', version no value);
 
 select
-  xmlroot(xmlelement(name gazonk, xmlattributes(
-    'val' as name,
-    1 + 1 as num
-  ), xmlelement(name qux, 'foo')), version '1.0', standalone yes);
+  xmlroot(
+    xmlelement(
+      name gazonk,
+      xmlattributes('val' as name, 1 + 1 as num),
+      xmlelement(name qux, 'foo')
+    ),
+    version '1.0',
+    standalone yes
+  );
 
 select xmlserialize(content data as varchar(20)) from xmltest;
 
@@ -190,16 +195,28 @@ select xmlserialize(document '<foo>73</foo><bar><val x="y">42</val></bar>' as te
 select xmlserialize(content '<foo>73</foo><bar><val x="y">42</val></bar>' as text indent);
 
 select
-  xmlserialize(document 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as text indent);
+  xmlserialize(
+    document 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>'
+    as text indent
+  );
 
 select
-  xmlserialize(content 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as text indent);
+  xmlserialize(
+    content 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>'
+    as text indent
+  );
 
 select
-  xmlserialize(document '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as text indent);
+  xmlserialize(
+    document '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>'
+    as text indent
+  );
 
 select
-  xmlserialize(content '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as text indent);
+  xmlserialize(
+    content '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>'
+    as text indent
+  );
 
 select xmlserialize(document '' as text indent);
 
@@ -214,10 +231,16 @@ select xmlserialize(document null as text indent);
 select xmlserialize(content null as text indent);
 
 select
-  xmlserialize(document '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as text indent);
+  xmlserialize(
+    document '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>'
+    as text indent
+  );
 
 select
-  xmlserialize(content '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as text indent);
+  xmlserialize(
+    content '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>'
+    as text indent
+  );
 
 select xmlserialize(document '<!DOCTYPE a><a/>' as text indent);
 
@@ -418,10 +441,16 @@ END
 $$;
 
 select
-  xmlexists('//town[text() = ''Toronto'']' passing '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>');
+  xmlexists(
+    '//town[text() = ''Toronto'']'
+    passing '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+  );
 
 select
-  xmlexists('//town[text() = ''Cwmbran'']' passing '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>');
+  xmlexists(
+    '//town[text() = ''Cwmbran'']'
+    passing '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+  );
 
 select xmlexists('count(/nosuchtag)' passing '<root/>');
 
@@ -574,7 +603,9 @@ select xmlparse(document '<!DOCTYPE foo [<!ENTITY c SYSTEM "/etc/passwd">]><foo>
 select xmlparse(document '<!DOCTYPE foo [<!ENTITY c SYSTEM "/etc/no.such.file">]><foo>&c;</foo>');
 
 select
-  xmlparse(document '<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"><chapter>&nbsp;</chapter>');
+  xmlparse(
+    document '<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"><chapter>&nbsp;</chapter>'
+  );
 
 create table xmldata (data xml);
 
@@ -1078,16 +1109,15 @@ with x as (
 ),
 y as (
   select
-    xmlelement(name data, xmlagg(
-      xmlelement(name proc, xmlforest(
-        proname,
-        proowner,
-        procost,
-        pronargs,
-        proargnames,
-        proargtypes
-      ))
-    ))
+    xmlelement(
+      name data,
+      xmlagg(
+        xmlelement(
+          name proc,
+          xmlforest(proname, proowner, procost, pronargs, proargnames, proargtypes)
+        )
+      )
+    )
     as doc
   from
     x
