@@ -1637,8 +1637,10 @@ clauses to break between, so they follow the line width instead:</p>
 <p>With <code>layout: "expanded"</code>, a <code>CASE</code> expression puts every <code>WHEN</code> and <code>ELSE</code>
 on its own line, one indent level in from where <code>CASE</code> starts, <code>THEN</code> one
 level further in, and <code>END</code> back under <code>CASE</code>. This holds wherever the <code>CASE</code>
-starts, after a leading comma or <code>THEN</code> for instance. A <code>WHEN</code> condition that
-breaks continues one level in from <code>WHEN</code>:</p>
+starts, after a leading comma for instance. A <code>CASE</code> nested as the result of a
+<code>THEN</code> or <code>ELSE</code> is indented from that line instead, with <code>END</code> under <code>THEN</code> or
+<code>ELSE</code>, so that deep nesting doesn't run past the line width. A <code>WHEN</code>
+condition that breaks continues one level in from <code>WHEN</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">select</span>
 <span class="w">  </span><span class="n">id</span>
 <span class="w">  </span><span class="p">,</span><span class="w"> </span><span class="k">case</span>
