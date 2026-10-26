@@ -57,6 +57,20 @@ pub(crate) fn resolved_hoverable<'a>(
         })
 }
 
+/// The function that a call resolves to, for statements whose names the editor grammar doesn't
+/// classify, like `CALL`.
+pub(crate) fn resolved_function<'a>(
+    references: &[Reference],
+    snapshot: &'a Snapshot,
+) -> Option<Hoverable<'a>> {
+    references.iter().find_map(|reference| match reference {
+        Reference::Function { function, .. } => {
+            find_function(snapshot, function).map(Hoverable::Function)
+        }
+        _ => None,
+    })
+}
+
 /// Whether `position` is in the last part of the qualified name at `span`, like `name` in
 /// `u.name`, rather than in a qualifier.
 fn is_in_last_part(sql: &str, span: TextRange, position: TextSize) -> bool {

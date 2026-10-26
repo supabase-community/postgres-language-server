@@ -783,6 +783,21 @@ async fn test_table_hover_resolved_by_search_path(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_procedure_hover_in_call(test_db: PgPool) {
+    let setup = r#"
+        create procedure hover_proc(a int, b text) language sql as 'select 1';
+        create procedure hover_proc(a text) language sql as 'select 1';
+    "#;
+
+    let query = format!(
+        "call hover_p{}roc(1, 'x')",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("procedure_in_call", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_not_on_qualifier(test_db: PgPool) {
     let setup = r#"
         create table hover_users (id serial primary key, name text not null);

@@ -62,6 +62,11 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         NodeEnum::ExplainStmt(n) => resolve_explain_stmt(r, n),
         NodeEnum::DeclareCursorStmt(n) => resolve_declare_cursor_stmt(r, n),
         NodeEnum::CopyStmt(n) => resolve_copy_stmt(r, n),
+        NodeEnum::CallStmt(n) => {
+            if let Some(call) = &n.funccall {
+                super::expr::resolve_procedure_call(r, call);
+            }
+        }
         NodeEnum::ColumnRef(n) => resolve_column_ref(r, n),
         NodeEnum::FuncCall(n) => resolve_func_call(r, n),
         NodeEnum::TypeCast(n) => {
