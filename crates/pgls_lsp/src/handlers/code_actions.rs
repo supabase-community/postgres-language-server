@@ -6,6 +6,7 @@ use crate::{
 };
 use anyhow::{Result, anyhow};
 use pgls_analyse::{Applicability, SUPPRESSION_ACTION_CATEGORY};
+use tower_lsp_server::jsonrpc;
 use tower_lsp_server::ls_types::{
     self, CodeAction, CodeActionDisabled, CodeActionOrCommand, Command, ExecuteCommandParams,
     MessageType, WorkspaceEdit,
@@ -122,11 +123,14 @@ pub fn get_actions(
                     .diagnostics
                     .iter()
                     .filter(|diagnostic| {
-                        diagnostic.code == Some(ls_types::NumberOrString::String(edit.rule.clone()))
+                        edit.rule.as_ref().is_some_and(|rule| {
+                            diagnostic.code == Some(ls_types::NumberOrString::String(rule.clone()))
+                        })
                     })
                     .cloned()
                     .collect();
-                let is_suppression = edit.category.matches(SUPPRESSION_ACTION_CATEGORY);
+                let is_fix =
+                    edit.rule.is_some() && !edit.category.matches(SUPPRESSION_ACTION_CATEGORY);
 
                 Some(CodeAction {
                     title: action.title,
@@ -135,7 +139,7 @@ pub fn get_actions(
                     )),
                     diagnostics: (!diagnostics.is_empty()).then_some(diagnostics),
                     edit: Some(workspace_edit(session, &url, edits)),
-                    is_preferred: (!is_suppression && edit.applicability == Applicability::Always)
+                    is_preferred: (is_fix && edit.applicability == Applicability::Always)
                         .then_some(true),
                     disabled: action
                         .disabled_reason
@@ -269,6 +273,28 @@ pub fn command_id(command: &CommandActionCategory) -> String {
     }
 }
 
+/// The statement and the document that `pgls.executeStatement` gets from [`get_actions`].
+fn execute_statement_arguments(
+    arguments: &[serde_json::Value],
+) -> Result<(pgls_workspace::workspace::StatementId, ls_types::Uri), jsonrpc::Error> {
+    let invalid = |message: String| {
+        jsonrpc::Error::invalid_params(format!(
+            "Invalid arguments for pgls.executeStatement: {message}"
+        ))
+    };
+    let [statement_id, uri] = arguments else {
+        return Err(invalid(format!(
+            "expected a statement and a document URI, got {} arguments",
+            arguments.len()
+        )));
+    };
+    let statement_id = serde_json::from_value(statement_id.clone())
+        .map_err(|error| invalid(format!("the statement: {error}")))?;
+    let uri = serde_json::from_value(uri.clone())
+        .map_err(|error| invalid(format!("the document URI: {error}")))?;
+    Ok((statement_id, uri))
+}
+
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub async fn execute_command(
     session: &Session,
@@ -278,10 +304,7 @@ pub async fn execute_command(
 
     match command.as_str() {
         "pgls.executeStatement" => {
-            let statement_id = serde_json::from_value::<pgls_workspace::workspace::StatementId>(
-                params.arguments[0].clone(),
-            )?;
-            let doc_url: ls_types::Uri = serde_json::from_value(params.arguments[1].clone())?;
+            let (statement_id, doc_url) = execute_statement_arguments(&params.arguments)?;
 
             let path = session.file_path(&doc_url)?;
             let project_key = session.project_key(&path);
