@@ -12,8 +12,8 @@ ALTER TABLE authors ADD COLUMN email text;
 -- section: down
 UPDATE authors SET name = 'x';
 
--- Without a transaction, each statement releases its locks.
--- section: up transaction:false
+-- Without a transaction, each statement that is sent on its own releases its locks.
+-- section: up transaction:false queries:separate
 ALTER TABLE books ADD COLUMN isbn text;
 UPDATE books SET isbn = '';
 

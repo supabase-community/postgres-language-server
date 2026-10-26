@@ -190,9 +190,11 @@ fn sql_function_body(
 }
 
 /// The migration sections of the file, each starting at a `-- section: up` or
-/// `-- section: down transaction:false` line.
+/// `-- section: down transaction:false` line. Like dbmate, each section is sent to Postgres as
+/// one query, unless `queries:separate` follows, like goose without `StatementBegin`.
 fn migration_sections(query: &str) -> Vec<MigrationSection> {
     let mut sections: Vec<MigrationSection> = Vec::new();
+    let mut one_query = Vec::new();
     let mut offset = 0;
     for line in query.split_inclusive('\n') {
         let start = TextSize::from(offset as u32);
@@ -206,11 +208,15 @@ fn migration_sections(query: &str) -> Vec<MigrationSection> {
             Some("down") => Direction::Down,
             other => panic!("Unknown section direction `{other:?}`"),
         };
-        let transaction = match words.next() {
-            None => true,
-            Some("transaction:false") => false,
-            Some(other) => panic!("Unknown section option `{other}`"),
-        };
+        let mut transaction = true;
+        let mut separate = false;
+        for option in words {
+            match option {
+                "transaction:false" => transaction = false,
+                "queries:separate" => separate = true,
+                other => panic!("Unknown section option `{other}`"),
+            }
+        }
         if let Some(previous) = sections.last_mut() {
             previous.range = TextRange::new(previous.range.start(), start);
         }
@@ -218,7 +224,14 @@ fn migration_sections(query: &str) -> Vec<MigrationSection> {
             range: TextRange::new(start, TextSize::from(query.len() as u32)),
             direction,
             transaction,
+            queries: Vec::new(),
         });
+        one_query.push(!separate);
+    }
+    for (section, one_query) in sections.iter_mut().zip(one_query) {
+        if one_query {
+            section.queries = vec![section.range];
+        }
     }
     sections
 }

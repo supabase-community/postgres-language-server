@@ -49,10 +49,10 @@ pub enum SectionMarkers {
     #[default]
     None,
     /// `-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section
-    /// without a transaction.
+    /// without a transaction, but still as one query.
     Dbmate,
     /// `-- +goose Up` and `-- +goose Down` of goose. `-- +goose NO TRANSACTION` runs the file
-    /// without a transaction.
+    /// without a transaction, statement by statement.
     Goose,
 }
 
