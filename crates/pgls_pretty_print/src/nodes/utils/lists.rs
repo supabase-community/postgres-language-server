@@ -35,7 +35,7 @@ pub(crate) fn emit_list_comma(
     // points into it, such as the operator of `a + 1`.
     let next_location = next
         .and_then(|node| node.node.as_ref())
-        .and_then(crate::comments::first_node_location);
+        .and_then(|node| crate::comments::first_node_location(node.to_ref()));
     if let Some(location) = next_location {
         e.take_comments_before_keyword_at(location, ",");
     }

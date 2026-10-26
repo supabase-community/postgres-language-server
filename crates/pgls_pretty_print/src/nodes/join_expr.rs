@@ -17,6 +17,13 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
     }
 
     if n.larg.is_some() {
+        // A join may start with any of these, and is written with the ones its type needs.
+        if let Some(ref rarg) = n.rarg {
+            for keyword in ["natural", "inner", "left", "right", "full", "cross", "join"] {
+                emit_comments_before_keyword(e, keyword, rarg);
+            }
+        }
+
         if matches!(e.config().layout, crate::Layout::Expanded) {
             // A hard break makes every soft line in the current group break too. Close the left
             // operand's group before emitting it so the joined table and qualification can still
@@ -116,6 +123,7 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
             emit_identifier_maybe_quoted(e, &using_alias.aliasname);
         }
     } else if let Some(ref quals) = n.quals {
+        emit_comments_before_keyword(e, "on", quals);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();

@@ -7,7 +7,7 @@ pub(super) fn emit_a_expr(e: &mut EventEmitter, n: &AExpr) {
         .lexpr
         .as_ref()
         .and_then(|node| node.node.as_ref())
-        .and_then(crate::comments::first_node_location)
+        .and_then(|node| crate::comments::first_node_location(node.to_ref()))
     {
         e.take_leading_comments_at(location);
     }

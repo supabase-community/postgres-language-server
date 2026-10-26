@@ -32,6 +32,13 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             }
 
             // Emit set operation keyword
+            if let Some(location) = n.rarg.as_deref().and_then(|rarg| {
+                crate::comments::first_node_location(pgls_query::NodeRef::SelectStmt(rarg))
+            }) {
+                for keyword in ["union", "intersect", "except"] {
+                    e.take_comments_before_keyword_at(location, keyword);
+                }
+            }
             e.line(LineType::SoftOrSpace);
             match n.op() {
                 SetOperation::SetopUnion => e.token(TokenKind::UNION_KW),
@@ -63,7 +70,8 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             }
 
             // Emit ORDER BY clause if present on the set operation
-            if !n.sort_clause.is_empty() {
+            if let Some(first) = n.sort_clause.first() {
+                emit_comments_before_keyword(e, "order", first);
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::ORDER_KW);
                 e.space();
@@ -78,6 +86,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             match n.limit_option() {
                 LimitOption::WithTies => {
                     if let Some(ref offset) = n.limit_offset {
+                        emit_comments_before_keyword(e, "offset", offset);
                         e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::OFFSET_KW);
                         e.space();
@@ -87,6 +96,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                     }
 
                     if let Some(ref limit) = n.limit_count {
+                        emit_comments_before_keyword(e, "fetch", limit);
                         e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::FETCH_KW);
                         e.space();
@@ -103,6 +113,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                 }
                 _ => {
                     if let Some(ref offset) = n.limit_offset {
+                        emit_comments_before_keyword(e, "offset", offset);
                         e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::OFFSET_KW);
                         e.space();
@@ -110,6 +121,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                     }
 
                     if let Some(ref limit) = n.limit_count {
+                        emit_comments_before_limit(e, limit);
                         e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::LIMIT_KW);
                         e.space();
@@ -211,7 +223,8 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             super::emit_into_clause(e, into_clause);
         }
 
-        if !n.from_clause.is_empty() {
+        if let Some(first) = n.from_clause.first() {
+            emit_comments_before_keyword(e, "from", first);
             emit_layout_break(e);
             e.token(TokenKind::FROM_KW);
 
@@ -230,13 +243,15 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
         }
 
         if let Some(ref where_clause) = n.where_clause {
+            emit_comments_before_keyword(e, "where", where_clause);
             emit_layout_break(e);
             e.token(TokenKind::WHERE_KW);
             emit_clause_condition(e, where_clause);
         }
 
         // Emit GROUP BY clause if present
-        if !n.group_clause.is_empty() {
+        if let Some(first) = n.group_clause.first() {
+            emit_comments_before_keyword(e, "group", first);
             emit_layout_break(e);
             e.token(TokenKind::GROUP_KW);
             e.space();
@@ -254,13 +269,15 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
 
         // Emit HAVING clause if present
         if let Some(ref having_clause) = n.having_clause {
+            emit_comments_before_keyword(e, "having", having_clause);
             emit_layout_break(e);
             e.token(TokenKind::HAVING_KW);
             emit_clause_condition(e, having_clause);
         }
 
         // Emit WINDOW clause if present
-        if !n.window_clause.is_empty() {
+        if let Some(first) = n.window_clause.first() {
+            emit_comments_before_keyword(e, "window", first);
             emit_layout_break(e);
             e.token(TokenKind::WINDOW_KW);
             match e.config().clause_body_style {
@@ -285,7 +302,8 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
     }
 
     // ORDER BY, LIMIT and locking follow a select list and a VALUES list alike.
-    if !n.sort_clause.is_empty() {
+    if let Some(first) = n.sort_clause.first() {
+        emit_comments_before_keyword(e, "order", first);
         emit_layout_break(e);
         e.token(TokenKind::ORDER_KW);
         e.space();
@@ -299,6 +317,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
     match n.limit_option() {
         LimitOption::WithTies => {
             if let Some(ref limit_offset) = n.limit_offset {
+                emit_comments_before_keyword(e, "offset", limit_offset);
                 emit_layout_break(e);
                 e.token(TokenKind::OFFSET_KW);
                 e.space();
@@ -308,6 +327,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             }
 
             if let Some(ref limit_count) = n.limit_count {
+                emit_comments_before_keyword(e, "fetch", limit_count);
                 emit_layout_break(e);
                 e.token(TokenKind::FETCH_KW);
                 e.space();
@@ -324,6 +344,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
         }
         _ => {
             if let Some(ref limit_count) = n.limit_count {
+                emit_comments_before_limit(e, limit_count);
                 emit_layout_break(e);
                 e.token(TokenKind::LIMIT_KW);
                 e.space();
@@ -331,6 +352,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             }
 
             if let Some(ref limit_offset) = n.limit_offset {
+                emit_comments_before_keyword(e, "offset", limit_offset);
                 emit_layout_break(e);
                 e.token(TokenKind::OFFSET_KW);
                 e.space();
@@ -352,6 +374,12 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
     e.group_end();
 }
 
+/// Emits the comments written before `LIMIT`, or before `FETCH FIRST`, which is written as `LIMIT`.
+fn emit_comments_before_limit(e: &mut EventEmitter, limit_count: &Node) {
+    emit_comments_before_keyword(e, "limit", limit_count);
+    emit_comments_before_keyword(e, "fetch", limit_count);
+}
+
 /// Removes the line comments written after `row`, which are attached to its last value, so that
 /// they can be emitted after the row. Between two rows, they follow the comma.
 fn take_comments_after_row(
@@ -362,7 +390,7 @@ fn take_comments_after_row(
     let Some(location) = row
         .node
         .as_ref()
-        .and_then(crate::comments::last_node_location)
+        .and_then(|node| crate::comments::last_node_location(node.to_ref()))
     else {
         return Vec::new();
     };
