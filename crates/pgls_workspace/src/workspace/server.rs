@@ -1578,8 +1578,15 @@ impl Workspace for WorkspaceServer {
         let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
         let mut formatted_sql_fn_bodies = HashMap::new();
 
-        // Only format SQL function bodies if skip_fn_bodies is false
+        // Only format SQL function bodies if skip_fn_bodies is false. A body with several
+        // statements is left as written.
         if !settings.formatter.skip_fn_bodies {
+            let mut statements_per_body: HashMap<StatementId, usize> = HashMap::new();
+            for (id, ..) in &format_candidates {
+                if let Some(parent_id) = id.parent() {
+                    *statements_per_body.entry(parent_id).or_default() += 1;
+                }
+            }
             for (id, _stmt_range, text, ast_result) in &format_candidates {
                 if !id.is_child() {
                     continue;
@@ -1588,6 +1595,10 @@ impl Workspace for WorkspaceServer {
                 let Some(parent_id) = id.parent() else {
                     continue;
                 };
+
+                if statements_per_body.get(&parent_id) != Some(&1) {
+                    continue;
+                }
 
                 let Ok(ast) = ast_result else {
                     continue;

@@ -1626,6 +1626,16 @@ async fn test_format_keeps_formatted_sql_function_body_as_written() {
 }
 
 #[tokio::test]
+async fn test_format_keeps_sql_function_body_with_several_statements_as_written() {
+    let content = "create function f() returns int language sql as $$\n  insert into t values (1);\n  SELECT   1;\n$$;";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $$\n  insert into t values (1);\n  SELECT   1;\n$$;"
+    );
+}
+
+#[tokio::test]
 async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     let content = "create function f() returns int language sql as $body$SELECT   1$body$;";
     let formatted = format_content(content);
@@ -3004,9 +3014,15 @@ impl TestProject {
         fs: &DynRef<'_, dyn FileSystem>,
         search: NestedConfigurationSearch,
     ) -> (Vec<PathBuf>, Option<IncompleteSearch>) {
-        let nested =
-            apply_nested_configurations(&*self.workspace, fs, self.project_key, search, |c| c)
-                .unwrap();
+        let nested = apply_nested_configurations(
+            &*self.workspace,
+            fs,
+            self.project_key,
+            search,
+            None,
+            |c| c,
+        )
+        .unwrap();
         let directories = nested
             .configurations
             .into_iter()
@@ -3034,6 +3050,7 @@ impl TestProject {
             fs,
             self.project_key,
             NestedConfigurationSearch::new(root),
+            None,
             |configuration| configuration,
         )
         .unwrap()
@@ -3375,6 +3392,7 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
         &fs,
         project.project_key,
         NestedConfigurationSearch::new("/repo"),
+        None,
         |configuration| configuration,
     )
     .unwrap()
