@@ -1,12 +1,3 @@
-macro_rules! assert_node_variant {
-    ($variant:ident, $expr:expr) => {
-        match $expr.node.as_ref() {
-            Some(pgls_query::NodeEnum::$variant(inner)) => inner,
-            other => panic!("Expected {}, got {:?}", stringify!($variant), other),
-        }
-    };
-}
-
 pub(crate) mod clauses;
 mod prelude;
 mod utils;

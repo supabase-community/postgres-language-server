@@ -64,7 +64,10 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
                 e.line(LineType::Soft);
                 e.indent_start();
                 emit_comma_separated_list(e, &clause.target_list, |emitter, node| {
-                    let target = assert_node_variant!(ResTarget, node);
+                    let Some(NodeEnum::ResTarget(target)) = node.node.as_ref() else {
+                        emit_node(emitter, node);
+                        return;
+                    };
                     if !target.name.is_empty() {
                         emit_identifier_maybe_quoted(emitter, &target.name);
                     }

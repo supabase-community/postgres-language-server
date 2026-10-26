@@ -37,7 +37,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                 SetOperation::SetopUnion => e.token(TokenKind::UNION_KW),
                 SetOperation::SetopIntersect => e.token(TokenKind::INTERSECT_KW),
                 SetOperation::SetopExcept => e.token(TokenKind::EXCEPT_KW),
-                _ => unreachable!(),
+                SetOperation::SetopNone | SetOperation::Undefined => {}
             }
 
             // Emit ALL keyword if present

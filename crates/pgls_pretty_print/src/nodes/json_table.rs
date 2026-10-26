@@ -30,7 +30,10 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
         e.token(TokenKind::PASSING_KW);
         e.space();
         emit_comma_separated_list(e, &n.passing, |e, node| {
-            let argument = assert_node_variant!(JsonArgument, node);
+            let Some(NodeEnum::JsonArgument(argument)) = node.node.as_ref() else {
+                emit_node(e, node);
+                return;
+            };
             super::emit_json_argument(e, argument);
         });
     }
