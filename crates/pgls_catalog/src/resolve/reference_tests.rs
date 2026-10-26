@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use sqlx::{Executor, PgPool};
 
-use super::{ColumnSource, Reference, ResolveParams, resolve};
+use super::{ColumnSource, FunctionContext, FunctionParam, Reference, ResolveParams, resolve};
 use crate::{
     Catalog, CatalogBase, Snapshot,
     typing::{Type, format_type},
@@ -19,6 +19,10 @@ const SETUP: &str = r#"
         language sql as 'select greeting || name';
     create function amb(a int, b text) returns int language sql as 'select 1';
     create function amb(c text, d int) returns int language sql as 'select 1';
+    create type mood as enum ('happy', 'sad');
+    create table people (id int8, current mood);
+    create function cheer(m mood) returns mood language sql as 'select m';
+    create function cheer_all(variadic moods mood[]) returns int language sql as 'select 1';
 "#;
 
 async fn catalog(test_db: &PgPool) -> (Catalog, Vec<String>) {
@@ -31,6 +35,16 @@ async fn catalog(test_db: &PgPool) -> (Catalog, Vec<String>) {
 
 /// The references of `sql`, each as the referencing text and what it resolves to.
 fn references(catalog: &Catalog, search_path: &[String], sql: &str) -> Vec<String> {
+    function_references_in(catalog, search_path, sql, None)
+}
+
+/// The references of `sql` as the body of `function`.
+fn function_references_in(
+    catalog: &Catalog,
+    search_path: &[String],
+    sql: &str,
+    function: Option<&FunctionContext>,
+) -> Vec<String> {
     let stmt = pgls_query::parse(sql)
         .expect("valid sql")
         .into_root()
@@ -39,7 +53,7 @@ fn references(catalog: &Catalog, search_path: &[String], sql: &str) -> Vec<Strin
         stmt: &stmt,
         catalog,
         search_path,
-        function: None,
+        function,
         sql: Some(sql),
         collect_references: true,
     });
@@ -111,6 +125,13 @@ fn references(catalog: &Catalog, search_path: &[String], sql: &str) -> Vec<Strin
                 Reference::Relation { relation, .. } => {
                     format!("relation {}.{}", relation.schema, relation.name)
                 }
+                Reference::Type { type_info, .. } => {
+                    format!("type {}.{}", type_info.schema, type_info.name)
+                }
+                Reference::Parameter { index, .. } => format!("parameter {index}"),
+                Reference::EnumLiteral { type_info, .. } => {
+                    format!("enum literal {}.{}", type_info.schema, type_info.name)
+                }
                 Reference::Star { columns, .. } => {
                     let columns = columns
                         .iter()
@@ -143,6 +164,7 @@ async fn function_references(test_db: PgPool) {
             "select pick(1), public.pick('a'::text)"
         ),
         [
+            "text => type pg_catalog.text",
             "pick => function public.pick(integer) <- i",
             "public.pick => function public.pick(text) <- t",
         ]
@@ -382,6 +404,141 @@ async fn references_are_recorded_once(test_db: PgPool) {
             "posts => relation public.posts",
             "pick => function public.pick(integer) <- i",
             "pick => function public.pick(integer) <- i",
+        ]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn type_references(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "select 1::int, cast(2 as pg_catalog.int8), '{}'::text[], 'sad'::mood, x::nope"
+        ),
+        [
+            "int => type pg_catalog.int4",
+            "pg_catalog.int8 => type pg_catalog.int8",
+            "text => type pg_catalog.text",
+            "mood => type public.mood",
+            "'sad' => enum literal public.mood",
+        ]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn enum_literal_references(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "select id from people where current = 'happy' or 'sad' <> current \
+             or current in ('happy', 'sad') or current between 'happy' and 'sad' \
+             or current is distinct from 'sad' or nullif(current, 'sad') is null"
+        ),
+        [
+            "people => relation public.people",
+            "id => column public.people.id: bigint (int8)",
+            "current => column public.people.current: public.mood (mood)",
+            "current => column public.people.current: public.mood (mood)",
+            "current => column public.people.current: public.mood (mood)",
+            "current => column public.people.current: public.mood (mood)",
+            "current => column public.people.current: public.mood (mood)",
+            "current => column public.people.current: public.mood (mood)",
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+        ]
+    );
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "insert into people (current) values ('happy'), ('sad')"
+        ),
+        [
+            "people => relation public.people",
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+        ]
+    );
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "update people set current = 'sad' where id = 1"
+        ),
+        [
+            "people => relation public.people",
+            "'sad' => enum literal public.mood",
+            "id => column public.people.id: bigint (int8)",
+        ]
+    );
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "select cheer('happy'), cheer_all('happy', 'sad')"
+        ),
+        [
+            "'happy' => enum literal public.mood",
+            "cheer => function public.cheer(public.mood) <- m",
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+            "cheer_all => function public.cheer_all(public.mood[]) <- moods, moods",
+        ]
+    );
+    // Literals that are not coerced to an enum are no enum literals.
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "select 'happy', current::text = 'happy' from people"
+        ),
+        [
+            "people => relation public.people",
+            "current => column public.people.current: public.mood (mood)",
+            "text => type pg_catalog.text",
+        ]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn parameter_references(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let param = |name: &str| FunctionParam {
+        name: Some(name.to_owned()),
+        type_schema: None,
+        type_name: "int8".to_owned(),
+        is_array: false,
+    };
+    let function = FunctionContext {
+        function_name: "lookup".to_owned(),
+        params: vec![param("user_id"), param("name")],
+    };
+    assert_eq!(
+        function_references_in(
+            &catalog,
+            &search_path,
+            "select title from posts where user_id = $1 or id = lookup.user_id or id = name",
+            Some(&function),
+        ),
+        [
+            "posts => relation public.posts",
+            "title => column public.posts.title: text (text)",
+            "user_id => column public.posts.user_id: bigint (int8)",
+            "$1 => parameter 0",
+            "id => column public.posts.id: bigint (int8)",
+            "lookup.user_id => parameter 0",
+            "id => column public.posts.id: bigint (int8)",
+            "name => parameter 1",
         ]
     );
 }

@@ -21,6 +21,6 @@ lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━�
 ## Fix (unsafe): Add CONCURRENTLY
 ```
 -- expect_lint/requireConcurrentReindex
-reindex (verbose) table CONCURRENTLY users;
+reindex (verbose) table concurrently users;
 
 ```

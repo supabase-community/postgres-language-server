@@ -45,6 +45,6 @@ drop index events_created_at_idx;
 create table users (id bigint, email text);
 create index users_email_idx on users (email);
 -- expect_lint/requireConcurrentIndexDeletion
-drop index CONCURRENTLY users_email_idx;
+drop index concurrently users_email_idx;
 
 ```

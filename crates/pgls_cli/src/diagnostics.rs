@@ -496,7 +496,25 @@ pub struct StdinDiagnostic {}
 pub struct FormatDiffDiagnostic {
     pub file_name: String,
     pub diff: TextEdit,
+    /// The zero-based line the diff starts at.
     pub start_line: u32,
+    /// Whether the diff covers one statement rather than the whole file.
+    pub statement: bool,
+}
+
+impl FormatDiffDiagnostic {
+    /// The header names the line, because a diff of a single line is printed without line
+    /// numbers, and in a large file it couldn't be found otherwise.
+    fn message_text(&self) -> String {
+        if self.statement {
+            format!(
+                "Statement at line {} could be formatted using `--write`",
+                self.start_line + 1
+            )
+        } else {
+            "File could be formatted using `--write`".to_string()
+        }
+    }
 }
 
 impl Diagnostic for FormatDiffDiagnostic {
@@ -515,11 +533,11 @@ impl Diagnostic for FormatDiffDiagnostic {
     }
 
     fn description(&self, fmt: &mut Formatter<'_>) -> fmt::Result {
-        write!(fmt, "Statement could be formatted using `--write`")
+        fmt.write_str(&self.message_text())
     }
 
     fn message(&self, fmt: &mut pgls_console::fmt::Formatter<'_>) -> std::io::Result<()> {
-        fmt.write_str("Statement could be formatted using `--write`")
+        fmt.write_str(&self.message_text())
     }
 
     fn advices(&self, visitor: &mut dyn Visit) -> std::io::Result<()> {

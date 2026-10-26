@@ -46,7 +46,7 @@ use pgls_workspace_macros::ignored_path;
 use snapshot_manager::SnapshotManager;
 #[cfg(feature = "db")]
 use sqlx::Executor;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use crate::{
     WorkspaceError,
@@ -65,6 +65,7 @@ use crate::{
         format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
         inlay_hints::{InlayHint, PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
+        semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
     workspace::{AnalyserDiagnosticsMapper, WithCSTandASTMapper},
@@ -396,19 +397,9 @@ impl WorkspaceServer {
         position: TextSize,
     ) -> Vec<CodeAction> {
         // Code actions are requested whenever the cursor moves, so don't resolve the file unless
-        // there is a `*` on the line.
+        // the cursor is on a `*` of a select list.
         let content = doc.get_document_content();
-        let bytes = content.as_bytes();
-        let offset = usize::from(position).min(bytes.len());
-        let line_start = bytes[..offset]
-            .iter()
-            .rposition(|byte| *byte == b'\n')
-            .map_or(0, |i| i + 1);
-        let line_end = bytes[offset..]
-            .iter()
-            .position(|byte| *byte == b'\n')
-            .map_or(bytes.len(), |i| offset + i);
-        if !bytes[line_start..line_end].contains(&b'*') {
+        if !expand_star::is_at_star(content, position) {
             return Vec::new();
         }
 
@@ -1109,6 +1100,7 @@ impl Workspace for WorkspaceServer {
 
         let mut fixes_applied = 0;
         let mut skipped_suggested_fixes = 0;
+        let mut converged = false;
         for _ in 0..MAX_PASSES {
             let doc = Document::new(code.clone(), 0);
             let diagnostics =
@@ -1144,10 +1136,17 @@ impl Workspace for WorkspaceServer {
                 applied += 1;
             }
             if applied == 0 {
+                converged = true;
                 break;
             }
             code = combined.apply(&code);
             fixes_applied += applied;
+        }
+        if !converged {
+            warn!(
+                path = ?params.path,
+                "Fixes still changed the file after {MAX_PASSES} passes, some may be left"
+            );
         }
 
         Ok(FixFileResult {
@@ -1891,6 +1890,90 @@ impl Workspace for WorkspaceServer {
 
         hints.sort_by_key(|hint| hint.offset);
         Ok(PullInlayHintsResult { hints })
+    }
+
+    #[ignored_path(project=params.project_key, path=&params.path)]
+    #[tracing::instrument(level = "debug", skip_all, fields(
+        path = params.path.as_os_str().to_str(),
+        range = ?params.range
+    ), err)]
+    fn pull_semantic_tokens(
+        &self,
+        params: PullSemanticTokensParams,
+    ) -> Result<PullSemanticTokensResult, WorkspaceError> {
+        let documents = self.documents.read().unwrap();
+        let doc = documents
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+
+        let settings = self.workspaces();
+        let settings = settings.settings_for(params.project_key, params.path.as_path());
+
+        #[cfg(feature = "db")]
+        let Some(snapshot) = settings
+            .and_then(|settings| {
+                self.connection
+                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+            })
+            .transpose()?
+        else {
+            tracing::debug!("No database connection available. Skipping semantic tokens.");
+            return Ok(PullSemanticTokensResult::default());
+        };
+
+        #[cfg(not(feature = "db"))]
+        let Some(snapshot) = self.snapshot.get() else {
+            tracing::debug!("No schema loaded. Skipping semantic tokens.");
+            return Ok(PullSemanticTokensResult::default());
+        };
+
+        let range = params
+            .range
+            .unwrap_or_else(|| TextRange::up_to(TextSize::of(doc.get_document_content())));
+        let mut tokens = Vec::new();
+        self.walk_statements(
+            settings,
+            doc,
+            &snapshot,
+            range.end(),
+            |stmt, catalog, session| {
+                let Some(sql) = stmt.sql.as_deref() else {
+                    return;
+                };
+                if stmt.range.intersect(range).is_none() {
+                    return;
+                }
+                tokens.extend(
+                    pgls_semantic_tokens::semantic_tokens(
+                        pgls_semantic_tokens::SemanticTokensParams {
+                            stmt: &stmt.root,
+                            sql,
+                            catalog,
+                            search_path: session.search_path(),
+                            function: stmt.function.as_ref(),
+                        },
+                    )
+                    .into_iter()
+                    .map(|token| SemanticToken {
+                        range: token.range + stmt.range.start(),
+                        kind: token.kind.into(),
+                        default_library: token.default_library,
+                    }),
+                );
+            },
+        );
+
+        // The body of a SQL function is a statement of its own, inside its `CREATE FUNCTION`.
+        tokens.sort_by_key(|token| (token.range.start(), token.range.end()));
+        let mut end = TextSize::default();
+        tokens.retain(|token| {
+            let keep = token.range.start() >= end;
+            if keep {
+                end = token.range.end();
+            }
+            keep
+        });
+        Ok(PullSemanticTokensResult { tokens })
     }
 }
 

@@ -20,5 +20,5 @@ lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━�
 ## Fix (unsafe): Add CONCURRENTLY
 ```
 -- expect_lint/requireConcurrentReindex
-reindex index CONCURRENTLY my_index;
+reindex index concurrently my_index;
 ```
