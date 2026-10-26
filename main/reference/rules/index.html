@@ -1334,6 +1334,7 @@
 <ul>
 <li>✅ The rule is part of the recommended preset.</li>
 <li>🛠 The rule only runs on files inside the configured <code>migrations.migrationsDir</code>.</li>
+<li>🔧 The rule can fix the issues it reports. Its page says whether the fix is safe.</li>
 <li>🔌 The rule needs a database connection.</li>
 </ul>
 <h2 id="correctness">Correctness<a class="headerlink" href="#correctness" title="Permanent link">&para;</a></h2>
@@ -1355,7 +1356,7 @@
 <td>Concurrent index operations are not allowed within a transaction.</td>
 </tr>
 <tr>
-<td><a href=".././rules/ban-duplicate-column-assignments/">banDuplicateColumnAssignments</a> ✅</td>
+<td><a href=".././rules/ban-duplicate-column-assignments/">banDuplicateColumnAssignments</a> ✅ 🔧</td>
 <td>A column is assigned or declared more than once.</td>
 </tr>
 <tr>
@@ -1363,11 +1364,11 @@
 <td>Statements that Postgres can't run inside a transaction block.</td>
 </tr>
 <tr>
-<td><a href=".././rules/ban-uncommitted-transaction/">banUncommittedTransaction</a> ✅ 🛠</td>
+<td><a href=".././rules/ban-uncommitted-transaction/">banUncommittedTransaction</a> ✅ 🛠 🔧</td>
 <td>A transaction is started but never committed or rolled back.</td>
 </tr>
 <tr>
-<td><a href=".././rules/identifier-too-long/">identifierTooLong</a> ✅</td>
+<td><a href=".././rules/identifier-too-long/">identifierTooLong</a> ✅ 🔧</td>
 <td>Identifiers longer than 63 bytes are silently truncated.</td>
 </tr>
 <tr>
@@ -1559,7 +1560,7 @@
 <td><code>VACUUM FULL</code> rewrites the entire table and acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
 </tr>
 <tr>
-<td><a href=".././rules/constraint-missing-not-valid/">constraintMissingNotValid</a> 🛠</td>
+<td><a href=".././rules/constraint-missing-not-valid/">constraintMissingNotValid</a> 🛠 🔧</td>
 <td>Adding constraints without NOT VALID blocks all reads and writes.</td>
 </tr>
 <tr>
@@ -1575,7 +1576,7 @@
 <td>Multiple ALTER TABLE statements on the same table should be combined into a single statement.</td>
 </tr>
 <tr>
-<td><a href=".././rules/prefer-robust-stmts/">preferRobustStmts</a> 🛠</td>
+<td><a href=".././rules/prefer-robust-stmts/">preferRobustStmts</a> 🛠 🔧</td>
 <td>Prefer statements with guards for robustness in migrations.</td>
 </tr>
 <tr>
@@ -1583,19 +1584,19 @@
 <td>Detaching a partition without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
 </tr>
 <tr>
-<td><a href=".././rules/require-concurrent-index-creation/">requireConcurrentIndexCreation</a> 🛠</td>
+<td><a href=".././rules/require-concurrent-index-creation/">requireConcurrentIndexCreation</a> 🛠 🔧</td>
 <td>Creating indexes non-concurrently can lock the table for writes.</td>
 </tr>
 <tr>
-<td><a href=".././rules/require-concurrent-index-deletion/">requireConcurrentIndexDeletion</a> 🛠</td>
+<td><a href=".././rules/require-concurrent-index-deletion/">requireConcurrentIndexDeletion</a> 🛠 🔧</td>
 <td>Dropping indexes non-concurrently can lock the table for reads.</td>
 </tr>
 <tr>
-<td><a href=".././rules/require-concurrent-refresh-matview/">requireConcurrentRefreshMatview</a> ✅ 🛠</td>
+<td><a href=".././rules/require-concurrent-refresh-matview/">requireConcurrentRefreshMatview</a> ✅ 🛠 🔧</td>
 <td><code>REFRESH MATERIALIZED VIEW</code> without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
 </tr>
 <tr>
-<td><a href=".././rules/require-concurrent-reindex/">requireConcurrentReindex</a> ✅ 🛠</td>
+<td><a href=".././rules/require-concurrent-reindex/">requireConcurrentReindex</a> ✅ 🛠 🔧</td>
 <td><code>REINDEX</code> without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock on the table.</td>
 </tr>
 <tr>
@@ -1627,7 +1628,7 @@
 </thead>
 <tbody>
 <tr>
-<td><a href=".././rules/ban-char-field/">banCharField</a></td>
+<td><a href=".././rules/ban-char-field/">banCharField</a> 🔧</td>
 <td>Using CHAR(n) or CHARACTER(n) types is discouraged.</td>
 </tr>
 <tr>
@@ -1643,15 +1644,15 @@
 <td>Prefer using IDENTITY columns over serial columns.</td>
 </tr>
 <tr>
-<td><a href=".././rules/prefer-jsonb/">preferJsonb</a></td>
+<td><a href=".././rules/prefer-jsonb/">preferJsonb</a> 🔧</td>
 <td>Prefer JSONB over JSON types.</td>
 </tr>
 <tr>
-<td><a href=".././rules/prefer-text-field/">preferTextField</a></td>
+<td><a href=".././rules/prefer-text-field/">preferTextField</a> 🔧</td>
 <td>Prefer using TEXT over VARCHAR(n) types.</td>
 </tr>
 <tr>
-<td><a href=".././rules/prefer-timestamptz/">preferTimestamptz</a></td>
+<td><a href=".././rules/prefer-timestamptz/">preferTimestamptz</a> 🔧</td>
 <td>Prefer TIMESTAMPTZ over TIMESTAMP types.</td>
 </tr>
 <tr>

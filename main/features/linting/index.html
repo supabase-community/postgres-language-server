@@ -1397,7 +1397,7 @@ postgres-language-server<span class="w"> </span>check<span class="w"> </span>mig
 <h2 id="autofix">Autofix<a class="headerlink" href="#autofix" title="Permanent link">&para;</a></h2>
 <p>Some rules can fix the issues they report. The fixes come in two kinds:</p>
 <ul>
-<li><strong>Safe</strong> fixes only do what the rule asks for, e.g. add <code>CONCURRENTLY</code> to <code>CREATE INDEX</code>. They are left out where Postgres would reject them. <code>CONCURRENTLY</code> can't run in a transaction block or in a function body, so the safe fix only adds it where the statement surely runs outside a transaction: in a migration section without a transaction (<code>-- migrate:up transaction:false</code> for dbmate, if the statement is the only one of the section, or <code>-- +goose NO TRANSACTION</code> for goose, see <a href="../../guides/checking_migrations/">Checking migrations</a>). Without section markers, we don't know whether the migration tool runs a file in a transaction. Migration tools usually do, so a file with more than one statement gets no fix, and adding <code>CONCURRENTLY</code> to a file with a single statement is an unsafe fix. It is never added on partitioned tables and system catalogs, which Postgres can't process concurrently.</li>
+<li><strong>Safe</strong> fixes only do what the rule asks for, e.g. add <code>CONCURRENTLY</code> to <code>REINDEX</code> (<code>requireConcurrentReindex</code>). They are left out where Postgres would reject them. <code>CONCURRENTLY</code> can't run in a transaction block or in a function body, so the safe fix only adds it where the statement surely runs outside a transaction: in a migration section without a transaction (<code>-- migrate:up transaction:false</code> for dbmate, if the statement is the only one of the section, or <code>-- +goose NO TRANSACTION</code> for goose, see <a href="../../guides/checking_migrations/">Checking migrations</a>). Without section markers, we don't know whether the migration tool runs a file in a transaction. Migration tools usually do, so a file with more than one statement gets no fix, and adding <code>CONCURRENTLY</code> to a file with a single statement is an unsafe fix. It is never added on partitioned tables and system catalogs, which Postgres can't process concurrently.</li>
 <li><strong>Unsafe</strong> fixes may change what a statement does, e.g. swap the type of a column or add <code>NOT VALID</code> to a constraint. Review them before applying them.</li>
 </ul>
 <p>In the editor, the fixes are offered as quick fixes on the diagnostic, next to a quick fix that suppresses the rule for the statement with a <code>-- pgls-ignore &lt;rule&gt;</code> comment.</p>
@@ -1412,7 +1412,17 @@ postgres-language-server<span class="w"> </span>check<span class="w"> </span>mig
 <div class="highlight"><pre><span></span><code>postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>migrations/
 postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>--unsafe<span class="w"> </span>migrations/
 </code></pre></div>
-<p>The documentation of each rule says whether it has a fix and whether the fix is safe.</p>
+<p>The <a href="../../reference/rules/">rules reference</a> marks the rules with a fix with 🔧, and the page of each rule says whether its fix is safe. Most rules with fixes, like <code>requireConcurrentIndexCreation</code>, <code>preferRobustStmts</code> or <code>preferTimestamptz</code>, aren't in the recommended preset (✅), so enable them first:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"linter"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"rules"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"requireConcurrentIndexCreation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"warn"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"requireConcurrentIndexDeletion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"warn"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Rules marked 🛠 in the reference, like the <code>CONCURRENTLY</code> rules, only run on files in <code>migrations.migrationsDir</code> if it is set.</p>
 
 
 
