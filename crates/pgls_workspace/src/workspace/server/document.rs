@@ -687,8 +687,8 @@ $$ LANGUAGE plpgsql;";
         assert_eq!(results.len(), 2);
 
         // Check the function body
-        let (_id, _range, ast, _cst) = &results[1];
-        assert_eq!(_id.content(), "SELECT $1 + $2;");
+        let (id, _range, ast, _cst) = &results[1];
+        assert_eq!(id.content(), "SELECT $1 + $2;");
         assert!(ast.is_some());
     }
 

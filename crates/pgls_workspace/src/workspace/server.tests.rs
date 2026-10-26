@@ -2890,6 +2890,21 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
 }
 
 #[test]
+fn test_section_marker_problems_are_reported() {
+    let content =
+        "create table t (id int);\n-- migrate:up\nselect 1;\n-- Migrate:Down\nselect 2;\n";
+    let categories = migration_diagnostics(SectionMarkers::Dbmate, None, content);
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "migrations/sectionMarkers")
+            .count(),
+        2,
+        "{categories:?}"
+    );
+}
+
+#[test]
 fn test_non_transactional_statement_in_a_function_body() {
     // A function runs in the transaction of the statement that calls it.
     let categories = migration_diagnostics(
