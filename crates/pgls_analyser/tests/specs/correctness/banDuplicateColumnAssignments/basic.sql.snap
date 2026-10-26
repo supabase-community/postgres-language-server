@@ -10,7 +10,7 @@ update users set name = 'a', name = 'b';
 ```
 
 # Diagnostics
-lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/banDuplicateColumnAssignments  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Multiple assignments to column name.
   

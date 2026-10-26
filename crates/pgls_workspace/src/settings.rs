@@ -785,9 +785,19 @@ impl DatabaseSettings {
         }
 
         let host = &self.host;
+        let port = self.port;
         let database = &self.database;
+        // A pattern can't name the port of an IPv6 address, see `pattern_names_port`.
+        let (target, pattern) = if host.contains(':') {
+            (format!("[{host}]:{port}/{database}"), format!("{host}/*"))
+        } else {
+            (
+                format!("{host}:{port}/{database}"),
+                format!("{host}:{port}/*"),
+            )
+        };
         let mut reason = format!(
-            "Statement execution is disabled for `{host}/{database}`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"{host}/*\"]."
+            "Statement execution is disabled for `{target}`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"{pattern}\"]."
         );
         if !self.invalid_statement_execution_patterns.is_empty() {
             let patterns = self
@@ -840,7 +850,7 @@ impl Default for DatabaseSettings {
             password: None,
             database: "postgres".to_string(),
             conn_timeout_secs: Duration::from_secs(10),
-            allow_statement_executions: true,
+            allow_statement_executions: false,
             invalid_statement_execution_patterns: Vec::new(),
             connection_string_error: None,
         }
@@ -903,8 +913,10 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
             && connection_string_error.is_none();
 
         // An invalid pattern is ignored rather than failing the whole configuration; the reason a
-        // statement cannot be executed names it.
+        // statement cannot be executed names it. A pattern that names a port only matches that
+        // port, any other pattern matches every port.
         let target = format!("{host}/{database}");
+        let target_with_port = format!("{host}:{port}/{database}");
         let mut allow_statement_executions = false;
         let mut invalid_statement_execution_patterns = Vec::new();
         for pattern in value
@@ -913,7 +925,14 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
             .flat_map(|set| set.iter())
         {
             match Glob::new(pattern) {
-                Ok(glob) => allow_statement_executions |= glob.compile_matcher().is_match(&target),
+                Ok(glob) => {
+                    let target = if pattern_names_port(pattern) {
+                        &target_with_port
+                    } else {
+                        &target
+                    };
+                    allow_statement_executions |= glob.compile_matcher().is_match(target);
+                }
                 Err(err) => {
                     warn!(
                         "Ignoring invalid pattern `{pattern}` in `db.allowStatementExecutionsAgainst`: {err}"
@@ -944,6 +963,14 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
             connection_string_error,
         }
     }
+}
+
+/// Whether a pattern of `db.allowStatementExecutionsAgainst` names a port, as `localhost:54322/*`
+/// does. That is the case if its host, the part before the first `/`, has exactly one `:`, so a
+/// pattern for an IPv6 address like `::1/*` names no port.
+fn pattern_names_port(pattern: &str) -> bool {
+    let host = pattern.split('/').next().unwrap_or(pattern);
+    host.matches(':').count() == 1
 }
 
 /// Parses `db.connectionString`. The error says why it is invalid without repeating it, as it may
@@ -1220,7 +1247,7 @@ mod tests {
         assert_eq!(
             config.statement_execution_disabled_reason().as_deref(),
             Some(
-                "Statement execution is disabled for `production/test-db`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"production/*\"]."
+                "Statement execution is disabled for `production:5432/test-db`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"production:5432/*\"]."
             )
         );
     }
@@ -1344,5 +1371,90 @@ mod tests {
         let config = DatabaseSettings::from(partial_config);
         assert!(!config.enable_connection);
         assert_eq!(config.connection_string_error, None);
+    }
+
+    fn allows(patterns: &[&str], host: &str, port: u16, database: &str) -> bool {
+        DatabaseSettings::from(PartialDatabaseConfiguration {
+            allow_statement_executions_against: Some(StringSet::from_iter(
+                patterns.iter().map(|pattern| pattern.to_string()),
+            )),
+            host: Some(host.into()),
+            port: Some(port),
+            database: Some(database.into()),
+            ..Default::default()
+        })
+        .allow_statement_executions
+    }
+
+    #[test]
+    fn patterns_with_a_port_only_match_that_port() {
+        assert!(allows(
+            &["127.0.0.1:54322/*"],
+            "127.0.0.1",
+            54322,
+            "postgres"
+        ));
+        assert!(!allows(
+            &["127.0.0.1:54322/*"],
+            "127.0.0.1",
+            5432,
+            "postgres"
+        ));
+        assert!(allows(&["localhost:*/dev"], "localhost", 6543, "dev"));
+        assert!(!allows(&["localhost:*/dev"], "localhost", 6543, "prod"));
+        assert!(allows(&["*:5432/*"], "db.internal", 5432, "app"));
+    }
+
+    #[test]
+    fn patterns_without_a_port_match_every_port() {
+        assert!(allows(&["localhost/*"], "localhost", 5432, "postgres"));
+        assert!(allows(&["localhost/*"], "localhost", 15432, "postgres"));
+        assert!(allows(&["*"], "production", 5432, "postgres"));
+        assert!(allows(&["::1/*"], "::1", 5432, "postgres"));
+    }
+
+    #[test]
+    fn disabled_reason_suggests_a_pattern_with_the_port() {
+        let config = DatabaseSettings::from(PartialDatabaseConfiguration {
+            host: Some("::1".into()),
+            port: Some(5433),
+            database: Some("postgres".into()),
+            ..Default::default()
+        });
+
+        assert_eq!(
+            config.statement_execution_disabled_reason().as_deref(),
+            Some(
+                "Statement execution is disabled for `[::1]:5433/postgres`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"::1/*\"]."
+            )
+        );
+    }
+
+    #[cfg(feature = "db")]
+    #[test]
+    fn connection_string_port_is_matched() {
+        let allows = |connection_string: &str| {
+            DatabaseSettings::from(PartialDatabaseConfiguration {
+                connection_string: Some(connection_string.to_string()),
+                allow_statement_executions_against: Some(StringSet::from_iter([String::from(
+                    "localhost:54322/*",
+                )])),
+                ..Default::default()
+            })
+            .allow_statement_executions
+        };
+
+        assert!(allows(
+            "postgres://postgres:postgres@localhost:54322/postgres"
+        ));
+        // A production database reached through a tunnel on another local port.
+        assert!(!allows(
+            "postgres://postgres:postgres@localhost:15432/postgres"
+        ));
+    }
+
+    #[test]
+    fn statement_executions_are_disallowed_by_default() {
+        assert!(!DatabaseSettings::default().allow_statement_executions);
     }
 }

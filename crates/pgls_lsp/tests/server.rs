@@ -1581,8 +1581,8 @@ async fn invalid_connection_string_warns_instead_of_crashing() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-async fn test_execute_statement(test_db: PgPool) -> Result<()> {
+/// A server whose configuration allows executing statements against `test_db`.
+fn statement_execution_server(test_db: &PgPool) -> Server {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
 
@@ -1617,10 +1617,76 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
         .into_inner();
 
     let (stream, sink) = client.split();
-    let mut server = Server::new(service);
+    let server = Server::new(service);
 
     let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+}
+
+/// Runs the `pgls.executeStatement` command of the statement at `position`.
+async fn execute_statement_at(
+    server: &mut Server,
+    doc_url: &Uri,
+    position: Position,
+) -> Result<Option<Value>> {
+    let code_actions_response = server
+        .request::<CodeActionParams, CodeActionResponse>(
+            "textDocument/codeAction",
+            "_code_action",
+            CodeActionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: doc_url.clone(),
+                },
+                range: Range {
+                    start: position,
+                    end: position,
+                },
+                context: CodeActionContext::default(),
+                partial_result_params: PartialResultParams::default(),
+                work_done_progress_params: WorkDoneProgressParams::default(),
+            },
+        )
+        .await?
+        .unwrap();
+
+    let exec_statement_command: (String, Vec<Value>) = code_actions_response
+        .iter()
+        .find_map(|action_or_cmd| match action_or_cmd {
+            lsp::CodeActionOrCommand::CodeAction(code_action) => {
+                let command = code_action.command.as_ref();
+                if command.is_some_and(|cmd| &cmd.command == "pgls.executeStatement") {
+                    let command = command.unwrap();
+                    let arguments = command.arguments.as_ref().unwrap().clone();
+                    Some((command.command.clone(), arguments))
+                } else {
+                    None
+                }
+            }
+
+            _ => None,
+        })
+        .expect("Did not find executeStatement command!");
+
+    let result = server
+        .request::<ExecuteCommandParams, Option<Value>>(
+            "workspace/executeCommand",
+            "_execStmt",
+            ExecuteCommandParams {
+                command: exec_statement_command.0,
+                arguments: exec_statement_command.1,
+                ..Default::default()
+            },
+        )
+        .await?;
+
+    Ok(result.flatten())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_execute_statement(test_db: PgPool) -> Result<()> {
+    let mut server = statement_execution_server(&test_db);
 
     server.initialize().await?;
     server.initialized().await?;
@@ -1661,65 +1727,18 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
         .open_named_document(doc_content.to_string(), doc_url.clone(), "sql")
         .await?;
 
-    let code_actions_response = server
-        .request::<CodeActionParams, CodeActionResponse>(
-            "textDocument/codeAction",
-            "_code_action",
-            CodeActionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: doc_url.clone(),
-                },
-                range: Range {
-                    start: Position::new(3, 7),
-                    end: Position::new(3, 7),
-                }, // just somewhere within the statement.
-                context: CodeActionContext::default(),
-                partial_result_params: PartialResultParams::default(),
-                work_done_progress_params: WorkDoneProgressParams::default(),
-            },
-        )
-        .await?
-        .unwrap();
-
-    let exec_statement_command: (String, Vec<Value>) = code_actions_response
-        .iter()
-        .find_map(|action_or_cmd| match action_or_cmd {
-            lsp::CodeActionOrCommand::CodeAction(code_action) => {
-                let command = code_action.command.as_ref();
-                if command.is_some_and(|cmd| &cmd.command == "pgls.executeStatement") {
-                    let command = command.unwrap();
-                    let arguments = command.arguments.as_ref().unwrap().clone();
-                    Some((command.command.clone(), arguments))
-                } else {
-                    None
-                }
-            }
-
-            _ => None,
-        })
-        .expect("Did not find executeStatement command!");
-
-    let result = server
-        .request::<ExecuteCommandParams, Option<Value>>(
-            "workspace/executeCommand",
-            "_execStmt",
-            ExecuteCommandParams {
-                command: exec_statement_command.0,
-                arguments: exec_statement_command.1,
-                ..Default::default()
-            },
-        )
-        .await?;
+    // Just somewhere within the statement.
+    let result = execute_statement_at(&mut server, &doc_url, Position::new(3, 7)).await?;
 
     assert_eq!(
         result,
-        Some(Some(json!({
+        Some(json!({
             "message": "Successfully executed statement. Rows affected: 0",
             "columns": [],
             "rows": [],
             "truncated": false,
             "rowsAffected": 0,
-        })))
+        }))
     );
 
     assert!(
@@ -1728,7 +1747,55 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     );
 
     server.shutdown().await?;
-    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_returns_the_postgres_error_at_its_position(
+    test_db: PgPool,
+) -> Result<()> {
+    let mut server = statement_execution_server(&test_db);
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    let doc_url = url!("test.sql");
+    server
+        .open_named_document(
+            "select 1;\nselect 'ä' as a, missing_column from pg_class;\n",
+            doc_url.clone(),
+            "sql",
+        )
+        .await?;
+
+    let result = execute_statement_at(&mut server, &doc_url, Position::new(1, 3)).await?;
+
+    // The position counts UTF-16 code units, the default position encoding.
+    assert_eq!(
+        result,
+        Some(json!({
+            "message": "Statement failed: column \"missing_column\" does not exist",
+            "columns": [],
+            "rows": [],
+            "truncated": false,
+            "error": {
+                "message": "column \"missing_column\" does not exist",
+                "code": "42703",
+                "position": { "line": 1, "character": 17 },
+            },
+        }))
+    );
+
+    // The error does not take the database offline.
+    let result = execute_statement_at(&mut server, &doc_url, Position::new(0, 3)).await?;
+    assert_eq!(
+        result.as_ref().and_then(|result| result.get("rows")),
+        Some(&json!([["1"]]))
+    );
+
+    server.shutdown().await?;
 
     Ok(())
 }

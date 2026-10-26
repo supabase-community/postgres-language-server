@@ -62,7 +62,7 @@ lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━�
   
 
 
-lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireConcurrentReindex  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × REINDEX without CONCURRENTLY blocks all table access.
   

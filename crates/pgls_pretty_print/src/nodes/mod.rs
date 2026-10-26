@@ -587,6 +587,27 @@ pub(super) fn emit_with_comments_at(
     e.take_trailing_comments_at(location);
 }
 
+/// Opens the argument list of a call whose arguments the emitter writes itself: `(`, and when the
+/// call doesn't fit, a break and one more level of indent.
+pub(super) fn open_call_arguments(e: &mut EventEmitter) {
+    use crate::TokenKind;
+    use crate::emitter::LineType;
+
+    e.token(TokenKind::L_PAREN);
+    e.indent_start();
+    e.line(LineType::Soft);
+}
+
+/// Closes an argument list opened with `open_call_arguments`, with `)` back on the call's indent.
+pub(super) fn close_call_arguments(e: &mut EventEmitter) {
+    use crate::TokenKind;
+    use crate::emitter::LineType;
+
+    e.indent_end();
+    e.line(LineType::Soft);
+    e.token(TokenKind::R_PAREN);
+}
+
 /// Emits the comments written before `keyword` whose node is `node`, the expression the parent
 /// writes after the keyword. Call it right before the break that precedes the keyword.
 ///

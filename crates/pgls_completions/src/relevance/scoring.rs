@@ -76,7 +76,9 @@ impl CompletionScore<'_> {
             (Some(_), Some(_)) => name.clone(),
 
             // If only one qualifier is written out, we might look at a schema, a table, or an alias.
-            (None, Some(qualifier)) => {
+            (None, Some(_)) => {
+                let qualifier = ctx.tail_qualifier_sanitized().unwrap_or_default();
+                let qualifier = qualifier.as_str();
                 if self.get_schema_name().is_some_and(|s| s == qualifier) {
                     self.get_table_name()
                         .map(|t| format!("{t}.{name}"))
@@ -443,7 +445,7 @@ impl CompletionScore<'_> {
                     set.iter().any(|mentioned| match mentioned.alias.as_ref() {
                         Some(als) => {
                             let aliased_table = ctx.get_mentioned_table_for_alias(als.as_str());
-                            column.name == mentioned.column.replace('"', "")
+                            column.name == mentioned.column
                                 && aliased_table.is_none_or(|t| t == &column.table_name)
                         }
                         None => mentioned.column == column.name,

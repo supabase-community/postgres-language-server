@@ -178,7 +178,7 @@ Some tools that the Postgres Language Server provides are implemented as mere in
     "password": "postgres",
     "database": "postgres",
     "connTimeoutSecs": 10,
-    "allowStatementExecutionsAgainst": ["127.0.0.1/*", "localhost/*"]
+    "allowStatementExecutionsAgainst": ["127.0.0.1:5432/*", "localhost:5432/*"]
   }
 }
 ```
@@ -191,7 +191,7 @@ individual fields. The URI takes precedence over any other connection fields.
 {
   "db": {
     "connectionString": "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable",
-    "allowStatementExecutionsAgainst": ["localhost/*"]
+    "allowStatementExecutionsAgainst": ["localhost:5432/*"]
   }
 }
 ```

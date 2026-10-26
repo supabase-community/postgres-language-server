@@ -67,7 +67,12 @@ pub struct TraversalData {
     pub unchanged: usize,
     pub matches: usize,
     pub skipped: usize,
+    /// The unsafe fixes that `--fix` didn't apply.
     pub suggested_fixes_skipped: u32,
+    /// The diagnostics with a fix, among those reported.
+    pub fixable_diagnostics: u32,
+    /// Whether the command writes files, e.g. with `--fix`.
+    pub writes: bool,
     pub diagnostics_not_printed: u32,
     pub workspace_root: Option<PathBuf>,
 }

@@ -13,7 +13,7 @@ create table posts (id bigint);
 ```
 
 # Diagnostics
-lint/banUncommittedTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/banUncommittedTransaction  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Transaction is never committed or rolled back.
   
