@@ -44,12 +44,20 @@ impl Default for RenderConfig {
     }
 }
 
+/// The column continuation lines align with, from `AlignStart`.
+struct Alignment {
+    column: usize,
+    /// The indent level when the alignment started.
+    indent_level: usize,
+}
+
 pub struct Renderer<W: Write> {
     config: RenderConfig,
     writer: W,
     current_line_length: usize,
     indent_level: usize,
-    alignment_offsets: Vec<usize>,
+    /// Open alignments, innermost last.
+    alignments: Vec<Alignment>,
     at_line_start: bool,
     /// A space written after the last text. It is only written out once more text follows on the
     /// same line, so a line never ends in whitespace.
@@ -63,7 +71,7 @@ impl<W: Write> Renderer<W> {
             writer,
             current_line_length: 0,
             indent_level: 0,
-            alignment_offsets: Vec::new(),
+            alignments: Vec::new(),
             at_line_start: true,
             pending_space: false,
         }
@@ -116,7 +124,7 @@ impl<W: Write> Renderer<W> {
                     i += 1;
                 }
                 LayoutEvent::AlignEnd => {
-                    self.alignment_offsets.pop();
+                    self.alignments.pop();
                     i += 1;
                 }
             }
@@ -185,16 +193,25 @@ impl<W: Write> Renderer<W> {
         }
     }
 
+    /// Continuation lines start at the column of the innermost alignment, plus one indent for
+    /// every level opened since. Without an alignment they start at the indent level.
     fn indentation_width(&self) -> usize {
-        self.indent_level * self.config.indent_size
-            + self.alignment_offsets.last().copied().unwrap_or(0)
+        let indent = self.indent_level * self.config.indent_size;
+        match self.alignments.last() {
+            Some(alignment) => (alignment.column + indent)
+                .saturating_sub(alignment.indent_level * self.config.indent_size),
+            None => indent,
+        }
     }
 
+    /// The column is kept with the indent level it was taken at, not as an offset from that
+    /// level's indent: the text on the line can start left of it, `select case` with the select
+    /// list already one level in for instance.
     fn start_alignment(&mut self) {
-        let offset = self
-            .effective_line_length()
-            .saturating_sub(self.indent_level * self.config.indent_size);
-        self.alignment_offsets.push(offset);
+        self.alignments.push(Alignment {
+            column: self.effective_line_length(),
+            indent_level: self.indent_level,
+        });
     }
 
     fn render_events_with_breaks(
@@ -262,7 +279,7 @@ impl<W: Write> Renderer<W> {
                     i += 1;
                 }
                 LayoutEvent::AlignEnd => {
-                    self.alignment_offsets.pop();
+                    self.alignments.pop();
                     i += 1;
                 }
             }
@@ -465,11 +482,17 @@ impl<W: Write> Renderer<W> {
                 self.current_line_length += spaces.len();
                 spaces
             }
+            // One tab per indent level and spaces for the rest of an alignment. The columns only
+            // line up when the editor's tab width equals `indent_size`.
             IndentStyle::Tabs => {
-                let tabs = "\t".repeat(self.indent_level)
-                    + &" ".repeat(self.alignment_offsets.last().copied().unwrap_or(0));
-                self.current_line_length += self.indentation_width();
-                tabs
+                let width = self.indentation_width();
+                let tabs = match self.config.indent_size {
+                    0 => self.indent_level,
+                    size => self.indent_level.min(width / size),
+                };
+                let spaces = width - tabs * self.config.indent_size;
+                self.current_line_length += width;
+                "\t".repeat(tabs) + &" ".repeat(spaces)
             }
         };
         write!(self.writer, "{indent_str}")?;
