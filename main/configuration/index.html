@@ -458,10 +458,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#sharing-configuration-with-extends" class="md-nav__link">
+  <a href="#sharing-settings-with-extends" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Sharing configuration with <code>extends</code>
+        Sharing settings with <code>extends</code>
       </span>
     </span>
   </a>
@@ -484,17 +484,6 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Nested configurations / monorepos
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#sharing-settings-with-extends" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Sharing settings with <code>extends</code>
       </span>
     </span>
   </a>
@@ -1531,10 +1520,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#sharing-configuration-with-extends" class="md-nav__link">
+  <a href="#sharing-settings-with-extends" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Sharing configuration with <code>extends</code>
+        Sharing settings with <code>extends</code>
       </span>
     </span>
   </a>
@@ -1557,17 +1546,6 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Nested configurations / monorepos
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#sharing-settings-with-extends" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Sharing settings with <code>extends</code>
       </span>
     </span>
   </a>
@@ -1772,7 +1750,7 @@
 <h2 id="where-the-configuration-is-loaded-from">Where the configuration is loaded from<a class="headerlink" href="#where-the-configuration-is-loaded-from" title="Permanent link">&para;</a></h2>
 <p>The configuration is resolved in this order, and the first match wins:</p>
 <ol>
-<li>The path passed with <code>--config-path</code> or <code>PGLS_CONFIG_PATH</code>, or the configuration path set in your editor. Not finding a configuration file there is an error.</li>
+<li>The path passed with <code>--config-path</code>, or the configuration path set in your editor. The language server (<code>lsp-proxy</code>, <code>start</code>) also reads it from <code>PGLS_CONFIG_PATH</code>; <code>check</code> and <code>format</code> only take <code>--config-path</code>. Not finding a configuration file there is an error.</li>
 <li>A <code>postgres-language-server.jsonc</code> (or the deprecated <code>postgrestools.jsonc</code>) in the project directory or any of its parent directories. The project directory is the working directory of the CLI, or the workspace folder in an editor.</li>
 <li>The user configuration, a <code>postgres-language-server.jsonc</code> in your configuration directory:</li>
 </ol>
@@ -1803,8 +1781,17 @@
 </ol>
 <p>The user configuration is only a fallback for projects without a configuration file. It is never merged into a project configuration. To share settings between projects and the user configuration, extend it explicitly from the project configuration (see below).</p>
 <p>The user configuration applies to the project as if it were placed in the project directory: globs in <code>files</code> and the VCS settings are resolved against the project. Relative paths in its <code>extends</code> are resolved against its own directory.</p>
-<h2 id="sharing-configuration-with-extends">Sharing configuration with <code>extends</code><a class="headerlink" href="#sharing-configuration-with-extends" title="Permanent link">&para;</a></h2>
-<p><code>extends</code> lists configuration files to inherit from. They are applied from left to right, and the settings of the file that declares <code>extends</code> take precedence over all of them.</p>
+<h2 id="sharing-settings-with-extends">Sharing settings with <code>extends</code><a class="headerlink" href="#sharing-settings-with-extends" title="Permanent link">&para;</a></h2>
+<p><code>extends</code> lists configuration files to inherit from, for example to share the linter setup between several projects of a monorepo. They are applied from left to right, so a later file overrides an earlier one, and the settings of the file that declares <code>extends</code> take precedence over all of them.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"$schema"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://pg-language-server.com/latest/schema.json"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"../postgres-language-server.base.jsonc"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"db"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"database"</span><span class="p">:</span><span class="w"> </span><span class="s2">"billing"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The entries can point at files in different places:</p>
 <div class="highlight"><pre><span></span><code>{
   "extends": [
     // relative to this file
@@ -1817,7 +1804,7 @@
 }
 </code></pre></div>
 <ul>
-<li>Entries starting with <code>~/</code> (or <code>~\</code> on Windows) are resolved against your home directory. This works on every platform, so a project can extend your user configuration with the same path on macOS and Linux.</li>
+<li>Entries starting with <code>~/</code> (or <code>~\</code> on Windows) are resolved against your home directory. This works on every platform, so a project can extend your user configuration with the same path on macOS and Linux. Only your own home directory is supported: <code>~user/</code> is not expanded.</li>
 <li>Entries starting with <code>.</code> or ending in <code>.jsonc</code> are resolved relative to the directory of the configuration file that declares them. Absolute paths are used as they are.</li>
 <li>Any other entry is resolved as a package, like <code>require</code> would in Node.js.</li>
 </ul>
@@ -1859,7 +1846,7 @@ individual fields. The URI takes precedence over any other connection fields.</p
         └── schema.sql
 </code></pre></div>
 <p>The language server finds the configuration files below each workspace folder when it starts, and reloads them when one is created, changed, or deleted, or when a workspace folder is added or removed. Each workspace folder is a project of its own, so a file belongs to the deepest workspace folder that contains it. The <code>check</code> and <code>format</code> commands use the configuration files below the working directory: the ones in the folders between the working directory and each path they check, and the ones below the folders they check.</p>
-<p>A nested configuration file inherits nothing from the configuration files above it: settings it does not set have their defaults. To share settings, extend the parent configuration explicitly; the nested file's own settings take precedence:</p>
+<p>A nested configuration file inherits nothing from the configuration files above it: settings it does not set have their defaults. To share settings, <a href="#sharing-settings-with-extends">extend</a> the parent configuration explicitly; the nested file's own settings take precedence:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"../../postgres-language-server.jsonc"</span><span class="p">],</span>
 <span class="w">  </span><span class="nt">"db"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1878,17 +1865,6 @@ individual fields. The URI takes precedence over any other connection fields.</p
 <li>When a configuration file is passed explicitly with <code>--config-path</code>, it applies to all files and nested configuration files are not looked up.</li>
 <li><code>dblint</code> uses the configuration of the working directory.</li>
 </ul>
-<h2 id="sharing-settings-with-extends">Sharing settings with <code>extends</code><a class="headerlink" href="#sharing-settings-with-extends" title="Permanent link">&para;</a></h2>
-<p><code>extends</code> lists other configuration files whose settings apply to this one, for example to share the linter setup between several projects of a monorepo:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"$schema"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://pg-language-server.com/latest/schema.json"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"../postgres-language-server.base.jsonc"</span><span class="p">],</span>
-<span class="w">  </span><span class="nt">"db"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"database"</span><span class="p">:</span><span class="w"> </span><span class="s2">"billing"</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>Paths that start with <code>.</code> or end in <code>.jsonc</code> are resolved relative to the configuration file. The files are applied from left to right, so a later file overrides an earlier one, and the settings of the configuration file itself take precedence over all of them.</p>
 <h2 id="specifying-files-to-process">Specifying files to process<a class="headerlink" href="#specifying-files-to-process" title="Permanent link">&para;</a></h2>
 <p>You can control the files/folders to process using different strategies, either CLI, configuration and VCS.</p>
 <h3 id="include-files-via-cli">Include files via CLI<a class="headerlink" href="#include-files-via-cli" title="Permanent link">&para;</a></h3>
