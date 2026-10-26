@@ -22,11 +22,12 @@ use pgls_workspace::workspace::{
     ProjectKey, RegisterProjectFolderParams, UnregisterProjectFolderParams, UpdateSettingsParams,
 };
 use pgls_workspace::{DynRef, WorkspaceError};
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::OnceLock;
 use std::sync::RwLock;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::{AtomicBool, AtomicU8};
@@ -37,7 +38,8 @@ use tokio::task::{AbortHandle, spawn_blocking};
 use tower_lsp_server::ls_types::Uri;
 use tower_lsp_server::ls_types::{self, ClientCapabilities};
 use tower_lsp_server::ls_types::{
-    DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, WatchKind,
+    DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, OneOf,
+    RelativePattern, WatchKind,
 };
 use tower_lsp_server::ls_types::{MessageType, Registration};
 use tower_lsp_server::ls_types::{Unregistration, WorkspaceFolder};
@@ -116,9 +118,18 @@ pub(crate) struct Session {
     /// one for the root. A document belongs to the project of the deepest folder that contains it.
     projects: RwLock<Vec<(PathBuf, ProjectKey)>>,
 
+    /// The project of the files outside every workspace folder, once one was opened.
+    folderless_project: OnceLock<ProjectKey>,
+
     /// The files settings of the root configuration of each project, by its folder. They decide
     /// which folders are searched for nested configuration files.
     root_files: parking_lot::RwLock<FxHashMap<PathBuf, Option<Arc<FilesSettings>>>>,
+
+    /// The files the configuration was loaded from besides the nested configuration files: the
+    /// root configuration files, which can be above a workspace folder or the user
+    /// configuration, and the files they and the nested ones extend. Changing one of them
+    /// reloads the configuration.
+    configuration_files: parking_lot::RwLock<FxHashSet<PathBuf>>,
 
     /// Whether a reload for changed configuration files is scheduled and hasn't started yet.
     reload_scheduled: AtomicBool,
@@ -250,7 +261,9 @@ impl Session {
             client_overrides: RwLock::new(ClientOverrides::default()),
             workspace_folders: RwLock::default(),
             projects: RwLock::default(),
+            folderless_project: OnceLock::new(),
             root_files: parking_lot::RwLock::default(),
+            configuration_files: parking_lot::RwLock::default(),
             reload_scheduled: AtomicBool::new(false),
             configuration_transition: tokio::sync::Mutex::new(()),
             #[cfg(test)]
@@ -314,39 +327,99 @@ impl Session {
             },
         );
 
+        let watchers = self.configuration_watchers();
         capabilities.add_capability(
             "pgls_did_change_workspace_settings",
             "workspace/didChangeWatchedFiles",
-            match self.base_path() {
-                Some(base_path) => {
-                    // Configuration files below the root apply to their directories.
-                    let watchers = ConfigName::file_names()
-                        .iter()
-                        .map(|config_name| FileSystemWatcher {
-                            glob_pattern: GlobPattern::String(format!(
-                                "{}/**/{}",
-                                base_path.display(),
-                                config_name
-                            )),
-                            kind: Some(WatchKind::all()),
-                        })
-                        .collect();
-
-                    CapabilityStatus::Enable(Some(json!(
-                        DidChangeWatchedFilesRegistrationOptions { watchers }
-                    )))
-                }
-                _ => CapabilityStatus::Disable,
+            if watchers.is_empty() {
+                CapabilityStatus::Disable
+            } else {
+                CapabilityStatus::Enable(Some(json!(DidChangeWatchedFilesRegistrationOptions {
+                    watchers
+                })))
             },
         );
 
         self.register_capabilities(capabilities).await;
     }
 
+    /// The watchers for the files the configuration comes from: the configuration files below
+    /// each workspace folder (or the root), the explicit configuration file, the user
+    /// configuration, and the files the loaded configuration files extend.
+    fn configuration_watchers(&self) -> Vec<FileSystemWatcher> {
+        let relative_patterns = self
+            .client_capabilities()
+            .and_then(|capabilities| capabilities.workspace.as_ref())
+            .and_then(|workspace| workspace.did_change_watched_files)
+            .and_then(|watched_files| watched_files.relative_pattern_support)
+            == Some(true);
+        let watcher = |folder: &Path, pattern: &str| {
+            let glob_pattern = match Uri::from_file_path(folder).filter(|_| relative_patterns) {
+                Some(base_uri) => GlobPattern::Relative(RelativePattern {
+                    base_uri: OneOf::Right(base_uri),
+                    pattern: pattern.to_string(),
+                }),
+                None => GlobPattern::String(format!("{}/{pattern}", escape_glob(folder))),
+            };
+            FileSystemWatcher {
+                glob_pattern,
+                kind: Some(WatchKind::all()),
+            }
+        };
+
+        let folders = match &self.config_path {
+            // A configuration file chosen by the user applies to everything.
+            Some(_) => Vec::new(),
+            None => self
+                .get_workspace_folders()
+                .or_else(|| self.base_path().map(|base_path| vec![base_path]))
+                .unwrap_or_default(),
+        };
+        let mut watchers: Vec<_> = folders
+            .iter()
+            .flat_map(|folder| {
+                ConfigName::file_names()
+                    .into_iter()
+                    .map(move |file_name| watcher(folder, &format!("**/{file_name}")))
+            })
+            .collect();
+
+        let mut files: Vec<PathBuf> =
+            self.configuration_files
+                .read()
+                .iter()
+                .cloned()
+                .chain(self.config_path.iter().map(
+                    |config_path| match self.fs.working_directory() {
+                        Some(working_directory) if config_path.is_relative() => {
+                            working_directory.join(config_path)
+                        }
+                        _ => config_path.clone(),
+                    },
+                ))
+                .chain(
+                    self.fs
+                        .user_config_directories()
+                        .into_iter()
+                        .map(|directory| directory.join(ConfigName::pgls_jsonc())),
+                )
+                .collect();
+        files.sort();
+        files.dedup();
+        watchers.extend(files.iter().filter_map(|file| {
+            let file_name = file.file_name()?.to_str()?;
+            Some(watcher(file.parent()?, &escape_glob(Path::new(file_name))))
+        }));
+        watchers
+    }
+
     /// Whether a change of the file at `path` changes the configuration: a configuration file at
     /// or above a workspace folder, or one below it that the nested configuration search looks
     /// at. Others, e.g. in `node_modules` or in ignored folders, are skipped.
     pub(crate) fn is_configuration_change(&self, path: &Path) -> bool {
+        if self.configuration_files.read().contains(path) {
+            return true;
+        }
         let is_configuration_file = path
             .file_name()
             .and_then(|file_name| file_name.to_str())
@@ -627,16 +700,33 @@ impl Session {
     }
 
     /// The project that the file at `path` belongs to: the one of the deepest workspace folder
-    /// that contains it, or else the one of the shallowest folder. Before the configuration is loaded, the key of no
-    /// project, for which the workspace only reports what needs no settings.
+    /// that contains it. A file outside every workspace folder belongs to a project without a
+    /// folder, which has the default settings, so that it never gets the settings (and the
+    /// database) of an unrelated folder. Without workspace folders or a root, or with a
+    /// configuration file chosen by the user, the only project applies to every file. Before the
+    /// configuration is loaded, the key of no project, for which the workspace only reports what
+    /// needs no settings.
     pub(crate) fn project_key(&self, path: &Path) -> ProjectKey {
         let projects = self.projects.read().unwrap();
-        projects
-            .iter()
-            .find(|(folder, _)| path.starts_with(folder))
-            .or_else(|| projects.last())
-            .map(|(_, key)| *key)
-            .unwrap_or_default()
+        if let Some((_, key)) = projects.iter().find(|(folder, _)| path.starts_with(folder)) {
+            return *key;
+        }
+        let Some((_, only_project)) = projects.last() else {
+            return ProjectKey::default();
+        };
+        if self.config_path.is_some()
+            || (self.get_workspace_folders().is_none() && self.base_path().is_none())
+        {
+            return *only_project;
+        }
+        *self.folderless_project.get_or_init(|| {
+            self.workspace
+                .register_project_folder(RegisterProjectFolderParams { path: None })
+                .unwrap_or_else(|error| {
+                    error!("Failed to register the project without a folder: {}", error);
+                    ProjectKey::default()
+                })
+        })
     }
 
     /// Returns the base path of the workspace on the filesystem if it has one
@@ -684,6 +774,7 @@ impl Session {
         };
 
         self.set_configuration_status(ConfigurationStatus::Loading);
+        let previous_files = std::mem::take(&mut *self.configuration_files.write());
         let mut status = ConfigurationStatus::Loaded;
         let mut projects = Vec::new();
         for root in roots {
@@ -712,6 +803,10 @@ impl Session {
 
         projects.sort_by_key(|(folder, _)| std::cmp::Reverse(folder.components().count()));
         *self.projects.write().unwrap() = projects;
+        if !matches!(status, ConfigurationStatus::Loaded) {
+            // A broken file can't tell what it extends, so keep watching what it did before.
+            self.configuration_files.write().extend(previous_files);
+        }
         self.set_configuration_status(status);
     }
 
@@ -745,27 +840,14 @@ impl Session {
                 }
             };
         let folder = folder.unwrap_or_default();
-        let is_new = !self
-            .projects
-            .read()
-            .unwrap()
-            .iter()
-            .any(|(project, _)| project == &folder);
 
         let (status, root_files) = self
             .load_pgls_configuration_file(project_key, base_path)
             .await;
         if !matches!(status, ConfigurationStatus::Loaded) {
-            // A project keeps its settings while its configuration is broken, and a new one is
-            // only registered once its configuration loads.
-            if is_new {
-                let _ = self
-                    .workspace
-                    .unregister_project_folder(UnregisterProjectFolderParams {
-                        path: PgLSPath::new(&folder),
-                    });
-                return (None, status);
-            }
+            // A project keeps its settings while its configuration is broken, and a new one has
+            // the defaults. Either way its files never fall back to the settings of another
+            // folder, which could point at another database.
             return (Some((folder, project_key)), status);
         }
         let root_files = root_files.map(Arc::new);
@@ -784,26 +866,33 @@ impl Session {
         (project, status)
     }
 
-    /// Lays the layers of the session over a configuration file: the environment and the client
-    /// overrides.
+    /// Lays the layers of the session over the root configuration file: the environment and the
+    /// client overrides.
     fn configure(&self) -> impl Fn(PartialConfiguration) -> PartialConfiguration + '_ {
+        self.configure_with(self.env_config.as_ref())
+    }
+
+    /// Lays the layers of the session over a configuration file: `environment` and the client
+    /// overrides.
+    fn configure_with<'a>(
+        &'a self,
+        environment: Option<&'a PartialConfiguration>,
+    ) -> impl Fn(PartialConfiguration) -> PartialConfiguration + 'a {
         let (client_overrides, overridden_sections) = {
             let overrides = self.client_overrides.read().unwrap();
             (overrides.configuration().cloned(), overrides.sections())
         };
         move |configuration| {
-            let mut configuration = merge_layers(
-                configuration,
-                self.env_config.as_ref(),
-                client_overrides.as_ref(),
-            );
+            let mut configuration =
+                merge_layers(configuration, environment, client_overrides.as_ref());
             overridden_sections.materialize_defaults(&mut configuration);
             configuration
         }
     }
 
     /// Applies every configuration file below `root` to the project, with the same layers as the
-    /// root configuration. The folders that `root_files` ignores are not searched.
+    /// root configuration, except that the environment only fills in the connection options a
+    /// file doesn't set. The folders that `root_files` ignores are not searched.
     async fn load_nested_configuration_files(
         self: &Arc<Self>,
         project_key: ProjectKey,
@@ -821,7 +910,11 @@ impl Session {
                     root_files,
                     ..NestedConfigurationSearch::new(root)
                 },
-                session.configure(),
+                session
+                    .env_config
+                    .as_ref()
+                    .and_then(|environment| environment.db.as_ref()),
+                session.configure_with(None),
             )
         })
         .await;
@@ -845,7 +938,13 @@ impl Session {
                 .await;
         }
         let mut status = ConfigurationStatus::Loaded;
-        for NestedConfiguration { directory, result } in nested.configurations {
+        for NestedConfiguration {
+            directory,
+            result,
+            extended_files,
+        } in nested.configurations
+        {
+            self.configuration_files.write().extend(extended_files);
             match result {
                 Ok(()) => info!("Loaded the nested configuration in {}", directory.display()),
                 Err(error) => {
@@ -877,6 +976,8 @@ impl Session {
                     configuration: fs_configuration,
                     directory_path: configuration_path,
                     file_path: configuration_file_path,
+                    extended_files,
+                    is_user_configuration,
                     ..
                 } = loaded_configuration;
 
@@ -885,6 +986,28 @@ impl Session {
                     configuration_file_path
                         .as_ref()
                         .map_or("<unknown>".to_string(), |p| p.display().to_string())
+                );
+                if is_user_configuration
+                    && let (Some(file_path), Some(directory)) =
+                        (&configuration_file_path, &configuration_path)
+                {
+                    self.client
+                        .log_message(
+                            MessageType::INFO,
+                            format!(
+                                "Using the user configuration at {} for {}, which has no \
+                                 configuration file.",
+                                file_path.display(),
+                                directory.display()
+                            ),
+                        )
+                        .await;
+                }
+                self.configuration_files.write().extend(
+                    configuration_file_path
+                        .iter()
+                        .cloned()
+                        .chain(extended_files),
                 );
 
                 // Check if using deprecated config filename and notify user (once)
@@ -1084,6 +1207,24 @@ impl Session {
                 negotiated_encoding(&params.client_capabilities)
             })
     }
+}
+
+/// A path as a glob pattern that matches only it: with `/` as the separator, and the characters
+/// that globs treat specially in brackets.
+fn escape_glob(path: &Path) -> String {
+    let mut pattern = String::new();
+    for character in path.to_string_lossy().chars() {
+        match character {
+            '\\' if cfg!(windows) => pattern.push('/'),
+            '*' | '?' | '[' | '{' | '}' => {
+                pattern.push('[');
+                pattern.push(character);
+                pattern.push(']');
+            }
+            _ => pattern.push(character),
+        }
+    }
+    pattern
 }
 
 /// Tracks one running configuration transition for [`Session::max_concurrent_transitions`].

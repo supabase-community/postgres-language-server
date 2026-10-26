@@ -10,7 +10,7 @@ use pgls_analyser::LinterRules;
 use pgls_configuration::Merge;
 use pgls_configuration::{
     ConfigurationDiagnostic, ConfigurationPathHint, ConfigurationPayload, PartialConfiguration,
-    VERSION, diagnostics::CantLoadExtendFile,
+    VERSION, database::PartialDatabaseConfiguration, diagnostics::CantLoadExtendFile,
 };
 use pgls_console::markup;
 use pgls_env::PGLS_WEBSITE;
@@ -18,7 +18,7 @@ use pgls_fs::{
     AutoSearchResult, ConfigName, FileSystem, FindFiles, OpenOptions, SKIPPED_DIRECTORIES,
     SkipDirectory,
 };
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
     DynRef, Workspace, WorkspaceError,
@@ -41,6 +41,12 @@ pub struct LoadedConfiguration {
     pub file_path: Option<PathBuf>,
     /// The Deserialized configuration
     pub configuration: PartialConfiguration,
+    /// The `db` section of the configuration file itself, without what it extends
+    pub file_database: Option<PartialDatabaseConfiguration>,
+    /// The files it extends
+    pub extended_files: Vec<PathBuf>,
+    /// Whether it is the user configuration, which applies because the project has none
+    pub is_user_configuration: bool,
 }
 
 impl LoadedConfiguration {
@@ -54,7 +60,8 @@ impl LoadedConfiguration {
             deserialized: mut partial_configuration,
         } = value;
 
-        partial_configuration.apply_extends(
+        let file_database = partial_configuration.db.clone();
+        let extended_files = partial_configuration.apply_extends(
             fs,
             &configuration_file_path,
             &external_resolution_base_path,
@@ -62,6 +69,9 @@ impl LoadedConfiguration {
 
         Ok(Self {
             configuration: partial_configuration,
+            file_database,
+            extended_files,
+            is_user_configuration: false,
             directory_path: configuration_file_path.parent().map(PathBuf::from),
             file_path: Some(configuration_file_path),
         })
@@ -108,6 +118,7 @@ pub fn load_configuration(
 
     let mut loaded = LoadedConfiguration::try_from_payload(config, fs)?;
     loaded.directory_path = Some(project_directory);
+    loaded.is_user_configuration = true;
     Ok(loaded)
 }
 
@@ -119,6 +130,8 @@ pub struct NestedConfiguration {
     /// Whether the configuration file was loaded and applied. The files below a configuration file
     /// that could not be applied use the default settings.
     pub result: Result<(), WorkspaceError>,
+    /// The files it extends.
+    pub extended_files: Vec<PathBuf>,
 }
 
 /// Where [apply_nested_configurations] looks for configuration files.
@@ -195,8 +208,11 @@ impl std::fmt::Display for IncompleteSearch {
 /// configuration directories are skipped even when they are below the root, and so is everything
 /// below the home directory or a filesystem root, which hold unrelated projects.
 ///
-/// `configure` lays the layers of the caller, such as the environment or the arguments of the
-/// CLI, over each configuration file. Folders that the settings above them ignore are skipped.
+/// The database settings of the `environment` (see [PartialDatabaseConfiguration::from_env])
+/// only fill in the connection options that a nested configuration file doesn't set itself, so
+/// that each file keeps its own database. `configure` then lays the layers of the caller, such as
+/// the arguments of the CLI, over each configuration file. Folders that the settings above them
+/// ignore are skipped.
 ///
 /// This walks the file system, so call it off the async runtime. Fails if the project is not
 /// registered.
@@ -205,6 +221,7 @@ pub fn apply_nested_configurations(
     fs: &DynRef<'_, dyn FileSystem>,
     project_key: ProjectKey,
     search: NestedConfigurationSearch,
+    environment: Option<&PartialDatabaseConfiguration>,
     configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
 ) -> Result<NestedConfigurations, WorkspaceError> {
     let NestedConfigurationSearch {
@@ -225,20 +242,27 @@ pub fn apply_nested_configurations(
     directories.dedup();
 
     let mut load_errors = Vec::new();
+    let mut extended_files = FxHashMap::default();
     let nested = directories
         .into_iter()
-        .map(|directory| {
-            load_nested_configuration(fs, &directory, &configure).unwrap_or_else(|error| {
-                load_errors.push((directory.clone(), error));
-                // Neither the configuration above it nor a part of the broken one applies.
-                NestedSettingsParams {
-                    directory,
-                    configuration: PartialConfiguration::default(),
-                    vcs_base_path: None,
-                    gitignore_matches: Vec::new(),
+        .map(
+            |directory| match load_nested_configuration(fs, &directory, environment, &configure) {
+                Ok((nested, extended)) => {
+                    extended_files.insert(directory, extended);
+                    nested
                 }
-            })
-        })
+                Err(error) => {
+                    load_errors.push((directory.clone(), error));
+                    // Neither the configuration above it nor a part of the broken one applies.
+                    NestedSettingsParams {
+                        directory,
+                        configuration: PartialConfiguration::default(),
+                        vcs_base_path: None,
+                        gitignore_matches: Vec::new(),
+                    }
+                }
+            },
+        )
         .collect();
 
     let UpdateNestedSettingsResult { applied, errors } =
@@ -262,7 +286,11 @@ pub fn apply_nested_configurations(
                 Some(error) => Err(error),
                 None => Ok(()),
             };
-            NestedConfiguration { directory, result }
+            NestedConfiguration {
+                extended_files: extended_files.remove(&directory).unwrap_or_default(),
+                directory,
+                result,
+            }
         })
         .collect();
     Ok(NestedConfigurations {
@@ -399,21 +427,32 @@ fn is_not_a_project_folder(fs: &DynRef<'_, dyn FileSystem>, folder: &Path) -> bo
 fn load_nested_configuration(
     fs: &DynRef<'_, dyn FileSystem>,
     directory: &Path,
+    environment: Option<&PartialDatabaseConfiguration>,
     configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
-) -> Result<NestedSettingsParams, WorkspaceError> {
+) -> Result<(NestedSettingsParams, Vec<PathBuf>), WorkspaceError> {
     let loaded = load_configuration(
         fs,
         ConfigurationPathHint::FromWorkspace(directory.to_path_buf()),
     )?;
-    let configuration = configure(loaded.configuration);
+    let mut configuration = loaded.configuration;
+    if let Some(environment) = environment
+        .and_then(|environment| environment.for_nested_configuration(loaded.file_database.as_ref()))
+    {
+        configuration.merge_with(PartialConfiguration {
+            db: Some(environment),
+            ..Default::default()
+        });
+    }
+    let configuration = configure(configuration);
     let (vcs_base_path, gitignore_matches) =
         configuration.retrieve_gitignore_matches(fs, Some(directory))?;
-    Ok(NestedSettingsParams {
+    let nested = NestedSettingsParams {
         directory: directory.to_path_buf(),
         configuration,
         vcs_base_path,
         gitignore_matches,
-    })
+    };
+    Ok((nested, loaded.extended_files))
 }
 
 /// - [Result]: if an error occurred while loading the configuration file.
@@ -604,19 +643,21 @@ fn strip_jsonc(content: &str) -> Result<String, ConfigurationDiagnostic> {
 }
 
 pub trait PartialConfigurationExt {
+    /// Returns the files it extended.
     fn apply_extends(
         &mut self,
         fs: &DynRef<'_, dyn FileSystem>,
         file_path: &Path,
         external_resolution_base_path: &Path,
-    ) -> Result<(), WorkspaceError>;
+    ) -> Result<Vec<PathBuf>, WorkspaceError>;
 
+    /// Returns each configuration file in `extends` with its path.
     fn deserialize_extends(
         &mut self,
         fs: &DynRef<'_, dyn FileSystem>,
         relative_resolution_base_path: &Path,
         external_resolution_base_path: &Path,
-    ) -> Result<Vec<PartialConfiguration>, WorkspaceError>;
+    ) -> Result<Vec<(PathBuf, PartialConfiguration)>, WorkspaceError>;
 
     fn retrieve_gitignore_matches(
         &self,
@@ -637,12 +678,15 @@ impl PartialConfigurationExt for PartialConfiguration {
         fs: &DynRef<'_, dyn FileSystem>,
         file_path: &Path,
         external_resolution_base_path: &Path,
-    ) -> Result<(), WorkspaceError> {
-        let configurations = self.deserialize_extends(
-            fs,
-            file_path.parent().expect("file path should have a parent"),
-            external_resolution_base_path,
-        )?;
+    ) -> Result<Vec<PathBuf>, WorkspaceError> {
+        let (extended_files, configurations): (Vec<_>, Vec<_>) = self
+            .deserialize_extends(
+                fs,
+                file_path.parent().expect("file path should have a parent"),
+                external_resolution_base_path,
+            )?
+            .into_iter()
+            .unzip();
 
         let extended_configuration = configurations.into_iter().reduce(
             |mut previous_configuration, current_configuration| {
@@ -656,7 +700,7 @@ impl PartialConfigurationExt for PartialConfiguration {
             self.merge_with(extended_configuration)
         }
 
-        Ok(())
+        Ok(extended_files)
     }
 
     /// It attempts to deserialize all the configuration files that were specified in the `extends` property
@@ -665,7 +709,7 @@ impl PartialConfigurationExt for PartialConfiguration {
         fs: &DynRef<'_, dyn FileSystem>,
         relative_resolution_base_path: &Path,
         external_resolution_base_path: &Path,
-    ) -> Result<Vec<PartialConfiguration>, WorkspaceError> {
+    ) -> Result<Vec<(PathBuf, PartialConfiguration)>, WorkspaceError> {
         let Some(extends) = &self.extends else {
             return Ok(Vec::new());
         };
@@ -731,7 +775,7 @@ impl PartialConfigurationExt for PartialConfiguration {
             let deserialized =
                 serde_json::from_str::<PartialConfiguration>(&strip_jsonc(&content)?)
                     .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
-            deserialized_configurations.push(deserialized)
+            deserialized_configurations.push((extend_configuration_file_path, deserialized))
         }
         Ok(deserialized_configurations)
     }

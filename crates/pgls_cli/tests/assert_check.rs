@@ -482,8 +482,8 @@ fn write_tree(files: &[(&str, &str)]) -> tempfile::TempDir {
     root
 }
 
-/// Runs `check` in `cwd` with the GitHub reporter, without the connection settings of the
-/// environment but with `envs`. Returns whether it succeeded and its output.
+/// Runs `check` in `cwd` without the connection settings of the environment but with `envs`.
+/// Returns whether it succeeded and its output.
 fn check_in(cwd: &Path, args: &[&str], envs: &[(&str, &str)]) -> (bool, String) {
     let mut cmd = cargo_bin_cmd!("postgres-language-server");
     for var in [
@@ -500,7 +500,7 @@ fn check_in(cwd: &Path, args: &[&str], envs: &[(&str, &str)]) -> (bool, String) 
     cmd.envs(envs.iter().copied());
     let output = cmd
         .current_dir(cwd)
-        .args(["check", "--reporter", "github", "--log-level", "none"])
+        .args(["check", "--log-level", "none"])
         .args(args)
         .output()
         .expect("failed to run CLI");
@@ -539,13 +539,132 @@ fn check_only_loads_the_configuration_files_of_its_paths() {
     assert!(success, "{output}");
 
     for path in ["db1/schema/a.sql", "db1"] {
-        let (success, output) = check_in(root.path(), &[path], &[]);
+        let (success, output) = check_in(root.path(), &["--reporter", "github", path], &[]);
         assert!(!success, "{output}");
         assert!(
             output.contains("::error title=lint/banDropColumn"),
             "the configuration of db1 doesn't apply to {path}:\n{output}"
         );
     }
+}
+
+/// A nested configuration file that can't be loaded is reported with its path, its folder uses
+/// the default settings, and the other files are still checked.
+#[test]
+fn check_reports_a_broken_nested_configuration_and_continues() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        (
+            "tests/fixtures/broken/postgres-language-server.jsonc",
+            "{ this is not json",
+        ),
+        ("a.sql", "alter table users drop column name;\n"),
+        (
+            "tests/fixtures/broken/b.sql",
+            "alter table users drop column name;\n",
+        ),
+    ]);
+
+    let (success, output) = check_in(root.path(), &[], &[]);
+    assert!(!success, "{output}");
+    assert!(
+        output.lines().any(|line| line.contains("broken")
+            && line.contains("postgres-language-server.jsonc")
+            && line.contains("configuration")),
+        "the broken configuration file is not named:\n{output}"
+    );
+
+    let (_, output) = check_in(root.path(), &["--reporter", "github"], &[]);
+    let level_of = |file: &str| {
+        output
+            .lines()
+            .find(|line| line.contains("title=lint/banDropColumn") && line.contains(file))
+            .and_then(|line| line.strip_prefix("::"))
+            .and_then(|line| line.split(' ').next())
+    };
+    assert_eq!(level_of("a.sql"), Some("error"), "{output}");
+    // The defaults, not the root configuration's `error`.
+    assert_eq!(level_of("b.sql"), Some("warning"), "{output}");
+}
+
+/// The database environment variables don't replace the database of a nested configuration file
+/// that sets one, so that `db1/` and `db2/` keep their own databases.
+#[cfg(target_os = "linux")]
+#[test]
+fn the_environment_does_not_replace_the_database_of_a_nested_configuration() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        (
+            "db1/postgres-language-server.jsonc",
+            r#"{ "db": { "host": "127.0.0.1", "port": 5432, "username": "postgres", "password": "postgres", "database": "nested_db_that_does_not_exist" } }"#,
+        ),
+        ("db1/a.sql", "select 1;\n"),
+    ]);
+
+    for envs in [
+        &[][..],
+        &[("PGDATABASE", "postgres")][..],
+        &[(
+            "DATABASE_URL",
+            "postgresql://postgres:postgres@127.0.0.1:5432/postgres",
+        )][..],
+    ] {
+        let (_, output) = check_in(root.path(), &["db1/a.sql"], envs);
+        assert!(
+            output.contains("nested_db_that_does_not_exist"),
+            "with {envs:?}, the nested configuration did not use its own database:\n{output}"
+        );
+    }
+}
+
+/// Without a project configuration, `check` says that it uses the user configuration, on stderr
+/// so that it stays out of the reporters' output.
+#[cfg(unix)]
+#[test]
+fn check_announces_the_user_configuration() {
+    let root = write_tree(&[
+        (
+            "config/postgres-language-server/postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        ("project/a.sql", "select 1;\n"),
+    ]);
+    let config_home = root.path().join("config");
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .current_dir(root.path().join("project"))
+        .env("XDG_CONFIG_HOME", &config_home)
+        .args([
+            "check",
+            "--log-level",
+            "none",
+            "--reporter",
+            "json",
+            "a.sql",
+        ])
+        .output()
+        .expect("failed to run CLI");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let user_configuration = config_home
+        .join("postgres-language-server")
+        .join("postgres-language-server.jsonc");
+    assert!(
+        stderr.contains(&format!(
+            "Using the user configuration at {}",
+            user_configuration.display()
+        )),
+        "{stderr}"
+    );
+    assert!(
+        !String::from_utf8_lossy(&output.stdout).contains("user configuration"),
+        "the announcement ended up in the report"
+    );
 }
 
 /// Runs `check` with the database settings given in `args` only, without the connection
@@ -809,7 +928,7 @@ fn check_fix_writes_safe_fixes() {
             &["--fix"],
             content
         ),
-        "-- migrate:up transaction:false\nreindex index CONCURRENTLY my_index;\n",
+        "-- migrate:up transaction:false\nreindex index concurrently my_index;\n",
     );
 }
 
@@ -821,6 +940,6 @@ fn check_fix_without_section_markers_needs_unsafe() {
     assert_eq!(check_fixed("fix-plain", "", &["--fix"], content), content);
     assert_eq!(
         check_fixed("fix-plain-unsafe", "", &["--fix", "--unsafe"], content),
-        "reindex index CONCURRENTLY my_index;\n"
+        "reindex index concurrently my_index;\n"
     );
 }

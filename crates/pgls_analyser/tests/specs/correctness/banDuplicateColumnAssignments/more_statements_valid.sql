@@ -1,0 +1,8 @@
+-- expect_no_diagnostics
+-- Postgres skips adding a column that already exists with IF NOT EXISTS.
+alter table users add column email text, add column if not exists email text;
+alter table users add column email text, drop column name;
+create type pair as (a int, b int);
+copy users (id, name) from stdin;
+-- The explicit names reach into the `*`, so we can't tell what the later entries are called.
+create view renamed_star (a, c, d) as select t.*, 2 as x, 3 as x from t;

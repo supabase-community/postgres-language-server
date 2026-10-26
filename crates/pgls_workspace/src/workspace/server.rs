@@ -44,7 +44,7 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_typecheck::TypecheckParams;
 use pgls_workspace_macros::ignored_path;
 use snapshot_manager::SnapshotManager;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use crate::{
     WorkspaceError,
@@ -63,6 +63,7 @@ use crate::{
         format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
         inlay_hints::{InlayHint, PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
+        semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
     workspace::{AnalyserDiagnosticsMapper, WithCSTandASTMapper},
@@ -85,6 +86,7 @@ mod connection_key;
 #[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
+mod expand_star;
 mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
@@ -356,7 +358,7 @@ impl WorkspaceServer {
                 actions.push(CodeAction {
                     title: fix.message.clone(),
                     kind: CodeActionKind::Edit(EditAction {
-                        rule: category.to_string(),
+                        rule: Some(category.to_string()),
                         category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
                         applicability: fix.applicability,
                         edits: fix
@@ -375,7 +377,7 @@ impl WorkspaceServer {
             actions.push(CodeAction {
                 title: format!("Suppress rule {rule} for this statement"),
                 kind: CodeActionKind::Edit(EditAction {
-                    rule: category.to_string(),
+                    rule: Some(category.to_string()),
                     category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
                     applicability: Applicability::MaybeIncorrect,
                     edits: vec![suppression_edit(doc, span.start(), rule)],
@@ -384,6 +386,41 @@ impl WorkspaceServer {
             });
         }
         actions
+    }
+
+    /// The refactors offered at `position`: expanding a `*` into its columns. `settings` are the
+    /// ones of the file.
+    fn refactor_code_actions(
+        &self,
+        settings: Option<&Settings>,
+        doc: &Document,
+        position: TextSize,
+    ) -> Vec<CodeAction> {
+        // Code actions are requested whenever the cursor moves, so don't resolve the file unless
+        // the cursor is on a `*` of a select list.
+        let content = doc.get_document_content();
+        if !expand_star::is_at_star(content, position) {
+            return Vec::new();
+        }
+
+        #[cfg(feature = "db")]
+        let snapshot = settings.and_then(|settings| {
+            self.connection
+                .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                .and_then(Result::ok)
+        });
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = self.snapshot.get();
+
+        let Some(snapshot) = snapshot else {
+            return Vec::new();
+        };
+        let (stmt_start, references) = self.references_at(settings, doc, &snapshot, position);
+        references
+            .iter()
+            .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
+            .collect()
     }
 
     /// The lint diagnostics of a document that are not suppressed.
@@ -495,14 +532,15 @@ impl WorkspaceServer {
     }
 
     /// The references whose span contains `position`, in the innermost statement at `position`
-    /// (the body of a SQL function rather than its `CREATE FUNCTION`).
+    /// (the body of a SQL function rather than its `CREATE FUNCTION`). Their spans are relative
+    /// to the start of that statement, which is returned with them.
     fn references_at(
         &self,
         settings: Option<&Settings>,
         doc: &Document,
         snapshot: &Arc<Snapshot>,
         position: TextSize,
-    ) -> Vec<Reference> {
+    ) -> (TextSize, Vec<Reference>) {
         let mut innermost: Option<(TextRange, Vec<Reference>)> = None;
         self.walk_statements(
             settings,
@@ -533,17 +571,18 @@ impl WorkspaceServer {
             },
         );
         let Some((range, references)) = innermost else {
-            return Vec::new();
+            return (TextSize::default(), Vec::new());
         };
         let position = position - range.start();
-        references
+        let references = references
             .into_iter()
             .filter(|reference| {
                 reference
                     .span()
                     .is_some_and(|span| span.contains_inclusive(position))
             })
-            .collect()
+            .collect();
+        (range.start(), references)
     }
 
     /// The indexed database snapshot, built once per snapshot.
@@ -997,6 +1036,11 @@ impl Workspace for WorkspaceServer {
             })
             .collect();
 
+        actions.splice(
+            0..0,
+            self.refactor_code_actions(settings, parser, params.cursor_position),
+        );
+
         if let Some(settings) = settings {
             let mut lint_actions = self.lint_code_actions(settings, &params, parser);
             lint_actions.append(&mut actions);
@@ -1055,6 +1099,7 @@ impl Workspace for WorkspaceServer {
 
         let mut fixes_applied = 0;
         let mut skipped_suggested_fixes = 0;
+        let mut converged = false;
         for _ in 0..MAX_PASSES {
             let doc = Document::new(code.clone(), 0);
             let diagnostics =
@@ -1090,10 +1135,17 @@ impl Workspace for WorkspaceServer {
                 applied += 1;
             }
             if applied == 0 {
+                converged = true;
                 break;
             }
             code = combined.apply(&code);
             fixes_applied += applied;
+        }
+        if !converged {
+            warn!(
+                path = ?params.path,
+                "Fixes still changed the file after {MAX_PASSES} passes, some may be left"
+            );
         }
 
         Ok(FixFileResult {
@@ -1450,8 +1502,15 @@ impl Workspace for WorkspaceServer {
         let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
         let mut formatted_sql_fn_bodies = HashMap::new();
 
-        // Only format SQL function bodies if skip_fn_bodies is false
+        // Only format SQL function bodies if skip_fn_bodies is false. A body with several
+        // statements is left as written.
         if !settings.formatter.skip_fn_bodies {
+            let mut statements_per_body: HashMap<StatementId, usize> = HashMap::new();
+            for (id, ..) in &format_candidates {
+                if let Some(parent_id) = id.parent() {
+                    *statements_per_body.entry(parent_id).or_default() += 1;
+                }
+            }
             for (id, _stmt_range, text, ast_result) in &format_candidates {
                 if !id.is_child() {
                     continue;
@@ -1460,6 +1519,10 @@ impl Workspace for WorkspaceServer {
                 let Some(parent_id) = id.parent() else {
                     continue;
                 };
+
+                if statements_per_body.get(&parent_id) != Some(&1) {
+                    continue;
+                }
 
                 let Ok(ast) = ast_result else {
                     continue;
@@ -1751,7 +1814,7 @@ impl Workspace for WorkspaceServer {
         match doc.iter_at(WithCSTandASTMapper, params.position).last() {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
                 let position_in_stmt = params.position - range.start();
-                let references = self.references_at(settings, doc, &snapshot, params.position);
+                let (_, references) = self.references_at(settings, doc, &snapshot, params.position);
                 let snapshot = self.snapshot_before(doc, range.start(), snapshot, &search_path);
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
@@ -1838,6 +1901,90 @@ impl Workspace for WorkspaceServer {
 
         hints.sort_by_key(|hint| hint.offset);
         Ok(PullInlayHintsResult { hints })
+    }
+
+    #[ignored_path(project=params.project_key, path=&params.path)]
+    #[tracing::instrument(level = "debug", skip_all, fields(
+        path = params.path.as_os_str().to_str(),
+        range = ?params.range
+    ), err)]
+    fn pull_semantic_tokens(
+        &self,
+        params: PullSemanticTokensParams,
+    ) -> Result<PullSemanticTokensResult, WorkspaceError> {
+        let documents = self.documents.read().unwrap();
+        let doc = documents
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+
+        let settings = self.workspaces();
+        let settings = settings.settings_for(params.project_key, params.path.as_path());
+
+        #[cfg(feature = "db")]
+        let Some(snapshot) = settings
+            .and_then(|settings| {
+                self.connection
+                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+            })
+            .transpose()?
+        else {
+            tracing::debug!("No database connection available. Skipping semantic tokens.");
+            return Ok(PullSemanticTokensResult::default());
+        };
+
+        #[cfg(not(feature = "db"))]
+        let Some(snapshot) = self.snapshot.get() else {
+            tracing::debug!("No schema loaded. Skipping semantic tokens.");
+            return Ok(PullSemanticTokensResult::default());
+        };
+
+        let range = params
+            .range
+            .unwrap_or_else(|| TextRange::up_to(TextSize::of(doc.get_document_content())));
+        let mut tokens = Vec::new();
+        self.walk_statements(
+            settings,
+            doc,
+            &snapshot,
+            range.end(),
+            |stmt, catalog, session| {
+                let Some(sql) = stmt.sql.as_deref() else {
+                    return;
+                };
+                if stmt.range.intersect(range).is_none() {
+                    return;
+                }
+                tokens.extend(
+                    pgls_semantic_tokens::semantic_tokens(
+                        pgls_semantic_tokens::SemanticTokensParams {
+                            stmt: &stmt.root,
+                            sql,
+                            catalog,
+                            search_path: session.search_path(),
+                            function: stmt.function.as_ref(),
+                        },
+                    )
+                    .into_iter()
+                    .map(|token| SemanticToken {
+                        range: token.range + stmt.range.start(),
+                        kind: token.kind.into(),
+                        default_library: token.default_library,
+                    }),
+                );
+            },
+        );
+
+        // The body of a SQL function is a statement of its own, inside its `CREATE FUNCTION`.
+        tokens.sort_by_key(|token| (token.range.start(), token.range.end()));
+        let mut end = TextSize::default();
+        tokens.retain(|token| {
+            let keep = token.range.start() >= end;
+            if keep {
+                end = token.range.end();
+            }
+            keep
+        });
+        Ok(PullSemanticTokensResult { tokens })
     }
 }
 

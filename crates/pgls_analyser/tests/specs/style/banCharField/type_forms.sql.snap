@@ -1,0 +1,116 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The quoted "char" is a single-byte internal type, and myschema.bpchar a type of the user.
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+create table codes (
+    a char(10)[],
+    b CHARACTER(5) ARRAY,
+    c national character(3),
+    d char /* code */ (2),
+    e "char",
+    f myschema.bpchar
+);
+
+```
+
+# Diagnostics
+lint/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CHAR type is discouraged due to space padding behavior.
+  
+  i CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.
+  
+  i Use VARCHAR or TEXT instead for variable-length character data.
+  
+
+
+## Fix (unsafe): Use VARCHAR
+```
+-- The quoted "char" is a single-byte internal type, and myschema.bpchar a type of the user.
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+create table codes (
+    a varchar(10)[],
+    b CHARACTER(5) ARRAY,
+    c national character(3),
+    d char /* code */ (2),
+    e "char",
+    f myschema.bpchar
+);
+
+```
+
+lint/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CHAR type is discouraged due to space padding behavior.
+  
+  i CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.
+  
+  i Use VARCHAR or TEXT instead for variable-length character data.
+  
+
+
+## Fix (unsafe): Use VARCHAR
+```
+-- The quoted "char" is a single-byte internal type, and myschema.bpchar a type of the user.
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+create table codes (
+    a char(10)[],
+    b VARCHAR(5) ARRAY,
+    c national character(3),
+    d char /* code */ (2),
+    e "char",
+    f myschema.bpchar
+);
+
+```
+
+lint/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CHAR type is discouraged due to space padding behavior.
+  
+  i CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.
+  
+  i Use VARCHAR or TEXT instead for variable-length character data.
+  
+
+
+lint/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CHAR type is discouraged due to space padding behavior.
+  
+  i CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.
+  
+  i Use VARCHAR or TEXT instead for variable-length character data.
+  
+
+
+## Fix (unsafe): Use VARCHAR
+```
+-- The quoted "char" is a single-byte internal type, and myschema.bpchar a type of the user.
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+-- expect_lint/banCharField
+create table codes (
+    a char(10)[],
+    b CHARACTER(5) ARRAY,
+    c national character(3),
+    d varchar /* code */ (2),
+    e "char",
+    f myschema.bpchar
+);
+
+```

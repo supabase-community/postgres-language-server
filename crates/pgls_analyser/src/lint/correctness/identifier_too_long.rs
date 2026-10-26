@@ -1,5 +1,5 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
-use pgls_analyse::{RuleSource, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
+use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{ScanToken, Token};
@@ -37,6 +37,7 @@ declare_lint_rule! {
         severity: Severity::Warning,
         recommended: true,
         sources: &[RuleSource::Squawk("identifier-too-long")],
+        fix_kind: FixKind::Safe,
     }
 }
 
@@ -65,14 +66,14 @@ impl LinterRule for IdentifierTooLong {
             Some((range, sql.get(range.start().into()..range.end().into())?))
         };
 
-        let mut reported: Vec<String> = Vec::new();
-        let mut diagnostics = Vec::new();
+        // Each long name, with the identifiers that spell it.
+        let mut names: Vec<(String, Vec<Occurrence>)> = Vec::new();
         for (i, token) in tokens.iter().enumerate() {
             let Some((range, token_text)) = text(token) else {
                 continue;
             };
-            let identifier = match token.token() {
-                Token::Ident => identifier_value(token_text),
+            let (identifier, replaceable) = match token.token() {
+                Token::Ident => (identifier_value(token_text), true),
                 Token::Uident => {
                     let escape = match (tokens.get(i + 1), tokens.get(i + 2)) {
                         (Some(uescape), Some(escape)) if uescape.token() == Token::Uescape => {
@@ -84,32 +85,72 @@ impl LinterRule for IdentifierTooLong {
                         _ => '\\',
                     };
                     match unicode_identifier_value(token_text, escape) {
-                        Some(identifier) => identifier,
+                        // Rewriting a `U&"..."` identifier would leave its UESCAPE clause behind.
+                        Some(identifier) => (identifier, false),
                         None => continue,
                     }
                 }
                 _ => continue,
             };
-            if identifier.len() <= MAX_IDENTIFIER_BYTES || reported.contains(&identifier) {
+            if identifier.len() <= MAX_IDENTIFIER_BYTES {
                 continue;
             }
+            let occurrence = Occurrence {
+                range,
+                quoted: token_text.starts_with('"'),
+                replaceable,
+            };
+            match names.iter_mut().find(|(name, _)| *name == identifier) {
+                Some((_, occurrences)) => occurrences.push(occurrence),
+                None => names.push((identifier, vec![occurrence])),
+            }
+        }
 
-            let truncated = &identifier[..identifier.floor_char_boundary(MAX_IDENTIFIER_BYTES)];
-            diagnostics.push(
+        names
+            .into_iter()
+            .map(|(identifier, occurrences)| {
+                let truncated = &identifier[..identifier.floor_char_boundary(MAX_IDENTIFIER_BYTES)];
                 LinterDiagnostic::new(
                     rule_category!(),
-                    Some(range),
+                    Some(occurrences[0].range),
                     markup! {
                         "Identifier "<Emphasis>{identifier}</Emphasis>" is longer than 63 bytes."
                     },
                 )
                 .detail(None, format!("Postgres truncates it to `{truncated}`."))
-                .note("Use a shorter name."),
-            );
-            reported.push(identifier);
-        }
-        diagnostics
+                .note("Use a shorter name.")
+                .maybe_fix(truncate(sql, truncated, &occurrences))
+            })
+            .collect()
     }
+}
+
+/// An identifier that spells a long name.
+struct Occurrence {
+    range: TextRange,
+    quoted: bool,
+    /// Whether the fix can rewrite it.
+    replaceable: bool,
+}
+
+/// Spells out the name Postgres uses, in every identifier of the statement that stands for it.
+/// This doesn't change what the statement does.
+fn truncate(sql: &str, truncated: &str, occurrences: &[Occurrence]) -> Option<RuleFix> {
+    let mut fix = RuleFix::new(format!("Use the truncated name `{truncated}`"));
+    for occurrence in occurrences
+        .iter()
+        .filter(|occurrence| occurrence.replaceable)
+    {
+        let replacement = if occurrence.quoted {
+            format!("\"{}\"", truncated.replace('"', "\"\""))
+        } else {
+            // Keep the case as written, downcasing it doesn't change the length.
+            let text = &sql[occurrence.range];
+            text[..text.floor_char_boundary(MAX_IDENTIFIER_BYTES)].to_owned()
+        };
+        fix = fix.replace(occurrence.range, replacement);
+    }
+    (!fix.edits.is_empty()).then_some(fix)
 }
 
 /// Whether `sql` may contain an identifier longer than 63 bytes, without scanning it. A name is

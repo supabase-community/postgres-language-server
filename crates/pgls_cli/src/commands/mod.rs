@@ -5,7 +5,8 @@ use crate::logging::LoggingKind;
 use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
 use pgls_configuration::{PartialConfiguration, partial_configuration};
-use pgls_console::Console;
+use pgls_console::{Console, ConsoleExt, markup};
+use pgls_diagnostics::{Error, PrintDiagnostic};
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
 use std::ffi::OsString;
@@ -401,6 +402,13 @@ pub(crate) fn nested_configuration_paths(
     match stdin_file_path {
         Some(path) => vec![OsString::from(path)],
         None => paths.to_vec(),
+    }
+}
+
+/// Prints diagnostics to stderr, for the commands that write their result to stdout.
+pub(crate) fn print_diagnostics(console: &mut dyn Console, diagnostics: Vec<Error>) {
+    for diagnostic in diagnostics {
+        console.error(markup! {{PrintDiagnostic::simple(&diagnostic)}});
     }
 }
 

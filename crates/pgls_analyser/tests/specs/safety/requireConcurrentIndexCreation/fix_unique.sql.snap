@@ -21,6 +21,6 @@ lint/requireConcurrentIndexCreation ━━━━━━━━━━━━━━�
 ## Fix (unsafe): Add CONCURRENTLY
 ```
 -- expect_lint/requireConcurrentIndexCreation
-create unique index CONCURRENTLY if not exists users_email_idx on users (lower(email));
+create unique index concurrently if not exists users_email_idx on users (lower(email));
 
 ```
