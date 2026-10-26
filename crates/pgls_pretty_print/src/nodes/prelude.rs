@@ -13,6 +13,7 @@ pub(super) use super::utils::predicates::*;
 pub(super) use super::utils::tokens::*;
 pub(super) use super::{emit_node, emit_node_enum};
 
+pub(super) use super::clauses::case_result::*;
 pub(super) use super::clauses::filter::*;
 pub(super) use super::clauses::function_options::*;
 pub(super) use super::clauses::grant::*;

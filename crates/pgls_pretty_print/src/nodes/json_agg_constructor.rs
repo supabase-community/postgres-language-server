@@ -21,7 +21,7 @@ pub(super) fn emit_json_agg_constructor(e: &mut EventEmitter, n: &JsonAggConstru
     e.group_end();
 }
 
-pub(super) fn emit_json_agg_tail(
+fn emit_json_agg_tail(
     e: &mut EventEmitter,
     constructor: &JsonAggConstructor,
     mut has_content: bool,

@@ -2,9 +2,27 @@ use pgls_query::protobuf::WindowDef;
 
 use super::prelude::*;
 
-// WindowDef is not a NodeEnum type, so we don't use pub(super)
-// It's a helper structure used within FuncCall and SelectStmt
-pub fn emit_window_def(e: &mut EventEmitter, n: &WindowDef) {
+/// What a window definition is written as.
+#[derive(Clone, Copy)]
+pub(super) enum WindowForm {
+    /// The window of a call, after OVER: `(partition by ...)`, or the name of a window.
+    Reference,
+    /// A named window of the WINDOW clause: `w as (partition by ...)`.
+    Named,
+}
+
+pub(super) fn emit_window_def(e: &mut EventEmitter, n: &WindowDef) {
+    emit_window_def_as(e, n, WindowForm::Reference);
+}
+
+pub(super) fn emit_window_def_as(e: &mut EventEmitter, n: &WindowDef, form: WindowForm) {
+    match form {
+        WindowForm::Reference => emit_window_reference(e, n),
+        WindowForm::Named => emit_named_window(e, n),
+    }
+}
+
+fn emit_window_reference(e: &mut EventEmitter, n: &WindowDef) {
     // The callers of a window definition reach it directly rather than through emit_node, so this
     // is the only place that can emit the comments written before the OVER clause.
     emit_with_comments_at(e, n.location, |e| emit_window_def_tokens(e, n));
@@ -26,7 +44,7 @@ fn emit_window_def_tokens(e: &mut EventEmitter, n: &WindowDef) {
     emit_window_spec(e, n);
 }
 
-pub fn emit_window_definition(e: &mut EventEmitter, n: &WindowDef) {
+fn emit_named_window(e: &mut EventEmitter, n: &WindowDef) {
     emit_identifier_maybe_quoted(e, &n.name);
     e.space();
     e.token(TokenKind::AS_KW);

@@ -70,7 +70,7 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
             // inheritance target, so ONLY must not be emitted
             if let Some(ref relation) = n.relation {
                 e.space();
-                super::emit_range_var_name(e, relation);
+                super::emit_range_var_as(e, relation, super::Only::Omitted);
             }
             emit_attribute_rename(e, &n.subname, &n.newname);
             emit_drop_behavior(e, n.behavior(), Separator::Space, Restrict::Omitted);
