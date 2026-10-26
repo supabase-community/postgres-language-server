@@ -10,6 +10,7 @@
 use pgls_catalog::CatalogView;
 use pgls_catalog::resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
 use pgls_query::NodeEnum;
+use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
 pub struct SemanticTokensParams<'a> {
@@ -62,18 +63,28 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
     })
     .references;
 
+    let Some(scanned) = scan(params.sql) else {
+        return Vec::new();
+    };
+
     let mut tokens = Vec::new();
     for reference in &references {
-        let Some(span) = reference.span() else {
+        if let Reference::EnumLiteral {
+            span, type_info, ..
+        } = reference
+        {
+            if let Some(span) = span {
+                tokens.push(SemanticToken {
+                    range: *span,
+                    kind: SemanticTokenKind::EnumMember,
+                    default_library: is_builtin_schema(&type_info.schema),
+                });
+            }
+            continue;
+        }
+        let Some((parts, next)) = name_parts(&scanned, reference.location()) else {
             continue;
         };
-        let Some(text) = params.sql.get(std::ops::Range::<usize>::from(span)) else {
-            continue;
-        };
-        let parts: Vec<TextRange> = name_parts(text)
-            .into_iter()
-            .map(|part| part + span.start())
-            .collect();
         let mut push = |range: Option<&TextRange>, kind, schema: Option<&str>| {
             if let Some(range) = range {
                 tokens.push(SemanticToken {
@@ -112,6 +123,19 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                     schema,
                 );
                 push(parts.last(), SemanticTokenKind::Type, schema);
+                // The other words of multi-word types like `double precision`, without
+                // modifiers like `(3)` in `timestamp(3) with time zone`.
+                let end = reference
+                    .span()
+                    .map_or(TextSize::default(), |span| span.end());
+                for token in scanned[next..]
+                    .iter()
+                    .take_while(|token| token_range(token).is_some_and(|range| range.end() <= end))
+                {
+                    if token.keyword_kind() != KeywordKind::NoKeyword {
+                        push(token_range(token).as_ref(), SemanticTokenKind::Type, schema);
+                    }
+                }
             }
             Reference::Column { source, .. } => {
                 let relation = match source {
@@ -143,13 +167,7 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                 }
                 push(parts.last(), SemanticTokenKind::Parameter, None);
             }
-            Reference::EnumLiteral { type_info, .. } => {
-                push(
-                    Some(&span),
-                    SemanticTokenKind::EnumMember,
-                    Some(type_info.schema.as_str()),
-                );
-            }
+            Reference::EnumLiteral { .. } => {}
             // A `*` is not a name, and its qualifier is a table or alias that has a reference of
             // its own where it is defined.
             Reference::Star { .. } => {}
@@ -172,60 +190,76 @@ fn is_builtin_schema(schema: &str) -> bool {
     matches!(schema, "pg_catalog" | "information_schema")
 }
 
-/// The ranges of the identifiers of a (possibly qualified) name like `public . "My Table"`,
-/// without the dots and whitespace between them.
-fn name_parts(text: &str) -> Vec<TextRange> {
-    let mut parts = Vec::new();
-    let mut chars = text.char_indices().peekable();
-    while let Some(&(start, c)) = chars.peek() {
-        if c.is_whitespace() || c == '.' {
-            chars.next();
-            continue;
-        }
-        let mut end = start;
-        if c == '"' {
-            chars.next();
-            // A doubled quote is a quote inside the identifier.
-            while let Some((i, c)) = chars.next() {
-                if c == '"' && chars.next_if(|&(_, c)| c == '"').is_none() {
-                    end = i + 1;
-                    break;
-                }
-            }
-        } else {
-            while let Some((i, c)) = chars.next_if(|&(_, c)| !c.is_whitespace() && c != '.') {
-                end = i + c.len_utf8();
-            }
-        }
-        if let (Ok(start), Ok(end)) = (TextSize::try_from(start), TextSize::try_from(end))
-            && start < end
-        {
-            parts.push(TextRange::new(start, end));
-        }
-    }
-    parts
+/// The tokens of the statement, without comments.
+fn scan(sql: &str) -> Option<Vec<ScanToken>> {
+    let scan = pgls_query::scan(sql).ok()?;
+    Some(
+        scan.tokens
+            .into_iter()
+            .filter(|token| !matches!(token.token(), Token::SqlComment | Token::CComment))
+            .collect(),
+    )
 }
 
-/// The name an identifier refers to: unquoted identifiers are folded to lower case.
+/// The ranges of the identifiers of the (possibly qualified) name that starts at `location`, like
+/// `public . "My Table"`, without the dots, whitespace, and comments between them. Also returns
+/// the index of the token after the name.
+fn name_parts(tokens: &[ScanToken], location: i32) -> Option<(Vec<TextRange>, usize)> {
+    let mut index = tokens.partition_point(|token| token.start < location);
+    let first = tokens.get(index).filter(|token| token.start == location)?;
+    let mut parts = vec![token_range(first)?];
+    index += 1;
+    // `$1` is never qualified.
+    if first.token() == Token::Param {
+        return Some((parts, index));
+    }
+    if !is_name(first) {
+        return None;
+    }
+    while let [dot, name, ..] = &tokens[index..]
+        && dot.token() == Token::Ascii46
+        && is_name(name)
+    {
+        parts.push(token_range(name)?);
+        index += 2;
+    }
+    Some((parts, index))
+}
+
+/// Whether the token can be (a part of) a name: an identifier or a keyword.
+fn is_name(token: &ScanToken) -> bool {
+    matches!(token.token(), Token::Ident | Token::Uident)
+        || token.keyword_kind() != KeywordKind::NoKeyword
+}
+
+fn token_range(token: &ScanToken) -> Option<TextRange> {
+    Some(TextRange::new(
+        TextSize::try_from(usize::try_from(token.start).ok()?).ok()?,
+        TextSize::try_from(usize::try_from(token.end).ok()?).ok()?,
+    ))
+}
+
+/// The name an identifier refers to: unquoted identifiers are folded to lower case. Like Postgres,
+/// only ASCII letters are folded.
 fn identifier(text: &str) -> String {
     match text
         .strip_prefix('"')
         .and_then(|text| text.strip_suffix('"'))
     {
         Some(quoted) => quoted.replace("\"\"", "\""),
-        None => text.to_lowercase(),
+        None => text.to_ascii_lowercase(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::name_parts;
+    use super::{name_parts, scan};
 
-    fn parts(text: &str) -> Vec<&str> {
-        name_parts(text)
-            .into_iter()
-            .map(|range| &text[range])
-            .collect()
+    /// The parts of the name at the start of `sql`.
+    fn parts(sql: &str) -> Vec<&str> {
+        name_parts(&scan(sql).unwrap(), 0)
+            .map(|(parts, _)| parts.into_iter().map(|range| &sql[range]).collect())
+            .unwrap_or_default()
     }
 
     #[test]
@@ -234,9 +268,17 @@ mod tests {
         assert_eq!(parts("public.users"), ["public", "users"]);
         assert_eq!(parts("public . users"), ["public", "users"]);
         assert_eq!(
+            parts("public /* c */ . -- c\n users x"),
+            ["public", "users"]
+        );
+        assert_eq!(
             parts(r#""My.Schema"."a ""b"" c".id"#),
             [r#""My.Schema""#, r#""a ""b"" c""#, "id"]
         );
+        assert_eq!(parts("größe.ölstand + 1"), ["größe", "ölstand"]);
+        assert_eq!(parts("current.name"), ["current", "name"]);
         assert_eq!(parts("$1"), ["$1"]);
+        assert_eq!(parts("f(x).y"), ["f"]);
+        assert!(parts("(u).name").is_empty());
     }
 }
