@@ -26,7 +26,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
 
                 // Emit operator if present
                 if !n.oper_name.is_empty() {
-                    emit_operator_from_list(e, &n.oper_name);
+                    emit_operator(e, &n.oper_name);
                     e.space();
                 }
             }
@@ -50,7 +50,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
                     e.token(TokenKind::IN_KW);
                 } else {
                     // Regular ANY with operator
-                    emit_operator_from_list(e, &n.oper_name);
+                    emit_operator(e, &n.oper_name);
                     e.space();
                     e.token(TokenKind::ANY_KW);
                 }
@@ -72,7 +72,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
                 e.space();
 
                 if !n.oper_name.is_empty() {
-                    emit_operator_from_list(e, &n.oper_name);
+                    emit_operator(e, &n.oper_name);
                     e.space();
                 }
             }
@@ -169,22 +169,4 @@ fn has_select_list_only(n: &SelectStmt) -> bool {
         && n.with_clause.is_none()
         && n.larg.is_none()
         && n.rarg.is_none()
-}
-
-fn emit_operator_from_list(e: &mut EventEmitter, oper_name: &[pgls_query::protobuf::Node]) {
-    // The operator name is typically stored as a list of String nodes
-    // For most operators it's just one element like "=" or "<"
-    // For qualified operators like "pg_catalog.=" it could be multiple
-    if oper_name.is_empty() {
-        return;
-    }
-
-    // For simplicity, just take the last element which is usually the operator symbol
-    if let Some(last) = oper_name.last() {
-        if let Some(pgls_query::NodeEnum::String(s)) = last.node.as_ref() {
-            e.token(TokenKind::IDENT(s.sval.clone()));
-        } else {
-            emit_node(e, last);
-        }
-    }
 }
