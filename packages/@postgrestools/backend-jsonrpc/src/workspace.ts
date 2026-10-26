@@ -2,6 +2,7 @@
 import type { Transport } from "./transport";
 export interface IsPathIgnoredParams {
   pgls_path: PgLSPath;
+  project_key: ProjectKey;
 }
 export interface PgLSPath {
   /**
@@ -14,24 +15,34 @@ export interface PgLSPath {
    */
   was_written: boolean;
 }
+/**
+ * Identifies a project of the workspace. [ProjectKey] is serialized like this.
+ */
+export interface ProjectKey {
+  idx: number;
+  version: number;
+}
 export type FileKind = FileKind2[];
 /**
  * The priority of the file
  */
 export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
 export interface RegisterProjectFolderParams {
+  /**
+   * The folder of the project. A project without a folder contains every path.
+   */
   path?: string;
-  setAsCurrentWorkspace: boolean;
 }
-export type ProjectKey = string;
 export interface GetFileContentParams {
   path: PgLSPath;
+  project_key: ProjectKey;
 }
 export interface PullFileDiagnosticsParams {
   categories: RuleCategories;
   max_diagnostics: number;
   only: RuleCode[];
   path: PgLSPath;
+  project_key: ProjectKey;
   skip: RuleCode[];
 }
 export type RuleCategories = RuleCategory[];
@@ -312,6 +323,7 @@ export interface GetCompletionsParams {
    * The Cursor position in the file for which a completion is requested.
    */
   position: TextSize;
+  project_key: ProjectKey;
 }
 export interface CompletionsResult {
   items: CompletionItem[];
@@ -352,6 +364,10 @@ export type CompletionItemKind =
 export interface UpdateSettingsParams {
   configuration: PartialConfiguration;
   gitignore_matches: string[];
+  /**
+   * The project whose root settings are updated.
+   */
+  project_key: ProjectKey;
   vcs_base_path?: string;
   workspace_directory?: string;
 }
@@ -1486,15 +1502,18 @@ Each pattern should be in the format `schema.object_name`, for example: - `"publ
 export interface OpenFileParams {
   content: string;
   path: PgLSPath;
+  project_key: ProjectKey;
   version: number;
 }
 export interface ChangeFileParams {
   content: string;
   path: PgLSPath;
+  project_key: ProjectKey;
   version: number;
 }
 export interface CloseFileParams {
   path: PgLSPath;
+  project_key: ProjectKey;
 }
 export type Configuration = PartialConfiguration;
 export interface Workspace {

@@ -74,7 +74,7 @@ create user mapping for u server "primary";
 
 drop user mapping for u server "primary";
 
-create foreign table ft1 ( x int ) server "primary";
+create foreign table ft1 (x int) server "primary";
 
 import foreign schema "primary" from server s into "select";
 
