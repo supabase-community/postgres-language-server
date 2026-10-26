@@ -151,3 +151,89 @@ fn expanded_values_rows_preserve_comments() {
         assert_eq!(output.matches(comment).count(), 1, "{output}");
     }
 }
+
+#[test]
+fn a_comment_after_a_values_row_stays_after_the_row() {
+    for (comma_style, expected) in [
+        (
+            CommaStyle::Trailing,
+            "insert into t\nvalues\n  (1, 'a'), -- first row\n  (2, 'b');",
+        ),
+        (
+            CommaStyle::Leading,
+            "insert into t\nvalues\n  (1, 'a') -- first row\n  , (2, 'b');",
+        ),
+    ] {
+        let config = FormatConfig {
+            values_row_layout: Layout::Expanded,
+            comma_style,
+            ..Default::default()
+        };
+        for sql in [
+            "insert into t values (1, 'a'), -- first row\n(2, 'b');",
+            "insert into t values (1, 'a') -- first row\n, (2, 'b');",
+        ] {
+            assert_eq!(format_idempotently(sql, &config), expected);
+        }
+    }
+}
+
+#[test]
+fn a_comment_after_the_last_values_row_stays_after_it() {
+    let config = FormatConfig {
+        values_row_layout: Layout::Expanded,
+        ..Default::default()
+    };
+    assert_eq!(
+        format_idempotently(
+            "insert into t values (1, 'a'), (2, 'b') -- last row\non conflict do nothing;",
+            &config
+        ),
+        "insert into t\nvalues\n  (1, 'a'),\n  (2, 'b') -- last row\non conflict do nothing;"
+    );
+}
+
+#[test]
+fn values_keeps_order_by_and_limit() {
+    for config in [
+        FormatConfig::default(),
+        FormatConfig {
+            values_row_layout: Layout::Expanded,
+            ..Default::default()
+        },
+    ] {
+        for sql in [
+            "values (1, 2), (3, 4) order by 1 limit 1",
+            "select * from (values (1), (2) limit 1 offset 1) as v",
+            "values (1), (2) order by 1 fetch first 1 rows with ties",
+        ] {
+            let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+            let output = format_statement(&ast, sql, &config);
+            assert!(output.is_ok(), "{sql}: {output:?}");
+            format_idempotently(sql, &config);
+        }
+    }
+
+    assert_eq!(
+        format_idempotently(
+            "values (1, 2), (3, 4) order by 1 limit 1",
+            &FormatConfig::default()
+        ),
+        "values (1, 2), (3, 4) order by 1 limit 1;"
+    );
+}
+
+#[test]
+fn cte_header_stays_on_one_line_with_expanded_values() {
+    let config = FormatConfig {
+        values_row_layout: Layout::Expanded,
+        ..Default::default()
+    };
+    assert_eq!(
+        format_idempotently(
+            "with v (a, b) as (values (1, 2), (3, 4)) select * from v",
+            &config
+        ),
+        "with v (a, b) as (\n  values\n    (1, 2),\n    (3, 4)\n)\nselect\n  *\nfrom\n  v;"
+    );
+}
