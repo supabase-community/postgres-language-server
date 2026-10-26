@@ -1270,12 +1270,14 @@ async fn non_ascii_names_get_whole_spans(test_db: PgPool) {
         }),
         ..Default::default()
     });
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
     let path = PgLSPath::new("test.sql");
     let content = "create table café (größe int);\ncreate table tee (größe int);\n\
         select a.größe from café a, tee b;\n";
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.into(),
             version: 1,
@@ -1286,6 +1288,7 @@ async fn non_ascii_names_get_whole_spans(test_db: PgPool) {
     let position = content.find("ße from").unwrap();
     let blocks = workspace
         .on_hover(OnHoverParams {
+            project_key,
             path: path.clone(),
             position: u32::try_from(position).unwrap().into(),
         })
@@ -2299,7 +2302,8 @@ async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
         }),
         ..Default::default()
     });
-    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     let content = format!(
@@ -2308,6 +2312,7 @@ async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
     );
     workspace
         .open_file(OpenFileParams {
+            project_key,
             path: path.clone(),
             content: content.clone(),
             version: 1,
@@ -2323,6 +2328,7 @@ async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
                 for position in [first, last] {
                     let blocks = workspace
                         .on_hover(OnHoverParams {
+                            project_key,
                             path: path.clone(),
                             position: position.into(),
                         })
@@ -2336,6 +2342,7 @@ async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
 
                     let actions = workspace
                         .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                            project_key,
                             path: path.clone(),
                             cursor_position: position.into(),
                             only: vec![],
