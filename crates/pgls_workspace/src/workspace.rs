@@ -261,6 +261,13 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError>;
 
+    /// Cancels the execution of the statement, if it is running. The execution then returns the
+    /// error that Postgres raises for the cancelled statement.
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError>;
+
     /// Invalidate the schema cache.
     ///
     /// # Arguments

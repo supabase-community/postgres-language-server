@@ -102,6 +102,14 @@ impl SnapshotManager {
         Ok(snapshot)
     }
 
+    /// Clear the snapshot for a specific connection.
+    #[cfg(feature = "db")]
+    pub fn clear_connection(&self, pool: &PgPool) {
+        let key: ConnectionKey = pool.into();
+        let mut schemas = self.db_schemas.write().unwrap();
+        schemas.remove(&key);
+    }
+
     /// Clear all connection-based snapshots.
     #[cfg(feature = "db")]
     pub fn clear_all_connections(&self) {

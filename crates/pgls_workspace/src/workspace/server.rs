@@ -8,7 +8,7 @@ use std::{
 };
 
 #[cfg(feature = "db")]
-use crate::features::code_actions::execute_statement::execution;
+use crate::features::code_actions::execute_statement::{execution, running::RunningStatements};
 use analyser::AnalyserVisitorBuilder;
 #[cfg(feature = "db")]
 use async_helper::run_async;
@@ -83,6 +83,8 @@ mod async_helper;
 mod connection_key;
 #[cfg(feature = "db")]
 mod connection_manager;
+#[cfg(feature = "db")]
+pub(crate) use connection_manager::DatabasePools;
 pub(crate) mod document;
 mod migration;
 mod pg_query;
@@ -110,6 +112,10 @@ pub struct WorkspaceServer {
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
+
+    /// The statements that are being executed, to cancel them
+    #[cfg(feature = "db")]
+    running_statements: RunningStatements,
 }
 
 /// A database snapshot with the changes of the statements before a statement.
@@ -146,6 +152,7 @@ impl WorkspaceServer {
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
             connection: ConnectionManager::new(),
+            running_statements: RunningStatements::default(),
         }
     }
 
@@ -1120,7 +1127,9 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        let stmt = parser.find(params.statement_id.clone(), ExecuteStatementMapper);
+        // Files can change while the statement runs.
+        drop(documents);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
@@ -1131,35 +1140,62 @@ impl Workspace for WorkspaceServer {
 
         let (_id, range, content, ast) = stmt.unwrap();
 
-        if ast.is_none() {
+        let Some(ast) = ast else {
             return Ok(ExecuteStatementResult {
                 message: "Statement is invalid.".into(),
                 ..Default::default()
             });
         };
 
+        if let Some(message) = execution::refusal(&ast) {
+            return Ok(ExecuteStatementResult {
+                message,
+                ..Default::default()
+            });
+        }
+
         let settings = self.workspaces();
         let no_connection = ExecuteStatementResult {
             message: "No database connection available.".into(),
             ..Default::default()
         };
-        let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
+        let Some(db) = settings
+            .settings_for(params.project_key, params.path.as_path())
+            .map(|settings| settings.db.clone())
         else {
             return Ok(no_connection);
         };
+        // The settings can change while the statement runs.
+        drop(settings);
 
-        if let Some(reason) = settings.db.statement_execution_disabled_reason() {
+        if let Some(reason) = db.statement_execution_disabled_reason() {
             return Ok(ExecuteStatementResult {
                 message: reason,
                 ..Default::default()
             });
         }
 
-        let Some(result) = self.connection.with_pools(&settings.db, |pools| {
-            let pool = pools.statement_pool.clone();
-            run_async(async move { execution::execute_statement(&pool, &content).await })?
-                .map_err(WorkspaceError::from)
-        }) else {
+        let options = execution::ExecuteOptions {
+            is_query: execution::is_query(&ast),
+            timeout: db.statement_timeout,
+        };
+        let (_running, cancelled) = self.running_statements.start(&params);
+
+        let result = self.connection.with_pools(&db, |pools| {
+            let statement_pools = pools.clone();
+            let result = run_async(async move {
+                execution::execute_statement(&statement_pools, &content, options, cancelled).await
+            })?
+            .map_err(WorkspaceError::from)?;
+
+            // Diagnostics, completions and hover should see the objects the statement created.
+            if result.error.is_none() && execution::may_change_schema(&ast) {
+                self.snapshot.clear_connection(&pools.pool);
+            }
+            Ok(result)
+        });
+
+        let Some(result) = result else {
             return Ok(no_connection);
         };
 
@@ -1185,6 +1221,24 @@ impl Workspace for WorkspaceServer {
             message: "Statement execution requires database support.".into(),
             ..Default::default()
         })
+    }
+
+    #[cfg(feature = "db")]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        self.running_statements.cancel(&params);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "db"))]
+    #[allow(unused_variables)]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        Ok(())
     }
 
     #[cfg(feature = "db")]

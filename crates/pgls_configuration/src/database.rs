@@ -53,6 +53,11 @@ pub struct DatabaseConfiguration {
     #[partial(bpaf(long("conn_timeout_secs"), fallback(Some(10)), debug_fallback))]
     pub conn_timeout_secs: u16,
 
+    /// How long a statement executed from the editor may run, in seconds, before Postgres cancels
+    /// it. `0` keeps the `statement_timeout` of the database. Default: `60`.
+    #[partial(bpaf(hide))]
+    pub statement_timeout_secs: u16,
+
     /// Actively disable all database-related features.
     #[partial(bpaf(long("disable-db"), req_flag(true)))]
     #[partial(cfg_attr(feature = "schema", schemars(skip)))]
@@ -76,6 +81,7 @@ impl std::fmt::Debug for DatabaseConfiguration {
                 &self.allow_statement_executions_against,
             )
             .field("conn_timeout_secs", &self.conn_timeout_secs)
+            .field("statement_timeout_secs", &self.statement_timeout_secs)
             .field("disable_connection", &self.disable_connection)
             .finish()
     }
@@ -98,6 +104,7 @@ impl std::fmt::Debug for PartialDatabaseConfiguration {
                 &self.allow_statement_executions_against,
             )
             .field("conn_timeout_secs", &self.conn_timeout_secs)
+            .field("statement_timeout_secs", &self.statement_timeout_secs)
             .field("disable_connection", &self.disable_connection)
             .finish()
     }
@@ -115,6 +122,7 @@ impl Default for DatabaseConfiguration {
             database: "postgres".to_string(),
             allow_statement_executions_against: Default::default(),
             conn_timeout_secs: 10,
+            statement_timeout_secs: 60,
         }
     }
 }

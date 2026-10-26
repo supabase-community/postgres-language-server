@@ -30,7 +30,8 @@ use crate::{
     },
     features::code_actions::{
         CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
-        EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementParams,
+        EXECUTE_STATEMENT_MAX_RESULT_SIZE, EXECUTE_STATEMENT_MAX_ROWS,
+        EXECUTE_STATEMENT_MAX_VALUE_SIZE, ExecuteStatementError, ExecuteStatementParams,
         ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
     },
     features::format::PullFileFormattingParams,
@@ -1989,6 +1990,18 @@ fn get_statement_execution_workspace(
     test_db: &PgPool,
     allow_statement_executions_against: &[String],
 ) -> (WorkspaceServer, ProjectKey) {
+    get_statement_execution_workspace_with_timeout(
+        test_db,
+        allow_statement_executions_against,
+        None,
+    )
+}
+
+fn get_statement_execution_workspace_with_timeout(
+    test_db: &PgPool,
+    allow_statement_executions_against: &[String],
+    statement_timeout_secs: Option<u16>,
+) -> (WorkspaceServer, ProjectKey) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         db: Some(PartialDatabaseConfiguration {
@@ -2003,6 +2016,7 @@ fn get_statement_execution_workspace(
             allow_statement_executions_against: Some(StringSet::from_iter(
                 allow_statement_executions_against.iter().cloned(),
             )),
+            statement_timeout_secs,
             ..Default::default()
         }),
         ..Default::default()
@@ -2157,8 +2171,7 @@ async fn execute_statement_returns_rows(test_db: PgPool) {
                 vec![Some("2".into()), Some("two".into()), None, None, None],
             ],
             truncated: false,
-            rows_affected: None,
-            error: None,
+            ..Default::default()
         }
     );
 }
@@ -2367,6 +2380,262 @@ async fn executed_statements_do_not_affect_the_server_connections(test_db: PgPoo
         "the connection is inside a transaction"
     );
     assert_eq!(row.get::<String, _>(1), "\"$user\", public");
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_times_out(test_db: PgPool) {
+    let (workspace, project_key) = get_statement_execution_workspace_with_timeout(
+        &test_db,
+        &allow_test_host(&test_db),
+        Some(1),
+    );
+
+    let start = Instant::now();
+    let (_, result) = execute_sql(&workspace, project_key, "select pg_sleep(10);");
+
+    assert_eq!(
+        result.error.map(|error| error.code).as_deref(),
+        Some("57014")
+    );
+    assert!(
+        start.elapsed() < Duration::from_secs(5),
+        "{:?}",
+        start.elapsed()
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_can_be_cancelled(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let path = PgLSPath::new("execute.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "select pg_sleep(30);".into(),
+            version: 1,
+        })
+        .unwrap();
+    let statement_id = workspace
+        .pull_code_actions(CodeActionsParams {
+            project_key,
+            path: path.clone(),
+            cursor_position: TextSize::new(0),
+            only: vec![],
+            skip: vec![],
+        })
+        .unwrap()
+        .actions
+        .into_iter()
+        .find_map(|action| match action.kind {
+            CodeActionKind::Command(CommandAction {
+                category: CommandActionCategory::ExecuteStatement(statement_id),
+            }) => Some(statement_id),
+            _ => None,
+        })
+        .unwrap();
+    let params = ExecuteStatementParams {
+        project_key,
+        path,
+        statement_id,
+    };
+
+    let start = Instant::now();
+    let result = std::thread::scope(|scope| {
+        let execution = scope.spawn(|| workspace.execute_statement(params.clone()));
+        std::thread::sleep(Duration::from_millis(500));
+        workspace
+            .cancel_statement_execution(params.clone())
+            .unwrap();
+        execution.join().unwrap().unwrap()
+    });
+
+    assert_eq!(
+        result.error.map(|error| error.code).as_deref(),
+        Some("57014")
+    );
+    assert!(
+        start.elapsed() < Duration::from_secs(10),
+        "{:?}",
+        start.elapsed()
+    );
+    assert!(workspace.running_statements.is_empty());
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_stops_a_truncated_query_early(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    // The first execution connects and loads the schema for the code actions, which isn't timed.
+    execute_sql(&workspace, project_key, "select 1 as one;");
+
+    // Without the cursor, Postgres would produce and send all 50 million rows.
+    let start = Instant::now();
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select generate_series(1, 50000000) as n",
+    );
+    let (_, next) = execute_sql(&workspace, project_key, "select 1 as one;");
+
+    assert!(result.truncated);
+    assert_eq!(result.rows.len(), EXECUTE_STATEMENT_MAX_ROWS);
+    assert_eq!(next.rows, [[Some("1".to_string())]]);
+    assert!(
+        start.elapsed() < Duration::from_secs(3),
+        "{:?}",
+        start.elapsed()
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_completes_a_truncated_command(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    execute_sql(&workspace, project_key, "create table inserted (id int);");
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "insert into inserted select generate_series(1, 1000) returning id;",
+    );
+    assert!(result.truncated);
+    assert_eq!(result.rows.len(), EXECUTE_STATEMENT_MAX_ROWS);
+
+    let (_, result) = execute_sql(&workspace, project_key, "select count(*) from inserted;");
+    assert_eq!(result.rows, [[Some("1000".to_string())]]);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_cuts_long_values(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    // The cut falls into the middle of an `ä`.
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select repeat('x', 20000000) as big, 'x' || repeat('ä', 10000) as umlauts, 'short' as short;",
+    );
+
+    assert!(result.truncated_values);
+    let [big, umlauts, short] = result.rows[0].clone().try_into().unwrap();
+    let big = big.unwrap();
+    assert_eq!(big.len(), EXECUTE_STATEMENT_MAX_VALUE_SIZE + '…'.len_utf8());
+    assert!(big.ends_with('…'));
+    let umlauts = umlauts.unwrap();
+    assert_eq!(
+        umlauts.len(),
+        EXECUTE_STATEMENT_MAX_VALUE_SIZE - 1 + '…'.len_utf8()
+    );
+    assert!(umlauts.ends_with("ää…"));
+    assert_eq!(short.as_deref(), Some("short"));
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_caps_the_result_size(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select repeat('x', 10000) as a, repeat('y', 10000) as b from generate_series(1, 150);",
+    );
+
+    assert!(result.truncated);
+    assert!(!result.truncated_values);
+    assert_eq!(
+        result.rows.len(),
+        EXECUTE_STATEMENT_MAX_RESULT_SIZE / (2 * EXECUTE_STATEMENT_MAX_VALUE_SIZE)
+    );
+    assert_eq!(result.message, "Showing the first 50 rows (truncated).");
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_refuses_copy_with_the_client(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    execute_sql(
+        &workspace,
+        project_key,
+        "create table copy_target (id int);",
+    );
+
+    let (_, result) = execute_sql(&workspace, project_key, "copy (select 1) to stdout;");
+    assert_eq!(
+        result.message,
+        "`COPY ... TO STDOUT` can't be executed from the editor. Use `\\copy` in psql, or a file on the database server."
+    );
+    let (_, result) = execute_sql(&workspace, project_key, "copy copy_target from stdin;");
+    assert!(
+        result
+            .message
+            .starts_with("`COPY ... FROM STDIN` can't be executed")
+    );
+
+    let (_, result) = execute_sql(&workspace, project_key, "select 1 as one;");
+    assert_eq!(result.rows, [[Some("1".to_string())]]);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_returns_notices(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "do $$ begin raise notice 'hello'; raise warning 'careful'; end $$;",
+    );
+
+    assert_eq!(result.notices, ["NOTICE: hello", "WARNING: careful"]);
+    assert_eq!(
+        result.message,
+        "Successfully executed statement. Rows affected: 0\nNOTICE: hello\nWARNING: careful"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn executed_ddl_refreshes_the_snapshot(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let other = PgLSPath::new("other.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: other.clone(),
+            content: "select id from created_by_execute;".into(),
+            version: 1,
+        })
+        .unwrap();
+    let typecheck_findings = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: other.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| is_typecheck(diagnostic))
+            .count()
+    };
+    assert!(typecheck_findings() > 0, "the table should be unknown");
+
+    execute_sql(
+        &workspace,
+        project_key,
+        "create table created_by_execute (id int);",
+    );
+
+    assert_eq!(typecheck_findings(), 0);
 }
 
 /// A workspace that reads the section markers of a migration tool.
