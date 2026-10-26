@@ -92,7 +92,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                     }
                     if let Some(NodeEnum::DefElem(def)) = &opt.node {
                         // Emit sequence option like START 7, INCREMENT 5
-                        super::emit_sequence_option(e, def);
+                        emit_sequence_option(e, def);
                     }
                 }
                 e.token(TokenKind::R_PAREN);

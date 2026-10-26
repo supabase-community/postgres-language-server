@@ -3,4 +3,5 @@
 
 pub(crate) mod modifiers;
 pub(crate) mod object_type;
+pub(crate) mod options;
 pub(crate) mod window_frame;

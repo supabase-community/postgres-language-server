@@ -39,7 +39,7 @@ pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
             // Use specialized sequence option emission
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {
                 emit_with_comments_at(e, def_elem.location, |e| {
-                    super::emit_sequence_option(e, def_elem);
+                    emit_sequence_option(e, def_elem);
                 });
             } else {
                 emit_node(e, opt);

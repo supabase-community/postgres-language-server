@@ -1,6 +1,5 @@
 use pgls_query::protobuf::GrantRoleStmt;
 
-use super::def_elem::emit_grant_role_option;
 use super::grant_stmt::emit_grant_list;
 use super::prelude::*;
 

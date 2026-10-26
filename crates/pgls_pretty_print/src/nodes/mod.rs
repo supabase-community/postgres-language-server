@@ -378,7 +378,7 @@ use ctesearch_clause::emit_ctesearch_clause;
 use current_of_expr::emit_current_of_expr;
 use deallocate_stmt::emit_deallocate_stmt;
 use declare_cursor_stmt::emit_declare_cursor_stmt;
-use def_elem::{emit_def_elem, emit_options_def_elem, emit_sequence_option};
+use def_elem::emit_def_elem;
 use define_stmt::emit_define_stmt;
 use delete_stmt::emit_delete_stmt;
 use discard_stmt::emit_discard_stmt;

@@ -15,4 +15,5 @@ pub(super) use super::{emit_node, emit_node_enum};
 
 pub(super) use super::clauses::modifiers::*;
 pub(super) use super::clauses::object_type::*;
+pub(super) use super::clauses::options::*;
 pub(super) use super::clauses::window_frame::*;
