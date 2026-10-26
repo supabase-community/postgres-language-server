@@ -307,11 +307,7 @@ fn query_token_range(q: &Query, fn_body: &str, search_from: usize) -> Option<Tex
     // UTF-8 byte offsets.
     let pos = byte_offset_from_one_based_char_offset(
         &q.text,
-        OneBasedCharOffset(
-            q.position
-                .parse::<usize>()
-                .expect("Expected query position to be a valid usize"),
-        ),
+        OneBasedCharOffset(q.position.parse::<usize>().ok()?),
     )?;
 
     let start = query_start?.get() + pos.get();
@@ -366,6 +362,18 @@ mod tests {
         let diagnostics = create_diagnostics_from_check_result(&result, fn_body, 0, None);
         let span = diagnostics[0].span.expect("expected diagnostic span");
         fn_body[usize::from(span.start())..usize::from(span.end())].to_string()
+    }
+
+    #[test]
+    fn ignores_a_query_position_that_is_not_a_number() {
+        let query = Query {
+            position: "unknown".to_string(),
+            text: "SELECT 1".to_string(),
+        };
+        assert_eq!(
+            query_token_range(&query, "BEGIN\n  SELECT 1;\nEND", 0),
+            None
+        );
     }
 
     #[test]

@@ -208,8 +208,9 @@ pub enum Reference {
     Type {
         /// The location of the type name in the statement.
         location: i32,
-        /// The span of the (possibly qualified) type name, without modifiers like `(10)` or `[]`.
-        /// For multi-word types like `double precision`, only the first word.
+        /// The span of the (possibly qualified) type name, with every word of multi-word types
+        /// like `double precision`, and without modifiers like `(10)` or `[]`. The precision of
+        /// `timestamp(3) with time zone` is inside the span.
         span: Option<TextRange>,
         type_info: crate::TypeInfo,
     },

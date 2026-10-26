@@ -52,7 +52,7 @@ pub(super) fn resolve_type_name(r: &mut Resolver, n: &TypeName) {
             if r.collects_references() {
                 r.record(Reference::Type {
                     location: n.location,
-                    span: r.name_span(n.location),
+                    span: r.type_name_span(n.location),
                     type_info,
                 });
             }

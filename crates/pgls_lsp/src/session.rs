@@ -161,6 +161,11 @@ pub(crate) struct Session {
     /// before a new task is spawned. This ensures that only one analysis run
     /// fires at the end of a rapid-fire burst rather than one per keystroke.
     diagnostic_debounce: Arc<Mutex<FxHashMap<ls_types::Uri, AbortHandle>>>,
+
+    /// Set when inlay hints or semantic tokens were requested while the database was
+    /// unreachable. The next diagnostics run that finds it reachable asks the client to request
+    /// them again.
+    editor_features_without_database: AtomicBool,
 }
 
 /// The parameters provided by the client in the "initialize" request
@@ -271,6 +276,7 @@ impl Session {
             #[cfg(test)]
             max_running_transitions: std::sync::atomic::AtomicUsize::new(0),
             diagnostic_debounce: Arc::new(Mutex::new(FxHashMap::default())),
+            editor_features_without_database: AtomicBool::new(false),
         }
     }
 
@@ -579,7 +585,62 @@ impl Session {
             .publish_diagnostics(url, diagnostics, Some(captured_version))
             .await;
 
+        if self
+            .editor_features_without_database
+            .load(Ordering::Relaxed)
+        {
+            let connection = self.workspace.check_database_connection(
+                features::diagnostics::CheckDatabaseConnectionParams {
+                    project_key: self.project_key(&pgls_path),
+                },
+            );
+            if connection.is_ok_and(|connection| connection.error.is_none())
+                && self
+                    .editor_features_without_database
+                    .swap(false, Ordering::Relaxed)
+            {
+                self.refresh_editor_features();
+            }
+        }
+
         Ok(())
+    }
+
+    /// Records that inlay hints or semantic tokens were requested while the database was
+    /// unreachable, so that the client is asked to request them again once it is reachable.
+    pub(crate) fn editor_features_without_database(&self) {
+        self.editor_features_without_database
+            .store(true, Ordering::Relaxed);
+    }
+
+    /// Asks the client to request inlay hints and semantic tokens again, if it supports that.
+    /// Called whenever their results may have changed without an edit: the configuration was
+    /// reloaded, the schema changed, or the database became reachable.
+    pub(crate) fn refresh_editor_features(&self) {
+        let workspace = self
+            .client_capabilities()
+            .and_then(|capabilities| capabilities.workspace.as_ref());
+        let inlay_hints = workspace
+            .and_then(|workspace| workspace.inlay_hint.as_ref())
+            .and_then(|inlay_hint| inlay_hint.refresh_support)
+            .unwrap_or(false);
+        let semantic_tokens = workspace
+            .and_then(|workspace| workspace.semantic_tokens.as_ref())
+            .and_then(|semantic_tokens| semantic_tokens.refresh_support)
+            .unwrap_or(false);
+        if !inlay_hints && !semantic_tokens {
+            return;
+        }
+        // The client answers these requests asynchronously, so don't wait for it.
+        let client = self.client.clone();
+        tokio::spawn(async move {
+            if inlay_hints && let Err(err) = client.inlay_hint_refresh().await {
+                error!("Failed to refresh inlay hints: {err}");
+            }
+            if semantic_tokens && let Err(err) = client.semantic_tokens_refresh().await {
+                error!("Failed to refresh semantic tokens: {err}");
+            }
+        });
     }
 
     /// Schedules a debounced diagnostic update for the given URL.
@@ -626,7 +687,8 @@ impl Session {
         }
     }
 
-    /// Updates diagnostics for every [`Document`] in this [`Session`]
+    /// Updates diagnostics for every [`Document`] in this [`Session`], and asks the client to
+    /// request inlay hints and semantic tokens again.
     pub(crate) async fn update_all_diagnostics(&self) {
         let mut futures: FuturesUnordered<_> = self
             .documents
@@ -641,6 +703,10 @@ impl Session {
                 error!("Error while updating diagnostics: {}", e);
             }
         }
+
+        // Whatever invalidated the diagnostics of every document may have changed the inlay
+        // hints and semantic tokens too.
+        self.refresh_editor_features();
     }
 
     /// Get a [`Document`] matching the provided [`ls_types::Uri`]
