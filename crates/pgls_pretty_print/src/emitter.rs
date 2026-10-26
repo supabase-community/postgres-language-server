@@ -59,12 +59,15 @@ pub struct EventEmitter {
     leading_line_comments_require_break: bool,
     /// Line comments written after a list comma, waiting for the emitter to reach that comma.
     comments_after_separator: Vec<Comment>,
+    /// `config.layout` as configured, while `with_layout` overrides it for part of a statement.
+    configured_layout: crate::Layout,
 }
 
 impl EventEmitter {
     pub fn new(config: FormatConfig) -> Self {
         Self {
             events: Vec::new(),
+            configured_layout: config.layout.clone(),
             config,
             leading_comments: HashMap::new(),
             trailing_comments: HashMap::new(),
@@ -77,6 +80,11 @@ impl EventEmitter {
     #[allow(dead_code)]
     pub fn config(&self) -> &FormatConfig {
         &self.config
+    }
+
+    /// The layout from the configuration, which `with_layout` does not change.
+    pub fn configured_layout(&self) -> crate::Layout {
+        self.configured_layout.clone()
     }
 
     /// Emits `body` with `layout` in place of the configured one.
@@ -93,6 +101,7 @@ impl EventEmitter {
     ) -> Self {
         Self {
             events: Vec::new(),
+            configured_layout: config.layout.clone(),
             config,
             leading_comments,
             trailing_comments,

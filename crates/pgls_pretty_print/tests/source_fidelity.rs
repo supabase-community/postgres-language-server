@@ -307,3 +307,21 @@ fn set_values_keep_their_case() {
         "set datestyle = 'German';"
     );
 }
+
+/// `with admin true` parses to the same AST, but only Postgres 16 and newer accept it.
+#[test]
+fn grant_role_with_admin_option_keeps_the_portable_spelling() {
+    assert_eq!(
+        format("GRANT r1 TO u1 WITH ADMIN OPTION"),
+        "grant r1 to u1 with admin option;"
+    );
+    assert_eq!(
+        format("GRANT r1 TO u1 WITH ADMIN TRUE"),
+        "grant r1 to u1 with admin option;"
+    );
+    // Only Postgres 16 and newer have the other options, so they keep the boolean spelling.
+    assert_eq!(
+        format("GRANT r1 TO u1 WITH INHERIT FALSE, ADMIN FALSE, SET TRUE"),
+        "grant r1 to u1 with inherit false, admin false, set true;"
+    );
+}

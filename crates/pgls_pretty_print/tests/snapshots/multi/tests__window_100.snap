@@ -2812,8 +2812,7 @@ select
   sum(salary),
   row_number() over (order by depname),
   sum(sum(salary) filter (where enroll_date > '2007-01-01'))
-  filter (where
-    depname <> 'sales') over (order by depname desc) as filtered_sum,
+    filter (where depname <> 'sales') over (order by depname desc) as filtered_sum,
   depname
 from
   empsalary

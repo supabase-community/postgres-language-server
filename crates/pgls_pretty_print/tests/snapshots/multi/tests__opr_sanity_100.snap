@@ -418,8 +418,7 @@ from
   pg_proc as p1
 where
   proallargtypes is not null and
-  array(select unnest(proargtypes)) <>
-  array(
+  array(select unnest(proargtypes)) <> array(
     select
       proallargtypes[i]
     from

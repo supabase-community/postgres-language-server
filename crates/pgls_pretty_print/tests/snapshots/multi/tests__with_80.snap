@@ -341,8 +341,7 @@ from
   )
   as t
 where
-  n <
-  (
+  n < (
     select
       count(*)
     from
