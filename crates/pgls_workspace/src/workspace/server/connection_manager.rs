@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::str::FromStr;
 use std::sync::RwLock;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use sqlx::{PgPool, Postgres, pool::PoolOptions, postgres::PgConnectOptions};
 
@@ -12,12 +12,10 @@ use crate::{
     settings::{DEFAULT_DATABASE_PASSWORD, DatabaseSettings},
 };
 
+use super::backoff::Backoff;
 use super::connection_key::ConnectionKey;
 use super::last_used::LastUsed;
 use super::pgpass::{PassfileTarget, password_from_passfile};
-
-const INITIAL_FAILURE_BACKOFF: Duration = Duration::from_secs(5);
-const MAX_FAILURE_BACKOFF: Duration = Duration::from_secs(60);
 
 /// How long a pool, and each of its connections, may stay unused before it is closed. An open
 /// connection holds a backend process on the server, and a project that isn't edited for a while
@@ -113,8 +111,7 @@ struct CachedFailure {
     error: DatabaseConnectionError,
     message: String,
     settings_fingerprint: u64,
-    attempts: u32,
-    next_retry_at: Instant,
+    backoff: Backoff,
 }
 
 pub struct ConnectionManager {
@@ -367,14 +364,8 @@ impl ConnectionManager {
         message: &str,
     ) {
         let mut failures = self.failures.write().unwrap();
-        let now = Instant::now();
-        let attempts = failures.get(key).map_or(1, |failure| failure.attempts + 1);
-        let multiplier = 1u32
-            .checked_shl(attempts.saturating_sub(1))
-            .unwrap_or(u32::MAX);
-        let backoff = INITIAL_FAILURE_BACKOFF
-            .saturating_mul(multiplier)
-            .min(MAX_FAILURE_BACKOFF);
+        let backoff = Backoff::after_failure(failures.get(key).map(|failure| &failure.backoff));
+        let delay = backoff.delay();
 
         let was_cached = failures.contains_key(key);
         failures.insert(
@@ -383,20 +374,17 @@ impl ConnectionManager {
                 error: error.clone(),
                 message: message.to_string(),
                 settings_fingerprint,
-                attempts,
-                next_retry_at: now + backoff,
+                backoff,
             },
         );
 
         if was_cached {
             tracing::debug!(
-                "Database connection failed again. Retrying after {:?}: {message}",
-                backoff
+                "Database connection failed again. Retrying after {delay:?}: {message}"
             );
         } else {
             tracing::warn!(
-                "Database connection failed. Skipping database-backed features for {:?}: {message}",
-                backoff
+                "Database connection failed. Skipping database-backed features for {delay:?}: {message}"
             );
         }
     }
@@ -421,11 +409,10 @@ impl ConnectionManager {
         }
         let failure = failures.get(key)?;
 
-        let now = Instant::now();
-        if now < failure.next_retry_at {
+        if failure.backoff.is_active() {
             tracing::debug!(
                 "Skipping database connection retry during backoff until {:?}: {}",
-                failure.next_retry_at,
+                failure.backoff.next_retry_at(),
                 failure.message
             );
             return Some(failure.error.clone());
@@ -499,8 +486,7 @@ mod tests {
                 error: authentication_failed(),
                 message: "authentication failed".to_string(),
                 settings_fingerprint: old_fingerprint,
-                attempts: 1,
-                next_retry_at: Instant::now() + Duration::from_secs(60),
+                backoff: Backoff::after_failure(None),
             },
         );
 
