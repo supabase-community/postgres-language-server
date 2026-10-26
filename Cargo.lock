@@ -2592,6 +2592,7 @@ dependencies = [
  "crossbeam",
  "directories",
  "enumflags2",
+ "ignore",
  "oxc_resolver",
  "parking_lot",
  "pgls_diagnostics",
@@ -2600,6 +2601,7 @@ dependencies = [
  "schemars",
  "serde",
  "smallvec",
+ "tempfile",
  "tracing",
 ]
 
@@ -2621,6 +2623,17 @@ dependencies = [
  "sqlx",
  "tracing",
  "tree-sitter",
+]
+
+[[package]]
+name = "pgls_inlay_hints"
+version = "0.0.0"
+dependencies = [
+ "pgls_catalog",
+ "pgls_query",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "sqlx",
 ]
 
 [[package]]
@@ -2653,6 +2666,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "futures",
+ "parking_lot",
  "pgls_analyse",
  "pgls_completions",
  "pgls_configuration",
@@ -2990,6 +3004,7 @@ dependencies = [
  "pgls_env",
  "pgls_fs",
  "pgls_hover",
+ "pgls_inlay_hints",
  "pgls_lexer",
  "pgls_matcher",
  "pgls_pglinter",

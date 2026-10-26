@@ -1,6 +1,6 @@
 # banCharField
 
-**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Group** [`style`](../rules.md#style) · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/banCharField`
 
 **Sources**: inspired by [`squawk/ban-char-field`](https://squawkhq.com/docs/ban-char-field)

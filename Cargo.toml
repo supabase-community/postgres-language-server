@@ -73,6 +73,7 @@ pgls_diagnostics_macros     = { path = "./crates/pgls_diagnostics_macros", versi
 pgls_env                    = { path = "./crates/pgls_env", version = "0.0.0" }
 pgls_fs                     = { path = "./crates/pgls_fs", version = "0.0.0" }
 pgls_hover                  = { path = "./crates/pgls_hover", version = "0.0.0" }
+pgls_inlay_hints            = { path = "./crates/pgls_inlay_hints", version = "0.0.0" }
 pgls_lexer                  = { path = "./crates/pgls_lexer", version = "0.0.0" }
 pgls_lexer_codegen          = { path = "./crates/pgls_lexer_codegen", version = "0.0.0" }
 pgls_lsp                    = { path = "./crates/pgls_lsp", version = "0.0.0" }
@@ -102,5 +103,17 @@ pgls_workspace_macros       = { path = "./crates/pgls_workspace_macros", version
 pgls_test_macros = { path = "./crates/pgls_test_macros" }
 pgls_test_utils  = { path = "./crates/pgls_test_utils" }
 
-[profile.dev.package]
-insta.opt-level = 3
+# Full debug info makes up most of the target dir, since every test binary
+# links its own copy. Line tables keep file:line in backtraces. Set
+# `CARGO_PROFILE_DEV_DEBUG=true` to get full debug info for a debugger.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.dev.package.insta]
+opt-level = 3
+
+[profile.dev.build-override]
+debug = false

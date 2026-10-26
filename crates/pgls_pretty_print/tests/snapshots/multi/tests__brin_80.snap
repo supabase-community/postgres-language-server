@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/brin.sql
-snapshot_kind: text
 ---
 create table brintest (
   byteacol bytea,
@@ -668,9 +667,7 @@ create table brintest_3 (
   d text
 );
 
-with
-rand_value
-as (
+with rand_value as (
   select
     string_agg(fipshash(cast(i as text)), '') as val
   from
@@ -689,9 +686,7 @@ drop index brin_test_temp_idx;
 
 vacuum brintest_3;
 
-with
-rand_value
-as (
+with rand_value as (
   select
     string_agg(fipshash(cast(-i as text)), '') as val
   from

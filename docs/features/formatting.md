@@ -58,6 +58,7 @@ Configure formatting behavior in your `postgres-language-server.jsonc`:
 | `castStyle` | `"cast"` | How an explicit cast is spelled: `"cast"` for `CAST(x AS t)`, `"operator"` for `x::t` |
 | `clauseBodyStyle` | `"break"` | Where a clause body starts: `"break"` for a new line, `"compact"` to keep the first element on the keyword line. Compact also keeps a select list of a single item on the `SELECT` line |
 | `isolateSemicolon` | `false` | Put the terminating semicolon on its own line when the statement spans several lines |
+| `skipFnBodies` | `false` | Keep `language sql` function bodies as written instead of formatting them |
 | `functionArgumentGroups` | `{}` (plus built-in defaults, see below) | Function names mapped to the number of adjacent arguments that should stay together when wrapping |
 
 With `valuesRowLayout: "expanded"` and `commaStyle: "leading"`, each `VALUES`
@@ -72,6 +73,30 @@ values
 The expressions inside each tuple stay on one line when they fit. This option
 applies to `INSERT`, standalone `VALUES`, and `VALUES` in subqueries and CTEs,
 independently of `layout` and `clauseBodyStyle`.
+
+With `layout: "expanded"`, a `CASE` expression puts every `WHEN` and `ELSE`
+on its own line, one indent level in from where `CASE` starts, `THEN` one
+level further in, and `END` back under `CASE`. This holds wherever the `CASE`
+starts, after a leading comma or `THEN` for instance. A `WHEN` condition that
+breaks continues one level in from `WHEN`:
+
+```sql
+select
+  id
+  , case
+      when status = 'active'
+        and deleted_at is null
+        then 'live'
+      else 'archived'
+    end as state
+from
+  accounts;
+```
+
+With `indentStyle: "tabs"`, the indent levels are written as tabs and the rest
+of an alignment, such as the two columns of `, ` before `case` above, as
+spaces. The columns only line up when the editor's tab width equals
+`indentSize`.
 
 With `clauseBodyStyle: "compact"`, the first relation stays on the `FROM` line
 and the condition on the `WHERE`, `HAVING`, or `ON` line. A select list of a
@@ -179,6 +204,10 @@ echo "SELECT a,b FROM t;" | postgres-language-server format --stdin-file-path=qu
 ```
 
 The file doesn't need to exist. Its path is used to apply the project configuration (for example, a path matching `files.ignore` is printed back unchanged) and to label diagnostics. If a statement cannot be formatted, it is printed unchanged, its diagnostics are written to stderr, and the command exits with a non-zero code. When the formatter is disabled, the input is printed unchanged. `--stdin-file-path` cannot be combined with file paths, `--write`, `--staged` or `--changed`.
+
+### Formatting generated SQL
+
+To format the SQL that a tool like the Supabase CLI generates, run `format --write` after each generation. See [Formatting Declarative Schemas](../guides/formatting_declarative_schemas.md).
 
 ## Editor Integration
 

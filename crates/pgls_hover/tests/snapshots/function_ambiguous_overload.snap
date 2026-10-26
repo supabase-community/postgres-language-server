@@ -1,0 +1,45 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+assertion_line: 101
+expression: snapshot
+---
+# Input
+```sql
+select amb('1', '2')
+         ↑ hovered here
+```
+
+# Hover Results
+### `public.amb(a integer, b text) → integer`  
+```plain  
+Function - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+
+CREATE OR REPLACE FUNCTION public.amb(a integer, b text)
+ RETURNS integer
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$select 1$function$
+
+  
+```
+
+---
+
+### `public.amb(c text, d integer) → integer`  
+```plain  
+Function - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+
+CREATE OR REPLACE FUNCTION public.amb(c text, d integer)
+ RETURNS integer
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$select 1$function$
+
+  
+```

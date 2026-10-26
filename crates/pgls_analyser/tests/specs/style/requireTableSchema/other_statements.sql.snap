@@ -1,0 +1,43 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireTableSchema
+alter table posts add column title text;
+-- expect_lint/requireTableSchema
+create table post_ids as select id from public.posts;
+-- expect_lint/requireTableSchema
+drop table public.comments, posts;
+
+```
+
+# Diagnostics
+lint/requireTableSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Table posts is not schema-qualified.
+  
+  i Without a schema, the table is resolved through the search_path of the session that runs the statement.
+  
+  i Specify the schema, e.g. public.my_table.
+  
+
+
+lint/requireTableSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Table post_ids is not schema-qualified.
+  
+  i Without a schema, the table is resolved through the search_path of the session that runs the statement.
+  
+  i Specify the schema, e.g. public.my_table.
+  
+
+
+lint/requireTableSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Table posts is not schema-qualified.
+  
+  i Without a schema, the table is resolved through the search_path of the session that runs the statement.
+  
+  i Specify the schema, e.g. public.my_table.

@@ -3,6 +3,7 @@ use pgls_catalog::Snapshot;
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
 
 mod column;
+mod derived_column;
 mod function;
 mod postgres_type;
 mod role;
@@ -10,6 +11,8 @@ mod schema;
 mod table;
 
 mod test_helper;
+
+pub use derived_column::DerivedColumn;
 
 /// Mapper type that will be used for filtering and turning data to markdown.
 #[derive(Debug)]
@@ -20,6 +23,7 @@ pub enum Hoverable<'a> {
     Role(&'a pgls_catalog::Role),
     Schema(&'a pgls_catalog::Schema),
     PostgresType(&'a pgls_catalog::PostgresType),
+    DerivedColumn(DerivedColumn),
 }
 
 impl<'a> From<&'a pgls_catalog::Schema> for Hoverable<'a> {
@@ -67,6 +71,7 @@ impl ContextualPriority for Hoverable<'_> {
             Hoverable::Role(role) => role.relevance_score(ctx),
             Hoverable::Schema(schema) => schema.relevance_score(ctx),
             Hoverable::PostgresType(type_) => type_.relevance_score(ctx),
+            Hoverable::DerivedColumn(column) => column.relevance_score(ctx),
         }
     }
 }
@@ -88,6 +93,9 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::PostgresType(type_) => {
                 ToHoverMarkdown::hover_headline(*type_, writer, snapshot)
             }
+            Hoverable::DerivedColumn(column) => {
+                ToHoverMarkdown::hover_headline(column, writer, snapshot)
+            }
         }
     }
 
@@ -105,6 +113,9 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::Role(role) => ToHoverMarkdown::hover_body(*role, writer, snapshot),
             Hoverable::Schema(schema) => ToHoverMarkdown::hover_body(*schema, writer, snapshot),
             Hoverable::PostgresType(type_) => ToHoverMarkdown::hover_body(*type_, writer, snapshot),
+            Hoverable::DerivedColumn(column) => {
+                ToHoverMarkdown::hover_body(column, writer, snapshot)
+            }
         }
     }
 
@@ -124,6 +135,9 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::PostgresType(type_) => {
                 ToHoverMarkdown::hover_footer(*type_, writer, snapshot)
             }
+            Hoverable::DerivedColumn(column) => {
+                ToHoverMarkdown::hover_footer(column, writer, snapshot)
+            }
         }
     }
 
@@ -135,6 +149,7 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::Role(role) => role.body_markdown_type(),
             Hoverable::Schema(schema) => schema.body_markdown_type(),
             Hoverable::PostgresType(type_) => type_.body_markdown_type(),
+            Hoverable::DerivedColumn(column) => column.body_markdown_type(),
         }
     }
 
@@ -146,6 +161,7 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::Role(role) => role.footer_markdown_type(),
             Hoverable::Schema(schema) => schema.footer_markdown_type(),
             Hoverable::PostgresType(type_) => type_.footer_markdown_type(),
+            Hoverable::DerivedColumn(column) => column.footer_markdown_type(),
         }
     }
 }

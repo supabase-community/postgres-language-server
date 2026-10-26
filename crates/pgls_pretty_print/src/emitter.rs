@@ -35,6 +35,9 @@ pub enum LayoutEvent {
     GroupEnd,
     IndentStart,
     IndentEnd,
+    /// Align continuation lines with the current column until `AlignEnd`.
+    AlignStart,
+    AlignEnd,
 }
 
 /// Collects layout events for the renderer.
@@ -56,15 +59,21 @@ pub struct EventEmitter {
     leading_line_comments_require_break: bool,
     /// Line comments written after a list comma, waiting for the emitter to reach that comma.
     comments_after_separator: Vec<Comment>,
+    /// `config.layout` as configured, while `with_layout` overrides it for part of a statement.
+    configured_layout: crate::Layout,
+    /// Identifiers the parser truncated, by their truncated name, as written in the source.
+    truncated_identifiers: HashMap<String, String>,
 }
 
 impl EventEmitter {
     pub fn new(config: FormatConfig) -> Self {
         Self {
             events: Vec::new(),
+            configured_layout: config.layout.clone(),
             config,
             leading_comments: HashMap::new(),
             trailing_comments: HashMap::new(),
+            truncated_identifiers: HashMap::new(),
             leading_line_comments_require_break: false,
             comments_after_separator: Vec::new(),
         }
@@ -74,6 +83,11 @@ impl EventEmitter {
     #[allow(dead_code)]
     pub fn config(&self) -> &FormatConfig {
         &self.config
+    }
+
+    /// The layout from the configuration, which `with_layout` does not change.
+    pub fn configured_layout(&self) -> crate::Layout {
+        self.configured_layout.clone()
     }
 
     /// Emits `body` with `layout` in place of the configured one.
@@ -90,12 +104,27 @@ impl EventEmitter {
     ) -> Self {
         Self {
             events: Vec::new(),
+            configured_layout: config.layout.clone(),
             config,
             leading_comments,
             trailing_comments,
+            truncated_identifiers: HashMap::new(),
             leading_line_comments_require_break: false,
             comments_after_separator: Vec::new(),
         }
+    }
+
+    /// Identifiers of the source that the parser truncated, by their truncated name. The emitter
+    /// writes them as written rather than as the AST has them.
+    pub fn set_truncated_identifiers(&mut self, identifiers: HashMap<String, String>) {
+        self.truncated_identifiers = identifiers;
+    }
+
+    /// `name` as written in the source, when the parser truncated it.
+    pub fn source_identifier<'a>(&'a self, name: &'a str) -> &'a str {
+        self.truncated_identifiers
+            .get(name)
+            .map_or(name, String::as_str)
     }
 
     pub fn token(&mut self, token: TokenKind) {
@@ -200,10 +229,25 @@ impl EventEmitter {
 
     /// Emits and consumes comments that follow `location`, if any.
     pub fn take_trailing_comments_at(&mut self, location: i32) {
-        let Some(comments) = self.trailing_comments.remove(&location) else {
-            return;
-        };
+        let comments = self.remove_trailing_comments_at(location);
+        self.emit_trailing_comments(comments);
+    }
 
+    /// Consumes the comments that follow `location` without emitting them, so that the caller
+    /// can emit them somewhere else with `emit_trailing_comments`.
+    pub fn remove_trailing_comments_at(&mut self, location: i32) -> Vec<Comment> {
+        self.trailing_comments.remove(&location).unwrap_or_default()
+    }
+
+    /// Puts back comments taken with `remove_trailing_comments_at`.
+    pub fn restore_trailing_comments_at(&mut self, location: i32, comments: Vec<Comment>) {
+        if !comments.is_empty() {
+            self.trailing_comments.insert(location, comments);
+        }
+    }
+
+    /// Emits comments that follow the node just emitted.
+    pub fn emit_trailing_comments(&mut self, comments: Vec<Comment>) {
         for comment in comments {
             if comment.after_separator {
                 self.comments_after_separator.push(comment);
@@ -283,5 +327,13 @@ impl EventEmitter {
 
     pub fn indent_end(&mut self) {
         self.events.push(LayoutEvent::IndentEnd);
+    }
+
+    pub fn align_start(&mut self) {
+        self.events.push(LayoutEvent::AlignStart);
+    }
+
+    pub fn align_end(&mut self) {
+        self.events.push(LayoutEvent::AlignEnd);
     }
 }

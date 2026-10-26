@@ -1,0 +1,67 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banSetSchema
+alter view active_users set schema reporting;
+-- expect_lint/banSetSchema
+alter function calculate_total(int) set schema billing;
+-- expect_lint/banSetSchema
+alter type order_status set schema billing;
+-- expect_lint/banSetSchema
+alter extension hstore set schema extensions;
+-- expect_lint/banSetSchema
+alter sequence order_number_seq set schema billing;
+
+```
+
+# Diagnostics
+lint/banSetSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Moving a view to another schema may break existing clients.
+  
+  i Clients that use the old schema-qualified name fail, and rolling back the application does not move it back.
+  
+  i Update clients to use the new schema-qualified name before moving the object.
+  
+
+
+lint/banSetSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Moving a function to another schema may break existing clients.
+  
+  i Clients that use the old schema-qualified name fail, and rolling back the application does not move it back.
+  
+  i Update clients to use the new schema-qualified name before moving the object.
+  
+
+
+lint/banSetSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Moving a type to another schema may break existing clients.
+  
+  i Clients that use the old schema-qualified name fail, and rolling back the application does not move it back.
+  
+  i Update clients to use the new schema-qualified name before moving the object.
+  
+
+
+lint/banSetSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Moving an extension to another schema may break existing clients.
+  
+  i Clients that use the old schema-qualified name fail, and rolling back the application does not move it back.
+  
+  i Update clients to use the new schema-qualified name before moving the object.
+  
+
+
+lint/banSetSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Moving a sequence to another schema may break existing clients.
+  
+  i Clients that use the old schema-qualified name fail, and rolling back the application does not move it back.
+  
+  i Update clients to use the new schema-qualified name before moving the object.

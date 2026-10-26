@@ -99,6 +99,13 @@ where
         self.request("pgls/code_actions", params)
     }
 
+    fn fix_file(
+        &self,
+        params: crate::features::code_actions::FixFileParams,
+    ) -> Result<crate::features::code_actions::FixFileResult, WorkspaceError> {
+        self.request("pgls/fix_file", params)
+    }
+
     fn execute_statement(
         &self,
         params: crate::features::code_actions::ExecuteStatementParams,
@@ -134,6 +141,13 @@ where
 
     fn update_settings(&self, params: super::UpdateSettingsParams) -> Result<(), WorkspaceError> {
         self.request("pgls/update_settings", params)
+    }
+
+    fn update_nested_settings(
+        &self,
+        params: super::UpdateNestedSettingsParams,
+    ) -> Result<super::UpdateNestedSettingsResult, WorkspaceError> {
+        self.request("pgls/update_nested_settings", params)
     }
 
     fn is_path_ignored(&self, params: IsPathIgnoredParams) -> Result<bool, WorkspaceError> {
@@ -188,6 +202,13 @@ where
         params: crate::features::on_hover::OnHoverParams,
     ) -> Result<crate::features::on_hover::OnHoverResult, WorkspaceError> {
         self.request("pgls/on_hover", params)
+    }
+
+    fn pull_inlay_hints(
+        &self,
+        params: crate::features::inlay_hints::PullInlayHintsParams,
+    ) -> Result<crate::features::inlay_hints::PullInlayHintsResult, WorkspaceError> {
+        self.request("pgls/pull_inlay_hints", params)
     }
 
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {

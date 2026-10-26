@@ -1,12 +1,14 @@
 //! Relations and CTEs referenced by name.
 
+use std::rc::Rc;
+
 use pgls_query::protobuf::RangeVar;
 
 use super::{Resolver, alias::apply_alias};
 use crate::lookup::{Lookup, RelationKind};
 use crate::resolve::{
-    FindingKind,
-    scope::{Columns, Item},
+    ColumnSource, FindingKind, Reference,
+    scope::{Columns, Item, ItemSource},
 };
 
 /// A relation or CTE in FROM. A name without schema is a CTE first ([`transformFromClauseItem`]
@@ -32,6 +34,18 @@ pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
             }
             columns
         });
+        if r.collects_references()
+            && let Some(names) = &cte.columns
+        {
+            item.source = Some(Rc::new(ItemSource::derived(
+                r,
+                ColumnSource::Cte {
+                    name: cte.name.clone(),
+                },
+                names,
+                cte.typed_columns.as_deref(),
+            )));
+        }
         return item;
     }
     resolve_target_relation(r, n)
@@ -57,6 +71,7 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
             columns
         }),
         has_system_columns: relation.has_system_columns,
+        source: relation.source,
     }
 }
 
@@ -67,6 +82,8 @@ pub(super) struct ResolvedRelation {
     pub columns: Columns,
     pub typed_columns: Option<Vec<crate::typing::TypedColumn>>,
     pub has_system_columns: bool,
+    /// Only set when references are collected.
+    pub source: Option<Rc<ItemSource>>,
 }
 
 /// Looks up a relation. Reports it if it doesn't exist. Port of [`RangeVarGetRelidExtended`],
@@ -89,6 +106,23 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
     match r.catalog.relation(schema, &n.relname, r.search_path) {
         Lookup::Found(relation) => {
             r.uses(relation.origin);
+            let mut source = None;
+            if r.collects_references() {
+                source = relation.columns.as_ref().map(|columns| {
+                    Rc::new(ItemSource {
+                        source: ColumnSource::Relation {
+                            schema: relation.schema.clone(),
+                            name: relation.name.clone(),
+                        },
+                        columns: columns.clone(),
+                    })
+                });
+                r.record(Reference::Relation {
+                    location: n.location,
+                    span: r.name_span(n.location),
+                    relation: relation.clone(),
+                });
+            }
             ResolvedRelation {
                 schema: Some(relation.schema),
                 columns: relation
@@ -105,6 +139,7 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
                         .collect()
                 }),
                 has_system_columns: relation.kind != RelationKind::View,
+                source,
             }
         }
         Lookup::Missing => {

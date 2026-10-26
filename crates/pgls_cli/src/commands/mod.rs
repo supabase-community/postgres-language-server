@@ -71,6 +71,14 @@ pub enum PgLSCommand {
         #[bpaf(long("since"), argument("REF"))]
         since: Option<String>,
 
+        /// Apply the safe fixes of the lint rules and write the files.
+        #[bpaf(long("fix"), switch)]
+        fix: bool,
+
+        /// Also apply the unsafe fixes, which may change what a statement does. Implies `--fix`.
+        #[bpaf(long("unsafe"), switch)]
+        unsafe_: bool,
+
         /// Single file, single path or list of paths
         #[bpaf(positional("PATH"), many)]
         paths: Vec<OsString>,
@@ -381,6 +389,18 @@ pub(crate) fn get_files_to_process_with_cli_options(
         Ok(Some(get_staged_files(fs)?))
     } else {
         Ok(None)
+    }
+}
+
+/// The paths whose nested configuration files apply: the virtual path of the code piped to
+/// `stdin`, or else the paths to process.
+pub(crate) fn nested_configuration_paths(
+    stdin_file_path: &Option<String>,
+    paths: &[OsString],
+) -> Vec<OsString> {
+    match stdin_file_path {
+        Some(path) => vec![OsString::from(path)],
+        None => paths.to_vec(),
     }
 }
 

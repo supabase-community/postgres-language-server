@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterIdentity
+alter table users alter column id add generated always as identity;
+
+```
+
+# Diagnostics
+lint/banAlterIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the identity of column id may break inserts from existing clients.
+  
+  i Inserts that provide an explicit value fail once the column is GENERATED ALWAYS.
+  
+  i Update client inserts before changing the identity.

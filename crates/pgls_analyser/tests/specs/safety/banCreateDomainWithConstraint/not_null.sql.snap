@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banCreateDomainWithConstraint
+create domain required_text as text not null;
+
+```
+
+# Diagnostics
+lint/banCreateDomainWithConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Domains with constraints have poor support for online migrations.
+  
+  i Changing the constraint later revalidates every column that uses the domain.
+  
+  i Use table and column constraints instead.

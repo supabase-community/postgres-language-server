@@ -20,33 +20,37 @@ pub(super) fn infer_func_call(
         if n.agg_star {
             return named(r, "int8");
         }
-        // `VARIADIC` passes the variadic array itself, and ordered-set aggregates take
-        // more arguments than the call lists. Neither is modelled.
-        if n.func_variadic || n.agg_within_group {
+        // Ordered-set aggregates take more arguments than the call lists. Not modelled.
+        if n.agg_within_group {
             return None;
         }
-        let args = n
-            .args
-            .iter()
-            .filter_map(|arg| arg.node.as_ref())
-            .map(|arg| match arg {
-                NodeEnum::NamedArgExpr(named) => CallArg {
-                    ty: named
-                        .arg
-                        .as_deref()
-                        .and_then(|x| x.node.as_ref())
-                        .and_then(|x| infer_expr(r, x)),
-                    name: Some(named.name.clone()),
-                },
-                arg => CallArg {
-                    ty: infer_expr(r, arg),
-                    name: None,
-                },
-            })
-            .collect::<Vec<_>>();
-        let selection = select_function(r.catalog, schema, name, &args, r.search_path);
+        let args = call_args(r, n);
+        let selection = select_function(
+            r.catalog,
+            schema,
+            name,
+            &args,
+            n.func_variadic,
+            r.search_path,
+        );
+        // `VARIADIC` passes the variadic array itself. The result of such a call is not
+        // modelled, and it is never reported.
+        if n.func_variadic {
+            if let Selection::Match(f) = &selection
+                && f.function
+                    .signature
+                    .as_ref()
+                    .is_some_and(|signature| signature.variadic_element.is_some())
+            {
+                r.record_call(n, &f.function);
+            }
+            return None;
+        }
         let failure = match selection {
-            Selection::Match(f) => return f.result,
+            Selection::Match(f) => {
+                r.record_call(n, &f.function);
+                return f.result;
+            }
             Selection::NoMatch => crate::resolve::MatchFailure::NoMatch,
             Selection::Ambiguous => crate::resolve::MatchFailure::Ambiguous,
             Selection::Unknown => return None,
@@ -63,4 +67,29 @@ pub(super) fn infer_func_call(
         );
         None
     }
+}
+
+/// The arguments of a call with their inferred types and names.
+pub(in crate::resolve) fn call_args(
+    r: &mut Resolver<'_>,
+    n: &pgls_query::protobuf::FuncCall,
+) -> Vec<CallArg> {
+    n.args
+        .iter()
+        .filter_map(|arg| arg.node.as_ref())
+        .map(|arg| match arg {
+            NodeEnum::NamedArgExpr(named) => CallArg {
+                ty: named
+                    .arg
+                    .as_deref()
+                    .and_then(|x| x.node.as_ref())
+                    .and_then(|x| infer_expr(r, x)),
+                name: Some(named.name.clone()),
+            },
+            arg => CallArg {
+                ty: infer_expr(r, arg),
+                name: None,
+            },
+        })
+        .collect()
 }

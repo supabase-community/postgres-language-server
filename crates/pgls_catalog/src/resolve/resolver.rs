@@ -1,12 +1,21 @@
 //! The state of name resolution: the catalog, the names in scope, and the findings so far.
 
+use std::mem::Discriminant;
+
 use pgls_text_size::{TextRange, TextSize};
+use rustc_hash::FxHashSet;
+
+use pgls_query::{
+    NodeEnum,
+    protobuf::{CoercionForm, FuncCall},
+};
 
 use super::{
-    Finding, FindingKind, FunctionContext, FunctionParam,
+    Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
     scope::{Cte, Level},
     span,
 };
+use crate::FunctionInfo;
 use crate::lookup::{CatalogView, Lookup, Origin};
 
 pub(super) struct Resolver<'a> {
@@ -23,6 +32,10 @@ pub(super) struct Resolver<'a> {
     /// The common table expressions in scope, innermost last.
     pub ctes: Vec<Cte>,
     pub output: crate::typing::QueryColumns,
+    /// The references resolved so far, when they are being collected.
+    pub references: Option<Vec<Reference>>,
+    /// The location and kind of each reference in `references`.
+    recorded: FxHashSet<(i32, Discriminant<Reference>)>,
 }
 
 impl<'a> Resolver<'a> {
@@ -42,6 +55,8 @@ impl<'a> Resolver<'a> {
             levels: Vec::new(),
             ctes: Vec::new(),
             output: None,
+            references: None,
+            recorded: FxHashSet::default(),
         }
     }
 
@@ -88,6 +103,71 @@ impl<'a> Resolver<'a> {
                 _ => self.database_only = false,
             }
         }
+    }
+
+    /// Whether references are being collected.
+    pub fn collects_references(&self) -> bool {
+        self.references.is_some()
+    }
+
+    /// Records a reference, when references are being collected.
+    pub fn record(&mut self, reference: Reference) {
+        let Some(references) = self.references.as_mut() else {
+            return;
+        };
+        // Some expressions are resolved more than once, e.g. VALUES rows in INSERT.
+        if self
+            .recorded
+            .insert((reference.location(), std::mem::discriminant(&reference)))
+        {
+            references.push(reference);
+        }
+    }
+
+    /// Records that `call` resolves to `function`, when references are being collected.
+    pub fn record_call(&mut self, call: &FuncCall, function: &FunctionInfo) {
+        if !self.collects_references() {
+            return;
+        }
+        // SQL syntax like EXTRACT or TRIM doesn't pass the arguments in order.
+        if call.funcformat() == CoercionForm::CoerceSqlSyntax {
+            return;
+        }
+        let Some(signature) = function.signature.as_ref() else {
+            return;
+        };
+        let parameters = &signature.arguments;
+        let has_names = call
+            .args
+            .iter()
+            .any(|arg| matches!(arg.node, Some(NodeEnum::NamedArgExpr(_))));
+        // Without `VARIADIC` and named arguments, the arguments from the variadic parameter on
+        // are its elements.
+        let expanded = !call.func_variadic && !has_names && signature.variadic_element.is_some();
+        let mut arguments = Vec::with_capacity(call.args.len());
+        for (i, arg) in call.args.iter().enumerate() {
+            let (parameter, named) = match arg.node.as_ref() {
+                Some(NodeEnum::NamedArgExpr(named)) => (
+                    parameters
+                        .iter()
+                        .position(|param| param.name.as_deref() == Some(named.name.as_str())),
+                    true,
+                ),
+                _ if expanded => (Some(i.min(parameters.len().saturating_sub(1))), false),
+                _ => (Some(i), false),
+            };
+            let Some(parameter) = parameter.filter(|&parameter| parameter < parameters.len())
+            else {
+                return;
+            };
+            arguments.push(ResolvedCallArgument { parameter, named });
+        }
+        self.record(Reference::Function {
+            location: call.location,
+            span: self.name_span(call.location),
+            function: function.clone(),
+            arguments,
+        });
     }
 
     /// Marks the statement as depending on something that is not an unchanged database object.

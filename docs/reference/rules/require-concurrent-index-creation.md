@@ -1,6 +1,6 @@
 # requireConcurrentIndexCreation
 
-**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Safe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/requireConcurrentIndexCreation`
 
 **Sources**: inspired by [`squawk/require-concurrent-index-creation`](https://squawkhq.com/docs/require-concurrent-index-creation)
@@ -11,6 +11,12 @@ Creating indexes non-concurrently can lock the table for writes.
 When creating an index on an existing table, using CREATE INDEX without CONCURRENTLY will lock the table
 against writes for the duration of the index build. This can cause downtime in production systems.
 Use CREATE INDEX CONCURRENTLY to build the index without blocking concurrent operations.
+
+The fix adds `CONCURRENTLY` where the statement surely runs outside a transaction block, and
+not on partitioned tables, which Postgres can't index concurrently. Without migration
+section markers, we don't know whether the migration tool runs the file in a transaction: a
+file with more than one statement gets no fix, and the fix is unsafe in a file with a single
+statement.
 
 ## Examples
 

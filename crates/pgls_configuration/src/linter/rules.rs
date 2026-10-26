@@ -103,6 +103,18 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Warning,
     },
     LinterRuleMetadata {
+        group: "safety",
+        name: "banAlterDomainWithAddConstraint",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterIdentity",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
         group: "style",
         name: "banCharField",
         recommended: false,
@@ -113,6 +125,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         name: "banConcurrentIndexCreationInTransaction",
         recommended: true,
         severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "banCreateDomainWithConstraint",
+        recommended: false,
+        severity: Severity::Warning,
     },
     LinterRuleMetadata {
         group: "destructive",
@@ -128,7 +146,43 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "destructive",
+        name: "banDropConstraint",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
         name: "banDropDatabase",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropDefault",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropDomain",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropExtension",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropFunction",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropGeneratedExpression",
         recommended: false,
         severity: Severity::Warning,
     },
@@ -146,6 +200,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "destructive",
+        name: "banDropSequence",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
         name: "banDropTable",
         recommended: true,
         severity: Severity::Warning,
@@ -153,6 +213,30 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     LinterRuleMetadata {
         group: "safety",
         name: "banDropTrigger",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropType",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropView",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "correctness",
+        name: "banDuplicateColumnAssignments",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banSetSchema",
         recommended: false,
         severity: Severity::Warning,
     },
@@ -167,6 +251,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         name: "banTruncateCascade",
         recommended: false,
         severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "correctness",
+        name: "banUncommittedTransaction",
+        recommended: true,
+        severity: Severity::Warning,
     },
     LinterRuleMetadata {
         group: "destructive",
@@ -215,6 +305,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         name: "functionReturnTypeMismatch",
         recommended: true,
         severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "correctness",
+        name: "identifierTooLong",
+        recommended: true,
+        severity: Severity::Warning,
     },
     LinterRuleMetadata {
         group: "typecheck",
@@ -302,6 +398,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "destructive",
+        name: "renamingObject",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
         name: "renamingTable",
         recommended: false,
         severity: Severity::Warning,
@@ -337,6 +439,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Warning,
     },
     LinterRuleMetadata {
+        group: "style",
+        name: "requireEnumValueOrdering",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
         group: "safety",
         name: "requireIdleInTransactionTimeout",
         recommended: false,
@@ -351,6 +459,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     LinterRuleMetadata {
         group: "safety",
         name: "requireStatementTimeout",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "requireTableSchema",
         recommended: false,
         severity: Severity::Warning,
     },
@@ -470,13 +584,24 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avoid_wide_lock_window:
         Option<RuleConfiguration<pgls_analyser::options::AvoidWideLockWindow>>,
+    #[doc = "Adding a constraint to a domain has poor support for online migrations."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_domain_with_add_constraint:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterDomainWithAddConstraint>>,
+    #[doc = "Changing the identity of a column may break inserts from existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_identity: Option<RuleConfiguration<pgls_analyser::options::BanAlterIdentity>>,
     #[doc = "Using CHAR(n) or CHARACTER(n) types is discouraged."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_char_field: Option<RuleConfiguration<pgls_analyser::options::BanCharField>>,
-    #[doc = "Concurrent index creation is not allowed within a transaction."]
+    #[doc = "Concurrent index operations are not allowed within a transaction."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_concurrent_index_creation_in_transaction:
         Option<RuleConfiguration<pgls_analyser::options::BanConcurrentIndexCreationInTransaction>>,
+    #[doc = "Domains with constraints have poor support for online migrations."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_create_domain_with_constraint:
+        Option<RuleConfiguration<pgls_analyser::options::BanCreateDomainWithConstraint>>,
     #[doc = "A DELETE statement without a WHERE clause will remove all rows from the table."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_delete_without_where:
@@ -484,27 +609,66 @@ pub struct Rules {
     #[doc = "Dropping a column may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_column: Option<RuleConfiguration<pgls_analyser::options::BanDropColumn>>,
+    #[doc = "Dropping a constraint may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_constraint: Option<RuleConfiguration<pgls_analyser::options::BanDropConstraint>>,
     #[doc = "Dropping a database may break existing clients (and everything else, really)."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_database: Option<RuleConfiguration<pgls_analyser::options::BanDropDatabase>>,
+    #[doc = "Dropping a column or domain default may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_default: Option<RuleConfiguration<pgls_analyser::options::BanDropDefault>>,
+    #[doc = "Dropping a domain may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_domain: Option<RuleConfiguration<pgls_analyser::options::BanDropDomain>>,
+    #[doc = "Dropping an extension may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_extension: Option<RuleConfiguration<pgls_analyser::options::BanDropExtension>>,
+    #[doc = "Dropping a function, procedure, routine, or aggregate may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_function: Option<RuleConfiguration<pgls_analyser::options::BanDropFunction>>,
+    #[doc = "Dropping the expression of a generated column may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_generated_expression:
+        Option<RuleConfiguration<pgls_analyser::options::BanDropGeneratedExpression>>,
     #[doc = "Dropping a NOT NULL constraint may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_not_null: Option<RuleConfiguration<pgls_analyser::options::BanDropNotNull>>,
     #[doc = "Dropping a schema will remove all objects within it and may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_schema: Option<RuleConfiguration<pgls_analyser::options::BanDropSchema>>,
+    #[doc = "Dropping a sequence may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_sequence: Option<RuleConfiguration<pgls_analyser::options::BanDropSequence>>,
     #[doc = "Dropping a table may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_table: Option<RuleConfiguration<pgls_analyser::options::BanDropTable>>,
     #[doc = "Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_trigger: Option<RuleConfiguration<pgls_analyser::options::BanDropTrigger>>,
+    #[doc = "Dropping a type, cast, operator, operator class, or operator family may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_type: Option<RuleConfiguration<pgls_analyser::options::BanDropType>>,
+    #[doc = "Dropping a view or materialized view may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_view: Option<RuleConfiguration<pgls_analyser::options::BanDropView>>,
+    #[doc = "A column is assigned or declared more than once."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_duplicate_column_assignments:
+        Option<RuleConfiguration<pgls_analyser::options::BanDuplicateColumnAssignments>>,
+    #[doc = "Moving an object to another schema may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_set_schema: Option<RuleConfiguration<pgls_analyser::options::BanSetSchema>>,
     #[doc = "Truncating a table removes all rows and can cause data loss in production."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_truncate: Option<RuleConfiguration<pgls_analyser::options::BanTruncate>>,
     #[doc = "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_truncate_cascade: Option<RuleConfiguration<pgls_analyser::options::BanTruncateCascade>>,
+    #[doc = "A transaction is started but never committed or rolled back."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_uncommitted_transaction:
+        Option<RuleConfiguration<pgls_analyser::options::BanUncommittedTransaction>>,
     #[doc = "An UPDATE statement without a WHERE clause will modify all rows in the table."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_update_without_where:
@@ -534,6 +698,9 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_return_type_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::FunctionReturnTypeMismatch>>,
+    #[doc = "Identifiers longer than 63 bytes are silently truncated."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier_too_long: Option<RuleConfiguration<pgls_analyser::options::IdentifierTooLong>>,
     #[doc = "An INSERT has a different number of target columns than values."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_column_mismatch:
@@ -580,6 +747,9 @@ pub struct Rules {
     #[doc = "Renaming columns may break existing queries and application code."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub renaming_column: Option<RuleConfiguration<pgls_analyser::options::RenamingColumn>>,
+    #[doc = "Renaming an object or an enum value may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub renaming_object: Option<RuleConfiguration<pgls_analyser::options::RenamingObject>>,
     #[doc = "Renaming tables may break existing queries and application code."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub renaming_table: Option<RuleConfiguration<pgls_analyser::options::RenamingTable>>,
@@ -603,6 +773,10 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_concurrent_reindex:
         Option<RuleConfiguration<pgls_analyser::options::RequireConcurrentReindex>>,
+    #[doc = "ALTER TYPE ... ADD VALUE without BEFORE or AFTER appends the value to the end of the enum."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_enum_value_ordering:
+        Option<RuleConfiguration<pgls_analyser::options::RequireEnumValueOrdering>>,
     #[doc = "Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_idle_in_transaction_timeout:
@@ -615,6 +789,9 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_statement_timeout:
         Option<RuleConfiguration<pgls_analyser::options::RequireStatementTimeout>>,
+    #[doc = "Table names in DDL should be schema-qualified."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_table_schema: Option<RuleConfiguration<pgls_analyser::options::RequireTableSchema>>,
     #[doc = "Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub running_statement_while_holding_access_exclusive: Option<
@@ -701,9 +878,21 @@ impl Rules {
                 .avoid_wide_lock_window
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "banAlterDomainWithAddConstraint" => self
+                .ban_alter_domain_with_add_constraint
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banAlterIdentity" => self
+                .ban_alter_identity
+                .as_ref()
+                .map(RuleConfiguration::level),
             "banCharField" => self.ban_char_field.as_ref().map(RuleConfiguration::level),
             "banConcurrentIndexCreationInTransaction" => self
                 .ban_concurrent_index_creation_in_transaction
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banCreateDomainWithConstraint" => self
+                .ban_create_domain_with_constraint
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banDeleteWithoutWhere" => self
@@ -711,8 +900,26 @@ impl Rules {
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banDropColumn" => self.ban_drop_column.as_ref().map(RuleConfiguration::level),
+            "banDropConstraint" => self
+                .ban_drop_constraint
+                .as_ref()
+                .map(RuleConfiguration::level),
             "banDropDatabase" => self
                 .ban_drop_database
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banDropDefault" => self.ban_drop_default.as_ref().map(RuleConfiguration::level),
+            "banDropDomain" => self.ban_drop_domain.as_ref().map(RuleConfiguration::level),
+            "banDropExtension" => self
+                .ban_drop_extension
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banDropFunction" => self
+                .ban_drop_function
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banDropGeneratedExpression" => self
+                .ban_drop_generated_expression
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banDropNotNull" => self
@@ -720,11 +927,26 @@ impl Rules {
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banDropSchema" => self.ban_drop_schema.as_ref().map(RuleConfiguration::level),
+            "banDropSequence" => self
+                .ban_drop_sequence
+                .as_ref()
+                .map(RuleConfiguration::level),
             "banDropTable" => self.ban_drop_table.as_ref().map(RuleConfiguration::level),
             "banDropTrigger" => self.ban_drop_trigger.as_ref().map(RuleConfiguration::level),
+            "banDropType" => self.ban_drop_type.as_ref().map(RuleConfiguration::level),
+            "banDropView" => self.ban_drop_view.as_ref().map(RuleConfiguration::level),
+            "banDuplicateColumnAssignments" => self
+                .ban_duplicate_column_assignments
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banSetSchema" => self.ban_set_schema.as_ref().map(RuleConfiguration::level),
             "banTruncate" => self.ban_truncate.as_ref().map(RuleConfiguration::level),
             "banTruncateCascade" => self
                 .ban_truncate_cascade
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banUncommittedTransaction" => self
+                .ban_uncommitted_transaction
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banUpdateWithoutWhere" => self
@@ -751,6 +973,10 @@ impl Rules {
                 .map(RuleConfiguration::level),
             "functionReturnTypeMismatch" => self
                 .function_return_type_mismatch
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "identifierTooLong" => self
+                .identifier_too_long
                 .as_ref()
                 .map(RuleConfiguration::level),
             "insertColumnMismatch" => self
@@ -794,6 +1020,7 @@ impl Rules {
                 .as_ref()
                 .map(RuleConfiguration::level),
             "renamingColumn" => self.renaming_column.as_ref().map(RuleConfiguration::level),
+            "renamingObject" => self.renaming_object.as_ref().map(RuleConfiguration::level),
             "renamingTable" => self.renaming_table.as_ref().map(RuleConfiguration::level),
             "requireConcurrentDetachPartition" => self
                 .require_concurrent_detach_partition
@@ -815,6 +1042,10 @@ impl Rules {
                 .require_concurrent_reindex
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "requireEnumValueOrdering" => self
+                .require_enum_value_ordering
+                .as_ref()
+                .map(RuleConfiguration::level),
             "requireIdleInTransactionTimeout" => self
                 .require_idle_in_transaction_timeout
                 .as_ref()
@@ -825,6 +1056,10 @@ impl Rules {
                 .map(RuleConfiguration::level),
             "requireStatementTimeout" => self
                 .require_statement_timeout
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireTableSchema" => self
+                .require_table_schema
                 .as_ref()
                 .map(RuleConfiguration::level),
             "runningStatementWhileHoldingAccessExclusive" => self
@@ -902,12 +1137,24 @@ impl Rules {
                 .avoid_wide_lock_window
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "banAlterDomainWithAddConstraint" => self
+                .ban_alter_domain_with_add_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterIdentity" => self
+                .ban_alter_identity
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "banCharField" => self
                 .ban_char_field
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banConcurrentIndexCreationInTransaction" => self
                 .ban_concurrent_index_creation_in_transaction
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banCreateDomainWithConstraint" => self
+                .ban_create_domain_with_constraint
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banDeleteWithoutWhere" => self
@@ -918,8 +1165,32 @@ impl Rules {
                 .ban_drop_column
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "banDropConstraint" => self
+                .ban_drop_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "banDropDatabase" => self
                 .ban_drop_database
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropDefault" => self
+                .ban_drop_default
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropDomain" => self
+                .ban_drop_domain
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropExtension" => self
+                .ban_drop_extension
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropFunction" => self
+                .ban_drop_function
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropGeneratedExpression" => self
+                .ban_drop_generated_expression
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banDropNotNull" => self
@@ -930,6 +1201,10 @@ impl Rules {
                 .ban_drop_schema
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "banDropSequence" => self
+                .ban_drop_sequence
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "banDropTable" => self
                 .ban_drop_table
                 .as_ref()
@@ -938,12 +1213,32 @@ impl Rules {
                 .ban_drop_trigger
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "banDropType" => self
+                .ban_drop_type
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropView" => self
+                .ban_drop_view
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDuplicateColumnAssignments" => self
+                .ban_duplicate_column_assignments
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banSetSchema" => self
+                .ban_set_schema
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "banTruncate" => self
                 .ban_truncate
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banTruncateCascade" => self
                 .ban_truncate_cascade
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banUncommittedTransaction" => self
+                .ban_uncommitted_transaction
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banUpdateWithoutWhere" => self
@@ -976,6 +1271,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "functionReturnTypeMismatch" => self
                 .function_return_type_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "identifierTooLong" => self
+                .identifier_too_long
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "insertColumnMismatch" => self
@@ -1034,6 +1333,10 @@ impl Rules {
                 .renaming_column
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "renamingObject" => self
+                .renaming_object
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "renamingTable" => self
                 .renaming_table
                 .as_ref()
@@ -1058,6 +1361,10 @@ impl Rules {
                 .require_concurrent_reindex
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "requireEnumValueOrdering" => self
+                .require_enum_value_ordering
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "requireIdleInTransactionTimeout" => self
                 .require_idle_in_transaction_timeout
                 .as_ref()
@@ -1068,6 +1375,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "requireStatementTimeout" => self
                 .require_statement_timeout
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireTableSchema" => self
+                .require_table_schema
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "runningStatementWhileHoldingAccessExclusive" => self

@@ -22,24 +22,49 @@ pub type AvoidCreateTrigger =
 pub type AvoidEnableDisableTrigger = < lint :: safety :: avoid_enable_disable_trigger :: AvoidEnableDisableTrigger as crate :: LinterRule > :: Options ;
 pub type AvoidWideLockWindow =
     <lint::safety::avoid_wide_lock_window::AvoidWideLockWindow as crate::LinterRule>::Options;
+pub type BanAlterDomainWithAddConstraint = < lint :: safety :: ban_alter_domain_with_add_constraint :: BanAlterDomainWithAddConstraint as crate :: LinterRule > :: Options ;
+pub type BanAlterIdentity =
+    <lint::destructive::ban_alter_identity::BanAlterIdentity as crate::LinterRule>::Options;
 pub type BanCharField = <lint::style::ban_char_field::BanCharField as crate::LinterRule>::Options;
 pub type BanConcurrentIndexCreationInTransaction = < lint :: correctness :: ban_concurrent_index_creation_in_transaction :: BanConcurrentIndexCreationInTransaction as crate :: LinterRule > :: Options ;
+pub type BanCreateDomainWithConstraint = < lint :: safety :: ban_create_domain_with_constraint :: BanCreateDomainWithConstraint as crate :: LinterRule > :: Options ;
 pub type BanDeleteWithoutWhere = < lint :: destructive :: ban_delete_without_where :: BanDeleteWithoutWhere as crate :: LinterRule > :: Options ;
 pub type BanDropColumn =
     <lint::destructive::ban_drop_column::BanDropColumn as crate::LinterRule>::Options;
+pub type BanDropConstraint =
+    <lint::destructive::ban_drop_constraint::BanDropConstraint as crate::LinterRule>::Options;
 pub type BanDropDatabase =
     <lint::destructive::ban_drop_database::BanDropDatabase as crate::LinterRule>::Options;
+pub type BanDropDefault =
+    <lint::destructive::ban_drop_default::BanDropDefault as crate::LinterRule>::Options;
+pub type BanDropDomain =
+    <lint::destructive::ban_drop_domain::BanDropDomain as crate::LinterRule>::Options;
+pub type BanDropExtension =
+    <lint::destructive::ban_drop_extension::BanDropExtension as crate::LinterRule>::Options;
+pub type BanDropFunction =
+    <lint::destructive::ban_drop_function::BanDropFunction as crate::LinterRule>::Options;
+pub type BanDropGeneratedExpression = < lint :: destructive :: ban_drop_generated_expression :: BanDropGeneratedExpression as crate :: LinterRule > :: Options ;
 pub type BanDropNotNull =
     <lint::destructive::ban_drop_not_null::BanDropNotNull as crate::LinterRule>::Options;
 pub type BanDropSchema =
     <lint::destructive::ban_drop_schema::BanDropSchema as crate::LinterRule>::Options;
+pub type BanDropSequence =
+    <lint::destructive::ban_drop_sequence::BanDropSequence as crate::LinterRule>::Options;
 pub type BanDropTable =
     <lint::destructive::ban_drop_table::BanDropTable as crate::LinterRule>::Options;
 pub type BanDropTrigger =
     <lint::safety::ban_drop_trigger::BanDropTrigger as crate::LinterRule>::Options;
+pub type BanDropType =
+    <lint::destructive::ban_drop_type::BanDropType as crate::LinterRule>::Options;
+pub type BanDropView =
+    <lint::destructive::ban_drop_view::BanDropView as crate::LinterRule>::Options;
+pub type BanDuplicateColumnAssignments = < lint :: correctness :: ban_duplicate_column_assignments :: BanDuplicateColumnAssignments as crate :: LinterRule > :: Options ;
+pub type BanSetSchema =
+    <lint::destructive::ban_set_schema::BanSetSchema as crate::LinterRule>::Options;
 pub type BanTruncate = <lint::destructive::ban_truncate::BanTruncate as crate::LinterRule>::Options;
 pub type BanTruncateCascade =
     <lint::destructive::ban_truncate_cascade::BanTruncateCascade as crate::LinterRule>::Options;
+pub type BanUncommittedTransaction = < lint :: correctness :: ban_uncommitted_transaction :: BanUncommittedTransaction as crate :: LinterRule > :: Options ;
 pub type BanUpdateWithoutWhere = < lint :: destructive :: ban_update_without_where :: BanUpdateWithoutWhere as crate :: LinterRule > :: Options ;
 pub type BanVacuumFull =
     <lint::safety::ban_vacuum_full::BanVacuumFull as crate::LinterRule>::Options;
@@ -50,6 +75,8 @@ pub type CreatingEnum = <lint::style::creating_enum::CreatingEnum as crate::Lint
 pub type DisallowUniqueConstraint = < lint :: safety :: disallow_unique_constraint :: DisallowUniqueConstraint as crate :: LinterRule > :: Options ;
 pub type FunctionArgumentMismatch = < lint :: typecheck :: function_argument_mismatch :: FunctionArgumentMismatch as crate :: LinterRule > :: Options ;
 pub type FunctionReturnTypeMismatch = < lint :: typecheck :: function_return_type_mismatch :: FunctionReturnTypeMismatch as crate :: LinterRule > :: Options ;
+pub type IdentifierTooLong =
+    <lint::correctness::identifier_too_long::IdentifierTooLong as crate::LinterRule>::Options;
 pub type InsertColumnMismatch =
     <lint::typecheck::insert_column_mismatch::InsertColumnMismatch as crate::LinterRule>::Options;
 pub type InvalidCast = <lint::typecheck::invalid_cast::InvalidCast as crate::LinterRule>::Options;
@@ -73,6 +100,8 @@ pub type PreferTimestamptz =
     <lint::style::prefer_timestamptz::PreferTimestamptz as crate::LinterRule>::Options;
 pub type RenamingColumn =
     <lint::destructive::renaming_column::RenamingColumn as crate::LinterRule>::Options;
+pub type RenamingObject =
+    <lint::destructive::renaming_object::RenamingObject as crate::LinterRule>::Options;
 pub type RenamingTable =
     <lint::destructive::renaming_table::RenamingTable as crate::LinterRule>::Options;
 pub type RequireConcurrentDetachPartition = < lint :: safety :: require_concurrent_detach_partition :: RequireConcurrentDetachPartition as crate :: LinterRule > :: Options ;
@@ -80,9 +109,12 @@ pub type RequireConcurrentIndexCreation = < lint :: safety :: require_concurrent
 pub type RequireConcurrentIndexDeletion = < lint :: safety :: require_concurrent_index_deletion :: RequireConcurrentIndexDeletion as crate :: LinterRule > :: Options ;
 pub type RequireConcurrentRefreshMatview = < lint :: safety :: require_concurrent_refresh_matview :: RequireConcurrentRefreshMatview as crate :: LinterRule > :: Options ;
 pub type RequireConcurrentReindex = < lint :: safety :: require_concurrent_reindex :: RequireConcurrentReindex as crate :: LinterRule > :: Options ;
+pub type RequireEnumValueOrdering = < lint :: style :: require_enum_value_ordering :: RequireEnumValueOrdering as crate :: LinterRule > :: Options ;
 pub type RequireIdleInTransactionTimeout = < lint :: safety :: require_idle_in_transaction_timeout :: RequireIdleInTransactionTimeout as crate :: LinterRule > :: Options ;
 pub type RequireSeparateConstraintValidation = < lint :: safety :: require_separate_constraint_validation :: RequireSeparateConstraintValidation as crate :: LinterRule > :: Options ;
 pub type RequireStatementTimeout = < lint :: safety :: require_statement_timeout :: RequireStatementTimeout as crate :: LinterRule > :: Options ;
+pub type RequireTableSchema =
+    <lint::style::require_table_schema::RequireTableSchema as crate::LinterRule>::Options;
 pub type RunningStatementWhileHoldingAccessExclusive = < lint :: safety :: running_statement_while_holding_access_exclusive :: RunningStatementWhileHoldingAccessExclusive as crate :: LinterRule > :: Options ;
 pub type TransactionNesting =
     <lint::correctness::transaction_nesting::TransactionNesting as crate::LinterRule>::Options;
