@@ -1,6 +1,5 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::{CatalogView, RelationKind};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::Token;
@@ -93,13 +92,10 @@ fn add_concurrently(
     stmt: &pgls_query::protobuf::IndexStmt,
 ) -> Option<RuleFix> {
     let relation = stmt.relation.as_ref()?;
-    let schema = Some(relation.schemaname.as_str()).filter(|schema| !schema.is_empty());
-    let is_partitioned = ctx
+    if ctx
         .catalog()
-        .relation(schema, &relation.relname, ctx.session().search_path())
-        .found()
-        .is_some_and(|relation| relation.kind == RelationKind::PartitionedTable);
-    if is_partitioned {
+        .is_partitioned_table(relation, ctx.session().search_path())
+    {
         return None;
     }
     let tokens = ctx.tokens()?;
