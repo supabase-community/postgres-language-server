@@ -1649,6 +1649,19 @@ async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     assert_eq!(format_content(&formatted), formatted);
 }
 
+#[tokio::test]
+async fn test_format_sql_function_bodies_with_quotes_and_atomic_bodies() {
+    let content = "create function f() returns text language sql as 'SELECT   ''a''';";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns text\nlanguage sql\nas $$\nselect 'a';\n$$;"
+    );
+    let content = "create function f(p int) returns int language sql begin atomic select p; select p + 1; end;";
+    let formatted = format_content(content);
+    assert_eq!(format_content(&formatted), formatted);
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -4288,4 +4301,115 @@ ALTER TABLE users DROP COLUMN email;
     assert!(project.is_ignored("/repo/db/migrations/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/db/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
+}
+
+/// Statements in `BEGIN ATOMIC` and `RETURN` bodies, and in `'...'` and `E'...'` bodies with
+/// escapes, get tokens, hover, and diagnostics at the right place in the file.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_sql_function_bodies(test_db: PgPool) {
+    test_db
+        .execute("create table body_users (id int, name text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create function atomic_fn(p int) returns int language sql\n\
+        begin atomic select p + id from body_users; end;\n\
+        create function return_fn(p int) returns int return p + 1;\n\
+        create function quoted_fn(p text) returns text language sql\n\
+        as 'select name || ''x'' || p from body_users where name = ''y'' and nope = 1';\n\
+        create function escaped_fn() returns text language sql\n\
+        as E'select \\'\\u00e9\\' || name from body_users where gone = 1';\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let tokens = workspace
+        .pull_semantic_tokens(PullSemanticTokensParams {
+            project_key,
+            path: path.clone(),
+            range: None,
+        })
+        .expect("Unable to pull semantic tokens")
+        .tokens
+        .into_iter()
+        .map(|token| (&content[token.range], token.kind))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        tokens,
+        vec![
+            ("p", SemanticTokenKind::Parameter),
+            ("id", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+            ("p", SemanticTokenKind::Parameter),
+            ("name", SemanticTokenKind::Property),
+            ("p", SemanticTokenKind::Parameter),
+            ("body_users", SemanticTokenKind::Class),
+            ("name", SemanticTokenKind::Property),
+            ("name", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+        ]
+    );
+
+    let hover = |needle: &str| {
+        let offset = content.find(needle).expect("needle in content") + 1;
+        workspace
+            .on_hover(OnHoverParams {
+                project_key,
+                path: path.clone(),
+                position: u32::try_from(offset).unwrap().into(),
+            })
+            .expect("Unable to hover")
+            .markdown_blocks
+    };
+    let blocks = hover("id from body_users; end");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.body_users.id"), "{blocks:?}");
+    let blocks = hover("name = ''y''");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.body_users.name"), "{blocks:?}");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+    let unknown_columns = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "lint/unknownColumn")
+        })
+        .map(|diagnostic| &content[diagnostic.location().span.expect("a span")])
+        .collect::<Vec<_>>();
+    assert_eq!(unknown_columns, ["nope", "gone"], "{diagnostics:#?}");
 }
