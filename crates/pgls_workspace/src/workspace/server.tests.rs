@@ -4489,6 +4489,7 @@ async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
     assert_eq!(result.errors, Vec::<String>::new());
     assert_eq!(workspace.connection.pool_count(), 1);
     assert_eq!(workspace.snapshot.connection_count(), 1);
+    let pools = workspace.connection.cached_pools();
 
     // Another folder with the same database keeps it.
     workspace.update_nested_settings(nested(&["db2"])).unwrap();
@@ -4498,4 +4499,9 @@ async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
     workspace.update_nested_settings(nested(&[])).unwrap();
     assert_eq!(workspace.connection.pool_count(), 0);
     assert_eq!(workspace.snapshot.connection_count(), 0);
+    // Both pools of the database are closed, also the one for executed statements.
+    for pools in pools {
+        assert!(pools.pool.is_closed());
+        assert!(pools.statement_pool.is_closed());
+    }
 }

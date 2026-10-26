@@ -91,6 +91,17 @@ pub(crate) struct DatabasePools {
     pub(crate) statement_pool: PgPool,
 }
 
+impl DatabasePools {
+    /// Closes both pools: they open no new connections, and their idle connections close once
+    /// the last clone, e.g. of a statement execution that is still running, is dropped.
+    fn close(&self) {
+        // `close` marks a pool as closed before its future is polled; the future would only wait
+        // for the connections that are in use.
+        drop(self.pool.close());
+        drop(self.statement_pool.close());
+    }
+}
+
 /// Cached connection pool with last access time
 struct CachedPool {
     pools: DatabasePools,
@@ -128,12 +139,14 @@ impl ConnectionManager {
         }
     }
 
-    /// Drops the pools and the failures of the connections for which `is_used` is false, e.g.
-    /// because no configuration points at them any more. Dropping a pool closes its connections.
+    /// Closes and drops the pools and drops the failures of the connections for which `is_used`
+    /// is false, e.g. because no configuration points at them any more. That includes the pool
+    /// for executed statements.
     pub(crate) fn retain(&self, is_used: impl Fn(&ConnectionKey) -> bool) {
-        self.pools.write().unwrap().retain(|key, _| {
+        self.pools.write().unwrap().retain(|key, cached| {
             let used = is_used(key);
             if !used {
+                cached.pools.close();
                 tracing::debug!(
                     "Closing the pool of {}:{}/{}, which no configuration uses",
                     key.host,
@@ -150,6 +163,17 @@ impl ConnectionManager {
     #[cfg(test)]
     pub(crate) fn pool_count(&self) -> usize {
         self.pools.read().unwrap().len()
+    }
+
+    /// The cached pools of every database.
+    #[cfg(test)]
+    pub(crate) fn cached_pools(&self) -> Vec<DatabasePools> {
+        self.pools
+            .read()
+            .unwrap()
+            .values()
+            .map(|cached| cached.pools.clone())
+            .collect()
     }
 
     /// Closes the pools that weren't used for [`POOL_IDLE_TIMEOUT`], looking at most once per
@@ -172,6 +196,7 @@ impl ConnectionManager {
             let idle_for = pool.last_used.idle_for();
             let idle = idle_for > POOL_IDLE_TIMEOUT;
             if idle {
+                pool.pools.close();
                 tracing::debug!(
                     "Closing the pool of {}:{}/{}, unused for {idle_for:?}",
                     key.host,
@@ -495,7 +520,7 @@ mod tests {
             ..settings()
         };
         manager.get_pool(&used).unwrap();
-        manager.get_pool(&unused).unwrap();
+        let unused_pools = manager.get_pools(&unused).unwrap();
         manager.record_failure(
             &ConnectionKey::from(&unused),
             settings_fingerprint(&unused),
@@ -509,6 +534,13 @@ mod tests {
         let pools = manager.pools.read().unwrap();
         assert_eq!(pools.keys().collect::<Vec<_>>(), [&used_key]);
         assert!(manager.failures.read().unwrap().is_empty());
+        // Both pools of the database are closed, also the one for executed statements, even
+        // though a clone of them is still alive.
+        assert!(unused_pools.pool.is_closed());
+        assert!(unused_pools.statement_pool.is_closed());
+        let used_pools = &pools[&used_key].pools;
+        assert!(!used_pools.pool.is_closed());
+        assert!(!used_pools.statement_pool.is_closed());
     }
 
     #[tokio::test]
@@ -519,7 +551,7 @@ mod tests {
             ..settings()
         };
         let busy = settings();
-        manager.get_pool(&idle).unwrap();
+        let idle_pools = manager.get_pools(&idle).unwrap();
         manager.get_pool(&busy).unwrap();
         manager.pools.read().unwrap()[&ConnectionKey::from(&idle)]
             .last_used
@@ -536,6 +568,8 @@ mod tests {
             pools.keys().collect::<Vec<_>>(),
             [&ConnectionKey::from(&busy)]
         );
+        assert!(idle_pools.pool.is_closed());
+        assert!(idle_pools.statement_pool.is_closed());
     }
 
     fn authentication_failed() -> DatabaseConnectionError {
