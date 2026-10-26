@@ -179,7 +179,8 @@ Lints your database schema.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow_statement_executions_against`**=_`ARG`_
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
 - **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
@@ -305,7 +306,8 @@ Runs everything to the requested files.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow_statement_executions_against`**=_`ARG`_
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
 - **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
@@ -457,7 +459,8 @@ Formats the requested files.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow_statement_executions_against`**=_`ARG`_
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
 - **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    

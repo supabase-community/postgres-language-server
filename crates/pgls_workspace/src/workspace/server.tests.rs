@@ -2084,7 +2084,7 @@ async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool)
         .unwrap()
         .to_string();
     let reason = format!(
-        "Statement execution is disabled for `{host}/{database}`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"{host}/*\"]."
+        "Statement execution is disabled for `{host}:5432/{database}`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"{host}:5432/*\"]."
     );
     assert_eq!(disabled_reason.as_deref(), Some(reason.as_str()));
     assert_eq!(
