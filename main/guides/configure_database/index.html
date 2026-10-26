@@ -860,6 +860,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#statement-execution-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Statement Execution Results
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1416,6 +1427,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#statement-execution-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Statement Execution Results
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1503,6 +1525,7 @@
 <p>When a database is configured (<code>host</code> or <code>connectionString</code>, or <code>PGHOST</code> or <code>DATABASE_URL</code> in the environment), <code>postgres-language-server check</code> treats a failed connection or login as an error: it reports a <code>database/connection</code> diagnostic, still runs the checks that do not need the database, and exits with a non-zero code. This way a CI run cannot pass with the database-backed checks silently skipped.</p>
 <p>To check without a database, disable the connection with <code>--disable-db</code> or <code>"disableConnection": true</code> (see <a href="#disabling-database-features">Disabling Database Features</a>).</p>
 <p>The language server keeps working without the database when the connection fails, and retries it in the background.</p>
+<p>An invalid <code>connectionString</code> (or <code>DATABASE_URL</code>), such as one with a non-numeric port, disables the database connection instead of stopping the language server, which shows a warning. <code>postgres-language-server check</code> reports it as a <code>database/connection</code> error, like a failed connection.</p>
 <h2 id="setting-the-connection-from-the-editor">Setting the connection from the editor<a class="headerlink" href="#setting-the-connection-from-the-editor" title="Permanent link">&para;</a></h2>
 <p>An editor extension can set the connection for a running language server session with the LSP request <code>pgls/set_configuration_overrides</code>, which takes any configuration and applies it on top of the configuration file:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
@@ -1541,6 +1564,27 @@
 <span class="p">}</span>
 </code></pre></div>
 <p>The patterns do not refer to schemas. To allow a single database only, name it, e.g. <code>"localhost/my_dev_db"</code>.</p>
+<p>When no pattern matches, the code action is disabled and its reason names the setting. An invalid pattern is ignored with a warning in the log, and the reason lists it.</p>
+<h3 id="statement-execution-results">Statement Execution Results<a class="headerlink" href="#statement-execution-results" title="Permanent link">&para;</a></h3>
+<p>The language server runs the statement with the LSP command <code>pgls.executeStatement</code>, shows a short summary with <code>window/showMessage</code>, and returns the result of <code>workspace/executeCommand</code>, so an editor extension can render the rows as a table:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2 rows"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"columns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"name"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"rows"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">"1"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Alice"</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">"2"</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">]</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"truncated"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="p">}</span>
+</code></pre></div>
+<ul>
+<li><code>columns</code> and <code>rows</code> are filled for statements that return rows, such as <code>select</code>, <code>values</code>, <code>show</code>, <code>explain</code>, and statements with <code>returning</code>.</li>
+<li>Each value is a string in its Postgres text representation, as <code>psql</code> shows it, or <code>null</code> for SQL <code>NULL</code>.</li>
+<li>At most 100 rows are returned. <code>truncated</code> is <code>true</code> if the statement returned more.</li>
+<li><code>rowsAffected</code> is set instead of <code>columns</code> and <code>rows</code> for statements that return no rows, such as <code>insert</code> without <code>returning</code> or <code>create table</code>. For example: <code>{ "message": "Successfully executed statement. Rows affected: 2", "columns": [], "rows": [], "truncated": false, "rowsAffected": 2 }</code>.</li>
+<li>If the statement is not executed, for example because statement execution is disabled, only <code>message</code> is meaningful: <code>columns</code> and <code>rows</code> are empty and <code>rowsAffected</code> is not set.</li>
+<li>If Postgres rejects the statement, the command fails with a JSON-RPC error carrying the Postgres error message.</li>
+</ul>
 <h2 id="disabling-database-features">Disabling Database Features<a class="headerlink" href="#disabling-database-features" title="Permanent link">&para;</a></h2>
 <p>If you prefer to work without a database connection, you can disable all database-related features:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
