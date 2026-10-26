@@ -571,7 +571,7 @@
             "null"
           ],
           "format": "uint8",
-          "minimum": 0.0
+          "minimum": 1.0
         },
         "indentStyle": {
           "description": "Indentation style: \"spaces\" or \"tabs\". Default: \"spaces\".",
@@ -603,7 +603,7 @@
           ]
         },
         "layout": {
-          "description": "How a statement is laid out: \"fit\" breaks only when a line would exceed the line width, \"expanded\" always breaks between clauses. Default: \"fit\".",
+          "description": "How a statement is laid out: \"fit\" breaks only when a line would exceed the line width, \"expanded\" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: \"fit\".",
           "anyOf": [
             {
               "$ref": "#/definitions/Layout"
@@ -620,7 +620,7 @@
             "null"
           ],
           "format": "uint16",
-          "minimum": 0.0
+          "minimum": 1.0
         },
         "logicalOperatorPlacement": {
           "description": "Where a boolean operator sits when a condition breaks: \"trailing\" or \"leading\". Default: \"trailing\".",

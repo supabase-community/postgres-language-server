@@ -529,7 +529,7 @@ export interface PartialFormatConfiguration {
    */
   keywordCase?: KeywordCase;
   /**
-   * How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
+   * How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
    */
   layout?: Layout;
   /**
