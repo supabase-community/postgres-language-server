@@ -649,6 +649,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#semantic-highlighting" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Semantic Highlighting
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#expand" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1322,6 +1333,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#semantic-highlighting" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Semantic Highlighting
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#expand" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1382,6 +1404,19 @@
 <h2 id="inlay-hints">Inlay Hints<a class="headerlink" href="#inlay-hints" title="Permanent link">&para;</a></h2>
 <p>Function calls show the names of the parameters their positional arguments are passed to, as in <code>make_point(x: 1, y: 2)</code>. Hints are only shown when the call resolves to exactly one function, including functions created earlier in the same file. Named arguments (<code>f(a =&gt; 1)</code>), unnamed parameters, and arguments that already carry the parameter's name (<code>f(t.x)</code> for the parameter <code>x</code>) get no hint. Of the elements passed to a <code>VARIADIC</code> parameter, only the first is labelled.</p>
 <p>Inlay hints require a database connection. Enable them in your editor, e.g. with <code>editor.inlayHints.enabled</code> in VS Code.</p>
+<h2 id="semantic-highlighting">Semantic Highlighting<a class="headerlink" href="#semantic-highlighting" title="Permanent link">&para;</a></h2>
+<p>The language server provides semantic tokens for the names that resolve to exactly one database object, so your editor can color them by what they refer to rather than by how they look:</p>
+<ul>
+<li><strong>Schemas</strong> (<code>namespace</code>), like <code>public</code> in <code>public.users</code></li>
+<li><strong>Tables, views, and other relations</strong> (<code>class</code>)</li>
+<li><strong>Columns</strong> (<code>property</code>)</li>
+<li><strong>Functions</strong> (<code>function</code>), the overload that the call resolves to</li>
+<li><strong>Types</strong> (<code>type</code>), like <code>int8</code> in <code>x::int8</code></li>
+<li><strong>Parameters</strong> (<code>parameter</code>) of a SQL function, in its body, by name or as <code>$1</code></li>
+<li><strong>Enum values</strong> (<code>enumMember</code>): string literals that are coerced to an enum type, like <code>'active'</code> in <code>status = 'active'</code>, <code>'active'::status</code>, or <code>insert into t (status) values ('active')</code></li>
+</ul>
+<p>Objects in <code>pg_catalog</code> and <code>information_schema</code> carry the <code>defaultLibrary</code> modifier. Names follow Postgres' name resolution, including objects created earlier in the same file and statements in the bodies of SQL functions. Names that match no object or several get no token and keep the highlighting of your editor's grammar.</p>
+<p>Semantic highlighting requires a database connection. In VS Code, it is controlled by <code>editor.semanticHighlighting.enabled</code>.</p>
 <h2 id="expand">Expand <code>*</code><a class="headerlink" href="#expand" title="Permanent link">&para;</a></h2>
 <p>With the cursor on a <code>*</code> or <code>t.*</code> in a select list or <code>RETURNING</code> list, the refactor code action "Expand <code>*</code> into its columns" replaces it with the columns it stands for:</p>
 <div class="highlight"><pre><span></span><code><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
