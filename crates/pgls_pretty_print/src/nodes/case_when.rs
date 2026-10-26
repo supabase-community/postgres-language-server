@@ -23,6 +23,9 @@ pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
     if expanded {
         e.indent_start();
     }
+    if let Some(ref result) = n.result {
+        super::emit_comments_before_keyword(e, "then", result);
+    }
     super::emit_layout_break(e);
     e.token(TokenKind::THEN_KW);
 

@@ -139,3 +139,71 @@ fn standalone_comment_stays_before_the_conjunction_it_documents() {
         );
     }
 }
+
+fn format_both_layouts(sql: &str) -> [String; 2] {
+    let expanded = FormatConfig {
+        layout: Layout::Expanded,
+        ..Default::default()
+    };
+    [
+        format_idempotently(sql, &FormatConfig::default()),
+        format_idempotently(sql, &expanded),
+    ]
+}
+
+#[test]
+fn a_comment_before_else_stays_before_else() {
+    for output in
+        format_both_layouts("select case when a then 'x' /* inline */ else 'y' end from t")
+    {
+        assert!(output.contains("'x' /* inline */"), "{output}");
+    }
+    for output in
+        format_both_layouts("select case when a then 'x'\n-- before else\nelse 'y' end from t")
+    {
+        assert!(output.contains("-- before else\n"), "{output}");
+        let comment = output.find("-- before else").unwrap();
+        assert!(comment < output.find("else 'y'").unwrap(), "{output}");
+    }
+}
+
+#[test]
+fn a_comment_before_then_stays_before_then() {
+    for output in format_both_layouts("select case when a /* cond */ then 1 else 2 end from t") {
+        assert!(output.contains("a /* cond */"), "{output}");
+        assert!(!output.contains("then /* cond */"), "{output}");
+    }
+}
+
+#[test]
+fn a_comment_before_end_stays_inside_the_case() {
+    for output in format_both_layouts("select case when a then 1 else 2 /* last */ end from t") {
+        assert!(output.contains("2 /* last */"), "{output}");
+        assert!(!output.contains("/* last */ t"), "{output}");
+    }
+}
+
+#[test]
+fn a_comment_after_case_stays_before_the_first_when() {
+    for output in format_both_layouts("select case -- why\nwhen a then 'x' else 'y' end from t") {
+        let comment = output.find("-- why").unwrap();
+        assert!(comment < output.find("when a").unwrap(), "{output}");
+        assert!(!output.contains("'y' -- why"), "{output}");
+    }
+}
+
+#[test]
+fn a_comment_before_on_in_a_grant_stays_before_on() {
+    assert_eq!(
+        format_idempotently("grant select -- c\non t to u", &FormatConfig::default()),
+        "grant select -- c\n  on table t\n  to u;"
+    );
+    assert_eq!(
+        format_idempotently("grant select on t /* c */ to u", &FormatConfig::default()),
+        "grant select on table t /* c */ to u;"
+    );
+    assert_eq!(
+        format_idempotently("grant r1 /* c */ to u", &FormatConfig::default()),
+        "grant r1 /* c */ to u;"
+    );
+}

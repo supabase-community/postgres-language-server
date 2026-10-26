@@ -309,9 +309,14 @@ impl<W: Write> Renderer<W> {
         for event in group_events {
             match event {
                 LayoutEvent::Token(token) => buffer.push_str(&token.render(&self.config)),
+                // Two spaces in a row collapse, as in `write_space`.
                 LayoutEvent::Space
                 | LayoutEvent::Line(LineType::SoftOrSpace)
-                | LayoutEvent::Line(LineType::Fill) => buffer.push(' '),
+                | LayoutEvent::Line(LineType::Fill) => {
+                    if !buffer.ends_with(' ') {
+                        buffer.push(' ');
+                    }
+                }
                 // Collapsing would push code behind a `--` comment or flatten a multi-line block
                 // comment into the surrounding expression.
                 LayoutEvent::Line(LineType::Hard) => return None,
