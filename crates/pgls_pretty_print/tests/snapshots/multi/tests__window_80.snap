@@ -3042,9 +3042,7 @@ window
     1 following
   );
 
-with
-cte (x)
-as (
+with cte (x) as (
   select 1 union all select 1 union all select 1
   union all
   select * from generate_series(5, 49, 2)
@@ -3063,9 +3061,7 @@ window
     1 following
   );
 
-with
-cte (x)
-as (
+with cte (x) as (
   select 1 union all select 1 union all select 1
   union all
   select * from generate_series(5, 49, 2)
@@ -3084,9 +3080,7 @@ window
     1 following
   );
 
-with
-cte (x)
-as (
+with cte (x) as (
   select 1 union all select 1 union all select 1
   union all
   select * from generate_series(5, 49, 2)
@@ -4183,13 +4177,10 @@ create aggregate sum_int_randomrestart (
   minvfunc = sum_int_randrestart_minvfunc
 );
 
-with
-vs
-as (
+with vs as (
   select i, cast(random() * 100 as int4) as v from generate_series(1, 100) as i
 ),
-sum_following
-as (
+sum_following as (
   select
     i,
     sum(v) over (

@@ -203,10 +203,25 @@ impl EventEmitter {
 
     /// Emits and consumes comments that follow `location`, if any.
     pub fn take_trailing_comments_at(&mut self, location: i32) {
-        let Some(comments) = self.trailing_comments.remove(&location) else {
-            return;
-        };
+        let comments = self.remove_trailing_comments_at(location);
+        self.emit_trailing_comments(comments);
+    }
 
+    /// Consumes the comments that follow `location` without emitting them, so that the caller
+    /// can emit them somewhere else with `emit_trailing_comments`.
+    pub fn remove_trailing_comments_at(&mut self, location: i32) -> Vec<Comment> {
+        self.trailing_comments.remove(&location).unwrap_or_default()
+    }
+
+    /// Puts back comments taken with `remove_trailing_comments_at`.
+    pub fn restore_trailing_comments_at(&mut self, location: i32, comments: Vec<Comment>) {
+        if !comments.is_empty() {
+            self.trailing_comments.insert(location, comments);
+        }
+    }
+
+    /// Emits comments that follow the node just emitted.
+    pub fn emit_trailing_comments(&mut self, comments: Vec<Comment>) {
         for comment in comments {
             if comment.after_separator {
                 self.comments_after_separator.push(comment);

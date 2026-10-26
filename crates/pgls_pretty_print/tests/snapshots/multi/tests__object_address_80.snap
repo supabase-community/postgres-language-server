@@ -251,9 +251,7 @@ select pg_get_object_address('subscription', '{one}', '{}');
 
 select pg_get_object_address('subscription', '{one,two}', '{}');
 
-with
-objects (type, name, args)
-as (
+with objects (type, name, args) as (
   values
     ('table', cast('{addr_nsp, gentable}' as text[]), cast('{}' as text[])),
     ('table', cast('{addr_nsp, parttable}' as text[]), cast('{}' as text[])),
@@ -339,9 +337,7 @@ drop owned by regress_addr_user;
 
 drop role regress_addr_user;
 
-with
-objects (classid, objid, objsubid)
-as (
+with objects (classid, objid, objsubid) as (
   values
     (cast('pg_class' as regclass), 0, 0),
     (cast('pg_class' as regclass), cast('pg_class' as regclass), 100),

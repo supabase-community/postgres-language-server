@@ -1022,9 +1022,7 @@ from
       premier_name text path 'PREMIER_NAME' default 'not specified'
   );
 
-with
-x
-as (
+with x as (
   select
     proname,
     proowner,
@@ -1038,16 +1036,14 @@ as (
   where
     proname = 'f_leak'
 ),
-y
-as (
+y as (
   select
     xmlelement(name proc, xmlforest(proname, proowner, procost, pronargs, proargnames, proargtypes))
     as proc
   from
     x
 ),
-z
-as (
+z as (
   select
     xmltable.*
   from
@@ -1068,9 +1064,7 @@ select * from z
 except
 select * from x;
 
-with
-x
-as (
+with x as (
   select
     proname,
     proowner,
@@ -1082,8 +1076,7 @@ as (
   from
     pg_proc
 ),
-y
-as (
+y as (
   select
     xmlelement(name data, xmlagg(
       xmlelement(name proc, xmlforest(
@@ -1099,8 +1092,7 @@ as (
   from
     x
 ),
-z
-as (
+z as (
   select
     xmltable.*
   from
