@@ -48,7 +48,7 @@ create type addr_nsp.gencomptype as (a int);
 
 create type addr_nsp.genenum as enum ('one', 'two');
 
-create foreign table addr_nsp.genftable ( a int ) server addr_fserv;
+create foreign table addr_nsp.genftable (a int) server addr_fserv;
 
 create aggregate addr_nsp.genaggr (int4) (sfunc = int4pl, stype = int4);
 

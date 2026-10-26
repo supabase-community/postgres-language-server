@@ -51,7 +51,9 @@ pub struct Renderer<W: Write> {
     indent_level: usize,
     alignment_offsets: Vec<usize>,
     at_line_start: bool,
-    after_line_comment: bool,
+    /// A space written after the last text. It is only written out once more text follows on the
+    /// same line, so a line never ends in whitespace.
+    pending_space: bool,
 }
 
 impl<W: Write> Renderer<W> {
@@ -63,7 +65,7 @@ impl<W: Write> Renderer<W> {
             indent_level: 0,
             alignment_offsets: Vec::new(),
             at_line_start: true,
-            after_line_comment: false,
+            pending_space: false,
         }
     }
 
@@ -88,9 +90,8 @@ impl<W: Write> Renderer<W> {
                     self.handle_line(line_type)?;
                     i += 1;
                 }
-                LayoutEvent::Comment { text, line_comment } => {
+                LayoutEvent::Comment { text, .. } => {
                     self.write_text(text)?;
-                    self.after_line_comment = *line_comment;
                     i += 1;
                 }
                 LayoutEvent::GroupStart { .. } => {
@@ -131,7 +132,14 @@ impl<W: Write> Renderer<W> {
         trailing_width: usize,
     ) -> Result<(), std::fmt::Error> {
         if let Some(single_line) = self.single_line_if_fits(group_events, trailing_width) {
-            self.write_text(&single_line)?;
+            // A space that ends the group waits for the next text, like any other space.
+            let text = single_line.trim_end_matches(' ');
+            if !text.is_empty() {
+                self.write_text(text)?;
+            }
+            if text.len() < single_line.len() {
+                self.write_space()?;
+            }
             return Ok(());
         }
 
@@ -227,9 +235,8 @@ impl<W: Write> Renderer<W> {
                     }
                     i += 1;
                 }
-                LayoutEvent::Comment { text, line_comment } => {
+                LayoutEvent::Comment { text, .. } => {
                     self.write_text(text)?;
-                    self.after_line_comment = *line_comment;
                     i += 1;
                 }
                 LayoutEvent::GroupStart { .. } => {
@@ -411,10 +418,11 @@ impl<W: Write> Renderer<W> {
     }
 
     fn write_text(&mut self, text: &str) -> Result<(), std::fmt::Error> {
-        self.after_line_comment = false;
         if self.at_line_start {
             self.write_indentation()?;
             self.at_line_start = false;
+        } else if std::mem::take(&mut self.pending_space) {
+            write!(self.writer, " ")?;
         }
 
         write!(self.writer, "{text}")?;
@@ -427,16 +435,21 @@ impl<W: Write> Renderer<W> {
         Ok(())
     }
 
+    /// Two spaces in a row, from a space next to a line that stayed flat for instance, are
+    /// written as one.
     fn write_space(&mut self) -> Result<(), std::fmt::Error> {
-        if !self.at_line_start {
-            write!(self.writer, " ")?;
+        if !self.at_line_start && !self.pending_space {
+            self.pending_space = true;
             self.current_line_length += 1;
         }
         Ok(())
     }
 
+    /// Ends the current line. A line that has no text yet is not ended again: two breaks in a
+    /// row, around an empty list for instance, would otherwise print a blank line.
     fn write_line_break(&mut self) -> Result<(), std::fmt::Error> {
-        if self.at_line_start && self.after_line_comment {
+        self.pending_space = false;
+        if self.at_line_start {
             return Ok(());
         }
         writeln!(self.writer)?;
