@@ -25,8 +25,8 @@ use sqlx::{Executor, PgPool, Row};
 use crate::{
     DynRef, Workspace, WorkspaceError,
     configuration::{
-        IncompleteSearch, NestedConfigurationSearch, apply_nested_configurations,
-        is_searched_for_configuration, load_configuration,
+        ConfigurationLayers, IncompleteSearch, NestedConfigurationSearch,
+        apply_nested_configurations, is_searched_for_configuration, load_configuration,
     },
     features::code_actions::{
         CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
@@ -39,9 +39,9 @@ use crate::{
     features::semantic_tokens::{PullSemanticTokensParams, SemanticTokenKind},
     settings::FilesSettings,
     workspace::{
-        IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
-        UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
-        server::WorkspaceServer,
+        FindProjectParams, IsPathIgnoredParams, OpenFileParams, ProjectKey,
+        RegisterProjectFolderParams, StatementId, UnregisterProjectFolderParams,
+        UpdateNestedSettingsParams, UpdateSettingsParams, server::WorkspaceServer,
     },
 };
 
@@ -3678,8 +3678,7 @@ impl TestProject {
             fs,
             self.project_key,
             search,
-            None,
-            |c| c,
+            &ConfigurationLayers::default(),
         )
         .unwrap();
         let directories = nested
@@ -3709,8 +3708,7 @@ impl TestProject {
             fs,
             self.project_key,
             NestedConfigurationSearch::new(root),
-            None,
-            |configuration| configuration,
+            &ConfigurationLayers::default(),
         )
         .unwrap()
         .configurations
@@ -4082,8 +4080,7 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
         &fs,
         project.project_key,
         NestedConfigurationSearch::new("/repo"),
-        None,
-        |configuration| configuration,
+        &ConfigurationLayers::default(),
     )
     .unwrap()
     .configurations;
@@ -4109,6 +4106,45 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
         project.severities("/repo/unreadable/a.sql"),
         [Severity::Warning]
     );
+}
+
+/// A file belongs to the project of the deepest folder that contains it, and a project without a
+/// folder contains every path.
+#[test]
+fn files_belong_to_the_project_of_the_deepest_folder() {
+    let workspace = WorkspaceServer::new();
+    let register = |path: Option<&str>| {
+        workspace
+            .register_project_folder(RegisterProjectFolderParams {
+                path: path.map(PathBuf::from),
+            })
+            .unwrap()
+    };
+    let find = |path: &str| {
+        workspace
+            .find_project(FindProjectParams {
+                path: PgLSPath::new(path),
+            })
+            .unwrap()
+    };
+    let outer = register(Some("/outer"));
+    let inner = register(Some("/outer/inner"));
+
+    assert_eq!(find("/outer/a.sql"), Some(outer));
+    assert_eq!(find("/outer/inner/a.sql"), Some(inner));
+    assert_eq!(find("/outer/innermost/a.sql"), Some(outer));
+    assert_eq!(find("/elsewhere/a.sql"), None);
+
+    let folderless = register(None);
+    assert_eq!(find("/elsewhere/a.sql"), Some(folderless));
+    assert_eq!(find("/outer/inner/a.sql"), Some(inner));
+
+    workspace
+        .unregister_project_folder(UnregisterProjectFolderParams {
+            path: PgLSPath::new("/outer/inner"),
+        })
+        .unwrap();
+    assert_eq!(find("/outer/inner/a.sql"), Some(outer));
 }
 
 /// Each project has its own nested settings, even when the folder of one is below the other, as

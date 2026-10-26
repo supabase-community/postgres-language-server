@@ -102,6 +102,16 @@ impl WorkspaceSettings {
             .map(|(key, _)| key)
     }
 
+    /// The project of the deepest folder that contains `path`. A project without a folder contains
+    /// every path.
+    pub fn find_project(&self, path: &Path) -> Option<ProjectKey> {
+        self.data
+            .iter()
+            .filter(|(_, project)| path.starts_with(project.path.as_path()))
+            .max_by_key(|(_, project)| project.path.components().count())
+            .map(|(key, _)| key)
+    }
+
     /// The folder of a project.
     pub fn get_project_path(&self, key: ProjectKey) -> Option<&PgLSPath> {
         self.data.get(key).map(|project| &project.path)
