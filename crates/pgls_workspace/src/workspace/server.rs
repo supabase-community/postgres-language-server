@@ -2099,6 +2099,11 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
                 ..
             } => unchanged_relation(schema, name),
             Reference::Column { .. } => true,
+            Reference::Type { type_info, .. } | Reference::EnumLiteral { type_info, .. } => {
+                type_info.origin == Origin::Database
+            }
+            // Parameters belong to a function of the file.
+            Reference::Parameter { .. } => false,
             // The columns of a `*` can come from objects that the file changed.
             Reference::Star { .. } => false,
         })
