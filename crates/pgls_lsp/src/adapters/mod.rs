@@ -112,12 +112,12 @@ impl WideChar {
 #[cfg(test)]
 mod tests {
     use crate::adapters::WideEncoding::{Utf16, Utf32};
-    use crate::adapters::from_lsp::offset;
+    use crate::adapters::from_lsp::{offset, text_range};
     use crate::adapters::line_index::LineIndex;
     use crate::adapters::to_lsp::position;
     use crate::adapters::{LineCol, PositionEncoding, WideEncoding};
     use pgls_text_size::TextSize;
-    use tower_lsp_server::ls_types::Position;
+    use tower_lsp_server::ls_types::{Position, Range};
 
     macro_rules! check_conversion {
         ($line_index:ident : $position:expr_2021 => $text_size:expr_2021 ) => {
@@ -178,6 +178,29 @@ mod tests {
         // Past the last line: the end of the text.
         assert_eq!(at(2, 0), TextSize::from(12));
         assert_eq!(at(u32::MAX, u32::MAX), TextSize::from(12));
+    }
+
+    #[test]
+    fn positions_inside_a_character_are_its_start() {
+        // `é` is 2 bytes and 1 UTF-16 unit, `😀` is 4 bytes and 2 UTF-16 units.
+        let line_index = LineIndex::new("aé😀b");
+        let at = |character, encoding| {
+            offset(&line_index, Position { line: 0, character }, encoding).unwrap()
+        };
+        let utf16 = PositionEncoding::Wide(WideEncoding::Utf16);
+        // Between the two halves of the surrogate pair of `😀`.
+        assert_eq!(at(3, utf16), TextSize::from(3));
+        assert_eq!(at(4, utf16), TextSize::from(7));
+        // Inside `é` and `😀`.
+        assert_eq!(at(2, PositionEncoding::Utf8), TextSize::from(1));
+        assert_eq!(at(5, PositionEncoding::Utf8), TextSize::from(3));
+    }
+
+    #[test]
+    fn ranges_that_end_before_they_start_are_an_error() {
+        let line_index = LineIndex::new("select 1;");
+        let range = Range::new(Position::new(0, 5), Position::new(0, 2));
+        assert!(text_range(&line_index, range, PositionEncoding::Utf8).is_err());
     }
 
     #[test]

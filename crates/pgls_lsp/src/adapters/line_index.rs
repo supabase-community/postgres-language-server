@@ -71,6 +71,11 @@ impl LineIndex {
     }
 
     pub fn line_col(&self, offset: TextSize) -> Option<LineCol> {
+        debug_assert!(
+            self.is_char_boundary(offset),
+            "offset {offset:?} is not on a char boundary of a text of length {:?}",
+            self.len
+        );
         let line = self.newlines.partition_point(|&it| it <= offset) - 1;
         let line_start_offset = self.newlines.get(line)?;
         let col = offset - line_start_offset;
@@ -88,7 +93,8 @@ impl LineIndex {
     }
 
     /// Like [`LineIndex::offset`], but a column past the end of its line is the end of the line,
-    /// as the LSP specifies, and a line past the end of the text is the end of the text.
+    /// as the LSP specifies, and a line past the end of the text is the end of the text. A column
+    /// inside a character is the start of that character.
     pub fn offset_clamped(&self, line_col: LineCol) -> TextSize {
         let line = line_col.line as usize;
         let Some(start) = self.newlines.get(line) else {
@@ -99,9 +105,37 @@ impl LineIndex {
             .newlines
             .get(line + 1)
             .map_or(self.len, |next| *next - TextSize::from(1));
-        start
-            .checked_add(TextSize::from(line_col.col))
-            .map_or(end, |offset| offset.min(end))
+        let col = TextSize::from(line_col.col).min(end - start);
+        let offset = start + self.floor_char_boundary(line_col.line, col);
+        debug_assert!(self.is_char_boundary(offset));
+        offset
+    }
+
+    /// Whether `offset` lies inside the text and not inside a multi-byte character.
+    pub fn is_char_boundary(&self, offset: TextSize) -> bool {
+        if offset > self.len {
+            return false;
+        }
+        let line = self.newlines.partition_point(|&it| it <= offset) - 1;
+        let Some(start) = self.newlines.get(line) else {
+            return false;
+        };
+        let col = offset - start;
+        u32::try_from(line).is_ok_and(|line| self.floor_char_boundary(line, col) == col)
+    }
+
+    /// The start of the character that contains column `col` of `line`.
+    fn floor_char_boundary(&self, line: u32, col: TextSize) -> TextSize {
+        let Some(wide_chars) = self.line_wide_chars.get(&line) else {
+            return col;
+        };
+        // The characters of a line are sorted, so the first one that ends after `col` is the only
+        // one that can contain it.
+        let index = wide_chars.partition_point(|c| c.end <= col);
+        match wide_chars.get(index) {
+            Some(c) if c.start < col => c.start,
+            _ => col,
+        }
     }
 
     pub fn to_wide(&self, enc: WideEncoding, line_col: LineCol) -> Option<WideLineCol> {
