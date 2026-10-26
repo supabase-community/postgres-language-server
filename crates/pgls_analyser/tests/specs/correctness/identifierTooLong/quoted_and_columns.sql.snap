@@ -65,7 +65,7 @@ create table public.accounts (
 
 ```
 
-lint/identifierTooLong ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/identifierTooLong  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Identifier customer_subscription_billing_cycle_adjustments_history_archive_ref is longer than 63 bytes.
   
