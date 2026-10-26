@@ -23,34 +23,13 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
     e.space();
 
     // Map object type to SQL keyword
-    let objtype_tokens: &[&str] = match n.objtype() {
-        ObjectType::ObjectTable => &["TABLE"],
-        ObjectType::ObjectSequence => &["SEQUENCE"],
-        ObjectType::ObjectView => &["VIEW"],
-        ObjectType::ObjectColumn => &["COLUMN"],
-        ObjectType::ObjectDatabase => &["DATABASE"],
-        ObjectType::ObjectSchema => &["SCHEMA"],
-        ObjectType::ObjectFunction => &["FUNCTION"],
-        ObjectType::ObjectProcedure => &["PROCEDURE"],
-        ObjectType::ObjectRoutine => &["ROUTINE"],
-        ObjectType::ObjectType => &["TYPE"],
-        ObjectType::ObjectDomain => &["DOMAIN"],
-        ObjectType::ObjectAggregate => &["AGGREGATE"],
-        ObjectType::ObjectRole => &["ROLE"],
-        ObjectType::ObjectTablespace => &["TABLESPACE"],
-        ObjectType::ObjectFdw => &["FOREIGN", "DATA", "WRAPPER"],
-        ObjectType::ObjectForeignServer => &["FOREIGN", "SERVER"],
-        ObjectType::ObjectLanguage => &["LANGUAGE"],
-        ObjectType::ObjectLargeobject => &["LARGE", "OBJECT"],
-        _ => &["TABLE"],
+    // SECURITY LABEL names a foreign server `FOREIGN SERVER`.
+    let keywords = match n.objtype() {
+        ObjectType::ObjectForeignServer => "FOREIGN SERVER",
+        objtype => object_type_keywords(objtype).unwrap_or("TABLE"),
     };
+    emit_keywords(e, keywords);
 
-    for (idx, token) in objtype_tokens.iter().enumerate() {
-        if idx > 0 {
-            e.space();
-        }
-        emit_keyword(e, token);
-    }
     e.space();
 
     // Emit object name

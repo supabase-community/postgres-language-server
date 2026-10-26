@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{AlterExtensionContentsStmt, ObjectType};
+use pgls_query::protobuf::AlterExtensionContentsStmt;
 
 use super::prelude::*;
 
@@ -29,13 +29,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
     e.space();
 
     // Object type
-    match n.objtype() {
-        ObjectType::ObjectTable => e.token(TokenKind::TABLE_KW),
-        ObjectType::ObjectFunction => e.token(TokenKind::FUNCTION_KW),
-        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
-        ObjectType::ObjectOperator => e.token(TokenKind::OPERATOR_KW),
-        _ => e.token(TokenKind::OBJECT_KW),
-    }
+    emit_keywords(e, object_type_keywords(n.objtype()).unwrap_or("OBJECT"));
     e.space();
 
     // Object name

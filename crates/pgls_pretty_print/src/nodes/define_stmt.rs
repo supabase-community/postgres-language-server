@@ -81,40 +81,9 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
     e.space();
 
     let kind = n.kind();
-    match kind {
-        ObjectType::ObjectAggregate => e.token(TokenKind::AGGREGATE_KW),
-        ObjectType::ObjectOperator => e.token(TokenKind::OPERATOR_KW),
-        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
-        ObjectType::ObjectCollation => e.token(TokenKind::COLLATION_KW),
-        ObjectType::ObjectTsdictionary => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::DICTIONARY_KW);
-        }
-        ObjectType::ObjectTsconfiguration => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::CONFIGURATION_KW);
-        }
-        ObjectType::ObjectTsparser => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::PARSER_KW);
-        }
-        ObjectType::ObjectTstemplate => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::TEMPLATE_KW);
-        }
-        _ => e.token(TokenKind::IDENT(format!("{kind:?}"))),
+    match object_type_keywords(kind) {
+        Some(keywords) => emit_keywords(e, keywords),
+        None => e.token(TokenKind::IDENT(format!("{kind:?}"))),
     }
 
     if n.if_not_exists {

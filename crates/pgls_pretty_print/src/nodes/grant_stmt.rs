@@ -103,73 +103,14 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
         }
         // No space here - will be added by line break before TO/FROM
     } else {
-        // Add explicit object type (singular)
-        match objtype {
-            ObjectType::ObjectTable => {
-                e.token(TokenKind::TABLE_KW);
-                e.space();
-            }
-            ObjectType::ObjectSequence => {
-                e.token(TokenKind::SEQUENCE_KW);
-                e.space();
-            }
-            ObjectType::ObjectDatabase => {
-                e.token(TokenKind::DATABASE_KW);
-                e.space();
-            }
-            ObjectType::ObjectSchema => {
-                e.token(TokenKind::SCHEMA_KW);
-                e.space();
-            }
-            ObjectType::ObjectFunction => {
-                e.token(TokenKind::FUNCTION_KW);
-                e.space();
-            }
-            ObjectType::ObjectProcedure => {
-                e.token(TokenKind::PROCEDURE_KW);
-                e.space();
-            }
-            ObjectType::ObjectType => {
-                e.token(TokenKind::TYPE_KW);
-                e.space();
-            }
-            ObjectType::ObjectLargeobject => {
-                e.token(TokenKind::LARGE_KW);
-                e.space();
-                e.token(TokenKind::OBJECT_KW);
-                e.space();
-            }
-            ObjectType::ObjectFdw => {
-                e.token(TokenKind::FOREIGN_KW);
-                e.space();
-                e.token(TokenKind::DATA_KW);
-                e.space();
-                e.token(TokenKind::WRAPPER_KW);
-                e.space();
-            }
-            ObjectType::ObjectForeignServer => {
-                e.token(TokenKind::FOREIGN_KW);
-                e.space();
-                e.token(TokenKind::SERVER_KW);
-                e.space();
-            }
-            ObjectType::ObjectLanguage => {
-                e.token(TokenKind::LANGUAGE_KW);
-                e.space();
-            }
-            ObjectType::ObjectTablespace => {
-                e.token(TokenKind::TABLESPACE_KW);
-                e.space();
-            }
-            ObjectType::ObjectDomain => {
-                e.token(TokenKind::DOMAIN_KW);
-                e.space();
-            }
-            ObjectType::ObjectRoutine => {
-                e.token(TokenKind::ROUTINE_KW);
-                e.space();
-            }
-            _ => {}
+        // Add explicit object type (singular). GRANT names a foreign server `FOREIGN SERVER`.
+        let keywords = match objtype {
+            ObjectType::ObjectForeignServer => Some("FOREIGN SERVER"),
+            objtype => object_type_keywords(objtype),
+        };
+        if let Some(keywords) = keywords {
+            emit_keywords(e, keywords);
+            e.space();
         }
     }
 

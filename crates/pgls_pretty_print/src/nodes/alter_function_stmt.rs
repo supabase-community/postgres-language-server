@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{AlterFunctionStmt, ObjectType};
+use pgls_query::protobuf::AlterFunctionStmt;
 
 use super::emit_object_with_args;
 use super::prelude::*;
@@ -9,11 +9,7 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
     e.token(TokenKind::ALTER_KW);
     e.space();
 
-    match n.objtype() {
-        ObjectType::ObjectProcedure => e.token(TokenKind::PROCEDURE_KW),
-        ObjectType::ObjectRoutine => e.token(TokenKind::ROUTINE_KW),
-        _ => e.token(TokenKind::FUNCTION_KW),
-    }
+    emit_keywords(e, object_type_keywords(n.objtype()).unwrap_or("FUNCTION"));
     e.space();
 
     // Function name with arguments
