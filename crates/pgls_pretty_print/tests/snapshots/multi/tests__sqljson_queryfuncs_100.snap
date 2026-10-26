@@ -554,16 +554,20 @@ create type sqljsonb_reca as (reca sqljsonb_rec[]);
 
 select
   json_query(
-    cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-    as jsonb),
+    cast(
+      '[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+      as jsonb
+    ),
     '$[0]'
     returning sqljsonb_rec
   );
 
 select
   json_query(
-    cast('[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-    as jsonb),
+    cast(
+      '[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+      as jsonb
+    ),
     '$[0]'
     returning sqljsonb_rec
     error on error
@@ -571,8 +575,10 @@ select
 
 select
   json_query(
-    cast('[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-    as jsonb),
+    cast(
+      '[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+      as jsonb
+    ),
     '$[0]'
     returning sqljsonb_rec
   );
@@ -601,16 +607,20 @@ from
 
 select
   json_query(
-    cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-    as jsonb),
+    cast(
+      '[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+      as jsonb
+    ),
     '$[0]'
     returning jsonpath
   );
 
 select
   json_query(
-    cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-    as jsonb),
+    cast(
+      '[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+      as jsonb
+    ),
     '$[0]'
     returning jsonpath
     error on error

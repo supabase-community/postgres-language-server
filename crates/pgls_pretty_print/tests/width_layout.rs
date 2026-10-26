@@ -170,3 +170,24 @@ fn the_width_check_counts_literals_but_excuses_unbreakable_lines() {
         common::width_problems("select 1; -- a comment far longer than the line", 40, 4).is_empty()
     );
 }
+
+#[test]
+fn cast_breaks_like_a_function_call() {
+    // `expr as type` stays together on the indented line when it fits there.
+    assert_eq!(
+        assert_fits(
+            "select extract(epoch from cast('2020-05-26 13:30:25.575401-04' as time with time zone)) from t"
+        ),
+        "select\n  extract(\n    epoch from\n    cast(\n      '2020-05-26 13:30:25.575401-04' as time with time zone\n    )\n  )\nfrom\n  t;"
+    );
+    assert_eq!(
+        assert_fits(
+            "select cast(format('%s:%s:%s', to_hex(odd), to_hex(even)) as some_long_type_name_here) from t"
+        ),
+        "select\n  cast(\n    format('%s:%s:%s', to_hex(odd), to_hex(even))\n    as some_long_type_name_here\n  )\nfrom\n  t;"
+    );
+    assert_eq!(
+        format_idempotently("select cast(a as int) from t"),
+        "select cast(a as int) from t;"
+    );
+}

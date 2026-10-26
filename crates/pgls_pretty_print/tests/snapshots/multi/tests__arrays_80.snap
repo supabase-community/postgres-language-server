@@ -595,14 +595,16 @@ select
   as "double precision[]";
 
 select
-  cast(cast(array[array['a', 'bc'], array['def', 'hijk']] as text[])
-  as varchar[])
+  cast(
+    cast(array[array['a', 'bc'], array['def', 'hijk']] as text[]) as varchar[]
+  )
   as "{{a,bc},{def,hijk}}";
 
 select
   pg_typeof(
-    cast(cast(array[array['a', 'bc'], array['def', 'hijk']] as text[])
-    as varchar[])
+    cast(
+      cast(array[array['a', 'bc'], array['def', 'hijk']] as text[]) as varchar[]
+    )
   )
   as "character varying[]";
 

@@ -92,8 +92,9 @@ select cast('$.g ? (exists (@.x))' as jsonpath);
 select cast('$.g ? (exists (@.x ? (@ == 14)))' as jsonpath);
 
 select
-  cast('$.g ? ((@.x >= 123 || @.a == 4) && exists (@.x ? (@ == 14)))'
-  as jsonpath);
+  cast(
+    '$.g ? ((@.x >= 123 || @.a == 4) && exists (@.x ? (@ == 14)))' as jsonpath
+  );
 
 select cast('$.g ? (+@.x >= +-(+@.a + 2))' as jsonpath);
 

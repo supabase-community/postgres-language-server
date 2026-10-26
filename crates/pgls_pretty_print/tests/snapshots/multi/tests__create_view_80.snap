@@ -1052,18 +1052,16 @@ select
   cast('foo' as text) = any (select cast(array['abc', 'def', 'foo'] as text[]));
 
 select
-  cast('foo' as text) = any (cast((
-    select cast(array['abc', 'def', 'foo'] as text[])
-  )
-  as text[]));
+  cast('foo' as text) = any (cast(
+    (select cast(array['abc', 'def', 'foo'] as text[])) as text[]
+  ));
 
 create view tt19v
 as select
   cast('foo' as text) = any (cast(array['abc', 'def', 'foo'] as text[])) as c1,
-  cast('foo' as text) = any (cast((
-    select cast(array['abc', 'def', 'foo'] as text[])
-  )
-  as text[]))
+  cast('foo' as text) = any (cast(
+    (select cast(array['abc', 'def', 'foo'] as text[])) as text[]
+  ))
   as c2;
 
 select pg_get_viewdef('tt19v', true);

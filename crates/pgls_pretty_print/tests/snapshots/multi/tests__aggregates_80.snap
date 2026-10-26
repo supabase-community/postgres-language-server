@@ -1499,8 +1499,9 @@ select
   percentile_disc(array[0.25, 0.5, 0.75]) within group (order by x)
 from
   unnest(
-    cast('{fred,jim,fred,jack,jill,fred,jill,jim,jim,sheila,jim,sheila}'
-    as text[])
+    cast(
+      '{fred,jim,fred,jack,jill,fred,jill,jim,jim,sheila,jim,sheila}' as text[]
+    )
   )
   as u (x);
 
