@@ -1161,12 +1161,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
-name = "foldhash"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
-
-[[package]]
 name = "form_urlencoded"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1473,7 +1467,7 @@ checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
 dependencies = [
  "allocator-api2",
  "equivalent",
- "foldhash 0.1.5",
+ "foldhash",
 ]
 
 [[package]]
@@ -1481,11 +1475,6 @@ name = "hashbrown"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
-dependencies = [
- "allocator-api2",
- "equivalent",
- "foldhash 0.2.0",
-]
 
 [[package]]
 name = "hashlink"
@@ -1990,15 +1979,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lru"
-version = "0.16.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f66e8d5d03f609abc3a39e6f08e4164ebf1447a732906d39eb9b99b7919ef39"
-dependencies = [
- "hashbrown 0.16.1",
-]
-
-[[package]]
 name = "ls-types"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2462,7 +2442,6 @@ dependencies = [
  "tempfile",
  "tikv-jemallocator",
  "tokio",
- "toml",
  "tracing",
  "tracing-appender",
  "tracing-bunyan-formatter",
@@ -2592,6 +2571,7 @@ dependencies = [
  "crossbeam",
  "directories",
  "enumflags2",
+ "ignore",
  "oxc_resolver",
  "parking_lot",
  "pgls_diagnostics",
@@ -2600,6 +2580,7 @@ dependencies = [
  "schemars",
  "serde",
  "smallvec",
+ "tempfile",
  "tracing",
 ]
 
@@ -2664,6 +2645,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "futures",
+ "parking_lot",
  "pgls_analyse",
  "pgls_completions",
  "pgls_configuration",
@@ -2819,6 +2801,17 @@ dependencies = [
  "protox",
  "quote",
  "ureq",
+]
+
+[[package]]
+name = "pgls_semantic_tokens"
+version = "0.0.0"
+dependencies = [
+ "pgls_catalog",
+ "pgls_query",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "sqlx",
 ]
 
 [[package]]
@@ -2990,7 +2983,6 @@ dependencies = [
  "globset",
  "ignore",
  "json-strip-comments 3.1.0",
- "lru",
  "pgls_analyse",
  "pgls_analyser",
  "pgls_catalog",
@@ -3009,6 +3001,7 @@ dependencies = [
  "pgls_pretty_print",
  "pgls_query",
  "pgls_query_ext",
+ "pgls_semantic_tokens",
  "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_suppressions",
@@ -3029,6 +3022,7 @@ dependencies = [
  "strum",
  "tempfile",
  "tokio",
+ "toml",
  "tracing",
  "tree-sitter",
  "url",

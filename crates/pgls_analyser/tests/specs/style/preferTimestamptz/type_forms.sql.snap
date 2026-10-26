@@ -1,0 +1,108 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+CREATE TABLE events (
+    a TIMESTAMP WITHOUT TIME ZONE,
+    b timestamp without time zone[],
+    c "timestamp",
+    d timestamp /* precision */ (3) without time zone,
+    e myschema.timestamp
+);
+
+```
+
+# Diagnostics
+lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
+  
+  i TIMESTAMP WITHOUT TIME ZONE can lead to issues when dealing with time zones.
+  
+  i Use TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) instead.
+  
+
+
+## Fix (unsafe): Use TIMESTAMPTZ
+```
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+CREATE TABLE events (
+    a TIMESTAMPTZ,
+    b timestamp without time zone[],
+    c "timestamp",
+    d timestamp /* precision */ (3) without time zone,
+    e myschema.timestamp
+);
+
+```
+
+lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
+  
+  i TIMESTAMP WITHOUT TIME ZONE can lead to issues when dealing with time zones.
+  
+  i Use TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) instead.
+  
+
+
+## Fix (unsafe): Use TIMESTAMPTZ
+```
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+CREATE TABLE events (
+    a TIMESTAMP WITHOUT TIME ZONE,
+    b timestamptz[],
+    c "timestamp",
+    d timestamp /* precision */ (3) without time zone,
+    e myschema.timestamp
+);
+
+```
+
+lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
+  
+  i TIMESTAMP WITHOUT TIME ZONE can lead to issues when dealing with time zones.
+  
+  i Use TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) instead.
+  
+
+
+lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
+  
+  i TIMESTAMP WITHOUT TIME ZONE can lead to issues when dealing with time zones.
+  
+  i Use TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) instead.
+  
+
+
+## Fix (unsafe): Use TIMESTAMPTZ
+```
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+-- expect_lint/preferTimestamptz
+CREATE TABLE events (
+    a TIMESTAMP WITHOUT TIME ZONE,
+    b timestamp without time zone[],
+    c "timestamp",
+    d timestamptz /* precision */ (3),
+    e myschema.timestamp
+);
+
+```

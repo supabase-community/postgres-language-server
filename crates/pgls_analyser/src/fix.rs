@@ -3,18 +3,24 @@
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
-use crate::RuleFix;
+use crate::{LinterRule, LinterRuleContext, RuleFix};
 
-/// The tokens of a statement, with offsets relative to the statement.
+/// The tokens of a statement, with offsets relative to the statement. Comments are not tokens,
+/// so the token after `timestamp` in `timestamp /* local */ without time zone` is `without`.
 #[derive(Clone, Copy)]
 pub struct StatementTokens<'a> {
     sql: &'a str,
     tokens: &'a [ScanToken],
+    comments: &'a [ScanToken],
 }
 
 impl<'a> StatementTokens<'a> {
-    pub(crate) fn new(sql: &'a str, tokens: &'a [ScanToken]) -> Self {
-        Self { sql, tokens }
+    pub(crate) fn new(sql: &'a str, tokens: &'a [ScanToken], comments: &'a [ScanToken]) -> Self {
+        Self {
+            sql,
+            tokens,
+            comments,
+        }
     }
 
     /// The range of the token at `index`.
@@ -88,7 +94,6 @@ impl<'a> StatementTokens<'a> {
                 Token::Ascii41 if depth == 0 => break,
                 Token::Ascii41 => depth -= 1,
                 Token::Ascii44 | Token::Ascii59 if depth == 0 => break,
-                Token::SqlComment | Token::CComment => continue,
                 _ => {}
             }
             last = index;
@@ -130,8 +135,87 @@ impl<'a> StatementTokens<'a> {
         Some((open, self.closing_paren(open)?))
     }
 
-    /// A fix that inserts ` <text>` after the token at `index`.
-    pub fn insert_after(&self, index: usize, message: &str, text: &str) -> RuleFix {
-        RuleFix::new(message).insert(self.range(index).end(), format!(" {text}"))
+    /// The ranges of the keyword pairs `first second` that are not inside parentheses, e.g. the
+    /// `DROP DEFAULT` of each command of an `ALTER TABLE`.
+    pub fn keyword_pairs(&self, first: Token, second: Token) -> Vec<TextRange> {
+        let mut depth = 0usize;
+        let mut pairs = Vec::new();
+        for (index, token) in self.tokens.iter().enumerate() {
+            match token.token() {
+                Token::Ascii40 => depth += 1,
+                Token::Ascii41 => depth = depth.saturating_sub(1),
+                kind if depth == 0 && kind == first && self.kind(index + 1) == Some(second) => {
+                    pairs.push(self.range(index).cover(self.range(index + 1)));
+                }
+                _ => {}
+            }
+        }
+        pairs
     }
+
+    /// A fix that inserts the keywords ` <text>` after the token at `index`, in the case of that
+    /// token if it is a keyword, or else of the statement's first keyword.
+    pub fn insert_after(&self, index: usize, message: &str, text: &str) -> RuleFix {
+        let is_keyword = |index: usize| self.tokens[index].keyword_kind() != KeywordKind::NoKeyword;
+        let like = Some(index)
+            .filter(|index| is_keyword(*index))
+            .or_else(|| (0..self.tokens.len()).find(|index| is_keyword(*index)))
+            .map_or("", |index| self.text(index));
+        RuleFix::new(message).insert(
+            self.range(index).end(),
+            format!(" {}", in_case_of(text, like)),
+        )
+    }
+
+    /// A fix that replaces the token at `index` with `text`, in the case of the token, e.g.
+    /// `TIMESTAMP` with `TIMESTAMPTZ`.
+    pub fn replace(&self, index: usize, message: &str, text: &str) -> RuleFix {
+        RuleFix::new(message).replace(self.range(index), in_case_of(text, self.text(index)))
+    }
+
+    /// Replaces the text in `range` with `text`, but keeps the comments in it, e.g. to replace
+    /// `varchar /* name */ (255)` with `text /* name */`.
+    pub fn replace_keeping_comments(&self, fix: RuleFix, range: TextRange, text: &str) -> RuleFix {
+        let mut replacement = text.to_string();
+        for comment in self.comments {
+            let comment = TextRange::new(
+                TextSize::from(comment.start as u32),
+                TextSize::from(comment.end as u32),
+            );
+            if range.contains_range(comment) {
+                replacement.push(' ');
+                replacement.push_str(&self.sql[comment]);
+            }
+        }
+        fix.replace(range, replacement)
+    }
+}
+
+/// `text` in uppercase if `like` is, and in lowercase otherwise.
+pub(crate) fn in_case_of(text: &str, like: &str) -> String {
+    if like.chars().any(|c| c.is_ascii_uppercase()) && !like.chars().any(|c| c.is_ascii_lowercase())
+    {
+        text.to_uppercase()
+    } else {
+        text.to_lowercase()
+    }
+}
+
+/// A fix that inserts `CONCURRENTLY` after the token at `index`, for a statement that Postgres
+/// can't run in a transaction block. There is none in a transaction block. If we only assume that
+/// the statement runs outside of one, because we don't know the migration tool, the fix is unsafe.
+pub(crate) fn add_concurrently<R: LinterRule + 'static>(
+    ctx: &LinterRuleContext<R>,
+    tokens: &StatementTokens,
+    index: usize,
+) -> Option<RuleFix> {
+    if ctx.in_transaction() {
+        return None;
+    }
+    let fix = tokens.insert_after(index, "Add CONCURRENTLY", "CONCURRENTLY");
+    Some(if ctx.knows_transaction() {
+        fix
+    } else {
+        fix.unsafe_fix()
+    })
 }

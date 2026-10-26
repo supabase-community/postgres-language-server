@@ -29,12 +29,12 @@ use crate::{
     OperatorKind,
     lookup::Lookup,
     typing::{
-        CallArg, CoercionContext, Decision, Selection, Type, can_coerce, normalize_type_name,
-        select_common_type, select_function, select_operator,
+        CallArg, CoercionContext, Decision, Selection, Type, TypeId, can_coerce,
+        normalize_type_name, select_common_type, select_function, select_operator,
     },
 };
 pub(super) use assignment::check_assignment;
-pub(super) use func_call::call_args;
+pub(super) use func_call::{call_args, resolve_procedure_call};
 use pgls_query::{NodeEnum, protobuf};
 
 fn named(r: &Resolver<'_>, name: &str) -> Option<Type> {
@@ -89,6 +89,14 @@ fn field_type(r: &Resolver<'_>, row: &Type, field: &str) -> Option<Type> {
     columns.into_iter().find(|column| column.name == field)?.ty
 }
 
+/// The type of a parameter in the body of a SQL function. Postgres parses the body when the
+/// function is called, with polymorphic parameters (`anyelement`, `anyarray`, ...) resolved to
+/// the types of the call's arguments ([`prepare_sql_fn_parse_info`]), so their type in the body is
+/// unknown. Other pseudo-types are not allowed for parameters of SQL functions
+/// ([`fmgr_sql_validator`]).
+///
+/// [`prepare_sql_fn_parse_info`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L286
+/// [`fmgr_sql_validator`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/pg_proc.c#L873
 fn function_param_type(r: &Resolver<'_>, param: &crate::resolve::FunctionParam) -> Option<Type> {
     let Lookup::Found(mut info) = r.catalog.type_(
         param.type_schema.as_deref(),
@@ -97,6 +105,9 @@ fn function_param_type(r: &Resolver<'_>, param: &crate::resolve::FunctionParam) 
     ) else {
         return None;
     };
+    if info.kind == Some(crate::TypeKind::Pseudo) {
+        return None;
+    }
     if param.is_array {
         let element = info.id.as_ref()?;
         let Lookup::Found(array) = r.catalog.type_by_id(element) else {
@@ -137,7 +148,8 @@ fn common_types(r: &Resolver<'_>, ts: &[Type]) -> Option<Type> {
 }
 
 /// Checks the `=` that `IS DISTINCT FROM`, `NULLIF` and simple `CASE` compare with, like
-/// [`make_op`] (through [`oper`]) does. Reports only proven selection failures.
+/// [`make_op`] (through [`oper`]) does. Reports only proven selection failures. Returns the
+/// selected operator.
 ///
 /// [`make_op`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L660
 /// [`oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L370
@@ -147,7 +159,7 @@ fn check_operator(
     left: Option<&Type>,
     right: &Type,
     location: i32,
-) {
+) -> Option<crate::OperatorInfo> {
     let selection = select_operator(
         r.catalog,
         None,
@@ -158,34 +170,72 @@ fn check_operator(
         r.search_path,
     );
     let failure = match selection {
-        Selection::NoMatch => Some(crate::resolve::MatchFailure::NoMatch),
-        Selection::Ambiguous => Some(crate::resolve::MatchFailure::Ambiguous),
-        Selection::Match(operator_result) => {
-            let Lookup::Found(boolean_info) =
-                r.catalog.type_(Some("pg_catalog"), "bool", r.search_path)
-            else {
-                return;
-            };
-            let Some(boolean) = boolean_info.id else {
-                return;
-            };
-            if operator_result.result.as_ref() != Some(&Type::Named(boolean)) {
-                return;
-            }
-            None
-        }
-        Selection::Unknown => None,
+        Selection::NoMatch => crate::resolve::MatchFailure::NoMatch,
+        Selection::Ambiguous => crate::resolve::MatchFailure::Ambiguous,
+        Selection::Match(operator_result) => return Some(operator_result.operator),
+        Selection::Unknown => return None,
     };
-    if let Some(failure) = failure {
-        let span = r.operator_span(location);
-        r.report_with_span(
-            crate::resolve::FindingKind::OperatorMismatch {
-                operator: operator.to_owned(),
-                left: left.cloned(),
-                right: right.clone(),
-                failure,
-            },
-            span,
-        );
+    let span = r.operator_span(location);
+    r.report_with_span(
+        crate::resolve::FindingKind::OperatorMismatch {
+            operator: operator.to_owned(),
+            left: left.cloned(),
+            right: right.clone(),
+            failure,
+        },
+        span,
+    );
+    None
+}
+
+/// The polymorphic types that an operand of an unknown literal resolves to the type of the other
+/// operand, like `anyenum` in the comparison operators of enums.
+const POLYMORPHIC_SCALAR_TYPES: &[&str] = &[
+    "anyelement",
+    "anynonarray",
+    "anyenum",
+    "anycompatible",
+    "anycompatiblenonarray",
+];
+
+/// Records a string literal operand of `operator` that is coerced to the enum type of the other
+/// operand. Postgres first assumes that an unknown literal has the type of the other operand
+/// ([`binary_oper_exact`]), and the polymorphic operators of enums resolve it to that type
+/// ([`enforce_generic_type_consistency`]).
+///
+/// [`binary_oper_exact`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L262
+/// [`enforce_generic_type_consistency`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2109
+fn record_enum_operands(
+    r: &mut Resolver<'_>,
+    operator: &crate::OperatorInfo,
+    left: (Option<&NodeEnum>, &Type),
+    right: (Option<&NodeEnum>, &Type),
+) {
+    if !r.collects_references() {
+        return;
     }
+    match (left.1, right.1) {
+        (Type::UnknownLiteral, Type::Named(other))
+            if takes_type_of_other(r, operator.left.as_ref(), other) =>
+        {
+            r.record_enum_literal(left.0, other);
+        }
+        (Type::Named(other), Type::UnknownLiteral)
+            if takes_type_of_other(r, operator.right.as_ref(), other) =>
+        {
+            r.record_enum_literal(right.0, other);
+        }
+        _ => {}
+    }
+}
+
+/// Whether an operand declared as `declared` takes the type `other` of the other operand.
+fn takes_type_of_other(r: &Resolver<'_>, declared: Option<&TypeId>, other: &TypeId) -> bool {
+    let Some(declared) = declared else {
+        return false;
+    };
+    declared == other
+        || r.catalog.type_by_id(declared).found().is_some_and(|info| {
+            info.schema == "pg_catalog" && POLYMORPHIC_SCALAR_TYPES.contains(&info.name.as_str())
+        })
 }

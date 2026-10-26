@@ -776,7 +776,7 @@ insert into gtest24nn (a) values (null);
 
 create type gtest_type as (f1 int, f2 text, f3 bigint);
 
-create table gtest28 of gtest_type (f1 with options generated always as (f2 * 2) stored );
+create table gtest28 of gtest_type (f1 with options generated always as (f2 * 2) stored);
 
 drop type gtest_type cascade;
 

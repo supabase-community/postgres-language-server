@@ -1,0 +1,22 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select * from "a""b" where
+                  ↑ hovered here
+```
+
+# Hover Results
+### `public.a"b` - 🔓 RLS disabled  
+```plain  
+Columns:
+- escaped_id: int4 - nullable
+  
+```  
+---    
+```plain  
+
+~0 rows, ~0 dead rows, 0 B  
+```

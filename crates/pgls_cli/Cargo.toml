@@ -38,7 +38,6 @@ serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 sqlx                     = { workspace = true }
 tokio                    = { workspace = true, features = ["io-std", "io-util", "net", "time", "rt", "sync", "rt-multi-thread", "macros"] }
-toml                     = { workspace = true }
 tracing                  = { workspace = true }
 tracing-appender         = "0.2.3"
 tracing-bunyan-formatter = { workspace = true }
@@ -72,3 +71,6 @@ path = "src/main.rs"
 [[bin]]
 name = "postgres-language-server"
 path = "src/main.rs"
+
+[lints]
+workspace = true

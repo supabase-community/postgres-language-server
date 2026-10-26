@@ -74,14 +74,17 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
                 })
                 .collect()
         };
-        let check =
-            |r: &mut Resolver, value: Option<Type>, target: Option<&TypedColumn>, location: i32| {
-                if let Some(target) = target
-                    && let Some(column_type) = target.ty.clone()
-                {
-                    check_assignment(r, &target.name, column_type, value, location);
-                }
-            };
+        let check = |r: &mut Resolver,
+                     expr: Option<&NodeEnum>,
+                     value: Option<Type>,
+                     target: Option<&TypedColumn>,
+                     location: i32| {
+            if let Some(target) = target
+                && let Some(column_type) = target.ty.clone()
+            {
+                check_assignment(r, &target.name, column_type, expr, value, location);
+            }
+        };
         match values_rows(source) {
             // Each row of `INSERT ... VALUES` is coerced to the target columns on its own.
             Some(rows) => {
@@ -91,8 +94,8 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
                         let Some(value) = value.node.as_ref() else {
                             continue;
                         };
-                        let value = infer_expr(r, value);
-                        check(r, value, *target, location);
+                        let value_type = infer_expr(r, value);
+                        check(r, Some(value), value_type, *target, location);
                     }
                 }
             }
@@ -104,7 +107,7 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
                     .enumerate()
                 {
                     let location = select_target_location(source, index).unwrap_or_default();
-                    check(r, value.ty.clone(), *target, location);
+                    check(r, None, value.ty.clone(), *target, location);
                 }
             }
         }

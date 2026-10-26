@@ -131,8 +131,9 @@ select -cast('-9223372036854775808 us' as interval);
 select -cast('-9223372036854775807 us' as interval);
 
 select
-  -cast('-2147483647 months -2147483647 days -9223372036854775807 us'
-  as interval);
+  -cast(
+    '-2147483647 months -2147483647 days -9223372036854775807 us' as interval
+  );
 
 create temporary table interval_tbl_of (f1 interval);
 
@@ -153,8 +154,9 @@ insert into interval_tbl_of (f1) values ('2147483647 years');
 insert into interval_tbl_of (f1) values ('-2147483648 years');
 
 select
-  extract(epoch from cast('256 microseconds' as interval) *
-  cast(2 ^ 55 as float8));
+  extract(
+    epoch from cast('256 microseconds' as interval) * cast(2 ^ 55 as float8)
+  );
 
 select
   r1.*,
@@ -214,12 +216,15 @@ select cast('4611686018427387904 usec' as interval) / 0.1;
 select avg(f1) from interval_tbl where isfinite(f1);
 
 select
-  cast('4 millenniums 5 centuries 4 decades 1 year 4 months 4 days 17 minutes 31 seconds'
-  as interval);
+  cast(
+    '4 millenniums 5 centuries 4 decades 1 year 4 months 4 days 17 minutes 31 seconds'
+    as interval
+  );
 
 select
-  cast('100000000y 10mon -1000000000d -100000h -10min -10.000001s ago'
-  as interval);
+  cast(
+    '100000000y 10mon -1000000000d -100000h -10min -10.000001s ago' as interval
+  );
 
 select
   justify_hours(
@@ -394,8 +399,9 @@ select cast('-2562047788:00:54.775807' as interval second(2));
 select
   f1,
   cast(f1 as interval day to minute) as minutes,
-  cast(cast(f1 + cast('1 month' as interval) as interval month)
-  as interval year)
+  cast(
+    cast(f1 + cast('1 month' as interval) as interval month) as interval year
+  )
   as years
 from
   interval_tbl;
@@ -773,8 +779,10 @@ select cast('-2147483648 days ago' as interval);
 select cast('-9223372036854775808 microseconds ago' as interval);
 
 select
-  cast('-2147483648 months -2147483648 days -9223372036854775808 microseconds ago'
-  as interval);
+  cast(
+    '-2147483648 months -2147483648 days -9223372036854775808 microseconds ago'
+    as interval
+  );
 
 select make_interval(years := 178956971);
 
@@ -805,26 +813,30 @@ select make_interval(mins := -1, secs := -9223372036800.0);
 set intervalstyle = postgres;
 
 select
-  cast('-2147483647 months -2147483648 days -9223372036854775808 us'
-  as interval);
+  cast(
+    '-2147483647 months -2147483648 days -9223372036854775808 us' as interval
+  );
 
 set intervalstyle = sql_standard;
 
 select
-  cast('-2147483647 months -2147483648 days -9223372036854775808 us'
-  as interval);
+  cast(
+    '-2147483647 months -2147483648 days -9223372036854775808 us' as interval
+  );
 
 set intervalstyle = iso_8601;
 
 select
-  cast('-2147483647 months -2147483648 days -9223372036854775808 us'
-  as interval);
+  cast(
+    '-2147483647 months -2147483648 days -9223372036854775808 us' as interval
+  );
 
 set intervalstyle = postgres_verbose;
 
 select
-  cast('-2147483647 months -2147483648 days -9223372036854775808 us'
-  as interval);
+  cast(
+    '-2147483647 months -2147483648 days -9223372036854775808 us' as interval
+  );
 
 select cast('30 days' as interval) = cast('1 month' as interval) as t;
 
@@ -940,15 +952,17 @@ from
 select extract(epoch from cast('1000000000 days' as interval));
 
 select
-  cast('-2147483648 months -2147483648 days -9223372036854775807 us'
-  as interval);
+  cast(
+    '-2147483648 months -2147483648 days -9223372036854775807 us' as interval
+  );
 
 select
   cast('2147483647 months 2147483647 days 9223372036854775806 us' as interval);
 
 select
-  cast('-2147483648 months -2147483648 days -9223372036854775808 us'
-  as interval);
+  cast(
+    '-2147483648 months -2147483648 days -9223372036854775808 us' as interval
+  );
 
 select
   cast('2147483647 months 2147483647 days 9223372036854775807 us' as interval);
@@ -1018,8 +1032,9 @@ select
   cast('1 month 1 day 1 us' as interval);
 
 select
-  cast('-2147483647 months -2147483647 days -9223372036854775807 us'
-  as interval) +
+  cast(
+    '-2147483647 months -2147483647 days -9223372036854775807 us' as interval
+  ) +
   cast('-1 month -1 day -1 us' as interval);
 
 select
@@ -1027,8 +1042,9 @@ select
   cast('-1 month -1 day -1 us' as interval);
 
 select
-  cast('-2147483647 months -2147483647 days -9223372036854775807 us'
-  as interval) -
+  cast(
+    '-2147483647 months -2147483647 days -9223372036854775807 us' as interval
+  ) -
   cast('1 month 1 day 1 us' as interval);
 
 select
@@ -1112,16 +1128,18 @@ where
   not isfinite(i);
 
 select
-  -cast('-2147483647 months -2147483647 days -9223372036854775807 us'
-  as interval);
+  -cast(
+    '-2147483647 months -2147483647 days -9223372036854775807 us' as interval
+  );
 
 select cast('infinity' as interval) * 'nan';
 
 select cast('-infinity' as interval) * 'nan';
 
 select
-  cast('-1073741824 months -1073741824 days -4611686018427387904 us'
-  as interval) *
+  cast(
+    '-1073741824 months -1073741824 days -4611686018427387904 us' as interval
+  ) *
   2;
 
 select cast('infinity' as interval) * 0;
@@ -1149,8 +1167,9 @@ select cast('-infinity' as interval) / '-infinity';
 select cast('-infinity' as interval) / 'nan';
 
 select
-  cast('-1073741824 months -1073741824 days -4611686018427387904 us'
-  as interval) /
+  cast(
+    '-1073741824 months -1073741824 days -4611686018427387904 us' as interval
+  ) /
   0.5;
 
 select

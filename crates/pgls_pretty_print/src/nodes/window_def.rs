@@ -114,23 +114,27 @@ fn emit_window_spec(e: &mut EventEmitter, n: &WindowDef) {
         emit_comma_separated_list(e, &n.order_clause, |node, emitter| {
             super::emit_node(node, emitter)
         });
+        first = false;
     }
 
-    emit_frame_clause(e, n);
+    emit_frame_clause(e, n, first);
 
     e.indent_end();
     e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
 }
 
-fn emit_frame_clause(e: &mut EventEmitter, n: &WindowDef) -> bool {
+/// Emits the frame clause, preceded by a break unless it is the first thing in the window spec.
+fn emit_frame_clause(e: &mut EventEmitter, n: &WindowDef, first: bool) -> bool {
     let options = n.frame_options;
 
     if options & FRAMEOPTION_NONDEFAULT == 0 {
         return false;
     }
 
-    e.line(LineType::SoftOrSpace);
+    if !first {
+        e.line(LineType::SoftOrSpace);
+    }
 
     emit_frame_mode(e, options);
     e.space();
@@ -144,7 +148,6 @@ fn emit_frame_clause(e: &mut EventEmitter, n: &WindowDef) -> bool {
         e.line(LineType::SoftOrSpace);
         emit_frame_bound(e, options, n.end_offset.as_deref(), FrameBoundSide::End);
     } else {
-        e.line(LineType::SoftOrSpace);
         emit_frame_bound(e, options, n.start_offset.as_deref(), FrameBoundSide::Start);
     }
 
