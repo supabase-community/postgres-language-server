@@ -15,7 +15,7 @@ Code that fails at runtime for reasons other than names or types.
 | Rule | Description |
 | --- | --- |
 | [avoidAlterEnumAddValue](./rules/avoid-alter-enum-add-value.md) | `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older Postgres versions. |
-| [banConcurrentIndexCreationInTransaction](./rules/ban-concurrent-index-creation-in-transaction.md) ✅ | Concurrent index creation is not allowed within a transaction. |
+| [banConcurrentIndexCreationInTransaction](./rules/ban-concurrent-index-creation-in-transaction.md) ✅ | Concurrent index operations are not allowed within a transaction. |
 | [banDuplicateColumnAssignments](./rules/ban-duplicate-column-assignments.md) ✅ | A column is assigned or declared more than once. |
 | [banUncommittedTransaction](./rules/ban-uncommitted-transaction.md) ✅ 🛠 | A transaction is started but never committed or rolled back. |
 | [identifierTooLong](./rules/identifier-too-long.md) ✅ | Identifiers longer than 63 bytes are silently truncated. |
@@ -102,7 +102,7 @@ Schema design preferences. Not enabled by the recommended preset.
 | [preferJsonb](./rules/prefer-jsonb.md) | Prefer JSONB over JSON types. |
 | [preferTextField](./rules/prefer-text-field.md) | Prefer using TEXT over VARCHAR(n) types. |
 | [preferTimestamptz](./rules/prefer-timestamptz.md) | Prefer TIMESTAMPTZ over TIMESTAMP types. |
-| [requireEnumValueOrdering](./rules/require-enum-value-ordering.md) | `ALTER TYPE ... ADD VALUE` without `BEFORE` or `AFTER` appends the value to the end of the enum. |
+| [requireEnumValueOrdering](./rules/require-enum-value-ordering.md) 🛠 | `ALTER TYPE ... ADD VALUE` without `BEFORE` or `AFTER` appends the value to the end of the enum. |
 | [requireTableSchema](./rules/require-table-schema.md) | Table names in DDL should be schema-qualified. |
 
 ## Typecheck

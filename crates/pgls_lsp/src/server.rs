@@ -1,16 +1,13 @@
 use crate::capabilities::server_capabilities;
 use crate::handlers;
-use crate::session::{
-    CapabilitySet, CapabilityStatus, ClientInformation, Session, SessionHandle, SessionKey,
-};
+use crate::session::{ClientInformation, Session, SessionHandle, SessionKey};
 use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
 use pgls_configuration::database::PartialDatabaseConfiguration;
-use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
+use pgls_fs::{FileSystem, OsFileSystem};
 use pgls_workspace::{DynRef, Workspace, workspace};
 use rustc_hash::FxHashMap;
-use serde_json::json;
 use std::panic::RefUnwindSafe;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -18,7 +15,7 @@ use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::Notify;
 use tokio::task::spawn_blocking;
-use tower_lsp_server::jsonrpc::Result as LspResult;
+use tower_lsp_server::jsonrpc::{self, Result as LspResult};
 use tower_lsp_server::{ClientSocket, ls_types::*};
 use tower_lsp_server::{LanguageServer, LspService, Server};
 use tracing::{Instrument, error, info};
@@ -50,48 +47,6 @@ impl LSPServer {
             stop_on_disconnect,
             is_initialized,
         }
-    }
-
-    async fn setup_capabilities(&self) {
-        let mut capabilities = CapabilitySet::default();
-
-        capabilities.add_capability(
-            "pgls_did_change_extension_settings",
-            "workspace/didChangeConfiguration",
-            if self.session.can_register_did_change_configuration() {
-                CapabilityStatus::Enable(None)
-            } else {
-                CapabilityStatus::Disable
-            },
-        );
-
-        capabilities.add_capability(
-            "pgls_did_change_workspace_settings",
-            "workspace/didChangeWatchedFiles",
-            match self.session.base_path() {
-                Some(base_path) => {
-                    // Configuration files below the root apply to their directories.
-                    let watchers = ConfigName::file_names()
-                        .iter()
-                        .map(|config_name| FileSystemWatcher {
-                            glob_pattern: GlobPattern::String(format!(
-                                "{}/**/{}",
-                                base_path.display(),
-                                config_name
-                            )),
-                            kind: Some(WatchKind::all()),
-                        })
-                        .collect();
-
-                    CapabilityStatus::Enable(Some(json!(
-                        DidChangeWatchedFilesRegistrationOptions { watchers }
-                    )))
-                }
-                _ => CapabilityStatus::Disable,
-            },
-        );
-
-        self.session.register_capabilities(capabilities).await;
     }
 }
 
@@ -150,7 +105,7 @@ impl LanguageServer for LSPServer {
             .log_message(MessageType::INFO, msg)
             .await;
 
-        self.setup_capabilities().await;
+        self.session.setup_capabilities().await;
 
         // Diagnostics are disabled by default, so update them after fetching workspace config
         self.session.update_all_diagnostics().await;
@@ -164,39 +119,27 @@ impl LanguageServer for LSPServer {
     #[tracing::instrument(level = "info", skip_all)]
     async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
         handlers::configuration::did_change_configuration(&self.session, params).await;
-        self.setup_capabilities().await;
+        self.session.setup_capabilities().await;
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
-        let file_paths = params
-            .changes
-            .iter()
-            .map(|change| change.uri.to_file_path());
-        for file_path in file_paths {
-            match file_path {
-                Some(file_path) => {
-                    // The root configuration file or one below it, which applies to its directory.
-                    let is_config_file = file_path
-                        .file_name()
-                        .and_then(|file_name| file_name.to_str())
-                        .is_some_and(|file_name| ConfigName::file_names().contains(&file_name));
-                    if is_config_file {
-                        self.session.reload_workspace_settings().await;
-                        self.setup_capabilities().await;
-                        self.session.update_all_diagnostics().await;
-                        // for now we are only interested to the configuration file,
-                        // so it's OK to exist the loop
-                        break;
+        let is_configuration_change =
+            params
+                .changes
+                .iter()
+                .any(|change| match change.uri.to_file_path() {
+                    Some(file_path) => self.session.is_configuration_change(&file_path),
+                    None => {
+                        error!(
+                            "The URI {:?} could not be parsed as a filesystem path",
+                            change.uri
+                        );
+                        false
                     }
-                }
-                None => {
-                    error!(
-                        "The Workspace root URI {file_path:?} could not be parsed as a filesystem path"
-                    );
-                    continue;
-                }
-            }
+                });
+        if is_configuration_change {
+            self.session.schedule_configuration_reload();
         }
     }
 
@@ -243,7 +186,7 @@ impl LanguageServer for LSPServer {
         // Loading the configuration registers the projects of the new folders and unregisters the
         // ones of the removed folders.
         self.session.reload_workspace_settings().await;
-        self.setup_capabilities().await;
+        self.session.setup_capabilities().await;
         self.session.update_all_diagnostics().await;
     }
 
@@ -293,7 +236,10 @@ impl LanguageServer for LSPServer {
         match handlers::code_actions::execute_command(&self.session, params).await {
             // we'll inform the client within `code_actions::execute_command`
             Ok(_) => LspResult::Ok(None),
-            Err(err) => LspResult::Err(into_lsp_error(err)),
+            Err(err) => LspResult::Err(
+                err.downcast::<jsonrpc::Error>()
+                    .unwrap_or_else(into_lsp_error),
+            ),
         }
     }
 
@@ -549,8 +495,9 @@ mod tests {
     use crate::session::SessionHandle;
     use futures::StreamExt;
     use pgls_configuration::PartialConfiguration;
-    use pgls_fs::{OsFileSystem, PgLSPath};
+    use pgls_fs::{ConfigName, OsFileSystem, PgLSPath};
     use pgls_workspace::workspace::{IsPathIgnoredParams, OpenFileParams};
+    use serde_json::json;
     use std::future::ready;
     use std::path::Path;
     use tower_lsp_server::ls_types::Uri;

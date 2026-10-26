@@ -159,6 +159,28 @@ mod tests {
     }
 
     #[test]
+    fn out_of_range_positions_are_clamped() {
+        // No line break at the end: lines 0 and 1.
+        let line_index = LineIndex::new("abcde\nfg😀");
+        let at = |line, character| {
+            offset(
+                &line_index,
+                Position { line, character },
+                PositionEncoding::Wide(WideEncoding::Utf16),
+            )
+            .unwrap()
+        };
+        assert_eq!(at(0, 3), TextSize::from(3));
+        // Past the end of a line: the end of that line.
+        assert_eq!(at(0, 10), TextSize::from(5));
+        assert_eq!(at(1, 100), TextSize::from(12));
+        assert_eq!(at(1, u32::MAX), TextSize::from(12));
+        // Past the last line: the end of the text.
+        assert_eq!(at(2, 0), TextSize::from(12));
+        assert_eq!(at(u32::MAX, u32::MAX), TextSize::from(12));
+    }
+
+    #[test]
     fn with_tabs() {
         let line_index = LineIndex::new(
             r#"

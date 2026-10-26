@@ -11,9 +11,14 @@ use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_console::{ColorMode, Console, ConsoleExt, markup};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
+use std::ffi::OsString;
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use pgls_workspace::configuration::{NestedConfiguration, apply_nested_configurations};
+use pgls_workspace::configuration::{
+    NestedConfiguration, NestedConfigurationSearch, apply_nested_configurations,
+};
+use pgls_workspace::settings::FilesSettings;
 use pgls_workspace::workspace::ProjectKey;
 use pgls_workspace::{App, DynRef, Workspace, WorkspaceRef};
 
@@ -65,6 +70,9 @@ pub struct CliSession<'app> {
     pub app: App<'app>,
     /// The project of the working directory, once [CliSession::setup_workspace] registered it
     project_key: ProjectKey,
+    /// The files settings of the root configuration, which decide the folders to search for
+    /// nested configuration files
+    root_files: Option<FilesSettings>,
 }
 
 impl<'app> CliSession<'app> {
@@ -79,6 +87,7 @@ impl<'app> CliSession<'app> {
                 WorkspaceRef::Borrowed(workspace),
             ),
             project_key: ProjectKey::default(),
+            root_files: None,
         })
     }
 
@@ -256,13 +265,15 @@ impl<'app> CliSession<'app> {
         self.project_key
     }
 
-    /// Applies every configuration file below the working directory to the project, so that each
-    /// file uses its nearest configuration file. The environment and the arguments apply to them
-    /// like to the root configuration file. Skipped when the user chose a configuration file.
+    /// Applies the configuration files that apply to `paths` to the project, so that each file
+    /// uses its nearest configuration file below the working directory. The environment and the
+    /// arguments apply to them like to the root configuration file. Skipped when the user chose a
+    /// configuration file.
     pub fn apply_nested_configurations(
-        &self,
+        &mut self,
         cli_options: &CliOptions,
         cli_configuration: Option<PartialConfiguration>,
+        paths: &[OsString],
     ) -> Result<(), CliDiagnostic> {
         if cli_options.config_path.is_some() {
             return Ok(());
@@ -271,14 +282,24 @@ impl<'app> CliSession<'app> {
             return Ok(());
         };
 
+        let root_files = self.root_files.take().map(Arc::new);
         let nested = apply_nested_configurations(
             self.workspace(),
             self.fs(),
             self.project_key,
-            &root,
+            NestedConfigurationSearch {
+                paths: Some(paths.iter().map(PathBuf::from).collect()),
+                root_files,
+                ..NestedConfigurationSearch::new(root)
+            },
             |configuration| apply_overrides(configuration, cli_configuration.clone()),
         )?;
-        for NestedConfiguration { result, .. } in nested {
+        if let Some(incomplete) = nested.incomplete {
+            self.console().log(markup! {
+                <Warn>"Warning: "</Warn>{incomplete.to_string()}"\n"
+            });
+        }
+        for NestedConfiguration { result, .. } in nested.configurations {
             result?;
         }
         Ok(())
@@ -289,8 +310,10 @@ impl<'app> CliSession<'app> {
         configuration: PartialConfiguration,
         vcs: VcsIntegration,
     ) -> Result<(), CliDiagnostic> {
-        self.project_key =
+        let (project_key, root_files) =
             workspace::setup_workspace(self.workspace(), self.fs(), configuration, vcs)?;
+        self.project_key = project_key;
+        self.root_files = Some(root_files);
         Ok(())
     }
 

@@ -1,5 +1,6 @@
-//! Runs the type-check rules over Postgres' own regression suite of every supported version
-//! (`pgls_postgres_regress`), against the catalog of a fresh database on that version.
+//! Runs the type-check rules, and the lint rules that only report what Postgres rejects, over
+//! Postgres' own regression suite of every supported version (`pgls_postgres_regress`), against
+//! the catalog of a fresh database on that version.
 //!
 //! A finding on a statement Postgres accepted is a false positive and fails the test. Findings on
 //! statements Postgres rejected are snapshotted per version, so a change in what we detect shows
@@ -35,13 +36,7 @@ const KNOWN_ARTEFACTS: &[(&str, &str, &str)] = &[(
 /// Known false positives in the bodies of SQL functions Postgres accepted: the file, a snippet of
 /// the function, the rule, and the root cause. Remove an entry once it is fixed; an entry that
 /// matches nothing fails the test.
-const KNOWN_FALSE_POSITIVES: &[(&str, &str, &str, &str)] = &[(
-    "polymorphism",
-    "select array_prepend($1, $2)",
-    "functionArgumentMismatch",
-    "parameters of polymorphic types keep the pseudo-type in the body, so `$1 anyelement` doesn't \
-     match `anycompatible`",
-)];
+const KNOWN_FALSE_POSITIVES: &[(&str, &str, &str, &str)] = &[];
 
 #[test]
 fn typecheck_reports_nothing_postgres_accepts() {
@@ -160,7 +155,10 @@ fn catalog(version: &Version) -> Arc<CatalogBase> {
 /// are passed on as unparsable.
 fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
     let options = LinterOptions::default();
-    let rules = [RuleFilter::Group(TYPECHECK_GROUP)];
+    let rules = [
+        RuleFilter::Group(TYPECHECK_GROUP),
+        RuleFilter::Rule("correctness", "banDuplicateColumnAssignments"),
+    ];
     let analyser = Analyser::new(AnalyserConfig {
         options: &options,
         filter: AnalysisFilter::from_enabled_rules(&rules),

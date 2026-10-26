@@ -6,14 +6,18 @@ use crate::{
 };
 use anyhow::{Result, anyhow};
 use pgls_analyse::{Applicability, SUPPRESSION_ACTION_CATEGORY};
+use tower_lsp_server::jsonrpc;
 use tower_lsp_server::ls_types::{
     self, CodeAction, CodeActionDisabled, CodeActionOrCommand, Command, ExecuteCommandParams,
     MessageType, WorkspaceEdit,
 };
 
+use pgls_text_size::{TextRange, TextSize};
 use pgls_workspace::features::code_actions::{
-    CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams,
+    CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams, FixFileMode,
+    FixFileParams,
 };
+use pgls_workspace::workspace::GetFileContentParams;
 
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn get_actions(
@@ -23,6 +27,24 @@ pub fn get_actions(
     let url = params.text_document.uri;
     let path = session.file_path(&url)?;
     let project_key = session.project_key(&path);
+
+    // On save, editors only ask for the fix-all action, which doesn't need the other actions.
+    let requested = params
+        .context
+        .only
+        .as_deref()
+        .filter(|kinds| !kinds.is_empty());
+    let fix_all = requested
+        .is_some_and(|kinds| kinds.iter().any(|kind| covers(kind, FIX_ALL_KIND)))
+        .then(|| fix_all_action(session, &url, path.clone()))
+        .transpose()?
+        .flatten();
+    if requested.is_some_and(|kinds| kinds.iter().all(|kind| covers(kind, FIX_ALL_KIND))) {
+        return Ok(fix_all
+            .into_iter()
+            .map(CodeActionOrCommand::CodeAction)
+            .collect());
+    }
 
     let cursor_position = get_cursor_position(session, &url, params.range.start)?;
 
@@ -101,11 +123,14 @@ pub fn get_actions(
                     .diagnostics
                     .iter()
                     .filter(|diagnostic| {
-                        diagnostic.code == Some(ls_types::NumberOrString::String(edit.rule.clone()))
+                        edit.rule.as_ref().is_some_and(|rule| {
+                            diagnostic.code == Some(ls_types::NumberOrString::String(rule.clone()))
+                        })
                     })
                     .cloned()
                     .collect();
-                let is_suppression = edit.category.matches(SUPPRESSION_ACTION_CATEGORY);
+                let is_fix =
+                    edit.rule.is_some() && !edit.category.matches(SUPPRESSION_ACTION_CATEGORY);
 
                 Some(CodeAction {
                     title: action.title,
@@ -113,11 +138,8 @@ pub fn get_actions(
                         edit.category.to_str().into_owned(),
                     )),
                     diagnostics: (!diagnostics.is_empty()).then_some(diagnostics),
-                    edit: Some(WorkspaceEdit {
-                        changes: Some(HashMap::from([(url.clone(), edits)])),
-                        ..Default::default()
-                    }),
-                    is_preferred: (!is_suppression && edit.applicability == Applicability::Always)
+                    edit: Some(workspace_edit(session, &url, edits)),
+                    is_preferred: (is_fix && edit.applicability == Applicability::Always)
                         .then_some(true),
                     disabled: action
                         .disabled_reason
@@ -132,8 +154,116 @@ pub fn get_actions(
 
     Ok(actions
         .into_iter()
+        .chain(fix_all)
         .map(CodeActionOrCommand::CodeAction)
         .collect())
+}
+
+/// The kind of the action that applies all safe fixes, e.g. on save with
+/// `"editor.codeActionsOnSave": { "source.fixAll.pgls": "explicit" }`.
+const FIX_ALL_KIND: &str = "source.fixAll.pgls";
+
+/// Whether the requested code action kind `requested` includes `kind`, e.g. `source` includes
+/// `source.fixAll.pgls`.
+fn covers(requested: &ls_types::CodeActionKind, kind: &str) -> bool {
+    let requested = requested.as_str();
+    kind == requested
+        || kind
+            .strip_prefix(requested)
+            .is_some_and(|rest| rest.starts_with('.'))
+}
+
+/// The action that applies all safe fixes of the document, if there are any.
+fn fix_all_action(
+    session: &Session,
+    url: &ls_types::Uri,
+    path: pgls_fs::PgLSPath,
+) -> Result<Option<CodeAction>> {
+    let Ok(doc) = session.document(url) else {
+        return Ok(None);
+    };
+    let project_key = session.project_key(&path);
+    let content = session.workspace.get_file_content(GetFileContentParams {
+        project_key,
+        path: path.clone(),
+    })?;
+    let fixed = session.workspace.fix_file(FixFileParams {
+        project_key,
+        path,
+        fix_file_mode: FixFileMode::SafeFixes,
+        only: vec![],
+        skip: vec![],
+    })?;
+    if fixed.fixes_applied == 0 || fixed.code == content {
+        return Ok(None);
+    }
+
+    // Replaces only what changed, so that the editor keeps the cursor and the folds.
+    let (range, new_text) = changed_range(&content, &fixed.code);
+    let edit = ls_types::TextEdit {
+        range: to_lsp::range(&doc.line_index, range, session.position_encoding())?,
+        new_text: new_text.to_string(),
+    };
+    Ok(Some(CodeAction {
+        title: "Apply all safe fixes".into(),
+        kind: Some(ls_types::CodeActionKind::from(FIX_ALL_KIND)),
+        edit: Some(workspace_edit(session, url, vec![edit])),
+        ..Default::default()
+    }))
+}
+
+/// The range of `old` that differs from `new`, and the text that replaces it.
+fn changed_range<'a>(old: &str, new: &'a str) -> (TextRange, &'a str) {
+    let prefix = old
+        .char_indices()
+        .zip(new.chars())
+        .find(|((_, a), b)| a != b)
+        .map_or(old.len().min(new.len()), |((index, _), _)| index);
+    let suffix = old[prefix..]
+        .chars()
+        .rev()
+        .zip(new[prefix..].chars().rev())
+        .take_while(|(a, b)| a == b)
+        .map(|(a, _)| a.len_utf8())
+        .sum::<usize>();
+    let size = |offset: usize| TextSize::try_from(offset).unwrap();
+    (
+        TextRange::new(size(prefix), size(old.len() - suffix)),
+        &new[prefix..new.len() - suffix],
+    )
+}
+
+/// An edit of the document at `url`. If the client supports it, the edit names the version of
+/// the document it applies to, so that the client rejects it if the document changed since.
+fn workspace_edit(
+    session: &Session,
+    url: &ls_types::Uri,
+    edits: Vec<ls_types::TextEdit>,
+) -> WorkspaceEdit {
+    let versioned = session
+        .client_capabilities()
+        .and_then(|capabilities| capabilities.workspace.as_ref())
+        .and_then(|workspace| workspace.workspace_edit.as_ref())
+        .and_then(|workspace_edit| workspace_edit.document_changes)
+        == Some(true);
+    match session.document(url) {
+        Ok(doc) if versioned => WorkspaceEdit {
+            document_changes: Some(ls_types::DocumentChanges::Edits(vec![
+                ls_types::TextDocumentEdit {
+                    text_document: ls_types::OptionalVersionedTextDocumentIdentifier {
+                        uri: url.clone(),
+                        version: Some(doc.version),
+                    },
+                    edits: edits.into_iter().map(ls_types::OneOf::Left).collect(),
+                },
+            ])),
+            ..Default::default()
+        },
+        _ => WorkspaceEdit {
+            changes: Some(HashMap::from([(url.clone(), edits)])),
+            ..Default::default()
+        },
+    }
 }
 
 pub fn command_id(command: &CommandActionCategory) -> String {
@@ -141,6 +271,28 @@ pub fn command_id(command: &CommandActionCategory) -> String {
         CommandActionCategory::ExecuteStatement(_) => "pgls.executeStatement".into(),
         CommandActionCategory::InvalidateSchemaCache => "pgls.invalidateSchemaCache".into(),
     }
+}
+
+/// The statement and the document that `pgls.executeStatement` gets from [`get_actions`].
+fn execute_statement_arguments(
+    arguments: &[serde_json::Value],
+) -> Result<(pgls_workspace::workspace::StatementId, ls_types::Uri), jsonrpc::Error> {
+    let invalid = |message: String| {
+        jsonrpc::Error::invalid_params(format!(
+            "Invalid arguments for pgls.executeStatement: {message}"
+        ))
+    };
+    let [statement_id, uri] = arguments else {
+        return Err(invalid(format!(
+            "expected a statement and a document URI, got {} arguments",
+            arguments.len()
+        )));
+    };
+    let statement_id = serde_json::from_value(statement_id.clone())
+        .map_err(|error| invalid(format!("the statement: {error}")))?;
+    let uri = serde_json::from_value(uri.clone())
+        .map_err(|error| invalid(format!("the document URI: {error}")))?;
+    Ok((statement_id, uri))
 }
 
 #[tracing::instrument(level = "debug", skip(session), err)]
@@ -152,10 +304,7 @@ pub async fn execute_command(
 
     match command.as_str() {
         "pgls.executeStatement" => {
-            let statement_id = serde_json::from_value::<pgls_workspace::workspace::StatementId>(
-                params.arguments[0].clone(),
-            )?;
-            let doc_url: ls_types::Uri = serde_json::from_value(params.arguments[1].clone())?;
+            let (statement_id, doc_url) = execute_statement_arguments(&params.arguments)?;
 
             let path = session.file_path(&doc_url)?;
             let project_key = session.project_key(&path);
@@ -192,5 +341,38 @@ pub async fn execute_command(
             Ok(None)
         }
         any => Err(anyhow!(format!("Unknown command: {any}"))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{FIX_ALL_KIND, changed_range, covers};
+    use pgls_text_size::TextRange;
+    use tower_lsp_server::ls_types::CodeActionKind;
+
+    #[test]
+    fn requested_kinds_cover_their_children() {
+        for kind in ["source", "source.fixAll", "source.fixAll.pgls"] {
+            assert!(covers(&CodeActionKind::from(kind), FIX_ALL_KIND), "{kind}");
+        }
+        for kind in ["quickfix", "source.fix", "source.fixAll.other"] {
+            assert!(!covers(&CodeActionKind::from(kind), FIX_ALL_KIND), "{kind}");
+        }
+    }
+
+    #[test]
+    fn changed_range_keeps_the_common_start_and_end() {
+        assert_eq!(
+            changed_range("drop index ä_idx;", "drop index concurrently ä_idx;"),
+            (TextRange::new(11.into(), 11.into()), "concurrently ")
+        );
+        assert_eq!(
+            changed_range("a", "a"),
+            (TextRange::new(1.into(), 1.into()), "")
+        );
+        assert_eq!(
+            changed_range("ab", "b"),
+            (TextRange::new(0.into(), 1.into()), "")
+        );
     }
 }

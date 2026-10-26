@@ -3,6 +3,7 @@ use std::{
     io::ErrorKind,
     ops::Deref,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use pgls_analyser::LinterRules;
@@ -13,11 +14,15 @@ use pgls_configuration::{
 };
 use pgls_console::markup;
 use pgls_env::PGLS_WEBSITE;
-use pgls_fs::{AutoSearchResult, ConfigName, FileSystem, OpenOptions};
+use pgls_fs::{
+    AutoSearchResult, ConfigName, FileSystem, FindFiles, OpenOptions, SKIPPED_DIRECTORIES,
+    SkipDirectory,
+};
+use rustc_hash::FxHashSet;
 
 use crate::{
     DynRef, Workspace, WorkspaceError,
-    settings::Settings,
+    settings::{FilesSettings, Settings},
     workspace::{
         NestedSettingsParams, ProjectKey, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
     },
@@ -116,33 +121,104 @@ pub struct NestedConfiguration {
     pub result: Result<(), WorkspaceError>,
 }
 
-/// Applies every configuration file below `root` to the project as nested settings, so that each
-/// file uses the settings of the nearest configuration file. They replace the nested settings the
-/// project had before.
+/// Where [apply_nested_configurations] looks for configuration files.
+pub struct NestedConfigurationSearch {
+    /// The folder of the project.
+    pub root: PathBuf,
+    /// Only the configuration files that apply to these paths are looked up: those in the folders
+    /// between the root and each path, and those below the paths that are folders. `None` looks
+    /// below the whole root. Relative paths are relative to the root.
+    pub paths: Option<Vec<PathBuf>>,
+    /// The files settings of the root configuration. The folders they ignore are not searched.
+    pub root_files: Option<Arc<FilesSettings>>,
+}
+
+impl NestedConfigurationSearch {
+    /// Looks for every configuration file below `root`.
+    pub fn new(root: impl Into<PathBuf>) -> Self {
+        Self {
+            root: root.into(),
+            paths: None,
+            root_files: None,
+        }
+    }
+}
+
+/// The result of [apply_nested_configurations].
+#[derive(Debug, Default)]
+pub struct NestedConfigurations {
+    /// The configuration files that apply.
+    pub configurations: Vec<NestedConfiguration>,
+    /// Set if the search did not look at every folder it should have, so that some configuration
+    /// files may be missing.
+    pub incomplete: Option<IncompleteSearch>,
+}
+
+/// Why [apply_nested_configurations] did not look at every folder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IncompleteSearch {
+    /// The folder is the home directory or a filesystem root, which holds unrelated projects.
+    NotAProjectFolder(PathBuf),
+    /// The search stopped at the depth or entry limit of [FindFiles].
+    LimitReached(PathBuf),
+}
+
+impl std::fmt::Display for IncompleteSearch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotAProjectFolder(folder) => write!(
+                f,
+                "{} is the home directory or a filesystem root, so the configuration files below \
+                 it are not used. Open a project folder to use them.",
+                folder.display()
+            ),
+            Self::LimitReached(folder) => write!(
+                f,
+                "Stopped looking for configuration files below {} after {} files or {} levels of \
+                 folders, so some may not be used. Ignore the folders that hold no SQL files in \
+                 `files.ignore` or `.gitignore`.",
+                folder.display(),
+                FindFiles::DEFAULT_MAX_ENTRIES,
+                FindFiles::DEFAULT_MAX_DEPTH
+            ),
+        }
+    }
+}
+
+/// Applies the configuration files below the root of a project to it as nested settings, so that
+/// each file uses the settings of the nearest configuration file. They replace the nested settings
+/// the project had before.
 ///
 /// A nested configuration file inherits nothing from the configuration files above it unless it
 /// `extends` them, and the user configuration is never merged into it: that one only applies, as
 /// the root settings, to the files that have no project configuration at or above them. The user
-/// configuration directories are skipped even when they are below `root`, for example when the
-/// home directory is opened as a workspace.
+/// configuration directories are skipped even when they are below the root, and so is everything
+/// below the home directory or a filesystem root, which hold unrelated projects.
 ///
 /// `configure` lays the layers of the caller, such as the environment or the arguments of the
 /// CLI, over each configuration file. Folders that the settings above them ignore are skipped.
 ///
-/// Returns the configuration files that apply. Fails if the project is not registered.
+/// This walks the file system, so call it off the async runtime. Fails if the project is not
+/// registered.
 pub fn apply_nested_configurations(
     workspace: &dyn Workspace,
     fs: &DynRef<'_, dyn FileSystem>,
     project_key: ProjectKey,
-    root: &Path,
+    search: NestedConfigurationSearch,
     configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
-) -> Result<Vec<NestedConfiguration>, WorkspaceError> {
+) -> Result<NestedConfigurations, WorkspaceError> {
+    let NestedConfigurationSearch {
+        root,
+        paths,
+        root_files,
+    } = search;
+    let root = root.as_path();
+    let (directories, incomplete) =
+        find_nested_configurations(fs, root, paths.as_deref(), root_files);
     let user_config_directories = fs.user_config_directories();
-    let mut directories: Vec<PathBuf> = fs
-        .find_files(root, ConfigName::file_names().as_slice())
+    let mut directories: Vec<PathBuf> = directories
         .into_iter()
-        .filter_map(|file_path| file_path.parent().map(PathBuf::from))
-        .filter(|directory| directory != root)
+        .filter(|directory| directory != root && directory.starts_with(root))
         .filter(|directory| !user_config_directories.contains(directory))
         .collect();
     directories.sort();
@@ -171,7 +247,7 @@ pub fn apply_nested_configurations(
             nested,
         })?;
 
-    Ok(applied
+    let configurations = applied
         .into_iter()
         .map(|directory| {
             let load_error = load_errors
@@ -188,7 +264,136 @@ pub fn apply_nested_configurations(
             };
             NestedConfiguration { directory, result }
         })
-        .collect())
+        .collect();
+    Ok(NestedConfigurations {
+        configurations,
+        incomplete,
+    })
+}
+
+/// The folders with a configuration file that [NestedConfigurationSearch] asks for.
+fn find_nested_configurations(
+    fs: &DynRef<'_, dyn FileSystem>,
+    root: &Path,
+    paths: Option<&[PathBuf]>,
+    root_files: Option<Arc<FilesSettings>>,
+) -> (Vec<PathBuf>, Option<IncompleteSearch>) {
+    let file_names = ConfigName::file_names();
+    let skip_directory = root_files.map(|root_files| {
+        Arc::new(move |directory: &Path| root_files.is_ignored(directory)) as SkipDirectory
+    });
+    let mut incomplete = None;
+    let mut find = |folder: &Path| -> Vec<PathBuf> {
+        if is_not_a_project_folder(fs, folder) {
+            incomplete.get_or_insert(IncompleteSearch::NotAProjectFolder(folder.to_path_buf()));
+            return Vec::new();
+        }
+        let found = fs.find_files(
+            folder,
+            &FindFiles {
+                skip_directory: skip_directory.clone(),
+                ..FindFiles::new(&file_names)
+            },
+        );
+        if found.truncated {
+            incomplete.get_or_insert(IncompleteSearch::LimitReached(folder.to_path_buf()));
+        }
+        found
+            .files
+            .into_iter()
+            .filter_map(|file_path| file_path.parent().map(PathBuf::from))
+            .collect()
+    };
+
+    let Some(paths) = paths else {
+        let directories = find(root);
+        return (directories, incomplete);
+    };
+
+    let mut directories = Vec::new();
+    // The folders between the root and a path that were looked at, with their ancestors.
+    let mut looked_at = FxHashSet::default();
+    for path in paths {
+        let path = normalize_path(&root.join(path));
+        if !path.starts_with(root) {
+            continue;
+        }
+        if fs.path_is_dir(&path) {
+            directories.extend(find(&path));
+        }
+        for directory in path
+            .ancestors()
+            .skip(1)
+            .take_while(|directory| *directory != root && directory.starts_with(root))
+        {
+            if !looked_at.insert(directory.to_path_buf()) {
+                break;
+            }
+            if file_names
+                .iter()
+                .any(|file_name| fs.path_is_file(&directory.join(file_name)))
+            {
+                directories.push(directory.to_path_buf());
+            }
+        }
+    }
+    (directories, incomplete)
+}
+
+/// Whether [apply_nested_configurations] looks for a configuration file in `directory` when it
+/// searches the whole `root`, so that a change of the file there has to be reloaded.
+/// `root_files` are the files settings of the root configuration.
+pub fn is_searched_for_configuration(
+    fs: &DynRef<'_, dyn FileSystem>,
+    root: &Path,
+    root_files: Option<&FilesSettings>,
+    directory: &Path,
+) -> bool {
+    let Ok(relative) = directory.strip_prefix(root) else {
+        return false;
+    };
+    if relative.as_os_str().is_empty() {
+        return true;
+    }
+    let is_skipped = |name: &OsStr| {
+        name.to_str()
+            .is_none_or(|name| name.starts_with('.') || SKIPPED_DIRECTORIES.contains(&name))
+    };
+    if is_not_a_project_folder(fs, root)
+        || relative.iter().any(is_skipped)
+        || relative.iter().count() > FindFiles::DEFAULT_MAX_DEPTH
+        || fs
+            .user_config_directories()
+            .iter()
+            .any(|user| user == directory)
+    {
+        return false;
+    }
+    let Some(root_files) = root_files else {
+        return true;
+    };
+    // Like the search: the root settings decide down to the first configuration file below it.
+    let mut folder = root.to_path_buf();
+    for component in relative {
+        folder.push(component);
+        if root_files.is_ignored(&folder) {
+            return false;
+        }
+        if folder != directory
+            && ConfigName::file_names()
+                .iter()
+                .any(|file_name| fs.path_is_file(&folder.join(file_name)))
+        {
+            return true;
+        }
+    }
+    true
+}
+
+/// The home directory and the filesystem roots hold unrelated projects, so looking for
+/// configuration files below them would apply the ones of other projects and take long.
+fn is_not_a_project_folder(fs: &DynRef<'_, dyn FileSystem>, folder: &Path) -> bool {
+    folder.parent().is_none() || fs.home_directory().is_some_and(|home| home == folder)
 }
 
 fn load_nested_configuration(
@@ -309,7 +514,7 @@ fn load_user_config(
     Ok(None)
 }
 
-/// Creates a new configuration on file system
+/// Creates a new configuration file in `directory`, relative to the working directory.
 ///
 /// ## Errors
 ///
@@ -318,9 +523,10 @@ fn load_user_config(
 /// - the program doesn't have the write rights
 pub fn create_config(
     fs: &mut DynRef<dyn FileSystem>,
+    directory: &Path,
     configuration: &mut PartialConfiguration,
 ) -> Result<(), WorkspaceError> {
-    let path = PathBuf::from(ConfigName::pgls_jsonc());
+    let path = directory.join(ConfigName::pgls_jsonc());
 
     if fs.path_exists(&path) {
         return Err(ConfigurationDiagnostic::new_already_exists().into());
@@ -341,14 +547,18 @@ pub fn create_config(
         Path::new("./node_modules/@postgrestools/postgrestools/schema.json");
     let pgls_node_schema_path =
         Path::new("./node_modules/@postgres-language-server/cli/schema.json");
+    // The schema path is relative to the configuration file.
     if fs
-        .open_with_options(pgls_node_schema_path, OpenOptions::default().read(true))
+        .open_with_options(
+            &directory.join(pgls_node_schema_path),
+            OpenOptions::default().read(true),
+        )
         .is_ok()
     {
         configuration.schema = pgls_node_schema_path.to_str().map(String::from);
     } else if fs
         .open_with_options(
-            postgrestools_node_schema_path,
+            &directory.join(postgrestools_node_schema_path),
             OpenOptions::default().read(true),
         )
         .is_ok()

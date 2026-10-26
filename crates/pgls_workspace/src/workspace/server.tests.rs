@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use pgls_analyse::{Applicability, RuleCategories};
+use pgls_analyse::{ActionCategory, Applicability, RefactorKind, RuleCategories};
 use pgls_configuration::{Merge, StringSet};
 use pgls_configuration::{
     PartialConfiguration, PartialFormatConfiguration, PartialTypecheckConfiguration,
@@ -18,19 +18,23 @@ use pgls_configuration::ConfigurationPathHint;
 #[cfg(not(target_os = "windows"))]
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_diagnostics::{Diagnostic, Severity};
-use pgls_fs::{ConfigName, FileSystem, MemoryFileSystem, PgLSPath};
+use pgls_fs::{ConfigName, FileSystem, FindFiles, MemoryFileSystem, PgLSPath};
 use pgls_text_size::TextRange;
 use sqlx::{Executor, PgPool};
 
 use crate::{
     DynRef, Workspace, WorkspaceError,
-    configuration::{apply_nested_configurations, load_configuration},
+    configuration::{
+        IncompleteSearch, NestedConfigurationSearch, apply_nested_configurations,
+        is_searched_for_configuration, load_configuration,
+    },
     features::code_actions::{
         CodeActionKind, ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
     },
     features::format::PullFileFormattingParams,
     features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
     features::on_hover::OnHoverParams,
+    settings::FilesSettings,
     workspace::{
         IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
         UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
@@ -273,9 +277,10 @@ DROP INDEX CONCURRENTLY IF EXISTS users_name_idx;
             .count()
     };
 
+    // Both sections run in a transaction.
     assert_eq!(
         in_transaction(migration_diagnostics(SectionMarkers::Goose, None, content)),
-        2
+        4
     );
     let content = format!("-- +goose NO TRANSACTION\n{content}");
     assert_eq!(
@@ -1967,13 +1972,12 @@ fn is_typecheck(diagnostic: &pgls_diagnostics::serde::Diagnostic) -> bool {
     })
 }
 
-/// A workspace that reads dbmate section markers, so a `transaction:false` section runs its
-/// statements outside a transaction, where `CONCURRENTLY` is allowed.
-fn dbmate_workspace() -> (WorkspaceServer, ProjectKey) {
+/// A workspace that reads the section markers of a migration tool.
+fn section_workspace(section_markers: SectionMarkers) -> (WorkspaceServer, ProjectKey) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Dbmate),
+            section_markers: Some(section_markers),
             ..Default::default()
         }),
         ..Default::default()
@@ -1981,12 +1985,47 @@ fn dbmate_workspace() -> (WorkspaceServer, ProjectKey) {
     get_test_workspace(Some(conf)).expect("Unable to create test workspace")
 }
 
+/// Applies the fixes of the given rules to `content`.
+fn fixed(
+    workspace: &WorkspaceServer,
+    project_key: ProjectKey,
+    content: &str,
+    fix_file_mode: FixFileMode,
+    rules: &[&str],
+) -> String {
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let code = workspace
+        .fix_file(FixFileParams {
+            project_key,
+            path: path.clone(),
+            fix_file_mode,
+            only: rules.iter().map(|rule| rule.parse().unwrap()).collect(),
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    workspace
+        .close_file(crate::workspace::CloseFileParams { project_key, path })
+        .expect("Unable to close test file");
+    code
+}
+
 #[test]
 fn test_code_actions_fix_and_suppress_lint_diagnostics() {
-    let (workspace, project_key) = dbmate_workspace();
+    // A dbmate section with `transaction:false` and a single statement runs outside a
+    // transaction, where `DROP INDEX CONCURRENTLY` works.
+    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
 
     let path = PgLSPath::new("test.sql");
-    let content = "-- migrate:up transaction:false\nselect 1;\n  drop index users_email_idx;";
+    let content = "-- migrate:up transaction:false\n  drop index users_email_idx;";
     workspace
         .open_file(OpenFileParams {
             project_key,
@@ -2000,7 +2039,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
         .pull_code_actions(crate::features::code_actions::CodeActionsParams {
             project_key,
             path: path.clone(),
-            cursor_position: 47.into(),
+            cursor_position: 37.into(),
             only: vec!["safety/requireConcurrentIndexDeletion".parse().unwrap()],
             skip: vec![],
         })
@@ -2022,7 +2061,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
     assert_eq!(
         fix.edits,
         vec![TextEdit {
-            range: TextRange::empty(54.into()),
+            range: TextRange::empty(44.into()),
             new_text: " CONCURRENTLY".into(),
         }]
     );
@@ -2035,7 +2074,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
     assert_eq!(
         suppression.edits,
         vec![TextEdit {
-            range: TextRange::empty(42.into()),
+            range: TextRange::empty(32.into()),
             new_text: "  -- pgls-ignore requireConcurrentIndexDeletion\n".into(),
         }]
     );
@@ -2081,10 +2120,10 @@ fn test_no_concurrently_fix_in_a_transaction() {
 
 #[test]
 fn test_fix_file() {
-    let (workspace, project_key) = dbmate_workspace();
-
+    // goose sends the statements of a `NO TRANSACTION` migration one by one.
+    let (workspace, project_key) = section_workspace(SectionMarkers::Goose);
+    let content = "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;";
     let path = PgLSPath::new("test.sql");
-    let content = "-- migrate:up transaction:false\ndrop index users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;";
     workspace
         .open_file(OpenFileParams {
             project_key,
@@ -2113,7 +2152,7 @@ fn test_fix_file() {
     let safe = fix(FixFileMode::SafeFixes);
     assert_eq!(
         safe.code,
-        "-- migrate:up transaction:false\ndrop index CONCURRENTLY users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index CONCURRENTLY users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
     );
     assert_eq!(safe.fixes_applied, 1);
     assert_eq!(safe.skipped_suggested_fixes, 1);
@@ -2121,10 +2160,183 @@ fn test_fix_file() {
     let all = fix(FixFileMode::SafeAndUnsafeFixes);
     assert_eq!(
         all.code,
-        "-- migrate:up transaction:false\ndrop index CONCURRENTLY IF EXISTS users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index CONCURRENTLY IF EXISTS users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
     );
     assert_eq!(all.fixes_applied, 2);
     assert_eq!(all.skipped_suggested_fixes, 0);
+}
+
+#[test]
+fn test_no_concurrently_fix_in_a_dbmate_section_with_several_statements() {
+    // dbmate sends a section to Postgres as one query, which runs in a transaction block if it
+    // has more than one statement.
+    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let content = "-- migrate:up transaction:false\ncreate index users_email_idx on users (email);\ncreate index users_name_idx on users (name);\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        content
+    );
+}
+
+#[test]
+fn test_concurrently_in_a_query_with_several_statements_is_flagged() {
+    let flagged = |markers, content| {
+        migration_diagnostics(markers, None, content)
+            .into_iter()
+            .filter(|category| category == "lint/banConcurrentIndexCreationInTransaction")
+            .count()
+    };
+    assert_eq!(
+        flagged(
+            SectionMarkers::Dbmate,
+            "-- migrate:up transaction:false\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n\n-- migrate:down transaction:false\ndrop index concurrently users_email_idx;\n"
+        ),
+        2
+    );
+    // goose sends a `StatementBegin` block as one query, and the other statements one by one.
+    assert_eq!(
+        flagged(
+            SectionMarkers::Goose,
+            "-- +goose NO TRANSACTION\n-- +goose Up\n-- +goose StatementBegin\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n-- +goose StatementEnd\ncreate index concurrently users_age_idx on users (age);\n-- +goose StatementBegin\ndrop index concurrently users_id_idx;\n-- +goose StatementEnd\n"
+        ),
+        2
+    );
+}
+
+#[test]
+fn test_concurrently_in_a_function_body() {
+    // A function runs in the transaction of the statement that calls it, so `CONCURRENTLY`
+    // fails in its body.
+    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let content = "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index users_email_idx on users (email) $$;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        content
+    );
+
+    let diagnostics = migration_diagnostics(
+        SectionMarkers::Dbmate,
+        None,
+        "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index concurrently users_email_idx on users (email) $$;\n",
+    );
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|category| *category == "lint/banConcurrentIndexCreationInTransaction")
+            .count(),
+        1,
+        "{diagnostics:?}"
+    );
+}
+
+#[test]
+fn test_no_concurrently_fix_next_to_an_unparsable_statement() {
+    // The file has two statements, even if the second only parses on Postgres 18.
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_email_idx on users (email);\nalter table users add constraint users_age_check check (age > 0) not enforced;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        content
+    );
+}
+
+#[test]
+fn test_concurrently_fix_is_unsafe_without_section_markers() {
+    // We don't know whether the migration tool runs a file with a single statement in a
+    // transaction.
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_email_idx on users (email);\n";
+    let rules = &["safety/requireConcurrentIndexCreation"];
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeFixes,
+            rules
+        ),
+        content
+    );
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            rules
+        ),
+        "create index CONCURRENTLY users_email_idx on users (email);\n"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
+    test_db
+        .execute(
+            "create table events (id bigint, created_at timestamptz) partition by range (created_at);
+             create index events_created_at_idx on events (created_at);
+             create table users (id bigint, email text);
+             create index users_email_idx on users (email);",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Goose),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    // Postgres can't create or drop the index of a partitioned table concurrently.
+    let content = "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index users_id_idx on users (id);\ndrop index users_email_idx;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeFixes,
+            &[
+                "safety/requireConcurrentIndexCreation",
+                "safety/requireConcurrentIndexDeletion"
+            ]
+        ),
+        "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index CONCURRENTLY users_id_idx on users (id);\ndrop index CONCURRENTLY users_email_idx;\n"
+    );
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -2445,6 +2657,117 @@ async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_code_actions_expand_star(test_db: PgPool) {
+    test_db
+        .execute(r#"create table star_items (id int, "Label" text);"#)
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create table star_tags (id int, item_id int, \"select\" text);\n\
+        select * from star_items i join star_tags t on t.item_id = i.id;\n\
+        select t.* from star_tags t where id > 0;\n\
+        create function all_items() returns setof star_items language sql\n\
+        as 'select * from star_items';\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let expand_actions = |needle: &str| {
+        let offset = content.find(needle).expect("needle in content");
+        workspace
+            .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                project_key,
+                path: path.clone(),
+                cursor_position: u32::try_from(offset).unwrap().into(),
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull code actions")
+            .actions
+            .into_iter()
+            .filter_map(|action| match action.kind {
+                CodeActionKind::Edit(edit) if edit.rule.is_none() => Some((action.title, edit)),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+    };
+    let range_of = |needle: &str| {
+        let start = content.find(needle).expect("needle in content");
+        TextRange::at(
+            u32::try_from(start).unwrap().into(),
+            u32::try_from(needle.len()).unwrap().into(),
+        )
+    };
+
+    // The columns of a table of the database and of one created in the file, qualified since
+    // there are two FROM items.
+    let actions = expand_actions("* from star_items");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    let (title, edit) = &actions[0];
+    assert_eq!(title, "Expand `*` into its columns");
+    assert_eq!(
+        edit.category,
+        ActionCategory::Refactor(RefactorKind::Rewrite)
+    );
+    assert_eq!(
+        edit.edits,
+        vec![TextEdit {
+            range: range_of("*"),
+            new_text: r#"i.id, i."Label", t.id, t.item_id, t."select""#.into(),
+        }]
+    );
+
+    // `t.*`, with the cursor on its qualifier.
+    let actions = expand_actions("t.* from");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    assert_eq!(actions[0].0, "Expand `t.*` into its columns");
+    assert_eq!(
+        actions[0].1.edits,
+        vec![TextEdit {
+            range: range_of("t.*"),
+            new_text: r#"t.id, t.item_id, t."select""#.into(),
+        }]
+    );
+
+    // In the body of a SQL function.
+    let actions = expand_actions("* from star_items'");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    assert_eq!(
+        actions[0].1.edits,
+        vec![TextEdit {
+            range: TextRange::at(range_of("* from star_items'").start(), 1.into()),
+            new_text: r#"id, "Label""#.into(),
+        }]
+    );
+
+    // Nothing to expand elsewhere.
+    assert!(expand_actions("where id").is_empty());
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -2505,6 +2828,130 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
     assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
 }
 
+/// The edit of the action that suppresses `rule` at `cursor`, and the lint diagnostics of `rule`
+/// that are left once it is applied.
+fn suppress(content: &str, cursor: usize, rule: &str) -> (TextEdit, usize) {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let actions = workspace
+        .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+            project_key,
+            path: path.clone(),
+            cursor_position: u32::try_from(cursor).unwrap().into(),
+            only: vec![rule.parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull code actions")
+        .actions;
+    let edit = actions
+        .into_iter()
+        .find_map(|action| match action.kind {
+            CodeActionKind::Edit(edit) if action.title.starts_with("Suppress rule") => {
+                Some(edit.edits.into_iter().next().unwrap())
+            }
+            _ => None,
+        })
+        .expect("expected a suppression action");
+
+    let mut suppressed = content.to_string();
+    suppressed.replace_range(std::ops::Range::<usize>::from(edit.range), &edit.new_text);
+    let path = PgLSPath::new("suppressed.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: suppressed,
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let left = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![rule.parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == format!("lint/{rule}"))
+        })
+        .count();
+    (edit, left)
+}
+
+#[test]
+fn test_suppression_goes_above_the_statement() {
+    // The diagnostic is on the third line of the statement.
+    let long = "a".repeat(70);
+    let content =
+        format!("select 1;\n  create table users (\n    id bigint,\n    {long} text\n  );\n");
+    let (edit, left) = suppress(
+        &content,
+        content.find(&long).unwrap() + 1,
+        "identifierTooLong",
+    );
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::empty(10.into()),
+            new_text: "  -- pgls-ignore identifierTooLong\n".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn test_suppression_of_a_statement_in_a_function_body() {
+    let content =
+        "create function drop_users() returns void language sql\nas $$\n  drop table users;\n$$;\n";
+    let (edit, left) = suppress(content, content.find("drop table").unwrap(), "banDropTable");
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::empty(0.into()),
+            new_text: "-- pgls-ignore banDropTable\n".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn test_suppression_of_a_statement_in_the_middle_of_a_line() {
+    let content = "  select 1; drop table users;\n";
+    let (edit, left) = suppress(content, content.find("drop").unwrap(), "banDropTable");
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::new(11.into(), 12.into()),
+            new_text: "\n  -- pgls-ignore banDropTable\n  ".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn test_suppression_keeps_crlf_line_endings() {
+    let content = "select 1;\r\ndrop table users;\r\n";
+    let (edit, left) = suppress(content, 13, "banDropTable");
+    assert_eq!(edit.new_text, "-- pgls-ignore banDropTable\r\n");
+    assert_eq!(left, 0);
+}
+
 /// A project of a workspace, set up like the language server does it.
 struct TestProject {
     workspace: Rc<WorkspaceServer>,
@@ -2550,6 +2997,24 @@ impl TestProject {
         }
     }
 
+    /// Applies the configuration files the search finds. Returns their folders and whether the
+    /// search was incomplete.
+    fn search(
+        &self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        search: NestedConfigurationSearch,
+    ) -> (Vec<PathBuf>, Option<IncompleteSearch>) {
+        let nested =
+            apply_nested_configurations(&*self.workspace, fs, self.project_key, search, |c| c)
+                .unwrap();
+        let directories = nested
+            .configurations
+            .into_iter()
+            .map(|nested| nested.directory)
+            .collect();
+        (directories, nested.incomplete)
+    }
+
     /// Another project of the same workspace.
     fn other(&self, project_key: ProjectKey) -> Self {
         Self {
@@ -2568,10 +3033,11 @@ impl TestProject {
             &*self.workspace,
             fs,
             self.project_key,
-            root,
+            NestedConfigurationSearch::new(root),
             |configuration| configuration,
         )
         .unwrap()
+        .configurations
         .into_iter()
         .map(|nested| {
             assert!(nested.result.is_ok(), "{:?}", nested.result);
@@ -2626,6 +3092,20 @@ impl TestProject {
             })
             .unwrap()
     }
+}
+
+/// The files settings of the configuration file at or above `root`.
+fn root_files(fs: &DynRef<'_, dyn FileSystem>, root: &str) -> Arc<FilesSettings> {
+    let configuration = load_configuration(
+        fs,
+        ConfigurationPathHint::FromWorkspace(PathBuf::from(root)),
+    )
+    .unwrap()
+    .configuration;
+    Arc::new(
+        FilesSettings::from_configuration(&configuration, Some(PathBuf::from(root)), None, &[])
+            .unwrap(),
+    )
 }
 
 /// A memory file system with a configuration file in each of the given folders.
@@ -2683,6 +3163,172 @@ fn files_use_the_nearest_configuration_file() {
     assert!(project.is_ignored("/repo/legacy/a.sql"));
 }
 
+/// The search doesn't descend into the folders that the root configuration ignores, except below
+/// a nested configuration file: its settings decide there, so the configuration files below it
+/// are still found.
+#[test]
+fn the_search_skips_the_folders_the_root_configuration_ignores() {
+    let fs = file_system_with_configurations(&[
+        (
+            "/repo",
+            r#"{ "files": { "ignore": ["legacy", "db1/generated"] } }"#,
+        ),
+        ("/repo/legacy/app", "{}"),
+        ("/repo/db1", "{}"),
+        (
+            "/repo/db1/generated",
+            r#"{ "linter": { "enabled": false } }"#,
+        ),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let (directories, incomplete) = project.search(
+        &fs,
+        NestedConfigurationSearch {
+            root_files: Some(root_files(&fs, "/repo")),
+            ..NestedConfigurationSearch::new("/repo")
+        },
+    );
+    assert_eq!(
+        directories,
+        [
+            PathBuf::from("/repo/db1"),
+            PathBuf::from("/repo/db1/generated")
+        ]
+    );
+    assert_eq!(incomplete, None);
+    assert_eq!(project.severities("/repo/db1/generated/a.sql"), []);
+}
+
+/// The home directory and the filesystem roots hold unrelated projects, so their configuration
+/// files are not applied, and the search says so.
+#[test]
+fn the_search_skips_the_home_directory() {
+    let mut fs = file_system_with_configurations(&[(
+        "/home/alice/project",
+        r#"{ "linter": { "enabled": false } }"#,
+    )]);
+    fs.set_home_directory("/home/alice");
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/home/alice"));
+    let (directories, incomplete) =
+        project.search(&fs, NestedConfigurationSearch::new("/home/alice"));
+    assert_eq!(directories, Vec::<PathBuf>::new());
+    assert_eq!(
+        incomplete,
+        Some(IncompleteSearch::NotAProjectFolder(PathBuf::from(
+            "/home/alice"
+        )))
+    );
+    assert_eq!(
+        project.severities("/home/alice/project/a.sql"),
+        [Severity::Warning]
+    );
+
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/"));
+    let (directories, incomplete) = project.search(&fs, NestedConfigurationSearch::new("/"));
+    assert_eq!(directories, Vec::<PathBuf>::new());
+    assert_eq!(
+        incomplete,
+        Some(IncompleteSearch::NotAProjectFolder(PathBuf::from("/")))
+    );
+}
+
+/// A search for some paths, like the CLI's, only finds the configuration files on the way to
+/// each path and below the paths that are folders.
+#[test]
+fn the_search_for_paths_only_looks_at_their_folders() {
+    let mut fs = file_system_with_configurations(&[
+        ("/repo", "{}"),
+        ("/repo/db1", "{}"),
+        ("/repo/db1/sub", "{}"),
+        ("/repo/db2", "{}"),
+        ("/repo/db2/nested", "{}"),
+        ("/repo/db3", "{ this is not json"),
+    ]);
+    fs.insert(PathBuf::from("/repo/db1/sub/a.sql"), "select 1;");
+    fs.insert(PathBuf::from("/repo/db2/b.sql"), "select 1;");
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let (directories, incomplete) = project.search(
+        &fs,
+        NestedConfigurationSearch {
+            paths: Some(vec![
+                PathBuf::from("db1/sub/a.sql"),
+                PathBuf::from("/repo/db1/sub/b.sql"),
+                PathBuf::from("/repo/db2"),
+                PathBuf::from("/elsewhere/c.sql"),
+            ]),
+            ..NestedConfigurationSearch::new("/repo")
+        },
+    );
+    assert_eq!(
+        directories,
+        [
+            PathBuf::from("/repo/db1"),
+            PathBuf::from("/repo/db2"),
+            PathBuf::from("/repo/db1/sub"),
+            PathBuf::from("/repo/db2/nested"),
+        ]
+    );
+    assert_eq!(incomplete, None);
+}
+
+/// The search stops at its depth limit and says so.
+#[test]
+fn the_search_reports_its_depth_limit() {
+    let deep = format!(
+        "/repo/{}",
+        ["d"; FindFiles::DEFAULT_MAX_DEPTH + 1].join("/")
+    );
+    let fs =
+        file_system_with_configurations(&[("/repo", "{}"), ("/repo/db1", "{}"), (&deep, "{}")]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+
+    let (directories, incomplete) = project.search(&fs, NestedConfigurationSearch::new("/repo"));
+    assert_eq!(directories, [PathBuf::from("/repo/db1")]);
+    assert_eq!(
+        incomplete,
+        Some(IncompleteSearch::LimitReached(PathBuf::from("/repo")))
+    );
+}
+
+/// A change of a configuration file only reloads the configuration if the search looks at its
+/// folder.
+#[test]
+fn configuration_changes_in_skipped_folders_are_ignored() {
+    let fs = file_system_with_configurations(&[
+        (
+            "/repo",
+            r#"{ "files": { "ignore": ["legacy", "db1/generated"] } }"#,
+        ),
+        ("/repo/db1", "{}"),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let root_files = root_files(&fs, "/repo");
+    let is_searched = |directory: &str| {
+        is_searched_for_configuration(
+            &fs,
+            Path::new("/repo"),
+            Some(&root_files),
+            Path::new(directory),
+        )
+    };
+
+    assert!(is_searched("/repo"));
+    assert!(is_searched("/repo/db2"));
+    assert!(is_searched("/repo/db1/generated"));
+    assert!(!is_searched("/repo/legacy"));
+    assert!(!is_searched("/repo/legacy/app"));
+    assert!(!is_searched("/repo/node_modules/pkg"));
+    assert!(!is_searched("/repo/.git"));
+    assert!(!is_searched("/elsewhere"));
+}
+
 /// Applying the nested configuration files again replaces the ones from before, so a deleted
 /// configuration file no longer applies.
 #[test]
@@ -2728,10 +3374,11 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
         &*project.workspace,
         &fs,
         project.project_key,
-        Path::new("/repo"),
+        NestedConfigurationSearch::new("/repo"),
         |configuration| configuration,
     )
-    .unwrap();
+    .unwrap()
+    .configurations;
     let failed: Vec<_> = nested
         .iter()
         .filter(|nested| nested.result.is_err())
@@ -2868,8 +3515,8 @@ fn nested_configurations_do_not_merge_the_user_configuration() {
     );
     let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
 
-    // The home directory is the workspace, and has no project configuration.
-    let root = home.clone();
+    // The workspace has no project configuration.
+    let root = home.join("repo");
     let loaded =
         load_configuration(&fs, ConfigurationPathHint::FromWorkspace(root.clone())).unwrap();
     assert_eq!(
@@ -2892,10 +3539,6 @@ fn nested_configurations_do_not_merge_the_user_configuration() {
         project.severities(home.join("repo/a.sql")),
         [Severity::Error]
     );
-    assert_eq!(
-        project.severities(user_config_directory.join("a.sql")),
-        [Severity::Error]
-    );
     // A nested configuration does not merge it, unless it extends it.
     assert_eq!(
         project.severities(home.join("repo/db/a.sql")),
@@ -2904,6 +3547,28 @@ fn nested_configurations_do_not_merge_the_user_configuration() {
     assert_eq!(
         project.severities(home.join("repo/shared/a.sql")),
         [Severity::Error]
+    );
+}
+
+/// A user configuration directory below the workspace, e.g. with `XDG_CONFIG_HOME` pointing into
+/// it, holds the user configuration, not a nested one.
+#[test]
+fn the_user_configuration_directories_are_not_nested_configurations() {
+    let mut fs = file_system_with_configurations(&[
+        ("/repo", "{}"),
+        (
+            "/repo/config/postgres-language-server",
+            r#"{ "linter": { "enabled": false } }"#,
+        ),
+    ]);
+    fs.set_user_config_directories(vec![PathBuf::from("/repo/config/postgres-language-server")]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let (project, directories) = TestProject::new(&fs, Path::new("/repo"));
+    assert_eq!(directories, Vec::<PathBuf>::new());
+    assert_eq!(
+        project.severities("/repo/config/postgres-language-server/a.sql"),
+        [Severity::Warning]
     );
 }
 

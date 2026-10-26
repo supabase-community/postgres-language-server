@@ -26,6 +26,9 @@ serde            = { workspace = true, optional = true }
 smallvec         = { workspace = true }
 tracing          = { workspace = true }
 
+[dev-dependencies]
+tempfile = "3.15.0"
+
 [features]
 schema = ["dep:schemars", "pgls_diagnostics/schema"]
 serde  = ["dep:serde"]

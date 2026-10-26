@@ -1,7 +1,6 @@
 use std::{
     borrow::Borrow,
     collections::HashMap,
-    fs,
     hash::{DefaultHasher, Hash, Hasher},
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
@@ -89,6 +88,7 @@ mod connection_key;
 #[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
+mod expand_star;
 mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
@@ -217,8 +217,7 @@ impl WorkspaceServer {
         };
 
         // Apply top-level `include`/`ignore`
-        is_ignored_by_files_settings(settings, path)
-            || is_ignored_by_migration_settings(settings, path)
+        settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
     }
 
     /// Whether the file is a migration. Migration-only rules don't run on other files.
@@ -351,7 +350,6 @@ impl WorkspaceServer {
         params: &CodeActionsParams,
         doc: &Document,
     ) -> Vec<CodeAction> {
-        let content = doc.get_document_content();
         let mut actions = Vec::new();
         for diagnostic in
             self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
@@ -369,7 +367,7 @@ impl WorkspaceServer {
                 actions.push(CodeAction {
                     title: fix.message.clone(),
                     kind: CodeActionKind::Edit(EditAction {
-                        rule: category.to_string(),
+                        rule: Some(category.to_string()),
                         category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
                         applicability: fix.applicability,
                         edits: fix
@@ -385,30 +383,63 @@ impl WorkspaceServer {
                 });
             }
 
-            // The comment goes on its own line above the line where the diagnostic starts,
-            // with the same indentation.
-            let line_start = content[..usize::from(span.start())]
-                .rfind('\n')
-                .map_or(0, |newline| newline + 1);
-            let indentation: String = content[line_start..]
-                .chars()
-                .take_while(|c| *c == ' ' || *c == '\t')
-                .collect();
             actions.push(CodeAction {
                 title: format!("Suppress rule {rule} for this statement"),
                 kind: CodeActionKind::Edit(EditAction {
-                    rule: category.to_string(),
+                    rule: Some(category.to_string()),
                     category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
                     applicability: Applicability::MaybeIncorrect,
-                    edits: vec![TextEdit {
-                        range: TextRange::empty(TextSize::try_from(line_start).unwrap()),
-                        new_text: format!("{indentation}-- pgls-ignore {rule}\n"),
-                    }],
+                    edits: vec![suppression_edit(doc, span.start(), rule)],
                 }),
                 disabled_reason: None,
             });
         }
         actions
+    }
+
+    /// The refactors offered at `position`: expanding a `*` into its columns. `settings` are the
+    /// ones of the file.
+    fn refactor_code_actions(
+        &self,
+        settings: Option<&Settings>,
+        doc: &Document,
+        position: TextSize,
+    ) -> Vec<CodeAction> {
+        // Code actions are requested whenever the cursor moves, so don't resolve the file unless
+        // there is a `*` on the line.
+        let content = doc.get_document_content();
+        let bytes = content.as_bytes();
+        let offset = usize::from(position).min(bytes.len());
+        let line_start = bytes[..offset]
+            .iter()
+            .rposition(|byte| *byte == b'\n')
+            .map_or(0, |i| i + 1);
+        let line_end = bytes[offset..]
+            .iter()
+            .position(|byte| *byte == b'\n')
+            .map_or(bytes.len(), |i| offset + i);
+        if !bytes[line_start..line_end].contains(&b'*') {
+            return Vec::new();
+        }
+
+        #[cfg(feature = "db")]
+        let snapshot = settings.and_then(|settings| {
+            self.connection
+                .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                .and_then(Result::ok)
+        });
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = self.snapshot.get();
+
+        let Some(snapshot) = snapshot else {
+            return Vec::new();
+        };
+        let (stmt_start, references) = self.references_at(settings, doc, &snapshot, position);
+        references
+            .iter()
+            .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
+            .collect()
     }
 
     /// The lint diagnostics of a document that are not suppressed.
@@ -588,6 +619,60 @@ impl WorkspaceServer {
                 self.snapshot_before(doc, id, range, snapshot, &search_path, || catalog),
             )
         })
+    }
+
+    /// The references whose span contains `position`, in the innermost statement at `position`
+    /// (the body of a SQL function rather than its `CREATE FUNCTION`). Their spans are relative
+    /// to the start of that statement, which is returned with them.
+    fn references_at(
+        &self,
+        settings: Option<&Settings>,
+        doc: &Document,
+        snapshot: &Arc<Snapshot>,
+        position: TextSize,
+    ) -> (TextSize, Vec<Reference>) {
+        let mut innermost: Option<(TextRange, Vec<Reference>)> = None;
+        self.walk_statements(
+            settings,
+            doc,
+            snapshot,
+            position + TextSize::from(1),
+            |stmt, catalog, session| {
+                let Some(sql) = stmt.sql.as_deref() else {
+                    return;
+                };
+                if !stmt.range.contains(position)
+                    || innermost
+                        .as_ref()
+                        .is_some_and(|(range, _)| !range.contains_range(stmt.range))
+                {
+                    return;
+                }
+                let references = resolve(ResolveParams {
+                    stmt: &stmt.root,
+                    catalog,
+                    search_path: session.search_path(),
+                    function: stmt.function.as_ref(),
+                    sql: Some(sql),
+                    collect_references: true,
+                })
+                .references;
+                innermost = Some((stmt.range, references));
+            },
+        );
+        let Some((range, references)) = innermost else {
+            return (TextSize::default(), Vec::new());
+        };
+        let position = position - range.start();
+        let references = references
+            .into_iter()
+            .filter(|reference| {
+                reference
+                    .span()
+                    .is_some_and(|span| span.contains_inclusive(position))
+            })
+            .collect();
+        (range.start(), references)
     }
 
     /// The indexed database snapshot, built once per snapshot.
@@ -811,28 +896,6 @@ impl WorkspaceServer {
     }
 }
 
-/// Check whether a file is ignored by `files.ignore`/`files.include` or the VCS ignore file
-fn is_ignored_by_files_settings(settings: &Settings, path: &Path) -> bool {
-    let is_included = settings.files.included_files.is_empty()
-        || is_dir(path)
-        || settings.files.included_files.matches_path(path);
-    !is_included
-        || settings.files.ignored_files.matches_path(path)
-        || settings.files.git_ignore.as_ref().is_some_and(|ignore| {
-            // `matched_path_or_any_parents` panics if `source` is not under the gitignore root.
-            // This checks excludes absolute paths that are not a prefix of the base root.
-            if !path.has_root() || path.starts_with(ignore.path()) {
-                // Because Postgres Language Server passes a list of paths,
-                // we use `matched_path_or_any_parents` instead of `matched`.
-                ignore
-                    .matched_path_or_any_parents(path, path.is_dir())
-                    .is_ignore()
-            } else {
-                false
-            }
-        })
-}
-
 /// Check whether a file is a migration before `migrations.after`
 fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
     settings
@@ -931,7 +994,7 @@ impl Workspace for WorkspaceServer {
                     .rev()
                     .find(|(applied, _)| directory.starts_with(applied))
                     .map_or(root, |(_, settings)| settings);
-                if is_ignored_by_files_settings(above, &directory) {
+                if above.files.is_ignored(&directory) {
                     continue;
                 }
 
@@ -1062,6 +1125,11 @@ impl Workspace for WorkspaceServer {
                 }
             })
             .collect();
+
+        actions.splice(
+            0..0,
+            self.refactor_code_actions(settings, parser, params.cursor_position),
+        );
 
         if let Some(settings) = settings {
             let mut lint_actions = self.lint_code_actions(settings, &params, parser);
@@ -1937,6 +2005,8 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
                 ..
             } => unchanged_relation(schema, name),
             Reference::Column { .. } => true,
+            // The columns of a `*` can come from objects that the file changed.
+            Reference::Star { .. } => false,
         })
 }
 
@@ -1950,12 +2020,51 @@ fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSectio
         })
 }
 
-/// Returns `true` if `path` is a directory or
-/// if it is a symlink that resolves to a directory.
-fn is_dir(path: &Path) -> bool {
-    path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
+/// The edit that adds `-- pgls-ignore <rule>` on its own line above the statement at `offset`,
+/// with the statement's indentation and the file's line ending. Above the statement, the comment
+/// suppresses the rule for all of the statement, including the bodies of its functions.
+fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
+    let content = doc.get_document_content();
+    let start = doc
+        .statement_ranges()
+        .iter()
+        .find(|statement| statement.contains_inclusive(offset))
+        .map_or(offset, |statement| statement.start());
+    let line_ending = match content.find('\n') {
+        Some(newline) if content[..newline].ends_with('\r') => "\r\n",
+        _ => "\n",
+    };
+
+    let start = usize::from(start);
+    let line_start = content[..start]
+        .rfind('\n')
+        .map_or(0, |newline| newline + 1);
+    let before = &content[line_start..start];
+    let indentation: String = before
+        .chars()
+        .take_while(|c| *c == ' ' || *c == '\t')
+        .collect();
+    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
+    if before.trim().is_empty() {
+        TextEdit {
+            range: TextRange::empty(offset(line_start)),
+            new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
+        }
+    } else {
+        // The statement starts after another one on the same line, so it moves to a line of its
+        // own.
+        let previous_end = line_start + before.trim_end().len();
+        TextEdit {
+            range: TextRange::new(offset(previous_end), offset(start)),
+            new_text: format!(
+                "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
+            ),
+        }
+    }
 }
 
+/// Returns `true` if `path` is a directory or
+/// if it is a symlink that resolves to a directory.
 /// Keeps at most one blank line in `text`, which only holds whitespace and comments.
 fn collapse_blank_lines(text: &str) -> String {
     let mut result = String::with_capacity(text.len());
