@@ -91,6 +91,27 @@ impl Document {
         ParseIterator::new(self, mapper, filter)
     }
 
+    /// The statements that contain `position`, outermost first: the top-level statement, and the
+    /// body of a SQL function if `position` is in it. Unlike filtering all statements with a
+    /// [`CursorPositionFilter`], this doesn't look at the other statements of the document.
+    pub fn iter_at<'a, M>(
+        &'a self,
+        mapper: M,
+        position: TextSize,
+    ) -> ParseIterator<'a, M, CursorPositionFilter>
+    where
+        M: StatementMapper<'a>,
+    {
+        // The ranges are ordered and don't overlap, so only the first one that ends after
+        // `position` can contain it.
+        let first = self.ranges.partition_point(|range| range.end() <= position);
+        let ranges = &self.ranges[first..self.ranges.len().min(first + 1)];
+        ParseIterator {
+            ranges: ranges.iter(),
+            ..ParseIterator::new(self, mapper, CursorPositionFilter::new(position))
+        }
+    }
+
     #[allow(dead_code)]
     pub fn count(&self) -> usize {
         self.iter(DefaultMapper).count()
@@ -135,21 +156,18 @@ where
     type Item = M::Output;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // First check if we have any pending sub-statements to process
-        if let Some((id, range, content)) = self.pending_sub_statements.pop() {
-            if self.filter.predicate(&id, &range, content.as_str()) {
-                return Some(self.mapper.map(self.parser, id, range));
+        // A loop rather than recursion: the filter can skip thousands of statements in a row.
+        loop {
+            // First check if we have any pending sub-statements to process
+            if let Some((id, range, content)) = self.pending_sub_statements.pop() {
+                if self.filter.predicate(&id, &range, content.as_str()) {
+                    return Some(self.mapper.map(self.parser, id, range));
+                }
+                continue;
             }
-            // If the sub-statement doesn't pass the filter, continue to the next item
-            return self.next();
-        }
 
-        // Process the next top-level statement
-        let next_range = self.ranges.next();
-
-        if let Some(range) = next_range {
-            // If we should include sub-statements and this statement has an AST
-
+            // Process the next top-level statement
+            let range = self.ranges.next()?;
             let content = &self.parser.content[*range];
             let root_id = StatementId::new(content);
 
@@ -170,12 +188,7 @@ where
             if self.filter.predicate(&root_id, range, content) {
                 return Some(self.mapper.map(self.parser, root_id, *range));
             }
-
-            // If the current statement doesn't pass the filter, try the next one
-            return self.next();
         }
-
-        None
     }
 }
 
@@ -690,6 +703,41 @@ $$ LANGUAGE plpgsql;";
             .collect::<Vec<_>>();
         assert_eq!(results2.len(), 1);
         assert_eq!(results2[0].2, "INSERT INTO users VALUES (1);");
+    }
+
+    #[test]
+    fn iter_at_yields_the_statements_at_the_position() {
+        let input =
+            "select 1;\ncreate function f() returns int language sql as 'select 2;';\nselect 3;";
+        let d = Document::new(input.to_string(), 1);
+        let at = |needle: &str| {
+            let position = TextSize::try_from(input.find(needle).unwrap()).unwrap();
+            d.iter_at(DefaultMapper, position)
+                .map(|(_, _, sql)| sql)
+                .collect::<Vec<_>>()
+        };
+
+        assert_eq!(at("1;"), ["select 1;"]);
+        // The `CREATE FUNCTION`, then its body.
+        assert_eq!(
+            at("2;"),
+            [
+                "create function f() returns int language sql as 'select 2;';",
+                "select 2;"
+            ]
+        );
+        assert_eq!(
+            at("returns"),
+            ["create function f() returns int language sql as 'select 2;';"]
+        );
+        assert_eq!(at("select 3"), ["select 3;"]);
+        // Between two statements, and past the end.
+        assert!(at("\ncreate").is_empty());
+        assert!(
+            d.iter_at(DefaultMapper, TextSize::of(input))
+                .next()
+                .is_none()
+        );
     }
 
     #[test]

@@ -59,12 +59,15 @@ pub struct EventEmitter {
     leading_line_comments_require_break: bool,
     /// Line comments written after a list comma, waiting for the emitter to reach that comma.
     comments_after_separator: Vec<Comment>,
+    /// `config.layout` as configured, while `with_layout` overrides it for part of a statement.
+    configured_layout: crate::Layout,
 }
 
 impl EventEmitter {
     pub fn new(config: FormatConfig) -> Self {
         Self {
             events: Vec::new(),
+            configured_layout: config.layout.clone(),
             config,
             leading_comments: HashMap::new(),
             trailing_comments: HashMap::new(),
@@ -77,6 +80,11 @@ impl EventEmitter {
     #[allow(dead_code)]
     pub fn config(&self) -> &FormatConfig {
         &self.config
+    }
+
+    /// The layout from the configuration, which `with_layout` does not change.
+    pub fn configured_layout(&self) -> crate::Layout {
+        self.configured_layout.clone()
     }
 
     /// Emits `body` with `layout` in place of the configured one.
@@ -93,6 +101,7 @@ impl EventEmitter {
     ) -> Self {
         Self {
             events: Vec::new(),
+            configured_layout: config.layout.clone(),
             config,
             leading_comments,
             trailing_comments,
@@ -203,10 +212,25 @@ impl EventEmitter {
 
     /// Emits and consumes comments that follow `location`, if any.
     pub fn take_trailing_comments_at(&mut self, location: i32) {
-        let Some(comments) = self.trailing_comments.remove(&location) else {
-            return;
-        };
+        let comments = self.remove_trailing_comments_at(location);
+        self.emit_trailing_comments(comments);
+    }
 
+    /// Consumes the comments that follow `location` without emitting them, so that the caller
+    /// can emit them somewhere else with `emit_trailing_comments`.
+    pub fn remove_trailing_comments_at(&mut self, location: i32) -> Vec<Comment> {
+        self.trailing_comments.remove(&location).unwrap_or_default()
+    }
+
+    /// Puts back comments taken with `remove_trailing_comments_at`.
+    pub fn restore_trailing_comments_at(&mut self, location: i32, comments: Vec<Comment>) {
+        if !comments.is_empty() {
+            self.trailing_comments.insert(location, comments);
+        }
+    }
+
+    /// Emits comments that follow the node just emitted.
+    pub fn emit_trailing_comments(&mut self, comments: Vec<Comment>) {
         for comment in comments {
             if comment.after_separator {
                 self.comments_after_separator.push(comment);
