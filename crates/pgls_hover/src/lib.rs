@@ -156,7 +156,12 @@ pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
         (!markdown_blocks.is_empty()).then_some(markdown_blocks)
     } else {
         // The grammar doesn't cover every statement, like `CALL`, but the resolver may.
-        let item = resolved_function(params.references, params.snapshot)?;
+        let item = resolved_function(
+            params.references,
+            params.snapshot,
+            params.stmt_sql,
+            params.position,
+        )?;
         format_hover_markdown(&item, params.snapshot)
             .ok()
             .map(|markdown| vec![markdown])
