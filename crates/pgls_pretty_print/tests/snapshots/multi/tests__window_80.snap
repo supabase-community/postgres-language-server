@@ -527,7 +527,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between current row and unbounded following),
+  sum(unique1) over (rows between current row and unbounded following),
   unique1,
   four
 from
@@ -536,7 +536,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 2 following),
+  sum(unique1) over (rows between 2 preceding and 2 following),
   unique1,
   four
 from
@@ -545,7 +545,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 2 following),
+  sum(unique1) over (rows between 2 preceding and 2 following),
   unique1,
   four
 from
@@ -555,7 +555,6 @@ where
 
 select
   sum(unique1) over (
-
     rows between
     2 preceding
     and
@@ -570,7 +569,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 2 following exclude group),
+  sum(unique1) over (rows between 2 preceding and 2 following exclude group),
   unique1,
   four
 from
@@ -579,7 +578,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 2 following exclude ties),
+  sum(unique1) over (rows between 2 preceding and 2 following exclude ties),
   unique1,
   four
 from
@@ -684,7 +683,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 2 preceding and 1 preceding),
+  sum(unique1) over (rows between 2 preceding and 1 preceding),
   unique1,
   four
 from
@@ -693,7 +692,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between 1 following and 3 following),
+  sum(unique1) over (rows between 1 following and 3 following),
   unique1,
   four
 from
@@ -702,7 +701,7 @@ where
   unique1 < 10;
 
 select
-  sum(unique1) over ( rows between unbounded preceding and 1 following),
+  sum(unique1) over (rows between unbounded preceding and 1 following),
   unique1,
   four
 from
@@ -805,8 +804,7 @@ window
 select
   sum(unique1) over (
     order by unique1
-    rows 
-    (select unique1 from tenk1 order by unique1 limit 1) + 1 preceding
+    rows (select unique1 from tenk1 order by unique1 limit 1) + 1 preceding
   ),
   unique1
 from
@@ -1419,7 +1417,7 @@ window
   );
 
 select
-  sum(unique1) over ( rows between x preceding and x following),
+  sum(unique1) over (rows between x preceding and x following),
   unique1,
   four
 from
@@ -1447,7 +1445,7 @@ select * from unbounded_syntax_test1a(2);
 select * from unbounded_syntax_test1b(2);
 
 select
-  sum(unique1) over ( rows between unbounded preceding and unbounded following),
+  sum(unique1) over (rows between unbounded preceding and unbounded following),
   unique1,
   four
 from
@@ -1487,7 +1485,7 @@ immutable
 return x;
 
 select
-  sum(unique1) over ( rows between 1 preceding and 1 following),
+  sum(unique1) over (rows between 1 preceding and 1 following),
   unique1,
   four
 from
@@ -1497,7 +1495,6 @@ where
 
 select
   sum(unique1) over (
-
     rows between
     unbounded(1) preceding
     and
@@ -1512,7 +1509,6 @@ where
 
 select
   sum(unique1) over (
-
     rows between
     unbounded.x preceding
     and
@@ -2571,7 +2567,6 @@ from
 
 select
   sum(salary) over (
-
     range between
     cast('1 year' as interval) preceding
     and
@@ -4286,10 +4281,10 @@ from
 
 select
   x,
-  avg(x) over ( rows between current row and 1 following) as curr_next_avg,
-  avg(x) over ( rows between 1 preceding and current row) as prev_curr_avg,
-  sum(x) over ( rows between current row and 1 following) as curr_next_sum,
-  sum(x) over ( rows between 1 preceding and current row) as prev_curr_sum
+  avg(x) over (rows between current row and 1 following) as curr_next_avg,
+  avg(x) over (rows between 1 preceding and current row) as prev_curr_avg,
+  sum(x) over (rows between current row and 1 following) as curr_next_sum,
+  sum(x) over (rows between 1 preceding and current row) as prev_curr_sum
 from
   (
     values
@@ -4308,7 +4303,7 @@ from
 
 select
   x,
-  avg(x) over ( rows between current row and 2 following)
+  avg(x) over (rows between current row and 2 following)
 from
   (
     values
@@ -4322,7 +4317,7 @@ from
 
 select
   x,
-  sum(x) over ( rows between current row and 2 following)
+  sum(x) over (rows between current row and 2 following)
 from
   (
     values
