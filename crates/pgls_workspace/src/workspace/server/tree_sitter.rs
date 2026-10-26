@@ -1,14 +1,13 @@
-use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
-use lru::LruCache;
+use rustc_hash::FxHashMap;
 
 use super::statement_identifier::StatementId;
 
-const DEFAULT_CACHE_SIZE: usize = 1000;
-
+/// The tree-sitter trees of the statements of a document. They are kept until the statement is
+/// no longer in the document, see [`TreeSitterStore::retain`].
 pub struct TreeSitterStore {
-    db: Mutex<LruCache<StatementId, Arc<tree_sitter::Tree>>>,
+    db: Mutex<FxHashMap<StatementId, Arc<tree_sitter::Tree>>>,
     parser: Mutex<tree_sitter::Parser>,
 }
 
@@ -20,17 +19,20 @@ impl TreeSitterStore {
             .expect("Error loading sql language");
 
         TreeSitterStore {
-            db: Mutex::new(LruCache::new(
-                NonZeroUsize::new(DEFAULT_CACHE_SIZE).unwrap(),
-            )),
+            db: Mutex::default(),
             parser: Mutex::new(parser),
         }
+    }
+
+    /// Drops the trees of the statements for which `keep` returns `false`.
+    pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
+        self.db.lock().unwrap().retain(|id, _| keep(id));
     }
 
     pub fn get_or_cache_tree(&self, statement: &StatementId) -> Arc<tree_sitter::Tree> {
         // First check cache
         {
-            let mut cache = self.db.lock().unwrap();
+            let cache = self.db.lock().unwrap();
             if let Some(existing) = cache.get(statement) {
                 return existing.clone();
             }
@@ -48,7 +50,7 @@ impl TreeSitterStore {
             if let Some(existing) = cache.get(statement) {
                 return existing.clone();
             }
-            cache.put(statement.clone(), tree.clone());
+            cache.insert(statement.clone(), tree.clone());
         }
 
         tree

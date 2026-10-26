@@ -10,7 +10,7 @@ ALTER TABLE users ADD COLUMN code character(10);
 ```
 
 # Diagnostics
-lint/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/banCharField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × CHAR type is discouraged due to space padding behavior.
   

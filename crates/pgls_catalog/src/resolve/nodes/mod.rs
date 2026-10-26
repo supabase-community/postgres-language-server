@@ -62,6 +62,11 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         NodeEnum::ExplainStmt(n) => resolve_explain_stmt(r, n),
         NodeEnum::DeclareCursorStmt(n) => resolve_declare_cursor_stmt(r, n),
         NodeEnum::CopyStmt(n) => resolve_copy_stmt(r, n),
+        NodeEnum::CallStmt(n) => {
+            if let Some(call) = &n.funccall {
+                super::expr::resolve_procedure_call(r, call);
+            }
+        }
         NodeEnum::ColumnRef(n) => resolve_column_ref(r, n),
         NodeEnum::FuncCall(n) => resolve_func_call(r, n),
         NodeEnum::TypeCast(n) => {
@@ -116,11 +121,21 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
             resolve_opt(r, &n.end_offset);
         }
         NodeEnum::List(n) => resolve_list(r, &n.items),
+        // `$1` in the body of a SQL function.
+        NodeEnum::ParamRef(n) => {
+            let params = r.function.map_or(0, |function| function.params.len());
+            if let Some(index) = usize::try_from(n.number)
+                .ok()
+                .and_then(|number| number.checked_sub(1))
+                .filter(|&index| index < params)
+            {
+                r.record_parameter(index, n.location);
+            }
+        }
         // Field names in indirection (`(row).field`) and leaves.
         NodeEnum::String(_)
         | NodeEnum::AStar(_)
         | NodeEnum::AConst(_)
-        | NodeEnum::ParamRef(_)
         | NodeEnum::SqlvalueFunction(_)
         | NodeEnum::SetToDefault(_)
         | NodeEnum::CurrentOfExpr(_) => {}

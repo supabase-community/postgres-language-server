@@ -1,0 +1,34 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The fix keeps the comment and the SQL valid.
+-- expect_lint/preferTimestamptz
+create table events (
+    a timestamp /* local */ without time zone
+);
+
+```
+
+# Diagnostics
+lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
+  
+  i TIMESTAMP WITHOUT TIME ZONE can lead to issues when dealing with time zones.
+  
+  i Use TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) instead.
+  
+
+
+## Fix (unsafe): Use TIMESTAMPTZ
+```
+-- The fix keeps the comment and the SQL valid.
+-- expect_lint/preferTimestamptz
+create table events (
+    a timestamptz /* local */
+);
+
+```

@@ -12,7 +12,7 @@ alter domain positive_int drop constraint if exists positive_int_check;
 # Diagnostics
 lint/banDropConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Dropping a constraint may break existing clients.
+  × Dropping constraint positive_int_check may break existing clients.
   
   i Clients may depend on the guarantee of the constraint, e.g. as the arbiter of INSERT ... ON CONFLICT.
   

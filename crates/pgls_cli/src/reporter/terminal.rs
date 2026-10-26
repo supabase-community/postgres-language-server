@@ -114,19 +114,50 @@ impl fmt::Display for Files {
     }
 }
 
-struct SummaryDetail(usize);
+/// What `--fix` and `--write` did.
+struct SummaryDetail<'a>(&'a TraversalData);
 
-impl fmt::Display for SummaryDetail {
+impl fmt::Display for SummaryDetail<'_> {
     fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
-        if self.0 > 0 {
+        if !self.0.writes {
+            return Ok(());
+        }
+        if self.0.changed > 0 {
             fmt.write_markup(markup! {
-                " Fixed "{Files(self.0)}"."
+                " Fixed "{Files(self.0.changed)}"."
             })
         } else {
             fmt.write_markup(markup! {
                 " No fixes applied."
             })
         }
+    }
+}
+
+/// The fixes that are left to apply.
+struct FixesLeft<'a>(&'a TraversalData);
+
+impl fmt::Display for FixesLeft<'_> {
+    fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
+        let skipped = self.0.suggested_fixes_skipped;
+        if skipped > 0 {
+            let fixes = if skipped == 1 { "fix" } else { "fixes" };
+            return fmt.write_markup(markup! {
+                "\n"<Info>"Skipped "{skipped}" unsafe "{fixes}". Rerun with "<Emphasis>"--fix --unsafe"</Emphasis>" to apply them."</Info>
+            });
+        }
+        let fixable = self.0.fixable_diagnostics;
+        if !self.0.writes && fixable > 0 {
+            let diagnostics = if fixable == 1 {
+                "diagnostic has"
+            } else {
+                "diagnostics have"
+            };
+            return fmt.write_markup(markup! {
+                "\n"<Info>{fixable}" "{diagnostics}" a fix. Run with "<Emphasis>"--fix"</Emphasis>" to apply the safe fixes, and with "<Emphasis>"--fix --unsafe"</Emphasis>" to apply all of them."</Info>
+            });
+        }
+        Ok(())
     }
 }
 
@@ -138,7 +169,7 @@ impl fmt::Display for ConsoleTraversalSummary<'_> {
         let files = Files(self.2.changed + self.2.unchanged);
         fmt.write_markup(markup!(
             <Info>
-                {action} " "{files}" in "{self.1.duration}"." {SummaryDetail(self.2.changed)}
+                {action} " "{files}" in "{self.1.duration}"." {SummaryDetail(self.2)}
             </Info>
         ))?;
 
@@ -164,7 +195,7 @@ impl fmt::Display for ConsoleTraversalSummary<'_> {
                 ))?;
             }
         }
-        Ok(())
+        fmt.write_markup(markup!({ FixesLeft(self.2) }))
     }
 }
 

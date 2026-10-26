@@ -4,7 +4,7 @@ expression: "run_format(&[FORMATTED_PATH, UNFORMATTED_PATH])"
 ---
 status: failure
 stdout:
-Processed 2 files in <duration>. No fixes applied.
+Processed 2 files in <duration>.
 Found 1 error.
 stderr:
 tests/fixtures/format/unformatted.sql format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
