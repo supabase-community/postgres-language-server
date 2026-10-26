@@ -2572,6 +2572,7 @@ dependencies = [
  "crossbeam",
  "directories",
  "enumflags2",
+ "ignore",
  "oxc_resolver",
  "parking_lot",
  "pgls_diagnostics",

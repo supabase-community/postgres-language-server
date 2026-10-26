@@ -17,14 +17,16 @@ pub(crate) fn inlay_hints(
 ) -> Result<Option<Vec<ls_types::InlayHint>>, LspError> {
     let url = params.text_document.uri;
     let path = session.file_path(&url)?;
+    let project_key = session.project_key(&path);
     let doc = session.document(&url)?;
     let encoding = session.position_encoding();
     let range = from_lsp::text_range(&doc.line_index, params.range, encoding)?;
 
-    let result = match session
-        .workspace
-        .pull_inlay_hints(PullInlayHintsParams { path, range })
-    {
+    let result = match session.workspace.pull_inlay_hints(PullInlayHintsParams {
+        project_key,
+        path,
+        range,
+    }) {
         Ok(result) => result,
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => return Ok(None),

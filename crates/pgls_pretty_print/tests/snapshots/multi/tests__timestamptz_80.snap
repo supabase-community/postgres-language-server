@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/timestamptz.sql
-snapshot_kind: text
 ---
 create table timestamptz_tbl (d1 timestamp(2) with time zone);
 
@@ -774,9 +773,7 @@ select make_timestamptz(1973, 7, 15, 8, 15, 55.33, '+2');
 
 select make_timestamptz(1973, 7, 15, 8, 15, 55.33, '-2');
 
-with
-tzs (tz)
-as (
+with tzs (tz) as (
   values
     ('+1'),
     ('+1:'),

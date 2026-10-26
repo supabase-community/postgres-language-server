@@ -182,7 +182,16 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
         specifier: &str,
         path: &Path,
     ) -> Result<Resolution, ResolveError>;
+
+    /// Finds the files at or below `root` named like one of `file_names`.
+    ///
+    /// It skips hidden directories, the directories in [SKIPPED_DIRECTORIES], and, on the OS file
+    /// system, everything that `.gitignore` and `.ignore` files exclude.
+    fn find_files(&self, root: &Path, file_names: &[&str]) -> Vec<PathBuf>;
 }
+
+/// Directories that [FileSystem::find_files] never descends into.
+pub const SKIPPED_DIRECTORIES: &[&str] = &["node_modules", "target"];
 
 /// Result of the auto search
 #[derive(Debug)]
@@ -388,6 +397,10 @@ where
         path: &Path,
     ) -> Result<Resolution, ResolveError> {
         T::resolve_configuration(self, specifier, path)
+    }
+
+    fn find_files(&self, root: &Path, file_names: &[&str]) -> Vec<PathBuf> {
+        T::find_files(self, root, file_names)
     }
 }
 
