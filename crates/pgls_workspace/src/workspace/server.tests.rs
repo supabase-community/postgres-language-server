@@ -2309,7 +2309,8 @@ async fn hover_follows_the_ddl_before_the_statement(test_db: PgPool) {
         }),
         ..Default::default()
     });
-    let (workspace, project_key) = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
     let statements = "alter table hover_db_items add column extra int;\n\
