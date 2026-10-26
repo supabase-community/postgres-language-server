@@ -1620,6 +1620,26 @@ tuple starts on its own indented line, even when the rows fit within <code>lineW
 <p>The expressions inside each tuple stay on one line when they fit. This option
 applies to <code>INSERT</code>, standalone <code>VALUES</code>, and <code>VALUES</code> in subqueries and CTEs,
 independently of <code>layout</code> and <code>clauseBodyStyle</code>.</p>
+<p>With <code>layout: "expanded"</code>, a <code>CASE</code> expression puts every <code>WHEN</code> and <code>ELSE</code>
+on its own line, one indent level in from where <code>CASE</code> starts, <code>THEN</code> one
+level further in, and <code>END</code> back under <code>CASE</code>. This holds wherever the <code>CASE</code>
+starts, after a leading comma or <code>THEN</code> for instance. A <code>WHEN</code> condition that
+breaks continues one level in from <code>WHEN</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span>
+<span class="w">  </span><span class="n">id</span>
+<span class="w">  </span><span class="p">,</span><span class="w"> </span><span class="k">case</span>
+<span class="w">      </span><span class="k">when</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'active'</span>
+<span class="w">        </span><span class="k">and</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="k">null</span>
+<span class="w">        </span><span class="k">then</span><span class="w"> </span><span class="s1">'live'</span>
+<span class="w">      </span><span class="k">else</span><span class="w"> </span><span class="s1">'archived'</span>
+<span class="w">    </span><span class="k">end</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">state</span>
+<span class="k">from</span>
+<span class="w">  </span><span class="n">accounts</span><span class="p">;</span>
+</code></pre></div>
+<p>With <code>indentStyle: "tabs"</code>, the indent levels are written as tabs and the rest
+of an alignment, such as the two columns of <code>,</code> before <code>case</code> above, as
+spaces. The columns only line up when the editor's tab width equals
+<code>indentSize</code>.</p>
 <p>With <code>clauseBodyStyle: "compact"</code>, the first relation stays on the <code>FROM</code> line
 and the condition on the <code>WHERE</code>, <code>HAVING</code>, or <code>ON</code> line. A select list of a
 single item stays on the <code>SELECT</code> line, while a list of several items still
