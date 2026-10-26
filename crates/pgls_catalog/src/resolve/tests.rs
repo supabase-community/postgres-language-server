@@ -324,6 +324,41 @@ fn ctes() {
 }
 
 #[test]
+fn search_and_cycle_add_columns_to_ctes() {
+    let cte = "with recursive c(n) as (select 1 union all select n + 1 from c where n < 2)";
+    assert_eq!(
+        findings(&format!(
+            "{cte} search depth first by n set ord select n, ord, nope from c"
+        )),
+        [unknown_column(None, "nope")]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{cte} cycle n set is_cycle using path select n, is_cycle, path, nope from c"
+        )),
+        [unknown_column(None, "nope")]
+    );
+    // The added columns come after the CTE's own, the sequence column first.
+    let parsed = pgls_query::parse(&format!(
+        "{cte} search breadth first by n set ord cycle n set is_cycle using path select * from c as x(a)"
+    ))
+    .expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let catalog = Catalog::new(Some(database()));
+    assert_eq!(
+        crate::resolve::query_output_columns(&query, &catalog, &search_path()),
+        Some(vec![
+            "a".to_owned(),
+            "ord".to_owned(),
+            "is_cycle".to_owned(),
+            "path".to_owned()
+        ])
+    );
+}
+
+#[test]
 fn functions() {
     assert_eq!(
         findings("select nope()"),
