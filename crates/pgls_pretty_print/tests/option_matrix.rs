@@ -174,6 +174,15 @@ fn check(sql: &str, config: &FormatConfig) -> Result<(), String> {
         return Ok(());
     };
     let mut problems = common::whitespace_problems(&output);
+    // At width 40 some statements can't fit. A `::` cast doesn't break either, so in a compact
+    // `select '...'::type` or `('...'::jsonb)['a']['b']` nothing can move to the next line.
+    if config.line_width >= 80 && matches!(config.cast_style, CastStyle::Cast) {
+        problems.extend(common::width_problems(
+            &output,
+            config.line_width,
+            config.indent_size,
+        ));
+    }
     problems.extend(common::mixed_indentation(
         &output,
         matches!(config.indent_style, IndentStyle::Tabs),

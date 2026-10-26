@@ -223,7 +223,8 @@ fn emit_aexpr_distinct(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::DISTINCT_KW);
     e.space();
     e.token(TokenKind::FROM_KW);
-    e.space();
+    // Like a comparison operator, the right-hand side wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
         emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
@@ -250,7 +251,8 @@ fn emit_aexpr_not_distinct(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::DISTINCT_KW);
     e.space();
     e.token(TokenKind::FROM_KW);
-    e.space();
+    // Like a comparison operator, the right-hand side wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
         emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
@@ -341,7 +343,8 @@ fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     }
 
     e.token(TokenKind::LIKE_KW);
-    e.space();
+    // Like a comparison operator, the pattern wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
         super::emit_node(rexpr, e);
@@ -365,7 +368,8 @@ fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     }
 
     e.token(TokenKind::ILIKE_KW);
-    e.space();
+    // Like a comparison operator, the pattern wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
         super::emit_node(rexpr, e);
@@ -391,7 +395,8 @@ fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::SIMILAR_KW);
     e.space();
     e.token(TokenKind::TO_KW);
-    e.space();
+    // Like a comparison operator, the pattern wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     // PostgreSQL stores SIMILAR TO as a call to similar_to_escape(pattern) or similar_to_escape(pattern, escape)
     // We need to emit the original pattern (and ESCAPE clause if present)

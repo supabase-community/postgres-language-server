@@ -1,3 +1,6 @@
+// Every test crate includes this module and uses only some of it.
+#![allow(dead_code)]
+
 use pgls_query::protobuf::Token;
 
 /// Checks the whitespace the formatter wrote between tokens: no space before a comma or `)`, none
@@ -85,7 +88,6 @@ pub fn whitespace_problems(output: &str) -> Vec<String> {
     problems
 }
 
-#[allow(dead_code)] // Not every test crate asserts directly.
 pub fn assert_clean_whitespace(output: &str) {
     let problems = whitespace_problems(output);
     assert!(
@@ -99,7 +101,6 @@ pub fn assert_clean_whitespace(output: &str) {
 /// spaces, a space before a tab when indenting with tabs. Alignment after the tabs is written as
 /// spaces, so spaces after tabs are fine. Lines inside a multi-line token, such as a function body,
 /// keep the indentation of the source.
-#[allow(dead_code)] // Not every test crate checks indentation.
 pub fn mixed_indentation(output: &str, indent_with_tabs: bool) -> Vec<String> {
     let token_ranges = pgls_query::scan(output)
         .map(|scan| {
@@ -122,6 +123,75 @@ pub fn mixed_indentation(output: &str, indent_with_tabs: bool) -> Vec<String> {
             problems.push(format!("mixed indentation in line {} `{line}`", index + 1));
         }
         line_start += line.len() + 1;
+    }
+    problems
+}
+
+/// Columns a line may need besides its indentation and its longest token before the formatter is
+/// expected to break it: a keyword or punctuation around an unbreakable token, `passing '...'` or
+/// `as "..."` for instance.
+const WIDTH_OVERHEAD: usize = 12;
+
+/// Lines longer than `max_line_length`, counting a tab as `tab_width` columns.
+///
+/// A line is excused when its indentation and its longest token leave no room to break it: a long
+/// string literal, quoted identifier or function body, or code nested so deeply that little room is
+/// left. String literals count like any other token, so a call that merely has a literal among its
+/// arguments still has to break. A `--` comment ending the line is written as in the source and is
+/// not counted.
+pub fn width_problems(output: &str, max_line_length: usize, tab_width: usize) -> Vec<String> {
+    let tokens: Vec<_> = pgls_query::scan(output)
+        .map(|scan| {
+            scan.tokens
+                .iter()
+                .map(|token| {
+                    (
+                        token.start as usize..token.end as usize,
+                        Token::try_from(token.token) == Ok(Token::SqlComment),
+                    )
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let columns = |text: &str| -> usize {
+        text.chars()
+            .map(|c| if c == '\t' { tab_width } else { 1 })
+            .sum()
+    };
+
+    let mut problems = Vec::new();
+    let mut line_start = 0;
+    for (index, line) in output.split('\n').enumerate() {
+        let line_end = line_start + line.len();
+        let code_end = tokens
+            .iter()
+            .find(|(range, line_comment)| {
+                *line_comment && range.start >= line_start && range.start < line_end
+            })
+            .map_or(line_end, |(range, _)| range.start);
+        let code = output[line_start..code_end].trim_end();
+        let width = columns(code);
+        if width > max_line_length {
+            let indent = columns(&code[..code.len() - code.trim_start().len()]);
+            let longest_token = tokens
+                .iter()
+                .map(|(range, _)| {
+                    let start = range.start.max(line_start);
+                    let end = range.end.min(code_end);
+                    output
+                        .get(start..end)
+                        .map_or(0, |piece| piece.chars().count())
+                })
+                .max()
+                .unwrap_or(0);
+            if indent + longest_token + WIDTH_OVERHEAD <= max_line_length {
+                problems.push(format!(
+                    "line {} has {width} columns, more than {max_line_length}: `{line}`",
+                    index + 1
+                ));
+            }
+        }
+        line_start = line_end + 1;
     }
     problems
 }

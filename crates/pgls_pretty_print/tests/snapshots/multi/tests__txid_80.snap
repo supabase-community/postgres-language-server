@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/txid.sql
-snapshot_kind: text
 ---
 select cast('12:13:' as txid_snapshot);
 
@@ -94,8 +93,8 @@ select txid_current_if_assigned() is null;
 select txid_current();
 
 select
-  txid_current_if_assigned() is not distinct from cast('txid_current'
-  as bigint);
+  txid_current_if_assigned() is not distinct from
+  cast('txid_current' as bigint);
 
 commit;
 
