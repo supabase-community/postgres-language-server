@@ -1401,6 +1401,13 @@ postgres-language-server<span class="w"> </span>check<span class="w"> </span>mig
 <li><strong>Unsafe</strong> fixes may change what a statement does, e.g. swap the type of a column or add <code>NOT VALID</code> to a constraint. Review them before applying them.</li>
 </ul>
 <p>In the editor, the fixes are offered as quick fixes on the diagnostic, next to a quick fix that suppresses the rule for the statement with a <code>-- pgls-ignore &lt;rule&gt;</code> comment.</p>
+<p>The <code>source.fixAll.pgls</code> code action applies all safe fixes of a file. To run it on save in VS Code:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"editor.codeActionsOnSave"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"source.fixAll.pgls"</span><span class="p">:</span><span class="w"> </span><span class="s2">"explicit"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>On the command line, <code>check --fix</code> applies the safe fixes and writes the files. Add <code>--unsafe</code> to also apply the unsafe fixes:</p>
 <div class="highlight"><pre><span></span><code>postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>migrations/
 postgres-language-server<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>--unsafe<span class="w"> </span>migrations/
