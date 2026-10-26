@@ -1,9 +1,10 @@
 //! The statements in the body of a SQL function. They are statements of their own, embedded in
 //! the `CREATE FUNCTION` statement:
 //!
-//! - `AS '...'`, `AS E'...'` and `AS $tag$...$tag$`: the string constant, split into statements
-//!   like Postgres splits it ([`pg_parse_query`]). Its value can differ from its text: `''` and
-//!   backslash escapes stand for other characters, which [`OffsetMap`] maps.
+//! - `AS '...'`, `AS E'...'`, `AS U&'...'` and `AS $tag$...$tag$`: the string constant, split
+//!   into statements like Postgres splits it ([`pg_parse_query`]). Its value can differ from its
+//!   text: `''`, backslash escapes and Unicode escapes stand for other characters, which
+//!   [`OffsetMap`] maps.
 //! - `BEGIN ATOMIC ... END`: each statement up to its `;`.
 //! - `RETURN expr`: the expression as `select expr`, which has the same length.
 //!
@@ -128,7 +129,7 @@ impl OffsetMap {
 
 /// The statements of the body of the SQL function that `stmt` creates, in order. `sql` is the
 /// text of `stmt`. Empty if `stmt` doesn't create a SQL function, if the body is empty, or if
-/// the body can't be found in `sql`, like a `U&'...'` string.
+/// the body can't be found in `sql`, like a string continued on the next line.
 ///
 /// A string body with a single statement, or one that doesn't parse, is a single statement over
 /// the whole body, so that its syntax error is reported for the body.
@@ -259,19 +260,52 @@ fn string_body(
     sql: &str,
 ) -> Option<StringBody> {
     let value = find_option_value(create_fn, "as")?;
-    tokens.windows(2).find_map(|pair| {
-        let [as_token, string] = pair else {
-            return None;
-        };
-        if as_token.token() != Token::As || string.token() != Token::Sconst {
+    tokens.iter().enumerate().find_map(|(i, as_token)| {
+        if as_token.token() != Token::As {
             return None;
         }
-        string_constant(&value, token_range(string)?, sql)
+        let string = tokens.get(i + 1)?;
+        match string.token() {
+            Token::Sconst => string_constant(&value, token_range(string)?, sql, None),
+            Token::Usconst => {
+                let escape = unicode_escape_character(tokens.get(i + 2..)?, sql)?;
+                string_constant(&value, token_range(string)?, sql, Some(escape))
+            }
+            _ => None,
+        }
     })
 }
 
-/// The body in the string constant at `range` of `sql`, if its value is `value`.
-fn string_constant(value: &str, range: TextRange, sql: &str) -> Option<StringBody> {
+/// The escape character of the `U&'...'` string followed by `tokens`: the character of a
+/// `UESCAPE '...'` clause, or `\`. Postgres rejects a statement whose escape character is
+/// invalid ([`check_uescapechar`]), so it has no body to find.
+///
+/// [`check_uescapechar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parser.c#L352
+fn unicode_escape_character(tokens: &[ScanToken], sql: &str) -> Option<u8> {
+    let [uescape, string, ..] = tokens else {
+        return Some(b'\\');
+    };
+    if uescape.token() != Token::Uescape {
+        return Some(b'\\');
+    }
+    let range = token_range(string)?;
+    match sql
+        .get(usize::from(range.start())..usize::from(range.end()))?
+        .as_bytes()
+    {
+        [b'\'', escape, b'\''] => Some(*escape),
+        _ => None,
+    }
+}
+
+/// The body in the string constant at `range` of `sql`, if its value is `value`. `unicode_escape`
+/// is the escape character of a `U&'...'` constant.
+fn string_constant(
+    value: &str,
+    range: TextRange,
+    sql: &str,
+    unicode_escape: Option<u8>,
+) -> Option<StringBody> {
     let text = sql.get(usize::from(range.start())..usize::from(range.end()))?;
     if let Some(after_dollar) = text.strip_prefix('$') {
         // `$tag$...$tag$`, where the tag can be empty.
@@ -289,14 +323,15 @@ fn string_constant(value: &str, range: TextRange, sql: &str) -> Option<StringBod
             offsets: OffsetMap::default(),
         });
     }
-    let (prefix, backslash_escapes) = match text.as_bytes() {
-        [b'e' | b'E', b'\'', ..] => (1, true),
-        [b'\'', ..] => (0, false),
-        // `U&'...'` and `B'...'`.
+    let (prefix, escapes) = match (text.as_bytes(), unicode_escape) {
+        ([b'u' | b'U', b'&', b'\'', ..], Some(escape)) => (2, Escapes::Unicode(escape)),
+        ([b'e' | b'E', b'\'', ..], None) => (1, Escapes::Backslash),
+        ([b'\'', ..], None) => (0, Escapes::None),
+        // `B'...'` and `X'...'`.
         _ => return None,
     };
     let inner = text.get(prefix + 1..)?.strip_suffix('\'')?;
-    let (unescaped, offsets) = unescape(inner, backslash_escapes)?;
+    let (unescaped, offsets) = unescape(inner, escapes)?;
     if unescaped != value {
         return None;
     }
@@ -310,22 +345,38 @@ fn string_constant(value: &str, range: TextRange, sql: &str) -> Option<StringBod
     })
 }
 
-/// The value of the inside of a string constant, and where its escapes are. With
-/// `backslash_escapes`, the escapes of `E'...'` strings are read like the `xe` rules of
-/// Postgres' lexer ([`scan.l`]). `None` if a quote ends the constant before its end, like in a
-/// constant continued on the next line, or if the value isn't valid UTF-8.
+/// The escapes of a string constant besides `''`.
+#[derive(Debug, Clone, Copy)]
+enum Escapes {
+    /// `'...'`.
+    None,
+    /// `E'...'`.
+    Backslash,
+    /// `U&'...'`, with its escape character.
+    Unicode(u8),
+}
+
+/// The value of the inside of a string constant, and where its escapes are. The escapes of
+/// `E'...'` strings are read like the `xe` rules of Postgres' lexer ([`scan.l`]), those of
+/// `U&'...'` strings like [`str_udeescape`]. `None` if a quote ends the constant before its end,
+/// like in a constant continued on the next line, if an escape is invalid, or if the value isn't
+/// valid UTF-8.
 ///
 /// [`scan.l`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L262
-fn unescape(inner: &str, backslash_escapes: bool) -> Option<(String, OffsetMap)> {
+/// [`str_udeescape`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parser.c#L372
+fn unescape(inner: &str, escapes: Escapes) -> Option<(String, OffsetMap)> {
     let bytes = inner.as_bytes();
     let mut value = Vec::with_capacity(bytes.len());
     let mut offsets = OffsetMap::default();
     let mut cursor = 0;
     while let Some(&byte) = bytes.get(cursor) {
-        let (decoded, len): (Vec<u8>, usize) = match byte {
-            b'\'' if bytes.get(cursor + 1) == Some(&b'\'') => (vec![b'\''], 2),
-            b'\'' => return None,
-            b'\\' if backslash_escapes => escape_sequence(bytes.get(cursor..)?)?,
+        let (decoded, len): (Vec<u8>, usize) = match (byte, escapes) {
+            (b'\'', _) if bytes.get(cursor + 1) == Some(&b'\'') => (vec![b'\''], 2),
+            (b'\'', _) => return None,
+            (b'\\', Escapes::Backslash) => escape_sequence(bytes.get(cursor..)?)?,
+            (_, Escapes::Unicode(escape)) if byte == escape => {
+                unicode_escape(bytes.get(cursor..)?, escape)?
+            }
             _ => {
                 value.push(byte);
                 cursor += 1;
@@ -341,6 +392,56 @@ fn unescape(inner: &str, backslash_escapes: bool) -> Option<(String, OffsetMap)>
         cursor += len;
     }
     Some((String::from_utf8(value).ok()?, offsets))
+}
+
+/// The bytes that the Unicode escape at the start of `text` stands for, and its length: the
+/// escape character twice, `\XXXX` or `\+XXXXXX`, or a UTF-16 surrogate pair of two of those.
+fn unicode_escape(text: &[u8], escape: u8) -> Option<(Vec<u8>, usize)> {
+    if text.get(1) == Some(&escape) {
+        return Some((vec![escape], 2));
+    }
+    let (first, len) = unicode_code_point(text)?;
+    let code_point = match first {
+        0xD800..=0xDBFF => {
+            // The first half of a surrogate pair, which the next escape completes.
+            if text.get(len) != Some(&escape) {
+                return None;
+            }
+            let (second, second_len) = unicode_code_point(text.get(len..)?)?;
+            if !(0xDC00..=0xDFFF).contains(&second) {
+                return None;
+            }
+            let code_point = 0x10000 + ((first - 0xD800) << 10) + (second - 0xDC00);
+            return Some((char_bytes(code_point)?, len + second_len));
+        }
+        code_point => code_point,
+    };
+    Some((char_bytes(code_point)?, len))
+}
+
+/// The code point of the `\XXXX` or `\+XXXXXX` escape at the start of `text`, where `\` is the
+/// escape character, and its length.
+fn unicode_code_point(text: &[u8]) -> Option<(u32, usize)> {
+    let (start, digits) = if text.get(1) == Some(&b'+') {
+        (2, 6)
+    } else {
+        (1, 4)
+    };
+    let hex = text.get(start..start + digits)?;
+    if !hex.iter().all(u8::is_ascii_hexdigit) {
+        return None;
+    }
+    let code_point = u32::from_str_radix(std::str::from_utf8(hex).ok()?, 16).ok()?;
+    Some((code_point, start + digits))
+}
+
+/// The UTF-8 encoding of a code point. `None` for code points that Postgres rejects: zero,
+/// beyond U+10FFFF, and the second half of a surrogate pair on its own.
+fn char_bytes(code_point: u32) -> Option<Vec<u8>> {
+    if code_point == 0 {
+        return None;
+    }
+    Some(char::from_u32(code_point)?.to_string().into_bytes())
 }
 
 /// The bytes that the backslash escape at the start of `text` stands for, and its length.
@@ -489,7 +590,7 @@ fn return_body(tokens: &[ScanToken], sql: &str) -> Option<EmbeddedStatement> {
 mod tests {
     use pgls_text_size::{TextRange, TextSize};
 
-    use super::{OffsetMap, sql_function_body, unescape};
+    use super::{Escapes, OffsetMap, sql_function_body, unescape};
 
     /// The statements of the body: their text in `input`, and the text that is parsed.
     fn bodies(input: &str) -> Vec<(&str, String)> {
@@ -552,8 +653,10 @@ mod tests {
             bodies("create function f() returns int language sql as $body$ select 1 $body$"),
             [(" select 1 ", " select 1 ".to_string())]
         );
-        // `U&'...'` strings are not supported.
-        assert!(bodies("create function f() returns int language sql as U&'select 1'").is_empty());
+        // A continued string isn't found.
+        assert!(
+            bodies("create function f() returns int language sql as 'select '\n'1'").is_empty()
+        );
     }
 
     #[test]
@@ -606,7 +709,7 @@ mod tests {
 
     #[test]
     fn unescapes_like_postgres() {
-        let value = |inner: &str| unescape(inner, true).map(|(value, _)| value);
+        let value = |inner: &str| unescape(inner, Escapes::Backslash).map(|(value, _)| value);
         assert_eq!(value(r"a\tb\x41\101\q\\"), Some("a\tbAAq\\".to_string()));
         assert_eq!(value(r"\U0001F600 é"), Some("\u{1F600} \u{e9}".to_string()));
         assert_eq!(value(r"\xc3\xa9"), Some("\u{e9}".to_string()));
@@ -616,9 +719,68 @@ mod tests {
         assert_eq!(value("a'\n'b"), None);
         // Without backslash escapes, backslashes are themselves.
         assert_eq!(
-            unescape(r"a\n''", false).map(|(value, _)| value),
+            unescape(r"a\n''", Escapes::None).map(|(value, _)| value),
             Some(r"a\n'".to_string())
         );
+    }
+
+    #[test]
+    fn unicode_string_bodies_are_mapped() {
+        let input = r"create function f(p text) returns text language sql as U&'select ''\00e9'' || \+01F600 || p'";
+        let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+        let [body] = sql_function_body(&ast, input).try_into().unwrap();
+        assert_eq!(body.sql, "select '\u{e9}' || \u{1F600} || p");
+        let source = &input[body.range];
+        assert_eq!(source, r"select ''\00e9'' || \+01F600 || p");
+        let p = TextSize::of("select '\u{e9}' || \u{1F600} || ");
+        assert_eq!(&source[usize::from(body.offsets.to_source(p))..], "p");
+        assert_eq!(
+            body.offsets
+                .to_statement(TextSize::of(source) - TextSize::from(1)),
+            p
+        );
+        assert!(!body.offsets.is_verbatim());
+
+        // With another escape character, and in lower case.
+        assert_eq!(
+            bodies(
+                "create function f() returns text language sql as u&'select ''!00e9\\!!''' uescape '!'"
+            ),
+            [(r"select ''!00e9\!!''", "select '\u{e9}\\!'".to_string())]
+        );
+        // Split into statements like other strings.
+        assert_eq!(
+            statements(
+                r"create function f() returns int language sql as U&'select 1; select \0032'"
+            ),
+            ["select 1;", "select 2"]
+        );
+    }
+
+    #[test]
+    fn unescapes_unicode_like_postgres() {
+        let value = |inner: &str, escape: u8| {
+            unescape(inner, Escapes::Unicode(escape)).map(|(value, _)| value)
+        };
+        assert_eq!(
+            value(r"a\0041\+000042\\''", b'\\'),
+            Some("aAB\\'".to_string())
+        );
+        // A surrogate pair, in both forms.
+        assert_eq!(
+            value(r"\D83D\DE00 \+00D83D\+00DE00", b'\\'),
+            Some("\u{1F600} \u{1F600}".to_string())
+        );
+        // Backslashes are themselves with another escape character.
+        assert_eq!(value(r"\n#0041##", b'#'), Some(r"\nA#".to_string()));
+        // Invalid escapes, a surrogate on its own, zero, and beyond U+10FFFF.
+        assert_eq!(value(r"\n", b'\\'), None);
+        assert_eq!(value(r"\004", b'\\'), None);
+        assert_eq!(value(r"\D83D", b'\\'), None);
+        assert_eq!(value(r"\D83Dx", b'\\'), None);
+        assert_eq!(value(r"\DE00", b'\\'), None);
+        assert_eq!(value(r"\0000", b'\\'), None);
+        assert_eq!(value(r"\+110000", b'\\'), None);
     }
 
     #[test]

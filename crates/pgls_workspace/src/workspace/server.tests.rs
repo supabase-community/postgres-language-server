@@ -4336,7 +4336,9 @@ async fn test_sql_function_bodies(test_db: PgPool) {
         create function quoted_fn(p text) returns text language sql\n\
         as 'select name || ''x'' || p from body_users where name = ''y'' and nope = 1';\n\
         create function escaped_fn() returns text language sql\n\
-        as E'select \\'\\u00e9\\' || name from body_users where gone = 1';\n";
+        as E'select \\'\\u00e9\\' || name from body_users where gone = 1';\n\
+        create function unicode_fn() returns text language sql\n\
+        as U&'select ''\\00e9'' || name from body_users where missing = 1';\n";
     workspace
         .open_file(OpenFileParams {
             project_key,
@@ -4368,6 +4370,8 @@ async fn test_sql_function_bodies(test_db: PgPool) {
             ("p", SemanticTokenKind::Parameter),
             ("body_users", SemanticTokenKind::Class),
             ("name", SemanticTokenKind::Property),
+            ("name", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
             ("name", SemanticTokenKind::Property),
             ("body_users", SemanticTokenKind::Class),
         ]
@@ -4411,5 +4415,9 @@ async fn test_sql_function_bodies(test_db: PgPool) {
         })
         .map(|diagnostic| &content[diagnostic.location().span.expect("a span")])
         .collect::<Vec<_>>();
-    assert_eq!(unknown_columns, ["nope", "gone"], "{diagnostics:#?}");
+    assert_eq!(
+        unknown_columns,
+        ["nope", "gone", "missing"],
+        "{diagnostics:#?}"
+    );
 }
