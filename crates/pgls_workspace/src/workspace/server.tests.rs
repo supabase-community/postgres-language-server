@@ -1250,6 +1250,58 @@ fn typecheck_diagnostics(
         .collect()
 }
 
+/// Postgres treats non-ASCII characters as letters in identifiers, so diagnostics and hover
+/// cover the whole name.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn non_ascii_names_get_whole_spans(test_db: PgPool) {
+    let content = "create table café (id int);\nselect a.größe from café a;\n";
+    let diagnostics = typecheck_diagnostics(&test_db, content);
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+    let span = diagnostics[0].location().span.expect("a span");
+    assert_eq!(&content[span], "a.größe");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "create table café (größe int);\ncreate table tee (größe int);\n\
+        select a.größe from café a, tee b;\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    // On the `ß`, after the first non-ASCII character. Without the resolved reference, hover
+    // shows the columns of both tables.
+    let position = content.find("ße from").unwrap();
+    let blocks = workspace
+        .on_hover(OnHoverParams {
+            project_key,
+            path: path.clone(),
+            position: u32::try_from(position).unwrap().into(),
+        })
+        .expect("Unable to hover")
+        .markdown_blocks;
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.café.größe"), "{blocks:?}");
+}
+
 /// GitHub issue #835: `RETURNS TABLE` columns are not parameters of the body, and `r.received_at`
 /// is a column of `r` even if an output column has the same name.
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -2233,6 +2285,86 @@ async fn test_hover_shows_resolved_references(test_db: PgPool) {
     // Without a unique reference, hover falls back to the columns with the hovered name.
     let blocks = hover("label as ambiguous");
     assert_eq!(blocks.len(), 2, "{blocks:?}");
+}
+
+/// Hover and code actions on a file with thousands of statements, on a thread with the 2 MiB
+/// stack of the language server's tokio workers. They used to recurse once per statement before
+/// or after the cursor and overflow the stack, which aborts the server.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = format!(
+        "create table long_file_items (id int);\n{}",
+        "select id from long_file_items;\n".repeat(5_000)
+    );
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let first = u32::try_from(content.find("id from").unwrap()).unwrap();
+    let last = u32::try_from(content.rfind("id from").unwrap()).unwrap();
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn_scoped(scope, || {
+                for position in [first, last] {
+                    let blocks = workspace
+                        .on_hover(OnHoverParams {
+                            project_key,
+                            path: path.clone(),
+                            position: position.into(),
+                        })
+                        .expect("Unable to hover")
+                        .markdown_blocks;
+                    assert_eq!(blocks.len(), 1, "{blocks:?}");
+                    assert!(
+                        blocks[0].contains("public.long_file_items.id"),
+                        "{blocks:?}"
+                    );
+
+                    let actions = workspace
+                        .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                            project_key,
+                            path: path.clone(),
+                            cursor_position: position.into(),
+                            only: vec![],
+                            skip: vec![],
+                        })
+                        .expect("Unable to pull code actions")
+                        .actions;
+                    let executes: Vec<_> = actions
+                        .iter()
+                        .filter(|action| action.title.starts_with("Execute Statement"))
+                        .collect();
+                    assert_eq!(executes.len(), 1, "{actions:#?}");
+                }
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    });
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

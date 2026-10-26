@@ -1,3 +1,5 @@
+mod common;
+
 use camino::Utf8Path;
 use dir_test::{Fixture, dir_test};
 use insta::{assert_snapshot, with_settings};
@@ -167,6 +169,7 @@ fn test_single(fixture: Fixture<&str>) {
         println!("Formatted content (width={max_line_length}):\n{output}");
 
         assert_line_lengths(&output, max_line_length);
+        common::assert_clean_whitespace(&output);
 
         let parsed_output = pgls_query::parse(&output).expect("Failed to parse SQL");
         let mut parsed_ast = parsed_output.into_root().expect("No root node found");
@@ -255,6 +258,7 @@ fn test_multi(fixture: Fixture<&str>) {
 
             // Verify line length
             assert_line_lengths(&output, max_line_length);
+            common::assert_clean_whitespace(&output);
 
             // Verify AST equality
             let parsed_output = pgls_query::parse(&output).unwrap_or_else(|e| {

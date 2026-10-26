@@ -13,9 +13,7 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
-use document::{
-    CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper, FormatStatementMapper,
-};
+use document::{DefaultMapper, Document, ExecuteStatementMapper, FormatStatementMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 #[cfg(feature = "db")]
@@ -644,7 +642,7 @@ impl WorkspaceServer {
                         .iter()
                         .any(|section| section.contains(range.start()))
                 })
-                .map(|(id, range, ast, cst, _)| {
+                .map(|(id, range, ast, cst)| {
                     let statement = statements
                         .iter()
                         .find(|statement| statement.range == range)
@@ -996,10 +994,7 @@ impl Workspace for WorkspaceServer {
         };
 
         let mut actions: Vec<CodeAction> = parser
-            .iter_with_filter(
-                DefaultMapper,
-                CursorPositionFilter::new(params.cursor_position),
-            )
+            .iter_at(DefaultMapper, params.cursor_position)
             .map(|(stmt, _, txt)| {
                 let title = format!(
                     "Execute Statement: {}...",
@@ -1755,13 +1750,7 @@ impl Workspace for WorkspaceServer {
         };
 
         // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
-        match doc
-            .iter_with_filter(
-                WithCSTandASTMapper,
-                CursorPositionFilter::new(params.position),
-            )
-            .last()
-        {
+        match doc.iter_at(WithCSTandASTMapper, params.position).last() {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
                 let position_in_stmt = params.position - range.start();
                 let references = self.references_at(settings, doc, &snapshot, params.position);

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/with.sql
-snapshot_kind: text
 ---
 with q1 (x, y) as (select 1, 2) select * from q1, q1 as q2;
 
@@ -28,9 +27,7 @@ select
 from
   t;
 
-with recursive
-t (n)
-as (
+with recursive t (n) as (
   values (cast('01' as varbit))
   union
   select n || cast('10' as varbit) from t where n < cast('100' as varbit)
@@ -86,24 +83,12 @@ select
 from
   t;
 
-with recursive
-w1 (c1)
-as (
-  with
-  w2 (c2)
-  as (
-    with
-    w3 (c3)
-    as (
-      with
-      w4 (c4)
-      as (
-        with
-        w5 (c5)
-        as (
-          with recursive
-          w6 (c6)
-          as (
+with recursive w1 (c1) as (
+  with w2 (c2) as (
+    with w3 (c3) as (
+      with w4 (c4) as (
+        with w5 (c5) as (
+          with recursive w6 (c6) as (
             with w6 (c6) as (with w8 (c8) as (select 1) select * from w8) select * from w6
           )
           select
@@ -136,33 +121,24 @@ select
 from
   w1;
 
-with recursive
-outermost (x)
-as (
+with recursive outermost (x) as (
   select 1
   union
-  (with
-  innermost1
-  as (
+  (with innermost1 as (
     select 2
     union
-    (with
-    innermost2
-    as (
+    (with innermost2 as (
       select 3
       union
-      (with
-      innermost3
-      as (
+      (with innermost3 as (
         select 4
         union
-        (with
-        innermost4
-        as (
+        (with innermost4 as (
           select 5
           union
-          (with
-          innermost5 as (select 6 union (with innermost6 as (select 7) select * from innermost6))
+          (with innermost5 as (
+            select 6 union (with innermost6 as (select 7) select * from innermost6)
+          )
           select
             *
           from
@@ -215,9 +191,7 @@ insert into department values (6, 4, 'F');
 
 insert into department values (7, 5, 'G');
 
-with recursive
-subdepartment
-as (
+with recursive subdepartment as (
   select name as root_name, * from department where name = 'A'
   union all
   select
@@ -235,9 +209,7 @@ from
   subdepartment
 order by name;
 
-with recursive
-subdepartment (level, id, parent_department, name)
-as (
+with recursive subdepartment (level, id, parent_department, name) as (
   select 1, * from department where name = 'A'
   union all
   select
@@ -255,9 +227,7 @@ from
   subdepartment
 order by name;
 
-with recursive
-subdepartment (level, id, parent_department, name)
-as (
+with recursive subdepartment (level, id, parent_department, name) as (
   select 1, * from department where name = 'A'
   union all
   select
@@ -284,9 +254,7 @@ from
   subdepartment
 order by name;
 
-with recursive
-subdepartment
-as (
+with recursive subdepartment as (
   select id, parent_department, name from department where name = 'A'
   union
   select
@@ -347,21 +315,21 @@ select pg_get_viewdef(cast('vsubdepartment' as regclass), true);
 
 select sum(n) from t;
 
-with recursive
-q as (select * from department union all (with x as (select * from q) select * from x))
+with recursive q as (
+  select * from department union all (with x as (select * from q) select * from x)
+)
 select
   *
 from
   q
 limit 24;
 
-with recursive
-q
-as (
+with recursive q as (
   select * from department
   union all
-  (with recursive
-  x as (select * from department union all (select * from q union all select * from x))
+  (with recursive x as (
+    select * from department union all (select * from q union all select * from x)
+  )
   select
     *
   from
@@ -399,9 +367,7 @@ values
   (15, 11),
   (16, 11);
 
-with recursive
-t (id, path)
-as (
+with recursive t (id, path) as (
   values (1, cast(array[] as int[]))
   union all
   select tree.id, t.path || tree.id from tree inner join t on tree.parent_id = t.id
@@ -417,9 +383,7 @@ from
 order by t1.id,
   t2.id;
 
-with recursive
-t (id, path)
-as (
+with recursive t (id, path) as (
   values (1, cast(array[] as int[]))
   union all
   select tree.id, t.path || tree.id from tree inner join t on tree.parent_id = t.id
@@ -435,9 +399,7 @@ from
 group by t1.id
 order by t1.id;
 
-with recursive
-t (id, path)
-as (
+with recursive t (id, path) as (
   values (1, cast(array[] as int[]))
   union all
   select tree.id, t.path || tree.id from tree inner join t on tree.parent_id = t.id
