@@ -339,7 +339,6 @@ impl WorkspaceServer {
         params: &CodeActionsParams,
         doc: &Document,
     ) -> Vec<CodeAction> {
-        let content = doc.get_document_content();
         let mut actions = Vec::new();
         for diagnostic in
             self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
@@ -373,25 +372,13 @@ impl WorkspaceServer {
                 });
             }
 
-            // The comment goes on its own line above the line where the diagnostic starts,
-            // with the same indentation.
-            let line_start = content[..usize::from(span.start())]
-                .rfind('\n')
-                .map_or(0, |newline| newline + 1);
-            let indentation: String = content[line_start..]
-                .chars()
-                .take_while(|c| *c == ' ' || *c == '\t')
-                .collect();
             actions.push(CodeAction {
                 title: format!("Suppress rule {rule} for this statement"),
                 kind: CodeActionKind::Edit(EditAction {
                     rule: category.to_string(),
                     category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
                     applicability: Applicability::MaybeIncorrect,
-                    edits: vec![TextEdit {
-                        range: TextRange::empty(TextSize::try_from(line_start).unwrap()),
-                        new_text: format!("{indentation}-- pgls-ignore {rule}\n"),
-                    }],
+                    edits: vec![suppression_edit(doc, span.start(), rule)],
                 }),
                 disabled_reason: None,
             });
@@ -1851,6 +1838,49 @@ fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSectio
         .map_or_else(Vec::new, |migrations| {
             migration::migration_sections(doc.get_document_content(), migrations.section_markers)
         })
+}
+
+/// The edit that adds `-- pgls-ignore <rule>` on its own line above the statement at `offset`,
+/// with the statement's indentation and the file's line ending. Above the statement, the comment
+/// suppresses the rule for all of the statement, including the bodies of its functions.
+fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
+    let content = doc.get_document_content();
+    let start = doc
+        .statement_ranges()
+        .iter()
+        .find(|statement| statement.contains_inclusive(offset))
+        .map_or(offset, |statement| statement.start());
+    let line_ending = match content.find('\n') {
+        Some(newline) if content[..newline].ends_with('\r') => "\r\n",
+        _ => "\n",
+    };
+
+    let start = usize::from(start);
+    let line_start = content[..start]
+        .rfind('\n')
+        .map_or(0, |newline| newline + 1);
+    let before = &content[line_start..start];
+    let indentation: String = before
+        .chars()
+        .take_while(|c| *c == ' ' || *c == '\t')
+        .collect();
+    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
+    if before.trim().is_empty() {
+        TextEdit {
+            range: TextRange::empty(offset(line_start)),
+            new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
+        }
+    } else {
+        // The statement starts after another one on the same line, so it moves to a line of its
+        // own.
+        let previous_end = line_start + before.trim_end().len();
+        TextEdit {
+            range: TextRange::new(offset(previous_end), offset(start)),
+            new_text: format!(
+                "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
+            ),
+        }
+    }
 }
 
 /// Returns `true` if `path` is a directory or

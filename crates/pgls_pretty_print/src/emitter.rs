@@ -61,6 +61,8 @@ pub struct EventEmitter {
     comments_after_separator: Vec<Comment>,
     /// `config.layout` as configured, while `with_layout` overrides it for part of a statement.
     configured_layout: crate::Layout,
+    /// Identifiers the parser truncated, by their truncated name, as written in the source.
+    truncated_identifiers: HashMap<String, String>,
 }
 
 impl EventEmitter {
@@ -71,6 +73,7 @@ impl EventEmitter {
             config,
             leading_comments: HashMap::new(),
             trailing_comments: HashMap::new(),
+            truncated_identifiers: HashMap::new(),
             leading_line_comments_require_break: false,
             comments_after_separator: Vec::new(),
         }
@@ -105,9 +108,23 @@ impl EventEmitter {
             config,
             leading_comments,
             trailing_comments,
+            truncated_identifiers: HashMap::new(),
             leading_line_comments_require_break: false,
             comments_after_separator: Vec::new(),
         }
+    }
+
+    /// Identifiers of the source that the parser truncated, by their truncated name. The emitter
+    /// writes them as written rather than as the AST has them.
+    pub fn set_truncated_identifiers(&mut self, identifiers: HashMap<String, String>) {
+        self.truncated_identifiers = identifiers;
+    }
+
+    /// `name` as written in the source, when the parser truncated it.
+    pub fn source_identifier<'a>(&'a self, name: &'a str) -> &'a str {
+        self.truncated_identifiers
+            .get(name)
+            .map_or(name, String::as_str)
     }
 
     pub fn token(&mut self, token: TokenKind) {
