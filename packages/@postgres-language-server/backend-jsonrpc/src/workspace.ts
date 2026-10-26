@@ -317,6 +317,7 @@ export interface CodeActionsParams {
   cursor_position: TextSize;
   only: RuleCode[];
   path: PgLSPath;
+  project_key: ProjectKey;
   skip: RuleCode[];
 }
 export interface CodeActionsResult {
@@ -387,6 +388,7 @@ export interface FixFileParams {
   fix_file_mode: FixFileMode;
   only: RuleCode[];
   path: PgLSPath;
+  project_key: ProjectKey;
   skip: RuleCode[];
 }
 /**

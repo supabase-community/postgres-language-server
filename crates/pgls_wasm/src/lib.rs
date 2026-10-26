@@ -345,6 +345,7 @@ impl Workspace {
         let result = self
             .inner
             .pull_code_actions(CodeActionsParams {
+                project_key: self.project_key,
                 path: PgLSPath::new(PathBuf::from(path)),
                 cursor_position: TextSize::from(offset),
                 only: vec![],
@@ -360,6 +361,7 @@ impl Workspace {
         self.fs.read(path)?;
         self.inner
             .fix_file(FixFileParams {
+                project_key: self.project_key,
                 path: PgLSPath::new(PathBuf::from(path)),
                 fix_file_mode: if unsafe_fixes {
                     FixFileMode::SafeAndUnsafeFixes
