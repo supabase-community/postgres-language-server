@@ -9,7 +9,7 @@ use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 use super::{
-    document_cache::{ContentChange, DocumentCache, DocumentCacheStats},
+    document_cache::{ContentChange, DocumentCache, DocumentCacheStats, StaleEntries},
     statement_identifier::StatementId,
 };
 
@@ -43,7 +43,9 @@ impl Document {
         }
     }
 
-    pub fn update_content(&mut self, content: String, version: i32) {
+    /// Replaces the content of the document. Returns what the change invalidated in its cache,
+    /// for the caller to drop, see [`StaleEntries::drop_in_background`].
+    pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
         let unchanged = common_prefix(&self.content, &content);
         // Only the statements around the change are split again.
         let split = pgls_statement_splitter::split_edited(&self.content, &self.split, &content);
@@ -88,7 +90,7 @@ impl Document {
         self.cache.content_changed(ContentChange {
             unchanged,
             first_changed_statement,
-        });
+        })
     }
 
     /// Where the last change of the content starts.
@@ -919,7 +921,8 @@ $$ LANGUAGE plpgsql;";
         let second_ast = d.cache.parse(&second);
         let first_tree = d.cache.tree(&first);
 
-        d.update_content("select 1;\nselect 3;".to_string(), 2);
+        d.update_content("select 1;\nselect 3;".to_string(), 2)
+            .drop_in_background();
 
         assert!(Arc::ptr_eq(&first_ast, &d.cache.parse(&first)));
         assert!(Arc::ptr_eq(&first_tree, &d.cache.tree(&first)));

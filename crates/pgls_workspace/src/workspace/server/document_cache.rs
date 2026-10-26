@@ -61,6 +61,37 @@ pub struct DocumentCacheStats {
     pub walk_checkpoints: usize,
 }
 
+/// What an edit invalidated in a document's cache. On a long file, the analysis, the copies of
+/// the catalog in the walk checkpoints and the snapshot hold every object the file defines, and
+/// dropping them takes tens of milliseconds, so [`StaleEntries::drop_in_background`] drops them
+/// off the path of the edit.
+#[must_use]
+pub(crate) struct StaleEntries {
+    analysis: Option<Arc<DocumentAnalysis>>,
+    walk: WalkCache,
+}
+
+/// The stack of the thread that drops [`StaleEntries`]. Dropping a statement's tree is recursive
+/// like parsing it, so this is the stack that the CLI gives its workers for parsing.
+const DROP_THREAD_STACK_BYTES: usize = 8 * 1024 * 1024;
+
+impl StaleEntries {
+    /// Drops the entries on a thread of its own, so that the edit doesn't wait for it. If the
+    /// thread can't be started, they are dropped right away.
+    pub(crate) fn drop_in_background(self) {
+        if self.analysis.is_none() && self.walk.is_empty() {
+            return;
+        }
+        let spawned = std::thread::Builder::new()
+            .name("pgls-cache-drop".into())
+            .stack_size(DROP_THREAD_STACK_BYTES)
+            .spawn(move || drop(self));
+        if let Err(error) = spawned {
+            tracing::debug!("Dropped the stale cache entries of an edit in place: {error}");
+        }
+    }
+}
+
 /// What the caches of a document depend on besides its text.
 #[derive(Clone)]
 pub(crate) struct CacheKey {
@@ -199,12 +230,14 @@ impl DocumentCache {
         f(&mut self.keyed(key).walk)
     }
 
-    /// Drops what `change` invalidates, see [`WalkCache::content_changed`], and the analysis.
-    /// [`Self::retain_statements`] drops what was cached for the statements.
-    pub(crate) fn content_changed(&mut self, change: ContentChange) {
+    /// Takes out what `change` invalidates, see [`WalkCache::content_changed`], and the
+    /// analysis. [`Self::retain_statements`] drops what was cached for the statements.
+    pub(crate) fn content_changed(&mut self, change: ContentChange) -> StaleEntries {
         let keyed = self.keyed.get_mut().unwrap();
-        keyed.analysis = None;
-        keyed.walk.content_changed(change);
+        StaleEntries {
+            analysis: keyed.analysis.take(),
+            walk: keyed.walk.content_changed(change),
+        }
     }
 
     /// The tree of the statement `id`, or why it doesn't parse.

@@ -110,25 +110,34 @@ impl WalkCache {
         });
     }
 
-    /// Drops what `change` invalidates. A checkpoint, and the snapshot of a top-level statement,
-    /// stay valid while the text before their statement and the statements before it are the
-    /// same. The resolved statements, and the snapshot of a function body, also need their
-    /// statement to be the same.
-    pub(crate) fn content_changed(&mut self, change: ContentChange) {
+    /// Takes out what `change` invalidates, and returns it. A checkpoint, and the snapshot of a
+    /// top-level statement, stay valid while the text before their statement and the statements
+    /// before it are the same. The resolved statements, and the snapshot of a function body,
+    /// also need their statement to be the same.
+    pub(crate) fn content_changed(&mut self, change: ContentChange) -> WalkCache {
         let before_statement =
             |at: TextSize| at <= change.unchanged && at <= change.first_changed_statement;
-        self.checkpoints
-            .retain(|checkpoint| before_statement(checkpoint.at()));
-        self.resolved.split_off(&change.first_changed_statement);
-        if self.snapshot.as_ref().is_some_and(|cached| {
+        let (checkpoints, invalid) = std::mem::take(&mut self.checkpoints)
+            .into_iter()
+            .partition(|checkpoint| before_statement(checkpoint.at()));
+        self.checkpoints = checkpoints;
+        let resolved = self.resolved.split_off(&change.first_changed_statement);
+        let snapshot = self.snapshot.take_if(|cached| {
             if cached.in_body {
                 cached.at >= change.first_changed_statement
             } else {
                 !before_statement(cached.at)
             }
-        }) {
-            self.snapshot = None;
+        });
+        WalkCache {
+            checkpoints: invalid,
+            resolved,
+            snapshot,
         }
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.checkpoints.is_empty() && self.resolved.is_empty() && self.snapshot.is_none()
     }
 
     /// The number of resolved statements and checkpoints.
