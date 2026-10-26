@@ -1,0 +1,17 @@
+-- Postgres rejects all of these with 42701 duplicate_column.
+-- expect_lint/banDuplicateColumnAssignments
+alter table users add column email text, add column email text;
+-- expect_lint/banDuplicateColumnAssignments
+alter table users add column if not exists email text, add column email text;
+-- expect_lint/banDuplicateColumnAssignments
+create type pair as (a int, a int);
+-- expect_lint/banDuplicateColumnAssignments
+copy users (id, id) from stdin;
+-- expect_lint/banDuplicateColumnAssignments
+create foreign table remote_users (id int, id int) server remote;
+-- A `*` hides only the names it expands to, `x` is still duplicated.
+-- expect_lint/banDuplicateColumnAssignments
+create view star_and_dups as select t.*, 1 as x, 2 as x from t;
+-- The explicit name only renames the first entry, which comes before the `*`.
+-- expect_lint/banDuplicateColumnAssignments
+create view renamed_before_star (a) as select 1, t.*, 2 as x, 3 as x from t;

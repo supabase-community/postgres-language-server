@@ -1,0 +1,22 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+select "a""b".id from "a""b";
+-----------------------
+program [0..29] 'select "a""b".id from "a""b";'
+  statement [0..28] 'select "a""b".id from "a""b"'
+    select [0..16] 'select "a""b".id'
+      keyword_select [0..6] 'select'
+      select_expression [7..16] '"a""b".id' (@end)
+        term [7..16] '"a""b".id' (@end)
+          object_reference [7..16] '"a""b".id' (@end)
+            any_identifier [7..13] '"a""b"' (@object_reference_1of2)
+            . [13..14] '.'
+            any_identifier [14..16] 'id' (@object_reference_2of2)
+    from [17..28] 'from "a""b"'
+      keyword_from [17..21] 'from'
+      relation [22..28] '"a""b"' (@end)
+        table_reference [22..28] '"a""b"' (@end)
+          any_identifier [22..28] '"a""b"' (@table_reference_1of1)
+  ; [28..29] ';'

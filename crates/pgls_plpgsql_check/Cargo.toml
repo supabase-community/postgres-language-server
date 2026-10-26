@@ -28,3 +28,6 @@ tree-sitter      = { workspace = true }
 pgls_test_utils = { workspace = true }
 
 [lib]
+
+[lints]
+workspace = true

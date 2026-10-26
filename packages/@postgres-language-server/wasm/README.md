@@ -194,6 +194,7 @@ The top-level `format(sql, options?)` function returns a `Promise<string>` with 
 - `textDocument/didClose`
 - `textDocument/completion`
 - `textDocument/hover`
+- `textDocument/codeAction`: the fixes of the lint diagnostics at the cursor, an action that suppresses each of them, and with `context.only` set to `source.fixAll.pgls`, an action that applies all safe fixes
 - `pgls/setSchema` (custom notification)
 
 ## Building
