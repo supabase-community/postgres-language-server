@@ -1,6 +1,6 @@
 use crate::adapters::line_index::LineIndex;
 use crate::adapters::{LineCol, PositionEncoding, WideLineCol};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use pgls_text_size::{TextRange, TextSize};
 use tower_lsp_server::ls_types;
 
@@ -24,9 +24,7 @@ pub fn offset(
         }
     };
 
-    line_index
-        .offset(line_col)
-        .with_context(|| format!("position {position:?} is out of range"))
+    Ok(line_index.offset_clamped(line_col))
 }
 
 /// The function is used to convert a LSP range to TextRange.

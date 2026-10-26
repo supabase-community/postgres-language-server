@@ -1196,8 +1196,7 @@ from
   tenk1 as t1
 where
   t1.thousand = 42 or
-  t1.thousand =
-  (
+  t1.thousand = (
     select
       t2.tenthous
     from
@@ -1213,8 +1212,7 @@ from
   tenk1 as t1
 where
   t1.thousand = 42 or
-  t1.thousand =
-  (
+  t1.thousand = (
     select
       t2.tenthous
     from
@@ -2326,8 +2324,9 @@ as
   from
     pg_class
   where
-    relnamespace =
-    (select oid from pg_namespace where nspname = 'schema_to_reindex');
+    relnamespace = (
+      select oid from pg_namespace where nspname = 'schema_to_reindex'
+    );
 
 insert into reindex_before
 select
@@ -2374,8 +2373,9 @@ as
   from
     pg_class
   where
-    relnamespace =
-    (select oid from pg_namespace where nspname = 'schema_to_reindex');
+    relnamespace = (
+      select oid from pg_namespace where nspname = 'schema_to_reindex'
+    );
 
 select
   b.relname,

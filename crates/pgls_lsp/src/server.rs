@@ -4,18 +4,19 @@ use crate::session::{ClientInformation, Session, SessionHandle, SessionKey};
 use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
+use parking_lot::Mutex;
 use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_fs::{FileSystem, OsFileSystem};
 use pgls_workspace::{DynRef, Workspace, workspace};
 use rustc_hash::FxHashMap;
 use std::panic::RefUnwindSafe;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::Notify;
 use tokio::task::spawn_blocking;
-use tower_lsp_server::jsonrpc::Result as LspResult;
+use tower_lsp_server::jsonrpc::{self, Result as LspResult};
 use tower_lsp_server::{ClientSocket, ls_types::*};
 use tower_lsp_server::{LanguageServer, LspService, Server};
 use tracing::{Instrument, error, info};
@@ -210,6 +211,28 @@ impl LanguageServer for LSPServer {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> LspResult<Option<SemanticTokensResult>> {
+        match handlers::semantic_tokens::semantic_tokens_full(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn semantic_tokens_range(
+        &self,
+        params: SemanticTokensRangeParams,
+    ) -> LspResult<Option<SemanticTokensRangeResult>> {
+        match handlers::semantic_tokens::semantic_tokens_range(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
     async fn completion(&self, params: CompletionParams) -> LspResult<Option<CompletionResponse>> {
         match handlers::completions::get_completions(&self.session, params) {
             Ok(result) => LspResult::Ok(Some(result)),
@@ -234,9 +257,11 @@ impl LanguageServer for LSPServer {
         params: ExecuteCommandParams,
     ) -> LspResult<Option<serde_json::Value>> {
         match handlers::code_actions::execute_command(&self.session, params).await {
-            // we'll inform the client within `code_actions::execute_command`
-            Ok(_) => LspResult::Ok(None),
-            Err(err) => LspResult::Err(into_lsp_error(err)),
+            Ok(result) => LspResult::Ok(result),
+            Err(err) => LspResult::Err(
+                err.downcast::<jsonrpc::Error>()
+                    .unwrap_or_else(into_lsp_error),
+            ),
         }
     }
 
@@ -265,16 +290,15 @@ impl LanguageServer for LSPServer {
 
 impl Drop for LSPServer {
     fn drop(&mut self) {
-        if let Ok(mut sessions) = self.sessions.lock() {
-            let _removed = sessions.remove(&self.session.key);
-            debug_assert!(_removed.is_some(), "Session did not exist.");
+        let mut sessions = self.sessions.lock();
+        let _removed = sessions.remove(&self.session.key);
+        debug_assert!(_removed.is_some(), "Session did not exist.");
 
-            if self.stop_on_disconnect
-                && sessions.is_empty()
-                && self.is_initialized.load(Ordering::Relaxed)
-            {
-                self.session.cancellation.notify_one();
-            }
+        if self.stop_on_disconnect
+            && sessions.is_empty()
+            && self.is_initialized.load(Ordering::Relaxed)
+        {
+            self.session.cancellation.notify_one();
         }
     }
 }
@@ -398,7 +422,7 @@ impl ServerFactory {
             }
             let handle = Arc::new(session);
 
-            let mut sessions = self.sessions.lock().unwrap();
+            let mut sessions = self.sessions.lock();
             sessions.insert(session_key, handle.clone());
 
             LSPServer::new(
@@ -442,10 +466,12 @@ impl ServerFactory {
         workspace_method!(builder, change_file);
         workspace_method!(builder, close_file);
         workspace_method!(builder, pull_file_diagnostics);
+        workspace_method!(builder, pull_code_actions);
         workspace_method!(builder, fix_file);
         workspace_method!(builder, check_database_connection);
         workspace_method!(builder, get_completions);
         workspace_method!(builder, pull_inlay_hints);
+        workspace_method!(builder, pull_semantic_tokens);
         workspace_method!(builder, register_project_folder);
         workspace_method!(builder, unregister_project_folder);
         workspace_method!(builder, invalidate_schema_cache);
@@ -518,7 +544,6 @@ mod tests {
         let session = factory
             .sessions
             .lock()
-            .unwrap()
             .values()
             .next()
             .cloned()

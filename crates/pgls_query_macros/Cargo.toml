@@ -22,3 +22,6 @@ proc-macro = true
 
 [build-dependencies]
 ureq = "2.9"
+
+[lints]
+workspace = true

@@ -6,6 +6,7 @@ use crate::utils;
 use anyhow::Result;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
+use parking_lot::{Mutex, RwLock};
 use pgls_analyse::RuleCategoriesBuilder;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
@@ -26,9 +27,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::Mutex;
 use std::sync::OnceLock;
-use std::sync::RwLock;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::{AtomicBool, AtomicU8};
 use std::time::Duration;
@@ -161,6 +160,11 @@ pub(crate) struct Session {
     /// before a new task is spawned. This ensures that only one analysis run
     /// fires at the end of a rapid-fire burst rather than one per keystroke.
     diagnostic_debounce: Arc<Mutex<FxHashMap<ls_types::Uri, AbortHandle>>>,
+
+    /// Set when inlay hints or semantic tokens were requested while the database was
+    /// unreachable. The next diagnostics run that finds it reachable asks the client to request
+    /// them again.
+    editor_features_without_database: AtomicBool,
 }
 
 /// The parameters provided by the client in the "initialize" request
@@ -271,6 +275,7 @@ impl Session {
             #[cfg(test)]
             max_running_transitions: std::sync::atomic::AtomicUsize::new(0),
             diagnostic_debounce: Arc::new(Mutex::new(FxHashMap::default())),
+            editor_features_without_database: AtomicBool::new(false),
         }
     }
 
@@ -286,7 +291,7 @@ impl Session {
         root_uri: Option<Uri>,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
     ) {
-        *self.workspace_folders.write().unwrap() = workspace_folders.as_ref().map(|folders| {
+        *self.workspace_folders.write() = workspace_folders.as_ref().map(|folders| {
             folders
                 .iter()
                 .filter_map(|folder| {
@@ -427,7 +432,7 @@ impl Session {
         let Some(directory) = path.parent().filter(|_| is_configuration_file) else {
             return false;
         };
-        let projects = self.projects.read().unwrap();
+        let projects = self.projects.read();
         let Some((folder, _)) = projects
             .iter()
             .find(|(folder, _)| directory.starts_with(folder))
@@ -579,7 +584,62 @@ impl Session {
             .publish_diagnostics(url, diagnostics, Some(captured_version))
             .await;
 
+        if self
+            .editor_features_without_database
+            .load(Ordering::Relaxed)
+        {
+            let connection = self.workspace.check_database_connection(
+                features::diagnostics::CheckDatabaseConnectionParams {
+                    project_key: self.project_key(&pgls_path),
+                },
+            );
+            if connection.is_ok_and(|connection| connection.error.is_none())
+                && self
+                    .editor_features_without_database
+                    .swap(false, Ordering::Relaxed)
+            {
+                self.refresh_editor_features();
+            }
+        }
+
         Ok(())
+    }
+
+    /// Records that inlay hints or semantic tokens were requested while the database was
+    /// unreachable, so that the client is asked to request them again once it is reachable.
+    pub(crate) fn editor_features_without_database(&self) {
+        self.editor_features_without_database
+            .store(true, Ordering::Relaxed);
+    }
+
+    /// Asks the client to request inlay hints and semantic tokens again, if it supports that.
+    /// Called whenever their results may have changed without an edit: the configuration was
+    /// reloaded, the schema changed, or the database became reachable.
+    pub(crate) fn refresh_editor_features(&self) {
+        let workspace = self
+            .client_capabilities()
+            .and_then(|capabilities| capabilities.workspace.as_ref());
+        let inlay_hints = workspace
+            .and_then(|workspace| workspace.inlay_hint.as_ref())
+            .and_then(|inlay_hint| inlay_hint.refresh_support)
+            .unwrap_or(false);
+        let semantic_tokens = workspace
+            .and_then(|workspace| workspace.semantic_tokens.as_ref())
+            .and_then(|semantic_tokens| semantic_tokens.refresh_support)
+            .unwrap_or(false);
+        if !inlay_hints && !semantic_tokens {
+            return;
+        }
+        // The client answers these requests asynchronously, so don't wait for it.
+        let client = self.client.clone();
+        tokio::spawn(async move {
+            if inlay_hints && let Err(err) = client.inlay_hint_refresh().await {
+                error!("Failed to refresh inlay hints: {err}");
+            }
+            if semantic_tokens && let Err(err) = client.semantic_tokens_refresh().await {
+                error!("Failed to refresh semantic tokens: {err}");
+            }
+        });
     }
 
     /// Schedules a debounced diagnostic update for the given URL.
@@ -591,7 +651,7 @@ impl Session {
     /// one analysis run per keystroke.
     pub(crate) fn schedule_diagnostics(self: &Arc<Self>, url: ls_types::Uri) {
         // Cancel any pending task for this URL.
-        if let Some(handle) = self.diagnostic_debounce.lock().unwrap().remove(&url) {
+        if let Some(handle) = self.diagnostic_debounce.lock().remove(&url) {
             handle.abort();
         }
 
@@ -600,11 +660,7 @@ impl Session {
         let join_handle = tokio::spawn(async move {
             tokio::time::sleep(DIAGNOSTIC_DEBOUNCE).await;
             // Remove our own entry so stale handles don't accumulate.
-            session
-                .diagnostic_debounce
-                .lock()
-                .unwrap()
-                .remove(&url_clone);
+            session.diagnostic_debounce.lock().remove(&url_clone);
             if let Err(err) = session.update_diagnostics(url_clone).await {
                 error!("Failed to update diagnostics: {}", err);
             }
@@ -612,7 +668,6 @@ impl Session {
 
         self.diagnostic_debounce
             .lock()
-            .unwrap()
             .insert(url, join_handle.abort_handle());
     }
 
@@ -621,17 +676,17 @@ impl Session {
     /// Called from `did_close` to ensure no diagnostics are published after
     /// the document has been closed.
     pub(crate) fn cancel_pending_diagnostics(&self, url: &ls_types::Uri) {
-        if let Some(handle) = self.diagnostic_debounce.lock().unwrap().remove(url) {
+        if let Some(handle) = self.diagnostic_debounce.lock().remove(url) {
             handle.abort();
         }
     }
 
-    /// Updates diagnostics for every [`Document`] in this [`Session`]
+    /// Updates diagnostics for every [`Document`] in this [`Session`], and asks the client to
+    /// request inlay hints and semantic tokens again.
     pub(crate) async fn update_all_diagnostics(&self) {
         let mut futures: FuturesUnordered<_> = self
             .documents
             .read()
-            .unwrap()
             .keys()
             .map(|url| self.update_diagnostics(url.clone()))
             .collect();
@@ -641,6 +696,10 @@ impl Session {
                 error!("Error while updating diagnostics: {}", e);
             }
         }
+
+        // Whatever invalidated the diagnostics of every document may have changed the inlay
+        // hints and semantic tokens too.
+        self.refresh_editor_features();
     }
 
     /// Get a [`Document`] matching the provided [`ls_types::Uri`]
@@ -649,7 +708,6 @@ impl Session {
     pub(crate) fn document(&self, url: &ls_types::Uri) -> Result<Document, Error> {
         self.documents
             .read()
-            .unwrap()
             .get(url)
             .cloned()
             .ok_or_else(|| WorkspaceError::not_found().with_file_path(url.to_string()))
@@ -659,25 +717,16 @@ impl Session {
     ///
     /// Used by [`handlers::text_document] to synchronize documents with the client.
     pub(crate) fn insert_document(&self, url: ls_types::Uri, document: Document) {
-        self.documents.write().unwrap().insert(url, document);
+        self.documents.write().insert(url, document);
     }
 
     /// Remove the [`Document`] matching the provided [`ls_types::Uri`]
     pub(crate) fn remove_document(&self, url: &ls_types::Uri) {
-        self.documents.write().unwrap().remove(url);
+        self.documents.write().remove(url);
     }
 
     pub(crate) fn file_path(&self, url: &ls_types::Uri) -> Result<PgLSPath> {
-        let path_to_file = match url.to_file_path() {
-            None => {
-                // If we can't create a path, it's probably because the file doesn't exist.
-                // It can be a newly created file that it's not on disk
-                PathBuf::from(url.path().as_str())
-            }
-            Some(path) => path.into_owned(),
-        };
-
-        Ok(PgLSPath::new(path_to_file))
+        Ok(PgLSPath::new(document_path(url)))
     }
 
     /// True if the client supports dynamic registration of "workspace/didChangeConfiguration" requests
@@ -692,12 +741,12 @@ impl Session {
 
     /// Get the current workspace folders
     pub(crate) fn get_workspace_folders(&self) -> Option<Vec<PathBuf>> {
-        self.workspace_folders.read().unwrap().clone()
+        self.workspace_folders.read().clone()
     }
 
     /// Applies a change of the workspace folders. The caller reloads the configuration.
     pub(crate) fn change_workspace_folders(&self, added: Vec<PathBuf>, removed: &[PathBuf]) {
-        let mut folders = self.workspace_folders.write().unwrap();
+        let mut folders = self.workspace_folders.write();
         // A client without workspace folders at the start used the root URI.
         let folders = folders.get_or_insert_with(|| self.base_path().into_iter().collect());
         folders.retain(|folder| !removed.contains(folder));
@@ -716,7 +765,7 @@ impl Session {
     /// configuration is loaded, the key of no project, for which the workspace only reports what
     /// needs no settings.
     pub(crate) fn project_key(&self, path: &Path) -> ProjectKey {
-        let projects = self.projects.read().unwrap();
+        let projects = self.projects.read();
         if let Some((_, key)) = projects.iter().find(|(folder, _)| path.starts_with(folder)) {
             return *key;
         }
@@ -795,7 +844,7 @@ impl Session {
         }
 
         // Unregister the projects of the workspace folders that were removed.
-        let previous = std::mem::take(&mut *self.projects.write().unwrap());
+        let previous = std::mem::take(&mut *self.projects.write());
         for (folder, _) in previous {
             if !projects.iter().any(|(project, _)| project == &folder) {
                 self.root_files.write().remove(&folder);
@@ -811,7 +860,7 @@ impl Session {
         }
 
         projects.sort_by_key(|(folder, _)| std::cmp::Reverse(folder.components().count()));
-        *self.projects.write().unwrap() = projects;
+        *self.projects.write() = projects;
         if !matches!(status, ConfigurationStatus::Loaded) {
             // A broken file can't tell what it extends, so keep watching what it did before.
             self.configuration_files.write().extend(previous_files);
@@ -888,7 +937,7 @@ impl Session {
         environment: Option<&'a PartialConfiguration>,
     ) -> impl Fn(PartialConfiguration) -> PartialConfiguration + 'a {
         let (client_overrides, overridden_sections) = {
-            let overrides = self.client_overrides.read().unwrap();
+            let overrides = self.client_overrides.read();
             (overrides.configuration().cloned(), overrides.sections())
         };
         move |configuration| {
@@ -1079,6 +1128,22 @@ impl Session {
                             &gitignore_matches,
                         )
                         .ok();
+
+                        // An invalid connection string only disables the database features,
+                        // so the user would not notice it otherwise.
+                        if let Some(error) = configuration
+                            .db
+                            .as_ref()
+                            .and_then(pgls_workspace::settings::connection_string_error)
+                        {
+                            self.client
+                                .show_message(
+                                    MessageType::WARNING,
+                                    format!("{error} Database features are disabled."),
+                                )
+                                .await;
+                        }
+
                         let result = self.workspace.update_settings(UpdateSettingsParams {
                             project_key,
                             workspace_directory,
@@ -1124,7 +1189,7 @@ impl Session {
         let _transition = self.configuration_transition.lock().await;
         #[cfg(test)]
         let _running = self.enter_transition();
-        self.client_overrides.write().unwrap().set(overrides);
+        self.client_overrides.write().set(overrides);
         // Everything from here on is synchronous work behind `.await`s that complete immediately, so
         // a transition only ever suspends when something makes the server wait. Yielding here in
         // tests turns that into a reliable suspension point, which is what lets the test suite
@@ -1139,11 +1204,7 @@ impl Session {
     /// Whether a client override layer is currently set.
     #[cfg(test)]
     pub(crate) fn has_client_overrides(&self) -> bool {
-        self.client_overrides
-            .read()
-            .unwrap()
-            .configuration()
-            .is_some()
+        self.client_overrides.read().configuration().is_some()
     }
 
     /// Reloads the configuration from disk, re-applying the sticky layers.
@@ -1181,6 +1242,10 @@ impl Session {
     }
 
     /// Retrieves information regarding the configuration status
+    #[expect(
+        clippy::unwrap_used,
+        reason = "only `set_configuration_status` writes the value, from a `ConfigurationStatus`"
+    )]
     pub(crate) fn configuration_status(&self) -> ConfigurationStatus {
         self.configuration_status
             .load(Ordering::Relaxed)
@@ -1205,11 +1270,10 @@ impl Session {
     }
 
     pub fn position_encoding(&self) -> PositionEncoding {
-        self.initialize_params
-            .get()
-            .map_or(PositionEncoding::Wide(WideEncoding::Utf16), |params| {
-                negotiated_encoding(&params.client_capabilities)
-            })
+        self.client_capabilities().map_or(
+            PositionEncoding::Wide(WideEncoding::Utf16),
+            negotiated_encoding,
+        )
     }
 }
 
@@ -1255,9 +1319,70 @@ fn is_stale_diagnostics(captured_version: i32, current_version: i32) -> bool {
     captured_version != current_version
 }
 
+/// The path of the workspace document for `url`.
+///
+/// Only `file:` URIs are files. Documents of other schemes, like `untitled:` buffers, the `git:`
+/// side of a diff, or the cells of a notebook, are keyed by their whole URI. Their URI path is
+/// often the path of a file, or the same for every cell of a notebook. The workspace keys
+/// documents by path, so they would otherwise share the document of that file, and closing them
+/// would close it.
+fn document_path(url: &ls_types::Uri) -> PathBuf {
+    if !url.scheme().as_str().eq_ignore_ascii_case("file") {
+        return PathBuf::from(url.as_str());
+    }
+    match url.to_file_path() {
+        Some(path) => path.into_owned(),
+        // If we can't create a path, it's probably because the file doesn't exist.
+        // It can be a newly created file that it's not on disk
+        None => PathBuf::from(url.path().as_str()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::is_stale_diagnostics;
+    use std::path::Path;
+    use std::str::FromStr;
+
+    use tower_lsp_server::ls_types::Uri;
+
+    use super::{document_path, is_stale_diagnostics};
+
+    fn path(uri: &str) -> std::path::PathBuf {
+        document_path(&Uri::from_str(uri).expect("a valid URI"))
+    }
+
+    #[test]
+    fn file_uris_are_decoded_into_paths() {
+        let expected = if cfg!(windows) {
+            Path::new("c:/Users/a/My Project/café.sql")
+        } else {
+            Path::new("/c:/Users/a/My Project/café.sql")
+        };
+        assert_eq!(
+            path("file:///c%3A/Users/a/My%20Project/caf%C3%A9.sql"),
+            expected
+        );
+    }
+
+    #[test]
+    fn other_schemes_get_paths_of_their_own() {
+        let file = path("file:///workspace/a.sql");
+        let git = path("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D");
+        assert_ne!(git, file);
+        assert_eq!(
+            git,
+            Path::new("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D")
+        );
+        assert_ne!(
+            path("vscode-notebook-cell:/workspace/nb.ipynb#W0sZmlsZQ%3D%3D"),
+            path("vscode-notebook-cell:/workspace/nb.ipynb#W1sZmlsZQ%3D%3D"),
+        );
+        // Not a relative path with its first character stripped on Windows.
+        assert_eq!(
+            path("untitled:Untitled-1"),
+            Path::new("untitled:Untitled-1")
+        );
+    }
 
     #[test]
     fn stale_diagnostics_are_detected_by_version() {

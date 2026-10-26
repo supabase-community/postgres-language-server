@@ -14,21 +14,24 @@ set session authorization regress_subscription_user;
 
 begin;
 
-create subscription regress_testsub connection 'testconn' publication testpub with (
-  create_slot
-);
+create subscription regress_testsub
+  connection 'testconn'
+  publication testpub
+  with (create_slot);
 
 commit;
 
 create subscription regress_testsub connection 'testconn' publication testpub;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication foo,
-testpub,
-foo with (connect = 'false');
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication foo, testpub, foo
+  with (connect = 'false');
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false');
 
 comment on subscription regress_testsub is 'test subscription';
 
@@ -78,78 +81,78 @@ from
 where
   subname = 'regress_testsub';
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false');
 
 set session authorization regress_subscription_user2;
 
-create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication foo with (
-  connect = 'false'
-);
+create subscription regress_testsub2
+  connection 'dbname=regress_doesnotexist'
+  publication foo
+  with (connect = 'false');
 
 set session authorization regress_subscription_user;
 
-create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  copy_data = 'true'
-);
+create subscription regress_testsub2
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', copy_data = 'true');
 
-create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  enabled = 'true'
-);
+create subscription regress_testsub2
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', enabled = 'true');
 
-create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  create_slot = 'true'
-);
+create subscription regress_testsub2
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', create_slot = 'true');
 
-create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (
-  slot_name = 'none',
-  enabled = 'true'
-);
+create subscription regress_testsub2
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (slot_name = 'none', enabled = 'true');
 
-create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (
-  slot_name = 'none',
-  enabled = 'false',
-  create_slot = 'true'
-);
+create subscription regress_testsub2
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (slot_name = 'none', enabled = 'false', create_slot = 'true');
 
-create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (
-  slot_name = 'none'
-);
+create subscription regress_testsub2
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (slot_name = 'none');
 
-create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (
-  slot_name = 'none',
-  enabled = 'false'
-);
+create subscription regress_testsub2
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (slot_name = 'none', enabled = 'false');
 
-create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (
-  slot_name = 'none',
-  create_slot = 'false'
-);
+create subscription regress_testsub2
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (slot_name = 'none', create_slot = 'false');
 
-create subscription regress_testsub3 connection 'dbname=regress_doesnotexist' publication testpub with (
-  slot_name = 'none',
-  connect = 'false'
-);
+create subscription regress_testsub3
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (slot_name = 'none', connect = 'false');
 
 alter subscription regress_testsub3 enable;
 
 alter subscription regress_testsub3 refresh publication;
 
-create subscription regress_testsub4 connection 'dbname=regress_doesnotexist' publication testpub with (
-  slot_name = 'none',
-  connect = 'false',
-  origin = foo
-);
+create subscription regress_testsub4
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (slot_name = 'none', connect = 'false', origin = foo);
 
-create subscription regress_testsub4 connection 'dbname=regress_doesnotexist' publication testpub with (
-  slot_name = 'none',
-  connect = 'false',
-  origin = 'none'
-);
+create subscription regress_testsub4
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (slot_name = 'none', connect = 'false', origin = 'none');
 
 alter subscription regress_testsub4 set (origin = 'any');
 
@@ -157,7 +160,9 @@ drop subscription regress_testsub3 restrict;
 
 drop subscription regress_testsub4 restrict;
 
-create subscription regress_testsub5 connection 'i_dont_exist=param' publication testpub;
+create subscription regress_testsub5
+  connection 'i_dont_exist=param'
+  publication testpub;
 
 create subscription regress_testsub5 connection 'port=-1' publication testpub;
 
@@ -232,15 +237,15 @@ drop subscription if exists regress_testsub restrict;
 
 drop subscription regress_testsub restrict;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  "binary" = foo
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', "binary" = foo);
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  "binary" = 'true'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', "binary" = 'true');
 
 alter subscription regress_testsub set ("binary" = 'false');
 
@@ -248,15 +253,15 @@ alter subscription regress_testsub set (slot_name = 'none');
 
 drop subscription regress_testsub restrict;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  streaming = foo
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', streaming = foo);
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  streaming = 'true'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', streaming = 'true');
 
 alter subscription regress_testsub set (streaming = parallel);
 
@@ -282,11 +287,10 @@ alter subscription regress_testsub drop publication testpub1, testpub2;
 
 drop subscription regress_testsub restrict;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication mypub with (
-  connect = 'false',
-  create_slot = 'false',
-  copy_data = 'false'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication mypub
+  with (connect = 'false', create_slot = 'false', copy_data = 'false');
 
 alter subscription regress_testsub enable;
 
@@ -317,15 +321,15 @@ drop subscription regress_testsub restrict;
 
 drop function func;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  two_phase = foo
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', two_phase = foo);
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  two_phase = 'true'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', two_phase = 'true');
 
 alter subscription regress_testsub set (streaming = 'true');
 
@@ -333,25 +337,24 @@ alter subscription regress_testsub set (slot_name = 'none');
 
 drop subscription regress_testsub restrict;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  streaming = 'true',
-  two_phase = 'true'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', streaming = 'true', two_phase = 'true');
 
 alter subscription regress_testsub set (slot_name = 'none');
 
 drop subscription regress_testsub restrict;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  disable_on_error = foo
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', disable_on_error = foo);
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  disable_on_error = 'false'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', disable_on_error = 'false');
 
 alter subscription regress_testsub set (disable_on_error = 'true');
 
@@ -359,29 +362,29 @@ alter subscription regress_testsub set (slot_name = 'none');
 
 drop subscription regress_testsub restrict;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  retain_dead_tuples = foo
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', retain_dead_tuples = foo);
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  retain_dead_tuples = 'false'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', retain_dead_tuples = 'false');
 
 alter subscription regress_testsub set (slot_name = 'none');
 
 drop subscription regress_testsub restrict;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  max_retention_duration = foo
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', max_retention_duration = foo);
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  max_retention_duration = 1000
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', max_retention_duration = 1000);
 
 alter subscription regress_testsub set (max_retention_duration = 0);
 
@@ -391,9 +394,10 @@ drop subscription regress_testsub restrict;
 
 set session authorization regress_subscription_user3;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false');
 
 reset session_authorization;
 
@@ -401,9 +405,10 @@ grant create on database regression to regress_subscription_user3;
 
 set session authorization regress_subscription_user3;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false');
 
 reset session_authorization;
 
@@ -411,10 +416,10 @@ grant create on database regression to regress_subscription_user3;
 
 set session authorization regress_subscription_user3;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (
-  connect = 'false',
-  password_required = 'false'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist'
+  publication testpub
+  with (connect = 'false', password_required = 'false');
 
 reset session_authorization;
 
@@ -422,9 +427,10 @@ grant create on database regression to regress_subscription_user3;
 
 set session authorization regress_subscription_user3;
 
-create subscription regress_testsub connection 'dbname=regress_doesnotexist password=regress_fakepassword' publication testpub with (
-  connect = 'false'
-);
+create subscription regress_testsub
+  connection 'dbname=regress_doesnotexist password=regress_fakepassword'
+  publication testpub
+  with (connect = 'false');
 
 alter subscription regress_testsub owner to regress_subscription_user;
 

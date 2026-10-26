@@ -21,7 +21,7 @@ refresh materialized view my_view;
 ```
 
 ```sh
-code-block.sql:1:1 lint/requireConcurrentRefreshMatview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireConcurrentRefreshMatview  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! REFRESH MATERIALIZED VIEW without CONCURRENTLY blocks all reads.
   

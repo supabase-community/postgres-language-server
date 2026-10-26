@@ -75,7 +75,15 @@ fn resolve_unqualified_column(r: &mut Resolver, name: &str, location: i32) {
         ColumnLookup::NotFound => {
             // A whole-row reference to a FROM item, or a parameter of the SQL function.
             let is_item = find_item(&r.levels, name).is_some();
-            if is_item || r.function_param(name).is_some() || has_opaque_items(&r.levels) {
+            let opaque = has_opaque_items(&r.levels);
+            if let Some(index) = r.function_param_index(name) {
+                // A column of an item with unknown columns would take precedence.
+                if !is_item && !opaque {
+                    r.record_parameter(index, location);
+                }
+                return;
+            }
+            if is_item || opaque {
                 return;
             }
             r.report(
@@ -115,6 +123,9 @@ fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, locat
     if let Some(function) = r.function {
         // `function_name.parameter`
         if function.function_name == qualifier {
+            if let Some(index) = r.function_param_index(name) {
+                r.record_parameter(index, location);
+            }
             return;
         }
         // A field of a composite parameter.

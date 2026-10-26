@@ -41,6 +41,9 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
     e.indent_start();
 
     // TO or FROM
+    if let Some(grantee) = n.grantee_roles.first() {
+        super::emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
+    }
     if n.is_grant {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TO_KW);
