@@ -12,27 +12,38 @@ use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, PgLSPath};
 use pgls_workspace::PartialConfigurationExt;
 use pgls_workspace::Workspace;
-use pgls_workspace::configuration::{LoadedConfiguration, load_configuration};
+use pgls_workspace::configuration::{
+    LoadedConfiguration, NestedConfiguration, NestedConfigurationSearch,
+    apply_nested_configurations, is_searched_for_configuration, load_configuration,
+};
 use pgls_workspace::features;
-use pgls_workspace::workspace::{RegisterProjectFolderParams, UpdateSettingsParams};
+use pgls_workspace::settings::FilesSettings;
+use pgls_workspace::workspace::{
+    ProjectKey, RegisterProjectFolderParams, UnregisterProjectFolderParams, UpdateSettingsParams,
+};
 use pgls_workspace::{DynRef, WorkspaceError};
-use rustc_hash::FxHashMap;
-use serde_json::Value;
-use std::path::PathBuf;
+use rustc_hash::{FxHashMap, FxHashSet};
+use serde_json::{Value, json};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::OnceLock;
 use std::sync::RwLock;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::{AtomicBool, AtomicU8};
 use std::time::Duration;
 use tokio::sync::Notify;
 use tokio::sync::OnceCell;
-use tokio::task::AbortHandle;
+use tokio::task::{AbortHandle, spawn_blocking};
 use tower_lsp_server::ls_types::Uri;
 use tower_lsp_server::ls_types::{self, ClientCapabilities};
+use tower_lsp_server::ls_types::{
+    DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, OneOf,
+    RelativePattern, WatchKind,
+};
 use tower_lsp_server::ls_types::{MessageType, Registration};
 use tower_lsp_server::ls_types::{Unregistration, WorkspaceFolder};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 /// Debounce delay for `textDocument/didChange` diagnostics.
 ///
@@ -40,6 +51,10 @@ use tracing::{debug, error, info};
 /// If another change arrives within the window the previous task is cancelled
 /// and the timer resets, so only one analysis run fires per burst.
 const DIAGNOSTIC_DEBOUNCE: Duration = Duration::from_millis(300);
+
+/// How long the server waits after a configuration file changed before it reloads the
+/// configuration, so that a burst of changes causes one reload.
+const CONFIGURATION_RELOAD_DEBOUNCE: Duration = Duration::from_millis(200);
 
 pub(crate) struct ClientInformation {
     #[allow(dead_code)]
@@ -95,15 +110,36 @@ pub(crate) struct Session {
     /// Layer set through workspace/didChangeConfiguration and the custom override request.
     client_overrides: RwLock<ClientOverrides>,
 
+    /// The workspace folders, which the client can change after the initialization. `None` if the
+    /// client has none and uses the root URI.
+    workspace_folders: RwLock<Option<Vec<PathBuf>>>,
+
+    /// The projects of the workspace by their folder, deepest first: one per workspace folder, or
+    /// one for the root. A document belongs to the project of the deepest folder that contains it.
+    projects: RwLock<Vec<(PathBuf, ProjectKey)>>,
+
+    /// The project of the files outside every workspace folder, once one was opened.
+    folderless_project: OnceLock<ProjectKey>,
+
+    /// The files settings of the root configuration of each project, by its folder. They decide
+    /// which folders are searched for nested configuration files.
+    root_files: parking_lot::RwLock<FxHashMap<PathBuf, Option<Arc<FilesSettings>>>>,
+
+    /// The files the configuration was loaded from besides the nested configuration files: the
+    /// root configuration files, which can be above a workspace folder or the user
+    /// configuration, and the files they and the nested ones extend. Changing one of them
+    /// reloads the configuration.
+    configuration_files: parking_lot::RwLock<FxHashSet<PathBuf>>,
+
+    /// Whether a reload for changed configuration files is scheduled and hasn't started yet.
+    reload_scheduled: AtomicBool,
+
     /// Serialises a whole configuration transition: storing the layer, reloading the settings and
     /// refreshing the diagnostics of all open documents.
     ///
     /// Two transitions really can run at the same time — the server runs on a multi-threaded
-    /// runtime and tower-lsp handles several messages concurrently — and that matters for three
-    /// things. `register_project_folder` and `update_settings` are separate workspace calls with
-    /// the current-project selection in between, so a parallel transition can make settings land
-    /// on the wrong project. An older transition's diagnostics refresh could publish after a newer
-    /// one, leaving the client with diagnostics computed under superseded settings; the staleness
+    /// runtime and tower-lsp handles several messages concurrently — and that matters for two
+    /// things. An older transition's diagnostics refresh could publish after a newer one, leaving the client with diagnostics computed under superseded settings; the staleness
     /// check does not catch that, because the document version is unchanged. And a burst of client
     /// requests would otherwise run one full reload and one type check pass per message.
     ///
@@ -223,6 +259,12 @@ impl Session {
             notified_deprecated_settings: AtomicBool::new(false),
             env_config,
             client_overrides: RwLock::new(ClientOverrides::default()),
+            workspace_folders: RwLock::default(),
+            projects: RwLock::default(),
+            folderless_project: OnceLock::new(),
+            root_files: parking_lot::RwLock::default(),
+            configuration_files: parking_lot::RwLock::default(),
+            reload_scheduled: AtomicBool::new(false),
             configuration_transition: tokio::sync::Mutex::new(()),
             #[cfg(test)]
             running_transitions: std::sync::atomic::AtomicUsize::new(0),
@@ -244,6 +286,21 @@ impl Session {
         root_uri: Option<Uri>,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
     ) {
+        *self.workspace_folders.write().unwrap() = workspace_folders.as_ref().map(|folders| {
+            folders
+                .iter()
+                .filter_map(|folder| {
+                    let path = folder.uri.to_file_path().map(|path| path.into_owned());
+                    if path.is_none() {
+                        error!(
+                            "The Workspace root URI {:?} could not be parsed as a filesystem path",
+                            folder.uri
+                        );
+                    }
+                    path
+                })
+                .collect()
+        });
         let result = self.initialize_params.set(InitializeParams {
             client_capabilities,
             client_information,
@@ -254,6 +311,149 @@ impl Session {
         if let Err(err) = result {
             error!("Failed to initialize session: {err}");
         }
+    }
+
+    /// Registers the capabilities that depend on the client and the workspace folders.
+    pub(crate) async fn setup_capabilities(&self) {
+        let mut capabilities = CapabilitySet::default();
+
+        capabilities.add_capability(
+            "pgls_did_change_extension_settings",
+            "workspace/didChangeConfiguration",
+            if self.can_register_did_change_configuration() {
+                CapabilityStatus::Enable(None)
+            } else {
+                CapabilityStatus::Disable
+            },
+        );
+
+        let watchers = self.configuration_watchers();
+        capabilities.add_capability(
+            "pgls_did_change_workspace_settings",
+            "workspace/didChangeWatchedFiles",
+            if watchers.is_empty() {
+                CapabilityStatus::Disable
+            } else {
+                CapabilityStatus::Enable(Some(json!(DidChangeWatchedFilesRegistrationOptions {
+                    watchers
+                })))
+            },
+        );
+
+        self.register_capabilities(capabilities).await;
+    }
+
+    /// The watchers for the files the configuration comes from: the configuration files below
+    /// each workspace folder (or the root), the explicit configuration file, the user
+    /// configuration, and the files the loaded configuration files extend.
+    fn configuration_watchers(&self) -> Vec<FileSystemWatcher> {
+        let relative_patterns = self
+            .client_capabilities()
+            .and_then(|capabilities| capabilities.workspace.as_ref())
+            .and_then(|workspace| workspace.did_change_watched_files)
+            .and_then(|watched_files| watched_files.relative_pattern_support)
+            == Some(true);
+        let watcher = |folder: &Path, pattern: &str| {
+            let glob_pattern = match Uri::from_file_path(folder).filter(|_| relative_patterns) {
+                Some(base_uri) => GlobPattern::Relative(RelativePattern {
+                    base_uri: OneOf::Right(base_uri),
+                    pattern: pattern.to_string(),
+                }),
+                None => GlobPattern::String(format!("{}/{pattern}", escape_glob(folder))),
+            };
+            FileSystemWatcher {
+                glob_pattern,
+                kind: Some(WatchKind::all()),
+            }
+        };
+
+        let folders = match &self.config_path {
+            // A configuration file chosen by the user applies to everything.
+            Some(_) => Vec::new(),
+            None => self
+                .get_workspace_folders()
+                .or_else(|| self.base_path().map(|base_path| vec![base_path]))
+                .unwrap_or_default(),
+        };
+        let mut watchers: Vec<_> = folders
+            .iter()
+            .flat_map(|folder| {
+                ConfigName::file_names()
+                    .into_iter()
+                    .map(move |file_name| watcher(folder, &format!("**/{file_name}")))
+            })
+            .collect();
+
+        let mut files: Vec<PathBuf> =
+            self.configuration_files
+                .read()
+                .iter()
+                .cloned()
+                .chain(self.config_path.iter().map(
+                    |config_path| match self.fs.working_directory() {
+                        Some(working_directory) if config_path.is_relative() => {
+                            working_directory.join(config_path)
+                        }
+                        _ => config_path.clone(),
+                    },
+                ))
+                .chain(
+                    self.fs
+                        .user_config_directories()
+                        .into_iter()
+                        .map(|directory| directory.join(ConfigName::pgls_jsonc())),
+                )
+                .collect();
+        files.sort();
+        files.dedup();
+        watchers.extend(files.iter().filter_map(|file| {
+            let file_name = file.file_name()?.to_str()?;
+            Some(watcher(file.parent()?, &escape_glob(Path::new(file_name))))
+        }));
+        watchers
+    }
+
+    /// Whether a change of the file at `path` changes the configuration: a configuration file at
+    /// or above a workspace folder, or one below it that the nested configuration search looks
+    /// at. Others, e.g. in `node_modules` or in ignored folders, are skipped.
+    pub(crate) fn is_configuration_change(&self, path: &Path) -> bool {
+        if self.configuration_files.read().contains(path) {
+            return true;
+        }
+        let is_configuration_file = path
+            .file_name()
+            .and_then(|file_name| file_name.to_str())
+            .is_some_and(|file_name| ConfigName::file_names().contains(&file_name));
+        let Some(directory) = path.parent().filter(|_| is_configuration_file) else {
+            return false;
+        };
+        let projects = self.projects.read().unwrap();
+        let Some((folder, _)) = projects
+            .iter()
+            .find(|(folder, _)| directory.starts_with(folder))
+        else {
+            return true;
+        };
+        let root_files = self.root_files.read().get(folder).cloned().flatten();
+        is_searched_for_configuration(&self.fs, folder, root_files.as_deref(), directory)
+    }
+
+    /// Reloads the configuration and refreshes the diagnostics shortly, once for every
+    /// configuration file that changes in the meantime, such as during a `git checkout`.
+    pub(crate) fn schedule_configuration_reload(self: &Arc<Self>) {
+        if self.reload_scheduled.swap(true, Ordering::AcqRel) {
+            return;
+        }
+        let session = Arc::clone(self);
+        tokio::spawn(async move {
+            tokio::time::sleep(CONFIGURATION_RELOAD_DEBOUNCE).await;
+            // A change from here on needs another reload, as this one may have read the file
+            // before it.
+            session.reload_scheduled.store(false, Ordering::Release);
+            session.reload_workspace_settings().await;
+            session.setup_capabilities().await;
+            session.update_all_diagnostics().await;
+        });
     }
 
     /// Register a set of capabilities with the client
@@ -333,6 +533,7 @@ impl Session {
         let diagnostics: Vec<ls_types::Diagnostic> = {
             let result = self.workspace.pull_file_diagnostics(
                 features::diagnostics::PullFileDiagnosticsParams {
+                    project_key: self.project_key(&pgls_path),
                     path: pgls_path.clone(),
                     max_diagnostics: u32::MAX,
                     categories: categories.build(),
@@ -467,16 +668,7 @@ impl Session {
     }
 
     pub(crate) fn file_path(&self, url: &ls_types::Uri) -> Result<PgLSPath> {
-        let path_to_file = match url.to_file_path() {
-            None => {
-                // If we can't create a path, it's probably because the file doesn't exist.
-                // It can be a newly created file that it's not on disk
-                PathBuf::from(url.path().as_str())
-            }
-            Some(path) => path.into_owned(),
-        };
-
-        Ok(PgLSPath::new(path_to_file))
+        Ok(PgLSPath::new(document_path(url)))
     }
 
     /// True if the client supports dynamic registration of "workspace/didChangeConfiguration" requests
@@ -490,10 +682,51 @@ impl Session {
     }
 
     /// Get the current workspace folders
-    pub(crate) fn get_workspace_folders(&self) -> Option<&Vec<WorkspaceFolder>> {
-        self.initialize_params
-            .get()
-            .and_then(|c| c.workspace_folders.as_ref())
+    pub(crate) fn get_workspace_folders(&self) -> Option<Vec<PathBuf>> {
+        self.workspace_folders.read().unwrap().clone()
+    }
+
+    /// Applies a change of the workspace folders. The caller reloads the configuration.
+    pub(crate) fn change_workspace_folders(&self, added: Vec<PathBuf>, removed: &[PathBuf]) {
+        let mut folders = self.workspace_folders.write().unwrap();
+        // A client without workspace folders at the start used the root URI.
+        let folders = folders.get_or_insert_with(|| self.base_path().into_iter().collect());
+        folders.retain(|folder| !removed.contains(folder));
+        for folder in added {
+            if !folders.contains(&folder) {
+                folders.push(folder);
+            }
+        }
+    }
+
+    /// The project that the file at `path` belongs to: the one of the deepest workspace folder
+    /// that contains it. A file outside every workspace folder belongs to a project without a
+    /// folder, which has the default settings, so that it never gets the settings (and the
+    /// database) of an unrelated folder. Without workspace folders or a root, or with a
+    /// configuration file chosen by the user, the only project applies to every file. Before the
+    /// configuration is loaded, the key of no project, for which the workspace only reports what
+    /// needs no settings.
+    pub(crate) fn project_key(&self, path: &Path) -> ProjectKey {
+        let projects = self.projects.read().unwrap();
+        if let Some((_, key)) = projects.iter().find(|(folder, _)| path.starts_with(folder)) {
+            return *key;
+        }
+        let Some((_, only_project)) = projects.last() else {
+            return ProjectKey::default();
+        };
+        if self.config_path.is_some()
+            || (self.get_workspace_folders().is_none() && self.base_path().is_none())
+        {
+            return *only_project;
+        }
+        *self.folderless_project.get_or_init(|| {
+            self.workspace
+                .register_project_folder(RegisterProjectFolderParams { path: None })
+                .unwrap_or_else(|error| {
+                    error!("Failed to register the project without a folder: {}", error);
+                    ProjectKey::default()
+                })
+        })
     }
 
     /// Returns the base path of the workspace on the filesystem if it has one
@@ -519,61 +752,232 @@ impl Session {
             .map(|params| &params.client_capabilities)
     }
 
-    /// This function attempts to read the `postgres-language-server.jsonc` configuration file from
-    /// the root URI and update the workspace settings accordingly
+    /// This function attempts to read the `postgres-language-server.jsonc` configuration file of
+    /// every workspace folder, or of the root URI, and update the settings of its project
+    /// accordingly. The configuration files below a folder apply to the files below them.
     #[tracing::instrument(level = "trace", skip(self))]
-    async fn load_workspace_settings(&self) {
-        // Providing a custom configuration path will not allow to support workspaces
-        if let Some(config_path) = &self.config_path {
-            let base_path = ConfigurationPathHint::FromUser(config_path.clone());
-            let status = self.load_pgls_configuration_file(base_path).await;
-            self.set_configuration_status(status);
+    async fn load_workspace_settings(self: &Arc<Self>) {
+        let roots = if let Some(config_path) = &self.config_path {
+            // Providing a custom configuration path will not allow to support workspaces
+            vec![ConfigurationPathHint::FromUser(config_path.clone())]
         } else if let Some(folders) = self.get_workspace_folders() {
             info!("Detected workspace folder.");
-            self.set_configuration_status(ConfigurationStatus::Loading);
-            for folder in folders {
-                info!(
-                    "Attempt to load the configuration file in {:?}",
-                    folder.uri.to_string()
-                );
-                let base_path = folder.uri.to_file_path();
-                match base_path {
-                    Some(base_path) => {
-                        let status = self
-                            .load_pgls_configuration_file(ConfigurationPathHint::FromWorkspace(
-                                base_path.into_owned(),
-                            ))
-                            .await;
-                        self.set_configuration_status(status);
-                    }
-                    None => {
-                        error!(
-                            "The Workspace root URI {:?} could not be parsed as a filesystem path",
-                            folder.uri
-                        );
-                    }
-                }
-            }
+            folders
+                .into_iter()
+                .map(ConfigurationPathHint::FromWorkspace)
+                .collect()
         } else {
-            let base_path = match self.base_path() {
+            vec![match self.base_path() {
                 None => ConfigurationPathHint::default(),
                 Some(path) => ConfigurationPathHint::FromLsp(path),
+            }]
+        };
+
+        self.set_configuration_status(ConfigurationStatus::Loading);
+        let previous_files = std::mem::take(&mut *self.configuration_files.write());
+        let mut status = ConfigurationStatus::Loaded;
+        let mut projects = Vec::new();
+        for root in roots {
+            let (project, project_status) = self.load_project(root).await;
+            projects.extend(project);
+            if !matches!(project_status, ConfigurationStatus::Loaded) {
+                status = project_status;
+            }
+        }
+
+        // Unregister the projects of the workspace folders that were removed.
+        let previous = std::mem::take(&mut *self.projects.write().unwrap());
+        for (folder, _) in previous {
+            if !projects.iter().any(|(project, _)| project == &folder) {
+                self.root_files.write().remove(&folder);
+                let result =
+                    self.workspace
+                        .unregister_project_folder(UnregisterProjectFolderParams {
+                            path: PgLSPath::new(&folder),
+                        });
+                if let Err(error) = result {
+                    error!("Failed to unregister the project folder: {}", error);
+                }
+            }
+        }
+
+        projects.sort_by_key(|(folder, _)| std::cmp::Reverse(folder.components().count()));
+        *self.projects.write().unwrap() = projects;
+        if !matches!(status, ConfigurationStatus::Loaded) {
+            // A broken file can't tell what it extends, so keep watching what it did before.
+            self.configuration_files.write().extend(previous_files);
+        }
+        self.set_configuration_status(status);
+    }
+
+    /// Loads the configuration of a project and its nested configuration files. Returns the folder
+    /// and the key of the project, unless it could not be registered.
+    async fn load_project(
+        self: &Arc<Self>,
+        base_path: ConfigurationPathHint,
+    ) -> (Option<(PathBuf, ProjectKey)>, ConfigurationStatus) {
+        // The configuration files below a workspace root apply to their directories. With a
+        // configuration file chosen by the user, that file applies to everything.
+        let root = match &base_path {
+            ConfigurationPathHint::FromWorkspace(path) | ConfigurationPathHint::FromLsp(path) => {
+                Some(path.clone())
+            }
+            ConfigurationPathHint::FromUser(_) | ConfigurationPathHint::None => None,
+        };
+        let folder = root.clone().or_else(|| self.fs.working_directory());
+
+        let project_key =
+            match self
+                .workspace
+                .register_project_folder(RegisterProjectFolderParams {
+                    path: folder.clone(),
+                }) {
+                Ok(project_key) => project_key,
+                Err(error) => {
+                    error!("Failed to register the project folder: {}", error);
+                    self.client.log_message(MessageType::ERROR, &error).await;
+                    return (None, ConfigurationStatus::Error);
+                }
             };
-            let status = self.load_pgls_configuration_file(base_path).await;
-            self.set_configuration_status(status);
+        let folder = folder.unwrap_or_default();
+
+        let (status, root_files) = self
+            .load_pgls_configuration_file(project_key, base_path)
+            .await;
+        if !matches!(status, ConfigurationStatus::Loaded) {
+            // A project keeps its settings while its configuration is broken, and a new one has
+            // the defaults. Either way its files never fall back to the settings of another
+            // folder, which could point at another database.
+            return (Some((folder, project_key)), status);
+        }
+        let root_files = root_files.map(Arc::new);
+        self.root_files
+            .write()
+            .insert(folder.clone(), root_files.clone());
+        let project = Some((folder, project_key));
+
+        let status = match root {
+            Some(root) => {
+                self.load_nested_configuration_files(project_key, root, root_files)
+                    .await
+            }
+            None => ConfigurationStatus::Loaded,
+        };
+        (project, status)
+    }
+
+    /// Lays the layers of the session over the root configuration file: the environment and the
+    /// client overrides.
+    fn configure(&self) -> impl Fn(PartialConfiguration) -> PartialConfiguration + '_ {
+        self.configure_with(self.env_config.as_ref())
+    }
+
+    /// Lays the layers of the session over a configuration file: `environment` and the client
+    /// overrides.
+    fn configure_with<'a>(
+        &'a self,
+        environment: Option<&'a PartialConfiguration>,
+    ) -> impl Fn(PartialConfiguration) -> PartialConfiguration + 'a {
+        let (client_overrides, overridden_sections) = {
+            let overrides = self.client_overrides.read().unwrap();
+            (overrides.configuration().cloned(), overrides.sections())
+        };
+        move |configuration| {
+            let mut configuration =
+                merge_layers(configuration, environment, client_overrides.as_ref());
+            overridden_sections.materialize_defaults(&mut configuration);
+            configuration
         }
     }
 
+    /// Applies every configuration file below `root` to the project, with the same layers as the
+    /// root configuration, except that the environment only fills in the connection options a
+    /// file doesn't set. The folders that `root_files` ignores are not searched.
+    async fn load_nested_configuration_files(
+        self: &Arc<Self>,
+        project_key: ProjectKey,
+        root: PathBuf,
+        root_files: Option<Arc<FilesSettings>>,
+    ) -> ConfigurationStatus {
+        // Walking a large folder takes a while, so keep it off the async runtime.
+        let session = Arc::clone(self);
+        let result = spawn_blocking(move || {
+            apply_nested_configurations(
+                &*session.workspace,
+                &session.fs,
+                project_key,
+                NestedConfigurationSearch {
+                    root_files,
+                    ..NestedConfigurationSearch::new(root)
+                },
+                session
+                    .env_config
+                    .as_ref()
+                    .and_then(|environment| environment.db.as_ref()),
+                session.configure_with(None),
+            )
+        })
+        .await;
+        let nested = match result {
+            Ok(Ok(nested)) => nested,
+            Ok(Err(error)) => {
+                error!("Failed to apply the nested configuration files: {}", error);
+                self.client.log_message(MessageType::ERROR, &error).await;
+                return ConfigurationStatus::Error;
+            }
+            Err(error) => {
+                error!("Failed to look for nested configuration files: {}", error);
+                return ConfigurationStatus::Error;
+            }
+        };
+
+        if let Some(incomplete) = nested.incomplete {
+            warn!("{incomplete}");
+            self.client
+                .log_message(MessageType::WARNING, incomplete.to_string())
+                .await;
+        }
+        let mut status = ConfigurationStatus::Loaded;
+        for NestedConfiguration {
+            directory,
+            result,
+            extended_files,
+        } in nested.configurations
+        {
+            self.configuration_files.write().extend(extended_files);
+            match result {
+                Ok(()) => info!("Loaded the nested configuration in {}", directory.display()),
+                Err(error) => {
+                    error!(
+                        "Couldn't load the configuration file in {}, reason:\n {}",
+                        directory.display(),
+                        error
+                    );
+                    self.client.log_message(MessageType::ERROR, &error).await;
+                    status = ConfigurationStatus::Error;
+                }
+            }
+        }
+        status
+    }
+
+    /// Loads the configuration file at or above the root of a project into its root settings.
+    ///
+    /// Also returns the files settings of the configuration, which decide the folders to search
+    /// for nested configuration files.
     async fn load_pgls_configuration_file(
         &self,
+        project_key: ProjectKey,
         base_path: ConfigurationPathHint,
-    ) -> ConfigurationStatus {
+    ) -> (ConfigurationStatus, Option<FilesSettings>) {
         match load_configuration(&self.fs, base_path.clone()) {
             Ok(loaded_configuration) => {
                 let LoadedConfiguration {
                     configuration: fs_configuration,
                     directory_path: configuration_path,
                     file_path: configuration_file_path,
+                    extended_files,
+                    is_user_configuration,
                     ..
                 } = loaded_configuration;
 
@@ -582,6 +986,28 @@ impl Session {
                     configuration_file_path
                         .as_ref()
                         .map_or("<unknown>".to_string(), |p| p.display().to_string())
+                );
+                if is_user_configuration
+                    && let (Some(file_path), Some(directory)) =
+                        (&configuration_file_path, &configuration_path)
+                {
+                    self.client
+                        .log_message(
+                            MessageType::INFO,
+                            format!(
+                                "Using the user configuration at {} for {}, which has no \
+                                 configuration file.",
+                                file_path.display(),
+                                directory.display()
+                            ),
+                        )
+                        .await;
+                }
+                self.configuration_files.write().extend(
+                    configuration_file_path
+                        .iter()
+                        .cloned()
+                        .chain(extended_files),
                 );
 
                 // Check if using deprecated config filename and notify user (once)
@@ -621,50 +1047,23 @@ impl Session {
 
                 info!("Update workspace settings.");
 
-                let fs = &self.fs;
-                let (client_overrides, overridden_sections) = {
-                    let overrides = self.client_overrides.read().unwrap();
-                    (overrides.configuration().cloned(), overrides.sections())
-                };
-                let mut configuration = merge_layers(
-                    fs_configuration,
-                    self.env_config.as_ref(),
-                    client_overrides.as_ref(),
-                );
-                overridden_sections.materialize_defaults(&mut configuration);
-
+                let configuration = self.configure()(fs_configuration);
                 let result = configuration
                     .retrieve_gitignore_matches(&self.fs, configuration_path.as_deref());
 
                 match result {
                     Ok((vcs_base_path, gitignore_matches)) => {
-                        let register_result =
-                            if let ConfigurationPathHint::FromWorkspace(path) = &base_path {
-                                // We don't need the key
-                                self.workspace
-                                    .register_project_folder(RegisterProjectFolderParams {
-                                        path: Some(path.clone()),
-                                        // This is naive, but we don't know if the user has a file already open or not, so we register every project as the current one.
-                                        // The correct one is actually set when the LSP calls `textDocument/didOpen`
-                                        set_as_current_workspace: true,
-                                    })
-                                    .err()
-                            } else {
-                                self.workspace
-                                    .register_project_folder(RegisterProjectFolderParams {
-                                        path: fs.working_directory(),
-                                        set_as_current_workspace: true,
-                                    })
-                                    .err()
-                            };
-                        if let Some(error) = register_result {
-                            error!("Failed to register the project folder: {}", error);
-                            self.client.log_message(MessageType::ERROR, &error).await;
-                            return ConfigurationStatus::Error;
-                        }
-
+                        let workspace_directory = self.fs.working_directory();
+                        let root_files = FilesSettings::from_configuration(
+                            &configuration,
+                            workspace_directory.clone(),
+                            vcs_base_path.clone(),
+                            &gitignore_matches,
+                        )
+                        .ok();
                         let result = self.workspace.update_settings(UpdateSettingsParams {
-                            workspace_directory: self.fs.working_directory(),
+                            project_key,
+                            workspace_directory,
                             configuration,
                             vcs_base_path,
                             gitignore_matches,
@@ -673,22 +1072,22 @@ impl Session {
                         if let Err(error) = result {
                             error!("Failed to set workspace settings: {}", error);
                             self.client.log_message(MessageType::ERROR, &error).await;
-                            ConfigurationStatus::Error
+                            (ConfigurationStatus::Error, None)
                         } else {
-                            ConfigurationStatus::Loaded
+                            (ConfigurationStatus::Loaded, root_files)
                         }
                     }
                     Err(err) => {
                         error!("Couldn't load the configuration file, reason:\n {}", err);
                         self.client.log_message(MessageType::ERROR, &err).await;
-                        ConfigurationStatus::Error
+                        (ConfigurationStatus::Error, None)
                     }
                 }
             }
             Err(err) => {
                 error!("Couldn't load the configuration file, reason:\n {}", err);
                 self.client.log_message(MessageType::ERROR, &err).await;
-                ConfigurationStatus::Error
+                (ConfigurationStatus::Error, None)
             }
         }
     }
@@ -699,7 +1098,7 @@ impl Session {
     /// open documents happen as one transition under `configuration_transition`, so that two
     /// concurrent calls cannot interleave.
     pub(crate) async fn set_client_overrides(
-        &self,
+        self: &Arc<Self>,
         overrides: Option<PartialConfiguration>,
     ) -> ConfigurationStatus {
         let _transition = self.configuration_transition.lock().await;
@@ -730,7 +1129,7 @@ impl Session {
     /// Reloads the configuration from disk, re-applying the sticky layers.
     ///
     /// Diagnostics are left alone: the callers decide whether the reload should refresh them.
-    pub(crate) async fn reload_workspace_settings(&self) -> ConfigurationStatus {
+    pub(crate) async fn reload_workspace_settings(self: &Arc<Self>) -> ConfigurationStatus {
         let _transition = self.configuration_transition.lock().await;
         #[cfg(test)]
         let _running = self.enter_transition();
@@ -794,6 +1193,24 @@ impl Session {
     }
 }
 
+/// A path as a glob pattern that matches only it: with `/` as the separator, and the characters
+/// that globs treat specially in brackets.
+fn escape_glob(path: &Path) -> String {
+    let mut pattern = String::new();
+    for character in path.to_string_lossy().chars() {
+        match character {
+            '\\' if cfg!(windows) => pattern.push('/'),
+            '*' | '?' | '[' | '{' | '}' => {
+                pattern.push('[');
+                pattern.push(character);
+                pattern.push(']');
+            }
+            _ => pattern.push(character),
+        }
+    }
+    pattern
+}
+
 /// Tracks one running configuration transition for [`Session::max_concurrent_transitions`].
 #[cfg(test)]
 pub(crate) struct RunningTransition<'a> {
@@ -818,9 +1235,70 @@ fn is_stale_diagnostics(captured_version: i32, current_version: i32) -> bool {
     captured_version != current_version
 }
 
+/// The path of the workspace document for `url`.
+///
+/// Only `file:` URIs are files. Documents of other schemes, like `untitled:` buffers, the `git:`
+/// side of a diff, or the cells of a notebook, are keyed by their whole URI. Their URI path is
+/// often the path of a file, or the same for every cell of a notebook. The workspace keys
+/// documents by path, so they would otherwise share the document of that file, and closing them
+/// would close it.
+fn document_path(url: &ls_types::Uri) -> PathBuf {
+    if !url.scheme().as_str().eq_ignore_ascii_case("file") {
+        return PathBuf::from(url.as_str());
+    }
+    match url.to_file_path() {
+        Some(path) => path.into_owned(),
+        // If we can't create a path, it's probably because the file doesn't exist.
+        // It can be a newly created file that it's not on disk
+        None => PathBuf::from(url.path().as_str()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::is_stale_diagnostics;
+    use std::path::Path;
+    use std::str::FromStr;
+
+    use tower_lsp_server::ls_types::Uri;
+
+    use super::{document_path, is_stale_diagnostics};
+
+    fn path(uri: &str) -> std::path::PathBuf {
+        document_path(&Uri::from_str(uri).expect("a valid URI"))
+    }
+
+    #[test]
+    fn file_uris_are_decoded_into_paths() {
+        let expected = if cfg!(windows) {
+            Path::new("c:/Users/a/My Project/café.sql")
+        } else {
+            Path::new("/c:/Users/a/My Project/café.sql")
+        };
+        assert_eq!(
+            path("file:///c%3A/Users/a/My%20Project/caf%C3%A9.sql"),
+            expected
+        );
+    }
+
+    #[test]
+    fn other_schemes_get_paths_of_their_own() {
+        let file = path("file:///workspace/a.sql");
+        let git = path("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D");
+        assert_ne!(git, file);
+        assert_eq!(
+            git,
+            Path::new("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D")
+        );
+        assert_ne!(
+            path("vscode-notebook-cell:/workspace/nb.ipynb#W0sZmlsZQ%3D%3D"),
+            path("vscode-notebook-cell:/workspace/nb.ipynb#W1sZmlsZQ%3D%3D"),
+        );
+        // Not a relative path with its first character stripped on Windows.
+        assert_eq!(
+            path("untitled:Untitled-1"),
+            Path::new("untitled:Untitled-1")
+        );
+    }
 
     #[test]
     fn stale_diagnostics_are_detected_by_version() {
