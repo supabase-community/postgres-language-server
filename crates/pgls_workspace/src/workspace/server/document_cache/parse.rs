@@ -1,6 +1,6 @@
 use std::sync::{Arc, LazyLock, Mutex};
 
-pub use pgls_lexer::{convert_to_positional_params, convert_to_positional_params_with_metadata};
+use pgls_lexer::convert_to_positional_params;
 use pgls_query_ext::{
     diagnostics::*,
     function_body::{EmbeddedStatement, function_body_location, sql_function_body},
@@ -8,7 +8,7 @@ use pgls_query_ext::{
 use regex::Regex;
 use rustc_hash::FxHashMap;
 
-use super::statement_identifier::StatementId;
+use crate::workspace::StatementId;
 
 /// The tree of a statement, or why it doesn't parse.
 pub type ParseResult = Result<Arc<pgls_query::NodeEnum>, SyntaxDiagnostic>;
