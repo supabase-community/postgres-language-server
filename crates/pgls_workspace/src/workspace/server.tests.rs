@@ -2614,7 +2614,10 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         select * from star_items i join star_tags t on t.item_id = i.id;\n\
         select t.* from star_tags t where id > 0;\n\
         create function all_items() returns setof star_items language sql\n\
-        as 'select * from star_items';\n";
+        as 'select * from star_items';\n\
+        create table größen (größe int, \"Ölstand\" int, \"Café\" int);\n\
+        select * from größen;\n\
+        select count(*) /* * */ from größen;\n";
     workspace
         .open_file(OpenFileParams {
             project_key,
@@ -2692,8 +2695,15 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         }]
     );
 
+    // Names that aren't ASCII aren't quoted, unless they have upper case ASCII letters.
+    let actions = expand_actions("* from größen;");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    assert_eq!(actions[0].1.edits[0].new_text, r#"größe, Ölstand, "Café""#);
+
     // Nothing to expand elsewhere.
     assert!(expand_actions("where id").is_empty());
+    assert!(expand_actions("*) /*").is_empty());
+    assert!(expand_actions("* */").is_empty());
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

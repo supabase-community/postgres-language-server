@@ -396,19 +396,9 @@ impl WorkspaceServer {
         position: TextSize,
     ) -> Vec<CodeAction> {
         // Code actions are requested whenever the cursor moves, so don't resolve the file unless
-        // there is a `*` on the line.
+        // the cursor is on a `*` of a select list.
         let content = doc.get_document_content();
-        let bytes = content.as_bytes();
-        let offset = usize::from(position).min(bytes.len());
-        let line_start = bytes[..offset]
-            .iter()
-            .rposition(|byte| *byte == b'\n')
-            .map_or(0, |i| i + 1);
-        let line_end = bytes[offset..]
-            .iter()
-            .position(|byte| *byte == b'\n')
-            .map_or(bytes.len(), |i| offset + i);
-        if !bytes[line_start..line_end].contains(&b'*') {
+        if !expand_star::is_at_star(content, position) {
             return Vec::new();
         }
 
