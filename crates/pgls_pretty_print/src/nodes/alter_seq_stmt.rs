@@ -11,9 +11,7 @@ pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
     e.space();
 
     if n.missing_ok {
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_exists(e);
         e.space();
     }
 

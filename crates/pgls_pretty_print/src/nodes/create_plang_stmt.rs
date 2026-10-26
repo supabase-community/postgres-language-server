@@ -9,9 +9,7 @@ pub(super) fn emit_create_plang_stmt(e: &mut EventEmitter, n: &CreatePLangStmt) 
     e.space();
 
     if n.replace {
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
         e.space();
     }
 

@@ -73,9 +73,7 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
 
     if n.replace {
         e.space();
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
     }
 
     e.space();
@@ -88,11 +86,7 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
 
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     let is_operator = kind == ObjectType::ObjectOperator;

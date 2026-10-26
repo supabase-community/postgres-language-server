@@ -24,11 +24,7 @@ pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
 
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     if let Some(ref sequence) = n.sequence {

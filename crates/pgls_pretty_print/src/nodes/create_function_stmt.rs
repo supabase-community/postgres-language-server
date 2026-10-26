@@ -13,9 +13,7 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
     e.space();
 
     if n.replace {
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
         e.space();
     }
 

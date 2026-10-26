@@ -9,9 +9,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
 
     if n.replace {
         e.space();
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
     }
 
     if let Some(ref view) = n.view {

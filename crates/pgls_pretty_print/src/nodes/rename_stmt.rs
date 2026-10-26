@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{DropBehavior, ObjectType, RenameStmt};
+use pgls_query::protobuf::{ObjectType, RenameStmt};
 
 use super::emit_range_var;
 use super::prelude::*;
@@ -19,9 +19,7 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
 
     if n.missing_ok {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_exists(e);
     }
 
     match rename_type {
@@ -75,10 +73,7 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
                 super::emit_range_var_name(e, relation);
             }
             emit_attribute_rename(e, &n.subname, &n.newname);
-            if matches!(n.behavior(), DropBehavior::DropCascade) {
-                e.space();
-                e.token(TokenKind::CASCADE_KW);
-            }
+            emit_drop_behavior(e, n.behavior(), Separator::Space, Restrict::Omitted);
         }
         ObjectType::ObjectAggregate => {
             emit_aggregate_head(e, n);
