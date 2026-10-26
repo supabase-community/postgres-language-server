@@ -467,6 +467,7 @@ impl ServerFactory {
         workspace_method!(builder, change_file);
         workspace_method!(builder, close_file);
         workspace_method!(builder, pull_file_diagnostics);
+        workspace_method!(builder, pull_code_actions);
         workspace_method!(builder, fix_file);
         workspace_method!(builder, check_database_connection);
         workspace_method!(builder, get_completions);
