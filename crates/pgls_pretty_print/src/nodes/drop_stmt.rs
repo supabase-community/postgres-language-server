@@ -34,7 +34,12 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
             }
             ObjectType::ObjectOpclass | ObjectType::ObjectOpfamily => {
                 // DROP OPERATOR CLASS/FAMILY uses: name USING access_method
-                emit_comma_separated_list(e, &n.objects, emit_drop_opclass_object);
+                emit_comma_separated_list(e, &n.objects, |e, object| {
+                    match operator_class_parts(object) {
+                        Some((method, name)) => emit_operator_class_name(e, method, name),
+                        None => emit_node(e, object),
+                    }
+                });
             }
             ObjectType::ObjectRule | ObjectType::ObjectTrigger | ObjectType::ObjectPolicy => {
                 // DROP RULE/TRIGGER/POLICY uses: name ON table_name
@@ -93,30 +98,6 @@ fn emit_drop_cast_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node
         e.space();
         emit_node(e, &list.items[1]);
         e.token(TokenKind::R_PAREN);
-        return;
-    }
-
-    // Fallback for unexpected structure
-    emit_node(e, node);
-}
-
-/// Emit DROP OPERATOR CLASS/FAMILY object.
-/// Format: name USING access_method
-/// The list is [access_method, name_parts...]
-fn emit_drop_opclass_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
-    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
-        && list.items.len() >= 2
-    {
-        // First element is the access method name
-        // Remaining elements are the operator class/family name parts
-        let name_parts = &list.items[1..];
-        emit_dot_separated_identifiers(e, name_parts);
-        e.space();
-        e.token(TokenKind::USING_KW);
-        e.space();
-        if let Some(pgls_query::NodeEnum::String(s)) = list.items[0].node.as_ref() {
-            emit_identifier_maybe_quoted(e, &s.sval);
-        }
         return;
     }
 

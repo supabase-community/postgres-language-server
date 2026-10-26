@@ -143,25 +143,6 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
     e.group_end();
 }
 
-fn emit_operator_name(e: &mut EventEmitter, defnames: &[Node]) {
-    for (idx, node) in defnames.iter().enumerate() {
-        if idx > 0 {
-            e.token(TokenKind::DOT);
-        }
-
-        match node.node.as_ref() {
-            Some(NodeEnum::String(s)) => {
-                if idx == defnames.len() - 1 {
-                    e.token(TokenKind::IDENT(s.sval.clone()));
-                } else {
-                    emit_identifier_maybe_quoted(e, &s.sval);
-                }
-            }
-            _ => emit_node(e, node),
-        }
-    }
-}
-
 fn emit_operator_def_elem(e: &mut EventEmitter, def: &DefElem) {
     emit_keyword(e, &def.defname);
 

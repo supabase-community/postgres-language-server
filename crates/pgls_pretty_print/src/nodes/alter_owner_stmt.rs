@@ -15,7 +15,10 @@ pub(super) fn emit_alter_owner_stmt(e: &mut EventEmitter, n: &AlterOwnerStmt) {
         ObjectType::ObjectOpfamily | ObjectType::ObjectOpclass => {
             if let Some(ref object) = n.object {
                 e.space();
-                emit_owner_operator_collection(e, object);
+                match operator_class_parts(object) {
+                    Some((method, name)) => emit_operator_class_name(e, method, name),
+                    None => emit_owner_object(e, object),
+                }
             }
         }
         ObjectType::ObjectAggregate => {
@@ -62,22 +65,4 @@ fn emit_owner_object(e: &mut EventEmitter, object: &pgls_query::Node) {
         Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
         _ => emit_node(e, object),
     }
-}
-
-fn emit_owner_operator_collection(e: &mut EventEmitter, object: &pgls_query::Node) {
-    if let Some(NodeEnum::List(list)) = &object.node
-        && list.items.len() >= 2
-    {
-        let (method_node, name_nodes) = list.items.split_first().unwrap();
-        if !name_nodes.is_empty() {
-            emit_dot_separated_list(e, name_nodes);
-            e.space();
-            e.token(TokenKind::USING_KW);
-            e.space();
-            emit_node(e, method_node);
-            return;
-        }
-    }
-
-    emit_owner_object(e, object);
 }

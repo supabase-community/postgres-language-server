@@ -541,35 +541,6 @@ fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     }
 }
 
-fn emit_operator(e: &mut EventEmitter, name: &[Node]) {
-    if name.len() > 1 {
-        emit_qualified_operator(e, name);
-    } else if let Some(first) = name.first() {
-        emit_operator_part(e, first);
-    }
-}
-
-fn emit_qualified_operator(e: &mut EventEmitter, name: &[Node]) {
-    e.token(TokenKind::OPERATOR_KW);
-    e.token(TokenKind::L_PAREN);
-
-    for (idx, part) in name.iter().enumerate() {
-        if idx > 0 {
-            e.token(TokenKind::DOT);
-        }
-        emit_operator_part(e, part);
-    }
-
-    e.token(TokenKind::R_PAREN);
-}
-
-fn emit_operator_part(e: &mut EventEmitter, node: &Node) {
-    match node.node.as_ref() {
-        Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-        _ => emit_node(e, node),
-    }
-}
-
 fn emit_simple_operator(e: &mut EventEmitter, op: &str) {
     e.token(TokenKind::IDENT(op.to_string()));
 }
