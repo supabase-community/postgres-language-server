@@ -1,6 +1,6 @@
 # identifierTooLong
 
-**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Since** `Unreleased`  
+**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Safe fix** · **Since** `Unreleased`  
 **Diagnostic** `lint/identifierTooLong`
 
 **Sources**: inspired by [`squawk/identifier-too-long`](https://squawkhq.com/docs/identifier-too-long)

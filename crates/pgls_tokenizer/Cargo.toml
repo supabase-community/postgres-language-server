@@ -17,3 +17,6 @@ version              = "0.0.0"
 insta.workspace = true
 
 [lib]
+
+[lints]
+workspace = true

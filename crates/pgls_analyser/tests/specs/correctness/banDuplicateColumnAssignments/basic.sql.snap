@@ -17,3 +17,12 @@ lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━
   i Postgres rejects statements that assign a column more than once.
   
   i Remove all but one of the assignments.
+  
+
+
+## Fix (unsafe): Keep only the last assignment to name
+```
+-- expect_lint/banDuplicateColumnAssignments
+update users set name = 'b';
+
+```

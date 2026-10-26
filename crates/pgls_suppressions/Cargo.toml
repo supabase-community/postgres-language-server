@@ -17,3 +17,6 @@ pgls_analyser    = { workspace = true }
 pgls_diagnostics = { workspace = true }
 pgls_text_size   = { workspace = true }
 tracing          = { workspace = true }
+
+[lints]
+workspace = true
