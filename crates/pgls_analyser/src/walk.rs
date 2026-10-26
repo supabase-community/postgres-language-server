@@ -36,7 +36,14 @@ pub struct WalkParams<'a> {
     /// The starts of top-level statements where to record the state of the walk, in file
     /// order, see [`Walk::checkpoints`].
     pub checkpoints: &'a [TextSize],
+    /// Checked every [`STOP_CHECK_INTERVAL`] statements. The walk stops when it returns `true`,
+    /// e.g. because the document changed or the request was cancelled.
+    pub should_stop: &'a dyn Fn() -> bool,
 }
+
+/// How many statements the walk visits between two checks of [`WalkParams::should_stop`]. The
+/// check takes a lock, and 64 statements take about a millisecond to walk.
+pub const STOP_CHECK_INTERVAL: usize = 64;
 
 /// The state of a walk before a top-level statement: the catalog and the session after the
 /// statements before it. It only depends on the text before the statement, the section the
@@ -82,6 +89,9 @@ pub struct Walk {
     /// first statement that starts at or after it. Resuming from it walks like walking from the
     /// start of the file, as long as the text before it doesn't change.
     pub checkpoints: Vec<WalkState>,
+    /// Set when [`WalkParams::should_stop`] stopped the walk before `end`. The catalog is then
+    /// that of where it stopped.
+    pub stopped: bool,
 }
 
 /// Walks the statements like the database runs them: the catalog and the session follow the
@@ -123,6 +133,7 @@ pub fn walk_statements(
         .filter(|at| *at >= resumes_at)
         .peekable();
     let mut checkpoints = Vec::new();
+    let mut visited = 0usize;
     for unit in migration_units(params.stmts, params.sections) {
         if unit.start >= params.end {
             break;
@@ -216,6 +227,14 @@ pub fn walk_statements(
             if stmt.range.start() >= params.end {
                 break;
             }
+            visited += 1;
+            if visited.is_multiple_of(STOP_CHECK_INTERVAL) && (params.should_stop)() {
+                return Walk {
+                    catalog: file_context.into_catalog(),
+                    checkpoints,
+                    stopped: true,
+                };
+            }
             while let Some(at) = checkpoint_at.next_if(|at| stmt.range.start() >= *at) {
                 skip_unparsable(&mut unparsable, at, &mut file_context);
                 checkpoints.push(state(at, &file_context, &catalog));
@@ -259,6 +278,7 @@ pub fn walk_statements(
             return Walk {
                 catalog: file_context.into_catalog(),
                 checkpoints,
+                stopped: false,
             };
         }
         if !is_down {
@@ -268,6 +288,7 @@ pub fn walk_statements(
     Walk {
         catalog,
         checkpoints,
+        stopped: false,
     }
 }
 

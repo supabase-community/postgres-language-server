@@ -13,13 +13,18 @@ use super::{
     statement_identifier::StatementId,
 };
 
+/// An open document. Clones share the cache, which is keyed so that each clone only sees what
+/// was cached for its own content.
+#[derive(Clone)]
 pub struct Document {
     content: String,
+    /// Incremented on every change of the content.
+    generation: u64,
     version: i32,
     /// The statements of `content`, kept to split the next version of it incrementally.
     split: SplitResult,
     diagnostics: Vec<SDiagnostic>,
-    cache: DocumentCache,
+    cache: Arc<DocumentCache>,
     suppressions: Suppressions,
     /// Where the last change of the content starts.
     edited_at: Option<TextSize>,
@@ -36,8 +41,9 @@ impl Document {
             split,
             diagnostics,
             content,
+            generation: 0,
             version,
-            cache: DocumentCache::new(),
+            cache: Arc::new(DocumentCache::new()),
             suppressions,
             edited_at: None,
         }
@@ -50,6 +56,7 @@ impl Document {
         let ranges = &split.ranges;
         self.content = content;
         self.version = version;
+        self.generation += 1;
 
         // The statements before the change keep what the walks cached for them. The splitter
         // looks ahead, so a statement before the change can still end elsewhere.
@@ -85,10 +92,19 @@ impl Document {
         let is_present =
             |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
         self.cache.retain_statements(is_present);
-        self.cache.content_changed(ContentChange {
-            unchanged,
-            first_changed_statement,
-        });
+        self.cache.content_changed(
+            ContentChange {
+                unchanged,
+                first_changed_statement,
+            },
+            self.generation,
+        );
+    }
+
+    /// Which version of the content this is: it is incremented on every change. Unlike the
+    /// client's version, it always increases.
+    pub fn generation(&self) -> u64 {
+        self.generation
     }
 
     /// Where the last change of the content starts.
@@ -1025,5 +1041,50 @@ $$ LANGUAGE plpgsql;";
                 format!("{:?}", split_diagnostics(&whole))
             );
         }
+    }
+
+    /// A clone of a document shares its cache, but a request on the previous version neither
+    /// reads nor writes what is cached for the new one.
+    #[test]
+    fn clones_only_see_the_cache_of_their_content() {
+        use crate::workspace::{
+            ProjectKey,
+            server::document_cache::{CacheKey, ResolvedStatement},
+        };
+
+        let previous = Document::new("select 1;".into(), 1);
+        let mut current = previous.clone();
+        current.update_content("select 2;".into(), 2);
+        let key = CacheKey::new(0, ProjectKey::default(), None);
+        let resolved = || -> Arc<[ResolvedStatement]> { Arc::from(Vec::new()) };
+
+        previous
+            .cache()
+            .with_walk(&key, previous.generation(), |walk| {
+                walk.record_resolved(0.into(), resolved())
+            });
+        assert!(
+            current
+                .cache()
+                .with_walk(&key, current.generation(), |walk| walk.resolved(0.into()))
+                .is_none()
+        );
+        current
+            .cache()
+            .with_walk(&key, current.generation(), |walk| {
+                walk.record_resolved(0.into(), resolved())
+            });
+        assert!(
+            previous
+                .cache()
+                .with_walk(&key, previous.generation(), |walk| walk.resolved(0.into()))
+                .is_none()
+        );
+        assert!(
+            current
+                .cache()
+                .with_walk(&key, current.generation(), |walk| walk.resolved(0.into()))
+                .is_some()
+        );
     }
 }

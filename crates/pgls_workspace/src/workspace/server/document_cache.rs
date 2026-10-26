@@ -111,6 +111,12 @@ pub(crate) struct DocumentCache {
 #[derive(Default)]
 struct KeyedCaches {
     key: Option<CacheKey>,
+    /// The generation of the document's content they are for, see [`Document::generation`].
+    /// A request on a previous generation, which still runs while the document changed, neither
+    /// reads nor writes them.
+    ///
+    /// [`Document::generation`]: super::document::Document::generation
+    generation: u64,
     analysis: Option<Arc<DocumentAnalysis>>,
     walk: WalkCache,
 }
@@ -124,20 +130,24 @@ impl DocumentCache {
         }
     }
 
-    /// The analysis of the document for `key`. `analyse` computes it if it isn't cached.
+    /// The analysis of the content of `generation` for `key`. `analyse` computes it if it isn't
+    /// cached. It returns `None` if the analysis stopped early, which isn't cached.
     pub(crate) fn analysis(
         &self,
         key: &CacheKey,
-        analyse: impl FnOnce() -> DocumentAnalysis,
-    ) -> Arc<DocumentAnalysis> {
+        generation: u64,
+        analyse: impl FnOnce() -> Option<DocumentAnalysis>,
+    ) -> Option<Arc<DocumentAnalysis>> {
         // Held while analysing, so that concurrent requests wait for one analysis.
-        let mut keyed = self.keyed(key);
+        let Some(mut keyed) = self.keyed(key, generation) else {
+            return analyse().map(Arc::new);
+        };
         if let Some(analysis) = &keyed.analysis {
-            return Arc::clone(analysis);
+            return Some(Arc::clone(analysis));
         }
-        let analysis = Arc::new(analyse());
+        let analysis = Arc::new(analyse()?);
         keyed.analysis = Some(Arc::clone(&analysis));
-        analysis
+        Some(analysis)
     }
 
     /// How much the document keeps, in entries: one per parse result, tree and resolved
@@ -152,7 +162,11 @@ impl DocumentCache {
     pub(crate) fn clear(&self) {
         self.parses.clear();
         self.trees.clear();
-        *self.keyed.lock().unwrap() = KeyedCaches::default();
+        let mut keyed = self.keyed.lock().unwrap();
+        *keyed = KeyedCaches {
+            generation: keyed.generation,
+            ..KeyedCaches::default()
+        };
     }
 
     /// What the caches hold for a document with the top-level statements `statements`. The
@@ -181,28 +195,48 @@ impl DocumentCache {
         self.keyed.lock().unwrap().analysis.clone()
     }
 
-    /// The caches for `key`, emptied first if they were for another key.
-    fn keyed(&self, key: &CacheKey) -> std::sync::MutexGuard<'_, KeyedCaches> {
+    /// The caches for `key`, emptied first if they were for another key. `None` if they are for
+    /// another generation of the content.
+    fn keyed(
+        &self,
+        key: &CacheKey,
+        generation: u64,
+    ) -> Option<std::sync::MutexGuard<'_, KeyedCaches>> {
         let mut keyed = self.keyed.lock().unwrap();
+        if keyed.generation != generation {
+            return None;
+        }
         if keyed.key.as_ref() != Some(key) {
             *keyed = KeyedCaches {
                 key: Some(key.clone()),
+                generation,
                 ..KeyedCaches::default()
             };
         }
-        keyed
+        Some(keyed)
     }
 
-    /// Runs `f` on what the walks over the document left for `key`. It is not held while
-    /// walking, so that requests on the same document don't wait for each other.
-    pub(crate) fn with_walk<R>(&self, key: &CacheKey, f: impl FnOnce(&mut WalkCache) -> R) -> R {
-        f(&mut self.keyed(key).walk)
+    /// Runs `f` on what the walks over the content of `generation` left for `key`. It is not
+    /// held while walking, so that requests on the same document don't wait for each other. A
+    /// request on a previous generation gets an empty cache, which is dropped.
+    pub(crate) fn with_walk<R>(
+        &self,
+        key: &CacheKey,
+        generation: u64,
+        f: impl FnOnce(&mut WalkCache) -> R,
+    ) -> R {
+        match self.keyed(key, generation) {
+            Some(mut keyed) => f(&mut keyed.walk),
+            None => f(&mut WalkCache::default()),
+        }
     }
 
-    /// Drops what `change` invalidates, see [`WalkCache::content_changed`], and the analysis.
-    /// [`Self::retain_statements`] drops what was cached for the statements.
-    pub(crate) fn content_changed(&mut self, change: ContentChange) {
-        let keyed = self.keyed.get_mut().unwrap();
+    /// The document's content changed to `generation`. Drops what `change` invalidates, see
+    /// [`WalkCache::content_changed`], and the analysis. [`Self::retain_statements`] drops what
+    /// was cached for the statements.
+    pub(crate) fn content_changed(&self, change: ContentChange, generation: u64) {
+        let mut keyed = self.keyed.lock().unwrap();
+        keyed.generation = generation;
         keyed.analysis = None;
         keyed.walk.content_changed(change);
     }

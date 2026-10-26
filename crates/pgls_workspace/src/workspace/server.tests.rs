@@ -5071,3 +5071,186 @@ async fn walks_from_checkpoints_match_full_walks(test_db: PgPool) {
             .expect("Unable to close test file");
     }
 }
+
+/// A request keeps working on the version of the document it started with, while an edit
+/// replaces it. A walk of the outdated version stops and leaves nothing in the shared cache.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_editor_requests_use_document_snapshots(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "create table items (id int);\nselect id from items;\n".repeat(100);
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let settings = workspace.workspaces();
+    let settings = settings.settings_for(project_key, path.as_path());
+    let snapshot = workspace
+        .database_snapshot(settings.unwrap())
+        .expect("a database snapshot");
+    let request = workspace.editor_request(project_key, &path, settings, snapshot);
+
+    let outdated = workspace.document(&path).expect("an open document");
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: path.clone(),
+            version: 2,
+            content: format!("{content}select 1;\n"),
+        })
+        .expect("Unable to change test file");
+    assert_eq!(outdated.get_document_content(), content);
+
+    let everything = TextRange::up_to(TextSize::of(content.as_str()));
+    assert!(
+        workspace
+            .resolved_statements(&request, &outdated, everything)
+            .is_empty()
+    );
+    let stats = workspace.document_cache_stats(&path).unwrap();
+    assert_eq!(
+        (stats.resolved_statements, stats.walk_checkpoints),
+        (0, 0),
+        "{stats:?}"
+    );
+    let current = workspace.document(&path).expect("an open document");
+    assert_eq!(
+        workspace
+            .resolved_statements(&request, &current, everything)
+            .len(),
+        200
+    );
+}
+
+/// A cancelled request stops walking, and the next one gets everything.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_cancelled_requests_stop_walking(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "create table items (id int);\nselect id from items;\n".repeat(100),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let tokens = || {
+        workspace
+            .pull_semantic_tokens(PullSemanticTokensParams {
+                project_key,
+                path: path.clone(),
+                range: None,
+            })
+            .expect("Unable to pull semantic tokens")
+            .tokens
+            .len()
+    };
+    let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    assert_eq!(crate::cancellation::with_cancellation(cancelled, tokens), 0);
+    assert_eq!(tokens(), 200);
+}
+
+/// Cancelled diagnostics and code actions stop analysing the document.
+#[tokio::test]
+async fn test_cancelled_analysis_stops() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "alter table items drop column name;\n".repeat(200);
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let diagnostics = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 1_000,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .len()
+    };
+    let cancelled = || Arc::new(std::sync::atomic::AtomicBool::new(true));
+    assert_eq!(
+        crate::cancellation::with_cancellation(cancelled(), diagnostics),
+        0
+    );
+    assert!(diagnostics() >= 200);
+
+    let last = TextSize::of(content.as_str()) - TextSize::from(10);
+    let actions = || {
+        workspace
+            .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                project_key,
+                path: path.clone(),
+                cursor_position: last,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull code actions")
+            .actions
+            .into_iter()
+            .filter(|action| matches!(&action.kind, CodeActionKind::Edit(_)))
+            .count()
+    };
+    // The analysis of the diagnostics is cached, so the code actions don't analyse again.
+    assert!(crate::cancellation::with_cancellation(cancelled(), actions) > 0);
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: path.clone(),
+            version: 2,
+            content: format!("{content}select 1;\n"),
+        })
+        .expect("Unable to change test file");
+    assert_eq!(
+        crate::cancellation::with_cancellation(cancelled(), actions),
+        0
+    );
+    assert!(actions() > 0);
+}

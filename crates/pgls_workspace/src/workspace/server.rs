@@ -9,6 +9,7 @@ use std::{
 };
 
 use analyser::AnalyserVisitorBuilder;
+use analysis::AnalysisRequest;
 #[cfg(feature = "db")]
 use analysis::DocumentAnalysis;
 #[cfg(feature = "db")]
@@ -22,9 +23,7 @@ use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
-use pgls_analyse::{
-    ActionCategory, AnalysisFilter, Applicability, RuleCategories, SUPPRESSION_ACTION_CATEGORY,
-};
+use pgls_analyse::{ActionCategory, AnalysisFilter, Applicability, SUPPRESSION_ACTION_CATEGORY};
 use pgls_analyser::{LinterDiagnostic, MigrationSection, RuleFix};
 use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
@@ -99,7 +98,9 @@ pub struct WorkspaceServer {
     /// global settings object for this workspace
     settings: RwLock<WorkspaceSettings>,
 
-    documents: RwLock<HashMap<PgLSPath, Document>>,
+    /// The open documents. Requests work on an `Arc` of a document, so that an edit doesn't wait
+    /// for them; it copies the document if a request still uses it.
+    documents: RwLock<HashMap<PgLSPath, Arc<Document>>>,
 
     /// The database snapshots, loaded from a database connection or from JSON
     snapshot: SnapshotManager,
@@ -186,18 +187,48 @@ impl WorkspaceServer {
     #[doc(hidden)]
     pub fn document_cache_stats(&self, path: &PgLSPath) -> Option<DocumentCacheStats> {
         let documents = self.documents.read().unwrap();
-        documents.get(path).map(Document::cache_stats)
+        documents.get(path).map(|doc| doc.cache_stats())
+    }
+
+    /// The open document at `path`. The lock of the documents is only held to look it up.
+    fn document(&self, path: &PgLSPath) -> Result<Arc<Document>, WorkspaceError> {
+        let documents = self.documents.read().unwrap();
+        documents
+            .get(path)
+            .cloned()
+            .ok_or_else(WorkspaceError::not_found)
+    }
+
+    /// Whether a request on `doc` should stop: the client cancelled it, or changed the document
+    /// at `path` while it was running, so its result would be outdated.
+    pub(super) fn should_stop<'a>(
+        &'a self,
+        path: &'a PgLSPath,
+        doc: &'a Document,
+    ) -> impl Fn() -> bool + 'a {
+        move || crate::cancellation::is_cancelled() || self.is_outdated(path, doc)
+    }
+
+    /// Whether `doc` is no longer the content of the document at `path`, e.g. because the client
+    /// changed it while a request was running.
+    pub(super) fn is_outdated(&self, path: &PgLSPath, doc: &Document) -> bool {
+        let documents = self.documents.read().unwrap();
+        documents
+            .get(path)
+            .is_none_or(|current| current.generation() != doc.generation())
     }
 
     /// Records what the caches of the document at `path` keep after a request, and drops the
     /// caches of the least recently used other documents to stay within
     /// [`DOCUMENT_CACHE_ENTRIES_MAX`]. The document of the request is never dropped, so a
     /// single file larger than the budget stays cached while it is used.
-    fn charge_document_caches(&self, documents: &HashMap<PgLSPath, Document>, path: &PgLSPath) {
-        let Some(doc) = documents.get(path) else {
+    fn charge_document_caches(&self, path: &PgLSPath, doc: &Document) {
+        let evicted = self.document_caches.record(path, doc.cache().usage());
+        if evicted.is_empty() {
             return;
-        };
-        for evicted in self.document_caches.record(path, doc.cache().usage()) {
+        }
+        let documents = self.documents.read().unwrap();
+        for evicted in evicted {
             if let Some(doc) = documents.get(&evicted) {
                 tracing::debug!(
                     "Dropping the caches of {} to keep at most {} cache entries",
@@ -291,15 +322,16 @@ impl WorkspaceServer {
     ) -> Vec<CodeAction> {
         // Editors request code actions whenever the cursor moves. Without a rule selection,
         // this is the analysis that the diagnostics of the last edit cached.
-        let analysis = self.analyse_document(
+        let should_stop = self.should_stop(&params.path, doc);
+        let Some(analysis) = self.analyse_document(
             params.project_key,
             settings,
             &params.path,
             doc,
-            RuleCategories::all(),
-            &params.only,
-            &params.skip,
-        );
+            AnalysisRequest::all(&params.only, &params.skip, &should_stop),
+        ) else {
+            return Vec::new();
+        };
         let suppressions = doc.suppressions();
         let mut actions = Vec::new();
         for diagnostic in analysis.lint_diagnostics() {
@@ -353,6 +385,7 @@ impl WorkspaceServer {
     fn refactor_code_actions(
         &self,
         project_key: ProjectKey,
+        path: &PgLSPath,
         settings: Option<&Settings>,
         doc: &Document,
         position: TextSize,
@@ -377,7 +410,7 @@ impl WorkspaceServer {
         let Some(snapshot) = snapshot else {
             return Vec::new();
         };
-        let request = self.editor_request(project_key, settings, snapshot);
+        let request = self.editor_request(project_key, path, settings, snapshot);
         let (stmt_start, references) = self.references_at(&request, doc, position);
         references
             .iter()
@@ -684,7 +717,7 @@ impl Workspace for WorkspaceServer {
         let mut documents = self.documents.write().unwrap();
         documents
             .entry(params.path.clone())
-            .or_insert_with(|| Document::new(params.content, params.version));
+            .or_insert_with(|| Arc::new(Document::new(params.content, params.version)));
 
         Ok(())
     }
@@ -712,12 +745,12 @@ impl Workspace for WorkspaceServer {
 
         match documents.entry(params.path.clone()) {
             std::collections::hash_map::Entry::Occupied(mut entry) => {
-                entry
-                    .get_mut()
-                    .update_content(params.content, params.version);
+                // A request that still works on the previous version keeps it. The copy shares
+                // the document's cache.
+                Arc::make_mut(entry.get_mut()).update_content(params.content, params.version);
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
-                entry.insert(Document::new(params.content, params.version));
+                entry.insert(Arc::new(Document::new(params.content, params.version)));
             }
         }
 
@@ -730,10 +763,7 @@ impl Workspace for WorkspaceServer {
 
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let document = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
         Ok(document.get_document_content().to_string())
     }
 
@@ -746,10 +776,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: CodeActionsParams,
     ) -> Result<CodeActionsResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let parser = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
@@ -759,7 +787,7 @@ impl Workspace for WorkspaceServer {
             None => Some("Statement execution not allowed against database.".into()),
         };
 
-        let mut actions: Vec<CodeAction> = parser
+        let mut actions: Vec<CodeAction> = doc
             .iter_at(DefaultMapper, params.cursor_position)
             .map(|(stmt, _, txt)| {
                 let title = format!(
@@ -781,14 +809,15 @@ impl Workspace for WorkspaceServer {
             0..0,
             self.refactor_code_actions(
                 params.project_key,
+                &params.path,
                 settings,
-                parser,
+                doc,
                 params.cursor_position,
             ),
         );
 
         if let Some(settings) = settings {
-            let mut lint_actions = self.lint_code_actions(settings, &params, parser);
+            let mut lint_actions = self.lint_code_actions(settings, &params, doc);
             lint_actions.append(&mut actions);
             actions = lint_actions;
         }
@@ -818,7 +847,7 @@ impl Workspace for WorkspaceServer {
             disabled_reason: invalidate_disabled_reason,
         });
 
-        self.charge_document_caches(&documents, &params.path);
+        self.charge_document_caches(&params.path, doc);
         Ok(CodeActionsResult { actions })
     }
 
@@ -828,10 +857,9 @@ impl Workspace for WorkspaceServer {
         /// that overlap are applied one after the other.
         const MAX_PASSES: usize = 10;
 
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+
+        let doc = &*document;
         let mut code = doc.get_document_content().to_string();
 
         let settings = self.workspaces();
@@ -914,12 +942,10 @@ impl Workspace for WorkspaceServer {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let parser = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
 
-        let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        let stmt = doc.find(params.statement_id, ExecuteStatementMapper);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
@@ -1025,10 +1051,9 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+
+        let doc = &*document;
 
         /*
          * The statements in the document might already have associated diagnostics,
@@ -1050,15 +1075,23 @@ impl Workspace for WorkspaceServer {
             );
         }
 
-        let analysis = self.analyse_document(
+        let should_stop = self.should_stop(&params.path, doc);
+        let Some(analysis) = self.analyse_document(
             params.project_key,
             settings,
             &params.path,
             doc,
-            params.categories,
-            &params.only,
-            &params.skip,
-        );
+            AnalysisRequest {
+                categories: params.categories,
+                only: &params.only,
+                skip: &params.skip,
+                should_stop: &should_stop,
+            },
+        ) else {
+            // The document changed or the request was cancelled. The diagnostics would be
+            // outdated anyway.
+            return Ok(PullDiagnosticsResult::default());
+        };
 
         /*
          * Checks against the database: statements that reference only objects that exist
@@ -1145,7 +1178,7 @@ impl Workspace for WorkspaceServer {
         diagnostics.retain(|d| !suppressions.is_suppressed(d));
         diagnostics.extend(suppression_errors.into_iter().map(SDiagnostic::new));
 
-        self.charge_document_caches(&documents, &params.path);
+        self.charge_document_caches(&params.path, doc);
         info!("Pulled {:?} diagnostic(s)", diagnostics.len());
         Ok(PullDiagnosticsResult {
             diagnostics,
@@ -1240,10 +1273,9 @@ impl Workspace for WorkspaceServer {
             return Ok(PullFormattingResult::default());
         }
 
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+
+        let doc = &*document;
 
         let result = formatting::format_document(
             doc,
@@ -1251,7 +1283,7 @@ impl Workspace for WorkspaceServer {
             params.range,
             &params.path.as_path().display().to_string(),
         );
-        self.charge_document_caches(&documents, &params.path);
+        self.charge_document_caches(&params.path, doc);
         Ok(result)
     }
 
@@ -1311,10 +1343,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let parsed_doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
@@ -1337,15 +1367,16 @@ impl Workspace for WorkspaceServer {
             return Ok(CompletionsResult::default());
         };
 
-        match get_statement_for_completions(parsed_doc, params.position) {
+        match get_statement_for_completions(doc, params.position) {
             None => {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
             }
             Some((stmt, cst)) => {
                 let position = stmt.statement_offset(params.position);
-                let request = self.editor_request(params.project_key, settings, snapshot);
-                let snapshot = self.snapshot_before(&request, parsed_doc, &stmt);
+                let request =
+                    self.editor_request(params.project_key, &params.path, settings, snapshot);
+                let snapshot = self.snapshot_before(&request, doc, &stmt);
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
@@ -1354,7 +1385,7 @@ impl Workspace for WorkspaceServer {
                     text: stmt.id.content().to_string(),
                 });
 
-                self.charge_document_caches(&documents, &params.path);
+                self.charge_document_caches(&params.path, doc);
                 Ok(CompletionsResult::in_document(items, &stmt))
             }
         }
@@ -1366,10 +1397,8 @@ impl Workspace for WorkspaceServer {
         position = params.position.to_string()
     ), err)]
     fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
@@ -1396,7 +1425,8 @@ impl Workspace for WorkspaceServer {
         match doc.iter_at(WithCSTMapper, params.position).last() {
             Some((stmt, ts_tree)) => {
                 let position_in_stmt = stmt.statement_offset(params.position);
-                let request = self.editor_request(params.project_key, settings, snapshot);
+                let request =
+                    self.editor_request(params.project_key, &params.path, settings, snapshot);
                 let (references, snapshot) =
                     self.hover_references(&request, doc, &stmt, params.position);
 
@@ -1409,7 +1439,7 @@ impl Workspace for WorkspaceServer {
                 })
                 .unwrap_or_default();
 
-                self.charge_document_caches(&documents, &params.path);
+                self.charge_document_caches(&params.path, doc);
                 Ok(OnHoverResult { markdown_blocks })
             }
             None => Ok(OnHoverResult::default()),
@@ -1425,10 +1455,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullInlayHintsParams,
     ) -> Result<PullInlayHintsResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
@@ -1454,7 +1482,7 @@ impl Workspace for WorkspaceServer {
             return Ok(PullInlayHintsResult::default());
         };
 
-        let request = self.editor_request(params.project_key, settings, snapshot);
+        let request = self.editor_request(params.project_key, &params.path, settings, snapshot);
         let mut hints = Vec::new();
         for statements in self.resolved_statements(&request, doc, params.range) {
             for resolved in statements.iter() {
@@ -1478,7 +1506,7 @@ impl Workspace for WorkspaceServer {
         }
 
         hints.sort_by_key(|hint| hint.offset);
-        self.charge_document_caches(&documents, &params.path);
+        self.charge_document_caches(&params.path, doc);
         Ok(PullInlayHintsResult { hints })
     }
 
@@ -1491,10 +1519,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullSemanticTokensParams,
     ) -> Result<PullSemanticTokensResult, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
-        let doc = documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
+        let document = self.document(&params.path)?;
+        let doc = &*document;
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
@@ -1523,7 +1549,7 @@ impl Workspace for WorkspaceServer {
         let range = params
             .range
             .unwrap_or_else(|| TextRange::up_to(TextSize::of(doc.get_document_content())));
-        let request = self.editor_request(params.project_key, settings, snapshot);
+        let request = self.editor_request(params.project_key, &params.path, settings, snapshot);
         let mut tokens = Vec::new();
         for statements in self.resolved_statements(&request, doc, range) {
             for resolved in statements.iter() {
@@ -1556,7 +1582,7 @@ impl Workspace for WorkspaceServer {
             }
             keep
         });
-        self.charge_document_caches(&documents, &params.path);
+        self.charge_document_caches(&params.path, doc);
         Ok(PullSemanticTokensResult { tokens })
     }
 }
