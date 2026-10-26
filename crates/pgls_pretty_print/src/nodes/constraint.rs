@@ -451,7 +451,7 @@ fn emit_check_condition(e: &mut EventEmitter, condition: &Node) {
     e.with_layout(Layout::Fit, |e| {
         emit_parenthesized_condition_with(e, condition, |e, node| match node {
             NodeEnum::BoolExpr(n) if expanded => {
-                super::bool_expr::emit_bool_expr_in_enclosing_group(e, n);
+                super::emit_bool_expr_as(e, n, super::OperandGroup::Enclosing);
             }
             _ => emit_node_enum(e, node),
         });

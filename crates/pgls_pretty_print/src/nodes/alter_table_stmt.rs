@@ -22,7 +22,7 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
     // For ObjectType (ALTER TYPE), don't emit ONLY since it's not valid
     if let Some(ref relation) = n.relation {
         match n.objtype() {
-            ObjectType::ObjectType => super::emit_range_var_name(e, relation),
+            ObjectType::ObjectType => super::emit_range_var_as(e, relation, super::Only::Omitted),
             _ => super::emit_range_var(e, relation),
         }
     }
