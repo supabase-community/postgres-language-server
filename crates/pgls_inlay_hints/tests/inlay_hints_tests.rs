@@ -7,6 +7,7 @@ use sqlx::{Executor, PgPool};
 const SETUP: &str = r#"
     create function make_point(x int, y int) returns int language sql as 'select x + y';
     create function add_unnamed(int, int) returns int language sql as 'select $1 + $2';
+    create function half_named(int, y int) returns int language sql as 'select $1 + y';
     create function sum_all(base int, variadic nums int[]) returns int
         language sql as 'select base';
     create function greet(name text, greeting text default 'hi') returns text
@@ -115,6 +116,36 @@ async fn unnamed_parameters_get_no_hints(test_db: PgPool) {
     assert_eq!(
         f.hinted("select add_unnamed(1, 2)"),
         "select add_unnamed(1, 2)"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn only_named_parameters_get_hints(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.hinted("select half_named(1, 2)"),
+        "select half_named(1, y: 2)"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn calls_in_a_long_statement(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    let items = |hinted: bool| {
+        (0..500)
+            .map(|i| {
+                if hinted {
+                    format!("abs({i}) + make_point(x: {i}, y: abs({i}))")
+                } else {
+                    format!("abs({i}) + make_point({i}, abs({i}))")
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    assert_eq!(
+        f.hinted(&format!("select {}", items(false))),
+        format!("select {}", items(true))
     );
 }
 
