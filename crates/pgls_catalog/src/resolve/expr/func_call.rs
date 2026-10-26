@@ -31,6 +31,7 @@ pub(super) fn infer_func_call(
             name,
             &args,
             n.func_variadic,
+            false,
             r.search_path,
         );
         // `VARIADIC` passes the variadic array itself. The result of such a call is not
@@ -73,7 +74,8 @@ pub(super) fn infer_func_call(
 /// are being collected. Postgres' checks of `CALL` ([`transformCallStmt`]) are not ported, so the
 /// findings of the arguments are dropped and the statement never gets one. `CALL` passes an
 /// argument for the output parameters of a procedure too, usually `NULL`, which the signatures
-/// of procedures include.
+/// of procedures include. Functions with the same name are candidates too, with their output
+/// arguments, and a call that selects one has no reference.
 ///
 /// [`transformCallStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L3253
 pub(in crate::resolve) fn resolve_procedure_call(
@@ -101,6 +103,7 @@ pub(in crate::resolve) fn resolve_procedure_call(
         name,
         &args,
         n.func_variadic,
+        true,
         r.search_path,
     ) && f.function.kind == crate::FunctionKind::Procedure
     {

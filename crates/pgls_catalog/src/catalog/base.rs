@@ -264,6 +264,26 @@ impl CatalogBase {
                                 })
                             })
                             .collect(),
+                        output_arguments: if is_procedure {
+                            Vec::new()
+                        } else {
+                            args.iter()
+                                .enumerate()
+                                .filter(|(_, arg)| matches!(arg.mode.as_str(), "out" | "table"))
+                                .map(|(position, arg)| {
+                                    (
+                                        position,
+                                        FunctionArgument {
+                                            name: (!arg.name.is_empty()).then(|| arg.name.clone()),
+                                            ty: types_by_id
+                                                .contains_key(&arg.type_id)
+                                                .then_some(TypeId::Snapshot(arg.type_id)),
+                                            mode: FunctionArgumentMode::Out,
+                                        },
+                                    )
+                                })
+                                .collect()
+                        },
                         input_defaults: defaults,
                         variadic_element: (function.variadic_type_id != 0
                             && types_by_id.contains_key(&function.variadic_type_id))
