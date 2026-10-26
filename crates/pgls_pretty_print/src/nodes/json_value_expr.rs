@@ -1,6 +1,4 @@
-use pgls_query::protobuf::{
-    JsonEncoding, JsonFormat, JsonFormatType, JsonOutput, JsonReturning, JsonValueExpr,
-};
+use pgls_query::protobuf::JsonValueExpr;
 
 use super::prelude::*;
 
@@ -14,130 +12,8 @@ pub(super) fn emit_json_value_expr(e: &mut EventEmitter, n: &JsonValueExpr) {
     }
 
     if let Some(ref format) = n.format {
-        emit_json_format(e, format);
+        emit_json_format_clause(e, format);
     }
 
     e.group_end();
-}
-
-pub(super) fn emit_json_output_node(e: &mut EventEmitter, n: &JsonOutput) {
-    e.group_start();
-
-    e.token(TokenKind::RETURNING_KW);
-
-    if let Some(ref type_name) = n.type_name {
-        e.space();
-        super::emit_type_name(e, type_name);
-    }
-
-    if let Some(ref returning) = n.returning {
-        let mut has_content = true;
-        emit_json_returning_clause(e, returning, &mut has_content);
-    }
-
-    e.group_end();
-}
-
-pub(super) fn emit_json_output(e: &mut EventEmitter, output: &JsonOutput, has_content: &mut bool) {
-    if *has_content {
-        e.space();
-    }
-
-    e.token(TokenKind::RETURNING_KW);
-
-    if let Some(ref type_name) = output.type_name {
-        e.space();
-        super::emit_type_name(e, type_name);
-    }
-
-    if let Some(ref returning) = output.returning {
-        emit_json_returning_clause(e, returning, has_content);
-    }
-
-    *has_content = true;
-}
-
-pub(super) fn emit_json_format_node(e: &mut EventEmitter, format: &JsonFormat) {
-    e.group_start();
-
-    emit_json_format_after(e, format, Prefix::None);
-
-    e.group_end();
-}
-
-/// What comes before a FORMAT clause.
-#[derive(Clone, Copy)]
-enum Prefix {
-    /// A space: the clause follows an expression on the same line.
-    Space,
-    /// Nothing: the clause is the whole node.
-    None,
-}
-
-pub(super) fn emit_json_format(e: &mut EventEmitter, format: &JsonFormat) {
-    emit_json_format_after(e, format, Prefix::Space);
-}
-
-fn emit_json_format_after(e: &mut EventEmitter, format: &JsonFormat, prefix: Prefix) {
-    let prefix_space = matches!(prefix, Prefix::Space);
-    let mut wrote_any = false;
-
-    match format.format_type() {
-        JsonFormatType::JsFormatJson => {
-            if prefix_space {
-                e.space();
-            }
-            e.token(TokenKind::FORMAT_KW);
-            e.space();
-            e.token(TokenKind::JSON_KW);
-            wrote_any = true;
-        }
-        JsonFormatType::JsFormatJsonb => {
-            if prefix_space {
-                e.space();
-            }
-            e.token(TokenKind::FORMAT_KW);
-            e.space();
-            emit_keyword(e, "jsonb");
-            wrote_any = true;
-        }
-        JsonFormatType::Undefined | JsonFormatType::JsFormatDefault => {}
-    }
-
-    match format.encoding() {
-        JsonEncoding::JsEncUtf8 => emit_encoding(e, "UTF8", prefix_space || wrote_any),
-        JsonEncoding::JsEncUtf16 => emit_encoding(e, "UTF16", prefix_space || wrote_any),
-        JsonEncoding::JsEncUtf32 => emit_encoding(e, "UTF32", prefix_space || wrote_any),
-        JsonEncoding::Undefined | JsonEncoding::JsEncDefault => {}
-    }
-}
-
-pub(super) fn emit_json_returning_node(e: &mut EventEmitter, returning: &JsonReturning) {
-    e.group_start();
-
-    let mut has_content = false;
-    emit_json_returning_clause(e, returning, &mut has_content);
-
-    e.group_end();
-}
-
-pub(super) fn emit_json_returning_clause(
-    e: &mut EventEmitter,
-    returning: &JsonReturning,
-    _has_content: &mut bool,
-) {
-    // JsonReturning contains internal type info (typid, typmod), not SQL RETURNING clause
-    // Only emit the format if present (FORMAT JSON ENCODING ...)
-    if let Some(ref format) = returning.format {
-        emit_json_format(e, format);
-    }
-}
-
-fn emit_encoding(e: &mut EventEmitter, label: &str, needs_space: bool) {
-    if needs_space {
-        e.space();
-    }
-    e.token(TokenKind::ENCODING_KW);
-    e.space();
-    emit_keyword(e, label);
 }
