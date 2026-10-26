@@ -1,5 +1,5 @@
 //! Implementation of the [FileSystem] and related traits for the underlying OS filesystem
-use super::{BoxedTraversal, ErrorKind, File, FileSystemDiagnostic};
+use super::{BoxedTraversal, ErrorKind, File, FileSystemDiagnostic, SKIPPED_DIRECTORIES};
 use crate::fs::OpenOptions;
 use crate::{
     FileSystem, PgLSPath, dir,
@@ -144,6 +144,36 @@ impl FileSystem for OsFileSystem {
         path: &Path,
     ) -> Result<Resolution, ResolveError> {
         self.configuration_resolver.resolve(path, specifier)
+    }
+
+    fn find_files(&self, root: &Path, file_names: &[&str]) -> Vec<PathBuf> {
+        ignore::WalkBuilder::new(root)
+            .hidden(true)
+            .require_git(false)
+            .filter_entry(|entry| {
+                !(entry
+                    .file_type()
+                    .is_some_and(|file_type| file_type.is_dir())
+                    && entry
+                        .file_name()
+                        .to_str()
+                        .is_some_and(|name| SKIPPED_DIRECTORIES.contains(&name)))
+            })
+            .build()
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .file_type()
+                    .is_some_and(|file_type| file_type.is_file())
+            })
+            .filter(|entry| {
+                entry
+                    .file_name()
+                    .to_str()
+                    .is_some_and(|name| file_names.contains(&name))
+            })
+            .map(ignore::DirEntry::into_path)
+            .collect()
     }
 }
 

@@ -2153,9 +2153,7 @@ create table part_abc_log (
   c bool
 );
 
-with
-t
-as (
+with t as (
   merge into part_abc_view as pt
   using (select stable_one() + 1 as pid) as q
   inner join
@@ -2170,9 +2168,7 @@ insert into part_abc_log
 select * from t
 returning *;
 
-with
-t
-as (
+with t as (
   merge into part_abc_view as pt
   using (select stable_one() + 1 as pid) as q
   inner join
