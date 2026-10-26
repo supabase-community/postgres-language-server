@@ -37,7 +37,10 @@ pub(super) fn emit_into_clause(e: &mut EventEmitter, n: &IntoClause) {
                 e.line(LineType::SoftOrSpace);
             }
             emit_comma_separated_list(e, &n.col_names, |e, node| {
-                let ident = assert_node_variant!(String, node);
+                let Some(NodeEnum::String(ident)) = node.node.as_ref() else {
+                    emit_node(e, node);
+                    return;
+                };
                 emit_string(e, ident);
             });
             if n.col_names.len() > 1 {

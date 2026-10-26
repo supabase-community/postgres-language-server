@@ -74,7 +74,11 @@ pub(super) fn emit_alter_table_cmd_of(
             e.token(TokenKind::TYPE_KW);
             if let Some(ref def) = cmd.def {
                 // Extract ColumnDef from Node to emit only type-related attributes
-                let column_def = assert_node_variant!(ColumnDef, def);
+                let Some(NodeEnum::ColumnDef(column_def)) = def.node.as_ref() else {
+                    e.space();
+                    emit_node(e, def);
+                    return;
+                };
 
                 // Emit type name (no space before - TYPE keyword already emitted)
                 if let Some(ref typename) = column_def.type_name {

@@ -41,7 +41,10 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
         e.line(LineType::Soft);
         e.indent_start();
         emit_comma_separated_list(e, &n.aliases, |emitter, alias_node| {
-            let alias = assert_node_variant!(String, alias_node);
+            let Some(NodeEnum::String(alias)) = alias_node.node.as_ref() else {
+                emit_node(emitter, alias_node);
+                return;
+            };
             emit_identifier_maybe_quoted(emitter, &alias.sval);
         });
         e.indent_end();

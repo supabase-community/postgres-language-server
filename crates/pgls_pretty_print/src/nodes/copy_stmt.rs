@@ -62,7 +62,10 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
         e.line(LineType::Soft);
         e.indent_start();
         emit_comma_separated_list(e, &n.options, |e, n| {
-            let def_elem = assert_node_variant!(DefElem, n);
+            let Some(NodeEnum::DefElem(def_elem)) = n.node.as_ref() else {
+                emit_node(e, n);
+                return;
+            };
             emit_copy_option(e, def_elem);
         });
         e.indent_end();

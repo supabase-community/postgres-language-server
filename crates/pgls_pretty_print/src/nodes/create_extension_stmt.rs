@@ -22,7 +22,10 @@ pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensi
         e.token(TokenKind::WITH_KW);
 
         for opt in &n.options {
-            let def = assert_node_variant!(DefElem, opt);
+            let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() else {
+                emit_node(e, opt);
+                continue;
+            };
             e.space();
             emit_extension_option(e, def);
         }

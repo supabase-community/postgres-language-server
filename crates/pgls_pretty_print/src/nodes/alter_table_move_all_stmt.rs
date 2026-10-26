@@ -28,7 +28,10 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
         e.token(TokenKind::BY_KW);
         e.space();
         emit_comma_separated_list(e, &n.roles, |e, node| {
-            let role_spec = assert_node_variant!(RoleSpec, node);
+            let Some(NodeEnum::RoleSpec(role_spec)) = node.node.as_ref() else {
+                emit_node(e, node);
+                return;
+            };
             super::emit_role_spec(e, role_spec);
         });
     }

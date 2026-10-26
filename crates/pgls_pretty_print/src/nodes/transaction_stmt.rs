@@ -108,7 +108,11 @@ fn emit_transaction_options(e: &mut EventEmitter, n: &TransactionStmt) {
             e.line(LineType::SoftOrSpace);
         }
 
-        let def_elem = assert_node_variant!(DefElem, option);
+        let Some(NodeEnum::DefElem(def_elem)) = option.node.as_ref() else {
+            emit_node(e, option);
+
+            continue;
+        };
         emit_transaction_option(e, def_elem);
     }
 }

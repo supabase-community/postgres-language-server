@@ -36,12 +36,22 @@ pub(crate) fn emit_set_clause_list(e: &mut EventEmitter, nodes: &[pgls_query::No
         }
 
         let node = &nodes[index];
-        let target = assert_node_variant!(ResTarget, node);
+        let Some(NodeEnum::ResTarget(target)) = node.node.as_ref() else {
+            emit_node(e, node);
+            index += 1;
+            continue;
+        };
 
         let consumed = if let Some(ref val) = target.val {
             match val.node.as_ref() {
                 Some(NodeEnum::MultiAssignRef(multi)) if multi.colno == 1 => {
-                    emit_multi_assign_clause(e, nodes, index, multi)
+                    match multi.source.as_deref() {
+                        Some(source) => emit_multi_assign_clause(e, nodes, index, multi, source),
+                        None => {
+                            emit_set_clause(e, target);
+                            1
+                        }
+                    }
                 }
                 _ => {
                     emit_set_clause(e, target);
@@ -62,20 +72,14 @@ fn emit_multi_assign_clause(
     nodes: &[pgls_query::Node],
     start: usize,
     multi: &MultiAssignRef,
+    source_node: &Node,
 ) -> usize {
     let total = multi.ncolumns.max(1) as usize;
     debug_assert_eq!(multi.colno, 1, "MultiAssignRef should start at colno 1");
 
-    let end = start + total;
-    debug_assert!(
-        end <= nodes.len(),
-        "MultiAssignRef spans beyond target list"
-    );
-
-    let source_node = multi
-        .source
-        .as_ref()
-        .expect("MultiAssignRef source missing row expression");
+    // The columns of `(a, b) = ...` are the next `ncolumns` targets. A source spanning past the
+    // list writes the targets there are, and the AST check refuses the output.
+    let end = (start + total).min(nodes.len());
 
     // Check if source is a RowExpr - if so, we may expand it; otherwise emit as-is
     let maybe_row_expr = if let Some(pgls_query::NodeEnum::RowExpr(r)) = source_node.node.as_ref() {
@@ -104,8 +108,10 @@ fn emit_multi_assign_clause(
             e.line(LineType::SoftOrSpace);
         }
 
-        let target = assert_node_variant!(ResTarget, node);
-        emit_column_name_with_indirection(e, target);
+        match node.node.as_ref() {
+            Some(NodeEnum::ResTarget(target)) => emit_column_name_with_indirection(e, target),
+            _ => emit_node(e, node),
+        }
     }
     e.indent_end();
     e.line(LineType::Soft);

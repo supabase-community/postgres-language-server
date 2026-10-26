@@ -20,7 +20,10 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
         e.line(LineType::SoftOrSpace);
         e.indent_start();
         for opt in &n.func_options {
-            let def_elem = assert_node_variant!(DefElem, opt);
+            let Some(NodeEnum::DefElem(def_elem)) = opt.node.as_ref() else {
+                emit_node(e, opt);
+                continue;
+            };
 
             match def_elem.defname.as_str() {
                 "handler" => {

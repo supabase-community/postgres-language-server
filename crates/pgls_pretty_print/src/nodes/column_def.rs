@@ -68,7 +68,10 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
             &n.fdwoptions,
             ListSeparatorSpacing::Space,
             |e, opt| {
-                let def_elem = assert_node_variant!(DefElem, opt);
+                let Some(NodeEnum::DefElem(def_elem)) = opt.node.as_ref() else {
+                    emit_node(e, opt);
+                    return;
+                };
                 emit_options_def_elem(e, def_elem);
             },
         );
