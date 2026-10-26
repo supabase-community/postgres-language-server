@@ -210,6 +210,20 @@ fn spans_cover_the_reference() {
 }
 
 #[test]
+fn spans_cover_non_ascii_names() {
+    let sql = "select größe from users";
+    let resolution = resolve_after("", sql, None);
+    assert_eq!(
+        resolution
+            .findings
+            .iter()
+            .map(|finding| &sql[finding.span.unwrap()])
+            .collect::<Vec<_>>(),
+        ["größe"]
+    );
+}
+
+#[test]
 fn columns() {
     assert_eq!(
         findings("select email from users"),

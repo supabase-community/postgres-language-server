@@ -33,7 +33,7 @@ pub(super) fn emit_range_tbl_function(e: &mut EventEmitter, n: &RangeTblFunction
         }
 
         e.indent_end();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
     }
 

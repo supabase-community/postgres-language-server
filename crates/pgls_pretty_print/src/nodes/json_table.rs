@@ -25,7 +25,7 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
     e.indent_start();
 
     if let Some(context) = n.context_item.as_ref() {
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
         super::emit_json_value_expr(e, context);
         e.token(TokenKind::COMMA);
     }
@@ -60,7 +60,7 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
             }
         });
         e.indent_end();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
     }
 
@@ -70,7 +70,7 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
     }
 
     e.indent_end();
-    e.line(LineType::SoftOrSpace);
+    e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
 
     if let Some(alias) = n.alias.as_ref() {
@@ -125,7 +125,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
                 }
             });
             e.indent_end();
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
         }
 

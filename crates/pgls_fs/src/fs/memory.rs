@@ -13,7 +13,10 @@ use pgls_diagnostics::{Error, Severity};
 use crate::fs::OpenOptions;
 use crate::{FileSystem, PgLSPath, TraversalContext, TraversalScope};
 
-use super::{BoxedTraversal, ErrorKind, File, FileSystemDiagnostic};
+use super::{
+    BoxedTraversal, ErrorKind, File, FileSystemDiagnostic, FindFiles, FoundFiles,
+    SKIPPED_DIRECTORIES, skips_directory,
+};
 
 type OnGetChangedFiles = Option<
     Arc<
@@ -258,6 +261,57 @@ impl FileSystem for MemoryFileSystem {
     ) -> Result<Resolution, ResolveError> {
         // not needed for the memory file system
         todo!()
+    }
+
+    fn find_files(&self, root: &Path, search: &FindFiles) -> FoundFiles {
+        let files = self.files.0.read();
+        let has_file = |directory: &Path| {
+            search
+                .file_names
+                .iter()
+                .any(|name| files.contains_key(&directory.join(name)))
+        };
+        let mut truncated = false;
+        let mut found: Vec<_> = files
+            .keys()
+            .filter(|path| {
+                let Ok(relative) = path.strip_prefix(root) else {
+                    return false;
+                };
+                let mut components: Vec<_> = relative.iter().map(|c| c.to_string_lossy()).collect();
+                let Some(file_name) = components.pop() else {
+                    return false;
+                };
+                if !search.file_names.contains(&&*file_name)
+                    || components.iter().any(|directory| {
+                        directory.starts_with('.') || SKIPPED_DIRECTORIES.contains(&&**directory)
+                    })
+                {
+                    return false;
+                }
+                if components.len() > search.max_depth {
+                    truncated = true;
+                    return false;
+                }
+                !path
+                    .ancestors()
+                    .skip(1)
+                    .take_while(|directory| *directory != root)
+                    .any(|directory| {
+                        skips_directory(search.skip_directory.as_ref(), root, directory, has_file)
+                    })
+            })
+            .cloned()
+            .collect();
+        found.sort();
+        if found.len() > search.max_entries {
+            found.truncate(search.max_entries);
+            truncated = true;
+        }
+        FoundFiles {
+            files: found,
+            truncated,
+        }
     }
 }
 
