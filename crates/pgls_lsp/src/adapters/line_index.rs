@@ -32,8 +32,10 @@ impl LineIndex {
             let char_size = TextSize::of(char);
 
             if char == '\n' {
-                // SAFETY: the conversion from `usize` to `TextSize` can fail if `offset`
-                // is larger than 2^32. We don't support such large files.
+                #[expect(
+                    clippy::expect_used,
+                    reason = "offsets are `TextSize` (u32) everywhere, documents over 4 GiB aren't supported"
+                )]
                 let char_offset = TextSize::try_from(offset).expect("TextSize overflow");
                 newlines.push(char_offset + char_size);
 

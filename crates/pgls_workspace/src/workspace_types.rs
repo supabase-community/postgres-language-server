@@ -113,8 +113,17 @@ fn value_type(value: &Value) -> String {
         Value::Bool(false) => "false".to_string(),
         Value::Number(value) => format!("{}", value.as_f64().unwrap()),
         Value::String(value) => format!("\"{value}\""),
-        Value::Array(_) => unimplemented!(),
-        Value::Object(_) => unimplemented!(),
+        Value::Array(items) => {
+            let items: Vec<_> = items.iter().map(value_type).collect();
+            format!("[{}]", items.join(", "))
+        }
+        Value::Object(fields) => {
+            let fields: Vec<_> = fields
+                .iter()
+                .map(|(key, value)| format!("\"{key}\": {}", value_type(value)))
+                .collect();
+            format!("{{ {} }}", fields.join(", "))
+        }
     }
 }
 
@@ -184,7 +193,9 @@ fn schema_object_type<'a>(
             let reference = schema.reference.as_deref()?;
             let key = reference.trim_start_matches("#/components/schemas/");
             match root_schema.definitions.get(key) {
-                Some(Schema::Bool(_)) => unimplemented!(),
+                // `true` accepts any value and `false` none.
+                Some(Schema::Bool(true)) => return Some("unknown".to_string()),
+                Some(Schema::Bool(false)) => return Some("never".to_string()),
                 Some(Schema::Object(schema)) => queue.push_back((key, schema)),
                 None => panic!("definition for type {key:?} not found"),
             }

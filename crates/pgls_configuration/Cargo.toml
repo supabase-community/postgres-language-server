@@ -34,3 +34,6 @@ doctest = false
 
 [features]
 schema = ["dep:schemars", "schemars/indexmap"]
+
+[lints]
+workspace = true
