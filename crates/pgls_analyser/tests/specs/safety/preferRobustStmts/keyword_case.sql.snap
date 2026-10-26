@@ -1,0 +1,50 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The inserted keywords follow the case of the statement.
+-- expect_lint/preferRobustStmts
+create table users (id bigint);
+-- expect_lint/preferRobustStmts
+CREATE TABLE posts (id bigint);
+
+```
+
+# Diagnostics
+lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CREATE TABLE should use IF NOT EXISTS.
+  
+  i Add IF NOT EXISTS to make the migration re-runnable if it fails.
+  
+
+
+## Fix (unsafe): Add IF NOT EXISTS
+```
+-- The inserted keywords follow the case of the statement.
+-- expect_lint/preferRobustStmts
+create table if not exists users (id bigint);
+-- expect_lint/preferRobustStmts
+CREATE TABLE posts (id bigint);
+
+```
+
+lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CREATE TABLE should use IF NOT EXISTS.
+  
+  i Add IF NOT EXISTS to make the migration re-runnable if it fails.
+  
+
+
+## Fix (unsafe): Add IF NOT EXISTS
+```
+-- The inserted keywords follow the case of the statement.
+-- expect_lint/preferRobustStmts
+create table users (id bigint);
+-- expect_lint/preferRobustStmts
+CREATE TABLE IF NOT EXISTS posts (id bigint);
+
+```

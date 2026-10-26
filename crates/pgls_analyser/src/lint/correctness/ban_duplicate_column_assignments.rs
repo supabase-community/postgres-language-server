@@ -1,10 +1,10 @@
 use crate::fix::StatementTokens;
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
-use pgls_analyse::{RuleSource, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
+use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_catalog::resolve::figure_column_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AlterTableType, Node, SelectStmt, SetOperation, Token};
+use pgls_query::protobuf::{AlterTableType, Node, ResTarget, SelectStmt, SetOperation, Token};
 use pgls_query::{NodeEnum, NodeRef};
 use pgls_text_size::TextRange;
 
@@ -49,6 +49,7 @@ declare_lint_rule! {
         severity: Severity::Error,
         recommended: true,
         sources: &[RuleSource::Squawk("ban-duplicate-column-assignments")],
+        fix_kind: FixKind::Unsafe,
     }
 }
 
@@ -133,15 +134,21 @@ fn report_assignments(
     tokens: Option<StatementTokens>,
     diagnostics: &mut Vec<LinterDiagnostic>,
 ) {
-    let assignments = targets.iter().filter_map(|target| match &target.node {
-        Some(NodeEnum::ResTarget(target)) => Some((
+    let targets: Vec<&ResTarget> = targets
+        .iter()
+        .filter_map(|target| match &target.node {
+            Some(NodeEnum::ResTarget(target)) => Some(target.as_ref()),
+            _ => None,
+        })
+        .collect();
+    let assignments = targets.iter().map(|target| {
+        (
             Column {
                 name: target.name.clone(),
                 span: token_range(tokens, target.location),
             },
             target.indirection.is_empty(),
-        )),
-        _ => None,
+        )
     });
 
     for column in duplicates(assignments) {
@@ -158,9 +165,53 @@ fn report_assignments(
                 None,
                 "Postgres rejects statements that assign a column more than once.",
             )
-            .note("Remove all but one of the assignments."),
+            .note("Remove all but one of the assignments.")
+            .maybe_fix(keep_last_assignment(&targets, name, tokens)),
         );
     }
+}
+
+/// Removes all but the last assignment to `column` from a SET clause, if each of them assigns
+/// the whole column on its own, like `name = 'a'`. We can't tell which value was meant, so the
+/// fix is unsafe.
+fn keep_last_assignment(
+    targets: &[&ResTarget],
+    column: &str,
+    tokens: Option<StatementTokens>,
+) -> Option<RuleFix> {
+    let tokens = tokens?;
+    let assignments: Vec<&ResTarget> = targets
+        .iter()
+        .copied()
+        .filter(|target| target.name == column)
+        .collect();
+    // INSERT column lists have no values, and `(a, b) = ...` assigns several columns at once.
+    let simple = assignments.iter().all(|target| {
+        target.indirection.is_empty()
+            && target.val.as_deref().is_some_and(|value| {
+                !matches!(value.node, Some(NodeEnum::MultiAssignRef(_)) | None)
+            })
+    });
+    if !simple {
+        return None;
+    }
+
+    let (_, earlier) = assignments.split_last()?;
+    let mut fix = RuleFix::new(format!("Keep only the last assignment to {column}"));
+    for target in earlier {
+        // Up to the next assignment, which a later one always is.
+        let start = tokens.at(target.location)?;
+        let mut comma = tokens.element_end(start) + 1;
+        while tokens.kind(comma)? != Token::Ascii44 {
+            comma += 1;
+        }
+        tokens.kind(comma + 1)?;
+        fix = fix.delete(TextRange::new(
+            tokens.range(start).start(),
+            tokens.range(comma + 1).start(),
+        ));
+    }
+    Some(fix)
 }
 
 /// What a list of column definitions or names belongs to.

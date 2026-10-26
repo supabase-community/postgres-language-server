@@ -1,5 +1,5 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
-use pgls_analyse::{RuleSource, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
+use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_catalog::TransactionMode;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -39,6 +39,7 @@ declare_lint_rule! {
         recommended: true,
         applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Squawk("ban-uncommitted-transaction")],
+        fix_kind: FixKind::Unsafe,
     }
 }
 
@@ -81,7 +82,12 @@ impl LinterRule for BanUncommittedTransaction {
                 None,
                 "Postgres rolls back the open transaction when the session ends, so its changes are not applied.",
             )
-            .note("Add a COMMIT or ROLLBACK statement to complete the transaction."),
+            .note("Add a COMMIT or ROLLBACK statement to complete the transaction.")
+            .maybe_fix(
+                file_context
+                    .end_offset()
+                    .map(|end| RuleFix::new("Add COMMIT at the end").insert(end, "\ncommit;")),
+            ),
         ]
     }
 }
