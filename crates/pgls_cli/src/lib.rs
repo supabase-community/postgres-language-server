@@ -9,7 +9,9 @@ use commands::check::{self, CheckArgs};
 use commands::format::{self, FormatArgs};
 use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
+use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_console::{ColorMode, Console, ConsoleExt, markup};
+use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -266,20 +268,23 @@ impl<'app> CliSession<'app> {
     }
 
     /// Applies the configuration files that apply to `paths` to the project, so that each file
-    /// uses its nearest configuration file below the working directory. The environment and the
-    /// arguments apply to them like to the root configuration file. Skipped when the user chose a
-    /// configuration file.
+    /// uses its nearest configuration file below the working directory. The arguments apply to
+    /// them like to the root configuration file, and the environment fills in the connection
+    /// options they don't set. Skipped when the user chose a configuration file.
+    ///
+    /// The folder of a configuration file that can't be loaded uses the default settings. Returns
+    /// an error diagnostic for each such file.
     pub fn apply_nested_configurations(
         &mut self,
         cli_options: &CliOptions,
         cli_configuration: Option<PartialConfiguration>,
         paths: &[OsString],
-    ) -> Result<(), CliDiagnostic> {
+    ) -> Result<Vec<Error>, CliDiagnostic> {
         if cli_options.config_path.is_some() {
-            return Ok(());
+            return Ok(Vec::new());
         }
         let Some(root) = self.fs().working_directory() else {
-            return Ok(());
+            return Ok(Vec::new());
         };
 
         let root_files = self.root_files.take().map(Arc::new);
@@ -292,17 +297,28 @@ impl<'app> CliSession<'app> {
                 root_files,
                 ..NestedConfigurationSearch::new(root)
             },
-            |configuration| apply_overrides(configuration, cli_configuration.clone()),
+            PartialDatabaseConfiguration::from_env().as_ref(),
+            |configuration| apply_arguments(configuration, cli_configuration.clone()),
         )?;
         if let Some(incomplete) = nested.incomplete {
             self.console().log(markup! {
                 <Warn>"Warning: "</Warn>{incomplete.to_string()}"\n"
             });
         }
-        for NestedConfiguration { result, .. } in nested.configurations {
-            result?;
-        }
-        Ok(())
+        let errors = nested
+            .configurations
+            .into_iter()
+            .filter_map(|NestedConfiguration { directory, result }| {
+                let error = result.err()?;
+                let file_path = ConfigName::file_names()
+                    .iter()
+                    .map(|file_name| directory.join(file_name))
+                    .find(|file_path| self.fs().path_is_file(file_path))
+                    .unwrap_or(directory);
+                Some(Error::from(error).with_file_path(file_path.display().to_string()))
+            })
+            .collect();
+        Ok(errors)
     }
 
     pub fn setup_workspace(
@@ -335,7 +351,7 @@ fn apply_overrides(
     cli_configuration: Option<PartialConfiguration>,
 ) -> PartialConfiguration {
     // Env vars override config file but are overridden by explicit CLI args.
-    if let Some(env_db) = pgls_configuration::database::PartialDatabaseConfiguration::from_env() {
+    if let Some(env_db) = PartialDatabaseConfiguration::from_env() {
         let env_config = PartialConfiguration {
             db: Some(env_db),
             ..Default::default()
@@ -343,6 +359,14 @@ fn apply_overrides(
         configuration.merge_with(env_config);
     }
 
+    apply_arguments(configuration, cli_configuration)
+}
+
+/// Lays the configuration from the arguments over a configuration file.
+fn apply_arguments(
+    mut configuration: PartialConfiguration,
+    cli_configuration: Option<PartialConfiguration>,
+) -> PartialConfiguration {
     if let Some(cli_config) = cli_configuration {
         configuration.merge_with(cli_config);
     }
