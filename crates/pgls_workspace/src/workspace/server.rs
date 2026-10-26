@@ -1,4 +1,5 @@
 use std::{
+    borrow::Borrow,
     collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
     panic::RefUnwindSafe,
@@ -28,8 +29,8 @@ use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
     LinterDiagnostic, LinterOptions, MigrationSection, RuleFix,
 };
-use pgls_catalog::resolve::{Reference, ResolveParams, resolve};
-use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
+use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
+use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
 use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
@@ -110,11 +111,20 @@ pub struct WorkspaceServer {
     /// The indexed database snapshot the catalog starts from
     catalog_base: Mutex<Option<Arc<CatalogBase>>>,
 
-    /// The last snapshot built for completions and hover, by the statements it includes
-    snapshot_before: Mutex<Option<(u64, Arc<Snapshot>)>>,
+    /// The last snapshot built for completions and hover
+    snapshot_before: Mutex<Option<SnapshotBefore>>,
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
+}
+
+/// A database snapshot with the changes of the statements before a statement.
+struct SnapshotBefore {
+    /// The database snapshot it is built from.
+    base: Arc<Snapshot>,
+    /// The text that the statement sees.
+    key: u64,
+    snapshot: Arc<Snapshot>,
 }
 
 /// The `Workspace` object is long-lived, so we want it to be able to cross
@@ -453,6 +463,7 @@ impl WorkspaceServer {
     /// earlier in the file. Each migration section gets a session of its own, and the changes of
     /// a down section don't carry into the next section. `visit` gets every parsed statement with
     /// the catalog and the session as they are before it. `settings` are the ones of the file.
+    /// Returns the catalog after the walked statements.
     fn walk_statements(
         &self,
         settings: Option<&Settings>,
@@ -460,7 +471,7 @@ impl WorkspaceServer {
         snapshot: &Arc<Snapshot>,
         end: TextSize,
         mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
-    ) {
+    ) -> Catalog {
         let (search_path, sections) = settings
             .map(|settings| {
                 (
@@ -529,6 +540,76 @@ impl WorkspaceServer {
                 session.apply(&stmt.root);
             }
         }
+        catalog
+    }
+
+    /// For hover on the statement `id` at `range`: the references whose span contains
+    /// `position`, and the database snapshot as the statement sees it.
+    fn hover_references(
+        &self,
+        settings: Option<&Settings>,
+        doc: &Document,
+        id: &StatementId,
+        range: TextRange,
+        position: TextSize,
+        snapshot: Arc<Snapshot>,
+    ) -> (Vec<Reference>, Arc<Snapshot>) {
+        let search_path = settings
+            .map(|settings| settings.typecheck.search_path.clone())
+            .unwrap_or_default();
+        let mut found = None;
+        let catalog = self.walk_statements(
+            settings,
+            doc,
+            &snapshot,
+            position + TextSize::from(1),
+            |stmt, catalog, session| {
+                let Some(sql) = stmt.sql.as_deref() else {
+                    return;
+                };
+                if stmt.range != range {
+                    return;
+                }
+                let position = position - range.start();
+                let (references, others): (Vec<_>, Vec<_>) = resolve(ResolveParams {
+                    stmt: &stmt.root,
+                    catalog,
+                    search_path: session.search_path(),
+                    function: stmt.function.as_ref(),
+                    sql: Some(sql),
+                    collect_references: true,
+                })
+                .references
+                .into_iter()
+                .partition(|reference| {
+                    reference
+                        .span()
+                        .is_some_and(|span| span.contains_inclusive(position))
+                });
+                // Objects that the file didn't change are the same in the database snapshot.
+                let snapshot = if in_database(&references, &others) {
+                    Arc::clone(&snapshot)
+                } else {
+                    self.snapshot_before(
+                        doc,
+                        id,
+                        range,
+                        Arc::clone(&snapshot),
+                        &search_path,
+                        || catalog,
+                    )
+                };
+                found = Some((references, snapshot));
+            },
+        );
+        // A statement that doesn't parse is not visited. It changes nothing, so it sees the
+        // catalog after the walk.
+        found.unwrap_or_else(|| {
+            (
+                Vec::new(),
+                self.snapshot_before(doc, id, range, snapshot, &search_path, || catalog),
+            )
+        })
     }
 
     /// The references whose span contains `position`, in the innermost statement at `position`
@@ -596,48 +677,43 @@ impl WorkspaceServer {
         base
     }
 
-    /// The database snapshot as the statement at `statement_start` sees it: with the objects
-    /// that the statements before it create, change, or drop.
-    fn snapshot_before(
+    /// The database snapshot as the statement `id` at `range` sees it: with the objects that the
+    /// statements before it create, change, or drop. `catalog` returns the catalog that the
+    /// statement sees, and is only called when the snapshot is not cached.
+    fn snapshot_before<C: Borrow<Catalog>>(
         &self,
         doc: &Document,
-        statement_start: TextSize,
+        id: &StatementId,
+        range: TextRange,
         snapshot: Arc<Snapshot>,
         search_path: &[String],
+        catalog: impl FnOnce() -> C,
     ) -> Arc<Snapshot> {
-        let statements: Vec<_> = doc
-            .iter(ExecuteStatementMapper)
-            .take_while(|(_, range, _, _)| range.end() <= statement_start)
-            .filter(|(id, _, _, _)| !id.is_child())
-            .filter_map(|(_, _, sql, ast)| Some((sql, ast?)))
-            .collect();
-        if statements.is_empty() {
-            return snapshot;
-        }
-
+        // The statement sees the text before it, and the body of a SQL function also sees its
+        // `CREATE FUNCTION`. Files with other settings can see another search path.
         let mut hasher = DefaultHasher::new();
-        Arc::as_ptr(&snapshot).hash(&mut hasher);
+        doc.get_document_content()[..usize::from(range.start())].hash(&mut hasher);
+        id.parent_content().hash(&mut hasher);
         search_path.hash(&mut hasher);
-        for (sql, _) in &statements {
-            sql.hash(&mut hasher);
-        }
         let key = hasher.finish();
 
         let mut cached = self.snapshot_before.lock().unwrap();
-        if let Some((cached_key, cached_snapshot)) = cached.as_ref()
-            && *cached_key == key
+        if let Some(cached) = cached.as_ref()
+            && cached.key == key
+            && Arc::ptr_eq(&cached.base, &snapshot)
         {
-            return Arc::clone(cached_snapshot);
+            return Arc::clone(&cached.snapshot);
         }
 
-        let mut catalog = Catalog::new(Some(self.catalog_base(&snapshot)));
-        let mut session = Session::new(snapshot.expand_search_path(search_path));
-        for (_, ast) in &statements {
-            catalog.apply(ast, session.search_path());
-            session.apply(ast);
-        }
-        let result = catalog.snapshot().unwrap_or(snapshot);
-        *cached = Some((key, Arc::clone(&result)));
+        let result = catalog()
+            .borrow()
+            .snapshot()
+            .unwrap_or_else(|| Arc::clone(&snapshot));
+        *cached = Some(SnapshotBefore {
+            base: snapshot,
+            key,
+            snapshot: Arc::clone(&result),
+        });
         result
     }
 
@@ -866,6 +942,8 @@ impl Workspace for WorkspaceServer {
                 params.vcs_base_path,
                 params.gitignore_matches.as_slice(),
             )?;
+        // The search path and the migration sections change what a statement sees.
+        *self.snapshot_before.lock().unwrap() = None;
 
         Ok(())
     }
@@ -934,6 +1012,8 @@ impl Workspace for WorkspaceServer {
         self.workspaces_mut()
             .as_mut()
             .set_nested_settings(params.project_key, nested);
+        // The search path and the migration sections change what a statement sees.
+        *self.snapshot_before.lock().unwrap() = None;
         Ok(result)
     }
 
@@ -1762,8 +1842,22 @@ impl Workspace for WorkspaceServer {
             }
             Some((id, range, cst)) => {
                 let position = params.position - range.start();
-                let snapshot =
-                    self.snapshot_before(parsed_doc, range.start(), snapshot, &search_path);
+                let snapshot = self.snapshot_before(
+                    parsed_doc,
+                    &id,
+                    range,
+                    Arc::clone(&snapshot),
+                    &search_path,
+                    || {
+                        self.walk_statements(
+                            settings.settings_for(params.project_key, params.path.as_path()),
+                            parsed_doc,
+                            &snapshot,
+                            range.start(),
+                            |_, _, _| {},
+                        )
+                    },
+                );
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
@@ -1790,9 +1884,6 @@ impl Workspace for WorkspaceServer {
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
-        let search_path = settings
-            .map(|settings| settings.typecheck.search_path.clone())
-            .unwrap_or_default();
 
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
@@ -1816,8 +1907,14 @@ impl Workspace for WorkspaceServer {
         match doc.iter_at(WithCSTandASTMapper, params.position).last() {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
                 let position_in_stmt = params.position - range.start();
-                let (_, references) = self.references_at(settings, doc, &snapshot, params.position);
-                let snapshot = self.snapshot_before(doc, range.start(), snapshot, &search_path);
+                let (references, snapshot) = self.hover_references(
+                    settings,
+                    doc,
+                    &stmt_id,
+                    range,
+                    params.position,
+                    snapshot,
+                );
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,
@@ -1994,6 +2091,41 @@ impl Workspace for WorkspaceServer {
         });
         Ok(PullSemanticTokensResult { tokens })
     }
+}
+
+/// Whether hover finds what `references` resolve to in the database snapshot: objects that the
+/// file didn't change, and columns of CTEs and subqueries. `others` are the other references of
+/// the statement.
+fn in_database(references: &[Reference], others: &[Reference]) -> bool {
+    // The statement references each relation that it takes columns from.
+    let unchanged_relation = |schema: &str, name: &str| {
+        references.iter().chain(others).any(|reference| {
+            matches!(
+                reference,
+                Reference::Relation { relation, .. }
+                    if relation.schema == schema
+                        && relation.name == name
+                        && relation.origin == Origin::Database
+            )
+        })
+    };
+    !references.is_empty()
+        && references.iter().all(|reference| match reference {
+            Reference::Relation { relation, .. } => relation.origin == Origin::Database,
+            Reference::Function { function, .. } => function.origin == Origin::Database,
+            Reference::Column {
+                source: ColumnSource::Relation { schema, name },
+                ..
+            } => unchanged_relation(schema, name),
+            Reference::Column { .. } => true,
+            Reference::Type { type_info, .. } | Reference::EnumLiteral { type_info, .. } => {
+                type_info.origin == Origin::Database
+            }
+            // Parameters belong to a function of the file.
+            Reference::Parameter { .. } => false,
+            // The columns of a `*` can come from objects that the file changed.
+            Reference::Star { .. } => false,
+        })
 }
 
 /// The migration sections of `doc`, like the up and down migrations of dbmate and goose.
