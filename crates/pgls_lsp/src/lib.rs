@@ -4,7 +4,6 @@
 
 mod adapters;
 mod capabilities;
-mod configuration;
 mod diagnostics;
 mod documents;
 mod handlers;

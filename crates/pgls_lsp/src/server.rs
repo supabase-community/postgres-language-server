@@ -567,9 +567,8 @@ mod tests {
     }
 
     /// Clearing an override has to restore the baseline. The configuration file is `{}` and there is
-    /// no environment configuration, so nothing below the override layer configures `files` — and
-    /// `Settings::merge_with_configuration` keeps a section that the incoming configuration omits,
-    /// which is why the cleared section has to be materialized with its defaults.
+    /// no environment configuration, so nothing below the override layer configures `files`: the
+    /// root settings are replaced on every load, so the section goes back to its defaults.
     #[tokio::test]
     async fn clearing_client_overrides_restores_the_baseline() {
         let working_directory = tempfile::tempdir().unwrap();

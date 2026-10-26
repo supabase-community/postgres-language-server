@@ -1,7 +1,7 @@
 mod layers;
 mod project;
 
-pub use layers::{ConfigurationLayers, OverrideMode, SectionMask};
+pub use layers::{ConfigurationLayers, OverrideMode};
 pub use project::{
     AppliedConfiguration, ConfigurationNotice, ConfigureProjectParams, ConfiguredProject,
     VcsIntegration, configure_project,
@@ -1109,7 +1109,10 @@ mod tests {
             r#"{ "db": { "host": "b" } }"#,
         );
 
-        let loaded = load(fs, ConfigurationPathHint::FromWorkspace(project_directory()));
+        let loaded = load(
+            fs,
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        );
         let db = loaded.configuration.db.as_ref().unwrap();
         assert_eq!(db.host.as_deref(), Some("b"));
         assert_eq!(db.database.as_deref(), Some("a"));
