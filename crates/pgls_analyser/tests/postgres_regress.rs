@@ -35,13 +35,7 @@ const KNOWN_ARTEFACTS: &[(&str, &str, &str)] = &[(
 /// Known false positives in the bodies of SQL functions Postgres accepted: the file, a snippet of
 /// the function, the rule, and the root cause. Remove an entry once it is fixed; an entry that
 /// matches nothing fails the test.
-const KNOWN_FALSE_POSITIVES: &[(&str, &str, &str, &str)] = &[(
-    "polymorphism",
-    "select array_prepend($1, $2)",
-    "functionArgumentMismatch",
-    "parameters of polymorphic types keep the pseudo-type in the body, so `$1 anyelement` doesn't \
-     match `anycompatible`",
-)];
+const KNOWN_FALSE_POSITIVES: &[(&str, &str, &str, &str)] = &[];
 
 #[test]
 fn typecheck_reports_nothing_postgres_accepts() {

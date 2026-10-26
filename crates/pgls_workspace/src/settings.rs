@@ -908,6 +908,50 @@ pub(crate) const DEFAULT_FILE_SIZE_LIMIT: NonZeroU64 =
     // SAFETY: This constant is initialized with a non-zero value
     NonZeroU64::new(1024 * 1024).unwrap();
 
+impl FilesSettings {
+    /// The files settings of a configuration, without applying the rest of it.
+    pub fn from_configuration(
+        configuration: &PartialConfiguration,
+        working_directory: Option<PathBuf>,
+        vcs_path: Option<PathBuf>,
+        gitignore_matches: &[String],
+    ) -> Result<Self, WorkspaceError> {
+        Ok(to_file_settings(
+            working_directory,
+            configuration.files.clone().map(FilesConfiguration::from),
+            vcs_path,
+            gitignore_matches,
+        )?
+        .unwrap_or_default())
+    }
+
+    /// Whether a file is ignored by `files.ignore`/`files.include` or the VCS ignore file.
+    pub fn is_ignored(&self, path: &Path) -> bool {
+        let is_included = self.included_files.is_empty()
+            || is_dir(path)
+            || self.included_files.matches_path(path);
+        !is_included
+            || self.ignored_files.matches_path(path)
+            || self.git_ignore.as_ref().is_some_and(|ignore| {
+                // `matched_path_or_any_parents` panics if `source` is not under the gitignore root.
+                // This checks excludes absolute paths that are not a prefix of the base root.
+                if !path.has_root() || path.starts_with(ignore.path()) {
+                    // Because Postgres Language Server passes a list of paths,
+                    // we use `matched_path_or_any_parents` instead of `matched`.
+                    ignore
+                        .matched_path_or_any_parents(path, path.is_dir())
+                        .is_ignore()
+                } else {
+                    false
+                }
+            })
+    }
+}
+
+fn is_dir(path: &Path) -> bool {
+    path.is_dir() || (path.is_symlink() && std::fs::read_link(path).is_ok_and(|path| path.is_dir()))
+}
+
 impl Default for FilesSettings {
     fn default() -> Self {
         Self {
