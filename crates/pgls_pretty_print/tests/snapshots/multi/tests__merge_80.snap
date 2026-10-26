@@ -682,9 +682,7 @@ insert into sq_target_merge_log values (1, 'Original value');
 
 begin;
 
-with
-m
-as (
+with m as (
   merge into sq_target as t
   using sq_source as s
   on tid = sid
@@ -704,8 +702,7 @@ as (
     end
     as description
 ),
-m2
-as (
+m2 as (
   merge into sq_target_merge_log as l
   using m
   on l.tid = m.tid

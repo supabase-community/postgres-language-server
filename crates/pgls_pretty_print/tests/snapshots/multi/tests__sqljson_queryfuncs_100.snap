@@ -119,22 +119,31 @@ select json_value(cast('null' as jsonb), '$' returning sqljsonb_int_not_null);
 select json_value(cast('null' as jsonb), '$' returning sqljsonb_int_not_null error on error);
 
 select
-  json_value(cast('null' as jsonb), '$'
-  returning sqljsonb_int_not_null
-  default 2 on empty
-  error on error);
+  json_value(
+    cast('null' as jsonb),
+    '$'
+    returning sqljsonb_int_not_null
+    default 2 on empty
+    error on error
+  );
 
 select
-  json_value(cast('1' as jsonb), '$.a'
-  returning sqljsonb_int_not_null
-  default 2 on empty
-  error on error);
+  json_value(
+    cast('1' as jsonb),
+    '$.a'
+    returning sqljsonb_int_not_null
+    default 2 on empty
+    error on error
+  );
 
 select
-  json_value(cast('1' as jsonb), '$.a'
-  returning sqljsonb_int_not_null
-  default null on empty
-  error on error);
+  json_value(
+    cast('1' as jsonb),
+    '$.a'
+    returning sqljsonb_int_not_null
+    default null on empty
+    error on error
+  );
 
 create type rainbow as enum ('red', 'orange', 'yellow', 'green', 'blue', 'purple');
 
@@ -190,11 +199,14 @@ select json_value(cast('["1"]' as jsonb), '$[*]' returning record);
 
 select
   x,
-  json_value(cast('{"a": 1, "b": 2}' as jsonb), '$.* ? (@ > $x)'
-  passing x as x
-  returning int
-  default -1 on empty
-  default -2 on error)
+  json_value(
+    cast('{"a": 1, "b": 2}' as jsonb),
+    '$.* ? (@ > $x)'
+    passing x as x
+    returning int
+    default -1 on empty
+    default -2 on error
+  )
   as y
 from
   generate_series(0, 2) as x;
@@ -205,54 +217,84 @@ select
   json_value(cast('null' as jsonb), '$a' passing cast(' (1, 2 )' as point) as a returning point);
 
 select
-  json_value(cast('null' as jsonb), '$a'
-  passing cast(' (1, 2 )' as point) as a
-  returning point
-  error on error);
+  json_value(
+    cast('null' as jsonb),
+    '$a'
+    passing cast(' (1, 2 )' as point) as a
+    returning point
+    error on error
+  );
 
 select
-  json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts);
+  json_value(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
+  );
 
 select
-  json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
-  returning timestamptz);
+  json_value(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
+    returning timestamptz
+  );
 
 select
-  json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
-  returning timestamp);
+  json_value(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
+    returning timestamp
+  );
 
 select
-  json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as date) as ts
-  returning date);
+  json_value(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as date) as ts
+    returning date
+  );
 
 select
-  json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as time) as ts
-  returning time);
+  json_value(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as time) as ts
+    returning time
+  );
 
 select
-  json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timetz) as ts
-  returning timetz);
+  json_value(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timetz) as ts
+    returning timetz
+  );
 
 select
-  json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timestamp) as ts
-  returning timestamp);
+  json_value(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timestamp) as ts
+    returning timestamp
+  );
 
 select
-  json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
-  returning json);
+  json_value(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
+    returning json
+  );
 
 select
-  json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
-  returning jsonb);
+  json_value(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
+    returning jsonb
+  );
 
 select json_value('{"a": 1.234}', '$.a' returning int error on error);
 
@@ -326,10 +368,13 @@ select
   json_query(cast('"aaa"' as jsonb), '$.a' returning char(2) omit quotes default 'bb' on empty);
 
 select
-  json_query(cast('"aaa"' as jsonb), '$.a'
-  returning char(2)
-  omit quotes
-  default cast('"bb"' as jsonb) on empty);
+  json_query(
+    cast('"aaa"' as jsonb),
+    '$.a'
+    returning char(2)
+    omit quotes
+    default cast('"bb"' as jsonb) on empty
+  );
 
 select json_query(cast('[1]' as jsonb), '$' with unconditional wrapper omit quotes);
 
@@ -350,20 +395,26 @@ select json_query(cast('{"rec": "{1,2,3}"}' as jsonb), '$.rec' returning int[] o
 select json_query(cast('{"rec": "{1,2,3}"}' as jsonb), '$.rec' returning int[] keep quotes);
 
 select
-  json_query(cast('{"rec": "{1,2,3}"}' as jsonb), '$.rec'
-  returning int[]
-  keep quotes
-  error on error);
+  json_query(
+    cast('{"rec": "{1,2,3}"}' as jsonb),
+    '$.rec'
+    returning int[]
+    keep quotes
+    error on error
+  );
 
 select json_query(cast('{"rec": "[1,2]"}' as jsonb), '$.rec' returning int4range omit quotes);
 
 select json_query(cast('{"rec": "[1,2]"}' as jsonb), '$.rec' returning int4range keep quotes);
 
 select
-  json_query(cast('{"rec": "[1,2]"}' as jsonb), '$.rec'
-  returning int4range
-  keep quotes
-  error on error);
+  json_query(
+    cast('{"rec": "[1,2]"}' as jsonb),
+    '$.rec'
+    returning int4range
+    keep quotes
+    error on error
+  );
 
 create domain qf_char_domain as char(1);
 
@@ -456,11 +507,13 @@ select json_query(cast('[3,4]' as jsonb), '$[*]' returning anyarray empty object
 select
   x,
   y,
-  json_query(cast('[1,2,3,4,5,null]' as jsonb), '$[*] ? (@ >= $x && @ <= $y)'
-  passing x as x,
-  y as y
-  with conditional wrapper
-  empty array on empty)
+  json_query(
+    cast('[1,2,3,4,5,null]' as jsonb),
+    '$[*] ? (@ >= $x && @ <= $y)'
+    passing x as x, y as y
+    with conditional wrapper
+    empty array on empty
+  )
   as list
 from
   generate_series(0, 4) as x,
@@ -469,20 +522,29 @@ from
 create type comp_abc as (a text, b int, c timestamp);
 
 select
-  json_query(cast('{"rec": "(abc,42,01.02.2003)"}' as jsonb), '$.rec'
-  returning comp_abc
-  omit quotes);
+  json_query(
+    cast('{"rec": "(abc,42,01.02.2003)"}' as jsonb),
+    '$.rec'
+    returning comp_abc
+    omit quotes
+  );
 
 select
-  json_query(cast('{"rec": "(abc,42,01.02.2003)"}' as jsonb), '$.rec'
-  returning comp_abc
-  keep quotes);
+  json_query(
+    cast('{"rec": "(abc,42,01.02.2003)"}' as jsonb),
+    '$.rec'
+    returning comp_abc
+    keep quotes
+  );
 
 select
-  json_query(cast('{"rec": "(abc,42,01.02.2003)"}' as jsonb), '$.rec'
-  returning comp_abc
-  keep quotes
-  error on error);
+  json_query(
+    cast('{"rec": "(abc,42,01.02.2003)"}' as jsonb),
+    '$.rec'
+    returning comp_abc
+    keep quotes
+    error on error
+  );
 
 drop type comp_abc;
 
@@ -491,57 +553,80 @@ create type sqljsonb_rec as (a int, t text, js json, jb jsonb, jsa json[]);
 create type sqljsonb_reca as (reca sqljsonb_rec[]);
 
 select
-  json_query(cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-  as jsonb), '$[0]'
-  returning sqljsonb_rec);
+  json_query(
+    cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+    as jsonb),
+    '$[0]'
+    returning sqljsonb_rec
+  );
 
 select
-  json_query(cast('[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-  as jsonb), '$[0]'
-  returning sqljsonb_rec
-  error on error);
+  json_query(
+    cast('[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+    as jsonb),
+    '$[0]'
+    returning sqljsonb_rec
+    error on error
+  );
 
 select
-  json_query(cast('[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-  as jsonb), '$[0]'
-  returning sqljsonb_rec);
-
-select
-  *
-from
-  unnest(
-    (json_query(cast('{"jsa":  [{"a": 1, "b": ["foo"]}, {"a": 2, "c": {}}, 123]}' as jsonb), '$'
-    returning sqljsonb_rec)).jsa
+  json_query(
+    cast('[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+    as jsonb),
+    '$[0]'
+    returning sqljsonb_rec
   );
 
 select
   *
 from
   unnest(
-    (json_query(cast('{"reca": [{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]}'
-    as jsonb), '$'
-    returning sqljsonb_reca)).reca
+    (json_query(
+      cast('{"jsa":  [{"a": 1, "b": ["foo"]}, {"a": 2, "c": {}}, 123]}' as jsonb),
+      '$'
+      returning sqljsonb_rec
+    )).jsa
   );
 
 select
-  json_query(cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-  as jsonb), '$[0]'
-  returning jsonpath);
+  *
+from
+  unnest(
+    (json_query(
+      cast('{"reca": [{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]}' as jsonb),
+      '$'
+      returning sqljsonb_reca
+    )).reca
+  );
 
 select
-  json_query(cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
-  as jsonb), '$[0]'
-  returning jsonpath
-  error on error);
+  json_query(
+    cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+    as jsonb),
+    '$[0]'
+    returning jsonpath
+  );
+
+select
+  json_query(
+    cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+    as jsonb),
+    '$[0]'
+    returning jsonpath
+    error on error
+  );
 
 select
   json_query(cast('[1,2,null,"3"]' as jsonb), '$[*]' returning int[] with unconditional wrapper);
 
 select
-  json_query(cast('[1,2,null,"a"]' as jsonb), '$[*]'
-  returning int[]
-  with unconditional wrapper
-  error on error);
+  json_query(
+    cast('[1,2,null,"a"]' as jsonb),
+    '$[*]'
+    returning int[]
+    with unconditional wrapper
+    error on error
+  );
 
 select
   json_query(cast('[1,2,null,"a"]' as jsonb), '$[*]' returning int[] with unconditional wrapper);
@@ -550,8 +635,11 @@ select
   *
 from
   unnest(
-    json_query(cast('[{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]' as jsonb), '$'
-    returning sqljsonb_rec[])
+    json_query(
+      cast('[{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]' as jsonb),
+      '$'
+      returning sqljsonb_rec[]
+    )
   );
 
 select json_query(cast('{"a": 1}' as jsonb), '$.a' returning sqljsonb_int_not_null);
@@ -559,24 +647,36 @@ select json_query(cast('{"a": 1}' as jsonb), '$.a' returning sqljsonb_int_not_nu
 select json_query(cast('{"a": 1}' as jsonb), '$.b' returning sqljsonb_int_not_null);
 
 select
-  json_query(cast('{"a": 1}' as jsonb), '$.b'
-  returning sqljsonb_int_not_null
-  error on empty
-  error on error);
+  json_query(
+    cast('{"a": 1}' as jsonb),
+    '$.b'
+    returning sqljsonb_int_not_null
+    error on empty
+    error on error
+  );
 
 select
-  json_query(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts);
+  json_query(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
+  );
 
 select
-  json_query(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
-  returning json);
+  json_query(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
+    returning json
+  );
 
 select
-  json_query(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
-  returning jsonb);
+  json_query(
+    cast('null' as jsonb),
+    '$ts'
+    passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
+    returning jsonb
+  );
 
 create table test_jsonb_constraints (
   js text,
@@ -585,10 +685,11 @@ create table test_jsonb_constraints (
     default json_query(cast('[1,2]' as jsonb), '$[*]' with unconditional wrapper)
     constraint test_jsonb_constraint1 check (js is json)
     constraint test_jsonb_constraint2 check (
-      json_exists(cast(js as jsonb), '$.a'
-      passing i + 5 as int,
-      cast(i as text) as "TXT",
-      array[1, 2, 3] as arr)
+      json_exists(
+        cast(js as jsonb),
+        '$.a'
+        passing i + 5 as int, cast(i as text) as "TXT", array[1, 2, 3] as arr
+      )
     )
     constraint test_jsonb_constraint3 check (
       json_value(cast(js as jsonb), '$.a' returning int default '12' on empty error on error) > i
@@ -797,43 +898,64 @@ drop function ret_setint;
 create domain queryfuncs_test_domain as text check (value <> 'foo');
 
 select
-  json_value(cast('{"d1": "H"}' as jsonb), '$.a2'
-  returning queryfuncs_test_domain
-  default cast('foo' as queryfuncs_test_domain) on empty);
+  json_value(
+    cast('{"d1": "H"}' as jsonb),
+    '$.a2'
+    returning queryfuncs_test_domain
+    default cast('foo' as queryfuncs_test_domain) on empty
+  );
 
 select
-  json_value(cast('{"d1": "H"}' as jsonb), '$.a2'
-  returning queryfuncs_test_domain
-  default cast('foo1' as queryfuncs_test_domain) on empty);
+  json_value(
+    cast('{"d1": "H"}' as jsonb),
+    '$.a2'
+    returning queryfuncs_test_domain
+    default cast('foo1' as queryfuncs_test_domain) on empty
+  );
 
 select
-  json_value(cast('{"d1": "H"}' as jsonb), '$.a2'
-  returning queryfuncs_test_domain
-  default cast(cast('"foo1"' as jsonb) as text) on empty);
+  json_value(
+    cast('{"d1": "H"}' as jsonb),
+    '$.a2'
+    returning queryfuncs_test_domain
+    default cast(cast('"foo1"' as jsonb) as text) on empty
+  );
 
 select
-  json_value(cast('{"d1": "foo"}' as jsonb), '$.a2'
-  returning queryfuncs_test_domain
-  default cast('foo1' as queryfuncs_test_domain) on empty);
+  json_value(
+    cast('{"d1": "foo"}' as jsonb),
+    '$.a2'
+    returning queryfuncs_test_domain
+    default cast('foo1' as queryfuncs_test_domain) on empty
+  );
 
 select json_query('"a"', '$.a' returning int default cast((select '"1"') as jsonb) on error);
 
 select
-  json_query('"a"', '$.a'
-  returning queryfuncs_test_domain
-  default cast((select '"1"') as queryfuncs_test_domain) on error);
+  json_query(
+    '"a"',
+    '$.a'
+    returning queryfuncs_test_domain
+    default cast((select '"1"') as queryfuncs_test_domain) on error
+  );
 
 select json_query('"a"', '$.a' returning int default cast(cast((select 1) as oid) as int) on error);
 
 select
-  json_query('"a"', '$.a'
-  returning int[]
-  default cast(cast((select '{1}') as oid[]) as int[]) on error);
+  json_query(
+    '"a"',
+    '$.a'
+    returning int[]
+    default cast(cast((select '{1}') as oid[]) as int[]) on error
+  );
 
 select
-  json_query('"a"', '$.a'
-  returning int[]
-  default cast((select '{1}') as text) collate "C" on error);
+  json_query(
+    '"a"',
+    '$.a'
+    returning int[]
+    default cast((select '{1}') as text) collate "C" on error
+  );
 
 create table someparent (a int);
 
@@ -841,9 +963,12 @@ create table somechild ()
 inherits (someparent);
 
 select
-  json_query('"a"', '$.a'
-  returning someparent
-  default cast(cast((select '(1)') as somechild) as someparent) on error);
+  json_query(
+    '"a"',
+    '$.a'
+    returning someparent
+    default cast(cast((select '(1)') as somechild) as someparent) on error
+  );
 
 drop domain queryfuncs_test_domain;
 

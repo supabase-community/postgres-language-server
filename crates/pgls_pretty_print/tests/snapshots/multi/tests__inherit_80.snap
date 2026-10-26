@@ -851,9 +851,7 @@ alter table inht1 rename column aaa to aaaa;
 
 alter table inht1 rename column b to bb;
 
-with recursive
-r
-as (
+with recursive r as (
   select cast('inht1' as regclass) as inhrelid
   union all
   select c.inhrelid from pg_inherits as c, r where r.inhrelid = c.inhparent
