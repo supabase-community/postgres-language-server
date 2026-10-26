@@ -1319,7 +1319,8 @@
   The password to connect to the database. Can also be set via the <code>PGPASSWORD</code> environment variable.
 - </em><em><code>--database</code></em><em>=<em><code>ARG</code></em> &mdash; 
   The name of the database. Can also be set via the <code>PGDATABASE</code> environment variable.
-- </em><em><code>--allow_statement_executions_against</code></em><em>=<em><code>ARG</code></em>
+- </em><em><code>--allow_statement_executions_against</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against <code>host:port/database</code>. A pattern without a port, e.g. <code>localhost/*</code>, is matched against <code>host/database</code> and allows every port.
 - </em><em><code>--conn_timeout_secs</code></em>*=<em><code>ARG</code></em> &mdash; 
   The connection timeout in seconds.</p>
 <p>[default: Some(10)]
@@ -1426,7 +1427,8 @@
   The password to connect to the database. Can also be set via the <code>PGPASSWORD</code> environment variable.
 - </em><em><code>--database</code></em><em>=<em><code>ARG</code></em> &mdash; 
   The name of the database. Can also be set via the <code>PGDATABASE</code> environment variable.
-- </em><em><code>--allow_statement_executions_against</code></em><em>=<em><code>ARG</code></em>
+- </em><em><code>--allow_statement_executions_against</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against <code>host:port/database</code>. A pattern without a port, e.g. <code>localhost/*</code>, is matched against <code>host/database</code> and allows every port.
 - </em><em><code>--conn_timeout_secs</code></em>*=<em><code>ARG</code></em> &mdash; 
   The connection timeout in seconds.</p>
 <p>[default: Some(10)]
@@ -1554,7 +1556,8 @@
   The password to connect to the database. Can also be set via the <code>PGPASSWORD</code> environment variable.
 - </em><em><code>--database</code></em><em>=<em><code>ARG</code></em> &mdash; 
   The name of the database. Can also be set via the <code>PGDATABASE</code> environment variable.
-- </em><em><code>--allow_statement_executions_against</code></em><em>=<em><code>ARG</code></em>
+- </em><em><code>--allow_statement_executions_against</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  Glob patterns of the databases that code actions may execute statements against, matched against <code>host:port/database</code>. A pattern without a port, e.g. <code>localhost/*</code>, is matched against <code>host/database</code> and allows every port.
 - </em><em><code>--conn_timeout_secs</code></em>*=<em><code>ARG</code></em> &mdash; 
   The connection timeout in seconds.</p>
 <p>[default: Some(10)]
