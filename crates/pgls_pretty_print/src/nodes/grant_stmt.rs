@@ -50,6 +50,9 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
     // The clauses after the privileges continue the statement, so a broken one indents them.
     e.indent_start();
 
+    if let Some(object) = n.objects.first() {
+        super::emit_comments_before_keyword(e, "on", object);
+    }
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);
     e.space();
@@ -188,6 +191,9 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
     }
 
     // TO/FROM - allow line break before this clause
+    if let Some(grantee) = n.grantees.first() {
+        super::emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
+    }
     e.line(LineType::SoftOrSpace);
 
     if n.is_grant {

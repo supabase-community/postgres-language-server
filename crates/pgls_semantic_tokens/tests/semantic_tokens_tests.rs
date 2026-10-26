@@ -13,6 +13,7 @@ const SETUP: &str = r#"
     create function make_point(x int, y int) returns int language sql as 'select x + y';
     create function amb(a int, b text) returns int language sql as 'select 1';
     create function amb(c text, d int) returns int language sql as 'select 1';
+    create table "cafÉ" (größe int, "Ölstand" int);
 "#;
 
 struct Fixture {
@@ -149,5 +150,42 @@ async fn function_parameters(test_db: PgPool) {
         ),
         "select [title:property] from [posts:class] where [user_id:property] = [$1:parameter] \
          or [id:property] = [lookup:function].[user_id:parameter]"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn comments_inside_qualified_names(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted("select u.name from public /* c */ . users u"),
+        "select u.[name:property] from [public:namespace] /* c */ . [users:class] u"
+    );
+    assert_eq!(
+        f.highlighted("select users -- c\n .id from users"),
+        "select [users:class] -- c\n .[id:property] from [users:class]"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn multi_word_types(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted(
+            "select 1::double precision, cast(now() as timestamp(3) with time zone), \
+             'a'::character varying(10), 1::int[]"
+        ),
+        "select 1::[double:type+] [precision:type+], \
+         cast([now:function+]() as [timestamp:type+](3) [with:type+] [time:type+] [zone:type+]), \
+         'a'::[character:type+] [varying:type+](10), 1::[int:type+][]"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn non_ascii_identifiers(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    // Postgres only folds ASCII letters, so `CAFÉ` is `cafÉ`.
+    assert_eq!(
+        f.highlighted(r#"select CAFÉ.größe, "Ölstand" from CAFÉ"#),
+        r#"select [CAFÉ:class].[größe:property], ["Ölstand":property] from [CAFÉ:class]"#
     );
 }

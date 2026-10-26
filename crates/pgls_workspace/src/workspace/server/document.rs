@@ -5,6 +5,7 @@ use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnost
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, utils::sql_function_body};
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
+use rustc_hash::FxHashSet;
 
 use super::{
     annotation::AnnotationStore,
@@ -55,6 +56,18 @@ impl Document {
             Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
         self.ranges = ranges;
         self.diagnostics = diagnostics;
+        // Keep what is cached for the statements that are still in the document. The bodies
+        // of SQL functions are kept with their function.
+        let statements: FxHashSet<&str> = self
+            .ranges
+            .iter()
+            .map(|range| &self.content[*range])
+            .collect();
+        let is_present =
+            |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
+        self.ast_db.retain(is_present);
+        self.cst_db.retain(is_present);
+        self.annotation_db.retain(is_present);
     }
 
     pub fn suppressions(&self) -> &Suppressions {
@@ -687,8 +700,8 @@ $$ LANGUAGE plpgsql;";
         assert_eq!(results.len(), 2);
 
         // Check the function body
-        let (_id, _range, ast, _cst) = &results[1];
-        assert_eq!(_id.content(), "SELECT $1 + $2;");
+        let (id, _range, ast, _cst) = &results[1];
+        assert_eq!(id.content(), "SELECT $1 + $2;");
         assert!(ast.is_some());
     }
 
@@ -785,6 +798,28 @@ $$ LANGUAGE plpgsql;";
                 .next()
                 .is_none()
         );
+    }
+
+    #[test]
+    fn keeps_the_parsed_statements_that_are_still_in_the_document() {
+        let mut d = Document::new("select 1;\nselect 2;".to_string(), 1);
+        let first = StatementId::new("select 1;");
+        let second = StatementId::new("select 2;");
+        let first_ast = d.ast_db.get_or_cache_ast(&first);
+        let second_ast = d.ast_db.get_or_cache_ast(&second);
+        let first_tree = d.cst_db.get_or_cache_tree(&first);
+
+        d.update_content("select 1;\nselect 3;".to_string(), 2);
+
+        assert!(Arc::ptr_eq(&first_ast, &d.ast_db.get_or_cache_ast(&first)));
+        assert!(Arc::ptr_eq(
+            &first_tree,
+            &d.cst_db.get_or_cache_tree(&first)
+        ));
+        assert!(!Arc::ptr_eq(
+            &second_ast,
+            &d.ast_db.get_or_cache_ast(&second)
+        ));
     }
 
     #[test]

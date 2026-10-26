@@ -60,6 +60,53 @@ pub(super) fn reference_end(sql: &str, start: usize) -> Option<usize> {
     Some(cursor)
 }
 
+/// The end of the type name starting at `start`, with all the words of the SQL-standard
+/// multi-word types like `double precision`, `character varying`, or `timestamp with time zone`.
+/// Modifiers are left out, except the precision of `time` and `timestamp`, which can come
+/// before `with time zone`.
+pub(super) fn type_name_end(sql: &str, start: usize) -> Option<usize> {
+    let end = reference_end(sql, start)?;
+    // The end after `word`, if it is the next word after `cursor`.
+    let word_end = |cursor: usize, word: &str| {
+        let next = sql.len() - sql.get(cursor..)?.trim_start().len();
+        let after = next + word.len();
+        let is_word = sql.get(next..after)?.eq_ignore_ascii_case(word)
+            && sql.as_bytes().get(after).is_none_or(|&byte| {
+                !(byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || byte >= 0x80)
+            });
+        is_word.then_some(after)
+    };
+    let words = |cursor: usize, words: &[&str]| {
+        words
+            .iter()
+            .try_fold(cursor, |cursor, word| word_end(cursor, word))
+    };
+    let first = sql[start..end].to_ascii_lowercase();
+    let end = match first.as_str() {
+        "double" => word_end(end, "precision").unwrap_or(end),
+        "character" | "char" | "nchar" | "bit" => word_end(end, "varying").unwrap_or(end),
+        "national" => {
+            let end = word_end(end, "character")
+                .or_else(|| word_end(end, "char"))
+                .unwrap_or(end);
+            word_end(end, "varying").unwrap_or(end)
+        }
+        "time" | "timestamp" => {
+            let rest = sql[end..].trim_start();
+            let precision = rest
+                .starts_with('(')
+                .then(|| rest.find(')'))
+                .flatten()
+                .map_or(end, |close| sql.len() - rest.len() + close + 1);
+            words(precision, &["with", "time", "zone"])
+                .or_else(|| words(precision, &["without", "time", "zone"]))
+                .unwrap_or(end)
+        }
+        _ => end,
+    };
+    Some(end)
+}
+
 /// The end of `*`, or of a qualified `t.*` or `"s"."t".*`, starting at `start`.
 pub(super) fn star_end(sql: &str, start: usize) -> Option<usize> {
     let bytes = sql.as_bytes();
@@ -248,7 +295,9 @@ pub(super) fn operator_end(sql: &str, start: usize) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::{cast_end, literal_end, operator_end, reference_end, star_end, token_end};
+    use super::{
+        cast_end, literal_end, operator_end, reference_end, star_end, token_end, type_name_end,
+    };
 
     fn text(sql: &str, start: usize, end: Option<usize>) -> &str {
         &sql[start..end.expect("span")]
@@ -278,6 +327,33 @@ mod tests {
         assert_eq!(text(sql, start, cast_end(sql, start)), "CAST(x AS bad)");
         let start = sql.find("date '").unwrap();
         assert_eq!(text(sql, start, cast_end(sql, start)), "date 'today'");
+    }
+
+    #[test]
+    fn type_name_spans_cover_every_word() {
+        let cases = [
+            ("int8[]", "int8"),
+            ("pg_catalog.int4)", "pg_catalog.int4"),
+            ("double precision, x", "double precision"),
+            ("DOUBLE\n  PRECISION", "DOUBLE\n  PRECISION"),
+            ("character varying(10)", "character varying"),
+            ("character(10)", "character"),
+            ("bit varying", "bit varying"),
+            ("national character varying", "national character varying"),
+            ("timestamp with time zone 'now'", "timestamp with time zone"),
+            (
+                "timestamp(3) without time zone",
+                "timestamp(3) without time zone",
+            ),
+            ("timestamp(3)", "timestamp"),
+            ("time with x", "time"),
+            ("timestamptz", "timestamptz"),
+            ("double precisionx", "double"),
+            ("\"double\" precision", "\"double\""),
+        ];
+        for (sql, expected) in cases {
+            assert_eq!(text(sql, 0, type_name_end(sql, 0)), expected, "{sql}");
+        }
     }
 
     #[test]

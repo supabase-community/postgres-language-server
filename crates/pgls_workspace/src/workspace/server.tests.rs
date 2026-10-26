@@ -2627,6 +2627,87 @@ async fn test_hover_shows_resolved_references(test_db: PgPool) {
     assert_eq!(blocks.len(), 2, "{blocks:?}");
 }
 
+/// Hover shows the objects as the statement sees them: created earlier in the file, changed by
+/// the file, or unchanged in the database, also after the file changes.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn hover_follows_the_ddl_before_the_statement(test_db: PgPool) {
+    test_db
+        .execute(
+            "create table hover_db_items (id int);
+             create table hover_db_tags (id int);",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let statements = "alter table hover_db_items add column extra int;\n\
+        select id from hover_file_items;\n\
+        select extra from hover_db_items;\n\
+        select id from hover_db_tags;\n";
+    let hover = |content: &str, version: i32, needle: &str| {
+        if version == 1 {
+            workspace.open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version,
+            })
+        } else {
+            workspace.change_file(crate::workspace::ChangeFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version,
+            })
+        }
+        .expect("Unable to update test file");
+        let offset = content.find(needle).expect("needle in content") + 2;
+        let blocks = workspace
+            .on_hover(OnHoverParams {
+                project_key,
+                path: path.clone(),
+                position: u32::try_from(offset).unwrap().into(),
+            })
+            .expect("Unable to hover")
+            .markdown_blocks;
+        assert_eq!(blocks.len(), 1, "{blocks:?}");
+        blocks.into_iter().next().unwrap()
+    };
+
+    let content = format!("create table hover_file_items (id int);\n{statements}");
+    let block = hover(&content, 1, "hover_file_items;");
+    assert!(block.contains("- id: int4"), "{block}");
+    assert!(!block.contains("- name"), "{block}");
+    // A table of the database that the file changed.
+    let block = hover(&content, 1, "hover_db_items;");
+    assert!(block.contains("- extra: int4"), "{block}");
+    // A table of the database that the file didn't change.
+    let block = hover(&content, 1, "hover_db_tags;");
+    assert!(block.contains("public.hover_db_tags"), "{block}");
+
+    // The statements before the hovered one changed.
+    let content = format!("create table hover_file_items (id int, name text);\n{statements}");
+    let block = hover(&content, 2, "hover_file_items;");
+    assert!(block.contains("- name: text"), "{block}");
+}
+
 /// Hover and code actions on a file with thousands of statements, on a thread with the 2 MiB
 /// stack of the language server's tokio workers. They used to recurse once per statement before
 /// or after the cursor and overflow the stack, which aborts the server.
@@ -2887,6 +2968,21 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
         })
         .collect();
     assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
+}
+
+#[test]
+fn test_section_marker_problems_are_reported() {
+    let content =
+        "create table t (id int);\n-- migrate:up\nselect 1;\n-- Migrate:Down\nselect 2;\n";
+    let categories = migration_diagnostics(SectionMarkers::Dbmate, None, content);
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "migrations/sectionMarkers")
+            .count(),
+        2,
+        "{categories:?}"
+    );
 }
 
 #[test]

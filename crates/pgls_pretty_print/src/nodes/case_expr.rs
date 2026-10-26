@@ -31,6 +31,7 @@ pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
 
     // ELSE clause
     if let Some(ref defresult) = n.defresult {
+        super::emit_comments_before_keyword(e, "else", defresult);
         super::emit_layout_break(e);
         e.token(TokenKind::ELSE_KW);
         e.space();

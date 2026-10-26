@@ -19,6 +19,13 @@ pub struct Comment {
     /// True for a line comment written after a list comma, `a, -- note`. It stays after the comma
     /// rather than moving onto the next item's line.
     pub after_separator: bool,
+    /// The keyword written right after the comment, in lower case, when no node starts there,
+    /// such as `else` in `then 'x' /* why */ else 'y'`.
+    ///
+    /// The comment is attached to the node after that keyword, but the parent emits the keyword
+    /// first. A parent that knows the keyword takes such comments before writing it, so that they
+    /// don't move past it. A parent that doesn't leaves them where they were.
+    pub before_keyword: Option<String>,
 }
 
 /// Comments of a statement, indexed by the node they surround.
@@ -58,6 +65,7 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
 
     let mut locations = collect_node_locations(ast);
     locations.sort_unstable();
+    let keyword_after = keywords_after_comments(sql, &locations);
 
     for mut source_comment in comments {
         let line_start = sql[..source_comment.start]
@@ -94,6 +102,10 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
             .rev()
             .find(|location| **location as usize <= source_comment.start)
             .copied();
+        source_comment.comment.before_keyword = keyword_after.get(&source_comment.start).cloned();
+        // Nothing inside the CASE follows its END, so a comment before END belongs to the last
+        // branch rather than to whatever follows the expression.
+        let leads = leads && source_comment.comment.before_keyword.as_deref() != Some("end");
 
         // The preferred side first, the other one as a fallback. A comment closing a list or a
         // statement has no node after it, and printing it after the node it already follows in the
@@ -147,6 +159,7 @@ fn ends_with_clause_header(line_prefix: &str) -> bool {
         "USING",
         "AND",
         "OR",
+        "CASE",
         "WHEN",
         "THEN",
         "ELSE",
@@ -190,6 +203,39 @@ struct SourceComment {
     comment: Comment,
 }
 
+/// For every comment followed by a keyword that no node starts at, the keyword in lower case, by
+/// the comment's start.
+fn keywords_after_comments(sql: &str, locations: &[i32]) -> HashMap<usize, String> {
+    use pgls_query::protobuf::KeywordKind;
+
+    let Ok(scan) = pgls_query::scan(sql) else {
+        return HashMap::new();
+    };
+
+    let mut keywords = HashMap::new();
+    for pair in scan.tokens.windows(2) {
+        let [comment, next] = [&pair[0], &pair[1]];
+        if !matches!(
+            Token::try_from(comment.token),
+            Ok(Token::SqlComment | Token::CComment)
+        ) || matches!(
+            Token::try_from(next.token),
+            Ok(Token::SqlComment | Token::CComment)
+        ) {
+            continue;
+        }
+        if next.keyword_kind == KeywordKind::NoKeyword as i32
+            || locations.binary_search(&next.start).is_ok()
+        {
+            continue;
+        }
+        if let Some(keyword) = sql.get(next.start as usize..next.end as usize) {
+            keywords.insert(comment.start as usize, keyword.to_ascii_lowercase());
+        }
+    }
+    keywords
+}
+
 /// Every comment of the statement, with its source range, in source order.
 fn collect_comments(sql: &str) -> Vec<SourceComment> {
     let Ok(scan) = pgls_query::scan(sql) else {
@@ -218,6 +264,7 @@ fn collect_comments(sql: &str) -> Vec<SourceComment> {
                     line_comment,
                     own_line: false,
                     after_separator: false,
+                    before_keyword: None,
                 },
             })
         })
@@ -382,6 +429,28 @@ mod tests {
 
         assert_eq!(attached.unattached.len(), 1);
         assert_eq!(attached.unattached[0].text, "-- trailing");
+    }
+
+    #[test]
+    fn a_comment_before_a_keyword_records_the_keyword() {
+        let sql = "SELECT CASE WHEN a THEN 'x' /* why */ ELSE 'y' END";
+        let attached = attach_comments(sql, &parse(sql));
+
+        let comments = attached
+            .leading_by_location
+            .values()
+            .next()
+            .expect("one entry");
+        assert_eq!(comments[0].before_keyword.as_deref(), Some("else"));
+    }
+
+    #[test]
+    fn a_comment_before_end_stays_with_the_last_branch() {
+        let sql = "SELECT CASE WHEN a THEN 1 ELSE 2 /* last */ END FROM t";
+        let attached = attach_comments(sql, &parse(sql));
+
+        assert!(attached.leading_by_location.is_empty());
+        assert_eq!(attached.trailing_by_location.len(), 1);
     }
 
     #[test]
