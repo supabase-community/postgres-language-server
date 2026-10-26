@@ -43,3 +43,17 @@ The language server caches schema information on startup.
 Function calls show the names of the parameters their positional arguments are passed to, as in `make_point(x: 1, y: 2)`. Hints are only shown when the call resolves to exactly one function, including functions created earlier in the same file. Named arguments (`f(a => 1)`), unnamed parameters, and arguments that already carry the parameter's name (`f(t.x)` for the parameter `x`) get no hint. Of the elements passed to a `VARIADIC` parameter, only the first is labelled.
 
 Inlay hints require a database connection. Enable them in your editor, e.g. with `editor.inlayHints.enabled` in VS Code.
+
+## Expand `*`
+
+With the cursor on a `*` or `t.*` in a select list or `RETURNING` list, the refactor code action "Expand `*` into its columns" replaces it with the columns it stands for:
+
+```sql
+select * from users u join posts p on p.user_id = u.id;
+-- becomes
+select u.id, u.name, p.id, p.user_id, p.title from users u join posts p on p.user_id = u.id;
+```
+
+Columns are qualified with the name or alias of their table when there are several in `FROM`, and quoted where needed. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for joins with `USING` or `NATURAL`, tables whose columns are unknown, or sources with two columns of the same name.
+
+Like hover, it requires a database connection.
