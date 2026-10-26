@@ -2468,6 +2468,9 @@ async fn execute_statement_stops_a_truncated_query_early(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
 
+    // The first execution connects and loads the schema for the code actions, which isn't timed.
+    execute_sql(&workspace, project_key, "select 1 as one;");
+
     // Without the cursor, Postgres would produce and send all 50 million rows.
     let start = Instant::now();
     let (_, result) = execute_sql(
