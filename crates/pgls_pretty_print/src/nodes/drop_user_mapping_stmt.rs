@@ -36,6 +36,5 @@ pub(super) fn emit_drop_user_mapping_stmt(e: &mut EventEmitter, n: &DropUserMapp
         super::emit_identifier_maybe_quoted(e, &n.servername);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

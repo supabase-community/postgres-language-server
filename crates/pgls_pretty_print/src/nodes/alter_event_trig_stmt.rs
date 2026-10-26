@@ -35,7 +35,5 @@ pub(super) fn emit_alter_event_trig_stmt(e: &mut EventEmitter, n: &AlterEventTri
         _ => {}
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

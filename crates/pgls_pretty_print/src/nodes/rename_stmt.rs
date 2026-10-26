@@ -99,7 +99,6 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
 

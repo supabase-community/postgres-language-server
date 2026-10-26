@@ -93,14 +93,11 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
     }
 
     // SQL body (if present, modern syntax)
-    let mut body_emits_semicolon = false;
     if let Some(ref sql_body) = n.sql_body {
         match sql_body.node.as_ref() {
             Some(pgls_query::NodeEnum::ReturnStmt(_)) => {
-                // RETURN emits its own semicolon
                 e.line(LineType::Hard);
                 super::emit_node(sql_body, e);
-                body_emits_semicolon = true;
             }
             _ => {
                 e.line(LineType::Hard);
@@ -108,21 +105,21 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
                 e.space();
                 e.token(TokenKind::ATOMIC_KW);
                 e.indent_start();
-                // A BEGIN ATOMIC body is a single-item list wrapping the list of statements.
-                // Each statement emits its own semicolon.
+                // A BEGIN ATOMIC body is a single-item list wrapping the list of statements. Each
+                // statement ends with a semicolon, which the statement itself doesn't write. It
+                // goes before the comments that follow the statement, as it does in the source.
                 for stmt in begin_atomic_statements(sql_body) {
                     e.line(LineType::Hard);
-                    super::emit_node(stmt, e);
+                    super::emit_node_with(stmt, e, |stmt, e| {
+                        super::emit_node_enum(stmt, e);
+                        e.token(TokenKind::SEMICOLON);
+                    });
                 }
                 e.indent_end();
                 e.line(LineType::Hard);
                 e.token(TokenKind::END_KW);
             }
         }
-    }
-
-    if !body_emits_semicolon {
-        e.token(TokenKind::SEMICOLON);
     }
 
     e.group_end();
@@ -413,11 +410,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
         "set" => {
             // The arg is a VariableSetStmt which will emit SET/RESET itself
             if let Some(ref arg) = d.arg {
-                if let Some(pgls_query::NodeEnum::VariableSetStmt(setstmt)) = &arg.node {
-                    super::emit_variable_set_stmt_no_semicolon(e, setstmt);
-                } else {
-                    super::emit_node(arg, e);
-                }
+                super::emit_node(arg, e);
             }
         }
         "transform" => {

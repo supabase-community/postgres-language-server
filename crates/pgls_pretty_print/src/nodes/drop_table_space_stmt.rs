@@ -24,6 +24,5 @@ pub(super) fn emit_drop_table_space_stmt(e: &mut EventEmitter, n: &DropTableSpac
         super::emit_identifier_maybe_quoted(e, &n.tablespacename);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

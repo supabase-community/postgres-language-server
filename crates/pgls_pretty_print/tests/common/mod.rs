@@ -88,6 +88,29 @@ pub fn whitespace_problems(output: &str) -> Vec<String> {
     problems
 }
 
+/// Empty statements in the output: a `;` that follows another `;`, as in `select 1;;`. Postgres
+/// accepts them, so the AST comparison doesn't notice, but they mean a statement wrote a terminator
+/// that its parent writes too.
+pub fn empty_statements(output: &str) -> Vec<String> {
+    let Ok(scan) = pgls_query::scan(output) else {
+        // The callers check that the output parses.
+        return Vec::new();
+    };
+    scan.tokens
+        .windows(2)
+        .filter(|pair| {
+            pair.iter()
+                .all(|token| Token::try_from(token.token) == Ok(Token::Ascii59))
+        })
+        .map(|pair| format!("empty statement at offset {}", pair[1].start))
+        .collect()
+}
+
+pub fn assert_no_empty_statements(output: &str) {
+    let problems = empty_statements(output);
+    assert!(problems.is_empty(), "{}\n\n{output}", problems.join("\n"));
+}
+
 pub fn assert_clean_whitespace(output: &str) {
     let problems = whitespace_problems(output);
     assert!(

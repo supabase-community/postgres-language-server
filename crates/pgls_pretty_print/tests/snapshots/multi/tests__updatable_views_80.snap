@@ -226,19 +226,19 @@ create rule rw_view16_ins_rule
 as on insert to rw_view16 where
   new.a > 0
 do instead
-  insert into base_tbl values (new.a, new.b);;
+  insert into base_tbl values (new.a, new.b);
 
 create rule rw_view16_upd_rule
 as on update to rw_view16 where
   old.a > 0
 do instead
-  update base_tbl set b = new.b where a = old.a;;
+  update base_tbl set b = new.b where a = old.a;
 
 create rule rw_view16_del_rule
 as on delete to rw_view16 where
   old.a > 0
 do instead
-  delete from base_tbl where a = old.a;;
+  delete from base_tbl where a = old.a;
 
 insert into rw_view16 (a, b) values (3, 'Row 3');
 
@@ -327,7 +327,7 @@ create table base_tbl_hist (
 create rule base_tbl_log
 as on insert to rw_view1
 do
-  insert into base_tbl_hist (a, b) values (new.a, new.b);;
+  insert into base_tbl_hist (a, b) values (new.a, new.b);
 
 select
   table_name,
@@ -462,7 +462,7 @@ order by table_name,
 create rule rw_view1_ins_rule
 as on insert to rw_view1
 do instead
-  insert into base_tbl values (new.a, new.b) returning *;;
+  insert into base_tbl values (new.a, new.b) returning *;
 
 select
   table_name,
@@ -497,7 +497,7 @@ order by table_name,
 create rule rw_view1_upd_rule
 as on update to rw_view1
 do instead
-  update base_tbl set b = new.b where a = old.a returning new.*;;
+  update base_tbl set b = new.b where a = old.a returning new.*;
 
 select
   table_name,
@@ -532,7 +532,7 @@ order by table_name,
 create rule rw_view1_del_rule
 as on delete to rw_view1
 do instead
-  delete from base_tbl where a = old.a returning old.*;;
+  delete from base_tbl where a = old.a returning old.*;
 
 select
   table_name,
@@ -573,7 +573,7 @@ drop rule rw_view1_upd_rule on rw_view1;
 create rule rw_view1_upd_rule
 as on update to rw_view1
 do instead
-  update base_tbl set b = new.b where a = old.a returning *;;
+  update base_tbl set b = new.b where a = old.a returning *;
 
 update rw_view2 set b = 'Row three' where a = 3 returning old.*, new.*;
 
@@ -1946,12 +1946,12 @@ drop trigger rw_view1_trig on rw_view1;
 create rule rw_view1_ins_rule
 as on insert to rw_view1
 do instead
-  insert into base_tbl values (new.a, 10);;
+  insert into base_tbl values (new.a, 10);
 
 create rule rw_view1_upd_rule
 as on update to rw_view1
 do instead
-  update base_tbl set a = new.a where a = old.a;;
+  update base_tbl set a = new.a where a = old.a;
 
 insert into rw_view2 values (-10);
 
@@ -1979,7 +1979,7 @@ as select a, 10 as b from base_tbl;
 create rule rw_view1_ins_rule
 as on insert to rw_view1
 do instead
-  insert into base_tbl values (new.a);;
+  insert into base_tbl values (new.a);
 
 create view rw_view2
 as select * from rw_view1 where a > b
@@ -2128,12 +2128,12 @@ create rule base_tbl_ins_rule
 as on insert to base_tbl where
   exists (select 1 from base_tbl as t where t.id = new.id)
 do instead
-  update base_tbl set data = new.data, deleted = false where id = new.id;;
+  update base_tbl set data = new.data, deleted = false where id = new.id;
 
 create rule base_tbl_del_rule
 as on delete to base_tbl
 do instead
-  update base_tbl set deleted = true where id = old.id;;
+  update base_tbl set deleted = true where id = old.id;
 
 create view rw_view1
   with (security_barrier = 'true')
@@ -2385,7 +2385,7 @@ as select * from t1;
 create rule v1_upd_rule
 as on update to v1
 do instead
-  update t1 set a = new.a where a = old.a;;
+  update t1 set a = new.a where a = old.a;
 
 create view v2
   with (security_barrier = 'true')
@@ -2881,7 +2881,7 @@ drop function base_tab_def_view_instrig_func;
 create rule base_tab_def_view_ins_rule
 as on insert to base_tab_def_view
 do instead
-  insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);;
+  insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);
 
 truncate base_tab_def;
 
@@ -2916,7 +2916,7 @@ drop rule base_tab_def_view_ins_rule on base_tab_def_view;
 create rule base_tab_def_view_ins_rule
 as on insert to base_tab_def_view
 do
-  insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);;
+  insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);
 
 truncate base_tab_def;
 

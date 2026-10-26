@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tablesample.sql
-snapshot_kind: text
 ---
 create table test_tablesample (
   id int,
@@ -38,7 +37,7 @@ begin;
 
 declare tablesample_cur scroll
 cursor
-for select id from test_tablesample tablesample system (50) repeatable (0);;
+for select id from test_tablesample tablesample system (50) repeatable (0);
 
 fetch absolute 1 from tablesample_cur;
 

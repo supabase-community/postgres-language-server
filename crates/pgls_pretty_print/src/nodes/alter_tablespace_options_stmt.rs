@@ -30,7 +30,5 @@ pub(super) fn emit_alter_tablespace_options_stmt(
         emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

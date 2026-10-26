@@ -36,6 +36,5 @@ pub(super) fn emit_dropdb_stmt(e: &mut EventEmitter, n: &DropdbStmt) {
         });
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

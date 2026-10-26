@@ -56,9 +56,9 @@ select -0x8000000000000000;
 
 select -0x8000000000000001;
 
-prepare p1 as select $1 as a;;
+prepare p1 as select $1 as a;
 
-prepare p1 as select $2147483648;;
+prepare p1 as select $2147483648;
 
 select 1000000;
 
@@ -89,7 +89,7 @@ END $$;
 
 select _100;
 
-prepare p1 as select $0 as _1;;
+prepare p1 as select $0 as _1;
 
 create table temp_float (f1 float8);
 

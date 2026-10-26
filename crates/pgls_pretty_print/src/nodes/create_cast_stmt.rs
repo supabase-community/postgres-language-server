@@ -64,7 +64,5 @@ pub(super) fn emit_create_cast_stmt(e: &mut EventEmitter, n: &CreateCastStmt) {
         _ => {}
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

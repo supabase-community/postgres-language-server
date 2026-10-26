@@ -29,9 +29,8 @@ pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStm
     // The SET/RESET statement
     if let Some(ref setstmt) = n.setstmt {
         e.line(LineType::SoftOrSpace);
-        super::emit_variable_set_stmt_no_semicolon(e, setstmt);
+        super::emit_variable_set_stmt(e, setstmt);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

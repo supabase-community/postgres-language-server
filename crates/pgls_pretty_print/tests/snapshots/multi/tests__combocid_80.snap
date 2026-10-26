@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/combocid.sql
-snapshot_kind: text
 ---
 create temporary table combocidtest (foobar int);
 
@@ -51,7 +50,7 @@ begin;
 
 insert into combocidtest values (333);
 
-declare c cursor for select ctid, cmin, * from combocidtest;;
+declare c cursor for select ctid, cmin, * from combocidtest;
 
 delete from combocidtest;
 

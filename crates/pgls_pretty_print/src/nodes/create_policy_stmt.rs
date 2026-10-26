@@ -74,7 +74,5 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         super::emit_parenthesized_condition(e, GroupKind::CreatePolicyStmt, with_check);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

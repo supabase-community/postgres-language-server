@@ -7,7 +7,7 @@ use insta::{assert_snapshot, with_settings};
 use pgls_pretty_print::{
     CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, Layout, LogicalOperatorPlacement,
     emitter::EventEmitter,
-    nodes::emit_node_enum,
+    nodes::emit_statement,
     normalize::normalize_ast,
     renderer::{IndentStyle, KeywordCase, RenderConfig, Renderer},
 };
@@ -148,7 +148,7 @@ fn test_single(fixture: Fixture<&str>) {
         // The emitter gets the fixture config, not the default one: an option that decides which
         // tokens exist is read here, before the renderer ever sees the events.
         let mut emitter = EventEmitter::new(fixture_config.clone());
-        emit_node_enum(&ast, &mut emitter);
+        emit_statement(&mut emitter, &ast);
 
         let mut output = String::new();
         let config = RenderConfig {
@@ -162,6 +162,7 @@ fn test_single(fixture: Fixture<&str>) {
 
         assert_line_lengths(&output, max_line_length, fixture_config.indent_size);
         common::assert_clean_whitespace(&output);
+        common::assert_no_empty_statements(&output);
 
         let parsed_output = pgls_query::parse(&output).expect("Failed to parse SQL");
         let mut parsed_ast = parsed_output.into_root().expect("No root node found");
@@ -238,7 +239,7 @@ fn test_multi(fixture: Fixture<&str>) {
             // The emitter gets the fixture config, not the default one: an option that decides
             // which tokens exist is read here, before the renderer ever sees the events.
             let mut emitter = EventEmitter::new(fixture_config.clone());
-            emit_node_enum(&ast, &mut emitter);
+            emit_statement(&mut emitter, &ast);
 
             let mut output = String::new();
             let config = RenderConfig {
@@ -251,6 +252,7 @@ fn test_multi(fixture: Fixture<&str>) {
             // Verify line length
             assert_line_lengths(&output, max_line_length, fixture_config.indent_size);
             common::assert_clean_whitespace(&output);
+            common::assert_no_empty_statements(&output);
 
             // Verify AST equality
             let parsed_output = pgls_query::parse(&output).unwrap_or_else(|e| {

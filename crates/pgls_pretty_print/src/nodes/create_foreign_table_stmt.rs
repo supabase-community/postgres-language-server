@@ -74,7 +74,5 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
         });
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

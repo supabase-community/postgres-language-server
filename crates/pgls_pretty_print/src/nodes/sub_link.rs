@@ -132,7 +132,6 @@ fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
     // Add indentation inside subquery parentheses
     e.line(LineType::Soft);
     e.indent_start();
-    // Check if this is a SelectStmt and emit without semicolon
     if let Some(pgls_query::NodeEnum::SelectStmt(select_stmt)) = node.node.as_ref() {
         // Expanded layout breaks between clauses. A subquery made of its select list alone, such
         // as `(select auth.uid())`, has none to break between, so it only breaks past the width.
@@ -144,7 +143,7 @@ fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
             e.configured_layout()
         };
         e.with_layout(layout, |e| {
-            super::emit_select_stmt_no_semicolon(e, select_stmt);
+            super::emit_select_stmt(e, select_stmt);
         });
     } else {
         // For other node types (e.g., VALUES), emit normally

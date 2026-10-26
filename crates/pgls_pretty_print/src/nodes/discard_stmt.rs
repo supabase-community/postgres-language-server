@@ -20,6 +20,5 @@ pub(super) fn emit_discard_stmt(e: &mut EventEmitter, n: &DiscardStmt) {
         _ => e.token(TokenKind::ALL_KW),
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

@@ -52,7 +52,5 @@ pub(super) fn emit_lock_stmt(e: &mut EventEmitter, n: &LockStmt) {
         e.token(TokenKind::NOWAIT_KW);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

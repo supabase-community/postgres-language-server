@@ -16,14 +16,6 @@ use super::{
 };
 
 pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
-    emit_select_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_select_stmt_no_semicolon(e: &mut EventEmitter, n: &SelectStmt) {
-    emit_select_stmt_impl(e, n, false);
-}
-
-fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: bool) {
     e.group_start(GroupKind::SelectStmt);
 
     // Emit WITH clause (Common Table Expressions) if present
@@ -43,7 +35,7 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
                 if needs_parens_left {
                     e.token(TokenKind::L_PAREN);
                 }
-                emit_select_stmt_no_semicolon(e, larg);
+                emit_select_stmt(e, larg);
                 if needs_parens_left {
                     e.token(TokenKind::R_PAREN);
                 }
@@ -73,7 +65,7 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
                 if needs_parens_right {
                     e.token(TokenKind::L_PAREN);
                 }
-                emit_select_stmt_no_semicolon(e, rarg);
+                emit_select_stmt(e, rarg);
                 if needs_parens_right {
                     e.token(TokenKind::R_PAREN);
                 }
@@ -139,10 +131,6 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             for locking in &n.locking_clause {
                 e.line(LineType::SoftOrSpace);
                 super::emit_node(locking, e);
-            }
-
-            if with_semicolon {
-                e.token(TokenKind::SEMICOLON);
             }
 
             e.group_end();
@@ -368,10 +356,6 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
                 super::emit_locking_clause(e, locking_clause);
             }
         }
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
     }
 
     e.group_end();

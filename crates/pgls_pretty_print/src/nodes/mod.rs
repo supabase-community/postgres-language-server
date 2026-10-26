@@ -352,14 +352,14 @@ use create_publication_stmt::emit_create_publication_stmt;
 use create_range_stmt::emit_create_range_stmt;
 use create_role_stmt::emit_create_role_stmt;
 use create_schema_stmt::emit_create_schema_stmt;
-use create_seq_stmt::{emit_create_seq_stmt, emit_create_seq_stmt_no_semicolon};
+use create_seq_stmt::emit_create_seq_stmt;
 use create_stats_stmt::emit_create_stats_stmt;
-use create_stmt::{emit_create_stmt, emit_create_stmt_no_semicolon};
+use create_stmt::emit_create_stmt;
 use create_subscription_stmt::emit_create_subscription_stmt;
 use create_table_as_stmt::emit_create_table_as_stmt;
 use create_table_space_stmt::emit_create_table_space_stmt;
 use create_transform_stmt::emit_create_transform_stmt;
-use create_trig_stmt::{emit_create_trig_stmt, emit_create_trig_stmt_no_semicolon};
+use create_trig_stmt::emit_create_trig_stmt;
 use create_user_mapping_stmt::emit_create_user_mapping_stmt;
 use createdb_stmt::emit_createdb_stmt;
 use ctecycle_clause::emit_ctecycle_clause;
@@ -369,7 +369,7 @@ use deallocate_stmt::emit_deallocate_stmt;
 use declare_cursor_stmt::emit_declare_cursor_stmt;
 use def_elem::{emit_def_elem, emit_options_def_elem, emit_sequence_option};
 use define_stmt::emit_define_stmt;
-use delete_stmt::{emit_delete_stmt, emit_delete_stmt_no_semicolon};
+use delete_stmt::emit_delete_stmt;
 use discard_stmt::emit_discard_stmt;
 use do_stmt::emit_do_stmt;
 use drop_owned_stmt::emit_drop_owned_stmt;
@@ -379,7 +379,7 @@ use drop_subscription_stmt::emit_drop_subscription_stmt;
 use drop_table_space_stmt::emit_drop_table_space_stmt;
 use drop_user_mapping_stmt::emit_drop_user_mapping_stmt;
 use dropdb_stmt::emit_dropdb_stmt;
-use execute_stmt::{emit_execute_stmt, emit_execute_stmt_no_semicolon};
+use execute_stmt::emit_execute_stmt;
 use explain_stmt::emit_explain_stmt;
 use fetch_stmt::emit_fetch_stmt;
 use field_select::emit_field_select;
@@ -389,16 +389,16 @@ use from_expr::emit_from_expr;
 use func_call::emit_func_call;
 use func_expr::emit_func_expr;
 use grant_role_stmt::emit_grant_role_stmt;
-use grant_stmt::{emit_grant_stmt, emit_grant_stmt_no_semicolon};
+use grant_stmt::emit_grant_stmt;
 use grouping_func::emit_grouping_func;
 use grouping_set::emit_grouping_set;
 use import_foreign_schema_stmt::emit_import_foreign_schema_stmt;
 use index_elem::emit_index_elem;
-use index_stmt::{emit_index_stmt, emit_index_stmt_no_semicolon};
+use index_stmt::emit_index_stmt;
 use infer_clause::emit_infer_clause;
 use inference_elem::emit_inference_elem;
 use inline_code_block::emit_inline_code_block;
-use insert_stmt::{emit_insert_stmt, emit_insert_stmt_no_semicolon};
+use insert_stmt::emit_insert_stmt;
 use int_list::emit_int_list;
 use integer::emit_integer;
 use into_clause::emit_into_clause;
@@ -432,7 +432,7 @@ use load_stmt::emit_load_stmt;
 use lock_stmt::emit_lock_stmt;
 use locking_clause::emit_locking_clause;
 use merge_action::{emit_merge_action, emit_merge_when_clause};
-use merge_stmt::{emit_merge_stmt, emit_merge_stmt_no_semicolon};
+use merge_stmt::emit_merge_stmt;
 use merge_support_func::emit_merge_support_func;
 use min_max_expr::emit_min_max_expr;
 use multi_assign_ref::emit_multi_assign_ref;
@@ -483,7 +483,7 @@ use rte_permission_info::emit_rte_permission_info;
 use rule_stmt::emit_rule_stmt;
 use scalar_array_op_expr::emit_scalar_array_op_expr;
 use sec_label_stmt::emit_sec_label_stmt;
-use select_stmt::{emit_select_stmt, emit_select_stmt_no_semicolon};
+use select_stmt::emit_select_stmt;
 use set_operation_stmt::emit_set_operation_stmt;
 use set_to_default::emit_set_to_default;
 use single_partition_spec::emit_single_partition_spec;
@@ -508,13 +508,13 @@ use truncate_stmt::emit_truncate_stmt;
 use type_cast::emit_type_cast;
 use type_name::emit_type_name;
 use unlisten_stmt::emit_unlisten_stmt;
-use update_stmt::{emit_update_stmt, emit_update_stmt_no_semicolon};
+use update_stmt::emit_update_stmt;
 use vacuum_relation::emit_vacuum_relation;
 use vacuum_stmt::emit_vacuum_stmt;
 use var::emit_var;
-use variable_set_stmt::{emit_variable_set_stmt, emit_variable_set_stmt_no_semicolon};
+use variable_set_stmt::emit_variable_set_stmt;
 use variable_show_stmt::emit_variable_show_stmt;
-use view_stmt::{emit_view_stmt, emit_view_stmt_no_semicolon};
+use view_stmt::emit_view_stmt;
 use window_clause::emit_window_clause;
 use window_def::emit_window_def;
 use window_func::emit_window_func;
@@ -536,6 +536,22 @@ fn is_window_expression(node: &Node) -> bool {
         }
         _ => false,
     }
+}
+
+/// Emits a top-level statement followed by the `;` that terminates it.
+///
+/// Statements never write a `;` themselves, so that one can be nested in another, a query in
+/// `EXPLAIN` or `PREPARE`, an element of `CREATE SCHEMA` or an action of a rule, without a
+/// separator of its own. Only the top level writes the terminator, and the statements that
+/// separate their children with `;`: `BEGIN ATOMIC` bodies and rules with several actions.
+///
+/// The terminator goes in a group around the statement, so that `isolate_semicolon` puts it on
+/// its own line exactly when the statement breaks.
+pub fn emit_statement(e: &mut EventEmitter, stmt: &NodeEnum) {
+    e.group_start(GroupKind::RawStmt);
+    emit_node_enum(stmt, e);
+    e.token(crate::TokenKind::SEMICOLON);
+    e.group_end();
 }
 
 pub fn emit_node(node: &Node, e: &mut EventEmitter) {

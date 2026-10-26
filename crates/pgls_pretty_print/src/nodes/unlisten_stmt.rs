@@ -17,7 +17,5 @@ pub(super) fn emit_unlisten_stmt(e: &mut EventEmitter, n: &UnlistenStmt) {
         super::emit_identifier_maybe_quoted(e, &n.conditionname);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

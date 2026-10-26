@@ -40,7 +40,5 @@ pub(super) fn emit_create_conversion_stmt(e: &mut EventEmitter, n: &CreateConver
     // Function name
     emit_dot_separated_list(e, &n.func_name);
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

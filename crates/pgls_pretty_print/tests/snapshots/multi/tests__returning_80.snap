@@ -101,7 +101,7 @@ as select f1, f2 from foo;
 create rule voo_i
 as on insert to voo
 do instead
-  insert into foo values (new.*, 57);;
+  insert into foo values (new.*, 57);
 
 insert into voo values (11, 'zit');
 
@@ -110,12 +110,12 @@ insert into voo values (12, 'zoo') returning *, f1 * 2;
 create or replace rule voo_i
 as on insert to voo
 do instead
-  insert into foo values (new.*, 57) returning *;;
+  insert into foo values (new.*, 57) returning *;
 
 create or replace rule voo_i
 as on insert to voo
 do instead
-  insert into foo values (new.*, 57) returning f1, f2;;
+  insert into foo values (new.*, 57) returning f1, f2;
 
 insert into voo values (13, 'zit2');
 
@@ -128,7 +128,7 @@ select * from voo;
 create or replace rule voo_u
 as on update to voo
 do instead
-  update foo set f1 = new.f1, f2 = new.f2 where f1 = old.f1 returning f1, f2;;
+  update foo set f1 = new.f1, f2 = new.f2 where f1 = old.f1 returning f1, f2;
 
 update voo set f1 = f1 + 1 where f2 = 'zoo2';
 
@@ -141,7 +141,7 @@ select * from voo;
 create or replace rule voo_d
 as on delete to voo
 do instead
-  delete from foo where f1 = old.f1 returning f1, f2;;
+  delete from foo where f1 = old.f1 returning f1, f2;
 
 delete from foo where f1 = 13;
 
@@ -222,7 +222,7 @@ do instead
   where
     f2 = f2j and f2 = old.f2
   returning foo.*,
-  other;;
+  other;
 
 update joinview set f1 = f1 + 1 where f3 = 57 returning *, other + 1;
 
@@ -364,7 +364,7 @@ do instead
   f4 = -1
   where
     f1 = old.f1
-  returning *;;
+  returning *;
 
 delete from foo where f1 = 4 returning old.*, new.*, *;
 

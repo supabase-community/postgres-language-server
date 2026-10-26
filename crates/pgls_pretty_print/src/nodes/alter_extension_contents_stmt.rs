@@ -43,7 +43,5 @@ pub(super) fn emit_alter_extension_contents_stmt(
         super::emit_node(object, e);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

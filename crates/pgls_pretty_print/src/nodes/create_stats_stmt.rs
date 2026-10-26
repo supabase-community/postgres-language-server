@@ -58,7 +58,5 @@ pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) 
     // Relations (tables or subselects)
     emit_comma_separated_list(e, &n.relations, super::emit_node);
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

@@ -791,7 +791,7 @@ create table ab_a3_b3 partition of ab_a3 for values in (3);
 
 set enable_indexonlyscan = off;
 
-prepare ab_q1 (int, int, int) as select * from ab where a between $1 and $2 and b <= $3;;
+prepare ab_q1 (int, int, int) as select * from ab where a between $1 and $2 and b <= $3;
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute ab_q1 (2, 2, 3);
 
@@ -799,17 +799,17 @@ explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execu
 
 deallocate ab_q1;
 
-prepare ab_q1 (int, int) as select a from ab where a between $1 and $2 and b < 3;;
+prepare ab_q1 (int, int) as select a from ab where a between $1 and $2 and b < 3;
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute ab_q1 (2, 2);
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute ab_q1 (2, 4);
 
-prepare ab_q2 (int, int) as select a from ab where a between $1 and $2 and b < (select 3);;
+prepare ab_q2 (int, int) as select a from ab where a between $1 and $2 and b < (select 3);
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute ab_q2 (2, 2);
 
-prepare ab_q3 (int, int) as select a from ab where b between $1 and $2 and a < (select 3);;
+prepare ab_q3 (int, int) as select a from ab where b between $1 and $2 and a < (select 3);
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute ab_q3 (2, 2);
 
@@ -819,7 +819,7 @@ create table hp2 partition of hp for values with (modulus 4, remainder 2);
 
 create table hp3 partition of hp for values with (modulus 4, remainder 3);
 
-prepare hp_q1 (text) as select * from hp where a is null and b = $1;;
+prepare hp_q1 (text) as select * from hp where a is null and b = $1;
 
 explain (costs 'off') execute hp_q1 ('xxx');
 
@@ -842,7 +842,7 @@ insert into list_part select generate_series(1, 4);
 
 begin;
 
-declare cur scroll cursor for select 1 from list_part where a > (select 1) and a < (select 4);;
+declare cur scroll cursor for select 1 from list_part where a > (select 1) and a < (select 4);
 
 move forward 3 from cur;
 
@@ -891,7 +891,7 @@ begin
 end;
 $$;
 
-prepare ab_q4 (int, int) as select avg(a) from ab where a between $1 and $2 and b < 4;;
+prepare ab_q4 (int, int) as select avg(a) from ab where a between $1 and $2 and b < 4;
 
 set parallel_setup_cost = 0;
 
@@ -903,7 +903,7 @@ set max_parallel_workers_per_gather = 2;
 
 select explain_parallel_append('execute ab_q4 (2, 2)');
 
-prepare ab_q5 (int, int, int) as select avg(a) from ab where a in ($1, $2, $3) and b < 4;;
+prepare ab_q5 (int, int, int) as select avg(a) from ab where a in ($1, $2, $3) and b < 4;
 
 select explain_parallel_append('execute ab_q5 (1, 1, 1)');
 
@@ -1026,7 +1026,7 @@ from
   )
   as ab
 where
-  a = $1 and b = (select -10);;
+  a = $1 and b = (select -10);
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute ab_q6 (1);
 
@@ -1214,7 +1214,7 @@ alter table part_cab
   attach partition
   part_abc_p1 for values in (3);
 
-prepare part_abc_q1 (int, int, int) as select * from part_abc where a = $1 and b = $2 and c = $3;;
+prepare part_abc_q1 (int, int, int) as select * from part_abc where a = $1 and b = $2 and c = $3;
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
 execute part_abc_q1 (1, 2, 3);
@@ -1239,7 +1239,7 @@ create table listp_2_1 partition of listp_2 for values in (2);
 
 select * from listp where b = 1;
 
-prepare q1 (int, int) as select * from listp where b in ($1, $2);;
+prepare q1 (int, int) as select * from listp where b in ($1, $2);
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute q1 (1, 1);
 
@@ -1249,7 +1249,7 @@ explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execu
 
 deallocate q1;
 
-prepare q1 (int, int, int, int) as select * from listp where b in ($1, $2) and $3 <> b and $4 <> b;;
+prepare q1 (int, int, int, int) as select * from listp where b in ($1, $2) and $3 <> b and $4 <> b;
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute q1 (1, 2, 2, 0);
 
@@ -1336,13 +1336,13 @@ insert into mc3p values (0, 1, 1), (1, 1, 1), (2, 1, 1);
 
 select * from mc3p where a < 3 and abs(b) = 1;
 
-prepare ps1 as select * from mc3p where a = $1 and abs(b) < (select 3);;
+prepare ps1 as select * from mc3p where a = $1 and abs(b) < (select 3);
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute ps1 (1);
 
 deallocate ps1;
 
-prepare ps2 as select * from mc3p where a <= $1 and abs(b) < (select 3);;
+prepare ps2 as select * from mc3p where a <= $1 and abs(b) < (select 3);
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute ps2 (1);
 
@@ -1389,7 +1389,7 @@ create index on ma_test using btree (b);
 
 analyze ma_test;
 
-prepare mt_q1 (int) as select a from ma_test where a >= $1 and a % 10 = 5 order by b;;
+prepare mt_q1 (int) as select a from ma_test where a >= $1 and a % 10 = 5 order by b;
 
 explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off') execute mt_q1 (15);
 
@@ -1405,7 +1405,7 @@ execute mt_q1 (35);
 
 deallocate mt_q1;
 
-prepare mt_q2 (int) as select * from ma_test where a >= $1 order by b limit 1;;
+prepare mt_q2 (int) as select * from ma_test where a >= $1 order by b limit 1;
 
 explain (analyze, verbose, costs 'off', summary 'off', timing 'off', buffers 'off')
 execute mt_q2 (35);
@@ -1644,7 +1644,7 @@ as select
 from
   (select * from p union all select * from q1 union all select 1, 1, 1) as s (a, b, c)
 where
-  s.a = $1 and s.b = $2 and s.c = (select 1);;
+  s.a = $1 and s.b = $2 and s.c = (select 1);
 
 explain (costs 'off') execute q (1, 1);
 

@@ -40,7 +40,5 @@ pub(super) fn emit_vacuum_stmt(e: &mut EventEmitter, n: &VacuumStmt) {
         emit_comma_separated_list(e, &n.rels, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

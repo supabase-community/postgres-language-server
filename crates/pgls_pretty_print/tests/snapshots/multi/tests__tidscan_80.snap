@@ -122,7 +122,7 @@ for select
 from
   tidscan
 where
-  ctid = any (cast(array['(0,1)', '(0,2)'] as tid[]));;
+  ctid = any (cast(array['(0,1)', '(0,2)'] as tid[]));
 
 fetch forward all from c;
 
@@ -134,7 +134,7 @@ rollback;
 
 begin;
 
-declare c cursor for select ctid, * from tidscan;;
+declare c cursor for select ctid, * from tidscan;
 
 fetch next from c;
 

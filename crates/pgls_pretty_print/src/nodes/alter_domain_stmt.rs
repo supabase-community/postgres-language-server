@@ -98,7 +98,5 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
     }
     e.indent_end();
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

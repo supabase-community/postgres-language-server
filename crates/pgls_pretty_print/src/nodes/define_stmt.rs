@@ -185,7 +185,6 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
         e.token(TokenKind::R_PAREN);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
 

@@ -27,6 +27,5 @@ pub(super) fn emit_createdb_stmt(e: &mut EventEmitter, n: &CreatedbStmt) {
         emit_space_separated_list(e, &n.options, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

@@ -80,7 +80,5 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
     e.space();
     emit_single_quoted_str(e, &n.label);
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

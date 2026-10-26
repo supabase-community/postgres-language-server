@@ -55,7 +55,5 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
     e.group_end();
     e.indent_end();
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

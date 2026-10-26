@@ -59,7 +59,5 @@ pub(super) fn emit_create_op_class_stmt(e: &mut EventEmitter, n: &CreateOpClassS
 
     e.indent_end();
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
