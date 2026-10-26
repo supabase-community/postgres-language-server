@@ -85,6 +85,6 @@ reindex table pg_toast.pg_toast_2619;
 -- expect_lint/requireConcurrentReindex
 reindex schema pg_catalog;
 -- expect_lint/requireConcurrentReindex
-reindex table CONCURRENTLY information_schema.sql_features;
+reindex table concurrently information_schema.sql_features;
 
 ```

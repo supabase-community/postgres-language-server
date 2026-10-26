@@ -9,6 +9,8 @@ use pgls_catalog::{
 
 pub(crate) use pgls_catalog::{is_reindex_concurrent, is_vacuum_full};
 
+use pgls_query::protobuf::{ScanToken, Token};
+
 use crate::fix::StatementTokens;
 use crate::linter_rule::LinterRule;
 use pgls_text_size::TextSize;
@@ -148,7 +150,8 @@ pub struct StatementContext<'a> {
     sql: Option<&'a str>,
     function: Option<&'a FunctionContext>,
     resolution: OnceCell<Option<Resolution>>,
-    tokens: OnceCell<Option<Vec<pgls_query::protobuf::ScanToken>>>,
+    /// The tokens of the statement without its comments, and the comments.
+    tokens: OnceCell<Option<(Vec<ScanToken>, Vec<ScanToken>)>>,
 }
 
 impl<'a> StatementContext<'a> {
@@ -168,11 +171,16 @@ impl<'a> StatementContext<'a> {
 
     pub(crate) fn tokens(&self) -> Option<StatementTokens<'_>> {
         let sql = self.sql?;
-        let tokens = self
+        let (tokens, comments) = self
             .tokens
-            .get_or_init(|| pgls_query::scan(sql).ok().map(|scan| scan.tokens))
-            .as_deref()?;
-        Some(StatementTokens::new(sql, tokens))
+            .get_or_init(|| {
+                let scan = pgls_query::scan(sql).ok()?;
+                Some(scan.tokens.into_iter().partition(|token| {
+                    !matches!(token.token(), Token::SqlComment | Token::CComment)
+                }))
+            })
+            .as_ref()?;
+        Some(StatementTokens::new(sql, tokens, comments))
     }
 
     pub fn resolution(&self, file_context: &AnalysedFileContext) -> Option<&Resolution> {
@@ -303,6 +311,24 @@ impl<'a> AnalysedFileContext<'a> {
             self.session.apply(stmt);
         }
         self.pos += 1;
+    }
+}
+
+/// The name of a built-in type, e.g. `varchar` for `varchar(10)` and `pg_catalog.varchar`, but
+/// not for `myschema.varchar`. Unqualified names are built-in types if they exist, since
+/// `pg_catalog` comes first on the search path.
+pub(crate) fn builtin_type_name(type_name: &pgls_query::protobuf::TypeName) -> Option<&str> {
+    let names: Vec<&str> = type_name
+        .names
+        .iter()
+        .map(|name| match &name.node {
+            Some(pgls_query::NodeEnum::String(name)) => Some(name.sval.as_str()),
+            _ => None,
+        })
+        .collect::<Option<_>>()?;
+    match names.as_slice() {
+        [name] | ["pg_catalog", name] => Some(name),
+        _ => None,
     }
 }
 

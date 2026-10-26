@@ -20,5 +20,5 @@ lint/requireConcurrentRefreshMatview ━━━━━━━━━━━━━━�
 ## Fix (unsafe): Add CONCURRENTLY
 ```
 -- expect_lint/requireConcurrentRefreshMatview
-refresh materialized view CONCURRENTLY my_view;
+refresh materialized view concurrently my_view;
 ```

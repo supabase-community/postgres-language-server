@@ -854,7 +854,7 @@ fn check_fix_writes_safe_fixes() {
             &["--fix"],
             content
         ),
-        "-- migrate:up transaction:false\nreindex index CONCURRENTLY my_index;\n",
+        "-- migrate:up transaction:false\nreindex index concurrently my_index;\n",
     );
 }
 
@@ -866,6 +866,6 @@ fn check_fix_without_section_markers_needs_unsafe() {
     assert_eq!(check_fixed("fix-plain", "", &["--fix"], content), content);
     assert_eq!(
         check_fixed("fix-plain-unsafe", "", &["--fix", "--unsafe"], content),
-        "reindex index CONCURRENTLY my_index;\n"
+        "reindex index concurrently my_index;\n"
     );
 }
