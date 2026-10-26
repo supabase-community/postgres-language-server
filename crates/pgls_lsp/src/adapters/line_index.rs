@@ -14,6 +14,8 @@ pub struct LineIndex {
     pub newlines: Vec<TextSize>,
     /// List of non-ASCII characters on each line.
     pub line_wide_chars: FxHashMap<u32, Vec<WideChar>>,
+    /// The length of the text.
+    pub len: TextSize,
 }
 
 impl LineIndex {
@@ -64,6 +66,7 @@ impl LineIndex {
         LineIndex {
             newlines,
             line_wide_chars,
+            len: TextSize::of(text),
         }
     }
 
@@ -82,6 +85,23 @@ impl LineIndex {
         self.newlines
             .get(line_col.line as usize)
             .map(|offset| offset + TextSize::from(line_col.col))
+    }
+
+    /// Like [`LineIndex::offset`], but a column past the end of its line is the end of the line,
+    /// as the LSP specifies, and a line past the end of the text is the end of the text.
+    pub fn offset_clamped(&self, line_col: LineCol) -> TextSize {
+        let line = line_col.line as usize;
+        let Some(start) = self.newlines.get(line) else {
+            return self.len;
+        };
+        // The end of the line is its line break, or the end of the text.
+        let end = self
+            .newlines
+            .get(line + 1)
+            .map_or(self.len, |next| *next - TextSize::from(1));
+        start
+            .checked_add(TextSize::from(line_col.col))
+            .map_or(end, |offset| offset.min(end))
     }
 
     pub fn to_wide(&self, enc: WideEncoding, line_col: LineCol) -> Option<WideLineCol> {
@@ -120,7 +140,7 @@ impl LineIndex {
         if let Some(wide_chars) = self.line_wide_chars.get(&line) {
             for c in wide_chars {
                 if col > u32::from(c.start) {
-                    col += u32::from(c.len()) - c.wide_len(enc) as u32;
+                    col = col.saturating_add(u32::from(c.len()) - c.wide_len(enc) as u32);
                 } else {
                     // From here on, all utf16 characters come *after* the character we are mapping,
                     // so we don't need to take them into account

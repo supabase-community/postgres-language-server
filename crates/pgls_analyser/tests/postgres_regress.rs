@@ -5,6 +5,10 @@
 //! A finding on a statement Postgres accepted is a false positive and fails the test. Findings on
 //! statements Postgres rejected are snapshotted per version, so a change in what we detect shows
 //! up in review.
+//!
+//! The body of a `LANGUAGE sql` function is analysed like the workspace does it: right after the
+//! `CREATE FUNCTION`, with the function's parameters in scope. A finding in the body of a function
+//! Postgres accepted is a false positive too.
 
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -13,10 +17,12 @@ use pgls_analyser::{
     AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterOptions, TYPECHECK_GROUP,
     UnparsableStatement,
 };
-use pgls_catalog::{CatalogBase, Snapshot};
+use pgls_catalog::{CatalogBase, Snapshot, resolve::FunctionContext};
 use pgls_console::StdDisplay;
 use pgls_diagnostics::{Diagnostic, PrintDiagnostic};
 use pgls_postgres_regress::{File, Verdict, Version};
+use pgls_query::NodeEnum;
+use pgls_text_size::TextRange;
 use rayon::prelude::*;
 
 /// Findings on statements Postgres accepted only because an earlier statement of the file failed.
@@ -27,39 +33,66 @@ const KNOWN_ARTEFACTS: &[(&str, &str, &str)] = &[(
     "`DROP TABLE writetest` fails in a read-only session, so the table still exists",
 )];
 
+/// Known false positives in the bodies of SQL functions Postgres accepted: the file, a snippet of
+/// the function, the rule, and the root cause. Remove an entry once it is fixed; an entry that
+/// matches nothing fails the test.
+const KNOWN_FALSE_POSITIVES: &[(&str, &str, &str, &str)] = &[];
+
 #[test]
 fn typecheck_reports_nothing_postgres_accepts() {
     let mut false_positives = Vec::new();
+    let mut fixed = vec![true; KNOWN_FALSE_POSITIVES.len()];
     for version in pgls_postgres_regress::versions() {
         let catalog = catalog(&version);
         let files = version.files();
-        let findings = files
+        let checked = files
             .par_iter()
-            .flat_map_iter(|file| check(&catalog, file))
+            .map(|file| check(&catalog, file))
             .collect::<Vec<_>>();
-        let analysed = files.iter().map(|x| x.statements.len()).sum::<usize>();
+        let analysed = Analysed {
+            statements: files.iter().map(|x| x.statements.len()).sum(),
+            bodies: checked.iter().map(|x| x.bodies).sum(),
+        };
         let mut rejected = Vec::new();
         let mut artefacts = Vec::new();
-        for finding in findings {
+        let mut known_false_positives = Vec::new();
+        for finding in checked.into_iter().flat_map(|x| x.findings) {
             match &finding.verdict {
-                Verdict::Accepted => match known_artefact(&finding) {
-                    Some(reason) => artefacts.push(format!("{}\n  {reason}", finding.location())),
-                    None => false_positives.push(format!(
-                        "{}/{}: {}\n  {}\n  {}",
-                        version.major,
-                        finding.location(),
-                        finding.rule,
-                        finding.message,
-                        truncate(&finding.sql, 300)
-                    )),
-                },
+                Verdict::Accepted => {
+                    if let Some(reason) = known_artefact(&finding) {
+                        artefacts.push(format!("{}\n  {reason}", finding.location()));
+                    } else if let Some(index) = known_false_positive(&finding) {
+                        fixed[index] = false;
+                        let (_, _, _, reason) = KNOWN_FALSE_POSITIVES[index];
+                        known_false_positives.push(format!(
+                            "{} {}\n  {reason}",
+                            finding.location(),
+                            finding.rule
+                        ));
+                    } else {
+                        false_positives.push(format!(
+                            "{}/{}: {}\n  {}\n  {}",
+                            version.major,
+                            finding.location(),
+                            finding.rule,
+                            finding.message,
+                            truncate(&finding.sql, 300)
+                        ));
+                    }
+                }
                 Verdict::Rejected(state) => rejected.push((state.clone(), finding)),
                 Verdict::Skipped => {}
             }
         }
         insta::assert_snapshot!(
             format!("typecheck_{}", version.major),
-            report(&version, analysed, &rejected, &artefacts)
+            report(
+                &version,
+                &analysed,
+                &rejected,
+                &artefacts,
+                &known_false_positives
+            )
         );
     }
     assert!(
@@ -68,6 +101,28 @@ fn typecheck_reports_nothing_postgres_accepts() {
         false_positives.len(),
         false_positives.join("\n\n")
     );
+    let fixed = KNOWN_FALSE_POSITIVES
+        .iter()
+        .zip(fixed)
+        .filter(|(_, fixed)| *fixed)
+        .map(|((file, needle, rule, _), _)| format!("{file} {rule} `{needle}`"))
+        .collect::<Vec<_>>();
+    assert!(
+        fixed.is_empty(),
+        "known false positives that no longer occur, remove them from KNOWN_FALSE_POSITIVES:\n{}",
+        fixed.join("\n")
+    );
+}
+
+struct Analysed {
+    statements: usize,
+    /// The SQL function bodies analysed.
+    bodies: usize,
+}
+
+struct Checked {
+    findings: Vec<Finding>,
+    bodies: usize,
 }
 
 struct Finding {
@@ -75,6 +130,8 @@ struct Finding {
     /// Where the statement starts.
     line: usize,
     col: usize,
+    /// Whether the finding is in the body of a SQL function.
+    in_body: bool,
     rule: String,
     message: String,
     verdict: Verdict,
@@ -83,7 +140,8 @@ struct Finding {
 
 impl Finding {
     fn location(&self) -> String {
-        format!("{}.sql:{}:{}", self.file, self.line, self.col)
+        let body = if self.in_body { " (body)" } else { "" };
+        format!("{}.sql:{}:{}{body}", self.file, self.line, self.col)
     }
 }
 
@@ -95,7 +153,7 @@ fn catalog(version: &Version) -> Arc<CatalogBase> {
 
 /// Lints a file like the workspace does: statements our parser doesn't understand (newer syntax)
 /// are passed on as unparsable.
-fn check(catalog: &Arc<CatalogBase>, file: &File) -> Vec<Finding> {
+fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
     let options = LinterOptions::default();
     let rules = [
         RuleFilter::Group(TYPECHECK_GROUP),
@@ -107,17 +165,24 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Vec<Finding> {
     });
     let mut stmts = Vec::new();
     let mut unparsable = Vec::new();
+    let mut bodies = Vec::new();
     for statement in &file.statements {
         let sql = file.sql(statement);
-        // psql variables (`:name`, `:'name'`) become positional parameters, as in the workspace.
-        let conversion = pgls_lexer::convert_to_positional_params_with_metadata(sql);
-        match pgls_query::parse(&conversion.sql) {
-            Ok(ast) => stmts.extend(ast.into_root().map(|root| {
-                AnalysableStatement::new(root, statement.range)
-                    .with_sql(sql)
-                    .with_identifier_parameters(conversion.has_identifier_parameters)
-            })),
-            Err(_) => unparsable.push(UnparsableStatement {
+        match parse(sql) {
+            Ok(Some((root, has_identifier_parameters))) => {
+                let body = sql_function_body(&root, sql, statement.range);
+                stmts.push(
+                    AnalysableStatement::new(root, statement.range)
+                        .with_sql(sql)
+                        .with_identifier_parameters(has_identifier_parameters),
+                );
+                if let Some(body) = body {
+                    bodies.push(body.range);
+                    stmts.push(body);
+                }
+            }
+            Ok(None) => {}
+            Err(()) => unparsable.push(UnparsableStatement {
                 range: statement.range,
                 sql: sql.to_owned(),
             }),
@@ -131,7 +196,7 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Vec<Finding> {
         typecheck: true,
         ..Default::default()
     });
-    diagnostics
+    let findings = diagnostics
         .iter()
         .map(|diagnostic| {
             let span = diagnostic.location().span.expect("findings have a span");
@@ -145,6 +210,9 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Vec<Finding> {
                 file: file.name.clone(),
                 line,
                 col,
+                in_body: bodies
+                    .iter()
+                    .any(|body| body.contains_inclusive(span.start())),
                 rule: diagnostic
                     .get_category_name()
                     .trim_start_matches("lint/")
@@ -155,7 +223,49 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Vec<Finding> {
                 sql: file.sql(statement).to_owned(),
             }
         })
-        .collect()
+        .collect();
+    Checked {
+        findings,
+        bodies: bodies.len(),
+    }
+}
+
+/// The root of a statement, and whether it has psql identifier parameters. `Err` if it doesn't
+/// parse, `None` if it isn't a single statement.
+fn parse(sql: &str) -> Result<Option<(NodeEnum, bool)>, ()> {
+    // psql variables (`:name`, `:'name'`) become positional parameters, as in the workspace.
+    let conversion = pgls_lexer::convert_to_positional_params_with_metadata(sql);
+    let ast = pgls_query::parse(&conversion.sql).map_err(|_| ())?;
+    Ok(ast
+        .into_root()
+        .map(|root| (root, conversion.has_identifier_parameters)))
+}
+
+/// The statement in the body of a `LANGUAGE sql` function, as the workspace extracts and analyses
+/// it.
+fn sql_function_body(root: &NodeEnum, sql: &str, range: TextRange) -> Option<AnalysableStatement> {
+    let NodeEnum::CreateFunctionStmt(create_fn) = root else {
+        return None;
+    };
+    let body = pgls_query_ext::utils::sql_function_body(root, sql)?;
+    let (body_root, has_identifier_parameters) = parse(&body.body).ok()??;
+    Some(
+        AnalysableStatement::new(body_root, body.range + range.start())
+            .with_sql(body.body)
+            .with_function(FunctionContext::from_create_function(create_fn))
+            .with_identifier_parameters(has_identifier_parameters),
+    )
+}
+
+fn known_false_positive(finding: &Finding) -> Option<usize> {
+    KNOWN_FALSE_POSITIVES
+        .iter()
+        .position(|(file, needle, rule, _)| {
+            finding.in_body
+                && finding.file == *file
+                && finding.rule == *rule
+                && finding.sql.contains(needle)
+        })
 }
 
 fn known_artefact(finding: &Finding) -> Option<&'static str> {
@@ -165,20 +275,24 @@ fn known_artefact(finding: &Finding) -> Option<&'static str> {
         .map(|(_, _, reason)| *reason)
 }
 
-/// A summary per rule and SQLSTATE, then one line per finding on a rejected statement.
+/// A summary per rule and SQLSTATE, the known artefacts and false positives, then one line per
+/// finding on a rejected statement.
 fn report(
     version: &Version,
-    analysed: usize,
+    analysed: &Analysed,
     rejected: &[(String, Finding)],
     artefacts: &[String],
+    false_positives: &[String],
 ) -> String {
     let mut counts: BTreeMap<(&str, &str), usize> = BTreeMap::new();
     for (state, finding) in rejected {
         *counts.entry((&finding.rule, state)).or_default() += 1;
     }
     let mut report = format!(
-        "{}: {analysed} statements, {} findings on statements Postgres rejected\n\n",
+        "{}: {} statements and {} SQL function bodies, {} findings on statements Postgres rejected\n\n",
         version.tag,
+        analysed.statements,
+        analysed.bodies,
         rejected.len()
     );
     for ((rule, state), count) in counts {
@@ -188,6 +302,12 @@ fn report(
         report.push_str("\nKnown artefacts\n");
         for artefact in artefacts {
             report.push_str(&format!("{artefact}\n"));
+        }
+    }
+    if !false_positives.is_empty() {
+        report.push_str("\nKnown false positives\n");
+        for false_positive in false_positives {
+            report.push_str(&format!("{false_positive}\n"));
         }
     }
     report.push_str("\nFindings\n");

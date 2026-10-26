@@ -101,6 +101,24 @@ where
         self.statement.resolution(self.file_context)
     }
 
+    /// The SQL function whose body the current statement is in, if it is in one.
+    pub fn function(&self) -> Option<&FunctionContext> {
+        self.statement.function
+    }
+
+    /// Whether the current statement runs in a transaction block. A statement in a function body
+    /// runs in the transaction of the statement that calls the function. Otherwise, see
+    /// [`AnalysedFileContext::in_transaction`].
+    pub fn in_transaction(&self) -> bool {
+        self.statement.function.is_some() || self.file_context.in_transaction()
+    }
+
+    /// Whether [`Self::in_transaction`] is known, rather than assumed because we don't know how
+    /// the migration tool runs the file.
+    pub fn knows_transaction(&self) -> bool {
+        self.statement.function.is_some() || self.session().in_transaction().is_some()
+    }
+
     /// The tokens of the current statement, to compute the edits of fixes. `None` if the
     /// statement text isn't known.
     pub fn tokens(&self) -> Option<StatementTokens<'_>> {
@@ -183,6 +201,7 @@ impl<'a> StatementContext<'a> {
 pub struct AnalysedFileContext<'a> {
     pub stmts: &'a [pgls_query::NodeEnum],
     pos: usize,
+    stmt_count: usize,
     catalog: Catalog,
     session: Session,
     /// Where each statement starts, and where the last statement ends, including the ones that
@@ -196,6 +215,7 @@ impl<'a> AnalysedFileContext<'a> {
         Self {
             stmts,
             pos: 0,
+            stmt_count: stmts.len(),
             catalog,
             session,
             starts: Vec::new(),
@@ -216,12 +236,21 @@ impl<'a> AnalysedFileContext<'a> {
         self.end?.checked_sub(*self.starts.get(self.pos)?)
     }
 
+    /// Sets the number of statements of the file, if it differs from the parsed statements, e.g.
+    /// because some don't parse.
+    pub fn with_stmt_count(mut self, stmt_count: usize) -> Self {
+        self.stmt_count = stmt_count;
+        self
+    }
+
     pub fn previous_stmts(&self) -> &[pgls_query::NodeEnum] {
         &self.stmts[0..self.pos]
     }
 
+    /// The number of statements that the file runs, including those that don't parse.
+    /// Statements in function bodies don't count.
     pub fn stmt_count(&self) -> usize {
-        self.stmts.len()
+        self.stmt_count
     }
 
     /// Whether the next statement runs in a transaction block. Without migration sections we
@@ -250,6 +279,17 @@ impl<'a> AnalysedFileContext<'a> {
     /// that doesn't parse.
     pub fn taint_catalog(&mut self) {
         self.catalog.taint();
+    }
+
+    /// The next statements are part of a query with more than one statement, see
+    /// [`Session::begin_implicit_block`].
+    pub fn begin_implicit_block(&mut self) {
+        self.session.begin_implicit_block();
+    }
+
+    /// The query started with [`Self::begin_implicit_block`] ended.
+    pub fn end_implicit_block(&mut self) {
+        self.session.end_implicit_block();
     }
 
     /// Moves to the next statement.

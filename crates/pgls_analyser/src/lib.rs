@@ -228,19 +228,62 @@ impl<'a> Analyser<'a> {
             let end = params
                 .unparsable
                 .iter()
-                .filter(|skipped| skipped.range.start() < unit.end)
+                .filter(|skipped| skipped.range.start() < unit.range.end())
                 .map(|skipped| skipped.range.end())
                 .chain(stmts.last().map(|stmt| stmt.range.end()))
                 .max()
                 .unwrap_or_default();
+            // The statements the unit runs, including those that don't parse, but not those in
+            // function bodies.
+            let stmt_count = |range: TextRange| {
+                params.stmts[unit.stmts.clone()]
+                    .iter()
+                    .filter(|stmt| stmt.function.is_none() && range.contains(stmt.range.start()))
+                    .count()
+                    + params
+                        .unparsable
+                        .iter()
+                        .filter(|skipped| range.contains(skipped.range.start()))
+                        .count()
+            };
+            // Outside a transaction, the queries with more than one statement run in an implicit
+            // transaction block.
+            let implicit_blocks: Vec<TextRange> = unit
+                .section
+                .filter(|section| !section.transaction)
+                .map(|section| {
+                    section
+                        .queries
+                        .iter()
+                        .copied()
+                        .filter(|query| stmt_count(*query) > 1)
+                        .collect()
+                })
+                .unwrap_or_default();
             let mut file_context =
                 AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
-                    .with_positions(stmts.iter().map(|stmt| stmt.range.start()).collect(), end);
+                    .with_positions(stmts.iter().map(|stmt| stmt.range.start()).collect(), end)
+                    .with_stmt_count(stmt_count(unit.range));
+            let mut implicit_block = None;
 
             for (stmt, root) in params.stmts[unit.stmts.clone()]
                 .iter()
                 .zip(&roots[unit.stmts.clone()])
             {
+                if stmt.function.is_none() {
+                    let block = implicit_blocks
+                        .iter()
+                        .position(|block| block.contains(stmt.range.start()));
+                    if block != implicit_block {
+                        if implicit_block.is_some() {
+                            file_context.end_implicit_block();
+                        }
+                        if block.is_some() {
+                            file_context.begin_implicit_block();
+                        }
+                        implicit_block = block;
+                    }
+                }
                 while let Some(skipped) =
                     unparsable.next_if(|skipped| skipped.range.start() < stmt.range.start())
                 {
@@ -312,7 +355,8 @@ impl<'a> Analyser<'a> {
                 file_context.next(stmt.function.is_none());
             }
 
-            while let Some(skipped) = unparsable.next_if(|skipped| skipped.range.start() < unit.end)
+            while let Some(skipped) =
+                unparsable.next_if(|skipped| skipped.range.start() < unit.range.end())
             {
                 if may_change_catalog(&skipped.sql) {
                     file_context.taint_catalog();
@@ -332,7 +376,7 @@ struct MigrationUnit<'a> {
     section: Option<&'a MigrationSection>,
     /// The indices of the statements.
     stmts: Range<usize>,
-    end: TextSize,
+    range: TextRange,
 }
 
 fn migration_units<'a>(
@@ -342,24 +386,26 @@ fn migration_units<'a>(
     let before_sections = sections
         .first()
         .map_or(TextSize::from(u32::MAX), |section| section.range.start());
-    let ends = std::iter::once((None, before_sections)).chain(
+    let ranges = std::iter::once((None, TextRange::up_to(before_sections))).chain(
         sections
             .iter()
-            .map(|section| (Some(section), section.range.end())),
+            .map(|section| (Some(section), section.range)),
     );
 
     let mut first = 0;
-    ends.map(|(section, end)| {
-        let last = first + stmts[first..].partition_point(|stmt| stmt.range.start() < end);
-        let unit = MigrationUnit {
-            section,
-            stmts: first..last,
-            end,
-        };
-        first = last;
-        unit
-    })
-    .collect()
+    ranges
+        .map(|(section, range)| {
+            let last =
+                first + stmts[first..].partition_point(|stmt| stmt.range.start() < range.end());
+            let unit = MigrationUnit {
+                section,
+                stmts: first..last,
+                range,
+            };
+            first = last;
+            unit
+        })
+        .collect()
 }
 
 /// Whether a statement that doesn't parse may have changed the catalog. Queries, `COPY`,

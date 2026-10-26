@@ -243,6 +243,15 @@ pub(crate) fn first_node_location(ast: &NodeEnum) -> Option<i32> {
         .min()
 }
 
+/// The location of the node of `ast` that starts last in the source. A trailing comment written
+/// after `ast` is attached there.
+pub(crate) fn last_node_location(ast: &NodeEnum) -> Option<i32> {
+    ast.iter()
+        .filter_map(|node| node_location(&node))
+        .filter(|location| *location >= 0)
+        .max()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

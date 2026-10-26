@@ -25,6 +25,7 @@ pub(super) fn emit_string_identifier(e: &mut EventEmitter, n: &PgString) {
 }
 
 pub(super) fn emit_identifier(e: &mut EventEmitter, value: &str) {
+    let value = e.source_identifier(value);
     let escaped = value.replace('"', "\"\"");
     e.token(TokenKind::IDENT(format!("\"{escaped}\"")));
 }
@@ -42,10 +43,11 @@ pub(super) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
         return;
     }
 
-    if needs_quoting_as_column_name(value) {
-        emit_identifier(e, value);
+    let value = e.source_identifier(value).to_string();
+    if needs_quoting_as_column_name(&value) {
+        emit_identifier(e, &value);
     } else {
-        e.token(TokenKind::IDENT(value.to_string()));
+        e.token(TokenKind::IDENT(value));
     }
 }
 
@@ -58,10 +60,11 @@ pub(super) fn emit_type_identifier_maybe_quoted(e: &mut EventEmitter, value: &st
         return;
     }
 
-    if needs_quoting(value) {
-        emit_identifier(e, value);
+    let value = e.source_identifier(value).to_string();
+    if needs_quoting(&value) {
+        emit_identifier(e, &value);
     } else {
-        e.token(TokenKind::TYPE_IDENT(value.to_string()));
+        e.token(TokenKind::TYPE_IDENT(value));
     }
 }
 
