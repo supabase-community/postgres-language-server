@@ -2,14 +2,13 @@ use std::sync::Arc;
 
 use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
-use pgls_query_ext::diagnostics::SyntaxDiagnostic;
+use pgls_query_ext::{diagnostics::SyntaxDiagnostic, utils::sql_function_body};
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
 
 use super::{
     annotation::AnnotationStore,
     pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
-    sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
 };
@@ -161,7 +160,7 @@ where
 
             if let Ok(ast) = self.parser.ast_db.get_or_cache_ast(&root_id).as_ref() {
                 // Check if this is a SQL function definition with a body
-                if let Some(sub_statement) = get_sql_fn_body(ast, content) {
+                if let Some(sub_statement) = sql_function_body(ast, content) {
                     // Add sub-statements to our pending queue
                     self.pending_sub_statements.push((
                         root_id.create_child(&sub_statement.body),
@@ -236,7 +235,6 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
         TextRange,
         Option<pgls_query::NodeEnum>,
         Arc<tree_sitter::Tree>,
-        Option<SQLFunctionSignature>,
     );
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
@@ -249,15 +247,7 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
 
         let cst_result = parser.cst_db.get_or_cache_tree(&id);
 
-        let sql_fn_sig = id.parent().and_then(|root| {
-            let ast_option = parser.ast_db.get_or_cache_ast(&root).as_ref().clone().ok();
-
-            let ast_option = ast_option.as_ref()?;
-
-            get_sql_fn_signature(ast_option)
-        });
-
-        (id.clone(), range, ast_option, cst_result, sql_fn_sig)
+        (id.clone(), range, ast_option, cst_result)
     }
 }
 
@@ -296,8 +286,10 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
         // Statements in the body of a SQL function can reference its parameters.
         let function = id.parent().and_then(|root| {
             let parent = parser.ast_db.get_or_cache_ast(&root);
-            let signature = get_sql_fn_signature(parent.as_ref().as_ref().ok()?)?;
-            Some(function_context(signature))
+            let Ok(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) = parent.as_ref() else {
+                return None;
+            };
+            pgls_catalog::resolve::FunctionContext::from_create_function(create_fn)
         });
 
         (
@@ -315,22 +307,6 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
         )
     }
 }
-fn function_context(signature: SQLFunctionSignature) -> pgls_catalog::resolve::FunctionContext {
-    pgls_catalog::resolve::FunctionContext {
-        function_name: signature.name,
-        params: signature
-            .args
-            .into_iter()
-            .map(|arg| pgls_catalog::resolve::FunctionParam {
-                name: arg.name,
-                type_schema: arg.type_.schema,
-                type_name: arg.type_.name,
-                is_array: arg.type_.is_array,
-            })
-            .collect(),
-    }
-}
-
 pub struct WithCSTMapper;
 impl<'a> StatementMapper<'a> for WithCSTMapper {
     type Output = (StatementId, TextRange, Arc<tree_sitter::Tree>);
@@ -470,6 +446,30 @@ mod tests {
 
         assert_eq!(stmts.len(), 2);
         assert_eq!(stmts[1].2, "select $1 + $2;");
+    }
+
+    #[test]
+    fn sql_function_body_sees_the_parameters() {
+        let input =
+            "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT a + $2;' LANGUAGE sql;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+        assert_eq!(results.len(), 2);
+        assert!(results[0].0.as_ref().unwrap().function.is_none());
+        let body = results[1].0.as_ref().unwrap();
+        assert_eq!(body.sql.as_deref(), Some("SELECT a + $2;"));
+        let function = body.function.as_ref().unwrap();
+        assert_eq!(function.function_name, "add");
+        assert_eq!(
+            function
+                .params
+                .iter()
+                .map(|param| param.name.as_deref())
+                .collect::<Vec<_>>(),
+            [Some("a"), Some("b")]
+        );
     }
 
     #[test]
@@ -615,14 +615,11 @@ $$ LANGUAGE plpgsql;";
         let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (_id, _range, ast, cst, sql_fn_sig) = &results[0];
+        let (_id, _range, ast, cst) = &results[0];
 
         // Should have both AST and CST
         assert!(ast.is_some());
         assert_eq!(cst.root_node().kind(), "program");
-
-        // Should not have SQL function signature for top-level statement
-        assert!(sql_fn_sig.is_none());
     }
 
     #[test]
@@ -635,16 +632,9 @@ $$ LANGUAGE plpgsql;";
         assert_eq!(results.len(), 2);
 
         // Check the function body
-        let (_id, _range, ast, _cst, sql_fn_sig) = &results[1];
+        let (_id, _range, ast, _cst) = &results[1];
         assert_eq!(_id.content(), "SELECT $1 + $2;");
         assert!(ast.is_some());
-        assert!(sql_fn_sig.is_some());
-
-        let sig = sql_fn_sig.as_ref().unwrap();
-        assert_eq!(sig.name, "add");
-        assert_eq!(sig.args.len(), 2);
-        assert_eq!(sig.args[0].name, Some("a".to_string()));
-        assert_eq!(sig.args[1].name, Some("b".to_string()));
     }
 
     #[test]

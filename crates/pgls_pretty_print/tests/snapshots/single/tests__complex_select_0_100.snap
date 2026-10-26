@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/complex_select_0.sql
-snapshot_kind: text
 ---
 with recursive
 pks_fks
@@ -208,7 +207,7 @@ select
   )
   as column_dependencies
 from
-  repeated_references as rep inner join pks_fks using ( resorigtbl, resorigcol)
+  repeated_references as rep inner join pks_fks using (resorigtbl, resorigcol)
   inner join
     pg_class as tbl
   on tbl.oid = rep.resorigtbl

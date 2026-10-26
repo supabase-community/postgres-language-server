@@ -312,9 +312,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.space();
                 e.token(TokenKind::WHERE_KW);
                 e.space();
-                e.token(TokenKind::L_PAREN);
-                super::emit_clause_condition(e, where_clause);
-                e.token(TokenKind::R_PAREN);
+                super::emit_parenthesized_condition(e, GroupKind::Constraint, where_clause);
             }
 
             emit_deferrable(e, n, &mut continued);
