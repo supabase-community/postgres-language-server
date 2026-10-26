@@ -39,11 +39,11 @@ where active;
 select *
 from users
 where exists (
-    select 1
-    from memberships
-    where memberships.user_id = users.id and
-      memberships.organization_id = 42
-  );
+  select 1
+  from memberships
+  where memberships.user_id = users.id and
+    memberships.organization_id = 42
+);
 
 select case
          when users.status = 'active'
