@@ -367,19 +367,22 @@ impl LspHandler {
                     .diagnostics
                     .iter()
                     .filter(|diagnostic| {
-                        diagnostic.code == Some(NumberOrString::String(edit.rule.clone()))
+                        edit.rule.as_ref().is_some_and(|rule| {
+                            diagnostic.code == Some(NumberOrString::String(rule.clone()))
+                        })
                     })
                     .cloned()
                     .collect();
-                let is_suppression = edit
-                    .category
-                    .matches(pgls_analyse::SUPPRESSION_ACTION_CATEGORY);
+                let is_fix = edit.rule.is_some()
+                    && !edit
+                        .category
+                        .matches(pgls_analyse::SUPPRESSION_ACTION_CATEGORY);
                 actions.push(CodeAction {
                     title: action.title,
                     kind: Some(CodeActionKind::from(edit.category.to_str().into_owned())),
                     diagnostics: (!diagnostics.is_empty()).then_some(diagnostics),
                     edit: Some(self.workspace_edit(&params.text_document.uri, doc.version, edits)),
-                    is_preferred: (!is_suppression
+                    is_preferred: (is_fix
                         && edit.applicability == pgls_analyse::Applicability::Always)
                         .then_some(true),
                     ..Default::default()

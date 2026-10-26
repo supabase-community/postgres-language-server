@@ -12,7 +12,7 @@ use pgls_configuration::PartialConfiguration;
 use pgls_configuration::StringSet;
 use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_configuration::migrations::{PartialMigrationsConfiguration, SectionMarkers};
-use pgls_fs::MemoryFileSystem;
+use pgls_fs::{ConfigName, MemoryFileSystem, OsFileSystem};
 use pgls_lsp::LSPServer;
 use pgls_lsp::ServerFactory;
 use pgls_workspace::DynRef;
@@ -24,6 +24,7 @@ use sqlx::Executor;
 use sqlx::PgPool;
 use std::any::type_name;
 use std::fmt::Display;
+use std::path::Path;
 use std::str::FromStr;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
@@ -47,10 +48,10 @@ use tower_lsp_server::ls_types::WorkDoneProgressParams;
 use tower_lsp_server::ls_types::WorkspaceFolder;
 use tower_lsp_server::ls_types::{
     ClientCapabilities, DidChangeConfigurationParams, DidChangeTextDocumentParams,
-    DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    FileChangeType, FileEvent, InitializeResult, InitializedParams, PublishDiagnosticsParams,
-    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
-    VersionedTextDocumentIdentifier,
+    DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, FileChangeType, FileEvent, InitializeResult, InitializedParams,
+    PublishDiagnosticsParams, TextDocumentContentChangeEvent, TextDocumentIdentifier,
+    TextDocumentItem, Uri, VersionedTextDocumentIdentifier, WorkspaceFoldersChangeEvent,
 };
 use tower_lsp_server::{jsonrpc::Request, ls_types::InitializeParams};
 
@@ -146,14 +147,42 @@ impl Server {
 
     /// Basic implementation of the `initialize` request for tests
     async fn initialize(&mut self) -> Result<()> {
-        self.initialize_with_capabilities(ClientCapabilities::default())
+        self.initialize_with_root(url!("")).await
+    }
+
+    /// Like [Server::initialize], with the given client capabilities
+    async fn initialize_with_capabilities(
+        &mut self,
+        capabilities: ClientCapabilities,
+    ) -> Result<()> {
+        self.initialize_with_options(url!(""), None, capabilities)
             .await
     }
 
+    /// Like [Server::initialize], with the workspace root at `root_uri`
+    async fn initialize_with_root(&mut self, root_uri: Uri) -> Result<()> {
+        self.initialize_with_folders(root_uri, None).await
+    }
+
+    /// Like [Server::initialize], with the workspace root at `root_uri` and the given workspace
+    /// folders
+    async fn initialize_with_folders(
+        &mut self,
+        root_uri: Uri,
+        workspace_folders: Option<Vec<WorkspaceFolder>>,
+    ) -> Result<()> {
+        self.initialize_with_options(root_uri, workspace_folders, ClientCapabilities::default())
+            .await
+    }
+
+    /// Like [Server::initialize], with the workspace root at `root_uri`, the given workspace
+    /// folders and the given client capabilities
     // The `root_path` field is deprecated, but we still need to specify it
     #[allow(deprecated)]
-    async fn initialize_with_capabilities(
+    async fn initialize_with_options(
         &mut self,
+        root_uri: Uri,
+        workspace_folders: Option<Vec<WorkspaceFolder>>,
         capabilities: ClientCapabilities,
     ) -> Result<()> {
         let _res: InitializeResult = self
@@ -163,11 +192,11 @@ impl Server {
                 InitializeParams {
                     process_id: None,
                     root_path: None,
-                    root_uri: Some(url!("")),
+                    root_uri: Some(root_uri),
                     initialization_options: None,
                     capabilities,
                     trace: None,
-                    workspace_folders: None,
+                    workspace_folders,
                     client_info: None,
                     locale: None,
                     work_done_progress_params: Default::default(),
@@ -643,9 +672,6 @@ async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool
     server.initialize().await?;
     server.initialized().await?;
 
-    // The document is opened before the first transition: `textDocument/didOpen` picks the project
-    // a path belongs to, and with a file system that has no working directory every configuration
-    // reload registers another project under the same empty path.
     server.open_document(STATEMENT).await?;
 
     let options = test_db.connect_options();
@@ -685,7 +711,10 @@ async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool
     );
 
     // A configuration reload carries no client configuration, but the sticky layer survives it.
+    drain_notifications(&mut receiver);
     server.change_watched_configuration_file().await?;
+    // The reload refreshes the diagnostics of the open document.
+    wait_for_diagnostics(&mut receiver, 0).await?;
     drain_notifications(&mut receiver);
     server.replace_document(1, STATEMENT).await?;
     assert!(
@@ -928,6 +957,101 @@ async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     assert_eq!(hints[0].position, Position::new(1, 18));
     assert!(matches!(&hints[0].label, lsp::InlayHintLabel::String(label) if label == "x:"));
     assert_eq!(hints[0].kind, Some(lsp::InlayHintKind::PARAMETER));
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute("create table people (id int, name text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    server
+        .open_document("select 1;\nselect name, now() from public.people;\n")
+        .await?;
+
+    let tokens: Option<lsp::SemanticTokensResult> = server
+        .request(
+            "textDocument/semanticTokens/full",
+            "semantic_tokens",
+            lsp::SemanticTokensParams {
+                work_done_progress_params: WorkDoneProgressParams::default(),
+                partial_result_params: lsp::PartialResultParams::default(),
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+            },
+        )
+        .await?;
+
+    let Some(lsp::SemanticTokensResult::Tokens(tokens)) = tokens else {
+        bail!("expected semantic tokens, got {tokens:?}");
+    };
+    let token =
+        |delta_line, delta_start, length, token_type, token_modifiers_bitset| lsp::SemanticToken {
+            delta_line,
+            delta_start,
+            length,
+            token_type,
+            token_modifiers_bitset,
+        };
+    assert_eq!(
+        tokens.data,
+        vec![
+            // `name`, a property.
+            token(1, 7, 4, 2, 0),
+            // `now`, a function of `pg_catalog`.
+            token(0, 6, 3, 3, 1),
+            // `public`, a namespace, and `people`, a class.
+            token(0, 11, 6, 0, 0),
+            token(0, 7, 6, 1, 0),
+        ]
+    );
 
     server.shutdown().await?;
     reader.abort();
@@ -1557,7 +1681,9 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
         .iter()
         .find(|action| action.title == "Add CONCURRENTLY")
         .expect("expected a fix for requireConcurrentReindex");
-    assert_eq!(fix.is_preferred, Some(true));
+    // Without section markers, we don't know whether the statement runs in a transaction, so
+    // the fix is unsafe.
+    assert_eq!(fix.is_preferred, None);
     let edits = &fix.edit.as_ref().unwrap().changes.as_ref().unwrap()[&doc_url];
     assert_eq!(edits.len(), 1);
     assert_eq!(edits[0].new_text, " CONCURRENTLY");
@@ -1573,6 +1699,114 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
         "-- pgls-ignore requireConcurrentReindex\n"
     );
     assert_eq!(edits[0].range.start, Position::new(0, 0));
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute("create table star_users (id int, name text);")
+        .await?;
+
+    let database = test_db
+        .connect_options()
+        .get_database()
+        .unwrap()
+        .to_string();
+    let host = test_db.connect_options().get_host().to_string();
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(database),
+            host: Some(host),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    let doc_content = "select * from star_users;";
+    let doc_url = url!("test.sql");
+    server
+        .open_named_document(doc_content.to_string(), doc_url.clone(), "sql")
+        .await?;
+
+    let code_actions_response = server
+        .request::<CodeActionParams, CodeActionResponse>(
+            "textDocument/codeAction",
+            "_code_action",
+            CodeActionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: doc_url.clone(),
+                },
+                range: Range {
+                    start: Position::new(0, 7),
+                    end: Position::new(0, 7),
+                },
+                context: CodeActionContext::default(),
+                partial_result_params: PartialResultParams::default(),
+                work_done_progress_params: WorkDoneProgressParams::default(),
+            },
+        )
+        .await?
+        .unwrap();
+
+    let action = code_actions_response
+        .into_iter()
+        .find_map(|action| match action {
+            lsp::CodeActionOrCommand::CodeAction(action)
+                if action.title == "Expand `*` into its columns" =>
+            {
+                Some(action)
+            }
+            _ => None,
+        })
+        .expect("expected the expand star action");
+    assert_eq!(
+        action.kind,
+        Some(lsp::CodeActionKind::from("refactor.rewrite.pgls"))
+    );
+    assert_eq!(action.is_preferred, None);
+    let edits = &action.edit.as_ref().unwrap().changes.as_ref().unwrap()[&doc_url];
+    assert_eq!(edits.len(), 1);
+    assert_eq!(edits[0].new_text, "id, name");
+    assert_eq!(
+        edits[0].range,
+        Range {
+            start: Position::new(0, 7),
+            end: Position::new(0, 8),
+        }
+    );
 
     server.shutdown().await?;
     reader.abort();
@@ -3093,6 +3327,195 @@ async fn test_crash_on_delete_character() -> Result<()> {
     Ok(())
 }
 
+/// A document of another scheme with the path of an open file, like the `git:` side of a diff in
+/// VS Code, has a workspace document of its own. Closing it used to close the document of the
+/// file, and the next edit of the file was never analysed.
+#[tokio::test]
+async fn closing_a_document_of_another_scheme_keeps_the_file() -> Result<()> {
+    let factory = ServerFactory::default();
+    let (service, client) = factory.create(None).into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    let file = url!("a.sql");
+    let git = if cfg!(windows) {
+        Uri::from_str("git:/z%3A/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D").unwrap()
+    } else {
+        Uri::from_str("git:/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D").unwrap()
+    };
+
+    server
+        .open_named_document("select 1;", file.clone(), "sql")
+        .await?;
+    server
+        .open_named_document("selec 1;", git.clone(), "sql")
+        .await?;
+    server
+        .notify(
+            "textDocument/didClose",
+            DidCloseTextDocumentParams {
+                text_document: TextDocumentIdentifier { uri: git },
+            },
+        )
+        .await?;
+    drain_notifications(&mut receiver);
+
+    server
+        .change_named_document(
+            file.clone(),
+            2,
+            vec![TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: "selec 1;".to_string(),
+            }],
+        )
+        .await?;
+
+    let published = wait_for_diagnostics(&mut receiver, 2).await?;
+    assert_eq!(published.uri, file);
+    assert!(!published.diagnostics.is_empty(), "{published:?}");
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// `pgls.executeStatement` without its arguments is an invalid request, not a panic.
+#[tokio::test]
+async fn execute_statement_without_arguments_is_invalid() -> Result<()> {
+    let factory = ServerFactory::default();
+    let (service, client) = factory.create(None).into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    for arguments in [vec![], vec![json!("not a statement"), json!(1)]] {
+        let result: Result<Option<Value>> = server
+            .request(
+                "workspace/executeCommand",
+                "_execute",
+                ExecuteCommandParams {
+                    command: "pgls.executeStatement".to_string(),
+                    arguments,
+                    work_done_progress_params: Default::default(),
+                },
+            )
+            .await;
+        let error = result.expect_err("expected an error response");
+        let code = error
+            .chain()
+            .find_map(|error| error.downcast_ref::<jsonrpc::Error>())
+            .map(|error| error.code);
+        assert_eq!(code, Some(jsonrpc::ErrorCode::InvalidParams), "{error:?}");
+    }
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// Inlay hints after multi-byte characters are positioned in UTF-16, and a range that ends past
+/// the end of the document, as some clients send, still gets them.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute(
+            "create function make_point(x int, y int) returns int language sql as 'select x + y';",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    // No line break at the end: the document has lines 0 and 1.
+    server
+        .open_document("select 1;\nselect '😀', make_point(1, 2)")
+        .await?;
+
+    for end in [
+        Position::new(1, 29),
+        Position::new(1, 500),
+        Position::new(2, 0),
+    ] {
+        let hints: Option<Vec<lsp::InlayHint>> = server
+            .request(
+                "textDocument/inlayHint",
+                "inlay_hints",
+                lsp::InlayHintParams {
+                    work_done_progress_params: WorkDoneProgressParams::default(),
+                    text_document: TextDocumentIdentifier {
+                        uri: url!("document.sql"),
+                    },
+                    range: Range {
+                        start: Position::new(0, 0),
+                        end,
+                    },
+                },
+            )
+            .await?;
+        let positions: Vec<_> = hints
+            .context("expected inlay hints")?
+            .into_iter()
+            .map(|hint| hint.position)
+            .collect();
+        // `1` starts at UTF-16 column 24, 26 in bytes.
+        assert_eq!(
+            positions,
+            [Position::new(1, 24), Position::new(1, 27)],
+            "{end:?}"
+        );
+    }
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
@@ -3238,5 +3661,399 @@ async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
     server.shutdown().await?;
     reader.abort();
 
+    Ok(())
+}
+
+/// Waits for the next diagnostics of the document at `uri`.
+async fn wait_for_diagnostics_of(
+    receiver: &mut Receiver<ServerNotification>,
+    uri: &Uri,
+) -> Result<Vec<lsp::Diagnostic>> {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let Some(ServerNotification::PublishDiagnostics(params)) = receiver.next().await else {
+                bail!("the server closed the connection");
+            };
+            if &params.uri == uri {
+                return Ok(params.diagnostics);
+            }
+        }
+    })
+    .await
+    .with_context(|| format!("timed out waiting for diagnostics of {}", uri.as_str()))?
+}
+
+/// The severities of the `banDropColumn` diagnostics.
+fn ban_drop_column_severities(diagnostics: &[lsp::Diagnostic]) -> Vec<lsp::DiagnosticSeverity> {
+    diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            matches!(
+                &diagnostic.code,
+                Some(lsp::NumberOrString::String(code)) if code == "lint/banDropColumn"
+            )
+        })
+        .filter_map(|diagnostic| diagnostic.severity)
+        .collect()
+}
+
+/// Opens a document that drops a column, and returns the severities of its `banDropColumn`
+/// diagnostics.
+async fn open_and_check(
+    server: &mut Server,
+    receiver: &mut Receiver<ServerNotification>,
+    uri: Uri,
+) -> Result<Vec<lsp::DiagnosticSeverity>> {
+    server
+        .open_named_document("alter table users drop column name;", uri.clone(), "sql")
+        .await?;
+    Ok(ban_drop_column_severities(
+        &wait_for_diagnostics_of(receiver, &uri).await?,
+    ))
+}
+
+/// A configuration file below the workspace root applies to the files in its directory, and the
+/// server picks up configuration files that are created or deleted while it runs.
+#[tokio::test]
+async fn nested_configuration_files_apply_to_their_directories() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let write_config = |directory: &str, content: &str| -> Result<()> {
+        let directory = root.path().join(directory);
+        std::fs::create_dir_all(&directory)?;
+        std::fs::write(directory.join(ConfigName::pgls_jsonc()), content)?;
+        Ok(())
+    };
+    write_config("", "{}")?;
+    write_config("db1", r#"{ "linter": { "enabled": false } }"#)?;
+    write_config(
+        "db2",
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )?;
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
+        .await?;
+    server.initialized().await?;
+
+    let document = |path: &str| Uri::from_file_path(root.path().join(path)).unwrap();
+
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("a.sql")).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("db1/a.sql")).await?,
+        []
+    );
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("db2/schema/a.sql")).await?,
+        [lsp::DiagnosticSeverity::ERROR]
+    );
+
+    // A configuration file created while the server runs.
+    write_config("db3", r#"{ "linter": { "enabled": false } }"#)?;
+    server
+        .notify(
+            "workspace/didChangeWatchedFiles",
+            DidChangeWatchedFilesParams {
+                changes: vec![FileEvent {
+                    uri: document("db3/postgres-language-server.jsonc"),
+                    typ: FileChangeType::CREATED,
+                }],
+            },
+        )
+        .await?;
+    drain_notifications(&mut receiver);
+    // The reload can come after the document is first checked.
+    server
+        .open_named_document(
+            "alter table users drop column name;",
+            document("db3/a.sql"),
+            "sql",
+        )
+        .await?;
+    wait_for_severities(&mut receiver, &document("db3/a.sql"), &[]).await?;
+
+    // A deleted one no longer applies, and the open documents are checked again.
+    std::fs::remove_file(root.path().join("db1").join(ConfigName::pgls_jsonc()))?;
+    drain_notifications(&mut receiver);
+    server
+        .notify(
+            "workspace/didChangeWatchedFiles",
+            DidChangeWatchedFilesParams {
+                changes: vec![FileEvent {
+                    uri: document("db1/postgres-language-server.jsonc"),
+                    typ: FileChangeType::DELETED,
+                }],
+            },
+        )
+        .await?;
+    // Diagnostics published before the deletion can still be on their way.
+    let db1 = document("db1/a.sql");
+    let refreshed = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let diagnostics = wait_for_diagnostics_of(&mut receiver, &db1).await?;
+            if !ban_drop_column_severities(&diagnostics).is_empty() {
+                return Ok::<_, Error>(ban_drop_column_severities(&diagnostics));
+            }
+        }
+    })
+    .await
+    .context("the diagnostics were not refreshed after deleting the configuration file")??;
+    assert_eq!(refreshed, [lsp::DiagnosticSeverity::WARNING]);
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// Waits until the diagnostics of the document at `uri` have the given `banDropColumn` severities.
+async fn wait_for_severities(
+    receiver: &mut Receiver<ServerNotification>,
+    uri: &Uri,
+    expected: &[lsp::DiagnosticSeverity],
+) -> Result<()> {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let diagnostics = wait_for_diagnostics_of(receiver, uri).await?;
+            if ban_drop_column_severities(&diagnostics) == expected {
+                return Ok::<_, Error>(());
+            }
+        }
+    })
+    .await
+    .with_context(|| format!("the diagnostics of {} were not refreshed", uri.as_str()))?
+}
+
+/// A workspace folder added after the initialization gets its own project with its configuration,
+/// and a removed one no longer applies.
+#[tokio::test]
+async fn workspace_folders_can_be_added_and_removed() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    for (folder, configuration) in [
+        ("one", "{}"),
+        (
+            "two",
+            r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+    ] {
+        std::fs::create_dir_all(root.path().join(folder))?;
+        std::fs::write(
+            root.path().join(folder).join(ConfigName::pgls_jsonc()),
+            configuration,
+        )?;
+    }
+    let folder = |name: &str| WorkspaceFolder {
+        uri: Uri::from_file_path(root.path().join(name)).unwrap(),
+        name: name.to_string(),
+    };
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_folders(folder("one").uri, Some(vec![folder("one")]))
+        .await?;
+    server.initialized().await?;
+
+    // Outside of every workspace folder, the project of the shallowest one applies.
+    let document = Uri::from_file_path(root.path().join("two").join("a.sql")).unwrap();
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document.clone()).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+
+    let change = |added: Vec<WorkspaceFolder>, removed: Vec<WorkspaceFolder>| {
+        DidChangeWorkspaceFoldersParams {
+            event: WorkspaceFoldersChangeEvent { added, removed },
+        }
+    };
+
+    server
+        .notify(
+            "workspace/didChangeWorkspaceFolders",
+            change(vec![folder("two")], vec![]),
+        )
+        .await?;
+    wait_for_severities(&mut receiver, &document, &[lsp::DiagnosticSeverity::ERROR]).await?;
+
+    server
+        .notify(
+            "workspace/didChangeWorkspaceFolders",
+            change(vec![], vec![folder("two")]),
+        )
+        .await?;
+    wait_for_severities(
+        &mut receiver,
+        &document,
+        &[lsp::DiagnosticSeverity::WARNING],
+    )
+    .await?;
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// A burst of configuration file changes, e.g. from a `git checkout`, reloads the configuration
+/// once, and a change in a folder the nested configuration search skips doesn't reload it.
+#[tokio::test]
+async fn configuration_changes_are_coalesced() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let config = root.path().join(ConfigName::pgls_jsonc());
+    std::fs::write(&config, "{}")?;
+    let skipped = root
+        .path()
+        .join("node_modules/pkg")
+        .join(ConfigName::pgls_jsonc());
+    std::fs::create_dir_all(skipped.parent().unwrap())?;
+    std::fs::write(&skipped, r#"{ "linter": { "enabled": false } }"#)?;
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
+        .await?;
+    server.initialized().await?;
+
+    let document = Uri::from_file_path(root.path().join("a.sql")).unwrap();
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document.clone()).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+
+    let changed = |path: &Path| DidChangeWatchedFilesParams {
+        changes: vec![FileEvent {
+            uri: Uri::from_file_path(path).unwrap(),
+            typ: FileChangeType::CHANGED,
+        }],
+    };
+    // Counts the times the diagnostics of the document are refreshed within a second.
+    async fn refreshes(receiver: &mut Receiver<ServerNotification>, uri: &Uri) -> usize {
+        let mut refreshes = 0;
+        let _ = tokio::time::timeout(Duration::from_secs(1), async {
+            while let Some(ServerNotification::PublishDiagnostics(params)) = receiver.next().await {
+                if &params.uri == uri {
+                    refreshes += 1;
+                }
+            }
+        })
+        .await;
+        refreshes
+    }
+
+    server
+        .notify("workspace/didChangeWatchedFiles", changed(&skipped))
+        .await?;
+    assert_eq!(
+        refreshes(&mut receiver, &document).await,
+        0,
+        "a configuration file in node_modules reloaded the configuration"
+    );
+
+    for _ in 0..5 {
+        server
+            .notify("workspace/didChangeWatchedFiles", changed(&config))
+            .await?;
+    }
+    assert_eq!(refreshes(&mut receiver, &document).await, 1);
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// A workspace folder whose configuration file is broken keeps its own project with the default
+/// settings, and a file outside every workspace folder gets the defaults too. Neither gets the
+/// settings of another folder, which could point at another database.
+#[tokio::test]
+async fn files_never_get_the_settings_of_another_workspace_folder() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    for (folder, configuration) in [
+        (
+            "one",
+            r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        ("two", "{ this is not json"),
+    ] {
+        std::fs::create_dir_all(root.path().join(folder))?;
+        std::fs::write(
+            root.path().join(folder).join(ConfigName::pgls_jsonc()),
+            configuration,
+        )?;
+    }
+    let folder = |name: &str| WorkspaceFolder {
+        uri: Uri::from_file_path(root.path().join(name)).unwrap(),
+        name: name.to_string(),
+    };
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_folders(folder("one").uri, Some(vec![folder("one"), folder("two")]))
+        .await?;
+    server.initialized().await?;
+
+    let document = |path: &str| Uri::from_file_path(root.path().join(path)).unwrap();
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("one/a.sql")).await?,
+        [lsp::DiagnosticSeverity::ERROR]
+    );
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("two/a.sql")).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document("elsewhere/a.sql")).await?,
+        [lsp::DiagnosticSeverity::WARNING]
+    );
+
+    server.shutdown().await?;
+    reader.abort();
     Ok(())
 }

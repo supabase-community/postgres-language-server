@@ -23,6 +23,16 @@ lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━
   
 
 
+## Fix (unsafe): Keep only the last assignment to name
+```
+-- expect_lint/banDuplicateColumnAssignments
+-- expect_lint/banDuplicateColumnAssignments
+merge into users using new_users on users.id = new_users.id
+when matched then update set name = 'x'
+when not matched then insert (id, id) values (new_users.id, 1);
+
+```
+
 lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Multiple assignments to column id.

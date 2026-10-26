@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/xml.sql
-snapshot_kind: text
 ---
 create table xmltest (
   id int,
@@ -686,7 +685,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -706,7 +704,6 @@ as select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -726,13 +723,12 @@ select * from xmltableview1;
 
 select * from xmltableview1;
 
-select * from xmltable( row() passing null columns v1 timestamp) as f (v1, v2);
+select * from xmltable(row() passing null columns v1 timestamp) as f (v1, v2);
 
 select
   *
 from
   xmltable(
-
     xmlnamespaces('http://x.y' as zz),
     '/zz:rows/zz:row'
     passing '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
@@ -745,7 +741,6 @@ as select
   *
 from
   xmltable(
-
     xmlnamespaces('http://x.y' as "Zz"),
     '/Zz:rows/Zz:row'
     passing '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
@@ -759,7 +754,6 @@ select
   *
 from
   xmltable(
-
     xmlnamespaces(default 'http://x.y'),
     '/rows/row'
     passing '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
@@ -770,7 +764,7 @@ from
 select
   *
 from
-  xmltable( '.' passing '<foo/>' columns a text path 'foo/namespace::node()');
+  xmltable('.' passing '<foo/>' columns a text path 'foo/namespace::node()');
 
 prepare pp
 as select
@@ -778,7 +772,6 @@ as select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -799,7 +792,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -812,7 +804,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -826,7 +817,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -840,7 +830,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -852,7 +841,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -864,7 +852,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -879,7 +866,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -893,7 +879,6 @@ select
   *
 from
   xmltable(
-
     '/root'
     passing '<root><element>a1a<!-- aaaa -->a2a<?aaaaa?> <!--z-->  bbbb<x>xxx</x>cccc</element></root>'
     columns
@@ -904,7 +889,6 @@ select
   *
 from
   xmltable(
-
     '/root'
     passing '<root><element>a1a<!-- aaaa -->a2a<?aaaaa?> <!--z-->  bbbb<x>xxx</x>cccc</element></root>'
     columns
@@ -915,7 +899,6 @@ select
   *
 from
   xmltable(
-
     'd/r'
     passing '<d><r><c><![CDATA[<hello> &"<>!<a>foo</a>]]></c></r><r><c>2</c></r></d>'
     columns
@@ -926,7 +909,6 @@ select
   *
 from
   xmltable(
-
     '/x/a'
     passing '<x><a><ent>&apos;</ent></a><a><ent>&quot;</ent></a><a><ent>&amp;</ent></a><a><ent>&lt;</ent></a><a><ent>&gt;</ent></a></x>'
     columns
@@ -937,7 +919,6 @@ select
   *
 from
   xmltable(
-
     '/x/a'
     passing '<x><a><ent>&apos;</ent></a><a><ent>&quot;</ent></a><a><ent>&amp;</ent></a><a><ent>&lt;</ent></a><a><ent>&gt;</ent></a></x>'
     columns
@@ -949,7 +930,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -968,7 +948,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -983,7 +962,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -999,7 +977,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -1046,7 +1023,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -1065,7 +1041,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -1086,7 +1061,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -1107,7 +1081,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -1121,9 +1094,7 @@ from
       premier_name text path 'PREMIER_NAME' default 'not specified'
   );
 
-with
-x
-as (
+with x as (
   select
     proname,
     proowner,
@@ -1140,8 +1111,7 @@ as (
   where
     proname = 'f_leak'
 ),
-y
-as (
+y as (
   select
     xmlelement(name proc, xmlforest(
       proname,
@@ -1155,14 +1125,12 @@ as (
   from
     x
 ),
-z
-as (
+z as (
   select
     xmltable.*
   from
     y,
     lateral xmltable(
-
       '/proc'
       passing proc
       columns
@@ -1178,9 +1146,7 @@ select * from z
 except
 select * from x;
 
-with
-x
-as (
+with x as (
   select
     proname,
     proowner,
@@ -1195,8 +1161,7 @@ as (
   from
     pg_proc
 ),
-y
-as (
+y as (
   select
     xmlelement(name data, xmlagg(
       xmlelement(name proc, xmlforest(
@@ -1212,14 +1177,12 @@ as (
   from
     x
 ),
-z
-as (
+z as (
   select
     xmltable.*
   from
     y,
     lateral xmltable(
-
       '/data/proc'
       passing doc
       columns
@@ -1253,7 +1216,6 @@ select
 from
   xmltest2,
   lateral xmltable(
-
     '/d/r'
     passing x
     columns
@@ -1265,7 +1227,6 @@ select
 from
   xmltest2,
   lateral xmltable(
-
     ('/d/r/' || lower(_path) || 'c')
     passing x
     columns
@@ -1277,7 +1238,6 @@ select
 from
   xmltest2,
   lateral xmltable(
-
     ('/d/r/' || lower(_path) || 'c')
     passing x
     columns
@@ -1288,7 +1248,6 @@ select
   *
 from
   xmltable(
-
     '*'
     passing '<a>a</a>'
     columns
@@ -1303,7 +1262,6 @@ select
   *
 from
   xmltable(
-
     '*'
     passing '<e>pre<!--c1--><?pi arg?><![CDATA[&ent1]]><n2>&amp;deep</n2>post</e>'
     columns
@@ -1315,7 +1273,6 @@ select
   *
 from
   xmltable(
-
     '.'
     passing xmlelement(name a)
     columns

@@ -15,10 +15,9 @@ describe("Workspace API", () => {
     );
 
     const workspace = await createWorkspaceWithBinary(command);
-    workspace.registerProjectFolder({
-      setAsCurrentWorkspace: true,
-    });
+    const projectKey = await workspace.registerProjectFolder({});
     await workspace.openFile({
+      project_key: projectKey,
       path: {
         path: "test.sql",
         was_written: false,
@@ -33,6 +32,7 @@ describe("Workspace API", () => {
       skip: [],
       max_diagnostics: 100,
       categories: [],
+      project_key: projectKey,
       path: {
         path: "test.sql",
         was_written: false,
@@ -49,12 +49,14 @@ describe("Workspace API", () => {
       kind: ["Handleable"],
     };
     await workspace.openFile({
+      project_key: projectKey,
       path,
       content: "refresh materialized view user_stats;",
       version: 0,
     });
 
     const { actions } = await workspace.pullCodeActions({
+      project_key: projectKey,
       path,
       cursor_position: 2,
       only: [],
@@ -63,6 +65,7 @@ describe("Workspace API", () => {
     expect(actions.map((action) => action.title)).toContain("Add CONCURRENTLY");
 
     const fixed = await workspace.fixFile({
+      project_key: projectKey,
       path,
       fix_file_mode: "SafeAndUnsafeFixes",
       only: [],
@@ -71,9 +74,10 @@ describe("Workspace API", () => {
     expect(fixed.code.toLowerCase()).toBe("refresh materialized view concurrently user_stats;");
     expect(fixed.fixes_applied).toBe(1);
 
-    await workspace.closeFile({ path });
+    await workspace.closeFile({ project_key: projectKey, path });
 
     await workspace.closeFile({
+      project_key: projectKey,
       path: {
         path: "test.sql",
         was_written: false,

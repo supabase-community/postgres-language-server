@@ -12,7 +12,8 @@ Clients that still use the old name of a view, function, type, sequence, schema,
 constraint, role, or any other object fail after the rename. The same goes for enum values
 renamed with `ALTER TYPE ... RENAME VALUE`.
 
-Tables and columns are covered by `renamingTable` and `renamingColumn`.
+Tables are covered by `renamingTable`, and columns and the attributes of composite types by
+`renamingColumn`.
 
 ## Examples
 
