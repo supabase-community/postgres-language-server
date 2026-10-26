@@ -48,10 +48,10 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
             e.token(TokenKind::L_PAREN);
             if !base.table_elts.is_empty() {
                 e.indent_start();
-                e.line(crate::emitter::LineType::SoftOrSpace);
+                e.line(crate::emitter::LineType::Soft);
                 emit_comma_separated_list(e, &base.table_elts, super::emit_node);
                 e.indent_end();
-                e.line(crate::emitter::LineType::SoftOrSpace);
+                e.line(crate::emitter::LineType::Soft);
             }
             e.token(TokenKind::R_PAREN);
         }

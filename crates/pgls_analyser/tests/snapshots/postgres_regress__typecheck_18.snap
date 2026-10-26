@@ -1,8 +1,8 @@
 ---
 source: crates/pgls_analyser/tests/postgres_regress.rs
-expression: "report(&version, analysed, &rejected, &artefacts)"
+expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_18_6: 47289 statements, 1843 findings on statements Postgres rejected
+REL_18_6: 47289 statements and 359 SQL function bodies, 1847 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 banDuplicateColumnAssignments 42601: 1
@@ -18,12 +18,12 @@ operatorTypeMismatch 42883: 9
 unknownColumn 42703: 40
 unknownColumn 42P01: 3
 unknownFunction 42704: 4
-unknownFunction 42883: 95
+unknownFunction 42883: 96
 unknownFunction 42P01: 19
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
 unknownRelation 42501: 1
-unknownRelation 42P01: 1533
+unknownRelation 42P01: 1536
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -242,6 +242,7 @@ btree_index.sql:275:1 42P01 unknownRelation
 char.sql:71:1 42P01 unknownRelation
 char.sql:73:1 42P01 unknownRelation
 cluster.sql:258:1 42P01 unknownRelation
+compression.sql:50:1 (body) 42883 unknownFunction
 compression.sql:140:1 42883 unknownFunction
 create_am.sql:49:1 42P01 unknownRelation
 create_am.sql:53:1 42P01 unknownRelation
@@ -1356,6 +1357,7 @@ select_implicit.sql:129:1 42702 ambiguousColumn
 select_implicit.sql:140:1 42702 ambiguousColumn
 select_into.sql:5:1 42P01 unknownRelation
 select_into.sql:12:1 42P01 unknownRelation
+select_into.sql:90:1 (body) 42P01 unknownRelation
 select_into.sql:97:1 42P01 unknownRelation
 select_parallel.sql:24:1 42P01 unknownRelation
 select_parallel.sql:26:1 42P01 unknownRelation
@@ -1805,6 +1807,8 @@ window.sql:385:1 42P01 unknownRelation
 window.sql:389:1 42P01 unknownRelation
 window.sql:393:1 42P01 unknownRelation
 window.sql:397:1 42P01 unknownRelation
+window.sql:518:1 (body) 42P01 unknownRelation
+window.sql:538:1 (body) 42P01 unknownRelation
 window.sql:556:1 42P01 unknownRelation
 window.sql:560:1 42P01 unknownRelation
 window.sql:564:1 42P01 unknownRelation

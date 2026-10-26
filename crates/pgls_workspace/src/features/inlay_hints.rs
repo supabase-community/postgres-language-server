@@ -4,6 +4,7 @@ use pgls_text_size::{TextRange, TextSize};
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullInlayHintsParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub path: PgLSPath,
     /// The hints of the statements that overlap this range are returned.
     pub range: TextRange,
