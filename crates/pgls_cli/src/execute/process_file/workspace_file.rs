@@ -40,6 +40,7 @@ impl<'ctx, 'app> WorkspaceFile<'ctx, 'app> {
         let guard = FileGuard::open(
             ctx.workspace,
             OpenFileParams {
+                project_key: ctx.project_key,
                 path: pgls_path,
                 version: 0,
                 content: input.clone(),

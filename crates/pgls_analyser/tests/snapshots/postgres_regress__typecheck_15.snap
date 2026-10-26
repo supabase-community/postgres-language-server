@@ -1,8 +1,8 @@
 ---
 source: crates/pgls_analyser/tests/postgres_regress.rs
-expression: "report(&version, analysed, &rejected, &artefacts)"
+expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_15_19: 39967 statements, 1583 findings on statements Postgres rejected
+REL_15_19: 39967 statements and 347 SQL function bodies, 1586 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 functionArgumentMismatch 42725: 5
@@ -21,7 +21,7 @@ unknownFunction 42P01: 18
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
 unknownRelation 42501: 1
-unknownRelation 42P01: 1284
+unknownRelation 42P01: 1287
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -30,6 +30,10 @@ transactions.sql:90:1
   `DROP TABLE writetest` fails in a read-only session, so the table still exists
 transactions.sql:92:1
   `DROP TABLE writetest` fails in a read-only session, so the table still exists
+
+Known false positives
+polymorphism.sql:690:1 (body) functionArgumentMismatch
+  parameters of polymorphic types keep the pseudo-type in the body, so `$1 anyelement` doesn't match `anycompatible`
 
 Findings
 aggregates.sql:23:1 42P01 unknownRelation
@@ -1239,6 +1243,7 @@ select_implicit.sql:129:1 42702 ambiguousColumn
 select_implicit.sql:140:1 42702 ambiguousColumn
 select_into.sql:5:1 42P01 unknownRelation
 select_into.sql:12:1 42P01 unknownRelation
+select_into.sql:90:1 (body) 42P01 unknownRelation
 select_into.sql:97:1 42P01 unknownRelation
 select_parallel.sql:17:1 42P01 unknownRelation
 select_parallel.sql:19:1 42P01 unknownRelation
@@ -1557,6 +1562,8 @@ window.sql:381:1 42P01 unknownRelation
 window.sql:385:1 42P01 unknownRelation
 window.sql:389:1 42P01 unknownRelation
 window.sql:393:1 42P01 unknownRelation
+window.sql:514:1 (body) 42P01 unknownRelation
+window.sql:534:1 (body) 42P01 unknownRelation
 window.sql:552:1 42P01 unknownRelation
 window.sql:556:1 42P01 unknownRelation
 window.sql:560:1 42P01 unknownRelation

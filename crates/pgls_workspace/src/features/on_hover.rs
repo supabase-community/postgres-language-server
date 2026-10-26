@@ -4,6 +4,7 @@ use pgls_text_size::TextSize;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct OnHoverParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub path: PgLSPath,
     pub position: TextSize,
 }
