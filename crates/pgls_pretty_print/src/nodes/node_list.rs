@@ -1,7 +1,7 @@
 use pgls_query::Node;
 
 use crate::emitter::{EventEmitter, GroupKind, LineType};
-use crate::{CommaStyle, TokenKind};
+use crate::{CommaStyle, Layout, TokenKind};
 
 /// Controls the spacing behavior after separators in list helpers
 #[derive(Clone, Copy, Default)]
@@ -130,7 +130,12 @@ pub(super) fn emit_comma_separated_list_with_layout_break<F>(
                     e.take_own_line_leading_comments_at(location);
                 }
 
-                super::emit_layout_break(e);
+                // As in `emit_comma_separated_list_with_spacing`, the break before a leading
+                // comma disappears when the list fits, so a single line reads "a, b".
+                match e.config().layout {
+                    Layout::Expanded => e.line(LineType::Hard),
+                    Layout::Fit => e.line(LineType::Soft),
+                }
                 e.token(TokenKind::COMMA);
                 e.space();
             } else {

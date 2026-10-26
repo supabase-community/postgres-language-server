@@ -872,8 +872,10 @@ select
     'null_frac',
     cast(0.26 as real),
     'elem_count_histogram',
-    cast('{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}'
-    as real[])
+    cast(
+      '{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}'
+      as real[]
+    )
   );
 
 select
@@ -1206,16 +1208,20 @@ insert into stats_import.test
 select
   1,
   'one',
-  cast((1, 1.1, 'ONE', '2001-01-01', '{ "xkey": "xval" }')
-  as stats_import.complex_type),
+  cast(
+    (1, 1.1, 'ONE', '2001-01-01', '{ "xkey": "xval" }')
+    as stats_import.complex_type
+  ),
   int4range(1, 4),
   array['red', 'green']
 union all
 select
   2,
   'two',
-  cast((2, 2.2, 'TWO', '2002-02-02', '[true, 4, "six"]')
-  as stats_import.complex_type),
+  cast(
+    (2, 2.2, 'TWO', '2002-02-02', '[true, 4, "six"]')
+    as stats_import.complex_type
+  ),
   int4range(1, 4),
   array['blue', 'yellow']
 union all

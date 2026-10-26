@@ -222,6 +222,15 @@ impl<'a> Analyser<'a> {
                 unit.section
                     .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
             );
+            let stmts = &params.stmts[unit.stmts.clone()];
+            let end = params
+                .unparsable
+                .iter()
+                .filter(|skipped| skipped.range.start() < unit.range.end())
+                .map(|skipped| skipped.range.end())
+                .chain(stmts.last().map(|stmt| stmt.range.end()))
+                .max()
+                .unwrap_or_default();
             // The statements the unit runs, including those that don't parse, but not those in
             // function bodies.
             let stmt_count = |range: TextRange| {
@@ -251,6 +260,7 @@ impl<'a> Analyser<'a> {
                 .unwrap_or_default();
             let mut file_context =
                 AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
+                    .with_positions(stmts.iter().map(|stmt| stmt.range.start()).collect(), end)
                     .with_stmt_count(stmt_count(unit.range));
             let mut implicit_block = None;
 
@@ -474,6 +484,35 @@ pub fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
         | NodeEnum::MergeStmt(_) => true,
         _ => false,
     }
+}
+
+/// Runs a single rule on a statement and returns the text each diagnostic points at.
+#[cfg(test)]
+pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
+    let rule_filter = pgls_analyse::RuleFilter::Rule(group, rule);
+    let options = LinterOptions::default();
+    let analyser = Analyser::new(AnalyserConfig {
+        options: &options,
+        filter: AnalysisFilter {
+            enabled_rules: Some(std::slice::from_ref(&rule_filter)),
+            ..Default::default()
+        },
+    });
+    let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
+    let range = TextRange::up_to(TextSize::of(sql));
+    analyser
+        .run(AnalyserParams {
+            stmts: vec![AnalysableStatement::new(root, range).with_sql(sql)],
+            ..Default::default()
+        })
+        .iter()
+        .map(|diagnostic| {
+            let span = pgls_diagnostics::Diagnostic::location(diagnostic)
+                .span
+                .unwrap();
+            sql[span].to_owned()
+        })
+        .collect()
 }
 
 #[cfg(test)]

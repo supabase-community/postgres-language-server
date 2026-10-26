@@ -438,7 +438,7 @@ select
   a,
   b
 from
-  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
+  prt1 full outer join prt2 as p2 (b, a, c) using (a, b)
 where
   a between 490 and 510
 group by 1,
@@ -450,7 +450,7 @@ select
   a,
   b
 from
-  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
+  prt1 full outer join prt2 as p2 (b, a, c) using (a, b)
 where
   a between 490 and 510
 group by 1,
@@ -642,58 +642,46 @@ order by t1.a,
 select
   count(*)
 from
-  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
+  prt1 full outer join prt2 as p2 (b, a, c) using (a, b)
   full outer join
     prt2 as p3 (b, a, c)
-  using (
-    a,
-    b)
+  using (a, b)
 where
   a between 490 and 510;
 
 select
   count(*)
 from
-  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
+  prt1 full outer join prt2 as p2 (b, a, c) using (a, b)
   full outer join
     prt2 as p3 (b, a, c)
-  using (
-    a,
-    b)
+  using (a, b)
 where
   a between 490 and 510;
 
 select
   count(*)
 from
-  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
+  prt1 full outer join prt2 as p2 (b, a, c) using (a, b)
   full outer join
     prt2 as p3 (b, a, c)
-  using (
-    a,
-    b)
+  using (a, b)
   full outer join
     prt1 as p4 (a, b, c)
-  using (
-    a,
-    b)
+  using (a, b)
 where
   a between 490 and 510;
 
 select
   count(*)
 from
-  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
+  prt1 full outer join prt2 as p2 (b, a, c) using (a, b)
   full outer join
     prt2 as p3 (b, a, c)
-  using (
-    a,
-    b)
+  using (a, b)
   full outer join
     prt1 as p4 (a, b, c)
-  using (
-    a,
-    b)
+  using (a, b)
 where
   a between 490 and 510;
 

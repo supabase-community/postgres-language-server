@@ -142,6 +142,12 @@ users - private.users (Table)
 --------------
 
 select "email" from "private".u|
+
+Results:
+users - private.users (Table)
+
+--------------
+
 select "email" from "private".users; |
 
 Results:

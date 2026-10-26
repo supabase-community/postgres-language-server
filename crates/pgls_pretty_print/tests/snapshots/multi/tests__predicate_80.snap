@@ -77,16 +77,16 @@ from
   left outer join
     pred_tab as t2
   on exists (
-      select
-        1
-      from
-        pred_tab as t3,
-        pred_tab as t4,
-        pred_tab as t5,
-        pred_tab as t6
-      where
-        t1.a = t3.a and t6.a is not null
-    );
+    select
+      1
+    from
+      pred_tab as t3,
+      pred_tab as t4,
+      pred_tab as t5,
+      pred_tab as t6
+    where
+      t1.a = t3.a and t6.a is not null
+  );
 
 select
   *
@@ -95,16 +95,16 @@ from
   left outer join
     pred_tab as t2
   on exists (
-      select
-        1
-      from
-        pred_tab as t3,
-        pred_tab as t4,
-        pred_tab as t5,
-        pred_tab as t6
-      where
-        t1.a = t3.a and t6.a is null
-    );
+    select
+      1
+    from
+      pred_tab as t3,
+      pred_tab as t4,
+      pred_tab as t5,
+      pred_tab as t6
+    where
+      t1.a = t3.a and t6.a is null
+  );
 
 drop table pred_tab;
 
