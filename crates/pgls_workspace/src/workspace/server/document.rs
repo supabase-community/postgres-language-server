@@ -9,7 +9,7 @@ use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 use super::{
-    document_cache::{ContentChange, DocumentCache, DocumentCacheStats},
+    document_cache::{ContentChange, DocumentCache, DocumentCacheStats, StaleEntries},
     statement_identifier::StatementId,
 };
 
@@ -49,7 +49,9 @@ impl Document {
         }
     }
 
-    pub fn update_content(&mut self, content: String, version: i32) {
+    /// Replaces the content of the document. Returns what the change invalidated in its cache,
+    /// for the caller to drop, see [`StaleEntries::drop_in_background`].
+    pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
         let unchanged = common_prefix(&self.content, &content);
         // Only the statements around the change are split again.
         let split = pgls_statement_splitter::split_edited(&self.content, &self.split, &content);
@@ -98,7 +100,7 @@ impl Document {
                 first_changed_statement,
             },
             self.generation,
-        );
+        )
     }
 
     /// Which version of the content this is: it is incremented on every change. Unlike the
@@ -935,7 +937,8 @@ $$ LANGUAGE plpgsql;";
         let second_ast = d.cache.parse(&second);
         let first_tree = d.cache.tree(&first);
 
-        d.update_content("select 1;\nselect 3;".to_string(), 2);
+        d.update_content("select 1;\nselect 3;".to_string(), 2)
+            .drop_in_background();
 
         assert!(Arc::ptr_eq(&first_ast, &d.cache.parse(&first)));
         assert!(Arc::ptr_eq(&first_tree, &d.cache.tree(&first)));
@@ -1032,7 +1035,8 @@ $$ LANGUAGE plpgsql;";
             let end = (at + below(20)).min(content.len());
             let inserted = snippets[below(snippets.len())];
             content = format!("{}{inserted}{}", &content[..at], &content[end..]);
-            d.update_content(content.clone(), version);
+            d.update_content(content.clone(), version)
+                .drop_in_background();
 
             let whole = pgls_statement_splitter::split(&content);
             assert_eq!(d.split, whole, "{content}");
@@ -1054,7 +1058,9 @@ $$ LANGUAGE plpgsql;";
 
         let previous = Document::new("select 1;".into(), 1);
         let mut current = previous.clone();
-        current.update_content("select 2;".into(), 2);
+        current
+            .update_content("select 2;".into(), 2)
+            .drop_in_background();
         let key = CacheKey::new(0, ProjectKey::default(), None);
         let resolved = || -> Arc<[ResolvedStatement]> { Arc::from(Vec::new()) };
 

@@ -743,16 +743,19 @@ impl Workspace for WorkspaceServer {
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
 
-        match documents.entry(params.path.clone()) {
+        let stale = match documents.entry(params.path.clone()) {
+            // A request that still works on the previous version keeps it. The copy shares the
+            // document's cache.
             std::collections::hash_map::Entry::Occupied(mut entry) => {
-                // A request that still works on the previous version keeps it. The copy shares
-                // the document's cache.
-                Arc::make_mut(entry.get_mut()).update_content(params.content, params.version);
+                Arc::make_mut(entry.get_mut()).update_content(params.content, params.version)
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
                 entry.insert(Arc::new(Document::new(params.content, params.version)));
+                return Ok(());
             }
-        }
+        };
+        drop(documents);
+        stale.drop_in_background();
 
         Ok(())
     }
