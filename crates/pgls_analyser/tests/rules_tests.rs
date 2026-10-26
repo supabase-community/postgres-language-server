@@ -116,19 +116,19 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
 
     let split = pgls_statement_splitter::split(&query);
 
-    // Statements that don't parse are passed on as such, like the workspace does.
+    // Statements that don't parse are passed on as such, like the workspace does. The body of a
+    // SQL function follows the function, with its parameters in scope.
     let mut stmts = Vec::new();
     let mut unparsable = Vec::new();
     for r in &split.ranges {
         let text = &query[*r];
         match pgls_query::parse(text) {
-            Ok(ast) => stmts.push(
-                AnalysableStatement::new(
-                    ast.into_root().expect("Failed to convert AST to root node"),
-                    *r,
-                )
-                .with_sql(text),
-            ),
+            Ok(ast) => {
+                let root = ast.into_root().expect("Failed to convert AST to root node");
+                let body = sql_function_body(&root, text, *r);
+                stmts.push(AnalysableStatement::new(root, *r).with_sql(text));
+                stmts.extend(body);
+            }
             Err(_) => unparsable.push(UnparsableStatement {
                 range: *r,
                 sql: text.to_owned(),
@@ -160,6 +160,24 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
 
     let expectation = Expectation::from_file(&query);
     expectation.assert(results.as_slice());
+}
+
+/// The statement in the body of a `LANGUAGE sql` function, as the workspace extracts it.
+fn sql_function_body(
+    root: &pgls_query::NodeEnum,
+    sql: &str,
+    range: TextRange,
+) -> Option<AnalysableStatement> {
+    let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = root else {
+        return None;
+    };
+    let body = pgls_query_ext::utils::sql_function_body(root, sql)?;
+    let body_root = pgls_query::parse(&body.body).ok()?.into_root()?;
+    Some(
+        AnalysableStatement::new(body_root, body.range + range.start())
+            .with_sql(body.body)
+            .with_function(pgls_catalog::resolve::FunctionContext::from_create_function(create_fn)),
+    )
 }
 
 /// The migration sections of the file, each starting at a `-- section: up` or

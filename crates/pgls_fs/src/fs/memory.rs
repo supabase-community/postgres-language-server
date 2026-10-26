@@ -13,7 +13,7 @@ use pgls_diagnostics::{Error, Severity};
 use crate::fs::OpenOptions;
 use crate::{FileSystem, PgLSPath, TraversalContext, TraversalScope};
 
-use super::{BoxedTraversal, ErrorKind, File, FileSystemDiagnostic};
+use super::{BoxedTraversal, ErrorKind, File, FileSystemDiagnostic, SKIPPED_DIRECTORIES};
 
 type OnGetChangedFiles = Option<
     Arc<
@@ -258,6 +258,29 @@ impl FileSystem for MemoryFileSystem {
     ) -> Result<Resolution, ResolveError> {
         // not needed for the memory file system
         todo!()
+    }
+
+    fn find_files(&self, root: &Path, file_names: &[&str]) -> Vec<PathBuf> {
+        let files = self.files.0.read();
+        let mut found: Vec<_> = files
+            .keys()
+            .filter(|path| {
+                let Ok(relative) = path.strip_prefix(root) else {
+                    return false;
+                };
+                let mut components: Vec<_> = relative.iter().map(|c| c.to_string_lossy()).collect();
+                let Some(file_name) = components.pop() else {
+                    return false;
+                };
+                file_names.contains(&&*file_name)
+                    && !components.iter().any(|directory| {
+                        directory.starts_with('.') || SKIPPED_DIRECTORIES.contains(&&**directory)
+                    })
+            })
+            .cloned()
+            .collect();
+        found.sort();
+        found
     }
 }
 

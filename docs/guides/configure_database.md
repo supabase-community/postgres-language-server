@@ -41,7 +41,9 @@ Configure database connection details in your `postgres-language-server.jsonc` f
 
 ## Supabase projects
 
-When you run `postgres-language-server init` in a directory that contains a `supabase/config.toml`, the generated configuration connects to the local Supabase database started by `supabase start`: host `127.0.0.1`, the port from `[db] port` in `supabase/config.toml` (default: `54322`), and `postgres` as username, password, and database. If the port cannot be read from `supabase/config.toml`, `init` uses `54322` and prints a warning.
+When you run `postgres-language-server init` in a directory that contains a `supabase/config.toml`, the generated configuration connects to the local Supabase database started by `supabase start`: host `127.0.0.1`, the port from `[db] port` in `supabase/config.toml` (default: `54322`), and `postgres` as username, password, and database. If the port cannot be read from `supabase/config.toml`, `init` uses `54322` and prints a warning. It also sets `migrations.migrationsDir` to `supabase/migrations`, so that the [migration rules](checking_migrations.md) apply to your migrations. Executing statements stays disabled; allow it with `db.allowStatementExecutionsAgainst` if you want to.
+
+In a monorepo, run `init` at the root: if the root has no `supabase/config.toml`, `init` looks for one in the folders one or two levels below it, such as `apps/web/supabase/config.toml`, and uses it if there is exactly one. With several, it leaves the connection alone and lists them, so run `init` in the folder of the project you want instead.
 
 ## Password file
 
