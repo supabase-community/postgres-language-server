@@ -3,7 +3,7 @@
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
-use crate::RuleFix;
+use crate::{LinterRule, LinterRuleContext, RuleFix};
 
 /// The tokens of a statement, with offsets relative to the statement.
 #[derive(Clone, Copy)]
@@ -130,8 +130,45 @@ impl<'a> StatementTokens<'a> {
         Some((open, self.closing_paren(open)?))
     }
 
+    /// The ranges of the keyword pairs `first second` that are not inside parentheses, e.g. the
+    /// `DROP DEFAULT` of each command of an `ALTER TABLE`.
+    pub fn keyword_pairs(&self, first: Token, second: Token) -> Vec<TextRange> {
+        let mut depth = 0usize;
+        let mut pairs = Vec::new();
+        for (index, token) in self.tokens.iter().enumerate() {
+            match token.token() {
+                Token::Ascii40 => depth += 1,
+                Token::Ascii41 => depth = depth.saturating_sub(1),
+                kind if depth == 0 && kind == first && self.kind(index + 1) == Some(second) => {
+                    pairs.push(self.range(index).cover(self.range(index + 1)));
+                }
+                _ => {}
+            }
+        }
+        pairs
+    }
+
     /// A fix that inserts ` <text>` after the token at `index`.
     pub fn insert_after(&self, index: usize, message: &str, text: &str) -> RuleFix {
         RuleFix::new(message).insert(self.range(index).end(), format!(" {text}"))
     }
+}
+
+/// A fix that inserts `CONCURRENTLY` after the token at `index`, for a statement that Postgres
+/// can't run in a transaction block. There is none in a transaction block. If we only assume that
+/// the statement runs outside of one, because we don't know the migration tool, the fix is unsafe.
+pub(crate) fn add_concurrently<R: LinterRule + 'static>(
+    ctx: &LinterRuleContext<R>,
+    tokens: &StatementTokens,
+    index: usize,
+) -> Option<RuleFix> {
+    if ctx.in_transaction() {
+        return None;
+    }
+    let fix = tokens.insert_after(index, "Add CONCURRENTLY", "CONCURRENTLY");
+    Some(if ctx.knows_transaction() {
+        fix
+    } else {
+        fix.unsafe_fix()
+    })
 }

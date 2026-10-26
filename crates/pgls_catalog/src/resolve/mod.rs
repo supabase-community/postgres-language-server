@@ -235,6 +235,25 @@ pub enum Reference {
         span: Option<TextRange>,
         type_info: crate::TypeInfo,
     },
+    /// A `*` or `t.*` in a select list or RETURNING list whose columns are all known, and each
+    /// can be referenced by a name that resolves to it.
+    Star {
+        /// The location of the `*`, or of the qualifier of `t.*`.
+        location: i32,
+        /// The span of the `*`, including its qualifier.
+        span: Option<TextRange>,
+        /// The columns that the `*` expands to, in order.
+        columns: Vec<StarColumn>,
+    },
+}
+
+/// A column that a `*` expands to, and the name that references it from where the `*` is.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StarColumn {
+    /// The qualifier of the column, e.g. `["u"]` for `u.name`. Empty if the column name alone
+    /// references it.
+    pub qualifier: Vec<String>,
+    pub name: String,
 }
 
 impl Reference {
@@ -245,7 +264,8 @@ impl Reference {
             | Self::Relation { location, .. }
             | Self::Type { location, .. }
             | Self::Parameter { location, .. }
-            | Self::EnumLiteral { location, .. } => *location,
+            | Self::EnumLiteral { location, .. }
+            | Self::Star { location, .. } => *location,
         }
     }
 
@@ -256,7 +276,8 @@ impl Reference {
             | Self::Relation { span, .. }
             | Self::Type { span, .. }
             | Self::Parameter { span, .. }
-            | Self::EnumLiteral { span, .. } => *span,
+            | Self::EnumLiteral { span, .. }
+            | Self::Star { span, .. } => *span,
         }
     }
 }

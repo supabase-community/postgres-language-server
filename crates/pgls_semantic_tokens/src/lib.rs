@@ -168,6 +168,9 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                 push(parts.last(), SemanticTokenKind::Parameter, None);
             }
             Reference::EnumLiteral { .. } => {}
+            // A `*` is not a name, and its qualifier is a table or alias that has a reference of
+            // its own where it is defined.
+            Reference::Star { .. } => {}
         }
     }
 

@@ -72,7 +72,13 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                 }
                 e.space();
                 emit_operator(e, &n.name);
-                e.line(LineType::SoftOrSpace);
+                // A subquery breaks inside its parentheses, so `= (` stays on the operator line,
+                // like `in (` and `exists (`.
+                if starts_with_subquery_parenthesis(rexpr) {
+                    e.space();
+                } else {
+                    e.line(LineType::SoftOrSpace);
+                }
                 emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
                 if grouped_suffix {
                     e.group_end();
@@ -596,6 +602,18 @@ fn starts_with_operator_char(node: &Node) -> bool {
 
 fn operator_needs_space(op: &str) -> bool {
     op.chars().any(|c| c.is_alphabetic())
+}
+
+/// Whether `node` is printed as `(subquery)` or `array(subquery)`.
+fn starts_with_subquery_parenthesis(node: &Node) -> bool {
+    use pgls_query::protobuf::SubLinkType;
+
+    matches!(
+        node.node.as_ref(),
+        Some(NodeEnum::SubLink(sub_link))
+            if sub_link.sub_link_type == SubLinkType::ExprSublink as i32
+                || sub_link.sub_link_type == SubLinkType::ArraySublink as i32
+    )
 }
 
 fn operator_prefers_line_break(name: &[Node]) -> bool {

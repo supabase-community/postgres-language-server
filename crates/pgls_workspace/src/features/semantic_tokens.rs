@@ -4,6 +4,7 @@ use pgls_text_size::TextRange;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullSemanticTokensParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub path: PgLSPath,
     /// The tokens of the statements that overlap this range are returned. `None` for the whole
     /// file.

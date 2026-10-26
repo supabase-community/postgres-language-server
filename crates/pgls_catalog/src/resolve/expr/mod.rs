@@ -89,6 +89,14 @@ fn field_type(r: &Resolver<'_>, row: &Type, field: &str) -> Option<Type> {
     columns.into_iter().find(|column| column.name == field)?.ty
 }
 
+/// The type of a parameter in the body of a SQL function. Postgres parses the body when the
+/// function is called, with polymorphic parameters (`anyelement`, `anyarray`, ...) resolved to
+/// the types of the call's arguments ([`prepare_sql_fn_parse_info`]), so their type in the body is
+/// unknown. Other pseudo-types are not allowed for parameters of SQL functions
+/// ([`fmgr_sql_validator`]).
+///
+/// [`prepare_sql_fn_parse_info`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L286
+/// [`fmgr_sql_validator`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/pg_proc.c#L873
 fn function_param_type(r: &Resolver<'_>, param: &crate::resolve::FunctionParam) -> Option<Type> {
     let Lookup::Found(mut info) = r.catalog.type_(
         param.type_schema.as_deref(),
@@ -97,6 +105,9 @@ fn function_param_type(r: &Resolver<'_>, param: &crate::resolve::FunctionParam) 
     ) else {
         return None;
     };
+    if info.kind == Some(crate::TypeKind::Pseudo) {
+        return None;
+    }
     if param.is_array {
         let element = info.id.as_ref()?;
         let Lookup::Found(array) = r.catalog.type_by_id(element) else {

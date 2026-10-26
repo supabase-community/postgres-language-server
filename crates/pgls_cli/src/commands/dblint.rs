@@ -27,6 +27,7 @@ pub fn dblint(
     let start = Instant::now();
 
     let params = PullDatabaseDiagnosticsParams {
+        project_key: session.project_key(),
         categories: RuleCategoriesBuilder::default().all().build(),
         max_diagnostics,
         only: Vec::new(), // Uses configuration settings
