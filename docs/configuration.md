@@ -10,6 +10,8 @@ Clients can issue the LSP request `pgls/set_configuration_overrides` with parame
 
 Configuration precedence, from lowest to highest, is: built-in defaults, the configuration file on disk, environment configuration (`DATABASE_URL`, `PGHOST`, and related variables) captured when the server starts, then the sticky client override. The client deliberately has higher precedence than the environment: it is an explicit live instruction from the editor for this session, while the environment describes the shell where the server started. Environment configuration continues to override the file. Clearing the overrides restores the file-plus-environment baseline.
 
+The options of the CLI, such as `--search_path` or `--host`, take the place of the client override for a run of the CLI, with the same precedence and the same rules: a list replaces the list of the configuration file instead of being appended to it, so `--search_path app` searches `app` only, and a connection option (`--host`, `--port`, `--username`, `--password`, `--database`) replaces a `db.connectionString` of the configuration file or the environment, unless `--connection-string` is passed too.
+
 ## Configuration file structure
 
 A configuration file is usually placed in your project’s root folder. It is organized around the tools that are provided. All tools are enabled by default, but some require additional setup like a database connection or the `plpgsql_check` extension.

@@ -1,7 +1,7 @@
 mod layers;
 mod project;
 
-pub use layers::{ConfigurationLayers, OverrideMode};
+pub use layers::ConfigurationLayers;
 pub use project::{
     AppliedConfiguration, ConfigurationNotice, ConfigureProjectParams, ConfiguredProject,
     VcsIntegration, configure_project,

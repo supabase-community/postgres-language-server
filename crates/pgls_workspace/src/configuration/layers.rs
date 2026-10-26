@@ -7,7 +7,7 @@ use pgls_configuration::{
 /// 1. the configuration file, with the files it extends,
 /// 2. the database settings of the environment ([PartialDatabaseConfiguration::from_env]),
 /// 3. the overrides of the caller: the arguments of the CLI, or the configuration a client of
-///    the language server sets.
+///    the language server sets. They replace what they set (see [apply_override]).
 ///
 /// The overrides deliberately outrank the environment. They are an explicit instruction for this
 /// run or session, whereas the environment only describes the shell that the process happened to
@@ -20,20 +20,6 @@ pub struct ConfigurationLayers {
     pub environment: Option<PartialDatabaseConfiguration>,
     /// The layer over everything else.
     pub overrides: Option<PartialConfiguration>,
-    /// How [ConfigurationLayers::overrides] applies.
-    pub override_mode: OverrideMode,
-}
-
-/// How the overrides of [ConfigurationLayers] apply to the layers below them.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum OverrideMode {
-    /// Like the environment, with plain [Merge]: the sets are unioned, and a connection string
-    /// below keeps winning over the individual connection options. The arguments of the CLI.
-    #[default]
-    Merge,
-    /// With the semantics of [apply_override], so that the overrides replace what they set. The
-    /// configuration a client of the language server sets.
-    Replace,
 }
 
 impl ConfigurationLayers {
@@ -73,10 +59,7 @@ impl ConfigurationLayers {
 
     fn apply_overrides(&self, mut configuration: PartialConfiguration) -> PartialConfiguration {
         if let Some(overrides) = &self.overrides {
-            match self.override_mode {
-                OverrideMode::Merge => configuration.merge_with(overrides.clone()),
-                OverrideMode::Replace => apply_override(&mut configuration, overrides),
-            }
+            apply_override(&mut configuration, overrides);
         }
         configuration
     }
@@ -146,21 +129,19 @@ mod tests {
         serde_json::from_value(value).unwrap()
     }
 
-    /// The layers of the language server: the client overrides replace what they set.
-    fn client_layers(
+    fn layers(
         environment: Option<serde_json::Value>,
         overrides: Option<serde_json::Value>,
     ) -> ConfigurationLayers {
         ConfigurationLayers {
             environment: environment.map(|environment| parse(environment).db.unwrap()),
             overrides: overrides.map(parse),
-            override_mode: OverrideMode::Replace,
         }
     }
 
     #[test]
-    fn client_layer_wins_over_environment_and_file() {
-        let merged = client_layers(
+    fn override_wins_over_environment_and_file() {
+        let merged = layers(
             Some(json!({"db":{"host":"env"}})),
             Some(json!({"db":{"host":"client"}})),
         )
@@ -170,7 +151,7 @@ mod tests {
 
     #[test]
     fn override_search_path_replaces_and_preserves_order() {
-        let merged = client_layers(
+        let merged = layers(
             None,
             Some(json!({"typecheck":{"searchPath":["client_b", "client_a"]}})),
         )
@@ -190,13 +171,13 @@ mod tests {
     #[test]
     fn individual_database_fields_clear_inherited_connection_string() {
         let inherited = || parse(json!({"db":{"connectionString":"postgres://inherited"}}));
-        let merged = client_layers(
+        let merged = layers(
             None,
             Some(json!({"db":{"host":"localhost", "database":"db"}})),
         )
         .apply(inherited());
         assert_eq!(merged.db.unwrap().connection_string, None);
-        let merged = client_layers(
+        let merged = layers(
             None,
             Some(json!({"db":{"connectionString":"postgres://own"}})),
         )
@@ -209,33 +190,15 @@ mod tests {
 
     #[test]
     fn empty_database_password_is_preserved() {
-        let merged = client_layers(None, Some(json!({"db":{"password":""}})))
+        let merged = layers(None, Some(json!({"db":{"password":""}})))
             .apply(PartialConfiguration::default());
         assert_eq!(merged.db.unwrap().password.as_deref(), Some(""));
-    }
-
-    /// The arguments of the CLI are merged like the environment.
-    #[test]
-    fn merged_overrides_union_sets() {
-        let layers = ConfigurationLayers {
-            overrides: Some(parse(json!({"typecheck":{"searchPath":["argument"]}}))),
-            ..Default::default()
-        };
-        let merged = layers.apply(parse(json!({"typecheck":{"searchPath":["file"]}})));
-        let actual: Vec<_> = merged
-            .typecheck
-            .unwrap()
-            .search_path
-            .unwrap()
-            .into_iter()
-            .collect();
-        assert_eq!(actual, ["file", "argument"]);
     }
 
     /// The environment overrides the root configuration file, but only fills in a nested one.
     #[test]
     fn environment_fills_in_nested_configurations() {
-        let layers = client_layers(Some(json!({"db":{"host":"env", "database":"env"}})), None);
+        let layers = layers(Some(json!({"db":{"host":"env", "database":"env"}})), None);
         let file = || parse(json!({"db":{"host":"file"}}));
 
         let root = layers.apply(file()).db.unwrap();
