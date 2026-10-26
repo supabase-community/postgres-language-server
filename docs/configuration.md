@@ -111,7 +111,7 @@ Removed rules:
 
 The configuration is resolved in this order, and the first match wins:
 
-1. The path passed with `--config-path` or `PGLS_CONFIG_PATH`, or the configuration path set in your editor. Not finding a configuration file there is an error.
+1. The path passed with `--config-path`, or the configuration path set in your editor. The language server (`lsp-proxy`, `start`) also reads it from `PGLS_CONFIG_PATH`; `check` and `format` only take `--config-path`. Not finding a configuration file there is an error.
 2. A `postgres-language-server.jsonc` (or the deprecated `postgrestools.jsonc`) in the project directory or any of its parent directories. The project directory is the working directory of the CLI, or the workspace folder in an editor.
 3. The user configuration, a `postgres-language-server.jsonc` in your configuration directory:
 
@@ -127,9 +127,25 @@ The user configuration is only a fallback for projects without a configuration f
 
 The user configuration applies to the project as if it were placed in the project directory: globs in `files` and the VCS settings are resolved against the project. Relative paths in its `extends` are resolved against its own directory.
 
-## Sharing configuration with `extends`
+When the user configuration applies, the CLI prints `Using the user configuration at <path>` to stderr, and the language server writes it to its log.
 
-`extends` lists configuration files to inherit from. They are applied from left to right, and the settings of the file that declares `extends` take precedence over all of them.
+The language server reloads the configuration when any of these files is created, changed, or deleted: the configuration files below each workspace folder, the configuration file above a workspace folder that applies to it, the configuration file set in your editor, the user configuration, and the files that a loaded configuration file `extends`.
+
+## Sharing settings with `extends`
+
+`extends` lists configuration files to inherit from, for example to share the linter setup between several projects of a monorepo. They are applied from left to right, so a later file overrides an earlier one, and the settings of the file that declares `extends` take precedence over all of them.
+
+```json
+{
+  "$schema": "https://pg-language-server.com/latest/schema.json",
+  "extends": ["../postgres-language-server.base.jsonc"],
+  "db": {
+    "database": "billing"
+  }
+}
+```
+
+The entries can point at files in different places:
 
 ```jsonc
 {
@@ -144,7 +160,7 @@ The user configuration applies to the project as if it were placed in the projec
 }
 ```
 
-- Entries starting with `~/` (or `~\` on Windows) are resolved against your home directory. This works on every platform, so a project can extend your user configuration with the same path on macOS and Linux.
+- Entries starting with `~/` (or `~\` on Windows) are resolved against your home directory. This works on every platform, so a project can extend your user configuration with the same path on macOS and Linux. Only your own home directory is supported: `~user/` is not expanded.
 - Entries starting with `.` or ending in `.jsonc` are resolved relative to the directory of the configuration file that declares them. Absolute paths are used as they are.
 - Any other entry is resolved as a package, like `require` would in Node.js.
 
@@ -162,7 +178,7 @@ Some tools that the Postgres Language Server provides are implemented as mere in
     "password": "postgres",
     "database": "postgres",
     "connTimeoutSecs": 10,
-    "allowStatementExecutionsAgainst": ["127.0.0.1/*", "localhost/*"]
+    "allowStatementExecutionsAgainst": ["127.0.0.1:5432/*", "localhost:5432/*"]
   }
 }
 ```
@@ -175,27 +191,60 @@ individual fields. The URI takes precedence over any other connection fields.
 {
   "db": {
     "connectionString": "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable",
-    "allowStatementExecutionsAgainst": ["localhost/*"]
+    "allowStatementExecutionsAgainst": ["localhost:5432/*"]
   }
 }
 ```
 
+## Nested configurations / monorepos
 
-## Sharing settings with `extends`
+A repository can hold more than one configuration file. Each file uses the nearest `postgres-language-server.jsonc` in its own folder or above it, so different folders can point at different databases or use different linter and formatter settings:
 
-`extends` lists other configuration files whose settings apply to this one, for example to share the linter setup between several projects of a monorepo:
+```
+my-repo/
+├── postgres-language-server.jsonc      # applies to everything else
+└── src/
+    ├── db1/
+    │   ├── postgres-language-server.jsonc  # applies to src/db1/**
+    │   └── migrations/0001_init.sql
+    └── db2/
+        ├── postgres-language-server.jsonc  # applies to src/db2/**
+        └── schema.sql
+```
+
+The language server finds the configuration files below each workspace folder when it starts, and reloads them when one is created, changed, or deleted, or when a workspace folder is added or removed. Each workspace folder is a project of its own, so a file belongs to the deepest workspace folder that contains it. The `check` and `format` commands use the configuration files below the working directory: the ones in the folders between the working directory and each path they check, and the ones below the folders they check.
+
+A nested configuration file inherits nothing from the configuration files above it: settings it does not set have their defaults. To share settings, [extend](#sharing-settings-with-extends) the parent configuration explicitly; the nested file's own settings take precedence:
 
 ```json
 {
-  "$schema": "https://pg-language-server.com/latest/schema.json",
-  "extends": ["../postgres-language-server.base.jsonc"],
+  "extends": ["../../postgres-language-server.jsonc"],
   "db": {
-    "database": "billing"
+    "database": "db1"
   }
 }
 ```
 
-Paths that start with `.` or end in `.jsonc` are resolved relative to the configuration file. The files are applied from left to right, so a later file overrides an earlier one, and the settings of the configuration file itself take precedence over all of them.
+Paths in a nested configuration file, such as `migrations.migrationsDir`, are relative to its folder.
+
+The [user configuration](#where-the-configuration-is-loaded-from) is a fallback for the workspace root only. When there is no configuration file at or above the root, it applies to the files that no nested configuration file covers. It is never merged into a nested configuration file. To use it there, extend it explicitly, for example with `"extends": ["~/.config/postgres-language-server/postgres-language-server.jsonc"]`.
+
+The database environment variables (`DATABASE_URL`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`) override the connection of the root configuration, as without nested configurations. In a nested configuration file, they only fill in the connection options that the file doesn't set itself, so that each folder keeps its own database even when, for example, `DATABASE_URL` is set in your shell or CI:
+
+- An environment variable is used for an option (`host`, `port`, `username`, `password`, `database`) that the nested file doesn't set itself. An option that the file only gets through `extends` is overridden like in the root configuration.
+- `DATABASE_URL` is only used when the nested file sets none of `connectionString`, `host`, `port`, `username`, `password`, and `database` itself, because a connection string takes precedence over the other options.
+- The database options passed to the CLI, such as `--connection-string`, and the editor's client overrides apply to every configuration file.
+
+Each workspace folder uses its own settings. When the configuration file of a workspace folder can't be loaded, the error is reported and the folder keeps the settings it had, or the defaults if it is new, until the file is fixed; its nested configuration files are not loaded meanwhile. Files outside every workspace folder use the default settings. A nested configuration file that can't be loaded gives its folder the default settings, and `check` reports it as an error but still checks the other files.
+
+Things to keep in mind:
+
+- Configuration files in hidden folders, `node_modules`, `target`, folders ignored by `.gitignore`, folders that the configuration above them ignores through `files.ignore` or `files.include`, and the user configuration directory are not loaded as nested configurations. Ignoring the large folders that hold no SQL files also makes the search faster.
+- When the workspace folder (or the working directory of the CLI) is your home directory or a filesystem root, nested configuration files are not looked up, because those folders hold unrelated projects.
+- The search stops after 100,000 files and folders, or 12 levels of folders below the workspace folder, and logs a warning. Configuration files beyond that are not used.
+- The database connection of a project is only opened when a file of that project needs it. Projects that point at the same database share its connection and schema cache.
+- When a configuration file is passed explicitly with `--config-path`, it applies to all files and nested configuration files are not looked up.
+- `dblint` uses the configuration of the working directory.
 
 ## Specifying files to process
 

@@ -123,7 +123,9 @@ define_section_mask!(
     pglinter,
     typecheck,
     plpgsql_check,
-    db
+    db,
+    inlay_hints,
+    semantic_tokens
 );
 
 /// The sticky layer of configuration a client supplies at runtime.

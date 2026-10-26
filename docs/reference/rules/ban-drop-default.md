@@ -23,12 +23,12 @@ alter table users alter column created_at drop default;
 ```
 
 ```sh
-code-block.sql:1:1 lint/banDropDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:43 lint/banDropDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! Dropping a default may break existing clients.
+  ! Dropping the default of column created_at may break existing clients.
   
   > 1 │ alter table users alter column created_at drop default;
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      │                                           ^^^^^^^^^^^^
     2 │ 
   
   i Inserts that omit the column fail if it is NOT NULL, and write NULL otherwise.
@@ -43,12 +43,12 @@ alter domain status drop default;
 ```
 
 ```sh
-code-block.sql:1:1 lint/banDropDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:21 lint/banDropDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! Dropping a default may break existing clients.
+  ! Dropping the default of domain status may break existing clients.
   
   > 1 │ alter domain status drop default;
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      │                     ^^^^^^^^^^^^
     2 │ 
   
   i Inserts that omit the column fail if it is NOT NULL, and write NULL otherwise.

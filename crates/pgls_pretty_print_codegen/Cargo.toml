@@ -23,3 +23,6 @@ ureq = "2.9"
 
 [lib]
 proc-macro = true
+
+[lints]
+workspace = true

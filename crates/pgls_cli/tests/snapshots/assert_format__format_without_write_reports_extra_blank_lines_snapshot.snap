@@ -4,12 +4,12 @@ expression: "run_format(&[BLANK_LINES_PATH])"
 ---
 status: failure
 stdout:
-Processed 1 file in <duration>. No fixes applied.
+Processed 1 file in <duration>.
 Found 1 error.
 stderr:
 tests/fixtures/format/blank_lines.sql format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Statement could be formatted using `--write`
+  × File could be formatted using `--write`
   
     1 1 │   select 1;
     2 2 │   
