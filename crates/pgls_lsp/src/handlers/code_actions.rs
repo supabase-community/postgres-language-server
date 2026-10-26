@@ -123,11 +123,14 @@ pub fn get_actions(
                     .diagnostics
                     .iter()
                     .filter(|diagnostic| {
-                        diagnostic.code == Some(ls_types::NumberOrString::String(edit.rule.clone()))
+                        edit.rule.as_ref().is_some_and(|rule| {
+                            diagnostic.code == Some(ls_types::NumberOrString::String(rule.clone()))
+                        })
                     })
                     .cloned()
                     .collect();
-                let is_suppression = edit.category.matches(SUPPRESSION_ACTION_CATEGORY);
+                let is_fix =
+                    edit.rule.is_some() && !edit.category.matches(SUPPRESSION_ACTION_CATEGORY);
 
                 Some(CodeAction {
                     title: action.title,
@@ -136,7 +139,7 @@ pub fn get_actions(
                     )),
                     diagnostics: (!diagnostics.is_empty()).then_some(diagnostics),
                     edit: Some(workspace_edit(session, &url, edits)),
-                    is_preferred: (!is_suppression && edit.applicability == Applicability::Always)
+                    is_preferred: (is_fix && edit.applicability == Applicability::Always)
                         .then_some(true),
                     disabled: action
                         .disabled_reason
