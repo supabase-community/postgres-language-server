@@ -646,7 +646,7 @@ impl WorkspaceServer {
                         .iter()
                         .any(|section| section.contains(range.start()))
                 })
-                .map(|(id, range, ast, cst, _)| {
+                .map(|(id, range, ast, cst)| {
                     let statement = statements
                         .iter()
                         .find(|statement| statement.range == range)
