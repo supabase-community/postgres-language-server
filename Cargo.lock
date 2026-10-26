@@ -2592,6 +2592,7 @@ dependencies = [
  "crossbeam",
  "directories",
  "enumflags2",
+ "ignore",
  "oxc_resolver",
  "parking_lot",
  "pgls_diagnostics",
@@ -2600,6 +2601,7 @@ dependencies = [
  "schemars",
  "serde",
  "smallvec",
+ "tempfile",
  "tracing",
 ]
 
@@ -2664,6 +2666,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "futures",
+ "parking_lot",
  "pgls_analyse",
  "pgls_completions",
  "pgls_configuration",
@@ -2819,6 +2822,17 @@ dependencies = [
  "protox",
  "quote",
  "ureq",
+]
+
+[[package]]
+name = "pgls_semantic_tokens"
+version = "0.0.0"
+dependencies = [
+ "pgls_catalog",
+ "pgls_query",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "sqlx",
 ]
 
 [[package]]
@@ -3009,6 +3023,7 @@ dependencies = [
  "pgls_pretty_print",
  "pgls_query",
  "pgls_query_ext",
+ "pgls_semantic_tokens",
  "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_suppressions",

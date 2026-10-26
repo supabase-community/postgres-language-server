@@ -16,10 +16,15 @@ pub fn formatting(
 ) -> Result<Option<Vec<TextEdit>>, LspError> {
     let url = params.text_document.uri;
     let path = session.file_path(&url)?;
+    let project_key = session.project_key(&path);
 
     let result = session
         .workspace
-        .pull_file_formatting(PullFileFormattingParams { path, range: None })?;
+        .pull_file_formatting(PullFileFormattingParams {
+            project_key,
+            path,
+            range: None,
+        })?;
 
     result_to_edits(result, session.position_encoding())
 }
@@ -30,12 +35,14 @@ pub fn range_formatting(
 ) -> Result<Option<Vec<TextEdit>>, LspError> {
     let url = params.text_document.uri;
     let path = session.file_path(&url)?;
+    let project_key = session.project_key(&path);
     let doc = session.document(&url)?;
     let range = from_lsp::text_range(&doc.line_index, params.range, session.position_encoding())?;
 
     let result = session
         .workspace
         .pull_file_formatting(PullFileFormattingParams {
+            project_key,
             path,
             range: Some(range),
         })?;

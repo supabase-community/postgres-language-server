@@ -14,7 +14,7 @@ create table public.accounts (
 ```
 
 # Diagnostics
-lint/identifierTooLong ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/identifierTooLong  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Identifier Customer Subscription Billing Cycle Adjustments History Archive Id is longer than 63 bytes.
   
@@ -24,10 +24,34 @@ lint/identifierTooLong ━━━━━━━━━━━━━━━━━━━
   
 
 
-lint/identifierTooLong ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Fix (safe): Use the truncated name `Customer Subscription Billing Cycle Adjustments History Archive`
+```
+create table public.accounts (
+  -- expect_lint/identifierTooLong
+  "Customer Subscription Billing Cycle Adjustments History Archive" bigint,
+  -- expect_lint/identifierTooLong
+  customer_subscription_billing_cycle_adjustments_history_archive_note text
+);
+
+```
+
+lint/identifierTooLong  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Identifier customer_subscription_billing_cycle_adjustments_history_archive_note is longer than 63 bytes.
   
   i Postgres truncates it to `customer_subscription_billing_cycle_adjustments_history_archive`.
   
   i Use a shorter name.
+  
+
+
+## Fix (safe): Use the truncated name `customer_subscription_billing_cycle_adjustments_history_archive`
+```
+create table public.accounts (
+  -- expect_lint/identifierTooLong
+  "Customer Subscription Billing Cycle Adjustments History Archive Id" bigint,
+  -- expect_lint/identifierTooLong
+  customer_subscription_billing_cycle_adjustments_history_archive text
+);
+
+```

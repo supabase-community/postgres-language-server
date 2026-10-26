@@ -9,10 +9,19 @@ use commands::check::{self, CheckArgs};
 use commands::format::{self, FormatArgs};
 use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
+use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_console::{ColorMode, Console, ConsoleExt, markup};
+use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
+use std::ffi::OsString;
 use std::path::PathBuf;
+use std::sync::Arc;
 
+use pgls_workspace::configuration::{
+    NestedConfiguration, NestedConfigurationSearch, apply_nested_configurations,
+};
+use pgls_workspace::settings::FilesSettings;
+use pgls_workspace::workspace::ProjectKey;
 use pgls_workspace::{App, DynRef, Workspace, WorkspaceRef};
 
 mod changed;
@@ -26,6 +35,24 @@ mod panic;
 mod reporter;
 mod service;
 mod workspace;
+
+/// The stack size of the threads that run the workspace: the tokio workers and blocking threads
+/// of the language server, and the rayon workers of `check`.
+///
+/// libpg_query serializes the parse tree recursively, so a long expression needs stack
+/// proportional to its length. In a release build, `select 1 + abs(1) + ...` overflows the 2 MiB
+/// default of tokio and rayon at about 10,000 terms, and the overflow aborts the whole process.
+/// With 8 MiB, the default stack of the main thread on Linux, it handles 20,000 terms. Postgres
+/// itself rejects that statement at 5,000 terms with its default `max_stack_depth` of 2 MB.
+pub(crate) const WORKER_STACK_SIZE_BYTES: usize = 8 * 1024 * 1024;
+
+/// A multi-threaded tokio runtime whose threads have a stack of [`WORKER_STACK_SIZE_BYTES`].
+pub(crate) fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_stack_size(WORKER_STACK_SIZE_BYTES)
+        .build()
+}
 
 use crate::cli_options::ColorsArg;
 pub use crate::commands::{PgLSCommand, pg_l_s_command};
@@ -43,6 +70,11 @@ pub(crate) use pgls_env::VERSION;
 pub struct CliSession<'app> {
     /// Instance of [App] used by this run of the CLI
     pub app: App<'app>,
+    /// The project of the working directory, once [CliSession::setup_workspace] registered it
+    project_key: ProjectKey,
+    /// The files settings of the root configuration, which decide the folders to search for
+    /// nested configuration files
+    root_files: Option<FilesSettings>,
 }
 
 impl<'app> CliSession<'app> {
@@ -56,6 +88,8 @@ impl<'app> CliSession<'app> {
                 console,
                 WorkspaceRef::Borrowed(workspace),
             ),
+            project_key: ProjectKey::default(),
+            root_files: None,
         })
     }
 
@@ -172,7 +206,7 @@ impl<'app> CliSession<'app> {
                             "schema-export",
                         )
                     })?;
-                let runtime = tokio::runtime::Runtime::new().map_err(CliDiagnostic::io_error)?;
+                let runtime = runtime().map_err(CliDiagnostic::io_error)?;
                 runtime.block_on(commands::schema_export::run_schema_export(
                     &connection_string,
                     output.as_deref(),
@@ -220,29 +254,88 @@ impl<'app> CliSession<'app> {
             });
         }
 
+        if loaded_configuration.is_user_configuration
+            && let Some(file_path) = &loaded_configuration.file_path
+        {
+            // On stderr, so that it doesn't end up in the output of a reporter or of `format`.
+            self.console().error(markup! {
+                <Info>"Using the user configuration at "{file_path.display().to_string()}"\n"</Info>
+            });
+        }
+
         for deprecation in loaded_configuration.configuration.deprecations() {
             self.console().log(markup! {
                 <Warn>"Warning: "</Warn>{deprecation}"\n"
             });
         }
 
-        let mut configuration = loaded_configuration.configuration;
+        Ok(apply_overrides(
+            loaded_configuration.configuration,
+            cli_configuration,
+        ))
+    }
 
-        // Env vars override config file but are overridden by explicit CLI args.
-        if let Some(env_db) = pgls_configuration::database::PartialDatabaseConfiguration::from_env()
-        {
-            let env_config = PartialConfiguration {
-                db: Some(env_db),
-                ..Default::default()
-            };
-            configuration.merge_with(env_config);
+    /// The project of the working directory, which every file of this run belongs to
+    pub fn project_key(&self) -> ProjectKey {
+        self.project_key
+    }
+
+    /// Applies the configuration files that apply to `paths` to the project, so that each file
+    /// uses its nearest configuration file below the working directory. The arguments apply to
+    /// them like to the root configuration file, and the environment fills in the connection
+    /// options they don't set. Skipped when the user chose a configuration file.
+    ///
+    /// The folder of a configuration file that can't be loaded uses the default settings. Returns
+    /// an error diagnostic for each such file.
+    pub fn apply_nested_configurations(
+        &mut self,
+        cli_options: &CliOptions,
+        cli_configuration: Option<PartialConfiguration>,
+        paths: &[OsString],
+    ) -> Result<Vec<Error>, CliDiagnostic> {
+        if cli_options.config_path.is_some() {
+            return Ok(Vec::new());
         }
+        let Some(root) = self.fs().working_directory() else {
+            return Ok(Vec::new());
+        };
 
-        if let Some(cli_config) = cli_configuration {
-            configuration.merge_with(cli_config);
+        let root_files = self.root_files.take().map(Arc::new);
+        let nested = apply_nested_configurations(
+            self.workspace(),
+            self.fs(),
+            self.project_key,
+            NestedConfigurationSearch {
+                paths: Some(paths.iter().map(PathBuf::from).collect()),
+                root_files,
+                ..NestedConfigurationSearch::new(root)
+            },
+            PartialDatabaseConfiguration::from_env().as_ref(),
+            |configuration| apply_arguments(configuration, cli_configuration.clone()),
+        )?;
+        if let Some(incomplete) = nested.incomplete {
+            self.console().log(markup! {
+                <Warn>"Warning: "</Warn>{incomplete.to_string()}"\n"
+            });
         }
-
-        Ok(configuration)
+        let errors = nested
+            .configurations
+            .into_iter()
+            .filter_map(
+                |NestedConfiguration {
+                     directory, result, ..
+                 }| {
+                    let error = result.err()?;
+                    let file_path = ConfigName::file_names()
+                        .iter()
+                        .map(|file_name| directory.join(file_name))
+                        .find(|file_path| self.fs().path_is_file(file_path))
+                        .unwrap_or(directory);
+                    Some(Error::from(error).with_file_path(file_path.display().to_string()))
+                },
+            )
+            .collect();
+        Ok(errors)
     }
 
     pub fn setup_workspace(
@@ -250,7 +343,11 @@ impl<'app> CliSession<'app> {
         configuration: PartialConfiguration,
         vcs: VcsIntegration,
     ) -> Result<(), CliDiagnostic> {
-        workspace::setup_workspace(self.workspace(), self.fs(), configuration, vcs)
+        let (project_key, root_files) =
+            workspace::setup_workspace(self.workspace(), self.fs(), configuration, vcs)?;
+        self.project_key = project_key;
+        self.root_files = Some(root_files);
+        Ok(())
     }
 
     pub fn report(
@@ -264,6 +361,36 @@ impl<'app> CliSession<'app> {
     }
 }
 
+/// Lays the database configuration from the environment and then the arguments over a
+/// configuration file.
+fn apply_overrides(
+    mut configuration: PartialConfiguration,
+    cli_configuration: Option<PartialConfiguration>,
+) -> PartialConfiguration {
+    // Env vars override config file but are overridden by explicit CLI args.
+    if let Some(env_db) = PartialDatabaseConfiguration::from_env() {
+        let env_config = PartialConfiguration {
+            db: Some(env_db),
+            ..Default::default()
+        };
+        configuration.merge_with(env_config);
+    }
+
+    apply_arguments(configuration, cli_configuration)
+}
+
+/// Lays the configuration from the arguments over a configuration file.
+fn apply_arguments(
+    mut configuration: PartialConfiguration,
+    cli_configuration: Option<PartialConfiguration>,
+) -> PartialConfiguration {
+    if let Some(cli_config) = cli_configuration {
+        configuration.merge_with(cli_config);
+    }
+
+    configuration
+}
+
 /// Controls whether workspace setup should include VCS integration details.
 pub enum VcsIntegration {
     Enabled,
@@ -275,5 +402,22 @@ pub fn to_color_mode(color: Option<&ColorsArg>) -> ColorMode {
         Some(ColorsArg::Off) => ColorMode::Disabled,
         Some(ColorsArg::Force) => ColorMode::Enabled,
         None => ColorMode::Auto,
+    }
+}
+
+#[cfg(test)]
+mod runtime_tests {
+    /// A long expression needs more stack than the 2 MiB default of tokio's threads. In a debug
+    /// build, 2,000 terms already overflow 2 MiB.
+    #[test]
+    fn workers_parse_long_expressions() {
+        let sql = format!("select 1{};", " + abs(1)".repeat(2_000));
+        let runtime = super::runtime().unwrap();
+        let parsed = runtime
+            .block_on(runtime.spawn(async move { pgls_query::parse(&sql).is_ok() }))
+            .unwrap();
+        // The tree is too deep for the protobuf decoder, so it doesn't parse, but the parser
+        // returns instead of overflowing the stack.
+        assert!(!parsed);
     }
 }
