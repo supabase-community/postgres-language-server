@@ -32,7 +32,7 @@ fn emit_val(e: &mut EventEmitter, n: &Val) {
             emit_string_literal(e, string);
         }
         Val::Bsval(bsval) => {
-            super::emit_bitstring(e, bsval);
+            super::emit_bit_string(e, bsval);
         }
     }
 }

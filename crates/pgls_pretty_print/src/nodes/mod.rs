@@ -45,16 +45,18 @@ mod alter_seq_stmt;
 mod alter_stats_stmt;
 mod alter_subscription_stmt;
 mod alter_system_stmt;
+mod alter_table_cmd;
 mod alter_table_move_all_stmt;
+mod alter_table_space_options_stmt;
 mod alter_table_stmt;
-mod alter_tablespace_options_stmt;
-mod alter_ts_configuration_stmt;
-mod alter_ts_dictionary_stmt;
+mod alter_tsconfiguration_stmt;
+mod alter_tsdictionary_stmt;
 mod alter_type_stmt;
 mod alter_user_mapping_stmt;
+mod alternative_sub_plan;
 mod array_coerce_expr;
 mod array_expr;
-mod bitstring;
+mod bit_string;
 mod bool_expr;
 mod boolean;
 mod boolean_test;
@@ -63,7 +65,7 @@ mod call_stmt;
 mod case_expr;
 mod case_test_expr;
 mod case_when;
-mod checkpoint_stmt;
+mod check_point_stmt;
 mod close_portal_stmt;
 mod cluster_stmt;
 mod coalesce_expr;
@@ -120,6 +122,7 @@ mod def_elem;
 mod define_stmt;
 mod delete_stmt;
 mod discard_stmt;
+mod distinct_expr;
 mod do_stmt;
 mod drop_owned_stmt;
 mod drop_role_stmt;
@@ -137,6 +140,7 @@ mod float;
 mod from_expr;
 mod func_call;
 mod func_expr;
+mod function_parameter;
 mod grant_role_stmt;
 mod grant_stmt;
 mod grouping_func;
@@ -176,11 +180,13 @@ mod locking_clause;
 mod merge_action;
 mod merge_stmt;
 mod merge_support_func;
+mod merge_when_clause;
 mod min_max_expr;
 mod multi_assign_ref;
 mod named_arg_expr;
 mod next_value_expr;
 mod notify_stmt;
+mod null_if_expr;
 mod null_test;
 mod object_with_args;
 mod oid_list;
@@ -194,7 +200,7 @@ mod partition_cmd;
 mod partition_elem;
 mod partition_range_datum;
 mod partition_spec;
-mod pl_assign_stmt;
+mod plassign_stmt;
 mod prepare_stmt;
 mod publication_obj_spec;
 mod publication_table;
@@ -210,7 +216,7 @@ mod range_tbl_ref;
 mod range_var;
 mod raw_stmt;
 mod reassign_owned_stmt;
-mod refresh_matview_stmt;
+mod refresh_mat_view_stmt;
 mod reindex_stmt;
 mod relabel_type;
 mod rename_stmt;
@@ -221,7 +227,7 @@ mod role_spec;
 mod row_compare_expr;
 mod row_expr;
 mod row_mark_clause;
-mod rte_permission_info;
+mod rtepermission_info;
 mod rule_stmt;
 mod scalar_array_op_expr;
 mod sec_label_stmt;
@@ -231,7 +237,7 @@ mod set_to_default;
 mod single_partition_spec;
 mod sort_by;
 mod sort_group_clause;
-mod sql_value_function;
+mod sqlvalue_function;
 mod stats_elem;
 mod string;
 mod sub_link;
@@ -298,16 +304,18 @@ use alter_seq_stmt::emit_alter_seq_stmt;
 use alter_stats_stmt::emit_alter_stats_stmt;
 use alter_subscription_stmt::emit_alter_subscription_stmt;
 use alter_system_stmt::emit_alter_system_stmt;
+use alter_table_cmd::{emit_alter_table_cmd, emit_alter_table_cmd_for_type};
 use alter_table_move_all_stmt::emit_alter_table_move_all_stmt;
-use alter_table_stmt::{emit_alter_table_cmd, emit_alter_table_stmt};
-use alter_tablespace_options_stmt::emit_alter_tablespace_options_stmt;
-use alter_ts_configuration_stmt::emit_alter_ts_configuration_stmt;
-use alter_ts_dictionary_stmt::emit_alter_ts_dictionary_stmt;
+use alter_table_space_options_stmt::emit_alter_table_space_options_stmt;
+use alter_table_stmt::emit_alter_table_stmt;
+use alter_tsconfiguration_stmt::emit_alter_tsconfiguration_stmt;
+use alter_tsdictionary_stmt::emit_alter_tsdictionary_stmt;
 use alter_type_stmt::emit_alter_type_stmt;
 use alter_user_mapping_stmt::emit_alter_user_mapping_stmt;
+use alternative_sub_plan::emit_alternative_sub_plan;
 use array_coerce_expr::emit_array_coerce_expr;
 use array_expr::emit_array_expr;
-use bitstring::emit_bitstring;
+use bit_string::emit_bit_string;
 use bool_expr::emit_bool_expr;
 use boolean::emit_boolean;
 use boolean_test::emit_boolean_test;
@@ -316,7 +324,7 @@ use call_stmt::emit_call_stmt;
 use case_expr::emit_case_expr;
 use case_test_expr::emit_case_test_expr;
 use case_when::emit_case_when;
-use checkpoint_stmt::emit_checkpoint_stmt;
+use check_point_stmt::emit_check_point_stmt;
 use close_portal_stmt::emit_close_portal_stmt;
 use cluster_stmt::emit_cluster_stmt;
 use coalesce_expr::emit_coalesce_expr;
@@ -344,7 +352,7 @@ use create_extension_stmt::emit_create_extension_stmt;
 use create_fdw_stmt::emit_create_fdw_stmt;
 use create_foreign_server_stmt::emit_create_foreign_server_stmt;
 use create_foreign_table_stmt::emit_create_foreign_table_stmt;
-use create_function_stmt::{emit_create_function_stmt, emit_function_parameter};
+use create_function_stmt::emit_create_function_stmt;
 use create_op_class_item::emit_create_op_class_item;
 use create_op_class_stmt::emit_create_op_class_stmt;
 use create_op_family_stmt::emit_create_op_family_stmt;
@@ -373,6 +381,7 @@ use def_elem::{emit_def_elem, emit_options_def_elem, emit_sequence_option};
 use define_stmt::emit_define_stmt;
 use delete_stmt::emit_delete_stmt;
 use discard_stmt::emit_discard_stmt;
+use distinct_expr::emit_distinct_expr;
 use do_stmt::emit_do_stmt;
 use drop_owned_stmt::emit_drop_owned_stmt;
 use drop_role_stmt::emit_drop_role_stmt;
@@ -390,6 +399,7 @@ use float::emit_float;
 use from_expr::emit_from_expr;
 use func_call::emit_func_call;
 use func_expr::emit_func_expr;
+use function_parameter::emit_function_parameter;
 use grant_role_stmt::emit_grant_role_stmt;
 use grant_stmt::emit_grant_stmt;
 use grouping_func::emit_grouping_func;
@@ -433,20 +443,22 @@ use listen_stmt::emit_listen_stmt;
 use load_stmt::emit_load_stmt;
 use lock_stmt::emit_lock_stmt;
 use locking_clause::emit_locking_clause;
-use merge_action::{emit_merge_action, emit_merge_when_clause};
+use merge_action::emit_merge_action;
 use merge_stmt::emit_merge_stmt;
 use merge_support_func::emit_merge_support_func;
+use merge_when_clause::emit_merge_when_clause;
 use min_max_expr::emit_min_max_expr;
 use multi_assign_ref::emit_multi_assign_ref;
 use named_arg_expr::emit_named_arg_expr;
 use next_value_expr::emit_next_value_expr;
 use notify_stmt::emit_notify_stmt;
+use null_if_expr::emit_null_if_expr;
 use null_test::emit_null_test;
 use object_with_args::{emit_object_with_args, emit_object_with_args_for_aggregate};
 use oid_list::emit_oid_list;
 use on_conflict_clause::emit_on_conflict_clause;
 use on_conflict_expr::emit_on_conflict_expr;
-use op_expr::{emit_distinct_expr, emit_null_if_expr, emit_op_expr};
+use op_expr::emit_op_expr;
 use param::emit_param;
 use param_ref::emit_param_ref;
 use partition_bound_spec::emit_partition_bound_spec;
@@ -454,7 +466,7 @@ use partition_cmd::emit_partition_cmd;
 use partition_elem::emit_partition_elem;
 use partition_range_datum::emit_partition_range_datum;
 use partition_spec::emit_partition_spec;
-use pl_assign_stmt::emit_pl_assign_stmt;
+use plassign_stmt::emit_plassign_stmt;
 use prepare_stmt::emit_prepare_stmt;
 use publication_obj_spec::emit_publication_obj_spec;
 use publication_table::emit_publication_table;
@@ -470,7 +482,7 @@ use range_tbl_ref::emit_range_tbl_ref;
 use range_var::{emit_range_var, emit_range_var_name};
 use raw_stmt::emit_raw_stmt;
 use reassign_owned_stmt::emit_reassign_owned_stmt;
-use refresh_matview_stmt::emit_refresh_matview_stmt;
+use refresh_mat_view_stmt::emit_refresh_mat_view_stmt;
 use reindex_stmt::emit_reindex_stmt;
 use relabel_type::emit_relabel_type;
 use rename_stmt::emit_rename_stmt;
@@ -481,7 +493,7 @@ use role_spec::emit_role_spec;
 use row_compare_expr::emit_row_compare_expr;
 use row_expr::emit_row_expr;
 use row_mark_clause::emit_row_mark_clause;
-use rte_permission_info::emit_rte_permission_info;
+use rtepermission_info::emit_rtepermission_info;
 use rule_stmt::emit_rule_stmt;
 use scalar_array_op_expr::emit_scalar_array_op_expr;
 use sec_label_stmt::emit_sec_label_stmt;
@@ -491,11 +503,11 @@ use set_to_default::emit_set_to_default;
 use single_partition_spec::emit_single_partition_spec;
 use sort_by::emit_sort_by;
 use sort_group_clause::emit_sort_group_clause;
-use sql_value_function::emit_sql_value_function;
+use sqlvalue_function::emit_sqlvalue_function;
 use stats_elem::emit_stats_elem;
 use string::emit_string;
 use sub_link::emit_sub_link;
-use sub_plan::{emit_alternative_sub_plan, emit_sub_plan};
+use sub_plan::emit_sub_plan;
 use subscripting_ref::emit_subscripting_ref;
 use table_func::emit_table_func;
 use table_like_clause::emit_table_like_clause;
@@ -594,7 +606,7 @@ pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::Integer(n) => emit_integer(e, n),
         NodeEnum::Float(n) => emit_float(e, n),
         NodeEnum::Boolean(n) => emit_boolean(e, n),
-        NodeEnum::BitString(n) => emit_bitstring(e, n),
+        NodeEnum::BitString(n) => emit_bit_string(e, n),
         NodeEnum::AArrayExpr(n) => emit_a_array_expr(e, n),
         NodeEnum::AIndices(n) => emit_a_indices(e, n),
         NodeEnum::AIndirection(n) => emit_a_indirection(e, n),
@@ -632,7 +644,7 @@ pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::NullTest(n) => emit_null_test(e, n),
         NodeEnum::Param(n) => emit_param(e, n),
         NodeEnum::ParamRef(n) => emit_param_ref(e, n),
-        NodeEnum::PlassignStmt(n) => emit_pl_assign_stmt(e, n),
+        NodeEnum::PlassignStmt(n) => emit_plassign_stmt(e, n),
         NodeEnum::PartitionCmd(n) => emit_partition_cmd(e, n),
         NodeEnum::PartitionElem(n) => emit_partition_elem(e, n),
         NodeEnum::PartitionBoundSpec(n) => emit_partition_bound_spec(e, n),
@@ -645,7 +657,7 @@ pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::ScalarArrayOpExpr(n) => emit_scalar_array_op_expr(e, n),
         NodeEnum::SetToDefault(n) => emit_set_to_default(e, n),
         NodeEnum::NextValueExpr(n) => emit_next_value_expr(e, n),
-        NodeEnum::SqlvalueFunction(n) => emit_sql_value_function(e, n),
+        NodeEnum::SqlvalueFunction(n) => emit_sqlvalue_function(e, n),
         NodeEnum::TypeCast(n) => emit_type_cast(e, n),
         NodeEnum::TypeName(n) => emit_type_name(e, n),
         NodeEnum::JoinExpr(n) => emit_join_expr(e, n),
@@ -655,7 +667,7 @@ pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::RangeTblEntry(n) => emit_range_tbl_entry(e, n),
         NodeEnum::RangeTblFunction(n) => emit_range_tbl_function(e, n),
         NodeEnum::RangeTblRef(n) => emit_range_tbl_ref(e, n),
-        NodeEnum::RtepermissionInfo(n) => emit_rte_permission_info(e, n),
+        NodeEnum::RtepermissionInfo(n) => emit_rtepermission_info(e, n),
         NodeEnum::SortBy(n) => emit_sort_by(e, n),
         NodeEnum::SortGroupClause(n) => emit_sort_group_clause(e, n),
         NodeEnum::SubscriptingRef(n) => emit_subscripting_ref(e, n),
@@ -694,7 +706,7 @@ pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::InlineCodeBlock(n) => emit_inline_code_block(e, n),
         NodeEnum::PrepareStmt(n) => emit_prepare_stmt(e, n),
         NodeEnum::CallStmt(n) => emit_call_stmt(e, n),
-        NodeEnum::CheckPointStmt(n) => emit_checkpoint_stmt(e, n),
+        NodeEnum::CheckPointStmt(n) => emit_check_point_stmt(e, n),
         NodeEnum::ClosePortalStmt(n) => emit_close_portal_stmt(e, n),
         NodeEnum::ClusterStmt(n) => emit_cluster_stmt(e, n),
         NodeEnum::CommentStmt(n) => emit_comment_stmt(e, n),
@@ -740,9 +752,9 @@ pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::AlterTableStmt(n) => emit_alter_table_stmt(e, n),
         NodeEnum::AlterTableCmd(n) => emit_alter_table_cmd(e, n),
         NodeEnum::AlterTableMoveAllStmt(n) => emit_alter_table_move_all_stmt(e, n),
-        NodeEnum::AlterTableSpaceOptionsStmt(n) => emit_alter_tablespace_options_stmt(e, n),
-        NodeEnum::AlterTsconfigurationStmt(n) => emit_alter_ts_configuration_stmt(e, n),
-        NodeEnum::AlterTsdictionaryStmt(n) => emit_alter_ts_dictionary_stmt(e, n),
+        NodeEnum::AlterTableSpaceOptionsStmt(n) => emit_alter_table_space_options_stmt(e, n),
+        NodeEnum::AlterTsconfigurationStmt(n) => emit_alter_tsconfiguration_stmt(e, n),
+        NodeEnum::AlterTsdictionaryStmt(n) => emit_alter_tsdictionary_stmt(e, n),
         NodeEnum::AlterTypeStmt(n) => emit_alter_type_stmt(e, n),
         NodeEnum::AlterUserMappingStmt(n) => emit_alter_user_mapping_stmt(e, n),
         NodeEnum::ExplainStmt(n) => emit_explain_stmt(e, n),
@@ -761,7 +773,7 @@ pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::ReplicaIdentityStmt(n) => emit_replica_identity_stmt(e, n),
         NodeEnum::ReturnStmt(n) => emit_return_stmt(e, n),
         NodeEnum::DeallocateStmt(n) => emit_deallocate_stmt(e, n),
-        NodeEnum::RefreshMatViewStmt(n) => emit_refresh_matview_stmt(e, n),
+        NodeEnum::RefreshMatViewStmt(n) => emit_refresh_mat_view_stmt(e, n),
         NodeEnum::ReassignOwnedStmt(n) => emit_reassign_owned_stmt(e, n),
         NodeEnum::RuleStmt(n) => emit_rule_stmt(e, n),
         NodeEnum::CompositeTypeStmt(n) => emit_composite_type_stmt(e, n),

@@ -2,7 +2,7 @@ use pgls_query::protobuf::PlAssignStmt;
 
 use super::prelude::*;
 
-pub(super) fn emit_pl_assign_stmt(e: &mut EventEmitter, n: &PlAssignStmt) {
+pub(super) fn emit_plassign_stmt(e: &mut EventEmitter, n: &PlAssignStmt) {
     e.group_start(GroupKind::PlassignStmt);
 
     if !n.name.is_empty() {

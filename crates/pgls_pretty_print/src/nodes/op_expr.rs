@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{DistinctExpr, NullIfExpr, OpExpr};
+use pgls_query::protobuf::OpExpr;
 
 use super::prelude::*;
 
@@ -23,68 +23,4 @@ pub(super) fn emit_op_expr(e: &mut EventEmitter, n: &OpExpr) {
     }
 
     e.group_end();
-}
-
-/// Emit a DistinctExpr (planner IS DISTINCT FROM node)
-pub(super) fn emit_distinct_expr(e: &mut EventEmitter, n: &DistinctExpr) {
-    e.group_start(GroupKind::DistinctExpr);
-
-    // DistinctExpr is planner form of IS DISTINCT FROM
-    if n.args.len() == 2 {
-        emit_node(&n.args[0], e);
-        e.space();
-        e.token(TokenKind::IS_KW);
-        e.space();
-        e.token(TokenKind::DISTINCT_KW);
-        e.space();
-        e.token(TokenKind::FROM_KW);
-        e.space();
-        emit_node(&n.args[1], e);
-    } else {
-        emit_args_as_sequence(e, &n.args, n.opno);
-    }
-
-    e.group_end();
-}
-
-/// Emit a NullIfExpr (planner NULLIF node)
-pub(super) fn emit_null_if_expr(e: &mut EventEmitter, n: &NullIfExpr) {
-    e.group_start(GroupKind::NullIfExpr);
-
-    // NullIfExpr is planner form of NULLIF(a, b)
-    e.token(TokenKind::NULLIF_KW);
-    e.token(TokenKind::L_PAREN);
-    if n.args.len() >= 2 {
-        emit_node(&n.args[0], e);
-        e.token(TokenKind::COMMA);
-        e.space();
-        emit_node(&n.args[1], e);
-    } else {
-        emit_args_as_sequence(e, &n.args, n.opno);
-    }
-    e.token(TokenKind::R_PAREN);
-
-    e.group_end();
-}
-
-fn emit_args_as_sequence(e: &mut EventEmitter, args: &[Node], opno: u32) {
-    if args.is_empty() {
-        e.token(TokenKind::IDENT(format!("op#{opno}")));
-        return;
-    }
-
-    if args.len() == 1 {
-        e.token(TokenKind::IDENT(format!("op#{opno}")));
-        e.space();
-        emit_node(&args[0], e);
-        return;
-    }
-
-    emit_node(&args[0], e);
-    for arg in &args[1..] {
-        e.space();
-        e.token(TokenKind::IDENT(format!("op#{opno}")));
-        e.space();
-        emit_node(arg, e);
-    }
 }

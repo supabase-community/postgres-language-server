@@ -533,7 +533,7 @@ fn emit_extract_field(e: &mut EventEmitter, node: &Node) {
 /// Emits an operand of SQL-standard syntax, in parentheses unless it is a single term that binds
 /// tighter than any operator.
 fn emit_parenthesized_unless_simple(e: &mut EventEmitter, node: &Node) {
-    if super::type_cast::needs_parentheses(node) {
+    if needs_parentheses(node, Position::Postfix) {
         e.token(TokenKind::L_PAREN);
         emit_node(node, e);
         e.token(TokenKind::R_PAREN);

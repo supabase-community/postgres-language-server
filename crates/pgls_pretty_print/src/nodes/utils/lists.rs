@@ -3,6 +3,7 @@
 use pgls_query::Node;
 
 use crate::emitter::{EventEmitter, GroupKind, LineType};
+use crate::nodes::emit_node;
 use crate::{CommaStyle, Layout, TokenKind};
 
 /// Where a list may break between two items.
@@ -126,7 +127,7 @@ pub(crate) fn emit_comma_separated_list_with_layout_break<F>(
 }
 
 pub(crate) fn emit_dot_separated_list(e: &mut EventEmitter, nodes: &[Node]) {
-    emit_dot_separated_list_with(e, nodes, crate::nodes::emit_node);
+    emit_dot_separated_list_with(e, nodes, emit_node);
 }
 
 pub(crate) fn emit_dot_separated_list_with<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
@@ -163,5 +164,28 @@ where
             e.line(LineType::SoftOrSpace);
         }
         render(n, e);
+    }
+}
+
+/// Emits the arguments of a planner operator node, whose operator is only known by its OID.
+pub(crate) fn emit_args_as_sequence(e: &mut EventEmitter, args: &[Node], opno: u32) {
+    if args.is_empty() {
+        e.token(TokenKind::IDENT(format!("op#{opno}")));
+        return;
+    }
+
+    if args.len() == 1 {
+        e.token(TokenKind::IDENT(format!("op#{opno}")));
+        e.space();
+        emit_node(&args[0], e);
+        return;
+    }
+
+    emit_node(&args[0], e);
+    for arg in &args[1..] {
+        e.space();
+        e.token(TokenKind::IDENT(format!("op#{opno}")));
+        e.space();
+        emit_node(arg, e);
     }
 }

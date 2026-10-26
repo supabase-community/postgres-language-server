@@ -109,7 +109,7 @@ fn emit_not_expr(e: &mut EventEmitter, n: &BoolExpr) {
 
 fn emit_bool_operand(e: &mut EventEmitter, node: &Node, parent_kind: BoolExprType) {
     e.with_leading_comment_line_break(|e| {
-        if needs_parentheses(node, parent_kind) {
+        if needs_parentheses(node, Position::BoolOperand(parent_kind)) {
             // The parentheses get their own group so that `or (a and b)` stays on one line when it
             // fits, even after the enclosing chain broke. Once it breaks, the operands go on their
             // own lines, indented, and the closing parenthesis returns to the operand's indent.
@@ -126,25 +126,4 @@ fn emit_bool_operand(e: &mut EventEmitter, node: &Node, parent_kind: BoolExprTyp
             emit_node(node, e);
         }
     });
-}
-
-/// Whether an operand is wrapped in parentheses: a weaker operator always needs them, and an AND
-/// inside an OR keeps them for readability, although AND already binds tighter.
-fn needs_parentheses(node: &Node, parent_kind: BoolExprType) -> bool {
-    match node.node.as_ref() {
-        Some(NodeEnum::BoolExpr(child)) => {
-            bool_precedence(child.boolop()) < bool_precedence(parent_kind)
-                || (parent_kind == BoolExprType::OrExpr && child.boolop() == BoolExprType::AndExpr)
-        }
-        _ => false,
-    }
-}
-
-fn bool_precedence(kind: BoolExprType) -> u8 {
-    match kind {
-        BoolExprType::NotExpr => 3,
-        BoolExprType::AndExpr => 2,
-        BoolExprType::OrExpr => 1,
-        BoolExprType::Undefined => 0,
-    }
 }

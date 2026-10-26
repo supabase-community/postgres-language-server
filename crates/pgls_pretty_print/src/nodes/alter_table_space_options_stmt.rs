@@ -2,7 +2,7 @@ use pgls_query::protobuf::AlterTableSpaceOptionsStmt;
 
 use super::prelude::*;
 
-pub(super) fn emit_alter_tablespace_options_stmt(
+pub(super) fn emit_alter_table_space_options_stmt(
     e: &mut EventEmitter,
     n: &AlterTableSpaceOptionsStmt,
 ) {

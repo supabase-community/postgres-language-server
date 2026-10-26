@@ -2,7 +2,7 @@ use pgls_query::protobuf::RtePermissionInfo;
 
 use super::prelude::*;
 
-pub(super) fn emit_rte_permission_info(e: &mut EventEmitter, n: &RtePermissionInfo) {
+pub(super) fn emit_rtepermission_info(e: &mut EventEmitter, n: &RtePermissionInfo) {
     e.group_start(GroupKind::RtepermissionInfo);
 
     emit_identifier(e, &format!("rteperm#{}", n.relid));

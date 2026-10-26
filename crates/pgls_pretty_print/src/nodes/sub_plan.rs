@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{AlternativeSubPlan, SubPlan};
+use pgls_query::protobuf::SubPlan;
 
 use super::prelude::*;
 
@@ -18,23 +18,6 @@ pub(super) fn emit_sub_plan(e: &mut EventEmitter, n: &SubPlan) {
         e.token(TokenKind::IDENT(n.plan_name.clone()));
     } else {
         e.token(TokenKind::IDENT(format!("SubPlan{}", n.plan_id)));
-    }
-
-    e.group_end();
-}
-
-/// Emit an AlternativeSubPlan (planner alternative subplan node)
-/// These represent multiple subplan options for the planner
-/// We emit the first available subplan
-pub(super) fn emit_alternative_sub_plan(e: &mut EventEmitter, n: &AlternativeSubPlan) {
-    e.group_start(GroupKind::AlternativeSubPlan);
-
-    // AlternativeSubPlan contains multiple subplan choices
-    // Emit the first one if available
-    if let Some(first) = n.subplans.first()
-        && let Some(inner) = first.node.as_ref()
-    {
-        emit_node_enum(inner, e);
     }
 
     e.group_end();

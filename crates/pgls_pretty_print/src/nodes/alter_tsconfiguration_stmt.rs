@@ -2,7 +2,7 @@ use pgls_query::protobuf::{AlterTsConfigType, AlterTsConfigurationStmt};
 
 use super::prelude::*;
 
-pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTsConfigurationStmt) {
+pub(super) fn emit_alter_tsconfiguration_stmt(e: &mut EventEmitter, n: &AlterTsConfigurationStmt) {
     e.group_start(GroupKind::AlterTsconfigurationStmt);
 
     e.token(TokenKind::ALTER_KW);

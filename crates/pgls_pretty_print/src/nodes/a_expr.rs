@@ -101,8 +101,13 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                         } else {
                             e.space();
                         }
-                    } else if !needs_parentheses(rexpr, parent_info, OperandSide::Unary)
-                        && starts_with_operator_char(rexpr)
+                    } else if !needs_parentheses(
+                        rexpr,
+                        Position::Operand {
+                            parent: parent_info,
+                            side: OperandSide::Unary,
+                        },
+                    ) && starts_with_operator_char(rexpr)
                     {
                         // Without a space the two operators would lex as one token, or as the
                         // start of a comment when both are minus signs.
@@ -633,149 +638,17 @@ fn operator_prefers_line_break(name: &[Node]) -> bool {
     }
 }
 
-const PREC_UNARY: u8 = 90;
-const PREC_POWER: u8 = 80;
-const PREC_MULTIPLICATIVE: u8 = 70;
-const PREC_ADDITIVE: u8 = 60;
-const PREC_OTHER: u8 = 55;
-const PREC_COMPARISON: u8 = 45;
-const PREC_IS: u8 = 40;
-const PREC_NOT: u8 = 35;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct OperatorInfo {
-    precedence: u8,
-    associativity: OperatorAssociativity,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum OperatorAssociativity {
-    Left,
-    Right,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum OperatorArity {
-    Unary,
-    Binary,
-}
-
-impl OperatorArity {
-    fn from_aexpr(expr: &AExpr) -> Self {
-        match (expr.lexpr.as_ref(), expr.rexpr.as_ref()) {
-            (Some(_), Some(_)) => OperatorArity::Binary,
-            (None, Some(_)) | (Some(_), None) => OperatorArity::Unary,
-            (None, None) => OperatorArity::Unary,
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum OperandSide {
-    Left,
-    Right,
-    Unary,
-}
-
 fn emit_operand_with_parens(
     e: &mut EventEmitter,
     node: &Node,
     parent: Option<OperatorInfo>,
     side: OperandSide,
 ) {
-    if needs_parentheses(node, parent, side) {
+    if needs_parentheses(node, Position::Operand { parent, side }) {
         e.token(TokenKind::L_PAREN);
         emit_node(node, e);
         e.token(TokenKind::R_PAREN);
     } else {
         emit_node(node, e);
     }
-}
-
-fn needs_parentheses(node: &Node, parent: Option<OperatorInfo>, side: OperandSide) -> bool {
-    let Some(parent_info) = parent else {
-        return false;
-    };
-
-    let Some(child_info) = node_operator_info(node) else {
-        return false;
-    };
-
-    if matches!(side, OperandSide::Unary) {
-        return child_info.precedence < parent_info.precedence;
-    }
-
-    if child_info.precedence < parent_info.precedence {
-        return true;
-    }
-
-    if child_info.precedence > parent_info.precedence {
-        return false;
-    }
-
-    // Same precedence - PostgreSQL comparison operators are non-associative
-    // (you can't chain a < b < c), so always need parens when nesting
-    // comparison expressions at the same level
-    if parent_info.precedence == PREC_COMPARISON && child_info.precedence == PREC_COMPARISON {
-        return true;
-    }
-
-    match parent_info.associativity {
-        OperatorAssociativity::Left => matches!(side, OperandSide::Right),
-        OperatorAssociativity::Right => matches!(side, OperandSide::Left),
-    }
-}
-
-fn node_operator_info(node: &Node) -> Option<OperatorInfo> {
-    match node.node.as_ref()? {
-        NodeEnum::AExpr(expr) if matches!(expr.kind(), AExprKind::AexprOp) => {
-            operator_info(&expr.name, OperatorArity::from_aexpr(expr))
-        }
-        // IS NULL / IS NOT NULL have PREC_IS precedence
-        NodeEnum::NullTest(_) => Some(OperatorInfo {
-            precedence: PREC_IS,
-            associativity: OperatorAssociativity::Left,
-        }),
-        // Boolean expressions (AND/OR) need parens when nested in comparison
-        // Use a low precedence so they get wrapped
-        NodeEnum::BoolExpr(_) => Some(OperatorInfo {
-            precedence: 20, // Lower than PREC_NOT (35)
-            associativity: OperatorAssociativity::Left,
-        }),
-        _ => None,
-    }
-}
-
-fn operator_info(name: &[Node], arity: OperatorArity) -> Option<OperatorInfo> {
-    let symbol = operator_symbol(name)?.to_ascii_lowercase();
-
-    let (precedence, associativity) = match symbol.as_str() {
-        "+" | "-" if matches!(arity, OperatorArity::Unary) => {
-            (PREC_UNARY, OperatorAssociativity::Right)
-        }
-        "~" if matches!(arity, OperatorArity::Unary) => (PREC_UNARY, OperatorAssociativity::Right),
-        "!" if matches!(arity, OperatorArity::Unary) => (PREC_UNARY, OperatorAssociativity::Left),
-        "^" => (PREC_POWER, OperatorAssociativity::Left),
-        "*" | "/" | "%" => (PREC_MULTIPLICATIVE, OperatorAssociativity::Left),
-        "+" | "-" => (PREC_ADDITIVE, OperatorAssociativity::Left),
-        "||" | "<<" | ">>" | "#" | "&" | "|" => (PREC_OTHER, OperatorAssociativity::Left),
-        "not" => (PREC_NOT, OperatorAssociativity::Right),
-        "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" => {
-            (PREC_COMPARISON, OperatorAssociativity::Left)
-        }
-        "is" | "isnull" | "notnull" => (PREC_IS, OperatorAssociativity::Left),
-        _ => (PREC_OTHER, OperatorAssociativity::Left),
-    };
-
-    Some(OperatorInfo {
-        precedence,
-        associativity,
-    })
-}
-
-fn operator_symbol(name: &[Node]) -> Option<&str> {
-    name.last().and_then(|node| match node.node.as_ref()? {
-        NodeEnum::String(s) => Some(s.sval.as_str()),
-        _ => None,
-    })
 }
