@@ -916,8 +916,7 @@ begin;
 
 delete from pg_depend
 where
-  objid =
-  (
+  objid = (
     select
       oid
     from
@@ -950,8 +949,7 @@ begin;
 
 delete from pg_depend
 where
-  objid =
-  (
+  objid = (
     select
       oid
     from

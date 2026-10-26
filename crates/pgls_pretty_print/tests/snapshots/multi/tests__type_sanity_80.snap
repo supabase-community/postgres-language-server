@@ -671,8 +671,7 @@ select
 from
   pg_class as c1
 where
-  c1.relnatts <>
-  (
+  c1.relnatts <> (
     select
       count(*)
     from
