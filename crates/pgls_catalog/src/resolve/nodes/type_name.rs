@@ -2,7 +2,7 @@ use pgls_query::protobuf::TypeName;
 
 use super::{Resolver, string::string_values};
 use crate::lookup::Lookup;
-use crate::resolve::FindingKind;
+use crate::resolve::{FindingKind, Reference};
 
 /// Types whose input is the name of a catalog object, which we don't resolve.
 const OBJECT_NAME_TYPES: &[&str] = &[
@@ -48,6 +48,13 @@ pub(super) fn resolve_type_name(r: &mut Resolver, n: &TypeName) {
             r.uses(type_info.origin);
             if OBJECT_NAME_TYPES.contains(&name) {
                 r.depends_on_file();
+            }
+            if r.collects_references() {
+                r.record(Reference::Type {
+                    location: n.location,
+                    span: r.name_span(n.location),
+                    type_info,
+                });
             }
         }
         Lookup::Missing => r.report(

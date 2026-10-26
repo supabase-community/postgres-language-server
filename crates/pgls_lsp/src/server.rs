@@ -210,6 +210,28 @@ impl LanguageServer for LSPServer {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> LspResult<Option<SemanticTokensResult>> {
+        match handlers::semantic_tokens::semantic_tokens_full(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn semantic_tokens_range(
+        &self,
+        params: SemanticTokensRangeParams,
+    ) -> LspResult<Option<SemanticTokensRangeResult>> {
+        match handlers::semantic_tokens::semantic_tokens_range(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
     async fn completion(&self, params: CompletionParams) -> LspResult<Option<CompletionResponse>> {
         match handlers::completions::get_completions(&self.session, params) {
             Ok(result) => LspResult::Ok(Some(result)),
@@ -445,10 +467,12 @@ impl ServerFactory {
         workspace_method!(builder, change_file);
         workspace_method!(builder, close_file);
         workspace_method!(builder, pull_file_diagnostics);
+        workspace_method!(builder, pull_code_actions);
         workspace_method!(builder, fix_file);
         workspace_method!(builder, check_database_connection);
         workspace_method!(builder, get_completions);
         workspace_method!(builder, pull_inlay_hints);
+        workspace_method!(builder, pull_semantic_tokens);
         workspace_method!(builder, register_project_folder);
         workspace_method!(builder, unregister_project_folder);
         workspace_method!(builder, invalidate_schema_cache);

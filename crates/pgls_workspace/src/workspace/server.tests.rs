@@ -34,6 +34,7 @@ use crate::{
     features::format::PullFileFormattingParams,
     features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
     features::on_hover::OnHoverParams,
+    features::semantic_tokens::{PullSemanticTokensParams, SemanticTokenKind},
     settings::FilesSettings,
     workspace::{
         IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
@@ -1626,6 +1627,16 @@ async fn test_format_keeps_formatted_sql_function_body_as_written() {
 }
 
 #[tokio::test]
+async fn test_format_keeps_sql_function_body_with_several_statements_as_written() {
+    let content = "create function f() returns int language sql as $$\n  insert into t values (1);\n  SELECT   1;\n$$;";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $$\n  insert into t values (1);\n  SELECT   1;\n$$;"
+    );
+}
+
+#[tokio::test]
 async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     let content = "create function f() returns int language sql as $body$SELECT   1$body$;";
     let formatted = format_content(content);
@@ -2062,7 +2073,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
         fix.edits,
         vec![TextEdit {
             range: TextRange::empty(44.into()),
-            new_text: " CONCURRENTLY".into(),
+            new_text: " concurrently".into(),
         }]
     );
 
@@ -2152,7 +2163,7 @@ fn test_fix_file() {
     let safe = fix(FixFileMode::SafeFixes);
     assert_eq!(
         safe.code,
-        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index CONCURRENTLY users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index concurrently users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
     );
     assert_eq!(safe.fixes_applied, 1);
     assert_eq!(safe.skipped_suggested_fixes, 1);
@@ -2160,7 +2171,7 @@ fn test_fix_file() {
     let all = fix(FixFileMode::SafeAndUnsafeFixes);
     assert_eq!(
         all.code,
-        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index CONCURRENTLY IF EXISTS users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index concurrently if exists users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
     );
     assert_eq!(all.fixes_applied, 2);
     assert_eq!(all.skipped_suggested_fixes, 0);
@@ -2285,7 +2296,43 @@ fn test_concurrently_fix_is_unsafe_without_section_markers() {
             FixFileMode::SafeAndUnsafeFixes,
             rules
         ),
-        "create index CONCURRENTLY users_email_idx on users (email);\n"
+        "create index concurrently users_email_idx on users (email);\n"
+    );
+}
+
+#[test]
+fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(r#"{"linter": {"rules": {"all": true}}}"#)
+            .unwrap(),
+    );
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let content = "create table t (a char(10)[], b timestamp /* local */ without time zone, c json, d varchar /* name */ (20));\nalter table t add constraint t_a check (a is not null);\n";
+
+    // `char(10)` becomes `varchar(10)`, and then `text` in the next pass.
+    let once = fixed(
+        &workspace,
+        project_key,
+        content,
+        FixFileMode::SafeAndUnsafeFixes,
+        &[],
+    );
+    assert_eq!(
+        once,
+        "create table if not exists t (a text[], b timestamptz /* local */, c jsonb, d text /* name */);\nalter table t add constraint t_a check (a is not null) not valid;\n"
+    );
+    assert!(pgls_query::parse(&once).is_ok());
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            &once,
+            FixFileMode::SafeAndUnsafeFixes,
+            &[]
+        ),
+        once
     );
 }
 
@@ -2335,7 +2382,7 @@ async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
                 "safety/requireConcurrentIndexDeletion"
             ]
         ),
-        "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index CONCURRENTLY users_id_idx on users (id);\ndrop index CONCURRENTLY users_email_idx;\n"
+        "-- +goose NO TRANSACTION\n-- +goose Up\ncreate index events_id_idx on events (id);\ndrop index events_created_at_idx;\ncreate index concurrently users_id_idx on users (id);\ndrop index concurrently users_email_idx;\n"
     );
 }
 
@@ -2409,6 +2456,91 @@ async fn test_inlay_hints(test_db: PgPool) {
                 label: "b:".into(),
                 kind: InlayHintKind::Parameter,
             },
+        ]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_semantic_tokens(test_db: PgPool) {
+    test_db
+        .execute("create table db_items (id int, label text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create type file_mood as enum ('up', 'down');\n\
+        create table file_items (id int, mood file_mood);\n\
+        select id from file_items where mood = 'up';\n\
+        create function by_id(item_id int) returns text language sql \
+        as 'select label from public.db_items where id = item_id';\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let tokens = |range: Option<TextRange>| {
+        workspace
+            .pull_semantic_tokens(PullSemanticTokensParams {
+                project_key,
+                path: path.clone(),
+                range,
+            })
+            .expect("Unable to pull semantic tokens")
+            .tokens
+            .into_iter()
+            .map(|token| (&content[token.range], token.kind))
+            .collect::<Vec<_>>()
+    };
+
+    // The table and the enum created in the file, and the body of the SQL function.
+    assert_eq!(
+        tokens(None),
+        vec![
+            ("id", SemanticTokenKind::Property),
+            ("file_items", SemanticTokenKind::Class),
+            ("mood", SemanticTokenKind::Property),
+            ("'up'", SemanticTokenKind::EnumMember),
+            ("label", SemanticTokenKind::Property),
+            ("public", SemanticTokenKind::Namespace),
+            ("db_items", SemanticTokenKind::Class),
+            ("id", SemanticTokenKind::Property),
+            ("item_id", SemanticTokenKind::Parameter),
+        ]
+    );
+
+    // Only the statements that overlap the range.
+    let select = content.find("select id").unwrap();
+    assert_eq!(
+        tokens(Some(TextRange::new(
+            u32::try_from(select).unwrap().into(),
+            u32::try_from(select + 1).unwrap().into(),
+        ))),
+        vec![
+            ("id", SemanticTokenKind::Property),
+            ("file_items", SemanticTokenKind::Class),
+            ("mood", SemanticTokenKind::Property),
+            ("'up'", SemanticTokenKind::EnumMember),
         ]
     );
 }
@@ -2604,7 +2736,10 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         select * from star_items i join star_tags t on t.item_id = i.id;\n\
         select t.* from star_tags t where id > 0;\n\
         create function all_items() returns setof star_items language sql\n\
-        as 'select * from star_items';\n";
+        as 'select * from star_items';\n\
+        create table größen (größe int, \"Ölstand\" int, \"Café\" int);\n\
+        select * from größen;\n\
+        select count(*) /* * */ from größen;\n";
     workspace
         .open_file(OpenFileParams {
             project_key,
@@ -2682,8 +2817,15 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         }]
     );
 
+    // Names that aren't ASCII aren't quoted, unless they have upper case ASCII letters.
+    let actions = expand_actions("* from größen;");
+    assert_eq!(actions.len(), 1, "{actions:?}");
+    assert_eq!(actions[0].1.edits[0].new_text, r#"größe, Ölstand, "Café""#);
+
     // Nothing to expand elsewhere.
     assert!(expand_actions("where id").is_empty());
+    assert!(expand_actions("*) /*").is_empty());
+    assert!(expand_actions("* */").is_empty());
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -2758,6 +2900,24 @@ fn test_section_marker_problems_are_reported() {
             .filter(|category| *category == "migrations/sectionMarkers")
             .count(),
         2,
+        "{categories:?}"
+    );
+}
+
+#[test]
+fn test_non_transactional_statement_in_a_function_body() {
+    // A function runs in the transaction of the statement that calls it.
+    let categories = migration_diagnostics(
+        SectionMarkers::Dbmate,
+        None,
+        "-- migrate:up transaction:false\ncreate function clean_up() returns void language sql as $$ vacuum users $$;\n",
+    );
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "lint/banNonTransactionalStatementInTransaction")
+            .count(),
+        1,
         "{categories:?}"
     );
 }
