@@ -82,9 +82,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
 
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::WITH_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, emit_node);
+        emit_with_options(e, &n.options);
     }
 
     e.group_end();

@@ -69,7 +69,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
             ListSeparatorSpacing::Space,
             |e, opt| {
                 let def_elem = assert_node_variant!(DefElem, opt);
-                super::emit_options_def_elem(e, def_elem);
+                emit_options_def_elem(e, def_elem);
             },
         );
         e.token(TokenKind::R_PAREN);

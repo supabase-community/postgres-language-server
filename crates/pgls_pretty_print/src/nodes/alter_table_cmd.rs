@@ -665,7 +665,7 @@ pub(super) fn emit_alter_table_cmd_of(
                             }
                         } else {
                             // Emit other sequence options
-                            super::emit_sequence_option(e, de);
+                            emit_sequence_option(e, de);
                         }
                     }
                 }
@@ -732,7 +732,7 @@ pub(super) fn emit_alter_table_cmd_of(
                         e.space();
                     }
                     if let Some(NodeEnum::DefElem(de)) = &opt.node {
-                        super::emit_options_def_elem(e, de);
+                        emit_options_def_elem(e, de);
                     }
                 }
             }
@@ -752,7 +752,7 @@ pub(super) fn emit_alter_table_cmd_of(
                         e.space();
                     }
                     if let Some(NodeEnum::DefElem(de)) = &opt.node {
-                        super::emit_options_def_elem(e, de);
+                        emit_options_def_elem(e, de);
                     }
                 }
             }

@@ -82,9 +82,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
     // WITH options
     if !n.options.is_empty() {
         emit_layout_break(e);
-        e.token(TokenKind::WITH_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, emit_node);
+        emit_with_options(e, &n.options);
     }
 
     // TABLESPACE

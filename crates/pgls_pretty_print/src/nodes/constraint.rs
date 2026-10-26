@@ -132,7 +132,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                     }
                     if let Some(NodeEnum::DefElem(def)) = &opt.node {
                         // Emit sequence option like START 7, INCREMENT 5
-                        super::emit_sequence_option(e, def);
+                        emit_sequence_option(e, def);
                     }
                 }
                 e.token(TokenKind::R_PAREN);

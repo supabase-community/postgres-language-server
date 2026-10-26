@@ -52,9 +52,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
     if !n.options.is_empty() {
         e.line(LineType::Hard);
         e.indent_start();
-        e.token(TokenKind::WITH_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, emit_node);
+        emit_with_options(e, &n.options);
         e.indent_end();
     }
 

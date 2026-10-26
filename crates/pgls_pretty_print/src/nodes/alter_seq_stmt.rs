@@ -25,7 +25,7 @@ pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
             e.line(LineType::SoftOrSpace);
             // Use specialized sequence option emission
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {
-                super::emit_sequence_option(e, def_elem);
+                emit_sequence_option(e, def_elem);
             } else {
                 emit_node(e, opt);
             }
