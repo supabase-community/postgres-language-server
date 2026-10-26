@@ -302,12 +302,15 @@ impl<'a> AnalysedFileContext<'a> {
 
     /// Moves to the next statement.
     ///
-    /// Executed statements (`applies_effects`) update the catalog and the session. Statements
-    /// in the bodies of SQL functions are only analysed, not executed.
-    pub fn next(&mut self, applies_effects: bool) {
-        if applies_effects && self.pos < self.stmts.len() {
-            let stmt = self.stmts[self.pos];
-            self.catalog.apply(stmt, self.session.search_path());
+    /// A statement that `runs` updates the session, and the catalog too if `updates_catalog`.
+    /// Statements in the bodies of SQL functions are only analysed, not executed. A statement on
+    /// placeholder names, like psql's `:name`, still takes its locks and changes the transaction,
+    /// but the catalog can't follow it.
+    pub fn next(&mut self, runs: bool, updates_catalog: bool) {
+        if runs && let Some(stmt) = self.stmts.get(self.pos) {
+            if updates_catalog {
+                self.catalog.apply(stmt, self.session.search_path());
+            }
             self.session.apply(stmt);
         }
         self.pos += 1;

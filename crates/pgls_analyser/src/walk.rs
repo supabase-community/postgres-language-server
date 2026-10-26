@@ -42,8 +42,8 @@ pub struct WalkParams<'a> {
 /// - A top-level statement that doesn't parse taints the catalog if it may have changed it.
 /// - The statements of SQL function bodies are visited, but they don't run.
 /// - The names of a statement with identifier parameters, like psql's `:name`, are placeholders.
-///   Such a statement is visited, but if it may change the catalog, it taints it instead of being
-///   applied.
+///   Such a statement is visited and applied to the session (its locks and its effect on the
+///   transaction), but if it may change the catalog, it taints it instead of being applied to it.
 ///
 /// The file context only knows the statements that the walk is given. When they stop before the
 /// end of the file, [`AnalysedFileContext::stmt_count`] and the implicit transaction blocks of
@@ -146,11 +146,14 @@ pub fn walk_statements(
 
             visit(stmt, &file_context);
 
+            // The names of a statement with identifier parameters are placeholders, so the
+            // catalog can't follow its changes. Its locks and its effect on the transaction are
+            // still those of the statement.
             let placeholders = stmt.has_identifier_parameters && !is_plain_query(&stmt.root);
             if runs && placeholders {
                 file_context.taint_catalog();
             }
-            file_context.next(runs && !placeholders);
+            file_context.next(runs, !placeholders);
         }
 
         skip_unparsable(&mut unparsable, unit.end.min(params.end), &mut file_context);
