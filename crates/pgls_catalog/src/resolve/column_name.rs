@@ -11,11 +11,24 @@ const UNNAMED: &str = "?column?";
 ///
 /// [`FigureColname`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1713
 pub fn figure_column_name(value: &NodeEnum) -> Option<String> {
+    figure_column_name_with(value, &|_| None)
+}
+
+/// Like [`figure_column_name`], but `subquery_column` names the first output column of a scalar
+/// subquery whose name can't be read from its select list alone, like the first column of the
+/// relation of `(select * from t)`.
+pub(super) fn figure_column_name_with(
+    value: &NodeEnum,
+    subquery_column: SubqueryColumn<'_>,
+) -> Option<String> {
     if is_star(value) {
         return None;
     }
-    figure_column_name_with_strength(value).map(|(name, _)| name)
+    figure_column_name_with_strength(value, subquery_column).map(|(name, _)| name)
 }
+
+/// The name of the first output column of a scalar subquery, if it is known.
+pub(super) type SubqueryColumn<'a> = &'a dyn Fn(&protobuf::SubLink) -> Option<String>;
 
 /// Whether a select list entry is a `*` that expands to several columns, like `*`, `t.*` or
 /// `(t.c).*`.
@@ -48,7 +61,11 @@ fn last_field_name(fields: &[pgls_query::protobuf::Node]) -> Option<&str> {
 /// [`FigureColnameInternal`].
 ///
 /// [`FigureColnameInternal`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1752
-fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
+fn figure_column_name_with_strength(
+    value: &NodeEnum,
+    subquery_column: SubqueryColumn<'_>,
+) -> Option<(String, u8)> {
+    let recurse = |node: &NodeEnum| figure_column_name_with_strength(node, subquery_column);
     let named = |name: &str| Some((name.to_owned(), 2));
     match value {
         NodeEnum::ColumnRef(column) => match last_field_name(&column.fields) {
@@ -57,7 +74,7 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
         },
         NodeEnum::AIndirection(indirection) => match last_field_name(&indirection.indirection) {
             Some(name) => named(name),
-            None => figure_column_name_with_strength(indirection.arg.as_deref()?.node.as_ref()?),
+            None => recurse(indirection.arg.as_deref()?.node.as_ref()?),
         },
         NodeEnum::FuncCall(call) => match call.funcname.last()?.node.as_ref()? {
             NodeEnum::String(name) => named(&name.sval),
@@ -65,7 +82,7 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
         },
         NodeEnum::AExpr(expr) if expr.kind() == protobuf::AExprKind::AexprNullif => named("nullif"),
         NodeEnum::TypeCast(cast) => {
-            let inner = figure_column_name_with_strength(cast.arg.as_deref()?.node.as_ref()?)?;
+            let inner = recurse(cast.arg.as_deref()?.node.as_ref()?)?;
             if inner.1 > 1 {
                 Some(inner)
             } else {
@@ -76,9 +93,7 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
                 }
             }
         }
-        NodeEnum::CollateClause(collate) => {
-            figure_column_name_with_strength(collate.arg.as_deref()?.node.as_ref()?)
-        }
+        NodeEnum::CollateClause(collate) => recurse(collate.arg.as_deref()?.node.as_ref()?),
         NodeEnum::GroupingFunc(_) => named("grouping"),
         NodeEnum::SubLink(link) => match link.sub_link_type() {
             protobuf::SubLinkType::ExistsSublink => named("exists"),
@@ -88,13 +103,15 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
                 let NodeEnum::SelectStmt(select) = link.subselect.as_deref()?.node.as_ref()? else {
                     return None;
                 };
-                Some((first_column_name(select)?, 2))
+                let name =
+                    first_column_name(select, subquery_column).or_else(|| subquery_column(link))?;
+                Some((name, 2))
             }
             _ => Some((UNNAMED.into(), 0)),
         },
         NodeEnum::CaseExpr(case) => {
             let default = match case.defresult.as_deref() {
-                Some(default) => figure_column_name_with_strength(default.node.as_ref()?)?,
+                Some(default) => recurse(default.node.as_ref()?)?,
                 None => (UNNAMED.into(), 0),
             };
             if default.1 > 1 {
@@ -172,13 +189,17 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
     }
 }
 
-/// The name of the first output column of a subquery. A set operation takes the names of its
-/// left-most select ([`transformSetOperationStmt`]), and VALUES names its columns `column1`,
-/// `column2`, ... ([`addRangeTableEntryForValues`]).
+/// The name of the first output column of a subquery, from its select list. A set operation takes
+/// the names of its left-most select ([`transformSetOperationStmt`]), and VALUES names its columns
+/// `column1`, `column2`, ... ([`addRangeTableEntryForValues`]). `None` for a `*`, which expands to
+/// the columns of its FROM items.
 ///
 /// [`transformSetOperationStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1751
 /// [`addRangeTableEntryForValues`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L2183
-fn first_column_name(select: &protobuf::SelectStmt) -> Option<String> {
+fn first_column_name(
+    select: &protobuf::SelectStmt,
+    subquery_column: SubqueryColumn<'_>,
+) -> Option<String> {
     let mut select = select;
     while select.op() != protobuf::SetOperation::SetopNone {
         select = select.larg.as_deref()?;
@@ -192,5 +213,5 @@ fn first_column_name(select: &protobuf::SelectStmt) -> Option<String> {
     if !target.name.is_empty() {
         return Some(target.name.clone());
     }
-    figure_column_name(target.val.as_deref()?.node.as_ref()?)
+    figure_column_name_with(target.val.as_deref()?.node.as_ref()?, subquery_column)
 }

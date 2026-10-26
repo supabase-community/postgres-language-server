@@ -6,7 +6,6 @@ use super::{
     Resolver, resolve_list,
     string::{string_value, string_values},
 };
-use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
     scope::{Columns, Item, Level, find_item},
@@ -48,7 +47,7 @@ pub(super) fn target_list_columns(r: &Resolver, targets: &[Node]) -> Columns {
         if !target.name.is_empty() {
             columns.push(target.name.clone());
         } else {
-            columns.push(figure_column_name(value)?);
+            columns.push(r.column_name(value)?);
         }
     }
     Some(columns)
@@ -191,7 +190,7 @@ pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], mut level:
             }
             typed.push(crate::typing::TypedColumn {
                 name: if target.name.is_empty() {
-                    figure_column_name(value).unwrap_or_default()
+                    r.column_name(value).unwrap_or_default()
                 } else {
                     target.name.clone()
                 },

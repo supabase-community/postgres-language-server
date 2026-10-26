@@ -3,7 +3,7 @@
 use std::mem::Discriminant;
 
 use pgls_text_size::{TextRange, TextSize};
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use pgls_query::{
     NodeEnum,
@@ -12,7 +12,8 @@ use pgls_query::{
 
 use super::{
     Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
-    scope::{Cte, Level},
+    column_name::figure_column_name_with,
+    scope::{Columns, Cte, Level},
     span,
 };
 use crate::lookup::{CatalogView, Lookup, Origin};
@@ -37,6 +38,9 @@ pub(super) struct Resolver<'a> {
     pub references: Option<Vec<Reference>>,
     /// The location and kind of each reference in `references`.
     recorded: FxHashSet<(i32, Discriminant<Reference>)>,
+    /// The name of the first output column of each scalar subquery resolved so far, by the
+    /// location of the subquery.
+    subquery_columns: FxHashMap<i32, String>,
 }
 
 impl<'a> Resolver<'a> {
@@ -58,6 +62,7 @@ impl<'a> Resolver<'a> {
             output: None,
             references: None,
             recorded: FxHashSet::default(),
+            subquery_columns: FxHashMap::default(),
         }
     }
 
@@ -110,6 +115,27 @@ impl<'a> Resolver<'a> {
                 _ => self.database_only = false,
             }
         }
+    }
+
+    /// Remembers the output columns of the scalar subquery `link`, which name an unnamed select
+    /// list entry that is the subquery.
+    pub fn set_subquery_columns(&mut self, link: &protobuf::SubLink, columns: Columns) {
+        if link.sub_link_type() == protobuf::SubLinkType::ExprSublink
+            && let Some(first) = columns.and_then(|columns| columns.into_iter().next())
+        {
+            self.subquery_columns.insert(link.location, first);
+        }
+    }
+
+    /// The column name Postgres chooses for an unnamed select list entry, see
+    /// [`figure_column_name`]. Scalar subqueries the resolver has resolved are named after their
+    /// first output column, which is also known when it is a `*`, as in `(select * from t)`.
+    ///
+    /// [`figure_column_name`]: super::figure_column_name
+    pub fn column_name(&self, value: &NodeEnum) -> Option<String> {
+        figure_column_name_with(value, &|link| {
+            self.subquery_columns.get(&link.location).cloned()
+        })
     }
 
     /// Whether references are being collected.

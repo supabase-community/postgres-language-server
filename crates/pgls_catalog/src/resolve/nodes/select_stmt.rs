@@ -12,7 +12,6 @@ use super::{
     resolve_list, resolve_node,
     with_clause::resolve_with_clause,
 };
-use crate::resolve::column_name::figure_column_name;
 use crate::resolve::scope::Columns;
 
 /// Resolves a query and returns its output columns, if known.
@@ -133,12 +132,19 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
 ///
 /// [`transformSelectStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1389
 fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
-    let mut level = resolve_from_clause(r, &n.from_clause);
-    level.output_names = n.target_list.iter().filter_map(output_name).collect();
-    let output_names = level.output_names.clone();
+    let level = resolve_from_clause(r, &n.from_clause);
     r.enter_level(level);
 
     resolve_list(r, &n.target_list);
+    // Named after resolving the select list, which names its scalar subqueries.
+    let output_names: Vec<String> = n
+        .target_list
+        .iter()
+        .filter_map(|target| output_name(r, target))
+        .collect();
+    if let Some(level) = r.levels.last_mut() {
+        level.output_names = output_names.clone();
+    }
     record_star_references(r, &n.target_list);
     for node in n.where_clause.iter().chain(&n.having_clause) {
         resolve_node(r, node);
@@ -229,7 +235,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
             let name = if !t.name.is_empty() {
                 t.name.clone()
             } else {
-                super::super::column_name::figure_column_name(value).unwrap_or_default()
+                r.column_name(value).unwrap_or_default()
             };
             out.push(crate::typing::TypedColumn {
                 name,
@@ -276,14 +282,14 @@ fn is_output_reference(expr: &NodeEnum, output_names: &[String]) -> bool {
 }
 
 /// The name of an entry of the select list, which `ORDER BY` and `GROUP BY` can reference.
-fn output_name(target: &Node) -> Option<String> {
+fn output_name(r: &Resolver, target: &Node) -> Option<String> {
     match &target.node {
         Some(NodeEnum::ResTarget(target)) if !target.name.is_empty() => Some(target.name.clone()),
         Some(NodeEnum::ResTarget(target)) => target
             .val
             .as_deref()
             .and_then(|value| value.node.as_ref())
-            .and_then(figure_column_name),
+            .and_then(|value| r.column_name(value)),
         _ => None,
     }
 }
