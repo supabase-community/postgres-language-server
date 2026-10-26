@@ -34,6 +34,7 @@ use crate::{
     features::format::PullFileFormattingParams,
     features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
     features::on_hover::OnHoverParams,
+    features::semantic_tokens::{PullSemanticTokensParams, SemanticTokenKind},
     settings::FilesSettings,
     workspace::{
         IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
@@ -2419,6 +2420,91 @@ async fn test_inlay_hints(test_db: PgPool) {
                 label: "b:".into(),
                 kind: InlayHintKind::Parameter,
             },
+        ]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_semantic_tokens(test_db: PgPool) {
+    test_db
+        .execute("create table db_items (id int, label text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create type file_mood as enum ('up', 'down');\n\
+        create table file_items (id int, mood file_mood);\n\
+        select id from file_items where mood = 'up';\n\
+        create function by_id(item_id int) returns text language sql \
+        as 'select label from public.db_items where id = item_id';\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let tokens = |range: Option<TextRange>| {
+        workspace
+            .pull_semantic_tokens(PullSemanticTokensParams {
+                project_key,
+                path: path.clone(),
+                range,
+            })
+            .expect("Unable to pull semantic tokens")
+            .tokens
+            .into_iter()
+            .map(|token| (&content[token.range], token.kind))
+            .collect::<Vec<_>>()
+    };
+
+    // The table and the enum created in the file, and the body of the SQL function.
+    assert_eq!(
+        tokens(None),
+        vec![
+            ("id", SemanticTokenKind::Property),
+            ("file_items", SemanticTokenKind::Class),
+            ("mood", SemanticTokenKind::Property),
+            ("'up'", SemanticTokenKind::EnumMember),
+            ("label", SemanticTokenKind::Property),
+            ("public", SemanticTokenKind::Namespace),
+            ("db_items", SemanticTokenKind::Class),
+            ("id", SemanticTokenKind::Property),
+            ("item_id", SemanticTokenKind::Parameter),
+        ]
+    );
+
+    // Only the statements that overlap the range.
+    let select = content.find("select id").unwrap();
+    assert_eq!(
+        tokens(Some(TextRange::new(
+            u32::try_from(select).unwrap().into(),
+            u32::try_from(select + 1).unwrap().into(),
+        ))),
+        vec![
+            ("id", SemanticTokenKind::Property),
+            ("file_items", SemanticTokenKind::Class),
+            ("mood", SemanticTokenKind::Property),
+            ("'up'", SemanticTokenKind::EnumMember),
         ]
     );
 }

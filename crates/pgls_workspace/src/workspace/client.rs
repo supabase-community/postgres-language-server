@@ -211,6 +211,13 @@ where
         self.request("pgls/pull_inlay_hints", params)
     }
 
+    fn pull_semantic_tokens(
+        &self,
+        params: crate::features::semantic_tokens::PullSemanticTokensParams,
+    ) -> Result<crate::features::semantic_tokens::PullSemanticTokensResult, WorkspaceError> {
+        self.request("pgls/pull_semantic_tokens", params)
+    }
+
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
         self.request("pgls/invalidate_schema_cache", all)
     }
