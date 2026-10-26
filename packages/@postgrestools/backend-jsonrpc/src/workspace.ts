@@ -340,9 +340,9 @@ export interface EditAction {
    */
   edits: TextEdit[];
   /**
-   * The category of the diagnostic the action fixes or suppresses, e.g. `lint/banDropTable`.
+   * The category of the diagnostic the action fixes or suppresses, e.g. `lint/banDropTable`. `None` for refactors.
    */
-  rule: string;
+  rule?: string;
 }
 export interface CommandAction {
   category: CommandActionCategory;
