@@ -223,10 +223,10 @@ fn dropped_names(tokens: StatementTokens) -> Vec<TextRange> {
 
 /// The unqualified names of the temporary tables created by earlier statements of the file.
 /// An unqualified name refers to them, since `pg_temp` comes first in the search path.
-fn temporary_tables(previous: &[NodeEnum]) -> Vec<&str> {
+fn temporary_tables<'a>(previous: &[&'a NodeEnum]) -> Vec<&'a str> {
     let mut tables = Vec::new();
     for stmt in previous {
-        let created = match stmt {
+        let created = match *stmt {
             NodeEnum::CreateStmt(stmt) => stmt.relation.as_ref(),
             NodeEnum::CreateTableAsStmt(stmt) => {
                 stmt.into.as_ref().and_then(|into| into.rel.as_ref())
