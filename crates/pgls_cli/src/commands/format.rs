@@ -29,6 +29,7 @@ pub fn format(
 
     let configuration = session.prepare_with_config(cli_options, args.configuration.clone())?;
     session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
+    session.apply_nested_configurations(cli_options, args.configuration.clone())?;
 
     let vcs = VcsTargeting {
         staged: args.staged,

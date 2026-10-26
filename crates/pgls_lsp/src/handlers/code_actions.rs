@@ -22,10 +22,12 @@ pub fn get_actions(
 ) -> Result<ls_types::CodeActionResponse> {
     let url = params.text_document.uri;
     let path = session.file_path(&url)?;
+    let project_key = session.project_key(&path);
 
     let cursor_position = get_cursor_position(session, &url, params.range.start)?;
 
     let workspace_actions = session.workspace.pull_code_actions(CodeActionsParams {
+        project_key,
         path,
         cursor_position,
         only: vec![],
@@ -159,10 +161,15 @@ pub async fn execute_command(
             let doc_url: ls_types::Uri = serde_json::from_value(params.arguments[1].clone())?;
 
             let path = session.file_path(&doc_url)?;
+            let project_key = session.project_key(&path);
 
             let result = session
                 .workspace
-                .execute_statement(ExecuteStatementParams { statement_id, path })?;
+                .execute_statement(ExecuteStatementParams {
+                    project_key,
+                    statement_id,
+                    path,
+                })?;
 
             /*
              * Updating all diagnostics: the changes caused by the statement execution

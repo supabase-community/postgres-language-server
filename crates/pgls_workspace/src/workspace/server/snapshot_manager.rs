@@ -24,7 +24,7 @@ use super::{async_helper::run_async, connection_key::ConnectionKey};
 ///
 /// DB-only API:
 /// - `load()` - Load schema from database connection
-/// - `clear_connection()` - Clear schema for specific connection
+/// - `clear_all_connections()` - Clear the schemas of all connections
 pub struct SnapshotManager {
     /// Connection-based snapshots (db mode only)
     #[cfg(feature = "db")]
@@ -100,14 +100,6 @@ impl SnapshotManager {
 
         schemas.insert(key, snapshot.clone());
         Ok(snapshot)
-    }
-
-    /// Clear the snapshot for a specific connection.
-    #[cfg(feature = "db")]
-    pub fn clear_connection(&self, pool: &PgPool) {
-        let key: ConnectionKey = pool.into();
-        let mut schemas = self.db_schemas.write().unwrap();
-        schemas.remove(&key);
     }
 
     /// Clear all connection-based snapshots.
