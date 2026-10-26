@@ -27,18 +27,21 @@ pub(crate) fn process(
 /// they are, so stdout always contains the best-effort output.
 fn format(session: &mut CliSession, payload: StdinPayload) -> Result<(), CliDiagnostic> {
     let pgls_path = PgLSPath::new(&payload.path);
+    let project_key = session.project_key();
     let workspace = session.workspace();
 
     let result = {
         let guard = FileGuard::open(
             workspace,
             OpenFileParams {
+                project_key,
                 path: pgls_path.clone(),
                 version: 0,
                 content: payload.content.clone(),
             },
         )?;
         guard.pull_file_formatting(PullFileFormattingParams {
+            project_key,
             path: pgls_path,
             range: None,
         })?
