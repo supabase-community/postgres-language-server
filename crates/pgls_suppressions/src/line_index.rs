@@ -28,16 +28,9 @@ impl LineIndex {
     }
 
     pub fn line_for_offset(&self, offset: TextSize) -> Option<usize> {
+        // The offsets are ordered: the last line that starts at or before `offset`.
         self.line_offset
-            .iter()
-            .enumerate()
-            .filter_map(|(i, line_offset)| {
-                if offset >= *line_offset {
-                    Some(i)
-                } else {
-                    None
-                }
-            })
-            .next_back()
+            .partition_point(|line_offset| *line_offset <= offset)
+            .checked_sub(1)
     }
 }

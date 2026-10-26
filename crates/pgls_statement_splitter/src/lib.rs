@@ -6,12 +6,16 @@ mod splitter;
 
 use diagnostics::SplitDiagnostic;
 use pgls_lexer::{Lexed, Lexer, SyntaxKind, convert_to_positional_params};
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 use splitter::{SplitResult as PassResult, Splitter, source};
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct SplitResult {
     pub ranges: Vec<TextRange>,
+    /// The errors of the lexer, ordered by position, then those of the splitter, by statement.
     pub errors: Vec<SplitDiagnostic>,
+    /// How many of the `errors` come from the lexer.
+    lex_errors: usize,
 }
 
 /// Splits `sql` into the ranges of the statements it contains.
@@ -46,6 +50,7 @@ pub fn split(sql: &str) -> SplitResult {
 
     let mut ranges = Vec::with_capacity(coarse.ranges.len());
     let mut errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
+    let lex_errors = errors.len();
 
     for range in coarse.ranges {
         let contains_blank_line = blank_lines.as_mut().is_some_and(|blank_lines| {
@@ -96,7 +101,224 @@ pub fn split(sql: &str) -> SplitResult {
         );
     }
 
-    SplitResult { ranges, errors }
+    SplitResult {
+        ranges,
+        errors,
+        lex_errors,
+    }
+}
+
+/// The statements around a change that are split again by [`split_edited`], on each side of it.
+/// The ones farthest from the change have to come out as before, which shows that the split
+/// around the change doesn't depend on the text outside of it.
+const EDIT_CONTEXT_STATEMENTS: usize = 2;
+
+/// Bytes that can open or close a string, a quoted identifier, a comment or a psql command. A
+/// change that touches one can change how everything after it is lexed.
+const LEXER_STATE_BYTES: &[u8] = b"$'\"/*-\\";
+
+/// Splits `new` like [`split`], reusing `previous`, the split of `old`.
+///
+/// Only the statements around the part of the text that changed are split again: from
+/// [`EDIT_CONTEXT_STATEMENTS`] statements before it to as many after it. The rest is taken from
+/// `previous`, shifted by the change in length. The result is the same as `split(new)`. It
+/// falls back to splitting all of `new` when the change can affect statements far from it:
+/// when it touches a quote, a comment or a psql command, or when the statements at the edges of
+/// the region don't come out as before.
+pub fn split_edited(old: &str, previous: &SplitResult, new: &str) -> SplitResult {
+    split_region(old, previous, new).unwrap_or_else(|| split(new))
+}
+
+/// Compared in blocks first, which is much faster than byte by byte.
+const COMPARE_BLOCK_BYTES: usize = 64;
+
+/// The length of the longest common prefix of `a` and `b`.
+fn common_prefix(a: &[u8], b: &[u8]) -> usize {
+    let len = a.len().min(b.len());
+    let mut equal = 0;
+    while equal + COMPARE_BLOCK_BYTES <= len
+        && a[equal..equal + COMPARE_BLOCK_BYTES] == b[equal..equal + COMPARE_BLOCK_BYTES]
+    {
+        equal += COMPARE_BLOCK_BYTES;
+    }
+    equal
+        + a[equal..len]
+            .iter()
+            .zip(&b[equal..len])
+            .take_while(|(a, b)| a == b)
+            .count()
+}
+
+/// The length of the longest common suffix of `a` and `b`, which have the same length.
+fn common_suffix(a: &[u8], b: &[u8]) -> usize {
+    let len = a.len();
+    let mut equal = 0;
+    while equal + COMPARE_BLOCK_BYTES <= len
+        && a[len - equal - COMPARE_BLOCK_BYTES..len - equal]
+            == b[len - equal - COMPARE_BLOCK_BYTES..len - equal]
+    {
+        equal += COMPARE_BLOCK_BYTES;
+    }
+    equal
+        + a[..len - equal]
+            .iter()
+            .rev()
+            .zip(b[..len - equal].iter().rev())
+            .take_while(|(a, b)| a == b)
+            .count()
+}
+
+fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitResult> {
+    let (old_bytes, new_bytes) = (old.as_bytes(), new.as_bytes());
+    let mut prefix = common_prefix(old_bytes, new_bytes);
+    while !old.is_char_boundary(prefix) || !new.is_char_boundary(prefix) {
+        prefix -= 1;
+    }
+    let max_suffix = old.len().min(new.len()) - prefix;
+    let mut suffix = common_suffix(
+        &old_bytes[old.len() - max_suffix..],
+        &new_bytes[new.len() - max_suffix..],
+    );
+    while !old.is_char_boundary(old.len() - suffix) || !new.is_char_boundary(new.len() - suffix) {
+        suffix -= 1;
+    }
+    let (old_end, new_end) = (old.len() - suffix, new.len() - suffix);
+    if old_end == prefix && new_end == prefix {
+        return Some(previous.clone());
+    }
+
+    // The change, with a byte of context on each side, because two bytes can form a token like
+    // `/*` or `--` together.
+    let touches_lexer_state = |text: &[u8], end: usize| {
+        text[prefix.saturating_sub(1)..(end + 1).min(text.len())]
+            .iter()
+            .any(|byte| LEXER_STATE_BYTES.contains(byte))
+    };
+    if touches_lexer_state(old_bytes, old_end) || touches_lexer_state(new_bytes, new_end) {
+        return None;
+    }
+
+    let ranges = &previous.ranges;
+    let to_size = |offset: usize| TextSize::try_from(offset).ok();
+    let (prefix_size, old_end_size) = (to_size(prefix)?, to_size(old_end)?);
+    // The statements from `first` to `last` (exclusive) are split again: the ones that the
+    // change touches, and `EDIT_CONTEXT_STATEMENTS` on each side.
+    let touched = ranges.partition_point(|range| range.end() < prefix_size);
+    let after = ranges.partition_point(|range| range.start() < old_end_size);
+    let first = touched.saturating_sub(EDIT_CONTEXT_STATEMENTS);
+    let last = (after + EDIT_CONTEXT_STATEMENTS).min(ranges.len());
+
+    let start = if first == 0 {
+        0
+    } else {
+        usize::from(ranges[first].start())
+    };
+    let new_region_end = if last == ranges.len() {
+        new.len()
+    } else {
+        (usize::from(ranges[last - 1].end()) + new.len()).checked_sub(old.len())?
+    };
+    if start > prefix || new_region_end < new_end {
+        return None;
+    }
+    let offset = to_size(start)?;
+    let shift = |range: TextRange| -> Option<TextRange> {
+        let start = (usize::from(range.start()) + new.len()).checked_sub(old.len())?;
+        let end = (usize::from(range.end()) + new.len()).checked_sub(old.len())?;
+        Some(TextRange::new(to_size(start)?, to_size(end)?))
+    };
+
+    let region = split(&new[start..new_region_end]);
+    let region_ranges: Vec<TextRange> = region.ranges.iter().map(|range| *range + offset).collect();
+
+    // The statements before and after the change come out as before, so the region doesn't
+    // depend on the text around it.
+    let before = touched - first;
+    if first > 0
+        && (region_ranges.len() < before || region_ranges[..before] != ranges[first..touched])
+    {
+        return None;
+    }
+    if last < ranges.len() {
+        let after_count = last - after;
+        if region_ranges.len() < after_count {
+            return None;
+        }
+        let expected = ranges[after..last]
+            .iter()
+            .map(|range| shift(*range))
+            .collect::<Option<Vec<_>>>()?;
+        if region_ranges[region_ranges.len() - after_count..] != expected[..] {
+            return None;
+        }
+    }
+
+    // The first and the last statement of the region only show that the region lines up with
+    // the statements around it: the first one is split without the statements before it, and
+    // the last one runs into the end of the region. Both are unchanged, so they are taken from
+    // `previous`, like the statements outside the region.
+    let low = if first > 0 {
+        ranges[first].end()
+    } else {
+        TextSize::from(0)
+    };
+    let (old_high, new_high) = if last < ranges.len() {
+        let old_high = ranges[last - 1].start();
+        (old_high, shift(TextRange::empty(old_high))?.start())
+    } else {
+        (to_size(old.len())?, to_size(new.len())?)
+    };
+    let kept_before = if first > 0 { first + 1 } else { 0 };
+    let kept_after = if last < ranges.len() {
+        last - 1
+    } else {
+        ranges.len()
+    };
+
+    let mut result_ranges = Vec::with_capacity(ranges.len() + region_ranges.len());
+    result_ranges.extend_from_slice(&ranges[..kept_before]);
+    result_ranges.extend(
+        region_ranges
+            .into_iter()
+            .filter(|range| range.start() >= low && range.start() < new_high),
+    );
+    for range in &ranges[kept_after..] {
+        result_ranges.push(shift(*range)?);
+    }
+
+    // The same for the errors. The errors of the lexer come first, as in `split`.
+    let place = |errors: &[SplitDiagnostic], region: &[SplitDiagnostic]| {
+        let mut placed = Vec::new();
+        for error in errors {
+            if error.span()?.end() <= low {
+                placed.push(error.clone());
+            }
+        }
+        for error in region {
+            let span = error.span()? + offset;
+            if span.start() >= low && span.end() <= new_high {
+                placed.push(error.clone().with_span(span));
+            }
+        }
+        for error in errors {
+            let span = error.span()?;
+            if span.start() >= old_high {
+                placed.push(error.clone().with_span(shift(span)?));
+            }
+        }
+        Some(placed)
+    };
+    let (old_lex, old_split) = previous.errors.split_at(previous.lex_errors);
+    let (region_lex, region_split) = region.errors.split_at(region.lex_errors);
+    let mut errors = place(old_lex, region_lex)?;
+    let lex_errors = errors.len();
+    errors.extend(place(old_split, region_split)?);
+
+    Some(SplitResult {
+        ranges: result_ranges,
+        errors,
+        lex_errors,
+    })
 }
 
 fn split_pass(lexed: &Lexed, blank_line_is_boundary: bool) -> PassResult {
@@ -1183,5 +1405,137 @@ VALUES
     fn empty_input() {
         assert_eq!(split("").ranges.len(), 0);
         assert_eq!(split("   \n  \n ").ranges.len(), 0);
+    }
+
+    /// A small deterministic random number generator (xorshift), so that a failure reproduces.
+    struct Rng(u64);
+
+    impl Rng {
+        fn below(&mut self, n: usize) -> usize {
+            self.0 ^= self.0 << 13;
+            self.0 ^= self.0 >> 7;
+            self.0 ^= self.0 << 17;
+            (self.0 % n.max(1) as u64) as usize
+        }
+    }
+
+    /// Statements of the kinds the splitter treats differently.
+    const STATEMENTS: &[&str] = &[
+        "create table t (id bigint primary key, name text not null);",
+        "create index t_name_idx on t (name);",
+        "create function f(a int) returns int language sql as $$ select a + 1 $$;",
+        "create function g(a int) returns int language sql begin atomic select a; select a + 1; end;",
+        "select c.relname from pg_class c where c.relnatts = 1 order by 1;",
+        "insert into t (id, name) values (1, 'x') on conflict (id) do update set name = 'y';",
+        "update t set name = 'z' where id = 1",
+        "delete from t where id in (select id from t)",
+        "with x as (select 1) select * from x;",
+        "-- a comment\nselect 1;",
+        "/* a block\ncomment */ select 2;",
+        "select 'a;b', \"c;d\";",
+        "alter table t add column c int;",
+        "begin;",
+        "commit;",
+        "select 1\n\nfrom t;",
+        "selec 1;",
+        "grant select on t to public;",
+    ];
+
+    /// Text inserted by the edits: whole statements, and fragments that can merge, cut or quote
+    /// statements.
+    const SNIPPETS: &[&str] = &[
+        ";",
+        "\n",
+        "\n\n",
+        " ",
+        "x",
+        "select 1",
+        "select",
+        "from t",
+        "begin atomic",
+        "end;",
+        "(",
+        ")",
+        "'",
+        "$$",
+        "/*",
+        "*/",
+        "--",
+        ",",
+        "with",
+        "delete",
+        "create table q (a int);",
+        "\\d t\n",
+        "é",
+        "insert into",
+        "case when true then 1 end",
+    ];
+
+    fn document(rng: &mut Rng, statements: usize) -> String {
+        let mut sql = String::new();
+        for _ in 0..statements {
+            sql.push_str(STATEMENTS[rng.below(STATEMENTS.len())]);
+            sql.push_str(["\n", "\n\n", " "][rng.below(3)]);
+        }
+        sql
+    }
+
+    fn char_boundary(sql: &str, mut offset: usize) -> usize {
+        while !sql.is_char_boundary(offset) {
+            offset -= 1;
+        }
+        offset
+    }
+
+    fn edit(rng: &mut Rng, sql: &str) -> String {
+        let at = char_boundary(sql, rng.below(sql.len() + 1));
+        let end = char_boundary(sql, (at + rng.below(40)).min(sql.len()));
+        let inserted = match rng.below(4) {
+            0 => "",
+            1 => STATEMENTS[rng.below(STATEMENTS.len())],
+            _ => SNIPPETS[rng.below(SNIPPETS.len())],
+        };
+        let end = if inserted.is_empty() || rng.below(2) == 0 {
+            end
+        } else {
+            at
+        };
+        format!("{}{inserted}{}", &sql[..at], &sql[end..])
+    }
+
+    #[test]
+    fn split_edited_is_split() {
+        let seed =
+            std::env::var("SPLIT_SEED").map_or(0x9e37_79b9_7f4a_7c15, |seed| seed.parse().unwrap());
+        let edits: usize =
+            std::env::var("SPLIT_EDITS").map_or(3_000, |edits| edits.parse().unwrap());
+        let mut rng = Rng(seed);
+        let mut incremental_edits = 0;
+        for document_index in 0..10 {
+            let mut sql = document(&mut rng, 60);
+            let mut previous = split(&sql);
+            for _ in 0..edits / 10 {
+                // Sometimes two edits at once, which the region has to cover together.
+                let mut new = edit(&mut rng, &sql);
+                if rng.below(4) == 0 {
+                    new = edit(&mut rng, &new);
+                }
+                let expected = split(&new);
+                let edited = split_edited(&sql, &previous, &new);
+                assert_eq!(
+                    edited, expected,
+                    "document {document_index}, from\n{sql}\nto\n{new}"
+                );
+                incremental_edits += usize::from(split_region(&sql, &previous, &new).is_some());
+                sql = new;
+                previous = edited;
+            }
+        }
+        // Most edits are split incrementally; the others fall back to a full split.
+        println!("{incremental_edits} of {edits} edits split incrementally");
+        assert!(
+            incremental_edits > edits / 3,
+            "{incremental_edits} of {edits}"
+        );
     }
 }
