@@ -4,10 +4,15 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, RwLock},
+    sync::{
+        Arc, Mutex, RwLock,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 use analyser::AnalyserVisitorBuilder;
+#[cfg(feature = "db")]
+use analysis::DocumentAnalysis;
 #[cfg(feature = "db")]
 use async_helper::run_async;
 #[cfg(feature = "db")]
@@ -15,18 +20,13 @@ use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
 use document::{DefaultMapper, Document, ExecuteStatementMapper};
+use document_cache::CacheKey;
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 use pgls_analyse::{
-    ActionCategory, AnalysisFilter, Applicability, RuleCategories, RuleCategoriesBuilder,
-    RuleFilter, SUPPRESSION_ACTION_CATEGORY,
+    ActionCategory, AnalysisFilter, Applicability, RuleCategories, SUPPRESSION_ACTION_CATEGORY,
 };
-#[cfg(feature = "db")]
-use pgls_analyser::StatementAnalysis;
-use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix, WalkParams,
-};
+use pgls_analyser::{LinterDiagnostic, MigrationSection, RuleFix, WalkParams};
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session};
 #[cfg(feature = "db")]
@@ -34,12 +34,10 @@ use pgls_lexer::convert_to_positional_params_with_metadata;
 use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
-use pgls_configuration::RuleSelector;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -49,7 +47,6 @@ use tracing::{debug, info, warn};
 
 use crate::{
     WorkspaceError,
-    configuration::to_analyser_rules,
     features::{
         code_actions::{
             CodeAction, CodeActionKind, CodeActionsParams, CodeActionsResult, CommandAction,
@@ -79,6 +76,7 @@ use super::{
 pub use statement_identifier::StatementId;
 
 mod analyser;
+mod analysis;
 #[cfg(feature = "db")]
 mod async_helper;
 #[cfg(feature = "db")]
@@ -112,6 +110,9 @@ pub struct WorkspaceServer {
 
     /// The last snapshot built for completions and hover
     snapshot_before: Mutex<Option<SnapshotBefore>>,
+
+    /// Incremented whenever the settings change, see [`CacheKey`].
+    settings_version: AtomicU64,
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
@@ -150,6 +151,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
+            settings_version: AtomicU64::default(),
             connection: ConnectionManager::new(),
         }
     }
@@ -163,6 +165,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
+            settings_version: AtomicU64::default(),
         }
     }
 
@@ -172,7 +175,39 @@ impl WorkspaceServer {
     }
 
     fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut<'_> {
-        WorkspaceSettingsHandleMut::new(&self.settings)
+        let handle = WorkspaceSettingsHandleMut::new(&self.settings);
+        // While the settings are locked, so that nothing is cached with the old settings under
+        // the new version.
+        self.settings_version.fetch_add(1, Ordering::Relaxed);
+        handle
+    }
+
+    /// The database snapshot of the database in `settings`, if it is reachable or a snapshot was
+    /// loaded from JSON.
+    fn database_snapshot(&self, settings: &Settings) -> Option<Arc<Snapshot>> {
+        #[cfg(feature = "db")]
+        let snapshot = self
+            .connection
+            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+            .and_then(Result::ok);
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = {
+            let _ = settings;
+            self.snapshot.get()
+        };
+
+        snapshot
+    }
+
+    /// What the caches of a document of `project_key` depend on besides its text, when the
+    /// analysis starts from `snapshot`.
+    fn cache_key(&self, project_key: ProjectKey, snapshot: Option<&Arc<Snapshot>>) -> CacheKey {
+        CacheKey::new(
+            self.settings_version.load(Ordering::Relaxed),
+            project_key,
+            snapshot.map(|snapshot| self.catalog_base(snapshot)),
+        )
     }
 
     /// Load schema from JSON string.
@@ -220,129 +255,6 @@ impl WorkspaceServer {
         settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
     }
 
-    /// Whether the file is a migration. Migration-only rules don't run on other files.
-    fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
-        match settings
-            .migrations
-            .as_ref()
-            .and_then(|migrations| migrations.path.as_ref())
-        {
-            Some(migrations_dir) if migration::is_in_migrations_dir(path, migrations_dir) => {
-                FileKind::Migration
-            }
-            Some(_) => FileKind::Other,
-            None => FileKind::Unknown,
-        }
-    }
-
-    /// Runs the lint and typecheck rules on a document. Returns the analysis, the syntax errors
-    /// of the statements, the disabled rules, and the migration sections that are not linted.
-    fn analyse_document(
-        &self,
-        settings: &Settings,
-        path: &PgLSPath,
-        doc: &Document,
-        categories: RuleCategories,
-        only: &[RuleSelector],
-        skip: &[RuleSelector],
-    ) -> (
-        AnalysisResult,
-        Vec<SyntaxDiagnostic>,
-        Vec<RuleFilter<'static>>,
-        Vec<TextRange>,
-    ) {
-        #[cfg(feature = "db")]
-        let snapshot = self
-            .connection
-            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
-            .and_then(Result::ok);
-
-        #[cfg(not(feature = "db"))]
-        let snapshot = self.snapshot.get();
-
-        /*
-         * Static analysis: the lint rules, and the typecheck rules when a database schema is
-         * available. The catalog starts from the database schema and follows the DDL of the
-         * file.
-         */
-        let typecheck = settings.typecheck.enabled && snapshot.is_some();
-        let search_path = match snapshot.as_deref() {
-            Some(snapshot) => snapshot.expand_search_path(&settings.typecheck.search_path),
-            None => settings.typecheck.search_path.clone(),
-        };
-        let catalog_base = snapshot
-            .as_ref()
-            .map(|snapshot| self.catalog_base(snapshot));
-
-        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
-            .with_linter_rules(only, skip)
-            .finish();
-
-        let options = LinterOptions {
-            rules: to_analyser_rules(settings),
-        };
-
-        let filter = AnalysisFilter {
-            categories,
-            enabled_rules: Some(enabled_rules.as_slice()),
-            disabled_rules: &disabled_rules,
-        };
-
-        let analyser = Analyser::new(AnalyserConfig {
-            options: &options,
-            filter,
-        });
-
-        /*
-         * Migration tools like dbmate and goose put the up and the down migration in one file.
-         * Each section is analysed as a migration of its own, and the down sections are only
-         * checked with `lintDown`. Syntax errors are reported everywhere.
-         */
-        let sections = document_sections(settings, doc);
-        let skipped_sections: Vec<TextRange> = sections
-            .iter()
-            .filter(|section| {
-                section.direction == Direction::Down
-                    && settings
-                        .migrations
-                        .as_ref()
-                        .is_some_and(|migrations| !migrations.lint_down)
-            })
-            .map(|section| section.range)
-            .collect();
-        let is_skipped = |range: TextRange| {
-            skipped_sections
-                .iter()
-                .any(|section| section.contains(range.start()))
-        };
-
-        let mut analysable_stmts = vec![];
-        let mut syntax_diagnostics = vec![];
-        let mut unparsable = vec![];
-        for (stmt, diagnostic, unparsable_stmt) in doc.iter(AnalyserDiagnosticsMapper) {
-            analysable_stmts.extend(stmt.filter(|stmt| !is_skipped(stmt.range)));
-            syntax_diagnostics.extend(diagnostic);
-            unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
-        }
-
-        let analysis = analyser.analyse(AnalyserParams {
-            stmts: analysable_stmts,
-            unparsable,
-            catalog_base,
-            search_path,
-            file_kind: self.file_kind(settings, path.as_path()),
-            sections,
-            typecheck,
-        });
-
-        (
-            analysis,
-            syntax_diagnostics,
-            disabled_rules,
-            skipped_sections,
-        )
-    }
-
     /// The fixes of the lint diagnostics at the cursor, and an action to suppress each of them.
     fn lint_code_actions(
         &self,
@@ -350,14 +262,26 @@ impl WorkspaceServer {
         params: &CodeActionsParams,
         doc: &Document,
     ) -> Vec<CodeAction> {
+        // Editors request code actions whenever the cursor moves. Without a rule selection,
+        // this is the analysis that the diagnostics of the last edit cached.
+        let analysis = self.analyse_document(
+            params.project_key,
+            settings,
+            &params.path,
+            doc,
+            RuleCategories::all(),
+            &params.only,
+            &params.skip,
+        );
+        let suppressions = doc.suppressions();
         let mut actions = Vec::new();
-        for diagnostic in
-            self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
-        {
+        for diagnostic in analysis.lint_diagnostics() {
             let Some(span) = diagnostic.location().span else {
                 continue;
             };
-            if !span.contains_inclusive(params.cursor_position) {
+            if !span.contains_inclusive(params.cursor_position)
+                || suppressions.is_suppressed(diagnostic)
+            {
                 continue;
             }
             let category = diagnostic.get_category_name();
@@ -429,31 +353,6 @@ impl WorkspaceServer {
         references
             .iter()
             .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
-            .collect()
-    }
-
-    /// The lint diagnostics of a document that are not suppressed.
-    fn lint_diagnostics(
-        &self,
-        settings: &Settings,
-        path: &PgLSPath,
-        doc: &Document,
-        only: &[RuleSelector],
-        skip: &[RuleSelector],
-    ) -> Vec<LinterDiagnostic> {
-        let (analysis, _, _, _) = self.analyse_document(
-            settings,
-            path,
-            doc,
-            RuleCategoriesBuilder::default().all().build(),
-            only,
-            skip,
-        );
-        let suppressions = doc.suppressions();
-        analysis
-            .diagnostics
-            .into_iter()
-            .filter(|diagnostic| !suppressions.is_suppressed(diagnostic))
             .collect()
     }
 
@@ -701,8 +600,7 @@ impl WorkspaceServer {
         settings: &Settings,
         path: &PgLSPath,
         doc: &Document,
-        statements: &[StatementAnalysis],
-        skipped_sections: &[TextRange],
+        analysis: &DocumentAnalysis,
     ) -> Result<(Vec<SDiagnostic>, Vec<TextRange>), WorkspaceError> {
         let typecheck_enabled = settings.typecheck.enabled;
         let plpgsql_check = settings.plpgsql_check.clone();
@@ -714,13 +612,10 @@ impl WorkspaceServer {
             let snapshot = self.snapshot.load(pool)?;
             let input = doc
                 .iter(TypecheckDiagnosticsMapper)
-                .filter(|(_, range, ..)| {
-                    !skipped_sections
-                        .iter()
-                        .any(|section| section.contains(range.start()))
-                })
+                .filter(|(_, range, ..)| !analysis.is_skipped(range.start()))
                 .map(|(id, range, ast, cst)| {
-                    let statement = statements
+                    let statement = analysis
+                        .statements()
                         .iter()
                         .find(|statement| statement.range == range)
                         .cloned();
@@ -1157,8 +1052,14 @@ impl Workspace for WorkspaceServer {
         let mut converged = false;
         for _ in 0..MAX_PASSES {
             let doc = Document::new(code.clone(), 0);
-            let diagnostics =
-                self.lint_diagnostics(settings, &params.path, &doc, &params.only, &params.skip);
+            let diagnostics = self.lint_diagnostics(
+                params.project_key,
+                settings,
+                &params.path,
+                &doc,
+                &params.only,
+                &params.skip,
+            );
 
             skipped_suggested_fixes = 0;
             let mut fixes: Vec<&RuleFix> = Vec::new();
@@ -1352,20 +1253,15 @@ impl Workspace for WorkspaceServer {
             );
         }
 
-        let (analysis, syntax_diagnostics, disabled_rules, skipped_sections) = self
-            .analyse_document(
-                settings,
-                &params.path,
-                doc,
-                params.categories,
-                &params.only,
-                &params.skip,
-            );
-        let is_skipped = |range: TextRange| {
-            skipped_sections
-                .iter()
-                .any(|section| section.contains(range.start()))
-        };
+        let analysis = self.analyse_document(
+            params.project_key,
+            settings,
+            &params.path,
+            doc,
+            params.categories,
+            &params.only,
+            &params.skip,
+        );
 
         /*
          * Checks against the database: statements that reference only objects that exist
@@ -1374,20 +1270,15 @@ impl Workspace for WorkspaceServer {
          */
         #[cfg(feature = "db")]
         let plpgsql_checked = {
-            let (db_diagnostics, plpgsql_checked) = self.database_diagnostics(
-                settings,
-                &params.path,
-                doc,
-                &analysis.statements,
-                &skipped_sections,
-            )?;
+            let (db_diagnostics, plpgsql_checked) =
+                self.database_diagnostics(settings, &params.path, doc, &analysis)?;
             diagnostics.extend(db_diagnostics);
             plpgsql_checked
         };
         #[cfg(not(feature = "db"))]
         let plpgsql_checked: Vec<TextRange> = Vec::new();
 
-        for diagnostic in syntax_diagnostics {
+        for diagnostic in analysis.syntax_diagnostics() {
             // Ignore the syntax error if we already have more specialized diagnostics for the
             // same statement, e.g. from plpgsql_check for CREATE FUNCTION statements.
             let covered = diagnostics.iter().any(|d| {
@@ -1408,34 +1299,42 @@ impl Workspace for WorkspaceServer {
             if !covered && !checked {
                 diagnostics.push(SDiagnostic::new(
                     diagnostic
+                        .clone()
                         .with_file_path(path.clone())
                         .with_severity(Severity::Error),
                 ));
             }
         }
 
-        diagnostics.extend(analysis.diagnostics.into_iter().map(Error::from).map(|d| {
-            let severity = d
-                .category()
-                .and_then(|category| settings.get_severity_from_rule_code(category))
-                .unwrap_or(Severity::Warning);
+        diagnostics.extend(
+            analysis
+                .lint_diagnostics()
+                .iter()
+                .cloned()
+                .map(Error::from)
+                .map(|d| {
+                    let severity = d
+                        .category()
+                        .and_then(|category| settings.get_severity_from_rule_code(category))
+                        .unwrap_or(Severity::Warning);
 
-            let span = d.location().span;
-            SDiagnostic::new(
-                d.with_file_path(path.clone())
-                    .with_file_span(span)
-                    .with_severity(severity),
-            )
-        }));
+                    let span = d.location().span;
+                    SDiagnostic::new(
+                        d.with_file_path(path.clone())
+                            .with_file_span(span)
+                            .with_severity(severity),
+                    )
+                }),
+        );
 
         let suppressions = doc.suppressions();
 
         let disabled_suppression_errors =
-            suppressions.get_disabled_diagnostic_suppressions_as_errors(&disabled_rules);
+            suppressions.get_disabled_diagnostic_suppressions_as_errors(analysis.disabled_rules());
 
         let mut unused_suppression_errors =
             suppressions.get_unused_suppressions_as_errors(&diagnostics);
-        unused_suppression_errors.retain(|error| !is_skipped(error.span));
+        unused_suppression_errors.retain(|error| !analysis.is_skipped(error.span.start()));
 
         let suppression_errors: Vec<Error> = suppressions
             .diagnostics
