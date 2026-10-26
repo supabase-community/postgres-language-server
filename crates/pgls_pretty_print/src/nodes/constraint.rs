@@ -503,18 +503,11 @@ fn emit_exclusion(e: &mut EventEmitter, exclusion: &pgls_query::Node) {
                         e.token(TokenKind::COMMA);
                         e.space();
                     }
-                    emit_exclusion_operator(e, op);
+                    emit_operator_part(e, op);
                 }
             }
-            _ => emit_exclusion_operator(e, operators),
+            _ => emit_operator_part(e, operators),
         }
-    }
-}
-
-fn emit_exclusion_operator(e: &mut EventEmitter, node: &pgls_query::Node) {
-    match node.node.as_ref() {
-        Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-        _ => emit_node(e, node),
     }
 }
 

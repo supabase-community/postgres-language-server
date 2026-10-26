@@ -33,7 +33,10 @@ pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjec
     } else if let Some(ref object) = n.object {
         match n.object_type() {
             ObjectType::ObjectOpclass | ObjectType::ObjectOpfamily => {
-                emit_operator_collection_object(e, object)
+                match operator_class_parts(object) {
+                    Some((method, name)) => emit_operator_class_name(e, method, name),
+                    None => emit_node(e, object),
+                }
             }
             ObjectType::ObjectAggregate => {
                 // Aggregate needs (*) for "any argument types"
@@ -66,20 +69,4 @@ pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjec
     }
 
     e.group_end();
-}
-
-fn emit_operator_collection_object(e: &mut EventEmitter, object: &pgls_query::Node) {
-    if let Some(pgls_query::NodeEnum::List(list)) = &object.node
-        && list.items.len() >= 2
-    {
-        let (method_node, name_nodes) = list.items.split_first().unwrap();
-        emit_dot_separated_list(e, name_nodes);
-        e.space();
-        e.token(TokenKind::USING_KW);
-        e.space();
-        emit_node(e, method_node);
-        return;
-    }
-
-    emit_node(e, object);
 }

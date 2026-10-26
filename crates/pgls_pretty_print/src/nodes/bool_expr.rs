@@ -5,16 +5,7 @@ use crate::LogicalOperatorPlacement;
 use super::prelude::*;
 
 pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
-    e.group_start();
-
-    match n.boolop() {
-        BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
-        BoolExprType::OrExpr => emit_variadic_bool_expr(e, n, TokenKind::OR_KW),
-        BoolExprType::NotExpr => emit_not_expr(e, n),
-        BoolExprType::Undefined => unreachable!("Undefined BoolExprType"),
-    }
-
-    e.expression_group_end();
+    emit_bool_expr_as(e, n, OperandGroup::Own);
 }
 
 /// Which group the operands of an AND or OR chain break with.
@@ -22,7 +13,8 @@ pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
 pub(super) enum OperandGroup {
     /// A group of the chain's own.
     Own,
-    /// The enclosing group, so that the operands go on their own lines whenever it breaks.
+    /// The enclosing group, so that the operands go on their own lines whenever it breaks. A NOT
+    /// keeps a group of its own.
     Enclosing,
 }
 
@@ -34,7 +26,18 @@ pub(super) fn emit_bool_expr_as(e: &mut EventEmitter, n: &BoolExpr, group: Opera
         (OperandGroup::Enclosing, BoolExprType::OrExpr) => {
             emit_variadic_bool_expr(e, n, TokenKind::OR_KW)
         }
-        _ => emit_bool_expr(e, n),
+        _ => {
+            e.group_start();
+
+            match n.boolop() {
+                BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
+                BoolExprType::OrExpr => emit_variadic_bool_expr(e, n, TokenKind::OR_KW),
+                BoolExprType::NotExpr => emit_not_expr(e, n),
+                BoolExprType::Undefined => unreachable!("Undefined BoolExprType"),
+            }
+
+            e.expression_group_end();
+        }
     }
 }
 

@@ -8,6 +8,8 @@ pub(crate) mod grant;
 pub(crate) mod json;
 pub(crate) mod modifiers;
 pub(crate) mod object_type;
+pub(crate) mod operator_class;
+pub(crate) mod operators;
 pub(crate) mod options;
 pub(crate) mod set_clause;
 pub(crate) mod window_frame;

@@ -170,26 +170,6 @@ fn emit_simple_rename(e: &mut EventEmitter, new_name: &str) {
     emit_identifier_maybe_quoted(e, new_name);
 }
 
-fn emit_operator_collection_head(e: &mut EventEmitter, n: &RenameStmt) -> bool {
-    if let Some(ref object) = n.object
-        && let Some(NodeEnum::List(list)) = &object.node
-        && list.items.len() >= 2
-    {
-        let (method_node, name_nodes) = list.items.split_first().unwrap();
-        if !name_nodes.is_empty() {
-            e.space();
-            emit_dot_separated_list(e, name_nodes);
-            e.space();
-            e.token(TokenKind::USING_KW);
-            e.space();
-            emit_node(e, method_node);
-            return true;
-        }
-    }
-
-    false
-}
-
 fn emit_keyworded_rename(e: &mut EventEmitter, keyword: TokenKind, old_name: &str, new_name: &str) {
     if old_name.is_empty() {
         emit_simple_rename(e, new_name);
@@ -235,4 +215,14 @@ fn emit_attribute_rename(e: &mut EventEmitter, old_name: &str, new_name: &str) {
     e.token(TokenKind::TO_KW);
     e.space();
     emit_identifier_maybe_quoted(e, new_name);
+}
+
+/// Emits ` schema.name USING method` of an operator class or family, if `n` names one.
+fn emit_operator_collection_head(e: &mut EventEmitter, n: &RenameStmt) -> bool {
+    let Some((method, name)) = n.object.as_deref().and_then(operator_class_parts) else {
+        return false;
+    };
+    e.space();
+    emit_operator_class_name(e, method, name);
+    true
 }
