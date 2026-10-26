@@ -1,6 +1,6 @@
 //! Questions about the shape of a node that decide how it is printed.
 
-use pgls_query::protobuf::{AExpr, AExprKind, BoolExprType, a_const::Val};
+use pgls_query::protobuf::{AExpr, AExprKind, BoolExprType, SubLinkType, a_const::Val};
 use pgls_query::{Node, NodeEnum};
 
 use crate::emitter::EventEmitter;
@@ -45,8 +45,6 @@ pub(crate) fn breaks_only_inside_its_parentheses(e: &EventEmitter, item: &Node) 
 }
 
 pub(crate) fn breaks_only_inside_a_subquery(node: &Node) -> bool {
-    use pgls_query::protobuf::{AExprKind, BoolExprType, SubLinkType};
-
     match node.node.as_ref() {
         Some(NodeEnum::SubLink(sub_link)) => {
             sub_link.sub_link_type != SubLinkType::MultiexprSublink as i32

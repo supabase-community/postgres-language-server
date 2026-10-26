@@ -3,8 +3,9 @@
 
 use pgls_query::{Node, NodeEnum};
 
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use crate::nodes::{emit_node, emit_node_enum};
+use crate::{ClauseBodyStyle, Layout, TokenKind};
 
 use super::comments::emit_node_with;
 use super::predicates::breaks_only_inside_a_subquery;
@@ -12,9 +13,6 @@ use super::predicates::breaks_only_inside_a_subquery;
 /// Opens the argument list of a call whose arguments the emitter writes itself: `(`, and when the
 /// call doesn't fit, a break and one more level of indent.
 pub(crate) fn open_call_arguments(e: &mut EventEmitter) {
-    use crate::TokenKind;
-    use crate::emitter::LineType;
-
     e.token(TokenKind::L_PAREN);
     e.indent_start();
     e.line(LineType::Soft);
@@ -22,18 +20,12 @@ pub(crate) fn open_call_arguments(e: &mut EventEmitter) {
 
 /// Closes an argument list opened with `open_call_arguments`, with `)` back on the call's indent.
 pub(crate) fn close_call_arguments(e: &mut EventEmitter) {
-    use crate::TokenKind;
-    use crate::emitter::LineType;
-
     e.indent_end();
     e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
 }
 
 pub(crate) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
-    use crate::ClauseBodyStyle;
-    use crate::emitter::LineType;
-
     // Compact keeps the condition on the keyword line. The indent stays in both cases so that the
     // condition's own continuation lines, the second AND of a chain for instance, sit under it.
     match e.config().clause_body_style {
@@ -86,9 +78,6 @@ pub(crate) fn emit_parenthesized_condition_with(
     condition: &Node,
     emit: impl FnOnce(&NodeEnum, &mut EventEmitter),
 ) {
-    use crate::TokenKind;
-    use crate::emitter::LineType;
-
     e.group_start(kind);
     e.token(TokenKind::L_PAREN);
     e.indent_start();
@@ -107,9 +96,6 @@ pub(crate) fn emit_parenthesized_condition_with(
 /// why expanded layout needs no renderer change.
 #[allow(dead_code)] // Consumed by the clause emitters introduced in task 3.
 pub(crate) fn emit_layout_break(e: &mut EventEmitter) {
-    use crate::Layout;
-    use crate::emitter::LineType;
-
     match e.config().layout {
         Layout::Expanded => e.line(LineType::Hard),
         Layout::Fit => e.line(LineType::SoftOrSpace),

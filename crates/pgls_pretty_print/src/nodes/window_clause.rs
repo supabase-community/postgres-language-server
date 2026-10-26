@@ -45,7 +45,7 @@ fn emit_window_spec(e: &mut EventEmitter, n: &WindowClause) {
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        emit_comma_separated_list(e, &n.order_clause, |node, emitter| emit_node(node, emitter));
+        emit_comma_separated_list(e, &n.order_clause, emit_node);
         has_content = true;
     }
 

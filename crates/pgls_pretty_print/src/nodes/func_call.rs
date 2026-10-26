@@ -224,7 +224,7 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
             e.token(TokenKind::BY_KW);
             e.space();
             e.indent_start();
-            emit_comma_separated_list(e, &n.agg_order, |node, emitter| emit_node(node, emitter));
+            emit_comma_separated_list(e, &n.agg_order, emit_node);
             e.indent_end();
         }
 

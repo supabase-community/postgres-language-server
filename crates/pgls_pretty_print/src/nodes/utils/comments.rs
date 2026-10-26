@@ -4,6 +4,8 @@ use pgls_query::{Node, NodeEnum};
 
 use crate::emitter::EventEmitter;
 
+/// Emits `node` with `emit` between the comments attached to its location, the way `emit_node`
+/// does with `emit_node_enum`.
 pub(crate) fn emit_node_with(
     node: &Node,
     e: &mut EventEmitter,

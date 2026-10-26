@@ -196,7 +196,7 @@ fn emit_type_modifiers(e: &mut EventEmitter, n: &TypeName, name_parts: &[String]
     }
 
     if !n.typmods.is_empty() {
-        emit_parenthesized_list(e, &n.typmods, |node, emitter| emit_node(node, emitter));
+        emit_parenthesized_list(e, &n.typmods, emit_node);
     }
 }
 
@@ -234,7 +234,7 @@ fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[Stri
             e.token(TokenKind::TIME_KW);
             // Emit precision if any
             if !n.typmods.is_empty() {
-                emit_parenthesized_list(e, &n.typmods, |node, emitter| emit_node(node, emitter));
+                emit_parenthesized_list(e, &n.typmods, emit_node);
             }
             e.space();
             e.token(TokenKind::WITH_KW);
@@ -247,7 +247,7 @@ fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[Stri
             e.token(TokenKind::TIMESTAMP_KW);
             // Emit precision if any
             if !n.typmods.is_empty() {
-                emit_parenthesized_list(e, &n.typmods, |node, emitter| emit_node(node, emitter));
+                emit_parenthesized_list(e, &n.typmods, emit_node);
             }
             e.space();
             e.token(TokenKind::WITH_KW);
