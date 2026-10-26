@@ -25,6 +25,8 @@ const SETUP: &str = r#"
     create function cheer_all(variadic moods mood[]) returns int language sql as 'select 1';
     create procedure do_it(a int, b text) language sql as 'select 1';
     create procedure with_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
+    create procedure with_inout(a int, out b int, inout c text) language plpgsql
+        as $$ begin b := a; end $$;
 "#;
 
 async fn catalog(test_db: &PgPool) -> (Catalog, Vec<String>) {
@@ -223,11 +225,34 @@ async fn procedure_call_references(test_db: PgPool) {
             "do_it => function public.do_it(integer, text) <- a, b (named)",
         ]
     );
-    // `CALL` passes an argument for output parameters too, and only calls procedures.
+    // `CALL` passes an argument for output parameters too.
     assert_eq!(
         references(&catalog, &search_path, "call with_out(1, null)"),
+        ["with_out => function public.with_out(integer, integer) <- a, b"]
+    );
+    assert_eq!(
+        references(&catalog, &search_path, "call with_inout(1, null, 'x')"),
+        ["with_inout => function public.with_inout(integer, integer, text) <- a, b, c"]
+    );
+    // Without it, the call matches no procedure.
+    assert_eq!(
+        references(&catalog, &search_path, "call with_out(1)"),
         [""; 0]
     );
+    // Procedures created in the file.
+    let mut file_catalog = catalog.clone();
+    let create = pgls_query::parse(
+        "create procedure file_out(x int, out y text, inout z int) language sql as 'select 1'",
+    )
+    .unwrap()
+    .into_root()
+    .unwrap();
+    file_catalog.apply(&create, &search_path);
+    assert_eq!(
+        references(&file_catalog, &search_path, "call file_out(1, null, 2)"),
+        ["file_out => function public.file_out(integer, text, integer) <- x, y, z"]
+    );
+    // `CALL` only calls procedures.
     assert_eq!(references(&catalog, &search_path, "call pick(1)"), [""; 0]);
 }
 

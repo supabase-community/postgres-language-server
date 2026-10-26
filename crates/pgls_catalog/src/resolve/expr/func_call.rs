@@ -71,10 +71,9 @@ pub(super) fn infer_func_call(
 
 /// Records the procedure that `CALL` calls, and the references in its arguments, when references
 /// are being collected. Postgres' checks of `CALL` ([`transformCallStmt`]) are not ported, so the
-/// findings of the arguments are dropped and the statement never gets one.
-///
-/// Procedures with output parameters are skipped: `CALL` passes an argument for them too, so the
-/// arguments don't line up with the input parameters of the signature.
+/// findings of the arguments are dropped and the statement never gets one. `CALL` passes an
+/// argument for the output parameters of a procedure too, usually `NULL`, which the signatures
+/// of procedures include.
 ///
 /// [`transformCallStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L3253
 pub(in crate::resolve) fn resolve_procedure_call(
@@ -104,7 +103,6 @@ pub(in crate::resolve) fn resolve_procedure_call(
         n.func_variadic,
         r.search_path,
     ) && f.function.kind == crate::FunctionKind::Procedure
-        && f.function.return_columns.is_none()
     {
         r.record_call(n, &f.function);
     }

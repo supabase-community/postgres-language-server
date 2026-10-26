@@ -15,6 +15,8 @@ const SETUP: &str = r#"
     create function amb(a int, b text) returns int language sql as 'select 1';
     create function amb(c text, d int) returns int language sql as 'select 1';
     create table points (x int, y int);
+    create procedure move_point(x int, out moved int, inout y int)
+        language plpgsql as $$ begin moved := x; end $$;
     create function measure(größe int, ö int) returns int language sql as 'select 1';
     create table sizes (größe int, Ö int);
 "#;
@@ -200,6 +202,15 @@ async fn sql_syntax_gets_no_hints(test_db: PgPool) {
     assert_eq!(
         f.hinted("select extract(year from now())"),
         "select extract(year from now())"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn procedure_calls_pass_output_arguments(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.hinted("call move_point(1, null, 2)"),
+        "call move_point(x: 1, moved: null, y: 2)"
     );
 }
 
