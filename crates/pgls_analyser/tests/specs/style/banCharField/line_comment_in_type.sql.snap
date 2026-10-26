@@ -1,0 +1,36 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The fix keeps a line comment in the type on a line of its own, so it doesn't comment out the
+-- constraints after the type.
+-- expect_lint/banCharField
+create table t (code char -- fixed width
+(10) not null
+);
+
+```
+
+# Diagnostics
+lint/banCharField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CHAR type is discouraged due to space padding behavior.
+  
+  i CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.
+  
+  i Use VARCHAR or TEXT instead for variable-length character data.
+  
+
+
+## Fix (unsafe): Use VARCHAR
+```
+-- The fix keeps a line comment in the type on a line of its own, so it doesn't comment out the
+-- constraints after the type.
+-- expect_lint/banCharField
+create table t (code varchar -- fixed width
+(10) not null
+);
+
+```
