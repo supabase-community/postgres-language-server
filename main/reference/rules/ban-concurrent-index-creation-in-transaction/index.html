@@ -1232,16 +1232,32 @@
 <strong>Diagnostic</strong> <code>lint/banConcurrentIndexCreationInTransaction</code></p>
 <p><strong>Sources</strong>: inspired by <a href="https://squawkhq.com/docs/ban-concurrent-index-creation-in-transaction"><code>squawk/ban-concurrent-index-creation-in-transaction</code></a></p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>Concurrent index creation is not allowed within a transaction.</p>
-<p><code>CREATE INDEX CONCURRENTLY</code> cannot be used within a transaction block. This will cause an error in Postgres.</p>
-<p>Migration tools usually run each migration in a transaction, so using <code>CREATE INDEX CONCURRENTLY</code> will fail in such tools.</p>
+<p>Concurrent index operations are not allowed within a transaction.</p>
+<p><code>CREATE INDEX CONCURRENTLY</code>, <code>DROP INDEX CONCURRENTLY</code>, <code>REINDEX CONCURRENTLY</code> and
+<code>ALTER TABLE ... DETACH PARTITION ... CONCURRENTLY</code> cannot be used within a transaction
+block, or in the body of a function. This will cause an error in Postgres.</p>
+<p>Migration tools usually run each migration in a transaction, so using <code>CONCURRENTLY</code> will fail in such tools.</p>
 <p>With <code>migrations.sectionMarkers</code>, the rule knows whether the migration runs in a transaction:
-dbmate's <code>-- migrate:up transaction:false</code> and goose's <code>-- +goose NO TRANSACTION</code> disable it.</p>
+dbmate's <code>-- migrate:up transaction:false</code> and goose's <code>-- +goose NO TRANSACTION</code> disable it.
+dbmate still sends the whole section to Postgres as one query, which Postgres runs in a
+transaction block if it has more than one statement.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="ss">"field_name_idx"</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="ss">"table_name"</span><span class="w"> </span><span class="p">(</span><span class="ss">"field_name"</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="k">BEGIN</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="ss">"field_name_idx"</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="ss">"table_name"</span><span class="w"> </span><span class="p">(</span><span class="ss">"field_name"</span><span class="p">);</span>
+<span class="k">COMMIT</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>
+<div class="highlight"><pre><span></span><code>code-block.sql:2:1<span class="w"> </span>lint/banConcurrentIndexCreationInTransaction<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<span class="w">  </span>×<span class="w"> </span>CREATE<span class="w"> </span>INDEX<span class="w"> </span>CONCURRENTLY<span class="w"> </span>cannot<span class="w"> </span>be<span class="w"> </span>used<span class="w"> </span>inside<span class="w"> </span>a<span class="w"> </span>transaction<span class="w"> </span>block.
+
+<span class="w">    </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>BEGIN<span class="p">;</span>
+<span class="w">  </span>&gt;<span class="w"> </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>CREATE<span class="w"> </span>INDEX<span class="w"> </span>CONCURRENTLY<span class="w"> </span><span class="s2">"field_name_idx"</span><span class="w"> </span>ON<span class="w"> </span><span class="s2">"table_name"</span><span class="w"> </span><span class="o">(</span><span class="s2">"field_name"</span><span class="o">)</span><span class="p">;</span>
+<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">    </span><span class="m">3</span><span class="w"> </span>│<span class="w"> </span>COMMIT<span class="p">;</span>
+<span class="w">    </span><span class="m">4</span><span class="w"> </span>│<span class="w"> </span>
+
+<span class="w">  </span>i<span class="w"> </span>Run<span class="w"> </span>CREATE<span class="w"> </span>INDEX<span class="w"> </span>CONCURRENTLY<span class="w"> </span>outside<span class="w"> </span>of<span class="w"> </span>a<span class="w"> </span>transaction.<span class="w"> </span>Migration<span class="w"> </span>tools<span class="w"> </span>usually<span class="w"> </span>run<span class="w"> </span><span class="k">in</span><span class="w"> </span>transactions,<span class="w"> </span>so<span class="w"> </span>you<span class="w"> </span>may<span class="w"> </span>need<span class="w"> </span>to<span class="w"> </span>run<span class="w"> </span>this<span class="w"> </span>statement<span class="w"> </span><span class="k">in</span><span class="w"> </span>its<span class="w"> </span>own<span class="w"> </span>migration<span class="w"> </span>or<span class="w"> </span>manually.
 </code></pre></div>
 <h2 id="how-to-configure">How to configure<a class="headerlink" href="#how-to-configure" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>

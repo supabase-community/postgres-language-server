@@ -1247,6 +1247,11 @@
 <p>When dropping an index, using DROP INDEX without CONCURRENTLY will lock the table
 preventing reads and writes for the duration of the drop. This can cause downtime in production systems.
 Use DROP INDEX CONCURRENTLY to drop the index without blocking concurrent operations.</p>
+<p>The fix adds <code>CONCURRENTLY</code> where the statement surely runs outside a transaction block, and
+not on the indexes of partitioned tables, which Postgres can't drop concurrently. Without
+migration section markers, we don't know whether the migration tool runs the file in a
+transaction: a file with more than one statement gets no fix, and the fix is unsafe in a
+file with a single statement.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">DROP</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">users_email_idx</span><span class="p">;</span>

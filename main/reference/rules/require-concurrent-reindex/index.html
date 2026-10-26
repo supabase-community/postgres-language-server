@@ -1246,6 +1246,11 @@
 <p><code>REINDEX</code> without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock on the table.</p>
 <p>This blocks all reads and writes until the reindex completes. Use <code>REINDEX CONCURRENTLY</code>
 to rebuild the index without blocking concurrent operations.</p>
+<p>The fix adds <code>CONCURRENTLY</code> where the statement surely runs outside a transaction block, and
+not on system catalogs, which Postgres can't reindex concurrently. Without migration section
+markers, we don't know whether the migration tool runs the file in a transaction: a file
+with more than one statement gets no fix, and the fix is unsafe in a file with a single
+statement.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">reindex</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">my_index</span><span class="p">;</span>
