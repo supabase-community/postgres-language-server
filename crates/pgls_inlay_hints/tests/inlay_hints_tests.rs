@@ -202,3 +202,17 @@ async fn sql_syntax_gets_no_hints(test_db: PgPool) {
         "select extract(year from now())"
     );
 }
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn only_ascii_letters_of_unquoted_arguments_are_downcased(test_db: PgPool) {
+    test_db
+        .execute(r#"create function accent("Éa" int) returns int language sql as 'select 1'"#)
+        .await
+        .expect("Failed to create the function");
+    let f = fixture(&test_db).await;
+    // Like Postgres in a UTF8 database, `ÉA` stands for `Éa`, not `éa`.
+    assert_eq!(
+        f.hinted(r#"select accent(t.ÉA) from (select 1 as "Éa") t"#),
+        r#"select accent(t.ÉA) from (select 1 as "Éa") t"#
+    );
+}

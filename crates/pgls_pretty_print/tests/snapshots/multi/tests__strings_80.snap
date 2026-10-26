@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/strings.sql
-snapshot_kind: text
 ---
 select 'first line - next line - third line' as "Three lines to one";
 
@@ -1198,22 +1197,32 @@ select btrim(cast('\000trim\000' as bytea), cast('' as bytea));
 
 select
   encode(
-    overlay(cast('Th\000omas' as bytea) placing cast('Th\001omas'
-    as bytea) from 2),
+    overlay(
+      cast('Th\000omas' as bytea)
+      placing cast('Th\001omas' as bytea)
+      from 2
+    ),
     'escape'
   );
 
 select
   encode(
-    overlay(cast('Th\000omas' as bytea) placing cast('\002\003'
-    as bytea) from 8),
+    overlay(
+      cast('Th\000omas' as bytea)
+      placing cast('\002\003' as bytea)
+      from 8
+    ),
     'escape'
   );
 
 select
   encode(
-    overlay(cast('Th\000omas' as bytea) placing cast('\002\003'
-    as bytea) from 5 for 3),
+    overlay(
+      cast('Th\000omas' as bytea)
+      placing cast('\002\003' as bytea)
+      from 5
+      for 3
+    ),
     'escape'
   );
 

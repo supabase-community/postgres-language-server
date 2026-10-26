@@ -186,8 +186,9 @@ from
     cast('{"d1": "H"}' as jsonb),
     '$'
     columns (
-      js1 jsonb_test_domain path '$.a2' default cast(cast('"foo1"' as jsonb)
-      as text) on empty
+      js1 jsonb_test_domain
+        path '$.a2'
+        default cast(cast('"foo1"' as jsonb) as text) on empty
     )
   );
 
@@ -198,8 +199,9 @@ from
     cast('{"d1": "H"}' as jsonb),
     '$'
     columns (
-      js1 jsonb_test_domain path '$.a2' default cast('foo'
-      as jsonb_test_domain) on empty
+      js1 jsonb_test_domain
+        path '$.a2'
+        default cast('foo' as jsonb_test_domain) on empty
     )
   );
 
@@ -210,8 +212,9 @@ from
     cast('{"d1": "H"}' as jsonb),
     '$'
     columns (
-      js1 jsonb_test_domain path '$.a2' default cast('foo1'
-      as jsonb_test_domain) on empty
+      js1 jsonb_test_domain
+        path '$.a2'
+        default cast('foo1' as jsonb_test_domain) on empty
     )
   );
 
@@ -222,8 +225,9 @@ from
     cast('{"d1": "foo"}' as jsonb),
     '$'
     columns (
-      js1 jsonb_test_domain path '$.d1' default cast('foo2'
-      as jsonb_test_domain) on error
+      js1 jsonb_test_domain
+        path '$.d1'
+        default cast('foo2' as jsonb_test_domain) on error
     )
   );
 

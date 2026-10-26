@@ -5,8 +5,8 @@
 //! resolution. Calls with unknown argument types, or that match no function or more than one,
 //! get none.
 
-use pgls_catalog::CatalogView;
 use pgls_catalog::resolve::{FunctionContext, Reference, ResolveParams, resolve};
+use pgls_catalog::{CatalogView, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{ScanToken, Token};
 use pgls_text_size::TextSize;
@@ -193,7 +193,7 @@ fn is_reference_to(sql: &str, tokens: &[ScanToken], name: &str) -> bool {
         && tokens
             .last()
             .and_then(text)
-            .is_some_and(|last| normalize_identifier(last) == name)
+            .is_some_and(|last| identifier_name(last) == name)
 }
 
 /// Postgres treats every non-ASCII character as a letter in identifiers.
@@ -203,17 +203,4 @@ fn is_identifier(text: &str) -> bool {
         || text
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$' || !c.is_ascii())
-}
-
-/// The name an identifier refers to: unquoted identifiers are folded to lower case. In UTF-8
-/// databases, Postgres only folds ASCII letters.
-/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scansup.c#L46
-fn normalize_identifier(text: &str) -> String {
-    match text
-        .strip_prefix('"')
-        .and_then(|text| text.strip_suffix('"'))
-    {
-        Some(quoted) => quoted.replace("\"\"", "\""),
-        None => text.to_ascii_lowercase(),
-    }
 }

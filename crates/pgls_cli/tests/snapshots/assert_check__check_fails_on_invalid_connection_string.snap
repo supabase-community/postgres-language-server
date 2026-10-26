@@ -4,7 +4,7 @@ expression: output
 ---
 status: failure
 stdout:
-Checked 1 file in <duration>. No fixes applied.
+Checked 1 file in <duration>.
 Found 1 error.
 stderr:
 database/connection ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

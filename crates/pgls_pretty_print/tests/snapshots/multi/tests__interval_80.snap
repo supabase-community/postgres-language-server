@@ -153,8 +153,9 @@ insert into interval_tbl_of (f1) values ('2147483647 years');
 insert into interval_tbl_of (f1) values ('-2147483648 years');
 
 select
-  extract(epoch from cast('256 microseconds' as interval) *
-  cast(2 ^ 55 as float8));
+  extract(
+    epoch from cast('256 microseconds' as interval) * cast(2 ^ 55 as float8)
+  );
 
 select
   r1.*,

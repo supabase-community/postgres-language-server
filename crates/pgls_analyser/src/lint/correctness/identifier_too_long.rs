@@ -1,5 +1,6 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
+use pgls_catalog::identifier_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{ScanToken, Token};
@@ -73,7 +74,7 @@ impl LinterRule for IdentifierTooLong {
                 continue;
             };
             let (identifier, replaceable) = match token.token() {
-                Token::Ident => (identifier_value(token_text), true),
+                Token::Ident => (identifier_name(token_text), true),
                 Token::Uident => {
                     let escape = match (tokens.get(i + 1), tokens.get(i + 2)) {
                         (Some(uescape), Some(escape)) if uescape.token() == Token::Uescape => {
@@ -197,20 +198,6 @@ fn may_contain_long_identifier(sql: &str) -> bool {
         i += 1;
     }
     false
-}
-
-/// The name a quoted or unquoted identifier stands for. Port of [`downcase_identifier`], which
-/// only downcases ASCII letters in UTF-8.
-///
-/// [`downcase_identifier`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scansup.c#L46
-fn identifier_value(text: &str) -> String {
-    match text
-        .strip_prefix('"')
-        .and_then(|text| text.strip_suffix('"'))
-    {
-        Some(quoted) => quoted.replace("\"\"", "\""),
-        None => text.to_ascii_lowercase(),
-    }
 }
 
 /// The escape character of a `UESCAPE 'c'` clause. Port of [`check_uescapechar`].

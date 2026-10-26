@@ -293,15 +293,11 @@ begin
 end
 $$;
 
-comment on function tg_hub_adjustslots_wrong(
-  bpchar,
-  int,
-  int) is 'function with args';
+comment on function tg_hub_adjustslots_wrong(bpchar, int, int)
+  is 'function with args';
 
-comment on function tg_hub_adjustslots(
-  bpchar,
-  int,
-  int) is 'function with args';
+comment on function tg_hub_adjustslots(bpchar, int, int)
+  is 'function with args';
 
 comment on function tg_hub_adjustslots(bpchar, int, int) is null;
 

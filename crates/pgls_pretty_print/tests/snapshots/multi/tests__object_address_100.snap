@@ -92,10 +92,10 @@ create publication addr_pub_schema for tables in schema addr_nsp;
 
 reset client_min_messages;
 
-create subscription regress_addr_sub connection '' publication bar with (
-  connect = 'false',
-  slot_name = 'none'
-);
+create subscription regress_addr_sub
+  connection ''
+  publication bar
+  with (connect = 'false', slot_name = 'none');
 
 create statistics addr_nsp.gentable_stat on a, b from addr_nsp.gentable;
 
