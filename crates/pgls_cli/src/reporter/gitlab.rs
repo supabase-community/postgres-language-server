@@ -107,14 +107,7 @@ impl Display for GitLabDiagnostics<'_> {
             .report
             .diagnostics
             .iter()
-            .filter(|d| d.severity() >= self.config.diagnostic_level)
-            .filter(|d| {
-                if self.config.verbose {
-                    d.tags().is_verbose()
-                } else {
-                    true
-                }
-            })
+            .filter(|d| self.config.should_emit(d))
             .filter_map(|pgls_diagnostic| {
                 let absolute_path = match pgls_diagnostic.location().resource {
                     Some(Resource::File(file)) => Some(file),
