@@ -1858,7 +1858,7 @@ individual fields. The URI takes precedence over any other connection fields.</p
         ├── postgres-language-server.jsonc  # applies to src/db2/**
         └── schema.sql
 </code></pre></div>
-<p>The language server finds the configuration files below each workspace folder when it starts, and reloads them when one is created, changed, or deleted, or when a workspace folder is added or removed. Each workspace folder is a project of its own, so a file belongs to the deepest workspace folder that contains it. The <code>check</code> and <code>format</code> commands find the configuration files below the working directory.</p>
+<p>The language server finds the configuration files below each workspace folder when it starts, and reloads them when one is created, changed, or deleted, or when a workspace folder is added or removed. Each workspace folder is a project of its own, so a file belongs to the deepest workspace folder that contains it. The <code>check</code> and <code>format</code> commands use the configuration files below the working directory: the ones in the folders between the working directory and each path they check, and the ones below the folders they check.</p>
 <p>A nested configuration file inherits nothing from the configuration files above it: settings it does not set have their defaults. To share settings, extend the parent configuration explicitly; the nested file's own settings take precedence:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"../../postgres-language-server.jsonc"</span><span class="p">],</span>
@@ -1871,7 +1871,9 @@ individual fields. The URI takes precedence over any other connection fields.</p
 <p>The <a href="#where-the-configuration-is-loaded-from">user configuration</a> is a fallback for the workspace root only. When there is no configuration file at or above the root, it applies to the files that no nested configuration file covers. It is never merged into a nested configuration file. To use it there, extend it explicitly, for example with <code>"extends": ["~/.config/postgres-language-server/postgres-language-server.jsonc"]</code>.</p>
 <p>Things to keep in mind:</p>
 <ul>
-<li>Configuration files in hidden folders, <code>node_modules</code>, <code>target</code>, folders ignored by <code>.gitignore</code>, folders that the configuration above them ignores through <code>files.ignore</code> or <code>files.include</code>, and the user configuration directory are not loaded as nested configurations.</li>
+<li>Configuration files in hidden folders, <code>node_modules</code>, <code>target</code>, folders ignored by <code>.gitignore</code>, folders that the configuration above them ignores through <code>files.ignore</code> or <code>files.include</code>, and the user configuration directory are not loaded as nested configurations. Ignoring the large folders that hold no SQL files also makes the search faster.</li>
+<li>When the workspace folder (or the working directory of the CLI) is your home directory or a filesystem root, nested configuration files are not looked up, because those folders hold unrelated projects.</li>
+<li>The search stops after 100,000 files and folders, or 12 levels of folders below the workspace folder, and logs a warning. Configuration files beyond that are not used.</li>
 <li>The database connection of a project is only opened when a file of that project needs it. Projects that point at the same database share its connection and schema cache.</li>
 <li>When a configuration file is passed explicitly with <code>--config-path</code>, it applies to all files and nested configuration files are not looked up.</li>
 <li><code>dblint</code> uses the configuration of the working directory.</li>
