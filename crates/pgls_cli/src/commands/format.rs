@@ -26,8 +26,11 @@ pub fn format(
         ));
     }
 
-    let configuration = session.prepare_with_config(cli_options, args.configuration.clone())?;
-    session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
+    let configuration = session.configure_workspace(
+        cli_options,
+        args.configuration.clone(),
+        VcsIntegration::Enabled,
+    )?;
 
     let mode = ExecutionMode::Format {
         write: args.write,
@@ -38,7 +41,6 @@ pub fn format(
     let paths = args.targets.resolve_paths(session.fs(), &configuration)?;
     let configuration_errors = session.apply_nested_configurations(
         cli_options,
-        args.configuration.clone(),
         &args.targets.nested_configuration_paths(&paths),
     )?;
 

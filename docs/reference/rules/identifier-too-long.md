@@ -1,6 +1,6 @@
 # identifierTooLong
 
-**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Since** `Unreleased`  
+**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Safe fix** · **Since** `Unreleased`  
 **Diagnostic** `lint/identifierTooLong`
 
 **Sources**: inspired by [`squawk/identifier-too-long`](https://squawkhq.com/docs/identifier-too-long)
@@ -21,7 +21,7 @@ create table customer_subscription_billing_cycle_adjustments_history_archives_v2
 ```
 
 ```sh
-code-block.sql:1:14 lint/identifierTooLong ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:14 lint/identifierTooLong  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Identifier customer_subscription_billing_cycle_adjustments_history_archives_v2 is longer than 63 bytes.
   

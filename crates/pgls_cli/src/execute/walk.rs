@@ -4,7 +4,7 @@ use crate::execute::diagnostics::PanicDiagnostic;
 use crate::reporter::{Report, TraversalData};
 use crate::{CliDiagnostic, CliSession};
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use pgls_diagnostics::{DiagnosticExt, Error, Resource};
+use pgls_diagnostics::{DiagnosticExt, DiagnosticTags, Error, Resource};
 use pgls_fs::{FileSystem, PathInterner, PgLSPath};
 use pgls_fs::{TraversalContext, TraversalScope};
 use pgls_workspace::dome::Dome;
@@ -95,6 +95,7 @@ pub(crate) fn traverse(
     let matches = matches.load(Ordering::Relaxed);
     let skipped = skipped.load(Ordering::Relaxed);
     let suggested_fixes_skipped = printer.skipped_fixes();
+    let fixable_diagnostics = printer.fixable_diagnostics.load(Ordering::Relaxed);
     let diagnostics_not_printed = printer.not_printed_diagnostics();
 
     let traversal = TraversalData {
@@ -104,6 +105,8 @@ pub(crate) fn traverse(
         matches,
         skipped,
         suggested_fixes_skipped,
+        fixable_diagnostics,
+        writes: config.allows_writes(),
         diagnostics_not_printed,
         workspace_root: session.fs().working_directory(),
     };
@@ -118,12 +121,14 @@ pub(crate) fn traverse(
 
 /// This function will setup the global Rayon thread pool the first time it's called
 ///
-/// This is currently only used to assign friendly debug names to the threads of the pool
+/// It assigns friendly debug names to the threads of the pool, and gives them the stack size of
+/// the workspace's threads.
 fn init_thread_pool() {
     static INIT_ONCE: Once = Once::new();
     INIT_ONCE.call_once(|| {
         rayon::ThreadPoolBuilder::new()
             .thread_name(|index| format!("pgls::worker_{index}"))
+            .stack_size(crate::WORKER_STACK_SIZE_BYTES)
             .build_global()
             .expect("failed to initialize the global thread pool");
     });
@@ -170,6 +175,8 @@ struct DiagnosticsPrinter<'ctx> {
     not_printed_diagnostics: AtomicU32,
     printed_diagnostics: AtomicU32,
     total_skipped_suggested_fixes: AtomicU32,
+    /// Count of the diagnostics that have a fix, printed or not
+    fixable_diagnostics: AtomicU32,
 }
 
 impl<'ctx> DiagnosticsPrinter<'ctx> {
@@ -181,6 +188,7 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
             not_printed_diagnostics: AtomicU32::new(0),
             printed_diagnostics: AtomicU32::new(0),
             total_skipped_suggested_fixes: AtomicU32::new(0),
+            fixable_diagnostics: AtomicU32::new(0),
         }
     }
 
@@ -263,6 +271,9 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                         .fetch_add(skipped_diagnostics, Ordering::Relaxed);
 
                     for diag in diag_list {
+                        if diag.tags().contains(DiagnosticTags::FIXABLE) {
+                            self.fixable_diagnostics.fetch_add(1, Ordering::Relaxed);
+                        }
                         if self.should_store() {
                             let diag = diag.with_file_path(&name).with_file_source_code(&content);
                             diagnostics.push(diag);

@@ -29,19 +29,22 @@ pub(crate) fn check_with_guard<'ctx>(
             let mut input = workspace_file.input()?;
             let mut changed = false;
 
-            if let ExecutionMode::Check {
-                fix: Some(fix_file_mode),
-                ..
-            } = ctx.config.mode
-            {
+            let ExecutionMode::Check {
+                fix, only, skip, ..
+            } = &ctx.config.mode
+            else {
+                return Ok(FileStatus::Unchanged);
+            };
+
+            if let Some(fix_file_mode) = *fix {
                 let fixed = ctx
                     .workspace
                     .fix_file(FixFileParams {
                         project_key: ctx.project_key,
                         path: PgLSPath::new(&workspace_file.path),
                         fix_file_mode,
-                        only: Vec::new(),
-                        skip: Vec::new(),
+                        only: only.clone(),
+                        skip: skip.clone(),
                     })
                     .with_file_path_and_code(
                         workspace_file.path.display().to_string(),
@@ -64,9 +67,12 @@ pub(crate) fn check_with_guard<'ctx>(
                     input = fixed.code;
                     changed = true;
                 }
+                if fixed.skipped_suggested_fixes > 0 {
+                    ctx.push_message(Message::SkippedFixes {
+                        skipped_suggested_fixes: fixed.skipped_suggested_fixes,
+                    });
+                }
             }
-
-            let (only, skip) = (Vec::new(), Vec::new());
 
             let max_diagnostics = ctx.remaining_diagnostics.load(Ordering::Relaxed);
 
@@ -75,8 +81,8 @@ pub(crate) fn check_with_guard<'ctx>(
                 .pull_file_diagnostics(
                     RuleCategoriesBuilder::default().all().build(),
                     max_diagnostics,
-                    only,
-                    skip,
+                    only.clone(),
+                    skip.clone(),
                 )
                 .with_file_path_and_code(
                     workspace_file.path.display().to_string(),

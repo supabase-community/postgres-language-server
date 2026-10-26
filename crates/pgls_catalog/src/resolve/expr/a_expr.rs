@@ -7,6 +7,8 @@ use super::*;
 pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr) -> Option<Type> {
     {
         use protobuf::AExprKind as Kind;
+        let lexpr = n.lexpr.as_deref().and_then(|x| x.node.as_ref());
+        let rexpr = n.rexpr.as_deref().and_then(|x| x.node.as_ref());
         match Kind::try_from(n.kind).ok()? {
             // Port of `transformAExprDistinct`; scalar cases look up `=` like `make_distinct_op`:
             // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1031
@@ -22,8 +24,10 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                     .as_deref()
                     .and_then(|x| x.node.as_ref())
                     .and_then(|x| infer_expr(r, x));
-                if let (Some(left), Some(right)) = (left.as_ref(), right.as_ref()) {
-                    check_operator(r, "=", Some(left), right, n.location);
+                if let (Some(left), Some(right)) = (left.as_ref(), right.as_ref())
+                    && let Some(operator) = check_operator(r, "=", Some(left), right, n.location)
+                {
+                    record_enum_operands(r, &operator, (lexpr, left), (rexpr, right));
                 }
                 return named(r, "bool");
             }
@@ -106,7 +110,18 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                         .collect::<Vec<_>>();
                     match select_common_type(r.catalog, &all) {
                         Selection::Match(Type::Named(common)) => {
-                            check_operator(r, name, Some(left), &Type::Named(common), n.location);
+                            check_operator(
+                                r,
+                                name,
+                                Some(left),
+                                &Type::Named(common.clone()),
+                                n.location,
+                            );
+                            for item in
+                                std::iter::once(lexpr).chain(items.iter().copied().map(Some))
+                            {
+                                r.record_enum_literal(item, &common);
+                            }
                             for (item, ty) in items.iter().zip(&types) {
                                 if matches!(item, NodeEnum::ColumnRef(_)) {
                                     check_operator(r, name, Some(left), ty, n.location);
@@ -119,8 +134,10 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                         _ => return named(r, "bool"),
                     }
                 }
-                for ty in &types {
-                    check_operator(r, name, Some(left), ty, n.location);
+                for (item, ty) in items.iter().zip(&types) {
+                    if let Some(operator) = check_operator(r, name, Some(left), ty, n.location) {
+                        record_enum_operands(r, &operator, (lexpr, left), (Some(item), ty));
+                    }
                 }
                 return named(r, "bool");
             }
@@ -149,11 +166,24 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                             Kind::AexprNotBetween | Kind::AexprNotBetweenSym => ("<", ">"),
                             _ => (">=", "<="),
                         };
-                        check_operator(r, lower, Some(left), low, n.location);
-                        check_operator(r, upper, Some(left), high, n.location);
+                        let low_expr = list.items[0].node.as_ref();
+                        let high_expr = list.items[1].node.as_ref();
+                        let mut comparisons =
+                            vec![(lower, low_expr, low), (upper, high_expr, high)];
                         if matches!(kind, Kind::AexprBetweenSym | Kind::AexprNotBetweenSym) {
-                            check_operator(r, lower, Some(left), high, n.location);
-                            check_operator(r, upper, Some(left), low, n.location);
+                            comparisons.extend([(lower, high_expr, high), (upper, low_expr, low)]);
+                        }
+                        for (operator, bound_expr, bound) in comparisons {
+                            if let Some(operator) =
+                                check_operator(r, operator, Some(left), bound, n.location)
+                            {
+                                record_enum_operands(
+                                    r,
+                                    &operator,
+                                    (lexpr, left),
+                                    (bound_expr, bound),
+                                );
+                            }
                         }
                     }
                 }
@@ -214,7 +244,9 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                     .node
                     .as_ref()
                     .and_then(|x| infer_expr(r, x))?;
-                check_operator(r, "=", Some(&left), &right, n.location);
+                if let Some(operator) = check_operator(r, "=", Some(&left), &right, n.location) {
+                    record_enum_operands(r, &operator, (lexpr, &left), (rexpr, &right));
+                }
                 return common_types(r, &[left, right]);
             }
             _ => {}
@@ -240,7 +272,12 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
             r.search_path,
         );
         match selection {
-            Selection::Match(o) => o.result,
+            Selection::Match(o) => {
+                if let Some(left) = left.as_ref() {
+                    record_enum_operands(r, &o.operator, (lexpr, left), (rexpr, &right));
+                }
+                o.result
+            }
             Selection::NoMatch | Selection::Ambiguous => {
                 let failure = if matches!(selection, Selection::NoMatch) {
                     crate::resolve::MatchFailure::NoMatch

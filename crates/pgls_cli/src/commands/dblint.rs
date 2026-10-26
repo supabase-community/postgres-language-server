@@ -15,8 +15,7 @@ pub fn dblint(
     cli_options: &CliOptions,
     cli_configuration: Option<PartialConfiguration>,
 ) -> Result<(), CliDiagnostic> {
-    let configuration = session.prepare_with_config(cli_options, cli_configuration)?;
-    session.setup_workspace(configuration, VcsIntegration::Disabled)?;
+    session.configure_workspace(cli_options, cli_configuration, VcsIntegration::Disabled)?;
     let workspace = session.workspace();
 
     let max_diagnostics = if cli_options.reporter.is_default() {

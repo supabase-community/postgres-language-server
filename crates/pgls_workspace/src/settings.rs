@@ -10,7 +10,7 @@ use std::{
     sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
     time::Duration,
 };
-use tracing::trace;
+use tracing::{trace, warn};
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pgls_configuration::{
@@ -22,18 +22,20 @@ use pgls_configuration::{
         CastStyle, ClauseBodyStyle, CommaStyle, FormatConfiguration, IndentStyle, KeywordCase,
         Layout, LogicalOperatorPlacement,
     },
+    inlay_hints::InlayHintsConfiguration,
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration, SectionMarkers},
     pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
+    semantic_tokens::SemanticTokensConfiguration,
     splinter::SplinterConfiguration,
 };
-use pgls_fs::{PgLSPath, normalize_path, real_path};
+use pgls_fs::{PgLSPath, normalize_path};
+use pgls_matcher::Matcher;
 #[cfg(feature = "db")]
 use sqlx::postgres::PgConnectOptions;
 
 use crate::{
     WorkspaceError,
-    matcher::Matcher,
     workspace::{ProjectKey, WorkspaceData},
 };
 
@@ -52,6 +54,16 @@ pub struct ProjectData {
 }
 
 impl ProjectData {
+    /// If `path` is below the root of the project, directly or through its real path, the number
+    /// of components of the folder it is below. A project without a folder contains every path.
+    fn depth_of(&self, path: &Path) -> Option<usize> {
+        let path = normalize_path(path);
+        let folder = std::iter::once(self.path.as_path())
+            .chain(self.real_path.as_deref())
+            .find(|folder| path.starts_with(folder))?;
+        Some(folder.components().count())
+    }
+
     /// `path` as a path below the root of the project, if it is one: relative to the root if it is
     /// relative, without `.` and `..`, and with the root as it was registered if the path goes
     /// through its real path instead, as when the folder was opened through a symlink.
@@ -92,13 +104,20 @@ impl WorkspaceSettings {
     pub fn insert_project(&mut self, workspace_path: impl Into<PathBuf>) -> ProjectKey {
         let path = PgLSPath::new(workspace_path.into());
         trace!("Insert workspace folder: {:?}", path);
-        let real_path = real_path(path.as_path());
         self.data.insert(ProjectData {
             path,
             settings: Settings::default(),
             nested: Vec::new(),
-            real_path,
+            real_path: None,
         })
+    }
+
+    /// Sets the folder of a project with symlinks resolved, if it differs from the folder, so
+    /// that the paths below it belong to the project too.
+    pub fn set_real_path(&mut self, key: ProjectKey, real_path: Option<PathBuf>) {
+        if let Some(project) = self.data.get_mut(key) {
+            project.real_path = real_path.filter(|real_path| real_path != project.path.as_path());
+        }
     }
 
     /// Remove a project, including its nested settings, using its folder.
@@ -113,6 +132,16 @@ impl WorkspaceSettings {
         self.data
             .iter()
             .find(|(_, project)| project.path.as_path() == path)
+            .map(|(key, _)| key)
+    }
+
+    /// The project of the deepest folder that contains `path`, directly or through the real path
+    /// of the folder. A project without a folder contains every path.
+    pub fn find_project(&self, path: &Path) -> Option<ProjectKey> {
+        self.data
+            .iter()
+            .filter_map(|(key, project)| Some((key, project.depth_of(path)?)))
+            .max_by_key(|(_, depth)| *depth)
             .map(|(key, _)| key)
     }
 
@@ -247,6 +276,12 @@ pub struct Settings {
 
     /// Migrations settings
     pub migrations: Option<MigrationSettings>,
+
+    /// Inlay hint settings for the workspace
+    pub inlay_hints: InlayHintsSettings,
+
+    /// Semantic token settings for the workspace
+    pub semantic_tokens: SemanticTokensSettings,
 }
 
 impl Settings {
@@ -307,6 +342,20 @@ impl Settings {
         if let Some(plpgsql_check) = configuration.plpgsql_check {
             self.plpgsql_check =
                 to_plpgsql_check_settings(PlPgSqlCheckConfiguration::from(plpgsql_check));
+        }
+
+        // inlay hints part
+        if let Some(inlay_hints) = configuration.inlay_hints {
+            self.inlay_hints = InlayHintsSettings {
+                enabled: InlayHintsConfiguration::from(inlay_hints).enabled,
+            };
+        }
+
+        // semantic tokens part
+        if let Some(semantic_tokens) = configuration.semantic_tokens {
+            self.semantic_tokens = SemanticTokensSettings {
+                enabled: SemanticTokensConfiguration::from(semantic_tokens).enabled,
+            };
         }
 
         // Migrations settings
@@ -384,8 +433,8 @@ fn to_formatter_settings(
 ) -> Result<FormatterSettings, WorkspaceError> {
     Ok(FormatterSettings {
         enabled: conf.enabled,
-        line_width: conf.line_width,
-        indent_size: conf.indent_size,
+        line_width: conf.line_width.get(),
+        indent_size: conf.indent_size.get(),
         indent_style: conf.indent_style,
         keyword_case: conf.keyword_case,
         constant_case: conf.constant_case,
@@ -683,6 +732,30 @@ impl Default for PglinterSettings {
     }
 }
 
+/// Inlay hint settings for the entire workspace
+#[derive(Debug, Clone)]
+pub struct InlayHintsSettings {
+    pub enabled: bool,
+}
+
+impl Default for InlayHintsSettings {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
+/// Semantic token settings for the entire workspace
+#[derive(Debug, Clone)]
+pub struct SemanticTokensSettings {
+    pub enabled: bool,
+}
+
+impl Default for SemanticTokensSettings {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
 /// plpgsql_check settings for the entire workspace
 #[derive(Debug, Clone)]
 pub struct PlPgSqlCheckSettings {
@@ -754,6 +827,45 @@ pub struct DatabaseSettings {
     pub database: String,
     pub conn_timeout_secs: Duration,
     pub allow_statement_executions: bool,
+    /// The patterns of `db.allowStatementExecutionsAgainst` that are not valid globs.
+    pub invalid_statement_execution_patterns: Vec<String>,
+    /// Why `db.connectionString` is invalid. The connection is disabled then.
+    pub connection_string_error: Option<String>,
+}
+
+impl DatabaseSettings {
+    /// Why statements cannot be executed against this database, or `None` if they can.
+    pub fn statement_execution_disabled_reason(&self) -> Option<String> {
+        if self.allow_statement_executions {
+            return None;
+        }
+
+        let host = &self.host;
+        let port = self.port;
+        let database = &self.database;
+        // A pattern can't name the port of an IPv6 address, see `pattern_names_port`.
+        let (target, pattern) = if host.contains(':') {
+            (format!("[{host}]:{port}/{database}"), format!("{host}/*"))
+        } else {
+            (
+                format!("{host}:{port}/{database}"),
+                format!("{host}:{port}/*"),
+            )
+        };
+        let mut reason = format!(
+            "Statement execution is disabled for `{target}`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"{pattern}\"]."
+        );
+        if !self.invalid_statement_execution_patterns.is_empty() {
+            let patterns = self
+                .invalid_statement_execution_patterns
+                .iter()
+                .map(|pattern| format!("`{pattern}`"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            reason.push_str(&format!(" Ignored invalid patterns: {patterns}."));
+        }
+        Some(reason)
+    }
 }
 
 impl std::fmt::Debug for DatabaseSettings {
@@ -774,6 +886,11 @@ impl std::fmt::Debug for DatabaseSettings {
                 "allow_statement_executions",
                 &self.allow_statement_executions,
             )
+            .field(
+                "invalid_statement_execution_patterns",
+                &self.invalid_statement_execution_patterns,
+            )
+            .field("connection_string_error", &self.connection_string_error)
             .finish()
     }
 }
@@ -789,7 +906,9 @@ impl Default for DatabaseSettings {
             password: None,
             database: "postgres".to_string(),
             conn_timeout_secs: Duration::from_secs(10),
-            allow_statement_executions: true,
+            allow_statement_executions: false,
+            invalid_statement_execution_patterns: Vec::new(),
+            connection_string_error: None,
         }
     }
 }
@@ -807,12 +926,7 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
             }
         });
 
-        // "host" OR "connectionString" is the minimum required setting for database features
-        // to be enabled.
-        let disable_connection = value.disable_connection.is_some_and(|disabled| disabled);
-        let enable_connection =
-            (connection_string.is_some() || value.host.as_ref().is_some()) && !disable_connection;
-
+        let has_host = value.host.is_some();
         #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut database = value.database.unwrap_or(d.database);
         #[cfg_attr(not(feature = "db"), allow(unused_mut))]
@@ -822,33 +936,67 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
         #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut username = value.username.unwrap_or(d.username);
 
-        // Parse connection string to extract host/port/username/database (DB mode only)
+        let disable_connection = value.disable_connection.is_some_and(|disabled| disabled);
+
+        // Parse connection string to extract host/port/username/database (DB mode only). An
+        // invalid one disables the connection instead of failing the whole configuration.
+        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
+        let mut connection_string_error: Option<String> = None;
         #[cfg(feature = "db")]
         if let Some(uri) = connection_string.as_ref() {
-            let opts = PgConnectOptions::from_str(uri)
-                .unwrap_or_else(|err| panic!("Invalid db.connectionString provided: {err}"));
-
-            // we only extract the values we need for statement execution checks and connection key
-            host = opts.get_host().to_string();
-            port = opts.get_port();
-            username = opts.get_username().to_string();
-            if let Some(db) = opts.get_database() {
-                database = db.to_string();
+            match parse_connection_string(uri) {
+                Ok(opts) => {
+                    // we only extract the values we need for statement execution checks and connection key
+                    host = opts.get_host().to_string();
+                    port = opts.get_port();
+                    username = opts.get_username().to_string();
+                    if let Some(db) = opts.get_database() {
+                        database = db.to_string();
+                    }
+                }
+                Err(error) if !disable_connection => {
+                    warn!("{error} The database connection is disabled.");
+                    connection_string_error = Some(error);
+                }
+                Err(_) => {}
             }
         }
 
-        let allow_statement_executions = value
-            .allow_statement_executions_against
-            .map(|stringset| {
-                stringset.iter().any(|pattern| {
-                    let glob = Glob::new(pattern)
-                        .unwrap_or_else(|_| panic!("Invalid pattern: {pattern}"))
-                        .compile_matcher();
+        // "host" OR "connectionString" is the minimum required setting for database features
+        // to be enabled.
+        let enable_connection = (connection_string.is_some() || has_host)
+            && !disable_connection
+            && connection_string_error.is_none();
 
-                    glob.is_match(format!("{host}/{database}"))
-                })
-            })
-            .unwrap_or(false);
+        // An invalid pattern is ignored rather than failing the whole configuration; the reason a
+        // statement cannot be executed names it. A pattern that names a port only matches that
+        // port, any other pattern matches every port.
+        let target = format!("{host}/{database}");
+        let target_with_port = format!("{host}:{port}/{database}");
+        let mut allow_statement_executions = false;
+        let mut invalid_statement_execution_patterns = Vec::new();
+        for pattern in value
+            .allow_statement_executions_against
+            .iter()
+            .flat_map(|set| set.iter())
+        {
+            match Glob::new(pattern) {
+                Ok(glob) => {
+                    let target = if pattern_names_port(pattern) {
+                        &target_with_port
+                    } else {
+                        &target
+                    };
+                    allow_statement_executions |= glob.compile_matcher().is_match(target);
+                }
+                Err(err) => {
+                    warn!(
+                        "Ignoring invalid pattern `{pattern}` in `db.allowStatementExecutionsAgainst`: {err}"
+                    );
+                    invalid_statement_execution_patterns.push(pattern.clone());
+                }
+            }
+        }
 
         Self {
             enable_connection,
@@ -867,8 +1015,48 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
                 .unwrap_or(d.conn_timeout_secs),
 
             allow_statement_executions,
+            invalid_statement_execution_patterns,
+            connection_string_error,
         }
     }
+}
+
+/// Whether a pattern of `db.allowStatementExecutionsAgainst` names a port, as `localhost:54322/*`
+/// does. That is the case if its host, the part before the first `/`, has exactly one `:`, so a
+/// pattern for an IPv6 address like `::1/*` names no port.
+fn pattern_names_port(pattern: &str) -> bool {
+    let host = pattern.split('/').next().unwrap_or(pattern);
+    host.matches(':').count() == 1
+}
+
+/// Parses `db.connectionString`. The error says why it is invalid without repeating it, as it may
+/// contain a password.
+#[cfg(feature = "db")]
+fn parse_connection_string(uri: &str) -> Result<PgConnectOptions, String> {
+    PgConnectOptions::from_str(uri).map_err(|err| {
+        let reason = match err {
+            sqlx::Error::Configuration(source) => source.to_string(),
+            err => err.to_string(),
+        };
+        format!(
+            "Invalid `db.connectionString`: {reason}. Expected a URL like `postgres://user:password@host:5432/database`."
+        )
+    })
+}
+
+/// Why the `db.connectionString` of `configuration` is invalid, if it is. The database connection
+/// is disabled while it is.
+pub fn connection_string_error(configuration: &PartialDatabaseConfiguration) -> Option<String> {
+    if configuration.disable_connection == Some(true) {
+        return None;
+    }
+    #[cfg(feature = "db")]
+    if let Some(uri) = configuration.connection_string.as_deref().map(str::trim)
+        && !uri.is_empty()
+    {
+        return parse_connection_string(uri).err();
+    }
+    None
 }
 
 /// Filesystem settings for the entire workspace
@@ -1111,7 +1299,56 @@ mod tests {
 
         let config = DatabaseSettings::from(partial_config);
 
-        assert!(!config.allow_statement_executions)
+        assert!(!config.allow_statement_executions);
+        assert_eq!(
+            config.statement_execution_disabled_reason().as_deref(),
+            Some(
+                "Statement execution is disabled for `production:5432/test-db`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"production:5432/*\"]."
+            )
+        );
+    }
+
+    #[test]
+    fn ignores_invalid_statement_execution_patterns() {
+        let partial_config = PartialDatabaseConfiguration {
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![
+                String::from("local[host/*"),
+                String::from("localhost/*"),
+            ])),
+            host: Some("localhost".into()),
+            database: Some("test-db".into()),
+            ..Default::default()
+        };
+
+        let config = DatabaseSettings::from(partial_config);
+
+        assert!(config.allow_statement_executions);
+        assert_eq!(
+            config.invalid_statement_execution_patterns,
+            ["local[host/*"]
+        );
+    }
+
+    #[test]
+    fn names_invalid_statement_execution_patterns_in_disabled_reason() {
+        let partial_config = PartialDatabaseConfiguration {
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![String::from(
+                "local[host/*",
+            )])),
+            host: Some("localhost".into()),
+            database: Some("test-db".into()),
+            ..Default::default()
+        };
+
+        let config = DatabaseSettings::from(partial_config);
+
+        assert!(!config.allow_statement_executions);
+        assert!(
+            config
+                .statement_execution_disabled_reason()
+                .unwrap()
+                .ends_with("Ignored invalid patterns: `local[host/*`.")
+        );
     }
 
     #[cfg(feature = "db")]
@@ -1149,5 +1386,131 @@ mod tests {
         let config = DatabaseSettings::from(partial_config);
 
         assert!(!config.allow_statement_executions)
+    }
+
+    #[cfg(feature = "db")]
+    #[test]
+    fn invalid_connection_string_disables_the_connection() {
+        let partial_config = PartialDatabaseConfiguration {
+            connection_string: Some(
+                "postgres://postgres:hunter2@localhost:not-a-port/test-db".to_string(),
+            ),
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![String::from(
+                "*/*",
+            )])),
+            ..Default::default()
+        };
+
+        let error = super::connection_string_error(&partial_config);
+        let config = DatabaseSettings::from(partial_config);
+
+        assert!(!config.enable_connection);
+        assert_eq!(config.connection_string_error, error);
+        assert_eq!(
+            error.as_deref(),
+            Some(
+                "Invalid `db.connectionString`: invalid port number. Expected a URL like `postgres://user:password@host:5432/database`."
+            )
+        );
+    }
+
+    #[cfg(feature = "db")]
+    #[test]
+    fn disabled_connection_ignores_invalid_connection_string() {
+        let partial_config = PartialDatabaseConfiguration {
+            connection_string: Some("host=localhost".to_string()),
+            disable_connection: Some(true),
+            ..Default::default()
+        };
+
+        assert_eq!(super::connection_string_error(&partial_config), None);
+        let config = DatabaseSettings::from(partial_config);
+        assert!(!config.enable_connection);
+        assert_eq!(config.connection_string_error, None);
+    }
+
+    fn allows(patterns: &[&str], host: &str, port: u16, database: &str) -> bool {
+        DatabaseSettings::from(PartialDatabaseConfiguration {
+            allow_statement_executions_against: Some(StringSet::from_iter(
+                patterns.iter().map(|pattern| pattern.to_string()),
+            )),
+            host: Some(host.into()),
+            port: Some(port),
+            database: Some(database.into()),
+            ..Default::default()
+        })
+        .allow_statement_executions
+    }
+
+    #[test]
+    fn patterns_with_a_port_only_match_that_port() {
+        assert!(allows(
+            &["127.0.0.1:54322/*"],
+            "127.0.0.1",
+            54322,
+            "postgres"
+        ));
+        assert!(!allows(
+            &["127.0.0.1:54322/*"],
+            "127.0.0.1",
+            5432,
+            "postgres"
+        ));
+        assert!(allows(&["localhost:*/dev"], "localhost", 6543, "dev"));
+        assert!(!allows(&["localhost:*/dev"], "localhost", 6543, "prod"));
+        assert!(allows(&["*:5432/*"], "db.internal", 5432, "app"));
+    }
+
+    #[test]
+    fn patterns_without_a_port_match_every_port() {
+        assert!(allows(&["localhost/*"], "localhost", 5432, "postgres"));
+        assert!(allows(&["localhost/*"], "localhost", 15432, "postgres"));
+        assert!(allows(&["*"], "production", 5432, "postgres"));
+        assert!(allows(&["::1/*"], "::1", 5432, "postgres"));
+    }
+
+    #[test]
+    fn disabled_reason_suggests_a_pattern_with_the_port() {
+        let config = DatabaseSettings::from(PartialDatabaseConfiguration {
+            host: Some("::1".into()),
+            port: Some(5433),
+            database: Some("postgres".into()),
+            ..Default::default()
+        });
+
+        assert_eq!(
+            config.statement_execution_disabled_reason().as_deref(),
+            Some(
+                "Statement execution is disabled for `[::1]:5433/postgres`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"::1/*\"]."
+            )
+        );
+    }
+
+    #[cfg(feature = "db")]
+    #[test]
+    fn connection_string_port_is_matched() {
+        let allows = |connection_string: &str| {
+            DatabaseSettings::from(PartialDatabaseConfiguration {
+                connection_string: Some(connection_string.to_string()),
+                allow_statement_executions_against: Some(StringSet::from_iter([String::from(
+                    "localhost:54322/*",
+                )])),
+                ..Default::default()
+            })
+            .allow_statement_executions
+        };
+
+        assert!(allows(
+            "postgres://postgres:postgres@localhost:54322/postgres"
+        ));
+        // A production database reached through a tunnel on another local port.
+        assert!(!allows(
+            "postgres://postgres:postgres@localhost:15432/postgres"
+        ));
+    }
+
+    #[test]
+    fn statement_executions_are_disallowed_by_default() {
+        assert!(!DatabaseSettings::default().allow_statement_executions);
     }
 }

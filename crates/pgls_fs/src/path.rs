@@ -274,19 +274,3 @@ pub fn normalize_path(path: &Path) -> PathBuf {
 
     result
 }
-
-/// The path with symlinks resolved, if it exists and differs from `path`. On Windows, without the
-/// `\\?\` prefix that [std::fs::canonicalize] adds, so that it compares with the paths of
-/// editors.
-pub fn real_path(path: &Path) -> Option<PathBuf> {
-    if !path.is_absolute() {
-        return None;
-    }
-    let real = std::fs::canonicalize(path).ok()?;
-    #[cfg(windows)]
-    let real = match real.to_str().and_then(|real| real.strip_prefix(r"\\?\")) {
-        Some(stripped) if !stripped.starts_with("UNC") => PathBuf::from(stripped),
-        _ => real,
-    };
-    (real != path).then_some(real)
-}

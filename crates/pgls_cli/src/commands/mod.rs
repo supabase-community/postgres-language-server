@@ -5,7 +5,7 @@ use crate::logging::LoggingKind;
 use crate::reporter::Report;
 use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
-use pgls_configuration::{PartialConfiguration, partial_configuration};
+use pgls_configuration::{PartialConfiguration, RuleSelector, partial_configuration};
 use pgls_console::{Console, ConsoleExt, markup};
 use pgls_diagnostics::{Category, Error, PrintDiagnostic};
 use pgls_fs::FileSystem;
@@ -50,11 +50,13 @@ pub enum PgLSCommand {
         #[bpaf(external, hide_usage)]
         cli_options: CliOptions,
 
-        /// Use this option when you want to format code piped from `stdin`, and print the output to `stdout`.
+        /// Use this option when you want to check code piped from `stdin`. The code is printed to
+        /// `stdout`, with the fixes applied if `--fix` is set, and the diagnostics to `stderr`.
         ///
-        /// The file doesn't need to exist on disk, what matters is the extension of the file. Based on the extension, we know how to check the code.
+        /// The file doesn't need to exist on disk. Its path is used to apply the configuration and
+        /// to label the diagnostics.
         ///
-        /// Example: `echo 'let a;' | pgls_cli check --stdin-file-path=test.sql`
+        /// Example: `echo 'drop table users;' | postgres-language-server check --stdin-file-path=test.sql`
         #[bpaf(long("stdin-file-path"), argument("PATH"), hide_usage)]
         stdin_file_path: Option<String>,
 
@@ -80,6 +82,16 @@ pub enum PgLSCommand {
         /// Also apply the unsafe fixes, which may change what a statement does. Implies `--fix`.
         #[bpaf(long("unsafe"), switch)]
         unsafe_: bool,
+
+        /// Only run the given lint rule or group, e.g. `--only=requireConcurrentIndexCreation` or
+        /// `--only=style`, also if the configuration disables it. Can be repeated. With `--fix`,
+        /// only its fixes are applied.
+        #[bpaf(long("only"), argument("GROUP|RULE"))]
+        only: Vec<RuleSelector>,
+
+        /// Skip the given lint rule or group, e.g. `--skip=preferRobustStmts`. Can be repeated.
+        #[bpaf(long("skip"), argument("GROUP|RULE"))]
+        skip: Vec<RuleSelector>,
 
         /// Single file, single path or list of paths
         #[bpaf(positional("PATH"), many)]
@@ -537,6 +549,8 @@ mod tests {
             matches: 0,
             skipped: 0,
             suggested_fixes_skipped: 0,
+            fixable_diagnostics: 0,
+            writes: false,
             diagnostics_not_printed: 0,
             workspace_root: None,
         }

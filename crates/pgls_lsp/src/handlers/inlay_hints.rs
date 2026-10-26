@@ -29,17 +29,24 @@ pub(crate) fn inlay_hints(
     }) {
         Ok(result) => result,
         Err(e) => match e {
-            WorkspaceError::DatabaseConnectionError(_) => return Ok(None),
+            WorkspaceError::DatabaseConnectionError(_) => {
+                session.editor_features_without_database();
+                return Ok(None);
+            }
             _ => return Err(e.into()),
         },
     };
 
+    // A hint that can't be placed is left out rather than failing the whole response.
     let hints = result
         .hints
         .into_iter()
-        .map(|hint| {
-            Ok(ls_types::InlayHint {
-                position: to_lsp::position(&doc.line_index, hint.offset, encoding)?,
+        .filter_map(|hint| {
+            let position = to_lsp::position(&doc.line_index, hint.offset, encoding)
+                .inspect_err(|error| tracing::warn!("Skipping an inlay hint: {error}"))
+                .ok()?;
+            Some(ls_types::InlayHint {
+                position,
                 label: ls_types::InlayHintLabel::String(hint.label),
                 kind: Some(match hint.kind {
                     InlayHintKind::Parameter => ls_types::InlayHintKind::PARAMETER,
@@ -51,7 +58,7 @@ pub(crate) fn inlay_hints(
                 data: None,
             })
         })
-        .collect::<anyhow::Result<Vec<_>>>()?;
+        .collect();
 
     Ok(Some(hints))
 }
