@@ -1,6 +1,6 @@
 # requireEnumValueOrdering
 
-**Group** [`style`](../rules.md#style) · **Since** `Unreleased`  
+**Group** [`style`](../rules.md#style) · **Migrations only** · **Since** `Unreleased`  
 **Diagnostic** `lint/requireEnumValueOrdering`
 
 **Sources**: inspired by [`squawk/require-enum-value-ordering`](https://squawkhq.com/docs/require-enum-value-ordering)

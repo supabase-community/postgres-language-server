@@ -53,7 +53,7 @@ Configure formatting behavior in your `postgres-language-server.jsonc`:
 | `typeCase` | `"lower"` | Casing for data types (text, int, varchar): `"upper"` or `"lower"` |
 | `commaStyle` | `"trailing"` | Where a comma sits when a list breaks: `"trailing"` or `"leading"` |
 | `logicalOperatorPlacement` | `"trailing"` | Where `AND` and `OR` sit when a condition breaks: `"trailing"` or `"leading"` |
-| `layout` | `"fit"` | How a statement is laid out: `"fit"` breaks only past the line width, `"expanded"` always breaks between clauses |
+| `layout` | `"fit"` | How a statement is laid out: `"fit"` breaks only past the line width, `"expanded"` always breaks between clauses, between select list items, before every `AND`/`OR` and before every `CASE` branch (see below) |
 | `valuesRowLayout` | `"fit"` | How `VALUES` rows are laid out: `"fit"` breaks only past the line width, `"expanded"` puts each tuple on its own indented line. `commaStyle` controls commas between rows as well as inside tuples |
 | `castStyle` | `"cast"` | How an explicit cast is spelled: `"cast"` for `CAST(x AS t)`, `"operator"` for `x::t` |
 | `clauseBodyStyle` | `"break"` | Where a clause body starts: `"break"` for a new line, `"compact"` to keep the first element on the keyword line. Compact also keeps a select list of a single item on the `SELECT` line |
@@ -73,6 +73,49 @@ values
 The expressions inside each tuple stay on one line when they fit. This option
 applies to `INSERT`, standalone `VALUES`, and `VALUES` in subqueries and CTEs,
 independently of `layout` and `clauseBodyStyle`.
+
+`layout: "expanded"` puts every clause, every select list item and every
+operand of an `AND`/`OR` chain on its own line, even when the statement would
+fit on one. A subquery made of a select list alone, such as
+`(select auth.uid())`, and the condition of a `CHECK` constraint have no
+clauses to break between, so they follow the line width instead:
+
+```sql
+select
+  id,
+  name
+from
+  users
+where
+  active and
+  organization_id = (select auth.uid());
+```
+
+With `layout: "expanded"`, a `CASE` expression puts every `WHEN` and `ELSE`
+on its own line, one indent level in from where `CASE` starts, `THEN` one
+level further in, and `END` back under `CASE`. This holds wherever the `CASE`
+starts, after a leading comma for instance. A `CASE` nested as the result of a
+`THEN` or `ELSE` is indented from that line instead, with `END` under `THEN` or
+`ELSE`, so that deep nesting doesn't run past the line width. A `WHEN`
+condition that breaks continues one level in from `WHEN`:
+
+```sql
+select
+  id
+  , case
+      when status = 'active'
+        and deleted_at is null
+        then 'live'
+      else 'archived'
+    end as state
+from
+  accounts;
+```
+
+With `indentStyle: "tabs"`, the indent levels are written as tabs and the rest
+of an alignment, such as the two columns of `, ` before `case` above, as
+spaces. The columns only line up when the editor's tab width equals
+`indentSize`.
 
 With `clauseBodyStyle: "compact"`, the first relation stays on the `FROM` line
 and the condition on the `WHERE`, `HAVING`, or `ON` line. A select list of a

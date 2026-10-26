@@ -1,0 +1,7 @@
+-- dbmate sends a section to Postgres as one query, which runs in a transaction block if it has
+-- more than one statement, so there is no fix.
+-- section: up transaction:false
+-- expect_lint/requireConcurrentIndexCreation
+create index users_email_idx on users (email);
+-- expect_lint/requireConcurrentIndexCreation
+create index users_name_idx on users (name);

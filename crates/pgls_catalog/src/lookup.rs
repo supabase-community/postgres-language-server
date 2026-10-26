@@ -235,9 +235,12 @@ pub enum FunctionArgumentMode {
     In,
     InOut,
     Variadic,
+    /// An output argument of a procedure. `CALL` passes an argument for it too.
+    Out,
 }
 
-/// An input argument of a function.
+/// An argument of a function's call signature: its input arguments, and for procedures also its
+/// output arguments.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionArgument {
     pub name: Option<String>,

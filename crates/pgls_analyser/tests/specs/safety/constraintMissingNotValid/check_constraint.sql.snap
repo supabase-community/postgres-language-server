@@ -10,7 +10,7 @@ ALTER TABLE users ADD CONSTRAINT check_age CHECK (age >= 0);
 ```
 
 # Diagnostics
-lint/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/constraintMissingNotValid  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
   

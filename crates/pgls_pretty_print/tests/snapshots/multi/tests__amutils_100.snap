@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/amutils.sql
-snapshot_kind: text
 ---
 select
   prop,
@@ -11,26 +10,14 @@ select
 from
   pg_am as a,
   unnest(
-    cast(array['asc',
-    'desc',
-    'nulls_first',
-    'nulls_last',
-    'orderable',
-    'distance_orderable',
-    'returnable',
-    'search_array',
-    'search_nulls',
-    'clusterable',
-    'index_scan',
-    'bitmap_scan',
-    'backward_scan',
-    'can_order',
-    'can_unique',
-    'can_multi_col',
-    'can_exclude',
-    'can_include',
-    'bogus']
-    as text[])
+    cast(
+      array[
+        'asc', 'desc', 'nulls_first', 'nulls_last', 'orderable', 'distance_orderable', 'returnable',
+        'search_array', 'search_nulls', 'clusterable', 'index_scan', 'bitmap_scan', 'backward_scan',
+        'can_order', 'can_unique', 'can_multi_col', 'can_exclude', 'can_include', 'bogus'
+      ]
+      as text[]
+    )
   )
   with ordinality
   as u (prop, ord)
@@ -46,26 +33,14 @@ select
 from
   pg_am as a,
   unnest(
-    cast(array['asc',
-    'desc',
-    'nulls_first',
-    'nulls_last',
-    'orderable',
-    'distance_orderable',
-    'returnable',
-    'search_array',
-    'search_nulls',
-    'clusterable',
-    'index_scan',
-    'bitmap_scan',
-    'backward_scan',
-    'can_order',
-    'can_unique',
-    'can_multi_col',
-    'can_exclude',
-    'can_include',
-    'bogus']
-    as text[])
+    cast(
+      array[
+        'asc', 'desc', 'nulls_first', 'nulls_last', 'orderable', 'distance_orderable', 'returnable',
+        'search_array', 'search_nulls', 'clusterable', 'index_scan', 'bitmap_scan', 'backward_scan',
+        'can_order', 'can_unique', 'can_multi_col', 'can_exclude', 'can_include', 'bogus'
+      ]
+      as text[]
+    )
   )
   with ordinality
   as u (prop, ord)
@@ -84,17 +59,13 @@ select
   pg_index_column_has_property(cast('brinidx' as regclass), 1, prop) as brin
 from
   unnest(
-    cast(array['asc',
-    'desc',
-    'nulls_first',
-    'nulls_last',
-    'orderable',
-    'distance_orderable',
-    'returnable',
-    'search_array',
-    'search_nulls',
-    'bogus']
-    as text[])
+    cast(
+      array[
+        'asc', 'desc', 'nulls_first', 'nulls_last', 'orderable', 'distance_orderable', 'returnable',
+        'search_array', 'search_nulls', 'bogus'
+      ]
+      as text[]
+    )
   )
   with ordinality
   as u (prop, ord)
@@ -123,8 +94,10 @@ select
 from
   pg_am as a,
   unnest(
-    cast(array['can_order', 'can_unique', 'can_multi_col', 'can_exclude', 'can_include', 'bogus']
-    as text[])
+    cast(
+      array['can_order', 'can_unique', 'can_multi_col', 'can_exclude', 'can_include', 'bogus']
+      as text[]
+    )
   )
   with ordinality
   as u (prop, ord)

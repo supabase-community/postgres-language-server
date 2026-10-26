@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/timetz.sql
-snapshot_kind: text
 ---
 create table timetz_tbl (f1 time(2) with time zone);
 
@@ -74,48 +73,64 @@ select * from pg_input_error_info('15:36:39 America/New_York', 'timetz');
 select f1 + cast('00:01' as time with time zone) as "Illegal" from timetz_tbl;
 
 select
-  extract(microsecond from cast('2020-05-26 13:30:25.575401-04'
-  as time with time zone));
+  extract(
+    microsecond from
+    cast('2020-05-26 13:30:25.575401-04' as time with time zone)
+  );
 
 select
-  extract(millisecond from cast('2020-05-26 13:30:25.575401-04'
-  as time with time zone));
+  extract(
+    millisecond from
+    cast('2020-05-26 13:30:25.575401-04' as time with time zone)
+  );
 
 select
-  extract(second from cast('2020-05-26 13:30:25.575401-04'
-  as time with time zone));
+  extract(
+    second from cast('2020-05-26 13:30:25.575401-04' as time with time zone)
+  );
 
 select
-  extract(minute from cast('2020-05-26 13:30:25.575401-04'
-  as time with time zone));
+  extract(
+    minute from cast('2020-05-26 13:30:25.575401-04' as time with time zone)
+  );
 
 select
-  extract(hour from cast('2020-05-26 13:30:25.575401-04'
-  as time with time zone));
+  extract(
+    hour from cast('2020-05-26 13:30:25.575401-04' as time with time zone)
+  );
 
 select
-  extract(day from cast('2020-05-26 13:30:25.575401-04'
-  as time with time zone));
+  extract(
+    day from cast('2020-05-26 13:30:25.575401-04' as time with time zone)
+  );
 
 select
-  extract(fortnight from cast('2020-05-26 13:30:25.575401-04'
-  as time with time zone));
+  extract(
+    fortnight from cast('2020-05-26 13:30:25.575401-04' as time with time zone)
+  );
 
 select
-  extract(timezone from cast('2020-05-26 13:30:25.575401-04:30'
-  as time with time zone));
+  extract(
+    timezone from
+    cast('2020-05-26 13:30:25.575401-04:30' as time with time zone)
+  );
 
 select
-  extract(timezone_hour from cast('2020-05-26 13:30:25.575401-04:30'
-  as time with time zone));
+  extract(
+    timezone_hour from
+    cast('2020-05-26 13:30:25.575401-04:30' as time with time zone)
+  );
 
 select
-  extract(timezone_minute from cast('2020-05-26 13:30:25.575401-04:30'
-  as time with time zone));
+  extract(
+    timezone_minute from
+    cast('2020-05-26 13:30:25.575401-04:30' as time with time zone)
+  );
 
 select
-  extract(epoch from cast('2020-05-26 13:30:25.575401-04'
-  as time with time zone));
+  extract(
+    epoch from cast('2020-05-26 13:30:25.575401-04' as time with time zone)
+  );
 
 select
   date_part(

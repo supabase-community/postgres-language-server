@@ -68,6 +68,9 @@ fn generate_group(
         if rule_metadata.applies_to == pgls_analyse::AppliesTo::Migration {
             markers.push_str(" 🛠");
         }
+        if rule_metadata.fix_kind != pgls_analyse::FixKind::None {
+            markers.push_str(" 🔧");
+        }
         if group == pgls_analyser::TYPECHECK_GROUP {
             markers.push_str(" 🔌");
         }

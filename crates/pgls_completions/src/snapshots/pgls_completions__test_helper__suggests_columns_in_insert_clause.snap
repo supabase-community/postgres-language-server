@@ -257,9 +257,9 @@ identity_increment - information_schema.columns.identity_increment (Column)
 insert into instruments ("id", |)
 
 Results:
-id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
+id - public.instruments.id (Column)
 a - public.others.a (Column)
 b - public.others.b (Column)
 
@@ -268,9 +268,9 @@ b - public.others.b (Column)
 insert into instruments ("id", "|)
 
 Results:
-id" - public.instruments.id (Column)
 name" - public.instruments.name (Column)
 z" - public.instruments.z (Column)
+id" - public.instruments.id (Column)
 a" - public.others.a (Column)
 b" - public.others.b (Column)
 
@@ -279,9 +279,9 @@ b" - public.others.b (Column)
 insert into instruments ("id", "|")
 
 Results:
-id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
+id - public.instruments.id (Column)
 a - public.others.a (Column)
 b - public.others.b (Column)
 
@@ -319,9 +319,9 @@ insert into instruments ("id", "name") values (|
 insert into instruments ("id", "name") values (|)
 
 Results:
+z - public.instruments.z (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
-z - public.instruments.z (Column)
 default - default (Keyword)
 a - public.others.a (Column)
 
@@ -331,9 +331,9 @@ insert into instruments ("id", "name") values (1|)
 insert into instruments ("id", "name") values (1, |)
 
 Results:
+z - public.instruments.z (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
-z - public.instruments.z (Column)
 default - default (Keyword)
 a - public.others.a (Column)
 
