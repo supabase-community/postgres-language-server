@@ -130,6 +130,24 @@ impl<'a> StatementTokens<'a> {
         Some((open, self.closing_paren(open)?))
     }
 
+    /// The ranges of the keyword pairs `first second` that are not inside parentheses, e.g. the
+    /// `DROP DEFAULT` of each command of an `ALTER TABLE`.
+    pub fn keyword_pairs(&self, first: Token, second: Token) -> Vec<TextRange> {
+        let mut depth = 0usize;
+        let mut pairs = Vec::new();
+        for (index, token) in self.tokens.iter().enumerate() {
+            match token.token() {
+                Token::Ascii40 => depth += 1,
+                Token::Ascii41 => depth = depth.saturating_sub(1),
+                kind if depth == 0 && kind == first && self.kind(index + 1) == Some(second) => {
+                    pairs.push(self.range(index).cover(self.range(index + 1)));
+                }
+                _ => {}
+            }
+        }
+        pairs
+    }
+
     /// A fix that inserts ` <text>` after the token at `index`.
     pub fn insert_after(&self, index: usize, message: &str, text: &str) -> RuleFix {
         RuleFix::new(message).insert(self.range(index).end(), format!(" {text}"))

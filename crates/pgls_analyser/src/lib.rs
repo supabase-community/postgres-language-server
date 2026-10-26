@@ -462,6 +462,35 @@ pub fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
     }
 }
 
+/// Runs a single rule on a statement and returns the text each diagnostic points at.
+#[cfg(test)]
+pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
+    let rule_filter = pgls_analyse::RuleFilter::Rule(group, rule);
+    let options = LinterOptions::default();
+    let analyser = Analyser::new(AnalyserConfig {
+        options: &options,
+        filter: AnalysisFilter {
+            enabled_rules: Some(std::slice::from_ref(&rule_filter)),
+            ..Default::default()
+        },
+    });
+    let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
+    let range = TextRange::up_to(TextSize::of(sql));
+    analyser
+        .run(AnalyserParams {
+            stmts: vec![AnalysableStatement::new(root, range).with_sql(sql)],
+            ..Default::default()
+        })
+        .iter()
+        .map(|diagnostic| {
+            let span = pgls_diagnostics::Diagnostic::location(diagnostic)
+                .span
+                .unwrap();
+            sql[span].to_owned()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use core::slice;
