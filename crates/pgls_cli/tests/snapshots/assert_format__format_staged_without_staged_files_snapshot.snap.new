@@ -1,0 +1,9 @@
+---
+source: crates/pgls_cli/tests/assert_format.rs
+assertion_line: 269
+expression: "run_format_in(repo.path(), &[\"--staged\"])"
+---
+status: success
+stdout:
+Processed 0 files in <duration>.
+stderr:

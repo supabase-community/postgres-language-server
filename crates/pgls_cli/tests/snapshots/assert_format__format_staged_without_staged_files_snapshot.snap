@@ -4,5 +4,5 @@ expression: "run_format_in(repo.path(), &[\"--staged\"])"
 ---
 status: success
 stdout:
-Processed 0 files in <duration>. No fixes applied.
+Processed 0 files in <duration>.
 stderr:
