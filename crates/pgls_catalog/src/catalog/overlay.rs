@@ -603,6 +603,7 @@ pub(super) fn function_info(
         return_columns: None,
         volatility: None,
         origin: Origin::File,
+        id: None,
         signature: None,
     }
 }

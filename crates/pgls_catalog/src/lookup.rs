@@ -112,6 +112,9 @@ pub struct FunctionInfo {
     /// `pg_proc.provolatile`. `None` when unknown, e.g. for aggregates the file creates.
     pub volatility: Option<Behavior>,
     pub origin: Origin,
+    /// `pg_proc.oid` of a function from the database snapshot, also after the file altered,
+    /// renamed or moved it. `None` for functions the file created or replaced.
+    pub id: Option<i64>,
     /// Complete typing signature when available.
     pub signature: Option<FunctionSignature>,
 }
