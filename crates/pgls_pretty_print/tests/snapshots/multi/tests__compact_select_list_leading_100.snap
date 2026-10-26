@@ -39,10 +39,10 @@ select case
 from users;
 
 select json_build_object(
-    'identifier', users.id
-    , 'display_name', users.name
-    , 'email_address', users.email
-  )
+  'identifier', users.id
+  , 'display_name', users.name
+  , 'email_address', users.email
+)
 from users;
 
 select first_really_long_column_name_here + second_really_long_column_name_here + third_long_column
