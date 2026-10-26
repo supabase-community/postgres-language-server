@@ -2428,6 +2428,130 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
     assert_eq!(labels, ["x:1", "y:2", "a:3", "b:4", "x:5", "y:6"]);
 }
 
+/// The edit of the action that suppresses `rule` at `cursor`, and the lint diagnostics of `rule`
+/// that are left once it is applied.
+fn suppress(content: &str, cursor: usize, rule: &str) -> (TextEdit, usize) {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let actions = workspace
+        .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+            project_key,
+            path: path.clone(),
+            cursor_position: u32::try_from(cursor).unwrap().into(),
+            only: vec![rule.parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull code actions")
+        .actions;
+    let edit = actions
+        .into_iter()
+        .find_map(|action| match action.kind {
+            CodeActionKind::Edit(edit) if action.title.starts_with("Suppress rule") => {
+                Some(edit.edits.into_iter().next().unwrap())
+            }
+            _ => None,
+        })
+        .expect("expected a suppression action");
+
+    let mut suppressed = content.to_string();
+    suppressed.replace_range(std::ops::Range::<usize>::from(edit.range), &edit.new_text);
+    let path = PgLSPath::new("suppressed.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: suppressed,
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let left = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![rule.parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == format!("lint/{rule}"))
+        })
+        .count();
+    (edit, left)
+}
+
+#[test]
+fn test_suppression_goes_above_the_statement() {
+    // The diagnostic is on the third line of the statement.
+    let long = "a".repeat(70);
+    let content =
+        format!("select 1;\n  create table users (\n    id bigint,\n    {long} text\n  );\n");
+    let (edit, left) = suppress(
+        &content,
+        content.find(&long).unwrap() + 1,
+        "identifierTooLong",
+    );
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::empty(10.into()),
+            new_text: "  -- pgls-ignore identifierTooLong\n".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn test_suppression_of_a_statement_in_a_function_body() {
+    let content =
+        "create function drop_users() returns void language sql\nas $$\n  drop table users;\n$$;\n";
+    let (edit, left) = suppress(content, content.find("drop table").unwrap(), "banDropTable");
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::empty(0.into()),
+            new_text: "-- pgls-ignore banDropTable\n".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn test_suppression_of_a_statement_in_the_middle_of_a_line() {
+    let content = "  select 1; drop table users;\n";
+    let (edit, left) = suppress(content, content.find("drop").unwrap(), "banDropTable");
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::new(11.into(), 12.into()),
+            new_text: "\n  -- pgls-ignore banDropTable\n  ".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn test_suppression_keeps_crlf_line_endings() {
+    let content = "select 1;\r\ndrop table users;\r\n";
+    let (edit, left) = suppress(content, 13, "banDropTable");
+    assert_eq!(edit.new_text, "-- pgls-ignore banDropTable\r\n");
+    assert_eq!(left, 0);
+}
+
 /// A project of a workspace, set up like the language server does it.
 struct TestProject {
     workspace: Rc<WorkspaceServer>,
