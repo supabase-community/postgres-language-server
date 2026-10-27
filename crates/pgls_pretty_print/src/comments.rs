@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use pgls_query::{NodeEnum, NodeRef, protobuf::BoolExprType, protobuf::Token};
 
@@ -19,12 +19,13 @@ pub struct Comment {
     /// True for a line comment written after a list comma, `a, -- note`. It stays after the comma
     /// rather than moving onto the next item's line.
     pub after_separator: bool,
-    /// The keyword written right after the comment, in lower case, when no node starts there,
-    /// such as `else` in `then 'x' /* why */ else 'y'`.
+    /// The keyword following this comment's consecutive comment group, in lower case, when no
+    /// node starts there, such as `else` in `then 'x' /* why */ else 'y'`.
     ///
-    /// The comment is attached to the node after that keyword, but the parent emits the keyword
-    /// first. A parent that knows the keyword takes such comments before writing it, so that they
-    /// don't move past it. A parent that doesn't leaves them where they were.
+    /// For clause keywords, the comment is attached to the following node, but the parent emits
+    /// the keyword first. A parent that knows the keyword takes such comments before writing it,
+    /// so that they don't move past it. Comments before a CASE's END are attached to that CASE
+    /// separately, because no branch follows END.
     pub before_keyword: Option<String>,
 }
 
@@ -35,6 +36,9 @@ pub struct AttachedComments {
     pub leading_by_location: HashMap<i32, Vec<Comment>>,
     /// Comments emitted after the node at this location.
     pub trailing_by_location: HashMap<i32, Vec<Comment>>,
+    /// Comments emitted before a CASE's END, indexed by the CASE's source location. A branch's
+    /// last node may be inside a function or another CASE, so it cannot hold these comments.
+    pub before_case_end_by_location: HashMap<i32, Vec<Comment>>,
     /// Comments that neither neighbour can hold, which today means a comment written after a
     /// statement terminator. The caller must not reformat a statement that has any: emitting it
     /// would drop them.
@@ -42,6 +46,7 @@ pub struct AttachedComments {
 }
 
 /// Which side of a node a comment ends up on, once the node is known.
+#[derive(Clone, Copy)]
 enum Placement {
     /// Emitted before the node at this location.
     Leading(i32),
@@ -65,7 +70,15 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
 
     let mut locations = collect_node_locations(ast);
     locations.sort_unstable();
-    let keyword_after = keywords_after_comments(sql, &locations);
+    let case_locations = ast
+        .iter()
+        .filter_map(|node| match node {
+            NodeRef::CaseExpr(case) => Some(case.location),
+            _ => None,
+        })
+        .collect();
+    let keyword_after = keywords_after_comments(sql, &locations, &case_locations);
+    let mut group_placements = HashMap::new();
 
     for mut source_comment in comments {
         let line_start = sql[..source_comment.start]
@@ -93,6 +106,17 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
                 || ends_with_clause_header(line_prefix)
                 || ends_with_structural_separator(line_prefix));
 
+        let anchor = keyword_after.get(&source_comment.start);
+        source_comment.comment.before_keyword = anchor.map(|anchor| anchor.keyword.clone());
+        if let Some(case_location) = anchor.and_then(|anchor| anchor.case_location) {
+            attached
+                .before_case_end_by_location
+                .entry(case_location)
+                .or_default()
+                .push(source_comment.comment);
+            continue;
+        }
+
         let next = locations
             .iter()
             .find(|location| **location as usize >= source_comment.end)
@@ -102,11 +126,6 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
             .rev()
             .find(|location| **location as usize <= source_comment.start)
             .copied();
-        source_comment.comment.before_keyword = keyword_after.get(&source_comment.start).cloned();
-        // Nothing inside the CASE follows its END, so a comment before END belongs to the last
-        // branch rather than to whatever follows the expression.
-        let leads = leads && source_comment.comment.before_keyword.as_deref() != Some("end");
-
         // The preferred side first, the other one as a fallback. A comment closing a list or a
         // statement has no node after it, and printing it after the node it already follows in the
         // source keeps it where its author wrote it, where refusing the statement keeps nothing.
@@ -117,6 +136,14 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
             previous
                 .map(Placement::Trailing)
                 .or_else(|| next.map(Placement::Leading))
+        };
+        // A block comment followed by a line comment must not land on opposite sides of a node.
+        // Keep the entire group on the side chosen for its first comment, in source order.
+        let placement = match anchor {
+            Some(anchor) => *group_placements
+                .entry(anchor.group_start)
+                .or_insert(placement),
+            None => placement,
         };
 
         match placement {
@@ -203,9 +230,20 @@ struct SourceComment {
     comment: Comment,
 }
 
-/// For every comment followed by a keyword that no node starts at, the keyword in lower case, by
-/// the comment's start.
-fn keywords_after_comments(sql: &str, locations: &[i32]) -> HashMap<usize, String> {
+struct KeywordAnchor {
+    keyword: String,
+    group_start: usize,
+    /// The CASE closed by END, if this is a comment before a CASE's END.
+    case_location: Option<i32>,
+}
+
+/// Anchors every comment in a consecutive group to the following keyword, when no node starts
+/// there. Matching CASE and END tokens identifies the expression that owns a closing comment.
+fn keywords_after_comments(
+    sql: &str,
+    locations: &[i32],
+    case_locations: &HashSet<i32>,
+) -> HashMap<usize, KeywordAnchor> {
     use pgls_query::protobuf::KeywordKind;
 
     let Ok(scan) = pgls_query::scan(sql) else {
@@ -213,25 +251,58 @@ fn keywords_after_comments(sql: &str, locations: &[i32]) -> HashMap<usize, Strin
     };
 
     let mut keywords = HashMap::new();
-    for pair in scan.tokens.windows(2) {
-        let [comment, next] = [&pair[0], &pair[1]];
-        if !matches!(
-            Token::try_from(comment.token),
-            Ok(Token::SqlComment | Token::CComment)
-        ) || matches!(
-            Token::try_from(next.token),
-            Ok(Token::SqlComment | Token::CComment)
-        ) {
-            continue;
-        }
-        if next.keyword_kind == KeywordKind::NoKeyword as i32
-            || locations.binary_search(&next.start).is_ok()
+    let mut pending_comments = Vec::new();
+    let mut cases = Vec::new();
+    let mut parentheses = 0usize;
+    let mut previous_token = None;
+    for token in &scan.tokens {
+        let kind = Token::try_from(token.token).ok();
+        let case_location = match kind {
+            Some(Token::SqlComment | Token::CComment) => {
+                pending_comments.push(token.start as usize);
+                continue;
+            }
+            Some(Token::Ascii40) => {
+                parentheses += 1;
+                None
+            }
+            Some(Token::Ascii41) => {
+                parentheses = parentheses.saturating_sub(1);
+                None
+            }
+            Some(Token::Case) if case_locations.contains(&token.start) => {
+                cases.push((token.start, parentheses));
+                None
+            }
+            // END can also name a field, `t.end`, or a subquery column, `select 2 end`. Neither
+            // closes the surrounding CASE. Likewise, a column alias called CASE must not open one.
+            Some(Token::EndP)
+                if previous_token != Some(Token::Ascii46)
+                    && cases.last().is_some_and(|(_, depth)| *depth == parentheses) =>
+            {
+                cases.pop().map(|(location, _)| location)
+            }
+            _ => None,
+        };
+        previous_token = kind;
+        if !pending_comments.is_empty()
+            && token.keyword_kind != KeywordKind::NoKeyword as i32
+            && locations.binary_search(&token.start).is_err()
+            && let Some(keyword) = sql.get(token.start as usize..token.end as usize)
         {
-            continue;
+            let group_start = pending_comments[0];
+            for &comment_start in &pending_comments {
+                keywords.insert(
+                    comment_start,
+                    KeywordAnchor {
+                        keyword: keyword.to_ascii_lowercase(),
+                        group_start,
+                        case_location,
+                    },
+                );
+            }
         }
-        if let Some(keyword) = sql.get(next.start as usize..next.end as usize) {
-            keywords.insert(comment.start as usize, keyword.to_ascii_lowercase());
-        }
+        pending_comments.clear();
     }
     keywords
 }
@@ -445,12 +516,17 @@ mod tests {
     }
 
     #[test]
-    fn a_comment_before_end_stays_with_the_last_branch() {
+    fn a_comment_before_end_is_anchored_to_its_case() {
         let sql = "SELECT CASE WHEN a THEN 1 ELSE 2 /* last */ END FROM t";
         let attached = attach_comments(sql, &parse(sql));
 
         assert!(attached.leading_by_location.is_empty());
-        assert_eq!(attached.trailing_by_location.len(), 1);
+        assert!(attached.trailing_by_location.is_empty());
+        let case_location = sql.find("CASE").unwrap() as i32;
+        assert_eq!(
+            attached.before_case_end_by_location[&case_location][0].text,
+            "/* last */"
+        );
     }
 
     #[test]
@@ -460,6 +536,7 @@ mod tests {
 
         assert!(attached.leading_by_location.is_empty());
         assert!(attached.trailing_by_location.is_empty());
+        assert!(attached.before_case_end_by_location.is_empty());
         assert!(attached.unattached.is_empty());
     }
 }
