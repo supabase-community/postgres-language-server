@@ -1,5 +1,9 @@
 //! # pgls_fs
 
+// The file system is external data, so a panic on an unexpected file takes down the server for
+// every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 mod dir;
 mod fs;
 mod interner;

@@ -1,3 +1,7 @@
+// The type check runs the statements of the client against the database, so a panic on unexpected
+// input or output takes down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 pub mod diagnostics;
 pub mod typed_identifier;
 
@@ -35,6 +39,10 @@ pub async fn check_sql(
     let (sql, tree, source_offset) = match target {
         TypecheckTarget::Direct => (params.sql, params.tree, TextSize::from(0)),
         TypecheckTarget::CreateQuery { sql, source_offset } => {
+            #[expect(
+                clippy::expect_used,
+                reason = "only fails if the grammar was generated for an incompatible tree-sitter version, which the tests catch"
+            )]
             parser
                 .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
                 .expect("Error loading sql language");
