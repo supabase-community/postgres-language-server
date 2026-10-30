@@ -65,7 +65,7 @@ The language server provides semantic tokens for the names that resolve to exact
 | Table, view, or other relation | `class` | `users` in `from users`, `users.id` |
 | Column | `property` | `name`, `u.name`, `public.users.id` |
 | Function | `function` | the overload that a call resolves to |
-| Type | `type` | `int8` in `x::int8`, `cast(x as text)`, `date 'today'` |
+| Type | `type` | `int8` in `x::int8`, `cast(x as text)`, `date 'today'`, column types in `create table`, function signatures |
 | Parameter of a SQL function, in its body | `parameter` | `id`, `fn.id`, `$1` |
 | Enum value | `enumMember` | `'active'` in `status = 'active'` |
 
