@@ -63,6 +63,9 @@
           git
           taplo
 
+          # Compiler cache, opt-in with RUSTC_WRAPPER=sccache (see AGENTS.md)
+          sccache
+
           # Lints the GitHub Actions workflows; actionlint checks `run:` scripts with shellcheck
           actionlint
           shellcheck
