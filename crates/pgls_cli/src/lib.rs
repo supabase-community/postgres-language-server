@@ -416,7 +416,7 @@ mod runtime_tests {
         let parsed = runtime
             .block_on(runtime.spawn(async move { pgls_query::parse(&sql).is_ok() }))
             .unwrap();
-        // The tree is too deep for the protobuf decoder, so it doesn't parse, but the parser
+        // The tree is nested too deeply to be decoded, so it doesn't parse, but the parser
         // returns instead of overflowing the stack.
         assert!(!parsed);
     }

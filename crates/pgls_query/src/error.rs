@@ -17,6 +17,11 @@ pub enum Error {
     Scan(String),
     #[error("Error splitting: {0}")]
     Split(String),
+    #[error(
+        "The statement is nested too deeply: its parse tree may be at most {} levels deep",
+        crate::MAX_NESTING
+    )]
+    TooDeep,
 }
 
 /// Convenient Result alias for returning `pg_query::Error`.

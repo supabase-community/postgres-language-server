@@ -119,6 +119,12 @@ debug = "line-tables-only"
 [profile.dev.package."*"]
 debug = false
 
+# Without optimisation, decoding the parse tree takes about 30 KiB of stack per level of an
+# expression, so a statement that the release build handles in 1 MiB overflows the stack of a
+# test thread.
+[profile.dev.package.pgls_query]
+opt-level = 1
+
 [profile.dev.package.insta]
 opt-level = 3
 

@@ -11,7 +11,8 @@ repository.workspace = true
 version              = "0.0.0"
 
 [dependencies]
-prost     = { workspace = true }
+# The parse tree is checked for its depth before it is decoded, see `nesting.rs`.
+prost     = { workspace = true, features = ["no-recursion-limit"] }
 thiserror = { workspace = true }
 
 pgls_query_macros = { workspace = true }

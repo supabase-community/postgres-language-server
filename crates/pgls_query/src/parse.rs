@@ -3,6 +3,7 @@ use std::ffi::{CStr, CString};
 use crate::NodeEnum;
 use crate::bindings::*;
 use crate::error::*;
+use crate::nesting::{MAX_NESTING, TooDeep, check_nesting};
 use crate::protobuf;
 
 use prost::Message;
@@ -34,8 +35,11 @@ pub fn parse(statement: &str) -> Result<ParseResult> {
         let stderr = unsafe { CStr::from_ptr(result.stderr_buffer) }
             .to_string_lossy()
             .to_string();
-        protobuf::ParseResult::decode(data)
-            .map_err(Error::Decode)
+        // prost's own recursion limit is off: it would reject a tree that is 100 messages deep,
+        // e.g. `select 1 + 1 + ...` with 50 terms.
+        check_nesting(data, MAX_NESTING)
+            .map_err(|TooDeep| Error::TooDeep)
+            .and_then(|()| protobuf::ParseResult::decode(data).map_err(Error::Decode))
             .map(|result| ParseResult::new(result, stderr))
     };
     unsafe { pg_query_free_protobuf_parse_result(result) };
