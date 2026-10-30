@@ -288,6 +288,41 @@ impl<'a> Resolver<'a> {
         self.span_to(location, span::literal_end)
     }
 
+    /// The alias `alias` after the (possibly qualified) name starting at `location`: its location
+    /// and span, if it is written there.
+    pub fn alias_location(&self, location: i32, alias: &str) -> Option<(i32, TextRange)> {
+        let sql = self.sql?;
+        let (start, end) = span::alias_span(sql, usize::try_from(location).ok()?)?;
+        if crate::identifier_name(&sql[start..end]) != alias {
+            return None;
+        }
+        Some((
+            i32::try_from(start).ok()?,
+            TextRange::new(
+                TextSize::try_from(start).ok()?,
+                TextSize::try_from(end).ok()?,
+            ),
+        ))
+    }
+
+    /// Records the alias of the FROM item named at `location`, when references are being
+    /// collected.
+    pub fn record_alias(&mut self, location: i32, alias: Option<&pgls_query::protobuf::Alias>) {
+        if !self.collects_references() {
+            return;
+        }
+        let Some(alias) = alias else {
+            return;
+        };
+        if let Some((location, span)) = self.alias_location(location, &alias.aliasname) {
+            self.record(Reference::Alias {
+                location,
+                span: Some(span),
+                name: alias.aliasname.clone(),
+            });
+        }
+    }
+
     /// The span of the first token of an expression starting at `location`.
     pub fn expression_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, |sql, start| {

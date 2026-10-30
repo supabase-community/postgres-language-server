@@ -140,6 +140,96 @@ pub(super) fn star_end(sql: &str, start: usize) -> Option<usize> {
     }
 }
 
+/// The position after the whitespace and comments at `cursor`. Block comments nest, as in
+/// [`scan.l`].
+///
+/// [`scan.l`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L440
+fn skip_trivia(sql: &str, mut cursor: usize) -> usize {
+    let bytes = sql.as_bytes();
+    loop {
+        match bytes.get(cursor..) {
+            Some([byte, ..]) if byte.is_ascii_whitespace() => cursor += 1,
+            Some([b'-', b'-', ..]) => {
+                while bytes.get(cursor).is_some_and(|byte| *byte != b'\n') {
+                    cursor += 1;
+                }
+            }
+            Some([b'/', b'*', ..]) => {
+                let mut depth = 0;
+                while cursor < bytes.len() {
+                    match &bytes[cursor..] {
+                        [b'/', b'*', ..] => {
+                            depth += 1;
+                            cursor += 2;
+                        }
+                        [b'*', b'/', ..] => {
+                            depth -= 1;
+                            cursor += 2;
+                            if depth == 0 {
+                                break;
+                            }
+                        }
+                        _ => cursor += 1,
+                    }
+                }
+            }
+            _ => return cursor,
+        }
+    }
+}
+
+/// The span of the alias after the (possibly qualified) name that starts at `start`, with or
+/// without `AS`, like `u` in `users as u` or `"U"` in `public.users "U"`. `None` if no
+/// identifier follows.
+pub(super) fn alias_span(sql: &str, start: usize) -> Option<(usize, usize)> {
+    let bytes = sql.as_bytes();
+    // The end of the name, whose parts can have whitespace and comments around their dots.
+    let mut cursor = start;
+    loop {
+        cursor = skip_trivia(sql, identifier_end(sql, cursor)?);
+        if bytes.get(cursor) != Some(&b'.') {
+            break;
+        }
+        cursor = skip_trivia(sql, cursor + 1);
+    }
+    if bytes
+        .get(cursor..cursor + 2)
+        .is_some_and(|word| word.eq_ignore_ascii_case(b"as"))
+        && !bytes
+            .get(cursor + 2)
+            .is_some_and(|byte| is_identifier_byte(*byte))
+    {
+        cursor = skip_trivia(sql, cursor + 2);
+    }
+    Some((cursor, identifier_end(sql, cursor)?))
+}
+
+/// The end of the quoted or unquoted identifier that starts at `start`.
+fn identifier_end(sql: &str, start: usize) -> Option<usize> {
+    let bytes = sql.as_bytes();
+    let first = *bytes.get(start)?;
+    if first == b'"' {
+        let mut end = start + 1;
+        loop {
+            if *bytes.get(end)? == b'"' {
+                end += 1;
+                if bytes.get(end) != Some(&b'"') {
+                    return Some(end);
+                }
+            }
+            end += 1;
+        }
+    }
+    if !is_identifier_start(first) {
+        return None;
+    }
+    let mut end = start;
+    while bytes.get(end).is_some_and(|byte| is_identifier_byte(*byte)) {
+        end += 1;
+    }
+    Some(end)
+}
+
 pub(super) fn token_end(sql: &str, start: usize) -> Option<usize> {
     let bytes = sql.as_bytes();
     let mut cursor = start;
@@ -296,8 +386,26 @@ pub(super) fn operator_end(sql: &str, start: usize) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::{
-        cast_end, literal_end, operator_end, reference_end, star_end, token_end, type_name_end,
+        alias_span, cast_end, literal_end, operator_end, reference_end, star_end, token_end,
+        type_name_end,
     };
+
+    #[test]
+    fn alias_spans() {
+        fn alias(sql: &str) -> Option<&str> {
+            alias_span(sql, 0).map(|(start, end)| &sql[start..end])
+        }
+        assert_eq!(alias("users u where"), Some("u"));
+        assert_eq!(alias("users AS u"), Some("u"));
+        assert_eq!(alias("public . users as\n  \"U s\"(a)"), Some("\"U s\""));
+        assert_eq!(
+            alias("users /* a /* nested */ c */ -- x\n asmodeus"),
+            Some("asmodeus")
+        );
+        assert_eq!(alias("public /* c */ . users u"), Some("u"));
+        assert_eq!(alias("users"), None);
+        assert_eq!(alias("users, posts"), None);
+    }
 
     fn text(sql: &str, start: usize, end: Option<usize>) -> &str {
         &sql[start..end.expect("span")]
