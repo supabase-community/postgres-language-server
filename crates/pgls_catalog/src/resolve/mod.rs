@@ -21,6 +21,7 @@ mod nodes;
 #[cfg(all(test, feature = "db"))]
 mod reference_tests;
 mod resolver;
+mod roles_and_schemas;
 mod scope;
 mod span;
 #[cfg(test)]
@@ -244,6 +245,23 @@ pub enum Reference {
         span: Option<TextRange>,
         name: String,
     },
+    /// A schema named on its own rather than as the qualifier of a name, like `app` in
+    /// `create schema app`, `grant usage on schema app to reader`, or `set search_path to app`.
+    Schema {
+        /// The location of the name in the statement.
+        location: i32,
+        /// The span of the name.
+        span: Option<TextRange>,
+        name: String,
+    },
+    /// A role of the database, like `reader` in `grant select on t to reader`.
+    Role {
+        /// The location of the name in the statement.
+        location: i32,
+        /// The span of the name.
+        span: Option<TextRange>,
+        name: String,
+    },
     /// The alias of a table or CTE in FROM, or of the target of INSERT, UPDATE, or DELETE, where
     /// it is defined, like `u` in `from users as u`. References to it, like `u` in `u.name`,
     /// are part of their column reference.
@@ -286,6 +304,8 @@ impl Reference {
             | Self::EnumLiteral { location, .. }
             | Self::Cte { location, .. }
             | Self::Alias { location, .. }
+            | Self::Schema { location, .. }
+            | Self::Role { location, .. }
             | Self::Star { location, .. } => *location,
         }
     }
@@ -300,6 +320,8 @@ impl Reference {
             | Self::EnumLiteral { span, .. }
             | Self::Cte { span, .. }
             | Self::Alias { span, .. }
+            | Self::Schema { span, .. }
+            | Self::Role { span, .. }
             | Self::Star { span, .. } => *span,
         }
     }
@@ -337,6 +359,7 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         resolver.references = Some(Vec::new());
     }
     nodes::resolve_node_enum(&mut resolver, params.stmt);
+    roles_and_schemas::record_roles_and_schemas(&mut resolver, params.stmt);
     resolver.check_function_params();
 
     let mut findings: Vec<Finding> = Vec::new();

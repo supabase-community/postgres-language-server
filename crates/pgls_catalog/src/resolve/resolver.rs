@@ -112,6 +112,11 @@ impl<'a> Resolver<'a> {
         }
     }
 
+    /// The statement text, if known.
+    pub fn sql(&self) -> Option<&'a str> {
+        self.sql
+    }
+
     /// Whether references are being collected.
     pub fn collects_references(&self) -> bool {
         self.references.is_some()

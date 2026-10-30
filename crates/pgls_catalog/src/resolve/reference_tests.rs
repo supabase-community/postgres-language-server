@@ -138,6 +138,8 @@ fn function_references_in(
                 }
                 Reference::Cte { name, .. } => format!("cte {name}"),
                 Reference::Alias { name, .. } => format!("alias {name}"),
+                Reference::Schema { name, .. } => format!("schema {name}"),
+                Reference::Role { name, .. } => format!("role {name}"),
                 Reference::Star { columns, .. } => {
                     let columns = columns
                         .iter()
