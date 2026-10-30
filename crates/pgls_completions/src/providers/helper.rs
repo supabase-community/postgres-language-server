@@ -2,7 +2,7 @@ use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_text_size::TextRange;
 use pgls_treesitter::TreesitterContext;
 
-use crate::{is_sanitized_token_with_quote, remove_sanitized_token};
+use crate::{is_unterminated_quote, remove_sanitized_token};
 
 pub(crate) fn node_text_surrounded_by_quotes(ctx: &TreesitterContext) -> bool {
     ctx.get_node_under_cursor_content()
@@ -20,10 +20,12 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     let mut start = node.start_byte();
     let mut end = start + length;
 
-    if sanitized.starts_with('"') && sanitized.ends_with('"') {
+    // Only the text inside the quotes is replaced. A quote the user hasn't closed yet has no
+    // closing quote here.
+    if sanitized.starts_with('"') {
         start += 1;
 
-        if sanitized.len() > 1 {
+        if sanitized.len() > 1 && sanitized.ends_with('"') {
             end -= 1;
         }
     }
@@ -31,10 +33,11 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     TextRange::new(start.try_into().unwrap(), end.try_into().unwrap())
 }
 
+/// Whether the cursor is in a quoted identifier without a closing quote, so the completion has to
+/// add it.
 pub(crate) fn only_leading_quote(ctx: &TreesitterContext) -> bool {
     let node_under_cursor_txt = ctx.get_node_under_cursor_content().unwrap_or("".into());
-    let node_under_cursor_txt = node_under_cursor_txt.as_str();
-    is_sanitized_token_with_quote(node_under_cursor_txt)
+    is_unterminated_quote(node_under_cursor_txt.as_str())
 }
 
 /// The text to insert for `item_name`, prefixed with the schema or alias name unless it is
@@ -112,6 +115,8 @@ mod tests {
             create table "My Schema"."Other" (x int);
             create function "MyFunc"() returns int language sql as 'select 1';
             create function "My Schema".helper() returns int language sql as 'select 1';
+            create policy "My Policy" on "MyTable" using (true);
+            create policy plain_policy on "MyTable" using (true);
             "#,
         )
         .await
@@ -132,6 +137,29 @@ mod tests {
             (r#"select {c} from "MyTable""#, "plain", "plain"),
             (r#"select t.{c} from "MyTable" t"#, "select", "select"),
             (r#"select t.{c} from "MyTable" t"#, "Id", r#""Id""#),
+            // Inside a quote the user hasn't closed yet.
+            (r#"select * from "My{c}"#, "MyTable", r#"MyTable""#),
+            (
+                r#"select * from "My{c} where true"#,
+                "MyTable",
+                r#"MyTable""#,
+            ),
+            (r#"select "I{c} from "MyTable""#, "Id", r#"Id""#),
+            // Policies and roles.
+            (
+                r#"alter policy {c} on "MyTable""#,
+                "My Policy",
+                r#""My Policy""#,
+            ),
+            (
+                r#"alter policy {c} on "MyTable""#,
+                "plain_policy",
+                "plain_policy",
+            ),
+            (r#"alter policy "My{c}"#, "My Policy", r#"My Policy""#),
+            // Roles are global, so the test uses one that needs no quotes.
+            (r#"grant select on "MyTable" to {c}"#, "anon", "anon"),
+            (r#"grant select on "MyTable" to "an{c}"#, "anon", r#"anon""#),
             // Functions.
             ("select {c}", "MyFunc", r#""MyFunc"()"#),
             ("select {c}", "helper", r#""My Schema".helper()"#),

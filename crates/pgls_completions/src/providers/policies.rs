@@ -1,14 +1,13 @@
-use pgls_catalog::Snapshot;
+use pgls_catalog::{NamePosition, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    providers::helper::node_text_surrounded_by_quotes,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::get_range_to_replace;
+use super::helper::{get_range_to_replace, with_schema_or_alias};
 
 pub fn complete_policies<'a>(
     ctx: &TreesitterContext<'a>,
@@ -18,13 +17,8 @@ pub fn complete_policies<'a>(
     let available_policies = &snapshot.policies;
 
     for pol in available_policies {
-        let text = if node_text_surrounded_by_quotes(ctx) {
-            // If we're within quotes, we want to change the content
-            // *within* the quotes.
-            pol.name.to_string()
-        } else {
-            format!("\"{}\"", pol.name)
-        };
+        // A policy name is a `name`, which is a `ColId`.
+        let text = with_schema_or_alias(ctx, &pol.name, None, NamePosition::ColId);
 
         let relevance = CompletionRelevanceData::Policy(pol);
 
