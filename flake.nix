@@ -39,6 +39,20 @@
           ln -s ${rustNightly}/bin/rustfmt $out/bin/rustfmt
         '';
 
+        # The tree-sitter CLI at the version CI uses (.tree-sitter-cli-version),
+        # built from crates.io since nixpkgs doesn't package every release.
+        # After changing the version, update both hashes.
+        treeSitterCli = pkgs.rustPlatform.buildRustPackage rec {
+          pname = "tree-sitter-cli";
+          version = pkgs.lib.trim (builtins.readFile ./.tree-sitter-cli-version);
+          src = pkgs.fetchCrate {
+            inherit pname version;
+            hash = "sha256-rde/jA+oXtWbvpMTncMDbtqQHNEjZRiaIP63nheLUq0=";
+          };
+          cargoHash = "sha256-QgwMhNkLgnYSUJAdolOm3iSp3gOOm9iX+rIcIw44ZTU=";
+          doCheck = false;
+        };
+
         # Development dependencies
         buildInputs = with pkgs; [
           # Nightly rustfmt (for codegen) - must come before stable toolchain
@@ -78,7 +92,7 @@
 
           # WebAssembly toolchain
           emscripten
-          tree-sitter
+          treeSitterCli
 
           # Database tools
           sqlx-cli
