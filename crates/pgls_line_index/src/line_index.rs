@@ -18,6 +18,13 @@ pub struct LineIndex {
     len: TextSize,
 }
 
+/// The index of an empty text.
+impl Default for LineIndex {
+    fn default() -> Self {
+        Self::new("")
+    }
+}
+
 impl LineIndex {
     pub fn new(text: &str) -> LineIndex {
         let mut line_wide_chars = FxHashMap::default();
