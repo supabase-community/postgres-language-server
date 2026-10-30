@@ -42,13 +42,13 @@ pub(super) fn infer_func_call(
                     .as_ref()
                     .is_some_and(|signature| signature.variadic_element.is_some())
             {
-                r.record_call(n, &f.function);
+                r.record_call(n, f);
             }
             return None;
         }
         let failure = match selection {
             Selection::Match(f) => {
-                r.record_call(n, &f.function);
+                r.record_call(n, &f);
                 return f.result;
             }
             Selection::NoMatch => crate::resolve::MatchFailure::NoMatch,
@@ -104,7 +104,7 @@ pub(in crate::resolve) fn resolve_procedure_call(
         r.search_path,
     ) && f.function.kind == crate::FunctionKind::Procedure
     {
-        r.record_call(n, &f.function);
+        r.record_call(n, &f);
     }
 }
 

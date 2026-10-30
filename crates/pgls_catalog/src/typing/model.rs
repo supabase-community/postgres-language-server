@@ -59,6 +59,10 @@ pub enum CoercionContext {
 pub struct ResolvedFunction {
     pub function: crate::FunctionInfo,
     pub result: Option<Type>,
+    /// The type each argument of the call is coerced to, in the order of the call's arguments,
+    /// with polymorphic parameter types resolved from the arguments. `None` where it is unknown,
+    /// like for `"any"`.
+    pub arguments: Vec<Option<Type>>,
 }
 
 /// A selected operator and its resolved result type.

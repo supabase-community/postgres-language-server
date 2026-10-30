@@ -259,7 +259,7 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
         ) else {
             return None;
         };
-        r.record_call(call, &selected.function);
+        r.record_call(call, &selected);
         match selected.function.return_columns {
             // A single output parameter of a composite type expands to its attributes.
             Some(columns) if columns.len() == 1 => {
