@@ -146,6 +146,10 @@ pub(crate) struct DocumentCache {
     parses: PgQueryStore,
     trees: TreeSitterStore,
     keyed: Mutex<KeyedCaches>,
+    /// Held while analysing, so that concurrent requests wait for one analysis. It isn't
+    /// `keyed`: an edit takes that while it holds the documents, and an analysis checks whether
+    /// the document changed, which needs the documents.
+    analysing: Mutex<()>,
 }
 
 /// The caches that are only valid for one [`CacheKey`].
@@ -168,6 +172,7 @@ impl DocumentCache {
             parses: PgQueryStore::new(),
             trees: TreeSitterStore::new(),
             keyed: Mutex::default(),
+            analysing: Mutex::default(),
         }
     }
 
@@ -179,15 +184,26 @@ impl DocumentCache {
         generation: u64,
         analyse: impl FnOnce() -> Option<DocumentAnalysis>,
     ) -> Option<Arc<DocumentAnalysis>> {
-        // Held while analysing, so that concurrent requests wait for one analysis.
-        let Some(mut keyed) = self.keyed(key, generation) else {
-            return analyse().map(Arc::new);
-        };
-        if let Some(analysis) = &keyed.analysis {
-            return Some(Arc::clone(analysis));
+        let analysing = self.analysing.lock().unwrap();
+        match self.keyed(key, generation) {
+            Some(keyed) => {
+                if let Some(analysis) = &keyed.analysis {
+                    return Some(Arc::clone(analysis));
+                }
+            }
+            None => {
+                drop(analysing);
+                return analyse().map(Arc::new);
+            }
         }
         let analysis = Arc::new(analyse()?);
-        keyed.analysis = Some(Arc::clone(&analysis));
+        // Unless the content or the key changed meanwhile.
+        let mut keyed = self.keyed.lock().unwrap();
+        if keyed.generation == generation && keyed.key.as_ref() == Some(key) {
+            keyed.analysis = Some(Arc::clone(&analysis));
+        }
+        drop(keyed);
+        drop(analysing);
         Some(analysis)
     }
 
