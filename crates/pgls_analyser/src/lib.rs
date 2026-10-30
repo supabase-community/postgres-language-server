@@ -133,6 +133,10 @@ pub struct AnalyserParams {
     pub sections: Vec<MigrationSection>,
     /// Whether the rules of the typecheck group run.
     pub typecheck: bool,
+    /// The text of the file. Fixes that also edit after their statement, like the `COMMIT` that
+    /// `banUncommittedTransaction` adds after the last statement, are checked on it. Without
+    /// it, such fixes are kept unchecked.
+    pub source: Option<String>,
 }
 
 /// A top-level statement that doesn't parse, e.g. because it uses syntax of a newer Postgres.
@@ -194,6 +198,16 @@ impl<'a> Analyser<'a> {
             .map(|base| base.snapshot().as_ref());
         let roots: Vec<pgls_query::NodeEnum> =
             params.stmts.iter().map(|s| s.root.clone()).collect();
+        let file = params.source.as_deref().map(|source| FileText {
+            source,
+            stmts: params
+                .stmts
+                .iter()
+                .filter(|stmt| stmt.function.is_none())
+                .map(|stmt| stmt.range)
+                .chain(params.unparsable.iter().map(|stmt| stmt.range))
+                .collect(),
+        });
 
         let rules: Vec<_> = self
             .registry
@@ -330,10 +344,9 @@ impl<'a> Analyser<'a> {
                             // keep the statement valid.
                             let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
                                 TextSize::of(sql.as_str()) == stmt.range.len()
-                                    && diagnostic
-                                        .fix
-                                        .as_ref()
-                                        .is_none_or(|fix| keeps_statement_valid(fix, sql))
+                                    && diagnostic.fix.as_ref().is_none_or(|fix| {
+                                        keeps_sql_valid(fix, sql, stmt.range.start(), file.as_ref())
+                                    })
                             });
                             if !fix_is_valid {
                                 diagnostic.fix = None;
@@ -377,15 +390,43 @@ impl<'a> Analyser<'a> {
     }
 }
 
-/// Whether the statement `sql` still parses with the fix applied. The edits are relative to the
-/// statement. A fix that also edits outside of the statement, e.g. to add a `COMMIT` after it,
-/// can't be checked on the statement alone and is kept.
-fn keeps_statement_valid(fix: &RuleFix, sql: &str) -> bool {
+/// The text of the file, and the ranges of its top-level statements.
+struct FileText<'a> {
+    source: &'a str,
+    stmts: Vec<TextRange>,
+}
+
+/// Whether the SQL still parses with the fix applied. The edits are relative to the statement
+/// `sql`, which starts at `start` in the file. A fix within the statement, or at its end, is
+/// checked on the statement. A fix that also edits after the statement, e.g. to add a `COMMIT`
+/// after the last statement, is checked on the text of the file from the start of the statement
+/// to the end of the last statement it edits. If that text doesn't parse without the fix, or the
+/// text of the file isn't known, the fix can't be checked and is kept.
+fn keeps_sql_valid(fix: &RuleFix, sql: &str, start: TextSize, file: Option<&FileText>) -> bool {
     let len = TextSize::of(sql);
-    if fix.edits.iter().any(|edit| edit.range.end() > len) {
+    let Some(edits_end) = fix.edits.iter().map(|edit| edit.range.end()).max() else {
+        return true;
+    };
+    if edits_end <= len {
+        return pgls_query::parse(&fix.apply(sql)).is_ok();
+    }
+    let Some(file) = file else {
+        return true;
+    };
+    let edits_end = start + edits_end;
+    let end = file
+        .stmts
+        .iter()
+        .filter(|stmt| stmt.start() >= start && stmt.start() < edits_end)
+        .map(|stmt| stmt.end())
+        .fold(edits_end, TextSize::max);
+    let Some(text) = file.source.get(usize::from(start)..usize::from(end)) else {
+        return true;
+    };
+    if pgls_query::parse(text).is_err() {
         return true;
     }
-    pgls_query::parse(&fix.apply(sql)).is_ok()
+    pgls_query::parse(&fix.apply(text)).is_ok()
 }
 
 /// Statements that run together: those before the first section marker, then each section.
@@ -506,6 +547,7 @@ pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
     analyser
         .run(AnalyserParams {
             stmts: vec![AnalysableStatement::new(root, range).with_sql(sql)],
+            source: Some(sql.to_owned()),
             ..Default::default()
         })
         .iter()
@@ -533,34 +575,56 @@ mod tests {
     use pgls_text_size::TextRange;
     use termcolor::NoColor;
 
-    use crate::{AnalysableStatement, Analyser, RuleFix, keeps_statement_valid};
+    use crate::{AnalysableStatement, Analyser, FileText, RuleFix, keeps_sql_valid};
 
     #[test]
     fn fixes_must_keep_the_statement_valid() {
         let sql = "create index users_email_idx on users (email)";
         let at = |offset: u32| pgls_text_size::TextSize::from(offset);
-        assert!(keeps_statement_valid(
-            &RuleFix::new("").insert(at(12), " concurrently"),
-            sql
-        ));
-        assert!(!keeps_statement_valid(
-            &RuleFix::new("").insert(at(12), " concurrently ("),
-            sql
-        ));
+        let valid = |fix: RuleFix| keeps_sql_valid(&fix, sql, at(0), None);
+        assert!(valid(RuleFix::new("").insert(at(12), " concurrently")));
+        assert!(!valid(RuleFix::new("").insert(at(12), " concurrently (")));
         // At the end of the statement, the edit is checked with it.
-        assert!(keeps_statement_valid(
-            &RuleFix::new("").insert(at(45), " where email is not null"),
-            sql
+        assert!(valid(
+            RuleFix::new("").insert(at(45), " where email is not null")
         ));
-        assert!(!keeps_statement_valid(
-            &RuleFix::new("").insert(at(45), " where"),
-            sql
-        ));
-        // After the statement, the fix can't be checked on the statement alone.
-        assert!(keeps_statement_valid(
-            &RuleFix::new("").insert(at(47), "\ncommit;"),
-            sql
-        ));
+        assert!(!valid(RuleFix::new("").insert(at(45), " where")));
+        // After the statement, the fix can't be checked without the file.
+        assert!(valid(RuleFix::new("").insert(at(47), "\ncommit;")));
+    }
+
+    #[test]
+    fn fixes_after_the_statement_are_checked_on_the_file() {
+        let source = "begin;\ncreate table t (id int);\ncreate table u (id int)";
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        let file = FileText {
+            source,
+            stmts: vec![
+                TextRange::new(at(0), at(5)),
+                TextRange::new(at(7), at(30)),
+                TextRange::new(at(32), at(55)),
+            ],
+        };
+        // A fix of `begin`.
+        let valid = |offset: u32, text: &str| {
+            let fix = RuleFix::new("").insert(at(offset), text);
+            keeps_sql_valid(&fix, &source[..5], at(0), Some(&file))
+        };
+        // After `create table t (id int);`.
+        assert!(valid(31, "\ncommit;"));
+        assert!(!valid(30, "\ncommit"));
+        // After the last statement, which has no semicolon.
+        assert!(valid(55, ";\ncommit;"));
+        assert!(!valid(55, "\ncommit;"));
+        // Inside `create table t`.
+        assert!(!valid(14, "\ncommit;"));
+        // Text that doesn't parse can't be checked.
+        let file = FileText {
+            source: "begin;\ncreate tabel t (id int)",
+            stmts: vec![TextRange::new(at(0), at(5)), TextRange::new(at(7), at(30))],
+        };
+        let fix = RuleFix::new("").insert(at(30), "\ncommit;");
+        assert!(keeps_sql_valid(&fix, "begin", at(0), Some(&file)));
     }
 
     #[ignore]
