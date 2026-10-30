@@ -5,7 +5,7 @@ use super::{
     string::string_values,
 };
 use crate::{
-    resolve::scope::{Item, Level},
+    resolve::scope::{Item, Level, StarEntry, StarOrder},
     typing::{Selection, TypedColumn, select_common_type},
 };
 
@@ -55,11 +55,24 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
             }
         })
         .collect::<Vec<_>>();
+    let star_order = if n.is_natural || !using_columns.is_empty() {
+        Some(merged_star_order(
+            &left,
+            &right,
+            n.is_natural,
+            &using_columns,
+        ))
+    } else {
+        None
+    };
     let mut joined = left;
     joined.extend(right);
     joined.merged_columns.extend(using_columns.iter().cloned());
     joined.merged_typed_columns.extend(merged);
     joined.has_natural_join |= n.is_natural;
+    if let Some(star_order) = star_order {
+        joined.star_order = star_order;
+    }
 
     if let Some(quals) = n.quals.as_deref() {
         r.enter_level(joined);
@@ -72,14 +85,9 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
 
     if let Some(alias) = &n.alias {
         // Only the alias of the join is visible outside of it.
-        let columns = if joined.has_natural_join || !joined.merged_columns.is_empty() {
-            None
-        } else {
-            joined.star_columns()
-        };
         let mut item = Item::named(
             Some(alias.aliasname.clone()),
-            apply_alias(columns, Some(alias)),
+            apply_alias(joined.star_columns(), Some(alias)),
         );
         if let Some(mut typed) = joined.star_typed_columns() {
             for (column, name) in typed.iter_mut().zip(&alias.colnames) {
@@ -103,4 +111,68 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
         ));
     }
     joined
+}
+
+/// The columns of `*` over a join that merges columns: the merged columns, then the other
+/// columns of the left side, then those of the right side. `NATURAL` merges the columns of the
+/// left side that the right side has too. Postgres rejects a merged column that either side
+/// doesn't have exactly once, so the order is unknown then. Port of the column lists of the
+/// `JoinExpr` case of [`transformFromClauseItem`].
+///
+/// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
+fn merged_star_order(left: &Level, right: &Level, natural: bool, using: &[String]) -> StarOrder {
+    let (Some(left_columns), Some(right_columns)) = (left.star(), right.star()) else {
+        return StarOrder::Unknown;
+    };
+    let names = |level: &Level, columns: &[StarEntry]| {
+        columns
+            .iter()
+            .map(|column| level.star_column_name(column).map(str::to_owned))
+            .collect::<Option<Vec<_>>>()
+    };
+    let (Some(left_names), Some(right_names)) =
+        (names(left, &left_columns), names(right, &right_columns))
+    else {
+        return StarOrder::Unknown;
+    };
+    let merged = if natural {
+        left_names
+            .iter()
+            .filter(|name| right_names.contains(name))
+            .cloned()
+            .collect()
+    } else {
+        using.to_vec()
+    };
+    let once = |names: &[String], name: &String| names.iter().filter(|n| *n == name).count() == 1;
+    if !merged
+        .iter()
+        .all(|name| once(&left_names, name) && once(&right_names, name) && once(&merged, name))
+    {
+        return StarOrder::Unknown;
+    }
+
+    let offset = left.items.len();
+    let mut columns: Vec<StarEntry> = merged.iter().cloned().map(StarEntry::Merged).collect();
+    columns.extend(
+        left_columns
+            .into_iter()
+            .zip(&left_names)
+            .filter(|(_, name)| !merged.contains(name))
+            .map(|(column, _)| column),
+    );
+    columns.extend(
+        right_columns
+            .into_iter()
+            .zip(&right_names)
+            .filter(|(_, name)| !merged.contains(name))
+            .map(|(column, _)| match column {
+                StarEntry::Item { item, column } => StarEntry::Item {
+                    item: item + offset,
+                    column,
+                },
+                merged => merged,
+            }),
+    );
+    StarOrder::Columns(columns)
 }

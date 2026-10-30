@@ -455,16 +455,39 @@ async fn star_references(test_db: PgPool) {
         stars("select exists (select * from posts where user_id = users.id) from users"),
         ["* => star id, user_id, title"]
     );
-    // Unknown columns, duplicate column names, merged columns, and items without a name have
-    // no reference.
+    // Joins that merge columns expand to the merged columns first, by their bare name.
+    assert_eq!(
+        stars("select * from users join posts using (id)"),
+        ["* => star id, users.name, posts.user_id, posts.title"]
+    );
+    assert_eq!(
+        stars("select * from users natural join people"),
+        ["* => star id, users.name, people.current"]
+    );
+    assert_eq!(
+        stars("select * from users join posts using (id) right join people using (id)"),
+        ["* => star id, users.name, posts.user_id, posts.title, people.current"]
+    );
+    assert_eq!(
+        stars("select * from (users join posts using (id)) j"),
+        ["* => star id, name, user_id, title"]
+    );
+    // Unknown columns, duplicate column names, ambiguous merged columns, and items without a
+    // name have no reference.
     assert_eq!(stars("select * from nope"), [""; 0]);
     assert_eq!(stars("select * from users, nope"), [""; 0]);
     assert_eq!(
         stars("select j.* from (users join posts on true) j"),
         [""; 0]
     );
-    assert_eq!(stars("select * from users join posts using (id)"), [""; 0]);
-    assert_eq!(stars("select * from users natural join posts"), [""; 0]);
+    assert_eq!(
+        stars("select * from users join posts using (id), people"),
+        [""; 0]
+    );
+    assert_eq!(
+        stars("select * from users join posts using (nope)"),
+        [""; 0]
+    );
     assert_eq!(stars("select * from users, (select 1 as one)"), [""; 0]);
     assert_eq!(
         stars("select 1 from users where (users.*) is not null"),
