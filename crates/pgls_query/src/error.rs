@@ -22,6 +22,8 @@ pub enum Error {
         crate::MAX_NESTING
     )]
     TooDeep,
+    #[error("The statement is too long to parse: {0}")]
+    TooLong(String),
 }
 
 /// Convenient Result alias for returning `pg_query::Error`.
