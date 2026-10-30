@@ -984,30 +984,29 @@ async fn hover_text(server: &mut Server, position: Position) -> Result<String> {
 /// why the schema couldn't be loaded.
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn hover_reports_why_the_schema_could_not_be_loaded(test_db: PgPool) -> Result<()> {
-    // Roles belong to the cluster, but the privileges on `pg_proc` to the test's own database.
+    // The server's connections run as `test_login`, a role of the test migrations that isn't a
+    // superuser. Both settings belong to the test's own database, which is dropped afterwards, so
+    // no role or privilege outlives the test.
+    let database = test_db
+        .connect_options()
+        .get_database()
+        .unwrap()
+        .to_string();
     test_db
         .execute(
-            r#"
-            do $$
-            begin
-                if not exists (select from pg_roles where rolname = 'pgls_hover_without_pg_proc') then
-                    create role pgls_hover_without_pg_proc login password 'pgls';
-                end if;
-            end
-            $$;
-            revoke select on pg_catalog.pg_proc from public;
-            "#,
+            format!(
+                r#"
+                revoke select on pg_catalog.pg_proc from public;
+                alter database "{database}" set role = 'test_login';
+                "#
+            )
+            .as_str(),
         )
         .await?;
 
-    let options = test_db.connect_options();
     let (mut server, reader) = server_with_database(
         PartialDatabaseConfiguration {
-            host: Some(options.get_host().to_string()),
-            port: Some(options.get_port()),
-            database: Some(options.get_database().unwrap().to_string()),
-            username: Some("pgls_hover_without_pg_proc".to_string()),
-            password: Some("pgls".to_string()),
+            database: Some(database),
             ..Default::default()
         },
         "select 1;\n",
