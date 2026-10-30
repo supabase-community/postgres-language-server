@@ -321,10 +321,7 @@ impl<'a> Analyser<'a> {
                     result
                         .diagnostics
                         .extend(diagnostics.into_iter().map(|mut diagnostic| {
-                            diagnostic.span = Some(match diagnostic.span {
-                                Some(span) => span + stmt.range.start(),
-                                None => stmt.range,
-                            });
+                            diagnostic.move_into_file(stmt.range);
                             // Fixes are computed on the statement text, which only matches the
                             // source if it has the length of the statement range. A fix must
                             // keep the statement valid.
@@ -533,7 +530,8 @@ mod tests {
     use pgls_text_size::TextRange;
     use termcolor::NoColor;
 
-    use crate::{AnalysableStatement, Analyser, RuleFix, keeps_statement_valid};
+    use crate::{AnalysableStatement, Analyser, LinterDiagnostic, RuleFix, keeps_statement_valid};
+    use pgls_diagnostics::category;
 
     #[test]
     fn fixes_must_keep_the_statement_valid() {
@@ -561,6 +559,33 @@ mod tests {
             &RuleFix::new("").insert(at(47), "\ncommit;"),
             sql
         ));
+    }
+
+    #[test]
+    fn diagnostics_move_into_the_file() {
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        let statement = TextRange::new(at(10), at(30));
+        let mut diagnostic = LinterDiagnostic::new(
+            category!("lint/banDropColumn"),
+            Some(TextRange::new(at(2), at(4))),
+            "",
+        )
+        .detail(Some(TextRange::new(at(5), at(7))), "here")
+        .detail(None, "no span");
+        diagnostic.move_into_file(statement);
+        assert_eq!(diagnostic.span, Some(TextRange::new(at(12), at(14))));
+        let details: Vec<_> = diagnostic
+            .rule_advice
+            .details
+            .iter()
+            .map(|detail| detail.range)
+            .collect();
+        assert_eq!(details, [Some(TextRange::new(at(15), at(17))), None]);
+
+        // Without a span, the diagnostic points at the statement.
+        let mut diagnostic = LinterDiagnostic::new(category!("lint/banDropColumn"), None, "");
+        diagnostic.move_into_file(statement);
+        assert_eq!(diagnostic.span, Some(statement));
     }
 
     #[ignore]
