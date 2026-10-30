@@ -896,6 +896,69 @@ fn indexes_follow_constraints_and_partitioned_indexes() {
 }
 
 #[test]
+fn dropping_a_column_drops_the_indexes_that_use_it() {
+    let search_path = path(&["public"]);
+    let after = |sql: &str| catalog_after(sql, &search_path);
+    let index = |catalog: &Catalog, name| catalog.index(None, name, &search_path);
+    let state = |catalog: &Catalog, name| match index(catalog, name) {
+        Lookup::Found(_) => "found",
+        Lookup::Missing => "missing",
+        Lookup::Unknown => "unknown",
+    };
+    let table = "create table t (a int, b int, c int);
+         create index t_a_idx on t (a);
+         create index t_b_idx on t ((b + 1));
+         create index t_qualified_idx on t (abs(t.b));
+         create index t_where_idx on t (a) where c > 0;
+         create index t_include_idx on t (a) include (c);
+         create index t_row_idx on t (md5(t::text));";
+
+    // The column of a key, an INCLUDE column, or a column in an expression or the predicate.
+    let catalog = after(&format!("{table} alter table t drop column c;"));
+    assert_eq!(state(&catalog, "t_where_idx"), "missing");
+    assert_eq!(state(&catalog, "t_include_idx"), "missing");
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+    assert_eq!(state(&catalog, "t_b_idx"), "found");
+    // `t` is the whole row. We don't follow what it depends on, so the index becomes unknown.
+    assert_eq!(state(&catalog, "t_row_idx"), "unknown");
+    let catalog = after(&format!("{table} alter table t drop column b;"));
+    assert_eq!(state(&catalog, "t_b_idx"), "missing");
+    assert_eq!(state(&catalog, "t_qualified_idx"), "missing");
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+    let catalog = after(&format!(
+        "{table} alter table t drop column if exists nope;"
+    ));
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+
+    // The index follows a renamed column.
+    let catalog = after(&format!(
+        "{table} alter table t rename column a to x; alter table t add column a int;
+         alter table t drop column a;"
+    ));
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+    let catalog = after(&format!(
+        "{table} alter table t rename column a to x; alter table t drop column x;"
+    ));
+    assert_eq!(state(&catalog, "t_a_idx"), "missing");
+
+    // The column is dropped from the children too, unless with ONLY.
+    let child = "create table t (a int); create table child (b int) inherits (t);
+         create index child_a_idx on child (a);";
+    let catalog = after(&format!("{child} alter table t drop column a;"));
+    assert_eq!(state(&catalog, "child_a_idx"), "missing");
+    let catalog = after(&format!("{child} alter table only t drop column a;"));
+    assert_eq!(state(&catalog, "child_a_idx"), "found");
+    // Postgres rejects dropping an inherited column, and we don't know which columns of a child
+    // are inherited.
+    let catalog = after(&format!("{child} alter table child drop column a;"));
+    assert_eq!(state(&catalog, "child_a_idx"), "unknown");
+
+    // We don't know the columns of the indexes of the database.
+    let catalog = after("alter table users drop column id;");
+    assert_eq!(state(&catalog, "users_name_idx"), "unknown");
+}
+
+#[test]
 fn indexes_with_names_we_dont_know_make_missing_indexes_unknown() {
     let search_path = path(&["public"]);
     for sql in [

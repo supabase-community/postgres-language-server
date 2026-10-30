@@ -57,7 +57,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     else {
         return;
     };
-    apply_index_changes(c, &relation, &commands);
+    apply_index_changes(c, &relation, range_var.inh, &commands);
     let changes_columns = commands.iter().any(|command| {
         matches!(
             command.subtype(),
@@ -100,11 +100,18 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
 ///   partitioned table also the constraints and indexes of the partitions
 ///   ([`dropconstraint_internal`]). We don't know which constraints have an index, so the index
 ///   with the name of the constraint becomes unknown.
+/// - `DROP COLUMN` drops the indexes that use the column, see [`Catalog::drop_column_indexes`].
+///   Without `ONLY`, Postgres drops the column from the children as well.
 ///
 /// [`transformIndexConstraint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L2406
 /// [`ATExecAddIndexConstraint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9715
 /// [`dropconstraint_internal`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L14098
-fn apply_index_changes(c: &mut Catalog, table: &RelationInfo, commands: &[&AlterTableCmd]) {
+fn apply_index_changes(
+    c: &mut Catalog,
+    table: &RelationInfo,
+    recurse: bool,
+    commands: &[&AlterTableCmd],
+) {
     for command in commands {
         match command.subtype() {
             AlterTableType::AtAddConstraint => {
@@ -125,6 +132,14 @@ fn apply_index_changes(c: &mut Catalog, table: &RelationInfo, commands: &[&Alter
                 {
                     c.move_index(index, &constraint.conname);
                 }
+            }
+            AlterTableType::AtDropColumn => {
+                // Postgres rejects dropping an inherited column, and we don't know which columns
+                // of a child are inherited. It also rejects `ONLY` on a partitioned table with
+                // partitions.
+                let may_fail = c.is_inheritance_child(table)
+                    || (!recurse && table.kind == RelationKind::PartitionedTable);
+                c.drop_column_indexes(table, &command.name, recurse, may_fail);
             }
             AlterTableType::AtDropConstraint => {
                 c.mark_index_unknown(&table.schema, &command.name);
