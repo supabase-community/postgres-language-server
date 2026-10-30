@@ -17,7 +17,7 @@ pub struct ScanResult {
 pub struct Node {
     #[prost(
         oneof = "node::Node",
-        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268"
+        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271"
     )]
     pub node: ::core::option::Option<node::Node>,
 }
@@ -144,81 +144,81 @@ pub mod node {
         #[prost(message, tag = "58")]
         InferenceElem(::prost::alloc::boxed::Box<super::InferenceElem>),
         #[prost(message, tag = "59")]
-        TargetEntry(::prost::alloc::boxed::Box<super::TargetEntry>),
+        ReturningExpr(::prost::alloc::boxed::Box<super::ReturningExpr>),
         #[prost(message, tag = "60")]
-        RangeTblRef(super::RangeTblRef),
+        TargetEntry(::prost::alloc::boxed::Box<super::TargetEntry>),
         #[prost(message, tag = "61")]
-        JoinExpr(::prost::alloc::boxed::Box<super::JoinExpr>),
+        RangeTblRef(super::RangeTblRef),
         #[prost(message, tag = "62")]
-        FromExpr(::prost::alloc::boxed::Box<super::FromExpr>),
+        JoinExpr(::prost::alloc::boxed::Box<super::JoinExpr>),
         #[prost(message, tag = "63")]
-        OnConflictExpr(::prost::alloc::boxed::Box<super::OnConflictExpr>),
+        FromExpr(::prost::alloc::boxed::Box<super::FromExpr>),
         #[prost(message, tag = "64")]
-        Query(::prost::alloc::boxed::Box<super::Query>),
+        OnConflictExpr(::prost::alloc::boxed::Box<super::OnConflictExpr>),
         #[prost(message, tag = "65")]
-        TypeName(super::TypeName),
+        Query(::prost::alloc::boxed::Box<super::Query>),
         #[prost(message, tag = "66")]
-        ColumnRef(super::ColumnRef),
+        TypeName(super::TypeName),
         #[prost(message, tag = "67")]
-        ParamRef(super::ParamRef),
+        ColumnRef(super::ColumnRef),
         #[prost(message, tag = "68")]
-        AExpr(::prost::alloc::boxed::Box<super::AExpr>),
+        ParamRef(super::ParamRef),
         #[prost(message, tag = "69")]
-        TypeCast(::prost::alloc::boxed::Box<super::TypeCast>),
+        AExpr(::prost::alloc::boxed::Box<super::AExpr>),
         #[prost(message, tag = "70")]
-        CollateClause(::prost::alloc::boxed::Box<super::CollateClause>),
+        TypeCast(::prost::alloc::boxed::Box<super::TypeCast>),
         #[prost(message, tag = "71")]
-        RoleSpec(super::RoleSpec),
+        CollateClause(::prost::alloc::boxed::Box<super::CollateClause>),
         #[prost(message, tag = "72")]
-        FuncCall(::prost::alloc::boxed::Box<super::FuncCall>),
+        RoleSpec(super::RoleSpec),
         #[prost(message, tag = "73")]
-        AStar(super::AStar),
+        FuncCall(::prost::alloc::boxed::Box<super::FuncCall>),
         #[prost(message, tag = "74")]
-        AIndices(::prost::alloc::boxed::Box<super::AIndices>),
+        AStar(super::AStar),
         #[prost(message, tag = "75")]
-        AIndirection(::prost::alloc::boxed::Box<super::AIndirection>),
+        AIndices(::prost::alloc::boxed::Box<super::AIndices>),
         #[prost(message, tag = "76")]
-        AArrayExpr(super::AArrayExpr),
+        AIndirection(::prost::alloc::boxed::Box<super::AIndirection>),
         #[prost(message, tag = "77")]
-        ResTarget(::prost::alloc::boxed::Box<super::ResTarget>),
+        AArrayExpr(super::AArrayExpr),
         #[prost(message, tag = "78")]
-        MultiAssignRef(::prost::alloc::boxed::Box<super::MultiAssignRef>),
+        ResTarget(::prost::alloc::boxed::Box<super::ResTarget>),
         #[prost(message, tag = "79")]
-        SortBy(::prost::alloc::boxed::Box<super::SortBy>),
+        MultiAssignRef(::prost::alloc::boxed::Box<super::MultiAssignRef>),
         #[prost(message, tag = "80")]
-        WindowDef(::prost::alloc::boxed::Box<super::WindowDef>),
+        SortBy(::prost::alloc::boxed::Box<super::SortBy>),
         #[prost(message, tag = "81")]
-        RangeSubselect(::prost::alloc::boxed::Box<super::RangeSubselect>),
+        WindowDef(::prost::alloc::boxed::Box<super::WindowDef>),
         #[prost(message, tag = "82")]
-        RangeFunction(super::RangeFunction),
+        RangeSubselect(::prost::alloc::boxed::Box<super::RangeSubselect>),
         #[prost(message, tag = "83")]
-        RangeTableFunc(::prost::alloc::boxed::Box<super::RangeTableFunc>),
+        RangeFunction(super::RangeFunction),
         #[prost(message, tag = "84")]
-        RangeTableFuncCol(::prost::alloc::boxed::Box<super::RangeTableFuncCol>),
+        RangeTableFunc(::prost::alloc::boxed::Box<super::RangeTableFunc>),
         #[prost(message, tag = "85")]
-        RangeTableSample(::prost::alloc::boxed::Box<super::RangeTableSample>),
+        RangeTableFuncCol(::prost::alloc::boxed::Box<super::RangeTableFuncCol>),
         #[prost(message, tag = "86")]
-        ColumnDef(::prost::alloc::boxed::Box<super::ColumnDef>),
+        RangeTableSample(::prost::alloc::boxed::Box<super::RangeTableSample>),
         #[prost(message, tag = "87")]
-        TableLikeClause(super::TableLikeClause),
+        ColumnDef(::prost::alloc::boxed::Box<super::ColumnDef>),
         #[prost(message, tag = "88")]
-        IndexElem(::prost::alloc::boxed::Box<super::IndexElem>),
+        TableLikeClause(super::TableLikeClause),
         #[prost(message, tag = "89")]
-        DefElem(::prost::alloc::boxed::Box<super::DefElem>),
+        IndexElem(::prost::alloc::boxed::Box<super::IndexElem>),
         #[prost(message, tag = "90")]
-        LockingClause(super::LockingClause),
+        DefElem(::prost::alloc::boxed::Box<super::DefElem>),
         #[prost(message, tag = "91")]
-        XmlSerialize(::prost::alloc::boxed::Box<super::XmlSerialize>),
+        LockingClause(super::LockingClause),
         #[prost(message, tag = "92")]
-        PartitionElem(::prost::alloc::boxed::Box<super::PartitionElem>),
+        XmlSerialize(::prost::alloc::boxed::Box<super::XmlSerialize>),
         #[prost(message, tag = "93")]
-        PartitionSpec(super::PartitionSpec),
+        PartitionElem(::prost::alloc::boxed::Box<super::PartitionElem>),
         #[prost(message, tag = "94")]
-        PartitionBoundSpec(super::PartitionBoundSpec),
+        PartitionSpec(super::PartitionSpec),
         #[prost(message, tag = "95")]
-        PartitionRangeDatum(::prost::alloc::boxed::Box<super::PartitionRangeDatum>),
+        PartitionBoundSpec(super::PartitionBoundSpec),
         #[prost(message, tag = "96")]
-        SinglePartitionSpec(super::SinglePartitionSpec),
+        PartitionRangeDatum(::prost::alloc::boxed::Box<super::PartitionRangeDatum>),
         #[prost(message, tag = "97")]
         PartitionCmd(super::PartitionCmd),
         #[prost(message, tag = "98")]
@@ -254,320 +254,326 @@ pub mod node {
         #[prost(message, tag = "113")]
         MergeWhenClause(::prost::alloc::boxed::Box<super::MergeWhenClause>),
         #[prost(message, tag = "114")]
-        TriggerTransition(super::TriggerTransition),
+        ReturningOption(super::ReturningOption),
         #[prost(message, tag = "115")]
-        JsonOutput(super::JsonOutput),
+        ReturningClause(super::ReturningClause),
         #[prost(message, tag = "116")]
-        JsonArgument(::prost::alloc::boxed::Box<super::JsonArgument>),
+        TriggerTransition(super::TriggerTransition),
         #[prost(message, tag = "117")]
-        JsonFuncExpr(::prost::alloc::boxed::Box<super::JsonFuncExpr>),
+        JsonOutput(super::JsonOutput),
         #[prost(message, tag = "118")]
-        JsonTablePathSpec(::prost::alloc::boxed::Box<super::JsonTablePathSpec>),
+        JsonArgument(::prost::alloc::boxed::Box<super::JsonArgument>),
         #[prost(message, tag = "119")]
-        JsonTable(::prost::alloc::boxed::Box<super::JsonTable>),
+        JsonFuncExpr(::prost::alloc::boxed::Box<super::JsonFuncExpr>),
         #[prost(message, tag = "120")]
-        JsonTableColumn(::prost::alloc::boxed::Box<super::JsonTableColumn>),
+        JsonTablePathSpec(::prost::alloc::boxed::Box<super::JsonTablePathSpec>),
         #[prost(message, tag = "121")]
-        JsonKeyValue(::prost::alloc::boxed::Box<super::JsonKeyValue>),
+        JsonTable(::prost::alloc::boxed::Box<super::JsonTable>),
         #[prost(message, tag = "122")]
-        JsonParseExpr(::prost::alloc::boxed::Box<super::JsonParseExpr>),
+        JsonTableColumn(::prost::alloc::boxed::Box<super::JsonTableColumn>),
         #[prost(message, tag = "123")]
-        JsonScalarExpr(::prost::alloc::boxed::Box<super::JsonScalarExpr>),
+        JsonKeyValue(::prost::alloc::boxed::Box<super::JsonKeyValue>),
         #[prost(message, tag = "124")]
-        JsonSerializeExpr(::prost::alloc::boxed::Box<super::JsonSerializeExpr>),
+        JsonParseExpr(::prost::alloc::boxed::Box<super::JsonParseExpr>),
         #[prost(message, tag = "125")]
-        JsonObjectConstructor(super::JsonObjectConstructor),
+        JsonScalarExpr(::prost::alloc::boxed::Box<super::JsonScalarExpr>),
         #[prost(message, tag = "126")]
-        JsonArrayConstructor(super::JsonArrayConstructor),
+        JsonSerializeExpr(::prost::alloc::boxed::Box<super::JsonSerializeExpr>),
         #[prost(message, tag = "127")]
+        JsonObjectConstructor(super::JsonObjectConstructor),
+        #[prost(message, tag = "128")]
+        JsonArrayConstructor(super::JsonArrayConstructor),
+        #[prost(message, tag = "129")]
         JsonArrayQueryConstructor(
             ::prost::alloc::boxed::Box<super::JsonArrayQueryConstructor>,
         ),
-        #[prost(message, tag = "128")]
-        JsonAggConstructor(::prost::alloc::boxed::Box<super::JsonAggConstructor>),
-        #[prost(message, tag = "129")]
-        JsonObjectAgg(::prost::alloc::boxed::Box<super::JsonObjectAgg>),
         #[prost(message, tag = "130")]
-        JsonArrayAgg(::prost::alloc::boxed::Box<super::JsonArrayAgg>),
+        JsonAggConstructor(::prost::alloc::boxed::Box<super::JsonAggConstructor>),
         #[prost(message, tag = "131")]
-        RawStmt(::prost::alloc::boxed::Box<super::RawStmt>),
+        JsonObjectAgg(::prost::alloc::boxed::Box<super::JsonObjectAgg>),
         #[prost(message, tag = "132")]
-        InsertStmt(::prost::alloc::boxed::Box<super::InsertStmt>),
+        JsonArrayAgg(::prost::alloc::boxed::Box<super::JsonArrayAgg>),
         #[prost(message, tag = "133")]
-        DeleteStmt(::prost::alloc::boxed::Box<super::DeleteStmt>),
+        RawStmt(::prost::alloc::boxed::Box<super::RawStmt>),
         #[prost(message, tag = "134")]
-        UpdateStmt(::prost::alloc::boxed::Box<super::UpdateStmt>),
+        InsertStmt(::prost::alloc::boxed::Box<super::InsertStmt>),
         #[prost(message, tag = "135")]
-        MergeStmt(::prost::alloc::boxed::Box<super::MergeStmt>),
+        DeleteStmt(::prost::alloc::boxed::Box<super::DeleteStmt>),
         #[prost(message, tag = "136")]
-        SelectStmt(::prost::alloc::boxed::Box<super::SelectStmt>),
+        UpdateStmt(::prost::alloc::boxed::Box<super::UpdateStmt>),
         #[prost(message, tag = "137")]
-        SetOperationStmt(::prost::alloc::boxed::Box<super::SetOperationStmt>),
+        MergeStmt(::prost::alloc::boxed::Box<super::MergeStmt>),
         #[prost(message, tag = "138")]
-        ReturnStmt(::prost::alloc::boxed::Box<super::ReturnStmt>),
+        SelectStmt(::prost::alloc::boxed::Box<super::SelectStmt>),
         #[prost(message, tag = "139")]
-        PlassignStmt(::prost::alloc::boxed::Box<super::PlAssignStmt>),
+        SetOperationStmt(::prost::alloc::boxed::Box<super::SetOperationStmt>),
         #[prost(message, tag = "140")]
-        CreateSchemaStmt(super::CreateSchemaStmt),
+        ReturnStmt(::prost::alloc::boxed::Box<super::ReturnStmt>),
         #[prost(message, tag = "141")]
-        AlterTableStmt(super::AlterTableStmt),
+        PlassignStmt(::prost::alloc::boxed::Box<super::PlAssignStmt>),
         #[prost(message, tag = "142")]
-        ReplicaIdentityStmt(super::ReplicaIdentityStmt),
+        CreateSchemaStmt(super::CreateSchemaStmt),
         #[prost(message, tag = "143")]
-        AlterTableCmd(::prost::alloc::boxed::Box<super::AlterTableCmd>),
+        AlterTableStmt(super::AlterTableStmt),
         #[prost(message, tag = "144")]
-        AlterCollationStmt(super::AlterCollationStmt),
+        AlterTableCmd(::prost::alloc::boxed::Box<super::AlterTableCmd>),
         #[prost(message, tag = "145")]
-        AlterDomainStmt(::prost::alloc::boxed::Box<super::AlterDomainStmt>),
+        AtalterConstraint(super::AtAlterConstraint),
         #[prost(message, tag = "146")]
-        GrantStmt(super::GrantStmt),
+        ReplicaIdentityStmt(super::ReplicaIdentityStmt),
         #[prost(message, tag = "147")]
-        ObjectWithArgs(super::ObjectWithArgs),
+        AlterCollationStmt(super::AlterCollationStmt),
         #[prost(message, tag = "148")]
-        AccessPriv(super::AccessPriv),
+        AlterDomainStmt(::prost::alloc::boxed::Box<super::AlterDomainStmt>),
         #[prost(message, tag = "149")]
-        GrantRoleStmt(super::GrantRoleStmt),
+        GrantStmt(super::GrantStmt),
         #[prost(message, tag = "150")]
-        AlterDefaultPrivilegesStmt(super::AlterDefaultPrivilegesStmt),
+        ObjectWithArgs(super::ObjectWithArgs),
         #[prost(message, tag = "151")]
-        CopyStmt(::prost::alloc::boxed::Box<super::CopyStmt>),
+        AccessPriv(super::AccessPriv),
         #[prost(message, tag = "152")]
-        VariableSetStmt(super::VariableSetStmt),
+        GrantRoleStmt(super::GrantRoleStmt),
         #[prost(message, tag = "153")]
-        VariableShowStmt(super::VariableShowStmt),
+        AlterDefaultPrivilegesStmt(super::AlterDefaultPrivilegesStmt),
         #[prost(message, tag = "154")]
-        CreateStmt(super::CreateStmt),
+        CopyStmt(::prost::alloc::boxed::Box<super::CopyStmt>),
         #[prost(message, tag = "155")]
-        Constraint(::prost::alloc::boxed::Box<super::Constraint>),
+        VariableSetStmt(super::VariableSetStmt),
         #[prost(message, tag = "156")]
-        CreateTableSpaceStmt(super::CreateTableSpaceStmt),
+        VariableShowStmt(super::VariableShowStmt),
         #[prost(message, tag = "157")]
-        DropTableSpaceStmt(super::DropTableSpaceStmt),
+        CreateStmt(super::CreateStmt),
         #[prost(message, tag = "158")]
-        AlterTableSpaceOptionsStmt(super::AlterTableSpaceOptionsStmt),
+        Constraint(::prost::alloc::boxed::Box<super::Constraint>),
         #[prost(message, tag = "159")]
-        AlterTableMoveAllStmt(super::AlterTableMoveAllStmt),
+        CreateTableSpaceStmt(super::CreateTableSpaceStmt),
         #[prost(message, tag = "160")]
-        CreateExtensionStmt(super::CreateExtensionStmt),
+        DropTableSpaceStmt(super::DropTableSpaceStmt),
         #[prost(message, tag = "161")]
-        AlterExtensionStmt(super::AlterExtensionStmt),
+        AlterTableSpaceOptionsStmt(super::AlterTableSpaceOptionsStmt),
         #[prost(message, tag = "162")]
+        AlterTableMoveAllStmt(super::AlterTableMoveAllStmt),
+        #[prost(message, tag = "163")]
+        CreateExtensionStmt(super::CreateExtensionStmt),
+        #[prost(message, tag = "164")]
+        AlterExtensionStmt(super::AlterExtensionStmt),
+        #[prost(message, tag = "165")]
         AlterExtensionContentsStmt(
             ::prost::alloc::boxed::Box<super::AlterExtensionContentsStmt>,
         ),
-        #[prost(message, tag = "163")]
-        CreateFdwStmt(super::CreateFdwStmt),
-        #[prost(message, tag = "164")]
-        AlterFdwStmt(super::AlterFdwStmt),
-        #[prost(message, tag = "165")]
-        CreateForeignServerStmt(super::CreateForeignServerStmt),
         #[prost(message, tag = "166")]
-        AlterForeignServerStmt(super::AlterForeignServerStmt),
+        CreateFdwStmt(super::CreateFdwStmt),
         #[prost(message, tag = "167")]
-        CreateForeignTableStmt(super::CreateForeignTableStmt),
+        AlterFdwStmt(super::AlterFdwStmt),
         #[prost(message, tag = "168")]
-        CreateUserMappingStmt(super::CreateUserMappingStmt),
+        CreateForeignServerStmt(super::CreateForeignServerStmt),
         #[prost(message, tag = "169")]
-        AlterUserMappingStmt(super::AlterUserMappingStmt),
+        AlterForeignServerStmt(super::AlterForeignServerStmt),
         #[prost(message, tag = "170")]
-        DropUserMappingStmt(super::DropUserMappingStmt),
+        CreateForeignTableStmt(super::CreateForeignTableStmt),
         #[prost(message, tag = "171")]
-        ImportForeignSchemaStmt(super::ImportForeignSchemaStmt),
+        CreateUserMappingStmt(super::CreateUserMappingStmt),
         #[prost(message, tag = "172")]
-        CreatePolicyStmt(::prost::alloc::boxed::Box<super::CreatePolicyStmt>),
+        AlterUserMappingStmt(super::AlterUserMappingStmt),
         #[prost(message, tag = "173")]
-        AlterPolicyStmt(::prost::alloc::boxed::Box<super::AlterPolicyStmt>),
+        DropUserMappingStmt(super::DropUserMappingStmt),
         #[prost(message, tag = "174")]
-        CreateAmStmt(super::CreateAmStmt),
+        ImportForeignSchemaStmt(super::ImportForeignSchemaStmt),
         #[prost(message, tag = "175")]
-        CreateTrigStmt(::prost::alloc::boxed::Box<super::CreateTrigStmt>),
+        CreatePolicyStmt(::prost::alloc::boxed::Box<super::CreatePolicyStmt>),
         #[prost(message, tag = "176")]
-        CreateEventTrigStmt(super::CreateEventTrigStmt),
+        AlterPolicyStmt(::prost::alloc::boxed::Box<super::AlterPolicyStmt>),
         #[prost(message, tag = "177")]
-        AlterEventTrigStmt(super::AlterEventTrigStmt),
+        CreateAmStmt(super::CreateAmStmt),
         #[prost(message, tag = "178")]
-        CreatePlangStmt(super::CreatePLangStmt),
+        CreateTrigStmt(::prost::alloc::boxed::Box<super::CreateTrigStmt>),
         #[prost(message, tag = "179")]
-        CreateRoleStmt(super::CreateRoleStmt),
+        CreateEventTrigStmt(super::CreateEventTrigStmt),
         #[prost(message, tag = "180")]
-        AlterRoleStmt(super::AlterRoleStmt),
+        AlterEventTrigStmt(super::AlterEventTrigStmt),
         #[prost(message, tag = "181")]
-        AlterRoleSetStmt(super::AlterRoleSetStmt),
+        CreatePlangStmt(super::CreatePLangStmt),
         #[prost(message, tag = "182")]
-        DropRoleStmt(super::DropRoleStmt),
+        CreateRoleStmt(super::CreateRoleStmt),
         #[prost(message, tag = "183")]
-        CreateSeqStmt(super::CreateSeqStmt),
+        AlterRoleStmt(super::AlterRoleStmt),
         #[prost(message, tag = "184")]
-        AlterSeqStmt(super::AlterSeqStmt),
+        AlterRoleSetStmt(super::AlterRoleSetStmt),
         #[prost(message, tag = "185")]
-        DefineStmt(super::DefineStmt),
+        DropRoleStmt(super::DropRoleStmt),
         #[prost(message, tag = "186")]
-        CreateDomainStmt(::prost::alloc::boxed::Box<super::CreateDomainStmt>),
+        CreateSeqStmt(super::CreateSeqStmt),
         #[prost(message, tag = "187")]
-        CreateOpClassStmt(super::CreateOpClassStmt),
+        AlterSeqStmt(super::AlterSeqStmt),
         #[prost(message, tag = "188")]
-        CreateOpClassItem(super::CreateOpClassItem),
+        DefineStmt(super::DefineStmt),
         #[prost(message, tag = "189")]
-        CreateOpFamilyStmt(super::CreateOpFamilyStmt),
+        CreateDomainStmt(::prost::alloc::boxed::Box<super::CreateDomainStmt>),
         #[prost(message, tag = "190")]
-        AlterOpFamilyStmt(super::AlterOpFamilyStmt),
+        CreateOpClassStmt(super::CreateOpClassStmt),
         #[prost(message, tag = "191")]
-        DropStmt(super::DropStmt),
+        CreateOpClassItem(super::CreateOpClassItem),
         #[prost(message, tag = "192")]
-        TruncateStmt(super::TruncateStmt),
+        CreateOpFamilyStmt(super::CreateOpFamilyStmt),
         #[prost(message, tag = "193")]
-        CommentStmt(::prost::alloc::boxed::Box<super::CommentStmt>),
+        AlterOpFamilyStmt(super::AlterOpFamilyStmt),
         #[prost(message, tag = "194")]
-        SecLabelStmt(::prost::alloc::boxed::Box<super::SecLabelStmt>),
+        DropStmt(super::DropStmt),
         #[prost(message, tag = "195")]
-        DeclareCursorStmt(::prost::alloc::boxed::Box<super::DeclareCursorStmt>),
+        TruncateStmt(super::TruncateStmt),
         #[prost(message, tag = "196")]
-        ClosePortalStmt(super::ClosePortalStmt),
+        CommentStmt(::prost::alloc::boxed::Box<super::CommentStmt>),
         #[prost(message, tag = "197")]
-        FetchStmt(super::FetchStmt),
+        SecLabelStmt(::prost::alloc::boxed::Box<super::SecLabelStmt>),
         #[prost(message, tag = "198")]
-        IndexStmt(::prost::alloc::boxed::Box<super::IndexStmt>),
+        DeclareCursorStmt(::prost::alloc::boxed::Box<super::DeclareCursorStmt>),
         #[prost(message, tag = "199")]
-        CreateStatsStmt(super::CreateStatsStmt),
+        ClosePortalStmt(super::ClosePortalStmt),
         #[prost(message, tag = "200")]
-        StatsElem(::prost::alloc::boxed::Box<super::StatsElem>),
+        FetchStmt(super::FetchStmt),
         #[prost(message, tag = "201")]
-        AlterStatsStmt(::prost::alloc::boxed::Box<super::AlterStatsStmt>),
+        IndexStmt(::prost::alloc::boxed::Box<super::IndexStmt>),
         #[prost(message, tag = "202")]
-        CreateFunctionStmt(::prost::alloc::boxed::Box<super::CreateFunctionStmt>),
+        CreateStatsStmt(super::CreateStatsStmt),
         #[prost(message, tag = "203")]
-        FunctionParameter(::prost::alloc::boxed::Box<super::FunctionParameter>),
+        StatsElem(::prost::alloc::boxed::Box<super::StatsElem>),
         #[prost(message, tag = "204")]
-        AlterFunctionStmt(super::AlterFunctionStmt),
+        AlterStatsStmt(::prost::alloc::boxed::Box<super::AlterStatsStmt>),
         #[prost(message, tag = "205")]
-        DoStmt(super::DoStmt),
+        CreateFunctionStmt(::prost::alloc::boxed::Box<super::CreateFunctionStmt>),
         #[prost(message, tag = "206")]
-        InlineCodeBlock(super::InlineCodeBlock),
+        FunctionParameter(::prost::alloc::boxed::Box<super::FunctionParameter>),
         #[prost(message, tag = "207")]
-        CallStmt(::prost::alloc::boxed::Box<super::CallStmt>),
+        AlterFunctionStmt(super::AlterFunctionStmt),
         #[prost(message, tag = "208")]
-        CallContext(super::CallContext),
+        DoStmt(super::DoStmt),
         #[prost(message, tag = "209")]
-        RenameStmt(::prost::alloc::boxed::Box<super::RenameStmt>),
+        InlineCodeBlock(super::InlineCodeBlock),
         #[prost(message, tag = "210")]
+        CallStmt(::prost::alloc::boxed::Box<super::CallStmt>),
+        #[prost(message, tag = "211")]
+        CallContext(super::CallContext),
+        #[prost(message, tag = "212")]
+        RenameStmt(::prost::alloc::boxed::Box<super::RenameStmt>),
+        #[prost(message, tag = "213")]
         AlterObjectDependsStmt(
             ::prost::alloc::boxed::Box<super::AlterObjectDependsStmt>,
         ),
-        #[prost(message, tag = "211")]
-        AlterObjectSchemaStmt(::prost::alloc::boxed::Box<super::AlterObjectSchemaStmt>),
-        #[prost(message, tag = "212")]
-        AlterOwnerStmt(::prost::alloc::boxed::Box<super::AlterOwnerStmt>),
-        #[prost(message, tag = "213")]
-        AlterOperatorStmt(super::AlterOperatorStmt),
         #[prost(message, tag = "214")]
-        AlterTypeStmt(super::AlterTypeStmt),
+        AlterObjectSchemaStmt(::prost::alloc::boxed::Box<super::AlterObjectSchemaStmt>),
         #[prost(message, tag = "215")]
-        RuleStmt(::prost::alloc::boxed::Box<super::RuleStmt>),
+        AlterOwnerStmt(::prost::alloc::boxed::Box<super::AlterOwnerStmt>),
         #[prost(message, tag = "216")]
-        NotifyStmt(super::NotifyStmt),
+        AlterOperatorStmt(super::AlterOperatorStmt),
         #[prost(message, tag = "217")]
-        ListenStmt(super::ListenStmt),
+        AlterTypeStmt(super::AlterTypeStmt),
         #[prost(message, tag = "218")]
-        UnlistenStmt(super::UnlistenStmt),
+        RuleStmt(::prost::alloc::boxed::Box<super::RuleStmt>),
         #[prost(message, tag = "219")]
-        TransactionStmt(super::TransactionStmt),
+        NotifyStmt(super::NotifyStmt),
         #[prost(message, tag = "220")]
-        CompositeTypeStmt(super::CompositeTypeStmt),
+        ListenStmt(super::ListenStmt),
         #[prost(message, tag = "221")]
-        CreateEnumStmt(super::CreateEnumStmt),
+        UnlistenStmt(super::UnlistenStmt),
         #[prost(message, tag = "222")]
-        CreateRangeStmt(super::CreateRangeStmt),
+        TransactionStmt(super::TransactionStmt),
         #[prost(message, tag = "223")]
-        AlterEnumStmt(super::AlterEnumStmt),
+        CompositeTypeStmt(super::CompositeTypeStmt),
         #[prost(message, tag = "224")]
-        ViewStmt(::prost::alloc::boxed::Box<super::ViewStmt>),
+        CreateEnumStmt(super::CreateEnumStmt),
         #[prost(message, tag = "225")]
-        LoadStmt(super::LoadStmt),
+        CreateRangeStmt(super::CreateRangeStmt),
         #[prost(message, tag = "226")]
-        CreatedbStmt(super::CreatedbStmt),
+        AlterEnumStmt(super::AlterEnumStmt),
         #[prost(message, tag = "227")]
-        AlterDatabaseStmt(super::AlterDatabaseStmt),
+        ViewStmt(::prost::alloc::boxed::Box<super::ViewStmt>),
         #[prost(message, tag = "228")]
-        AlterDatabaseRefreshCollStmt(super::AlterDatabaseRefreshCollStmt),
+        LoadStmt(super::LoadStmt),
         #[prost(message, tag = "229")]
-        AlterDatabaseSetStmt(super::AlterDatabaseSetStmt),
+        CreatedbStmt(super::CreatedbStmt),
         #[prost(message, tag = "230")]
-        DropdbStmt(super::DropdbStmt),
+        AlterDatabaseStmt(super::AlterDatabaseStmt),
         #[prost(message, tag = "231")]
-        AlterSystemStmt(super::AlterSystemStmt),
+        AlterDatabaseRefreshCollStmt(super::AlterDatabaseRefreshCollStmt),
         #[prost(message, tag = "232")]
-        ClusterStmt(super::ClusterStmt),
+        AlterDatabaseSetStmt(super::AlterDatabaseSetStmt),
         #[prost(message, tag = "233")]
-        VacuumStmt(super::VacuumStmt),
+        DropdbStmt(super::DropdbStmt),
         #[prost(message, tag = "234")]
-        VacuumRelation(super::VacuumRelation),
+        AlterSystemStmt(super::AlterSystemStmt),
         #[prost(message, tag = "235")]
-        ExplainStmt(::prost::alloc::boxed::Box<super::ExplainStmt>),
+        ClusterStmt(super::ClusterStmt),
         #[prost(message, tag = "236")]
-        CreateTableAsStmt(::prost::alloc::boxed::Box<super::CreateTableAsStmt>),
+        VacuumStmt(super::VacuumStmt),
         #[prost(message, tag = "237")]
-        RefreshMatViewStmt(super::RefreshMatViewStmt),
+        VacuumRelation(super::VacuumRelation),
         #[prost(message, tag = "238")]
-        CheckPointStmt(super::CheckPointStmt),
+        ExplainStmt(::prost::alloc::boxed::Box<super::ExplainStmt>),
         #[prost(message, tag = "239")]
-        DiscardStmt(super::DiscardStmt),
+        CreateTableAsStmt(::prost::alloc::boxed::Box<super::CreateTableAsStmt>),
         #[prost(message, tag = "240")]
-        LockStmt(super::LockStmt),
+        RefreshMatViewStmt(super::RefreshMatViewStmt),
         #[prost(message, tag = "241")]
-        ConstraintsSetStmt(super::ConstraintsSetStmt),
+        CheckPointStmt(super::CheckPointStmt),
         #[prost(message, tag = "242")]
-        ReindexStmt(super::ReindexStmt),
+        DiscardStmt(super::DiscardStmt),
         #[prost(message, tag = "243")]
-        CreateConversionStmt(super::CreateConversionStmt),
+        LockStmt(super::LockStmt),
         #[prost(message, tag = "244")]
-        CreateCastStmt(super::CreateCastStmt),
+        ConstraintsSetStmt(super::ConstraintsSetStmt),
         #[prost(message, tag = "245")]
-        CreateTransformStmt(super::CreateTransformStmt),
+        ReindexStmt(super::ReindexStmt),
         #[prost(message, tag = "246")]
-        PrepareStmt(::prost::alloc::boxed::Box<super::PrepareStmt>),
+        CreateConversionStmt(super::CreateConversionStmt),
         #[prost(message, tag = "247")]
-        ExecuteStmt(super::ExecuteStmt),
+        CreateCastStmt(super::CreateCastStmt),
         #[prost(message, tag = "248")]
-        DeallocateStmt(super::DeallocateStmt),
+        CreateTransformStmt(super::CreateTransformStmt),
         #[prost(message, tag = "249")]
-        DropOwnedStmt(super::DropOwnedStmt),
+        PrepareStmt(::prost::alloc::boxed::Box<super::PrepareStmt>),
         #[prost(message, tag = "250")]
-        ReassignOwnedStmt(super::ReassignOwnedStmt),
+        ExecuteStmt(super::ExecuteStmt),
         #[prost(message, tag = "251")]
-        AlterTsdictionaryStmt(super::AlterTsDictionaryStmt),
+        DeallocateStmt(super::DeallocateStmt),
         #[prost(message, tag = "252")]
-        AlterTsconfigurationStmt(super::AlterTsConfigurationStmt),
+        DropOwnedStmt(super::DropOwnedStmt),
         #[prost(message, tag = "253")]
-        PublicationTable(::prost::alloc::boxed::Box<super::PublicationTable>),
+        ReassignOwnedStmt(super::ReassignOwnedStmt),
         #[prost(message, tag = "254")]
-        PublicationObjSpec(::prost::alloc::boxed::Box<super::PublicationObjSpec>),
+        AlterTsdictionaryStmt(super::AlterTsDictionaryStmt),
         #[prost(message, tag = "255")]
-        CreatePublicationStmt(super::CreatePublicationStmt),
+        AlterTsconfigurationStmt(super::AlterTsConfigurationStmt),
         #[prost(message, tag = "256")]
-        AlterPublicationStmt(super::AlterPublicationStmt),
+        PublicationTable(::prost::alloc::boxed::Box<super::PublicationTable>),
         #[prost(message, tag = "257")]
-        CreateSubscriptionStmt(super::CreateSubscriptionStmt),
+        PublicationObjSpec(::prost::alloc::boxed::Box<super::PublicationObjSpec>),
         #[prost(message, tag = "258")]
-        AlterSubscriptionStmt(super::AlterSubscriptionStmt),
+        CreatePublicationStmt(super::CreatePublicationStmt),
         #[prost(message, tag = "259")]
-        DropSubscriptionStmt(super::DropSubscriptionStmt),
+        AlterPublicationStmt(super::AlterPublicationStmt),
         #[prost(message, tag = "260")]
-        Integer(super::Integer),
+        CreateSubscriptionStmt(super::CreateSubscriptionStmt),
         #[prost(message, tag = "261")]
-        Float(super::Float),
+        AlterSubscriptionStmt(super::AlterSubscriptionStmt),
         #[prost(message, tag = "262")]
-        Boolean(super::Boolean),
+        DropSubscriptionStmt(super::DropSubscriptionStmt),
         #[prost(message, tag = "263")]
-        String(super::String),
+        Integer(super::Integer),
         #[prost(message, tag = "264")]
-        BitString(super::BitString),
+        Float(super::Float),
         #[prost(message, tag = "265")]
-        List(super::List),
+        Boolean(super::Boolean),
         #[prost(message, tag = "266")]
-        IntList(super::IntList),
+        String(super::String),
         #[prost(message, tag = "267")]
-        OidList(super::OidList),
+        BitString(super::BitString),
         #[prost(message, tag = "268")]
+        List(super::List),
+        #[prost(message, tag = "269")]
+        IntList(super::IntList),
+        #[prost(message, tag = "270")]
+        OidList(super::OidList),
+        #[prost(message, tag = "271")]
         AConst(super::AConst),
     }
 }
@@ -716,7 +722,7 @@ pub struct IntoClause {
     #[prost(string, tag = "6")]
     pub table_space_name: ::prost::alloc::string::String,
     #[prost(message, optional, boxed, tag = "7")]
-    pub view_query: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
+    pub view_query: ::core::option::Option<::prost::alloc::boxed::Box<Query>>,
     #[prost(bool, tag = "8")]
     pub skip_data: bool,
 }
@@ -738,7 +744,9 @@ pub struct Var {
     pub varnullingrels: ::prost::alloc::vec::Vec<u64>,
     #[prost(uint32, tag = "8")]
     pub varlevelsup: u32,
-    #[prost(int32, tag = "9")]
+    #[prost(enumeration = "VarReturningType", tag = "9")]
+    pub varreturningtype: i32,
+    #[prost(int32, tag = "10")]
     pub location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1223,6 +1231,10 @@ pub struct ArrayExpr {
     #[prost(bool, tag = "6")]
     pub multidims: bool,
     #[prost(int32, tag = "7")]
+    pub list_start: i32,
+    #[prost(int32, tag = "8")]
+    pub list_end: i32,
+    #[prost(int32, tag = "9")]
     pub location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1244,8 +1256,8 @@ pub struct RowExpr {
 pub struct RowCompareExpr {
     #[prost(message, optional, boxed, tag = "1")]
     pub xpr: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
-    #[prost(enumeration = "RowCompareType", tag = "2")]
-    pub rctype: i32,
+    #[prost(enumeration = "CompareType", tag = "2")]
+    pub cmptype: i32,
     #[prost(message, repeated, tag = "3")]
     pub opnos: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, repeated, tag = "4")]
@@ -1577,6 +1589,17 @@ pub struct InferenceElem {
     pub inferopclass: u32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ReturningExpr {
+    #[prost(message, optional, boxed, tag = "1")]
+    pub xpr: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
+    #[prost(int32, tag = "2")]
+    pub retlevelsup: i32,
+    #[prost(bool, tag = "3")]
+    pub retold: bool,
+    #[prost(message, optional, boxed, tag = "4")]
+    pub retexpr: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TargetEntry {
     #[prost(message, optional, boxed, tag = "1")]
     pub xpr: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
@@ -1678,60 +1701,66 @@ pub struct Query {
     #[prost(bool, tag = "14")]
     pub has_row_security: bool,
     #[prost(bool, tag = "15")]
+    pub has_group_rte: bool,
+    #[prost(bool, tag = "16")]
     pub is_return: bool,
-    #[prost(message, repeated, tag = "16")]
-    pub cte_list: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, repeated, tag = "17")]
-    pub rtable: ::prost::alloc::vec::Vec<Node>,
+    pub cte_list: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, repeated, tag = "18")]
+    pub rtable: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, repeated, tag = "19")]
     pub rteperminfos: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, optional, boxed, tag = "19")]
+    #[prost(message, optional, boxed, tag = "20")]
     pub jointree: ::core::option::Option<::prost::alloc::boxed::Box<FromExpr>>,
-    #[prost(message, repeated, tag = "20")]
+    #[prost(message, repeated, tag = "21")]
     pub merge_action_list: ::prost::alloc::vec::Vec<Node>,
-    #[prost(int32, tag = "21")]
+    #[prost(int32, tag = "22")]
     pub merge_target_relation: i32,
-    #[prost(message, optional, boxed, tag = "22")]
+    #[prost(message, optional, boxed, tag = "23")]
     pub merge_join_condition: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
-    #[prost(message, repeated, tag = "23")]
+    #[prost(message, repeated, tag = "24")]
     pub target_list: ::prost::alloc::vec::Vec<Node>,
-    #[prost(enumeration = "OverridingKind", tag = "24")]
+    #[prost(enumeration = "OverridingKind", tag = "25")]
     pub r#override: i32,
-    #[prost(message, optional, boxed, tag = "25")]
+    #[prost(message, optional, boxed, tag = "26")]
     pub on_conflict: ::core::option::Option<::prost::alloc::boxed::Box<OnConflictExpr>>,
-    #[prost(message, repeated, tag = "26")]
-    pub returning_list: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, repeated, tag = "27")]
-    pub group_clause: ::prost::alloc::vec::Vec<Node>,
-    #[prost(bool, tag = "28")]
-    pub group_distinct: bool,
+    #[prost(string, tag = "27")]
+    pub returning_old_alias: ::prost::alloc::string::String,
+    #[prost(string, tag = "28")]
+    pub returning_new_alias: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "29")]
-    pub grouping_sets: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, optional, boxed, tag = "30")]
-    pub having_qual: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
-    #[prost(message, repeated, tag = "31")]
-    pub window_clause: ::prost::alloc::vec::Vec<Node>,
+    pub returning_list: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, repeated, tag = "30")]
+    pub group_clause: ::prost::alloc::vec::Vec<Node>,
+    #[prost(bool, tag = "31")]
+    pub group_distinct: bool,
     #[prost(message, repeated, tag = "32")]
+    pub grouping_sets: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, optional, boxed, tag = "33")]
+    pub having_qual: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
+    #[prost(message, repeated, tag = "34")]
+    pub window_clause: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, repeated, tag = "35")]
     pub distinct_clause: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, repeated, tag = "33")]
+    #[prost(message, repeated, tag = "36")]
     pub sort_clause: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, optional, boxed, tag = "34")]
+    #[prost(message, optional, boxed, tag = "37")]
     pub limit_offset: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
-    #[prost(message, optional, boxed, tag = "35")]
-    pub limit_count: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
-    #[prost(enumeration = "LimitOption", tag = "36")]
-    pub limit_option: i32,
-    #[prost(message, repeated, tag = "37")]
-    pub row_marks: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, optional, boxed, tag = "38")]
-    pub set_operations: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
-    #[prost(message, repeated, tag = "39")]
-    pub constraint_deps: ::prost::alloc::vec::Vec<Node>,
+    pub limit_count: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
+    #[prost(enumeration = "LimitOption", tag = "39")]
+    pub limit_option: i32,
     #[prost(message, repeated, tag = "40")]
+    pub row_marks: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, optional, boxed, tag = "41")]
+    pub set_operations: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
+    #[prost(message, repeated, tag = "42")]
+    pub constraint_deps: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, repeated, tag = "43")]
     pub with_check_options: ::prost::alloc::vec::Vec<Node>,
-    #[prost(int32, tag = "41")]
+    #[prost(int32, tag = "44")]
     pub stmt_location: i32,
-    #[prost(int32, tag = "42")]
+    #[prost(int32, tag = "45")]
     pub stmt_len: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1778,6 +1807,10 @@ pub struct AExpr {
     #[prost(message, optional, boxed, tag = "4")]
     pub rexpr: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
     #[prost(int32, tag = "5")]
+    pub rexpr_list_start: i32,
+    #[prost(int32, tag = "6")]
+    pub rexpr_list_end: i32,
+    #[prost(int32, tag = "7")]
     pub location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1855,6 +1888,10 @@ pub struct AArrayExpr {
     #[prost(message, repeated, tag = "1")]
     pub elements: ::prost::alloc::vec::Vec<Node>,
     #[prost(int32, tag = "2")]
+    pub list_start: i32,
+    #[prost(int32, tag = "3")]
+    pub list_end: i32,
+    #[prost(int32, tag = "4")]
     pub location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -2061,6 +2098,8 @@ pub struct DefElem {
     pub defaction: i32,
     #[prost(int32, tag = "5")]
     pub location: i32,
+    #[prost(int32, tag = "6")]
+    pub arg_location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LockingClause {
@@ -2134,8 +2173,6 @@ pub struct PartitionRangeDatum {
     #[prost(int32, tag = "3")]
     pub location: i32,
 }
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct SinglePartitionSpec {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PartitionCmd {
     #[prost(message, optional, tag = "1")]
@@ -2207,11 +2244,13 @@ pub struct RangeTblEntry {
     pub enrname: ::prost::alloc::string::String,
     #[prost(double, tag = "29")]
     pub enrtuples: f64,
-    #[prost(bool, tag = "30")]
-    pub lateral: bool,
+    #[prost(message, repeated, tag = "30")]
+    pub groupexprs: ::prost::alloc::vec::Vec<Node>,
     #[prost(bool, tag = "31")]
+    pub lateral: bool,
+    #[prost(bool, tag = "32")]
     pub in_from_cl: bool,
-    #[prost(message, repeated, tag = "32")]
+    #[prost(message, repeated, tag = "33")]
     pub security_quals: ::prost::alloc::vec::Vec<Node>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -2279,8 +2318,10 @@ pub struct SortGroupClause {
     #[prost(uint32, tag = "3")]
     pub sortop: u32,
     #[prost(bool, tag = "4")]
-    pub nulls_first: bool,
+    pub reverse_sort: bool,
     #[prost(bool, tag = "5")]
+    pub nulls_first: bool,
+    #[prost(bool, tag = "6")]
     pub hashable: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -2444,6 +2485,22 @@ pub struct MergeWhenClause {
     pub target_list: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, repeated, tag = "6")]
     pub values: ::prost::alloc::vec::Vec<Node>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ReturningOption {
+    #[prost(enumeration = "ReturningOptionKind", tag = "1")]
+    pub option: i32,
+    #[prost(string, tag = "2")]
+    pub value: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub location: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ReturningClause {
+    #[prost(message, repeated, tag = "1")]
+    pub options: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, repeated, tag = "2")]
+    pub exprs: ::prost::alloc::vec::Vec<Node>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TriggerTransition {
@@ -2679,8 +2736,8 @@ pub struct InsertStmt {
     pub on_conflict_clause: ::core::option::Option<
         ::prost::alloc::boxed::Box<OnConflictClause>,
     >,
-    #[prost(message, repeated, tag = "5")]
-    pub returning_list: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, optional, tag = "5")]
+    pub returning_clause: ::core::option::Option<ReturningClause>,
     #[prost(message, optional, tag = "6")]
     pub with_clause: ::core::option::Option<WithClause>,
     #[prost(enumeration = "OverridingKind", tag = "7")]
@@ -2694,8 +2751,8 @@ pub struct DeleteStmt {
     pub using_clause: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, optional, boxed, tag = "3")]
     pub where_clause: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
-    #[prost(message, repeated, tag = "4")]
-    pub returning_list: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, optional, tag = "4")]
+    pub returning_clause: ::core::option::Option<ReturningClause>,
     #[prost(message, optional, tag = "5")]
     pub with_clause: ::core::option::Option<WithClause>,
 }
@@ -2709,8 +2766,8 @@ pub struct UpdateStmt {
     pub where_clause: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
     #[prost(message, repeated, tag = "4")]
     pub from_clause: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, repeated, tag = "5")]
-    pub returning_list: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, optional, tag = "5")]
+    pub returning_clause: ::core::option::Option<ReturningClause>,
     #[prost(message, optional, tag = "6")]
     pub with_clause: ::core::option::Option<WithClause>,
 }
@@ -2724,8 +2781,8 @@ pub struct MergeStmt {
     pub join_condition: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
     #[prost(message, repeated, tag = "4")]
     pub merge_when_clauses: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, repeated, tag = "5")]
-    pub returning_list: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, optional, tag = "5")]
+    pub returning_clause: ::core::option::Option<ReturningClause>,
     #[prost(message, optional, tag = "6")]
     pub with_clause: ::core::option::Option<WithClause>,
 }
@@ -2832,13 +2889,6 @@ pub struct AlterTableStmt {
     pub missing_ok: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ReplicaIdentityStmt {
-    #[prost(string, tag = "1")]
-    pub identity_type: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub name: ::prost::alloc::string::String,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AlterTableCmd {
     #[prost(enumeration = "AlterTableType", tag = "1")]
     pub subtype: i32,
@@ -2856,6 +2906,32 @@ pub struct AlterTableCmd {
     pub missing_ok: bool,
     #[prost(bool, tag = "8")]
     pub recurse: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AtAlterConstraint {
+    #[prost(string, tag = "1")]
+    pub conname: ::prost::alloc::string::String,
+    #[prost(bool, tag = "2")]
+    pub alter_enforceability: bool,
+    #[prost(bool, tag = "3")]
+    pub is_enforced: bool,
+    #[prost(bool, tag = "4")]
+    pub alter_deferrability: bool,
+    #[prost(bool, tag = "5")]
+    pub deferrable: bool,
+    #[prost(bool, tag = "6")]
+    pub initdeferred: bool,
+    #[prost(bool, tag = "7")]
+    pub alter_inheritability: bool,
+    #[prost(bool, tag = "8")]
+    pub noinherit: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ReplicaIdentityStmt {
+    #[prost(string, tag = "1")]
+    pub identity_type: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub name: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AlterCollationStmt {
@@ -2966,7 +3042,11 @@ pub struct VariableSetStmt {
     #[prost(message, repeated, tag = "3")]
     pub args: ::prost::alloc::vec::Vec<Node>,
     #[prost(bool, tag = "4")]
+    pub jumble_args: bool,
+    #[prost(bool, tag = "5")]
     pub is_local: bool,
+    #[prost(int32, tag = "6")]
+    pub location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VariableShowStmt {
@@ -2990,14 +3070,16 @@ pub struct CreateStmt {
     #[prost(message, repeated, tag = "7")]
     pub constraints: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, repeated, tag = "8")]
+    pub nnconstraints: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, repeated, tag = "9")]
     pub options: ::prost::alloc::vec::Vec<Node>,
-    #[prost(enumeration = "OnCommitAction", tag = "9")]
+    #[prost(enumeration = "OnCommitAction", tag = "10")]
     pub oncommit: i32,
-    #[prost(string, tag = "10")]
-    pub tablespacename: ::prost::alloc::string::String,
     #[prost(string, tag = "11")]
+    pub tablespacename: ::prost::alloc::string::String,
+    #[prost(string, tag = "12")]
     pub access_method: ::prost::alloc::string::String,
-    #[prost(bool, tag = "12")]
+    #[prost(bool, tag = "13")]
     pub if_not_exists: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -3011,58 +3093,66 @@ pub struct Constraint {
     #[prost(bool, tag = "4")]
     pub initdeferred: bool,
     #[prost(bool, tag = "5")]
-    pub skip_validation: bool,
+    pub is_enforced: bool,
     #[prost(bool, tag = "6")]
-    pub initially_valid: bool,
+    pub skip_validation: bool,
     #[prost(bool, tag = "7")]
+    pub initially_valid: bool,
+    #[prost(bool, tag = "8")]
     pub is_no_inherit: bool,
-    #[prost(message, optional, boxed, tag = "8")]
+    #[prost(message, optional, boxed, tag = "9")]
     pub raw_expr: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
-    #[prost(string, tag = "9")]
-    pub cooked_expr: ::prost::alloc::string::String,
     #[prost(string, tag = "10")]
+    pub cooked_expr: ::prost::alloc::string::String,
+    #[prost(string, tag = "11")]
     pub generated_when: ::prost::alloc::string::String,
-    #[prost(int32, tag = "11")]
-    pub inhcount: i32,
-    #[prost(bool, tag = "12")]
+    #[prost(string, tag = "12")]
+    pub generated_kind: ::prost::alloc::string::String,
+    #[prost(bool, tag = "13")]
     pub nulls_not_distinct: bool,
-    #[prost(message, repeated, tag = "13")]
-    pub keys: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, repeated, tag = "14")]
-    pub including: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, repeated, tag = "15")]
-    pub exclusions: ::prost::alloc::vec::Vec<Node>,
+    pub keys: ::prost::alloc::vec::Vec<Node>,
+    #[prost(bool, tag = "15")]
+    pub without_overlaps: bool,
     #[prost(message, repeated, tag = "16")]
+    pub including: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, repeated, tag = "17")]
+    pub exclusions: ::prost::alloc::vec::Vec<Node>,
+    #[prost(message, repeated, tag = "18")]
     pub options: ::prost::alloc::vec::Vec<Node>,
-    #[prost(string, tag = "17")]
+    #[prost(string, tag = "19")]
     pub indexname: ::prost::alloc::string::String,
-    #[prost(string, tag = "18")]
-    pub indexspace: ::prost::alloc::string::String,
-    #[prost(bool, tag = "19")]
-    pub reset_default_tblspc: bool,
     #[prost(string, tag = "20")]
+    pub indexspace: ::prost::alloc::string::String,
+    #[prost(bool, tag = "21")]
+    pub reset_default_tblspc: bool,
+    #[prost(string, tag = "22")]
     pub access_method: ::prost::alloc::string::String,
-    #[prost(message, optional, boxed, tag = "21")]
+    #[prost(message, optional, boxed, tag = "23")]
     pub where_clause: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
-    #[prost(message, optional, tag = "22")]
+    #[prost(message, optional, tag = "24")]
     pub pktable: ::core::option::Option<RangeVar>,
-    #[prost(message, repeated, tag = "23")]
+    #[prost(message, repeated, tag = "25")]
     pub fk_attrs: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, repeated, tag = "24")]
+    #[prost(message, repeated, tag = "26")]
     pub pk_attrs: ::prost::alloc::vec::Vec<Node>,
-    #[prost(string, tag = "25")]
+    #[prost(bool, tag = "27")]
+    pub fk_with_period: bool,
+    #[prost(bool, tag = "28")]
+    pub pk_with_period: bool,
+    #[prost(string, tag = "29")]
     pub fk_matchtype: ::prost::alloc::string::String,
-    #[prost(string, tag = "26")]
+    #[prost(string, tag = "30")]
     pub fk_upd_action: ::prost::alloc::string::String,
-    #[prost(string, tag = "27")]
+    #[prost(string, tag = "31")]
     pub fk_del_action: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "28")]
+    #[prost(message, repeated, tag = "32")]
     pub fk_del_set_cols: ::prost::alloc::vec::Vec<Node>,
-    #[prost(message, repeated, tag = "29")]
+    #[prost(message, repeated, tag = "33")]
     pub old_conpfeqop: ::prost::alloc::vec::Vec<Node>,
-    #[prost(uint32, tag = "30")]
+    #[prost(uint32, tag = "34")]
     pub old_pktable_oid: u32,
-    #[prost(int32, tag = "31")]
+    #[prost(int32, tag = "35")]
     pub location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -3574,16 +3664,18 @@ pub struct IndexStmt {
     #[prost(bool, tag = "18")]
     pub isconstraint: bool,
     #[prost(bool, tag = "19")]
-    pub deferrable: bool,
+    pub iswithoutoverlaps: bool,
     #[prost(bool, tag = "20")]
-    pub initdeferred: bool,
+    pub deferrable: bool,
     #[prost(bool, tag = "21")]
-    pub transformed: bool,
+    pub initdeferred: bool,
     #[prost(bool, tag = "22")]
-    pub concurrent: bool,
+    pub transformed: bool,
     #[prost(bool, tag = "23")]
-    pub if_not_exists: bool,
+    pub concurrent: bool,
     #[prost(bool, tag = "24")]
+    pub if_not_exists: bool,
+    #[prost(bool, tag = "25")]
     pub reset_default_tblspc: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -3646,6 +3738,8 @@ pub struct FunctionParameter {
     pub mode: i32,
     #[prost(message, optional, boxed, tag = "4")]
     pub defexpr: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
+    #[prost(int32, tag = "5")]
+    pub location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AlterFunctionStmt {
@@ -3779,6 +3873,8 @@ pub struct NotifyStmt {
     pub conditionname: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub payload: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub payload_location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListenStmt {
@@ -4147,6 +4243,8 @@ pub struct CreateSubscriptionStmt {
     pub publication: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, repeated, tag = "4")]
     pub options: ::prost::alloc::vec::Vec<Node>,
+    #[prost(int32, tag = "5")]
+    pub conninfo_location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AlterSubscriptionStmt {
@@ -4160,6 +4258,8 @@ pub struct AlterSubscriptionStmt {
     pub publication: ::prost::alloc::vec::Vec<Node>,
     #[prost(message, repeated, tag = "5")]
     pub options: ::prost::alloc::vec::Vec<Node>,
+    #[prost(int32, tag = "6")]
+    pub conninfo_location: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DropSubscriptionStmt {
@@ -4180,6 +4280,116 @@ pub struct ScanToken {
     pub token: i32,
     #[prost(enumeration = "KeywordKind", tag = "5")]
     pub keyword_kind: i32,
+}
+/// protobuf-c doesn't support optional fields, so any optional strings
+/// are just an empty string if it should be the equivalent of None/nil.
+///
+/// These fields have `// optional` at the end of the line.
+///
+/// Upstream issue: <https://github.com/protobuf-c/protobuf-c/issues/476>
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SummaryResult {
+    #[prost(message, repeated, tag = "1")]
+    pub tables: ::prost::alloc::vec::Vec<summary_result::Table>,
+    /// The value here is the table name (i.e. schema.table or just table).
+    #[prost(map = "string, string", tag = "2")]
+    pub aliases: ::std::collections::HashMap<
+        ::prost::alloc::string::String,
+        ::prost::alloc::string::String,
+    >,
+    #[prost(string, repeated, tag = "3")]
+    pub cte_names: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    #[prost(message, repeated, tag = "4")]
+    pub functions: ::prost::alloc::vec::Vec<summary_result::Function>,
+    #[prost(message, repeated, tag = "5")]
+    pub filter_columns: ::prost::alloc::vec::Vec<summary_result::FilterColumn>,
+    #[prost(string, repeated, tag = "6")]
+    pub statement_types: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// optional, empty if truncation limit is -1
+    #[prost(string, tag = "7")]
+    pub truncated_query: ::prost::alloc::string::String,
+}
+/// Nested message and enum types in `SummaryResult`.
+pub mod summary_result {
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Table {
+        #[prost(string, tag = "1")]
+        pub name: ::prost::alloc::string::String,
+        #[prost(string, tag = "2")]
+        pub schema_name: ::prost::alloc::string::String,
+        #[prost(string, tag = "3")]
+        pub table_name: ::prost::alloc::string::String,
+        #[prost(enumeration = "Context", tag = "4")]
+        pub context: i32,
+    }
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Function {
+        #[prost(string, tag = "1")]
+        pub name: ::prost::alloc::string::String,
+        #[prost(string, tag = "2")]
+        pub function_name: ::prost::alloc::string::String,
+        /// optional
+        #[prost(string, tag = "3")]
+        pub schema_name: ::prost::alloc::string::String,
+        #[prost(enumeration = "Context", tag = "4")]
+        pub context: i32,
+    }
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct FilterColumn {
+        /// optional
+        #[prost(string, tag = "1")]
+        pub schema_name: ::prost::alloc::string::String,
+        /// optional
+        #[prost(string, tag = "2")]
+        pub table_name: ::prost::alloc::string::String,
+        #[prost(string, tag = "3")]
+        pub column: ::prost::alloc::string::String,
+    }
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
+    #[repr(i32)]
+    pub enum Context {
+        None = 0,
+        Select = 1,
+        Dml = 2,
+        Ddl = 3,
+        Call = 4,
+    }
+    impl Context {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Self::None => "None",
+                Self::Select => "Select",
+                Self::Dml => "DML",
+                Self::Ddl => "DDL",
+                Self::Call => "Call",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "None" => Some(Self::None),
+                "Select" => Some(Self::Select),
+                "DML" => Some(Self::Dml),
+                "DDL" => Some(Self::Ddl),
+                "Call" => Some(Self::Call),
+                _ => None,
+            }
+        }
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -4586,6 +4796,7 @@ pub enum RteKind {
     RteCte = 7,
     RteNamedtuplestore = 8,
     RteResult = 9,
+    RteGroup = 10,
 }
 impl RteKind {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -4604,6 +4815,7 @@ impl RteKind {
             Self::RteCte => "RTE_CTE",
             Self::RteNamedtuplestore => "RTE_NAMEDTUPLESTORE",
             Self::RteResult => "RTE_RESULT",
+            Self::RteGroup => "RTE_GROUP",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -4619,6 +4831,7 @@ impl RteKind {
             "RTE_CTE" => Some(Self::RteCte),
             "RTE_NAMEDTUPLESTORE" => Some(Self::RteNamedtuplestore),
             "RTE_RESULT" => Some(Self::RteResult),
+            "RTE_GROUP" => Some(Self::RteGroup),
             _ => None,
         }
     }
@@ -4730,6 +4943,35 @@ impl CteMaterialize {
             "CTEMaterializeDefault" => Some(Self::Default),
             "CTEMaterializeAlways" => Some(Self::Always),
             "CTEMaterializeNever" => Some(Self::Never),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ReturningOptionKind {
+    Undefined = 0,
+    ReturningOptionOld = 1,
+    ReturningOptionNew = 2,
+}
+impl ReturningOptionKind {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Undefined => "RETURNING_OPTION_KIND_UNDEFINED",
+            Self::ReturningOptionOld => "RETURNING_OPTION_OLD",
+            Self::ReturningOptionNew => "RETURNING_OPTION_NEW",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "RETURNING_OPTION_KIND_UNDEFINED" => Some(Self::Undefined),
+            "RETURNING_OPTION_OLD" => Some(Self::ReturningOptionOld),
+            "RETURNING_OPTION_NEW" => Some(Self::ReturningOptionNew),
             _ => None,
         }
     }
@@ -5059,65 +5301,64 @@ pub enum AlterTableType {
     AtSetNotNull = 6,
     AtSetExpression = 7,
     AtDropExpression = 8,
-    AtCheckNotNull = 9,
-    AtSetStatistics = 10,
-    AtSetOptions = 11,
-    AtResetOptions = 12,
-    AtSetStorage = 13,
-    AtSetCompression = 14,
-    AtDropColumn = 15,
-    AtAddIndex = 16,
-    AtReAddIndex = 17,
-    AtAddConstraint = 18,
-    AtReAddConstraint = 19,
-    AtReAddDomainConstraint = 20,
-    AtAlterConstraint = 21,
-    AtValidateConstraint = 22,
-    AtAddIndexConstraint = 23,
-    AtDropConstraint = 24,
-    AtReAddComment = 25,
-    AtAlterColumnType = 26,
-    AtAlterColumnGenericOptions = 27,
-    AtChangeOwner = 28,
-    AtClusterOn = 29,
-    AtDropCluster = 30,
-    AtSetLogged = 31,
-    AtSetUnLogged = 32,
-    AtDropOids = 33,
-    AtSetAccessMethod = 34,
-    AtSetTableSpace = 35,
-    AtSetRelOptions = 36,
-    AtResetRelOptions = 37,
-    AtReplaceRelOptions = 38,
-    AtEnableTrig = 39,
-    AtEnableAlwaysTrig = 40,
-    AtEnableReplicaTrig = 41,
-    AtDisableTrig = 42,
-    AtEnableTrigAll = 43,
-    AtDisableTrigAll = 44,
-    AtEnableTrigUser = 45,
-    AtDisableTrigUser = 46,
-    AtEnableRule = 47,
-    AtEnableAlwaysRule = 48,
-    AtEnableReplicaRule = 49,
-    AtDisableRule = 50,
-    AtAddInherit = 51,
-    AtDropInherit = 52,
-    AtAddOf = 53,
-    AtDropOf = 54,
-    AtReplicaIdentity = 55,
-    AtEnableRowSecurity = 56,
-    AtDisableRowSecurity = 57,
-    AtForceRowSecurity = 58,
-    AtNoForceRowSecurity = 59,
-    AtGenericOptions = 60,
-    AtAttachPartition = 61,
-    AtDetachPartition = 62,
-    AtDetachPartitionFinalize = 63,
-    AtAddIdentity = 64,
-    AtSetIdentity = 65,
-    AtDropIdentity = 66,
-    AtReAddStatistics = 67,
+    AtSetStatistics = 9,
+    AtSetOptions = 10,
+    AtResetOptions = 11,
+    AtSetStorage = 12,
+    AtSetCompression = 13,
+    AtDropColumn = 14,
+    AtAddIndex = 15,
+    AtReAddIndex = 16,
+    AtAddConstraint = 17,
+    AtReAddConstraint = 18,
+    AtReAddDomainConstraint = 19,
+    AtAlterConstraint = 20,
+    AtValidateConstraint = 21,
+    AtAddIndexConstraint = 22,
+    AtDropConstraint = 23,
+    AtReAddComment = 24,
+    AtAlterColumnType = 25,
+    AtAlterColumnGenericOptions = 26,
+    AtChangeOwner = 27,
+    AtClusterOn = 28,
+    AtDropCluster = 29,
+    AtSetLogged = 30,
+    AtSetUnLogged = 31,
+    AtDropOids = 32,
+    AtSetAccessMethod = 33,
+    AtSetTableSpace = 34,
+    AtSetRelOptions = 35,
+    AtResetRelOptions = 36,
+    AtReplaceRelOptions = 37,
+    AtEnableTrig = 38,
+    AtEnableAlwaysTrig = 39,
+    AtEnableReplicaTrig = 40,
+    AtDisableTrig = 41,
+    AtEnableTrigAll = 42,
+    AtDisableTrigAll = 43,
+    AtEnableTrigUser = 44,
+    AtDisableTrigUser = 45,
+    AtEnableRule = 46,
+    AtEnableAlwaysRule = 47,
+    AtEnableReplicaRule = 48,
+    AtDisableRule = 49,
+    AtAddInherit = 50,
+    AtDropInherit = 51,
+    AtAddOf = 52,
+    AtDropOf = 53,
+    AtReplicaIdentity = 54,
+    AtEnableRowSecurity = 55,
+    AtDisableRowSecurity = 56,
+    AtForceRowSecurity = 57,
+    AtNoForceRowSecurity = 58,
+    AtGenericOptions = 59,
+    AtAttachPartition = 60,
+    AtDetachPartition = 61,
+    AtDetachPartitionFinalize = 62,
+    AtAddIdentity = 63,
+    AtSetIdentity = 64,
+    AtDropIdentity = 65,
+    AtReAddStatistics = 66,
 }
 impl AlterTableType {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -5135,7 +5376,6 @@ impl AlterTableType {
             Self::AtSetNotNull => "AT_SetNotNull",
             Self::AtSetExpression => "AT_SetExpression",
             Self::AtDropExpression => "AT_DropExpression",
-            Self::AtCheckNotNull => "AT_CheckNotNull",
             Self::AtSetStatistics => "AT_SetStatistics",
             Self::AtSetOptions => "AT_SetOptions",
             Self::AtResetOptions => "AT_ResetOptions",
@@ -5208,7 +5448,6 @@ impl AlterTableType {
             "AT_SetNotNull" => Some(Self::AtSetNotNull),
             "AT_SetExpression" => Some(Self::AtSetExpression),
             "AT_DropExpression" => Some(Self::AtDropExpression),
-            "AT_CheckNotNull" => Some(Self::AtCheckNotNull),
             "AT_SetStatistics" => Some(Self::AtSetStatistics),
             "AT_SetOptions" => Some(Self::AtSetOptions),
             "AT_ResetOptions" => Some(Self::AtResetOptions),
@@ -5362,6 +5601,8 @@ pub enum ConstrType {
     ConstrAttrNotDeferrable = 12,
     ConstrAttrDeferred = 13,
     ConstrAttrImmediate = 14,
+    ConstrAttrEnforced = 15,
+    ConstrAttrNotEnforced = 16,
 }
 impl ConstrType {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -5385,6 +5626,8 @@ impl ConstrType {
             Self::ConstrAttrNotDeferrable => "CONSTR_ATTR_NOT_DEFERRABLE",
             Self::ConstrAttrDeferred => "CONSTR_ATTR_DEFERRED",
             Self::ConstrAttrImmediate => "CONSTR_ATTR_IMMEDIATE",
+            Self::ConstrAttrEnforced => "CONSTR_ATTR_ENFORCED",
+            Self::ConstrAttrNotEnforced => "CONSTR_ATTR_NOT_ENFORCED",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -5405,6 +5648,8 @@ impl ConstrType {
             "CONSTR_ATTR_NOT_DEFERRABLE" => Some(Self::ConstrAttrNotDeferrable),
             "CONSTR_ATTR_DEFERRED" => Some(Self::ConstrAttrDeferred),
             "CONSTR_ATTR_IMMEDIATE" => Some(Self::ConstrAttrImmediate),
+            "CONSTR_ATTR_ENFORCED" => Some(Self::ConstrAttrEnforced),
+            "CONSTR_ATTR_NOT_ENFORCED" => Some(Self::ConstrAttrNotEnforced),
             _ => None,
         }
     }
@@ -5977,6 +6222,38 @@ impl TableFuncType {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
+pub enum VarReturningType {
+    Undefined = 0,
+    VarReturningDefault = 1,
+    VarReturningOld = 2,
+    VarReturningNew = 3,
+}
+impl VarReturningType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Undefined => "VAR_RETURNING_TYPE_UNDEFINED",
+            Self::VarReturningDefault => "VAR_RETURNING_DEFAULT",
+            Self::VarReturningOld => "VAR_RETURNING_OLD",
+            Self::VarReturningNew => "VAR_RETURNING_NEW",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "VAR_RETURNING_TYPE_UNDEFINED" => Some(Self::Undefined),
+            "VAR_RETURNING_DEFAULT" => Some(Self::VarReturningDefault),
+            "VAR_RETURNING_OLD" => Some(Self::VarReturningOld),
+            "VAR_RETURNING_NEW" => Some(Self::VarReturningNew),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
 pub enum ParamKind {
     Undefined = 0,
     ParamExtern = 1,
@@ -6155,47 +6432,6 @@ impl SubLinkType {
             "MULTIEXPR_SUBLINK" => Some(Self::MultiexprSublink),
             "ARRAY_SUBLINK" => Some(Self::ArraySublink),
             "CTE_SUBLINK" => Some(Self::CteSublink),
-            _ => None,
-        }
-    }
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum RowCompareType {
-    Undefined = 0,
-    RowcompareLt = 1,
-    RowcompareLe = 2,
-    RowcompareEq = 3,
-    RowcompareGe = 4,
-    RowcompareGt = 5,
-    RowcompareNe = 6,
-}
-impl RowCompareType {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            Self::Undefined => "ROW_COMPARE_TYPE_UNDEFINED",
-            Self::RowcompareLt => "ROWCOMPARE_LT",
-            Self::RowcompareLe => "ROWCOMPARE_LE",
-            Self::RowcompareEq => "ROWCOMPARE_EQ",
-            Self::RowcompareGe => "ROWCOMPARE_GE",
-            Self::RowcompareGt => "ROWCOMPARE_GT",
-            Self::RowcompareNe => "ROWCOMPARE_NE",
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "ROW_COMPARE_TYPE_UNDEFINED" => Some(Self::Undefined),
-            "ROWCOMPARE_LT" => Some(Self::RowcompareLt),
-            "ROWCOMPARE_LE" => Some(Self::RowcompareLe),
-            "ROWCOMPARE_EQ" => Some(Self::RowcompareEq),
-            "ROWCOMPARE_GE" => Some(Self::RowcompareGe),
-            "ROWCOMPARE_GT" => Some(Self::RowcompareGt),
-            "ROWCOMPARE_NE" => Some(Self::RowcompareNe),
             _ => None,
         }
     }
@@ -6798,9 +7034,10 @@ pub enum JoinType {
     JoinRight = 4,
     JoinSemi = 5,
     JoinAnti = 6,
-    JoinRightAnti = 7,
-    JoinUniqueOuter = 8,
-    JoinUniqueInner = 9,
+    JoinRightSemi = 7,
+    JoinRightAnti = 8,
+    JoinUniqueOuter = 9,
+    JoinUniqueInner = 10,
 }
 impl JoinType {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -6816,6 +7053,7 @@ impl JoinType {
             Self::JoinRight => "JOIN_RIGHT",
             Self::JoinSemi => "JOIN_SEMI",
             Self::JoinAnti => "JOIN_ANTI",
+            Self::JoinRightSemi => "JOIN_RIGHT_SEMI",
             Self::JoinRightAnti => "JOIN_RIGHT_ANTI",
             Self::JoinUniqueOuter => "JOIN_UNIQUE_OUTER",
             Self::JoinUniqueInner => "JOIN_UNIQUE_INNER",
@@ -6831,6 +7069,7 @@ impl JoinType {
             "JOIN_RIGHT" => Some(Self::JoinRight),
             "JOIN_SEMI" => Some(Self::JoinSemi),
             "JOIN_ANTI" => Some(Self::JoinAnti),
+            "JOIN_RIGHT_SEMI" => Some(Self::JoinRightSemi),
             "JOIN_RIGHT_ANTI" => Some(Self::JoinRightAnti),
             "JOIN_UNIQUE_OUTER" => Some(Self::JoinUniqueOuter),
             "JOIN_UNIQUE_INNER" => Some(Self::JoinUniqueInner),
@@ -7140,6 +7379,56 @@ impl LockTupleMode {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
+pub enum CompareType {
+    Undefined = 0,
+    CompareInvalid = 1,
+    CompareLt = 2,
+    CompareLe = 3,
+    CompareEq = 4,
+    CompareGe = 5,
+    CompareGt = 6,
+    CompareNe = 7,
+    CompareOverlap = 8,
+    CompareContainedBy = 9,
+}
+impl CompareType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Undefined => "COMPARE_TYPE_UNDEFINED",
+            Self::CompareInvalid => "COMPARE_INVALID",
+            Self::CompareLt => "COMPARE_LT",
+            Self::CompareLe => "COMPARE_LE",
+            Self::CompareEq => "COMPARE_EQ",
+            Self::CompareGe => "COMPARE_GE",
+            Self::CompareGt => "COMPARE_GT",
+            Self::CompareNe => "COMPARE_NE",
+            Self::CompareOverlap => "COMPARE_OVERLAP",
+            Self::CompareContainedBy => "COMPARE_CONTAINED_BY",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "COMPARE_TYPE_UNDEFINED" => Some(Self::Undefined),
+            "COMPARE_INVALID" => Some(Self::CompareInvalid),
+            "COMPARE_LT" => Some(Self::CompareLt),
+            "COMPARE_LE" => Some(Self::CompareLe),
+            "COMPARE_EQ" => Some(Self::CompareEq),
+            "COMPARE_GE" => Some(Self::CompareGe),
+            "COMPARE_GT" => Some(Self::CompareGt),
+            "COMPARE_NE" => Some(Self::CompareNe),
+            "COMPARE_OVERLAP" => Some(Self::CompareOverlap),
+            "COMPARE_CONTAINED_BY" => Some(Self::CompareContainedBy),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
 pub enum KeywordKind {
     NoKeyword = 0,
     UnreservedKeyword = 1,
@@ -7369,380 +7658,383 @@ pub enum Token {
     Encoding = 402,
     Encrypted = 403,
     EndP = 404,
-    EnumP = 405,
-    ErrorP = 406,
-    Escape = 407,
-    Event = 408,
-    Except = 409,
-    Exclude = 410,
-    Excluding = 411,
-    Exclusive = 412,
-    Execute = 413,
-    Exists = 414,
-    Explain = 415,
-    Expression = 416,
-    Extension = 417,
-    External = 418,
-    Extract = 419,
-    FalseP = 420,
-    Family = 421,
-    Fetch = 422,
-    Filter = 423,
-    Finalize = 424,
-    FirstP = 425,
-    FloatP = 426,
-    Following = 427,
-    For = 428,
-    Force = 429,
-    Foreign = 430,
-    Format = 431,
-    Forward = 432,
-    Freeze = 433,
-    From = 434,
-    Full = 435,
-    Function = 436,
-    Functions = 437,
-    Generated = 438,
-    Global = 439,
-    Grant = 440,
-    Granted = 441,
-    Greatest = 442,
-    GroupP = 443,
-    Grouping = 444,
-    Groups = 445,
-    Handler = 446,
-    Having = 447,
-    HeaderP = 448,
-    Hold = 449,
-    HourP = 450,
-    IdentityP = 451,
-    IfP = 452,
-    Ilike = 453,
-    Immediate = 454,
-    Immutable = 455,
-    ImplicitP = 456,
-    ImportP = 457,
-    InP = 458,
-    Include = 459,
-    Including = 460,
-    Increment = 461,
-    Indent = 462,
-    Index = 463,
-    Indexes = 464,
-    Inherit = 465,
-    Inherits = 466,
-    Initially = 467,
-    InlineP = 468,
-    InnerP = 469,
-    Inout = 470,
-    InputP = 471,
-    Insensitive = 472,
-    Insert = 473,
-    Instead = 474,
-    IntP = 475,
-    Integer = 476,
-    Intersect = 477,
-    Interval = 478,
-    Into = 479,
-    Invoker = 480,
-    Is = 481,
-    Isnull = 482,
-    Isolation = 483,
-    Join = 484,
-    Json = 485,
-    JsonArray = 486,
-    JsonArrayagg = 487,
-    JsonExists = 488,
-    JsonObject = 489,
-    JsonObjectagg = 490,
-    JsonQuery = 491,
-    JsonScalar = 492,
-    JsonSerialize = 493,
-    JsonTable = 494,
-    JsonValue = 495,
-    Keep = 496,
-    Key = 497,
-    Keys = 498,
-    Label = 499,
-    Language = 500,
-    LargeP = 501,
-    LastP = 502,
-    LateralP = 503,
-    Leading = 504,
-    Leakproof = 505,
-    Least = 506,
-    Left = 507,
-    Level = 508,
-    Like = 509,
-    Limit = 510,
-    Listen = 511,
-    Load = 512,
-    Local = 513,
-    Localtime = 514,
-    Localtimestamp = 515,
-    Location = 516,
-    LockP = 517,
-    Locked = 518,
-    Logged = 519,
-    Mapping = 520,
-    Match = 521,
-    Matched = 522,
-    Materialized = 523,
-    Maxvalue = 524,
-    Merge = 525,
-    MergeAction = 526,
-    Method = 527,
-    MinuteP = 528,
-    Minvalue = 529,
-    Mode = 530,
-    MonthP = 531,
-    Move = 532,
-    NameP = 533,
-    Names = 534,
-    National = 535,
-    Natural = 536,
-    Nchar = 537,
-    Nested = 538,
-    New = 539,
-    Next = 540,
-    Nfc = 541,
-    Nfd = 542,
-    Nfkc = 543,
-    Nfkd = 544,
-    No = 545,
-    None = 546,
-    Normalize = 547,
-    Normalized = 548,
-    Not = 549,
-    Nothing = 550,
-    Notify = 551,
-    Notnull = 552,
-    Nowait = 553,
-    NullP = 554,
-    Nullif = 555,
-    NullsP = 556,
-    Numeric = 557,
-    ObjectP = 558,
-    Of = 559,
-    Off = 560,
-    Offset = 561,
-    Oids = 562,
-    Old = 563,
-    Omit = 564,
-    On = 565,
-    Only = 566,
-    Operator = 567,
-    Option = 568,
-    Options = 569,
-    Or = 570,
-    Order = 571,
-    Ordinality = 572,
-    Others = 573,
-    OutP = 574,
-    OuterP = 575,
-    Over = 576,
-    Overlaps = 577,
-    Overlay = 578,
-    Overriding = 579,
-    Owned = 580,
-    Owner = 581,
-    Parallel = 582,
-    Parameter = 583,
-    Parser = 584,
-    Partial = 585,
-    Partition = 586,
-    Passing = 587,
-    Password = 588,
-    Path = 589,
-    Placing = 590,
-    Plan = 591,
-    Plans = 592,
-    Policy = 593,
-    Position = 594,
-    Preceding = 595,
-    Precision = 596,
-    Preserve = 597,
-    Prepare = 598,
-    Prepared = 599,
-    Primary = 600,
-    Prior = 601,
-    Privileges = 602,
-    Procedural = 603,
-    Procedure = 604,
-    Procedures = 605,
-    Program = 606,
-    Publication = 607,
-    Quote = 608,
-    Quotes = 609,
-    Range = 610,
-    Read = 611,
-    Real = 612,
-    Reassign = 613,
-    Recheck = 614,
-    Recursive = 615,
-    RefP = 616,
-    References = 617,
-    Referencing = 618,
-    Refresh = 619,
-    Reindex = 620,
-    RelativeP = 621,
-    Release = 622,
-    Rename = 623,
-    Repeatable = 624,
-    Replace = 625,
-    Replica = 626,
-    Reset = 627,
-    Restart = 628,
-    Restrict = 629,
-    Return = 630,
-    Returning = 631,
-    Returns = 632,
-    Revoke = 633,
-    Right = 634,
-    Role = 635,
-    Rollback = 636,
-    Rollup = 637,
-    Routine = 638,
-    Routines = 639,
-    Row = 640,
-    Rows = 641,
-    Rule = 642,
-    Savepoint = 643,
-    Scalar = 644,
-    Schema = 645,
-    Schemas = 646,
-    Scroll = 647,
-    Search = 648,
-    SecondP = 649,
-    Security = 650,
-    Select = 651,
-    Sequence = 652,
-    Sequences = 653,
-    Serializable = 654,
-    Server = 655,
-    Session = 656,
-    SessionUser = 657,
-    Set = 658,
-    Sets = 659,
-    Setof = 660,
-    Share = 661,
-    Show = 662,
-    Similar = 663,
-    Simple = 664,
-    Skip = 665,
-    Smallint = 666,
-    Snapshot = 667,
-    Some = 668,
-    Source = 669,
-    SqlP = 670,
-    Stable = 671,
-    StandaloneP = 672,
-    Start = 673,
-    Statement = 674,
-    Statistics = 675,
-    Stdin = 676,
-    Stdout = 677,
-    Storage = 678,
-    Stored = 679,
-    StrictP = 680,
-    StringP = 681,
-    StripP = 682,
-    Subscription = 683,
-    Substring = 684,
-    Support = 685,
-    Symmetric = 686,
-    Sysid = 687,
-    SystemP = 688,
-    SystemUser = 689,
-    Table = 690,
-    Tables = 691,
-    Tablesample = 692,
-    Tablespace = 693,
-    Target = 694,
-    Temp = 695,
-    Template = 696,
-    Temporary = 697,
-    TextP = 698,
-    Then = 699,
-    Ties = 700,
-    Time = 701,
-    Timestamp = 702,
-    To = 703,
-    Trailing = 704,
-    Transaction = 705,
-    Transform = 706,
-    Treat = 707,
-    Trigger = 708,
-    Trim = 709,
-    TrueP = 710,
-    Truncate = 711,
-    Trusted = 712,
-    TypeP = 713,
-    TypesP = 714,
-    Uescape = 715,
-    Unbounded = 716,
-    Unconditional = 717,
-    Uncommitted = 718,
-    Unencrypted = 719,
-    Union = 720,
-    Unique = 721,
-    Unknown = 722,
-    Unlisten = 723,
-    Unlogged = 724,
-    Until = 725,
-    Update = 726,
-    User = 727,
-    Using = 728,
-    Vacuum = 729,
-    Valid = 730,
-    Validate = 731,
-    Validator = 732,
-    ValueP = 733,
-    Values = 734,
-    Varchar = 735,
-    Variadic = 736,
-    Varying = 737,
-    Verbose = 738,
-    VersionP = 739,
-    View = 740,
-    Views = 741,
-    Volatile = 742,
-    When = 743,
-    Where = 744,
-    WhitespaceP = 745,
-    Window = 746,
-    With = 747,
-    Within = 748,
-    Without = 749,
-    Work = 750,
-    Wrapper = 751,
-    Write = 752,
-    XmlP = 753,
-    Xmlattributes = 754,
-    Xmlconcat = 755,
-    Xmlelement = 756,
-    Xmlexists = 757,
-    Xmlforest = 758,
-    Xmlnamespaces = 759,
-    Xmlparse = 760,
-    Xmlpi = 761,
-    Xmlroot = 762,
-    Xmlserialize = 763,
-    Xmltable = 764,
-    YearP = 765,
-    YesP = 766,
-    Zone = 767,
-    FormatLa = 768,
-    NotLa = 769,
-    NullsLa = 770,
-    WithLa = 771,
-    WithoutLa = 772,
-    ModeTypeName = 773,
-    ModePlpgsqlExpr = 774,
-    ModePlpgsqlAssign1 = 775,
-    ModePlpgsqlAssign2 = 776,
-    ModePlpgsqlAssign3 = 777,
-    Uminus = 778,
+    Enforced = 405,
+    EnumP = 406,
+    ErrorP = 407,
+    Escape = 408,
+    Event = 409,
+    Except = 410,
+    Exclude = 411,
+    Excluding = 412,
+    Exclusive = 413,
+    Execute = 414,
+    Exists = 415,
+    Explain = 416,
+    Expression = 417,
+    Extension = 418,
+    External = 419,
+    Extract = 420,
+    FalseP = 421,
+    Family = 422,
+    Fetch = 423,
+    Filter = 424,
+    Finalize = 425,
+    FirstP = 426,
+    FloatP = 427,
+    Following = 428,
+    For = 429,
+    Force = 430,
+    Foreign = 431,
+    Format = 432,
+    Forward = 433,
+    Freeze = 434,
+    From = 435,
+    Full = 436,
+    Function = 437,
+    Functions = 438,
+    Generated = 439,
+    Global = 440,
+    Grant = 441,
+    Granted = 442,
+    Greatest = 443,
+    GroupP = 444,
+    Grouping = 445,
+    Groups = 446,
+    Handler = 447,
+    Having = 448,
+    HeaderP = 449,
+    Hold = 450,
+    HourP = 451,
+    IdentityP = 452,
+    IfP = 453,
+    Ilike = 454,
+    Immediate = 455,
+    Immutable = 456,
+    ImplicitP = 457,
+    ImportP = 458,
+    InP = 459,
+    Include = 460,
+    Including = 461,
+    Increment = 462,
+    Indent = 463,
+    Index = 464,
+    Indexes = 465,
+    Inherit = 466,
+    Inherits = 467,
+    Initially = 468,
+    InlineP = 469,
+    InnerP = 470,
+    Inout = 471,
+    InputP = 472,
+    Insensitive = 473,
+    Insert = 474,
+    Instead = 475,
+    IntP = 476,
+    Integer = 477,
+    Intersect = 478,
+    Interval = 479,
+    Into = 480,
+    Invoker = 481,
+    Is = 482,
+    Isnull = 483,
+    Isolation = 484,
+    Join = 485,
+    Json = 486,
+    JsonArray = 487,
+    JsonArrayagg = 488,
+    JsonExists = 489,
+    JsonObject = 490,
+    JsonObjectagg = 491,
+    JsonQuery = 492,
+    JsonScalar = 493,
+    JsonSerialize = 494,
+    JsonTable = 495,
+    JsonValue = 496,
+    Keep = 497,
+    Key = 498,
+    Keys = 499,
+    Label = 500,
+    Language = 501,
+    LargeP = 502,
+    LastP = 503,
+    LateralP = 504,
+    Leading = 505,
+    Leakproof = 506,
+    Least = 507,
+    Left = 508,
+    Level = 509,
+    Like = 510,
+    Limit = 511,
+    Listen = 512,
+    Load = 513,
+    Local = 514,
+    Localtime = 515,
+    Localtimestamp = 516,
+    Location = 517,
+    LockP = 518,
+    Locked = 519,
+    Logged = 520,
+    Mapping = 521,
+    Match = 522,
+    Matched = 523,
+    Materialized = 524,
+    Maxvalue = 525,
+    Merge = 526,
+    MergeAction = 527,
+    Method = 528,
+    MinuteP = 529,
+    Minvalue = 530,
+    Mode = 531,
+    MonthP = 532,
+    Move = 533,
+    NameP = 534,
+    Names = 535,
+    National = 536,
+    Natural = 537,
+    Nchar = 538,
+    Nested = 539,
+    New = 540,
+    Next = 541,
+    Nfc = 542,
+    Nfd = 543,
+    Nfkc = 544,
+    Nfkd = 545,
+    No = 546,
+    None = 547,
+    Normalize = 548,
+    Normalized = 549,
+    Not = 550,
+    Nothing = 551,
+    Notify = 552,
+    Notnull = 553,
+    Nowait = 554,
+    NullP = 555,
+    Nullif = 556,
+    NullsP = 557,
+    Numeric = 558,
+    ObjectP = 559,
+    ObjectsP = 560,
+    Of = 561,
+    Off = 562,
+    Offset = 563,
+    Oids = 564,
+    Old = 565,
+    Omit = 566,
+    On = 567,
+    Only = 568,
+    Operator = 569,
+    Option = 570,
+    Options = 571,
+    Or = 572,
+    Order = 573,
+    Ordinality = 574,
+    Others = 575,
+    OutP = 576,
+    OuterP = 577,
+    Over = 578,
+    Overlaps = 579,
+    Overlay = 580,
+    Overriding = 581,
+    Owned = 582,
+    Owner = 583,
+    Parallel = 584,
+    Parameter = 585,
+    Parser = 586,
+    Partial = 587,
+    Partition = 588,
+    Passing = 589,
+    Password = 590,
+    Path = 591,
+    Period = 592,
+    Placing = 593,
+    Plan = 594,
+    Plans = 595,
+    Policy = 596,
+    Position = 597,
+    Preceding = 598,
+    Precision = 599,
+    Preserve = 600,
+    Prepare = 601,
+    Prepared = 602,
+    Primary = 603,
+    Prior = 604,
+    Privileges = 605,
+    Procedural = 606,
+    Procedure = 607,
+    Procedures = 608,
+    Program = 609,
+    Publication = 610,
+    Quote = 611,
+    Quotes = 612,
+    Range = 613,
+    Read = 614,
+    Real = 615,
+    Reassign = 616,
+    Recursive = 617,
+    RefP = 618,
+    References = 619,
+    Referencing = 620,
+    Refresh = 621,
+    Reindex = 622,
+    RelativeP = 623,
+    Release = 624,
+    Rename = 625,
+    Repeatable = 626,
+    Replace = 627,
+    Replica = 628,
+    Reset = 629,
+    Restart = 630,
+    Restrict = 631,
+    Return = 632,
+    Returning = 633,
+    Returns = 634,
+    Revoke = 635,
+    Right = 636,
+    Role = 637,
+    Rollback = 638,
+    Rollup = 639,
+    Routine = 640,
+    Routines = 641,
+    Row = 642,
+    Rows = 643,
+    Rule = 644,
+    Savepoint = 645,
+    Scalar = 646,
+    Schema = 647,
+    Schemas = 648,
+    Scroll = 649,
+    Search = 650,
+    SecondP = 651,
+    Security = 652,
+    Select = 653,
+    Sequence = 654,
+    Sequences = 655,
+    Serializable = 656,
+    Server = 657,
+    Session = 658,
+    SessionUser = 659,
+    Set = 660,
+    Sets = 661,
+    Setof = 662,
+    Share = 663,
+    Show = 664,
+    Similar = 665,
+    Simple = 666,
+    Skip = 667,
+    Smallint = 668,
+    Snapshot = 669,
+    Some = 670,
+    Source = 671,
+    SqlP = 672,
+    Stable = 673,
+    StandaloneP = 674,
+    Start = 675,
+    Statement = 676,
+    Statistics = 677,
+    Stdin = 678,
+    Stdout = 679,
+    Storage = 680,
+    Stored = 681,
+    StrictP = 682,
+    StringP = 683,
+    StripP = 684,
+    Subscription = 685,
+    Substring = 686,
+    Support = 687,
+    Symmetric = 688,
+    Sysid = 689,
+    SystemP = 690,
+    SystemUser = 691,
+    Table = 692,
+    Tables = 693,
+    Tablesample = 694,
+    Tablespace = 695,
+    Target = 696,
+    Temp = 697,
+    Template = 698,
+    Temporary = 699,
+    TextP = 700,
+    Then = 701,
+    Ties = 702,
+    Time = 703,
+    Timestamp = 704,
+    To = 705,
+    Trailing = 706,
+    Transaction = 707,
+    Transform = 708,
+    Treat = 709,
+    Trigger = 710,
+    Trim = 711,
+    TrueP = 712,
+    Truncate = 713,
+    Trusted = 714,
+    TypeP = 715,
+    TypesP = 716,
+    Uescape = 717,
+    Unbounded = 718,
+    Unconditional = 719,
+    Uncommitted = 720,
+    Unencrypted = 721,
+    Union = 722,
+    Unique = 723,
+    Unknown = 724,
+    Unlisten = 725,
+    Unlogged = 726,
+    Until = 727,
+    Update = 728,
+    User = 729,
+    Using = 730,
+    Vacuum = 731,
+    Valid = 732,
+    Validate = 733,
+    Validator = 734,
+    ValueP = 735,
+    Values = 736,
+    Varchar = 737,
+    Variadic = 738,
+    Varying = 739,
+    Verbose = 740,
+    VersionP = 741,
+    View = 742,
+    Views = 743,
+    Virtual = 744,
+    Volatile = 745,
+    When = 746,
+    Where = 747,
+    WhitespaceP = 748,
+    Window = 749,
+    With = 750,
+    Within = 751,
+    Without = 752,
+    Work = 753,
+    Wrapper = 754,
+    Write = 755,
+    XmlP = 756,
+    Xmlattributes = 757,
+    Xmlconcat = 758,
+    Xmlelement = 759,
+    Xmlexists = 760,
+    Xmlforest = 761,
+    Xmlnamespaces = 762,
+    Xmlparse = 763,
+    Xmlpi = 764,
+    Xmlroot = 765,
+    Xmlserialize = 766,
+    Xmltable = 767,
+    YearP = 768,
+    YesP = 769,
+    Zone = 770,
+    FormatLa = 771,
+    NotLa = 772,
+    NullsLa = 773,
+    WithLa = 774,
+    WithoutLa = 775,
+    ModeTypeName = 776,
+    ModePlpgsqlExpr = 777,
+    ModePlpgsqlAssign1 = 778,
+    ModePlpgsqlAssign2 = 779,
+    ModePlpgsqlAssign3 = 780,
+    Uminus = 781,
 }
 impl Token {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -7919,6 +8211,7 @@ impl Token {
             Self::Encoding => "ENCODING",
             Self::Encrypted => "ENCRYPTED",
             Self::EndP => "END_P",
+            Self::Enforced => "ENFORCED",
             Self::EnumP => "ENUM_P",
             Self::ErrorP => "ERROR_P",
             Self::Escape => "ESCAPE",
@@ -8073,6 +8366,7 @@ impl Token {
             Self::NullsP => "NULLS_P",
             Self::Numeric => "NUMERIC",
             Self::ObjectP => "OBJECT_P",
+            Self::ObjectsP => "OBJECTS_P",
             Self::Of => "OF",
             Self::Off => "OFF",
             Self::Offset => "OFFSET",
@@ -8104,6 +8398,7 @@ impl Token {
             Self::Passing => "PASSING",
             Self::Password => "PASSWORD",
             Self::Path => "PATH",
+            Self::Period => "PERIOD",
             Self::Placing => "PLACING",
             Self::Plan => "PLAN",
             Self::Plans => "PLANS",
@@ -8128,7 +8423,6 @@ impl Token {
             Self::Read => "READ",
             Self::Real => "REAL",
             Self::Reassign => "REASSIGN",
-            Self::Recheck => "RECHECK",
             Self::Recursive => "RECURSIVE",
             Self::RefP => "REF_P",
             Self::References => "REFERENCES",
@@ -8256,6 +8550,7 @@ impl Token {
             Self::VersionP => "VERSION_P",
             Self::View => "VIEW",
             Self::Views => "VIEWS",
+            Self::Virtual => "VIRTUAL",
             Self::Volatile => "VOLATILE",
             Self::When => "WHEN",
             Self::Where => "WHERE",
@@ -8466,6 +8761,7 @@ impl Token {
             "ENCODING" => Some(Self::Encoding),
             "ENCRYPTED" => Some(Self::Encrypted),
             "END_P" => Some(Self::EndP),
+            "ENFORCED" => Some(Self::Enforced),
             "ENUM_P" => Some(Self::EnumP),
             "ERROR_P" => Some(Self::ErrorP),
             "ESCAPE" => Some(Self::Escape),
@@ -8620,6 +8916,7 @@ impl Token {
             "NULLS_P" => Some(Self::NullsP),
             "NUMERIC" => Some(Self::Numeric),
             "OBJECT_P" => Some(Self::ObjectP),
+            "OBJECTS_P" => Some(Self::ObjectsP),
             "OF" => Some(Self::Of),
             "OFF" => Some(Self::Off),
             "OFFSET" => Some(Self::Offset),
@@ -8651,6 +8948,7 @@ impl Token {
             "PASSING" => Some(Self::Passing),
             "PASSWORD" => Some(Self::Password),
             "PATH" => Some(Self::Path),
+            "PERIOD" => Some(Self::Period),
             "PLACING" => Some(Self::Placing),
             "PLAN" => Some(Self::Plan),
             "PLANS" => Some(Self::Plans),
@@ -8675,7 +8973,6 @@ impl Token {
             "READ" => Some(Self::Read),
             "REAL" => Some(Self::Real),
             "REASSIGN" => Some(Self::Reassign),
-            "RECHECK" => Some(Self::Recheck),
             "RECURSIVE" => Some(Self::Recursive),
             "REF_P" => Some(Self::RefP),
             "REFERENCES" => Some(Self::References),
@@ -8803,6 +9100,7 @@ impl Token {
             "VERSION_P" => Some(Self::VersionP),
             "VIEW" => Some(Self::View),
             "VIEWS" => Some(Self::Views),
+            "VIRTUAL" => Some(Self::Virtual),
             "VOLATILE" => Some(Self::Volatile),
             "WHEN" => Some(Self::When),
             "WHERE" => Some(Self::Where),

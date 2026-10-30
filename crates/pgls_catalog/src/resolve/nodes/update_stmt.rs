@@ -4,7 +4,7 @@ use super::{
     Resolver,
     from_clause::resolve_from_clause,
     range_var::resolve_target_relation,
-    res_target::{check_target_column, resolve_returning_list},
+    res_target::{check_target_column, resolve_returning_clause},
     resolve_node,
     with_clause::resolve_with_clause,
 };
@@ -70,5 +70,5 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
     }
 
     let level = r.exit_level();
-    resolve_returning_list(r, &n.returning_list, level)
+    resolve_returning_clause(r, n.returning_clause.as_ref(), level)
 }

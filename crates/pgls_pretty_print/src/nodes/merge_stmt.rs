@@ -56,12 +56,11 @@ fn emit_merge_stmt_impl(e: &mut EventEmitter, n: &MergeStmt, with_semicolon: boo
     }
 
     // RETURNING clause - wrap in group for compact formatting
-    if !n.returning_list.is_empty() {
+    if let Some(returning) = &n.returning_clause {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::RETURNING_KW);
-        e.space();
+        super::returning_clause::emit_returning_keyword(e, returning);
         e.indent_start();
-        super::node_list::emit_comma_separated_list(e, &n.returning_list, super::emit_node);
+        super::node_list::emit_comma_separated_list(e, &returning.exprs, super::emit_node);
         e.indent_end();
     }
 

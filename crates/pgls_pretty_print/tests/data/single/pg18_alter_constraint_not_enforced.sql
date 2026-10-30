@@ -1,0 +1,1 @@
+ALTER TABLE orders ALTER CONSTRAINT orders_customer_fk NOT ENFORCED;

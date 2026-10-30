@@ -48,7 +48,7 @@ mod tests {
     fn it_can_fingerprint_a_simple_statement() {
         let result =
             fingerprint("SELECT * FROM contacts.person WHERE id IN (1, 2, 3, 4);").unwrap();
-        assert_eq!(result.hex, "643d2a3c294ab8a7");
+        assert_eq!(result.hex, "5735f5c64dd9f68e");
     }
 
     #[test]
@@ -74,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn it_ignores_aliases() {
+    fn it_ignores_column_aliases() {
         let q1 = "SELECT a AS b";
         let q2 = "SELECT a AS c";
         assert_eq!(fingerprint(q1).unwrap().hex, fingerprint(q2).unwrap().hex);
@@ -83,21 +83,22 @@ mod tests {
         let q2 = "SELECT a AS c";
         assert_eq!(fingerprint(q1).unwrap().hex, fingerprint(q2).unwrap().hex);
 
-        let q1 = "SELECT * FROM a AS b";
-        let q2 = "SELECT * FROM a AS c";
-        assert_eq!(fingerprint(q1).unwrap().hex, fingerprint(q2).unwrap().hex);
-
-        let q1 = "SELECT * FROM a";
-        let q2 = "SELECT * FROM a AS c";
-        assert_eq!(fingerprint(q1).unwrap().hex, fingerprint(q2).unwrap().hex);
-
-        let q1 = "SELECT * FROM (SELECT * FROM x AS y) AS a";
-        let q2 = "SELECT * FROM (SELECT * FROM x AS z) AS b";
-        assert_eq!(fingerprint(q1).unwrap().hex, fingerprint(q2).unwrap().hex);
-
         let q1 = "SELECT a AS b UNION SELECT x AS y";
         let q2 = "SELECT a AS c UNION SELECT x AS z";
         assert_eq!(fingerprint(q1).unwrap().hex, fingerprint(q2).unwrap().hex);
+    }
+
+    /// Since libpg_query 18, fingerprints follow the query IDs of Postgres 18: in SELECT and DML
+    /// statements a table alias replaces the relation name.
+    #[test]
+    fn it_fingerprints_table_aliases() {
+        let q1 = "SELECT * FROM a AS b";
+        let q2 = "SELECT * FROM a AS c";
+        assert_ne!(fingerprint(q1).unwrap().hex, fingerprint(q2).unwrap().hex);
+
+        let q1 = "SELECT * FROM a";
+        let q2 = "SELECT * FROM a AS c";
+        assert_ne!(fingerprint(q1).unwrap().hex, fingerprint(q2).unwrap().hex);
     }
 
     #[test]
@@ -238,10 +239,10 @@ mod tests {
         assert_eq!(result.hex, "fdf2f4127644f4d8");
 
         let result = fingerprint("SELECT * FROM x AS a, y AS b").unwrap();
-        assert_eq!(result.hex, "4e9acae841dae228");
+        assert_eq!(result.hex, "675cc4043bec7035");
 
         let result = fingerprint("SELECT * FROM y AS a, x AS b").unwrap();
-        assert_eq!(result.hex, "4e9acae841dae228");
+        assert_eq!(result.hex, "675cc4043bec7035");
 
         let result = fingerprint("SELECT x AS a, y AS b FROM x").unwrap();
         assert_eq!(result.hex, "65dff5f5e9a643ad");
@@ -266,7 +267,7 @@ mod tests {
         assert_eq!(result.hex, "fcf44da7b597ef43");
 
         let result = fingerprint("SELECT * FROM a AS b").unwrap();
-        assert_eq!(result.hex, "fcf44da7b597ef43");
+        assert_eq!(result.hex, "579efc630b5991eb");
 
         let result =
             fingerprint("UPDATE users SET one_thing = $1, second_thing = $2 WHERE users.id = $1")
@@ -290,7 +291,7 @@ mod tests {
         assert_eq!(result.hex, "d993959a33d627d4");
 
         let result = fingerprint("START TRANSACTION READ WRITE").unwrap();
-        assert_eq!(result.hex, "4ca25828c835d55a");
+        assert_eq!(result.hex, "d2bd82412b9a616d");
 
         let result =
             fingerprint("DECLARE cursor_123 CURSOR FOR SELECT * FROM test WHERE id = 123").unwrap();
@@ -318,7 +319,7 @@ mod tests {
             "CREATE TEMPORARY TABLE my_temp_table (test_id integer NOT NULL) ON COMMIT DROP",
         )
         .unwrap();
-        assert_eq!(result.hex, "1407ed5c5bb00967");
+        assert_eq!(result.hex, "a6d58d968d06bbad");
 
         let result = fingerprint("CREATE TEMPORARY TABLE my_temp_table AS SELECT 1").unwrap();
         assert_eq!(result.hex, "695ebe73a3abc45c");

@@ -156,7 +156,7 @@ INSTA_UPDATE=always cargo test -p pgls_analyser --test rules_tests
 - New rules keep `version: "next"`; the release workflow replaces it with the released version.
 - A spec file under `tests/specs/<group>/<ruleName>/` lists one `-- expect_lint/<ruleName>` line per expected diagnostic, or `-- expect_no_diagnostics`. Only the count per rule is checked, not which statement the line is above.
 - Every `expect_diagnostic` snippet in a rule's doc comment must produce exactly one diagnostic. `docs_codegen`, which runs as part of `just gen-lint`, fails otherwise.
-- The vendored libpg_query is Postgres 17, so syntax that is new in Postgres 18 has no AST nodes yet.
+- The vendored libpg_query is Postgres 18, so it parses syntax that older servers reject (`RETURNING WITH (OLD AS o)`, virtual generated columns, `NOT ENFORCED`, ...). Where the server version matters, check `server_version_num()` of the catalog.
 - The parser truncates identifiers to 63 bytes. For the source text as written, scan the statement with `pgls_query::scan`.
 - `ctx.stmt().iter()` walks every nested node of a statement (CTEs, subqueries, `ON CONFLICT`, ...) as a `NodeRef`.
 - To see the AST of a statement, print `pgls_query::parse(sql)?.into_root()` with `{:#?}`, e.g. from a throwaway test.
@@ -188,6 +188,8 @@ INSTA_UPDATE=always cargo test -p pgls_analyser --test rules_tests
 
 ### Code Generation
 Many parser structures are generated from PostgreSQL's protobuf definitions using procedural macros in `pgls_query_macros`. Run `just gen-lint` after modifying analyzer rules or configurations.
+
+To upgrade libpg_query, check out the new tag in `crates/pgls_query/vendor/libpg_query` and copy its `protobuf/pg_query.proto` and `src/postgres/include/parser/kwlist.h` into the vendor directories of `pgls_query_macros`, `pgls_lexer_codegen` and `pgls_pretty_print_codegen` (renaming them to the new tag). `crates/pgls_query/src/protobuf.rs` is only regenerated when `protoc` is on the `PATH`, which the Nix shell doesn't provide: `nix build --print-out-paths nixpkgs#protobuf` and prepend its `bin` to `PATH` for one `cargo build -p pgls_query`.
 
 ### Database Schema
 The introspection queries live in `crates/pgls_catalog/src/snapshot/queries/`. After changing one, run `cargo sqlx prepare --workspace` against the test database to update `.sqlx/`.

@@ -54,6 +54,7 @@ fn vendored_layout(vendor_root: &Path, out_dir: &Path) -> Result<Layout, String>
     let items = vec![
         vendor_root.join(format!("{LIB_NAME}.h")),
         vendor_root.join("postgres_deparse.h"),
+        vendor_root.join("pg_query_scan_tokens.h"),
         vendor_root.join("Makefile"),
         vendor_root.join("src"),
         vendor_root.join("protobuf"),
@@ -68,6 +69,8 @@ fn vendored_layout(vendor_root: &Path, out_dir: &Path) -> Result<Layout, String>
     let extra_includes = vec![
         root.join("."),
         root.join("vendor"),
+        root.join("vendor/upb"),
+        root.join("vendor/upb/third_party/utf8_range"),
         root.join("src/postgres/include"),
         root.join("src/include"),
     ];
@@ -216,10 +219,15 @@ fn compile_c_if_needed(layout: &Layout, is_emscripten: bool, target: &str) {
         }
     }
 
-    // Add vendor files from copied tree
-    cc.file(layout.build_root.join("vendor/protobuf-c/protobuf-c.c"));
+    // Add vendor files from copied tree (see `UPB_SRC_FILES` in libpg_query's Makefile)
+    cc.file(layout.build_root.join("vendor/upb/upb.c"));
+    cc.file(
+        layout
+            .build_root
+            .join("vendor/upb/third_party/utf8_range/utf8_range.c"),
+    );
     cc.file(layout.build_root.join("vendor/xxhash/xxhash.c"));
-    cc.file(layout.build_root.join("protobuf/pg_query.pb-c.c"));
+    cc.file(layout.build_root.join("protobuf/pg_query.upb_minitable.c"));
 
     for inc in &layout.extra_includes {
         cc.include(inc);

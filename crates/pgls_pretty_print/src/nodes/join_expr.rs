@@ -78,6 +78,10 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
         JoinType::JoinAnti => {
             emit_join_token(TokenKind::IDENT("anti".to_string()), e);
         }
+        JoinType::JoinRightSemi => {
+            emit_join_token(TokenKind::RIGHT_KW, e);
+            emit_join_token(TokenKind::IDENT("semi".to_string()), e);
+        }
         JoinType::JoinRightAnti => {
             emit_join_token(TokenKind::RIGHT_KW, e);
             emit_join_token(TokenKind::IDENT("anti".to_string()), e);

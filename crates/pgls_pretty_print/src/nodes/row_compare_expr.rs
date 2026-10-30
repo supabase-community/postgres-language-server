@@ -3,7 +3,7 @@ use crate::{
     emitter::{EventEmitter, GroupKind},
     nodes::node_list::emit_parenthesized_list,
 };
-use pgls_query::protobuf::{RowCompareExpr, RowCompareType};
+use pgls_query::protobuf::{CompareType, RowCompareExpr};
 
 pub(super) fn emit_row_compare_expr(e: &mut EventEmitter, n: &RowCompareExpr) {
     e.group_start(GroupKind::RowCompareExpr);
@@ -12,17 +12,17 @@ pub(super) fn emit_row_compare_expr(e: &mut EventEmitter, n: &RowCompareExpr) {
 
     e.space();
 
-    let op = match n.rctype() {
-        RowCompareType::RowcompareLt => "<",
-        RowCompareType::RowcompareLe => "<=",
-        RowCompareType::RowcompareEq => "=",
-        RowCompareType::RowcompareGe => ">=",
-        RowCompareType::RowcompareGt => ">",
-        RowCompareType::RowcompareNe => "<>",
-        RowCompareType::Undefined => {
-            debug_assert!(false, "RowCompareExpr missing rctype");
-            "?"
-        }
+    // A planner node: the parser never produces it, so an unknown comparison is left as `?`.
+    let op = match n.cmptype() {
+        CompareType::CompareLt => "<",
+        CompareType::CompareLe => "<=",
+        CompareType::CompareEq => "=",
+        CompareType::CompareGe => ">=",
+        CompareType::CompareGt => ">",
+        CompareType::CompareNe => "<>",
+        CompareType::CompareOverlap => "&&",
+        CompareType::CompareContainedBy => "<@",
+        CompareType::CompareInvalid | CompareType::Undefined => "?",
     };
     e.token(TokenKind::IDENT(op.to_string()));
 

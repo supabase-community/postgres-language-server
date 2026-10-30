@@ -1,0 +1,17 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/pg18_create_table_constraints.sql
+---
+create table bookings (
+  room_id int not null,
+  during tstzrange not null,
+  guest_id int,
+  nights int
+    generated always as (cast(upper(during) as date) -
+    cast(lower(during) as date)) virtual,
+  constraint bookings_pkey primary key (room_id, during without overlaps),
+  constraint bookings_room_fk foreign key (room_id, period during)
+    references rooms (id, period valid_at),
+  constraint bookings_guest_check check (guest_id > 0) not enforced,
+  constraint bookings_guest_nn not null guest_id no inherit
+);

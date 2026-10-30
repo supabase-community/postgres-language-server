@@ -74,44 +74,44 @@ message Node {
     CurrentOfExpr current_of_expr = 56 [json_name="CurrentOfExpr"];
     NextValueExpr next_value_expr = 57 [json_name="NextValueExpr"];
     InferenceElem inference_elem = 58 [json_name="InferenceElem"];
-    TargetEntry target_entry = 59 [json_name="TargetEntry"];
-    RangeTblRef range_tbl_ref = 60 [json_name="RangeTblRef"];
-    JoinExpr join_expr = 61 [json_name="JoinExpr"];
-    FromExpr from_expr = 62 [json_name="FromExpr"];
-    OnConflictExpr on_conflict_expr = 63 [json_name="OnConflictExpr"];
-    Query query = 64 [json_name="Query"];
-    TypeName type_name = 65 [json_name="TypeName"];
-    ColumnRef column_ref = 66 [json_name="ColumnRef"];
-    ParamRef param_ref = 67 [json_name="ParamRef"];
-    A_Expr a_expr = 68 [json_name="A_Expr"];
-    TypeCast type_cast = 69 [json_name="TypeCast"];
-    CollateClause collate_clause = 70 [json_name="CollateClause"];
-    RoleSpec role_spec = 71 [json_name="RoleSpec"];
-    FuncCall func_call = 72 [json_name="FuncCall"];
-    A_Star a_star = 73 [json_name="A_Star"];
-    A_Indices a_indices = 74 [json_name="A_Indices"];
-    A_Indirection a_indirection = 75 [json_name="A_Indirection"];
-    A_ArrayExpr a_array_expr = 76 [json_name="A_ArrayExpr"];
-    ResTarget res_target = 77 [json_name="ResTarget"];
-    MultiAssignRef multi_assign_ref = 78 [json_name="MultiAssignRef"];
-    SortBy sort_by = 79 [json_name="SortBy"];
-    WindowDef window_def = 80 [json_name="WindowDef"];
-    RangeSubselect range_subselect = 81 [json_name="RangeSubselect"];
-    RangeFunction range_function = 82 [json_name="RangeFunction"];
-    RangeTableFunc range_table_func = 83 [json_name="RangeTableFunc"];
-    RangeTableFuncCol range_table_func_col = 84 [json_name="RangeTableFuncCol"];
-    RangeTableSample range_table_sample = 85 [json_name="RangeTableSample"];
-    ColumnDef column_def = 86 [json_name="ColumnDef"];
-    TableLikeClause table_like_clause = 87 [json_name="TableLikeClause"];
-    IndexElem index_elem = 88 [json_name="IndexElem"];
-    DefElem def_elem = 89 [json_name="DefElem"];
-    LockingClause locking_clause = 90 [json_name="LockingClause"];
-    XmlSerialize xml_serialize = 91 [json_name="XmlSerialize"];
-    PartitionElem partition_elem = 92 [json_name="PartitionElem"];
-    PartitionSpec partition_spec = 93 [json_name="PartitionSpec"];
-    PartitionBoundSpec partition_bound_spec = 94 [json_name="PartitionBoundSpec"];
-    PartitionRangeDatum partition_range_datum = 95 [json_name="PartitionRangeDatum"];
-    SinglePartitionSpec single_partition_spec = 96 [json_name="SinglePartitionSpec"];
+    ReturningExpr returning_expr = 59 [json_name="ReturningExpr"];
+    TargetEntry target_entry = 60 [json_name="TargetEntry"];
+    RangeTblRef range_tbl_ref = 61 [json_name="RangeTblRef"];
+    JoinExpr join_expr = 62 [json_name="JoinExpr"];
+    FromExpr from_expr = 63 [json_name="FromExpr"];
+    OnConflictExpr on_conflict_expr = 64 [json_name="OnConflictExpr"];
+    Query query = 65 [json_name="Query"];
+    TypeName type_name = 66 [json_name="TypeName"];
+    ColumnRef column_ref = 67 [json_name="ColumnRef"];
+    ParamRef param_ref = 68 [json_name="ParamRef"];
+    A_Expr a_expr = 69 [json_name="A_Expr"];
+    TypeCast type_cast = 70 [json_name="TypeCast"];
+    CollateClause collate_clause = 71 [json_name="CollateClause"];
+    RoleSpec role_spec = 72 [json_name="RoleSpec"];
+    FuncCall func_call = 73 [json_name="FuncCall"];
+    A_Star a_star = 74 [json_name="A_Star"];
+    A_Indices a_indices = 75 [json_name="A_Indices"];
+    A_Indirection a_indirection = 76 [json_name="A_Indirection"];
+    A_ArrayExpr a_array_expr = 77 [json_name="A_ArrayExpr"];
+    ResTarget res_target = 78 [json_name="ResTarget"];
+    MultiAssignRef multi_assign_ref = 79 [json_name="MultiAssignRef"];
+    SortBy sort_by = 80 [json_name="SortBy"];
+    WindowDef window_def = 81 [json_name="WindowDef"];
+    RangeSubselect range_subselect = 82 [json_name="RangeSubselect"];
+    RangeFunction range_function = 83 [json_name="RangeFunction"];
+    RangeTableFunc range_table_func = 84 [json_name="RangeTableFunc"];
+    RangeTableFuncCol range_table_func_col = 85 [json_name="RangeTableFuncCol"];
+    RangeTableSample range_table_sample = 86 [json_name="RangeTableSample"];
+    ColumnDef column_def = 87 [json_name="ColumnDef"];
+    TableLikeClause table_like_clause = 88 [json_name="TableLikeClause"];
+    IndexElem index_elem = 89 [json_name="IndexElem"];
+    DefElem def_elem = 90 [json_name="DefElem"];
+    LockingClause locking_clause = 91 [json_name="LockingClause"];
+    XmlSerialize xml_serialize = 92 [json_name="XmlSerialize"];
+    PartitionElem partition_elem = 93 [json_name="PartitionElem"];
+    PartitionSpec partition_spec = 94 [json_name="PartitionSpec"];
+    PartitionBoundSpec partition_bound_spec = 95 [json_name="PartitionBoundSpec"];
+    PartitionRangeDatum partition_range_datum = 96 [json_name="PartitionRangeDatum"];
     PartitionCmd partition_cmd = 97 [json_name="PartitionCmd"];
     RangeTblEntry range_tbl_entry = 98 [json_name="RangeTblEntry"];
     RTEPermissionInfo rtepermission_info = 99 [json_name="RTEPermissionInfo"];
@@ -129,161 +129,164 @@ message Node {
     CTECycleClause ctecycle_clause = 111 [json_name="CTECycleClause"];
     CommonTableExpr common_table_expr = 112 [json_name="CommonTableExpr"];
     MergeWhenClause merge_when_clause = 113 [json_name="MergeWhenClause"];
-    TriggerTransition trigger_transition = 114 [json_name="TriggerTransition"];
-    JsonOutput json_output = 115 [json_name="JsonOutput"];
-    JsonArgument json_argument = 116 [json_name="JsonArgument"];
-    JsonFuncExpr json_func_expr = 117 [json_name="JsonFuncExpr"];
-    JsonTablePathSpec json_table_path_spec = 118 [json_name="JsonTablePathSpec"];
-    JsonTable json_table = 119 [json_name="JsonTable"];
-    JsonTableColumn json_table_column = 120 [json_name="JsonTableColumn"];
-    JsonKeyValue json_key_value = 121 [json_name="JsonKeyValue"];
-    JsonParseExpr json_parse_expr = 122 [json_name="JsonParseExpr"];
-    JsonScalarExpr json_scalar_expr = 123 [json_name="JsonScalarExpr"];
-    JsonSerializeExpr json_serialize_expr = 124 [json_name="JsonSerializeExpr"];
-    JsonObjectConstructor json_object_constructor = 125 [json_name="JsonObjectConstructor"];
-    JsonArrayConstructor json_array_constructor = 126 [json_name="JsonArrayConstructor"];
-    JsonArrayQueryConstructor json_array_query_constructor = 127 [json_name="JsonArrayQueryConstructor"];
-    JsonAggConstructor json_agg_constructor = 128 [json_name="JsonAggConstructor"];
-    JsonObjectAgg json_object_agg = 129 [json_name="JsonObjectAgg"];
-    JsonArrayAgg json_array_agg = 130 [json_name="JsonArrayAgg"];
-    RawStmt raw_stmt = 131 [json_name="RawStmt"];
-    InsertStmt insert_stmt = 132 [json_name="InsertStmt"];
-    DeleteStmt delete_stmt = 133 [json_name="DeleteStmt"];
-    UpdateStmt update_stmt = 134 [json_name="UpdateStmt"];
-    MergeStmt merge_stmt = 135 [json_name="MergeStmt"];
-    SelectStmt select_stmt = 136 [json_name="SelectStmt"];
-    SetOperationStmt set_operation_stmt = 137 [json_name="SetOperationStmt"];
-    ReturnStmt return_stmt = 138 [json_name="ReturnStmt"];
-    PLAssignStmt plassign_stmt = 139 [json_name="PLAssignStmt"];
-    CreateSchemaStmt create_schema_stmt = 140 [json_name="CreateSchemaStmt"];
-    AlterTableStmt alter_table_stmt = 141 [json_name="AlterTableStmt"];
-    ReplicaIdentityStmt replica_identity_stmt = 142 [json_name="ReplicaIdentityStmt"];
-    AlterTableCmd alter_table_cmd = 143 [json_name="AlterTableCmd"];
-    AlterCollationStmt alter_collation_stmt = 144 [json_name="AlterCollationStmt"];
-    AlterDomainStmt alter_domain_stmt = 145 [json_name="AlterDomainStmt"];
-    GrantStmt grant_stmt = 146 [json_name="GrantStmt"];
-    ObjectWithArgs object_with_args = 147 [json_name="ObjectWithArgs"];
-    AccessPriv access_priv = 148 [json_name="AccessPriv"];
-    GrantRoleStmt grant_role_stmt = 149 [json_name="GrantRoleStmt"];
-    AlterDefaultPrivilegesStmt alter_default_privileges_stmt = 150 [json_name="AlterDefaultPrivilegesStmt"];
-    CopyStmt copy_stmt = 151 [json_name="CopyStmt"];
-    VariableSetStmt variable_set_stmt = 152 [json_name="VariableSetStmt"];
-    VariableShowStmt variable_show_stmt = 153 [json_name="VariableShowStmt"];
-    CreateStmt create_stmt = 154 [json_name="CreateStmt"];
-    Constraint constraint = 155 [json_name="Constraint"];
-    CreateTableSpaceStmt create_table_space_stmt = 156 [json_name="CreateTableSpaceStmt"];
-    DropTableSpaceStmt drop_table_space_stmt = 157 [json_name="DropTableSpaceStmt"];
-    AlterTableSpaceOptionsStmt alter_table_space_options_stmt = 158 [json_name="AlterTableSpaceOptionsStmt"];
-    AlterTableMoveAllStmt alter_table_move_all_stmt = 159 [json_name="AlterTableMoveAllStmt"];
-    CreateExtensionStmt create_extension_stmt = 160 [json_name="CreateExtensionStmt"];
-    AlterExtensionStmt alter_extension_stmt = 161 [json_name="AlterExtensionStmt"];
-    AlterExtensionContentsStmt alter_extension_contents_stmt = 162 [json_name="AlterExtensionContentsStmt"];
-    CreateFdwStmt create_fdw_stmt = 163 [json_name="CreateFdwStmt"];
-    AlterFdwStmt alter_fdw_stmt = 164 [json_name="AlterFdwStmt"];
-    CreateForeignServerStmt create_foreign_server_stmt = 165 [json_name="CreateForeignServerStmt"];
-    AlterForeignServerStmt alter_foreign_server_stmt = 166 [json_name="AlterForeignServerStmt"];
-    CreateForeignTableStmt create_foreign_table_stmt = 167 [json_name="CreateForeignTableStmt"];
-    CreateUserMappingStmt create_user_mapping_stmt = 168 [json_name="CreateUserMappingStmt"];
-    AlterUserMappingStmt alter_user_mapping_stmt = 169 [json_name="AlterUserMappingStmt"];
-    DropUserMappingStmt drop_user_mapping_stmt = 170 [json_name="DropUserMappingStmt"];
-    ImportForeignSchemaStmt import_foreign_schema_stmt = 171 [json_name="ImportForeignSchemaStmt"];
-    CreatePolicyStmt create_policy_stmt = 172 [json_name="CreatePolicyStmt"];
-    AlterPolicyStmt alter_policy_stmt = 173 [json_name="AlterPolicyStmt"];
-    CreateAmStmt create_am_stmt = 174 [json_name="CreateAmStmt"];
-    CreateTrigStmt create_trig_stmt = 175 [json_name="CreateTrigStmt"];
-    CreateEventTrigStmt create_event_trig_stmt = 176 [json_name="CreateEventTrigStmt"];
-    AlterEventTrigStmt alter_event_trig_stmt = 177 [json_name="AlterEventTrigStmt"];
-    CreatePLangStmt create_plang_stmt = 178 [json_name="CreatePLangStmt"];
-    CreateRoleStmt create_role_stmt = 179 [json_name="CreateRoleStmt"];
-    AlterRoleStmt alter_role_stmt = 180 [json_name="AlterRoleStmt"];
-    AlterRoleSetStmt alter_role_set_stmt = 181 [json_name="AlterRoleSetStmt"];
-    DropRoleStmt drop_role_stmt = 182 [json_name="DropRoleStmt"];
-    CreateSeqStmt create_seq_stmt = 183 [json_name="CreateSeqStmt"];
-    AlterSeqStmt alter_seq_stmt = 184 [json_name="AlterSeqStmt"];
-    DefineStmt define_stmt = 185 [json_name="DefineStmt"];
-    CreateDomainStmt create_domain_stmt = 186 [json_name="CreateDomainStmt"];
-    CreateOpClassStmt create_op_class_stmt = 187 [json_name="CreateOpClassStmt"];
-    CreateOpClassItem create_op_class_item = 188 [json_name="CreateOpClassItem"];
-    CreateOpFamilyStmt create_op_family_stmt = 189 [json_name="CreateOpFamilyStmt"];
-    AlterOpFamilyStmt alter_op_family_stmt = 190 [json_name="AlterOpFamilyStmt"];
-    DropStmt drop_stmt = 191 [json_name="DropStmt"];
-    TruncateStmt truncate_stmt = 192 [json_name="TruncateStmt"];
-    CommentStmt comment_stmt = 193 [json_name="CommentStmt"];
-    SecLabelStmt sec_label_stmt = 194 [json_name="SecLabelStmt"];
-    DeclareCursorStmt declare_cursor_stmt = 195 [json_name="DeclareCursorStmt"];
-    ClosePortalStmt close_portal_stmt = 196 [json_name="ClosePortalStmt"];
-    FetchStmt fetch_stmt = 197 [json_name="FetchStmt"];
-    IndexStmt index_stmt = 198 [json_name="IndexStmt"];
-    CreateStatsStmt create_stats_stmt = 199 [json_name="CreateStatsStmt"];
-    StatsElem stats_elem = 200 [json_name="StatsElem"];
-    AlterStatsStmt alter_stats_stmt = 201 [json_name="AlterStatsStmt"];
-    CreateFunctionStmt create_function_stmt = 202 [json_name="CreateFunctionStmt"];
-    FunctionParameter function_parameter = 203 [json_name="FunctionParameter"];
-    AlterFunctionStmt alter_function_stmt = 204 [json_name="AlterFunctionStmt"];
-    DoStmt do_stmt = 205 [json_name="DoStmt"];
-    InlineCodeBlock inline_code_block = 206 [json_name="InlineCodeBlock"];
-    CallStmt call_stmt = 207 [json_name="CallStmt"];
-    CallContext call_context = 208 [json_name="CallContext"];
-    RenameStmt rename_stmt = 209 [json_name="RenameStmt"];
-    AlterObjectDependsStmt alter_object_depends_stmt = 210 [json_name="AlterObjectDependsStmt"];
-    AlterObjectSchemaStmt alter_object_schema_stmt = 211 [json_name="AlterObjectSchemaStmt"];
-    AlterOwnerStmt alter_owner_stmt = 212 [json_name="AlterOwnerStmt"];
-    AlterOperatorStmt alter_operator_stmt = 213 [json_name="AlterOperatorStmt"];
-    AlterTypeStmt alter_type_stmt = 214 [json_name="AlterTypeStmt"];
-    RuleStmt rule_stmt = 215 [json_name="RuleStmt"];
-    NotifyStmt notify_stmt = 216 [json_name="NotifyStmt"];
-    ListenStmt listen_stmt = 217 [json_name="ListenStmt"];
-    UnlistenStmt unlisten_stmt = 218 [json_name="UnlistenStmt"];
-    TransactionStmt transaction_stmt = 219 [json_name="TransactionStmt"];
-    CompositeTypeStmt composite_type_stmt = 220 [json_name="CompositeTypeStmt"];
-    CreateEnumStmt create_enum_stmt = 221 [json_name="CreateEnumStmt"];
-    CreateRangeStmt create_range_stmt = 222 [json_name="CreateRangeStmt"];
-    AlterEnumStmt alter_enum_stmt = 223 [json_name="AlterEnumStmt"];
-    ViewStmt view_stmt = 224 [json_name="ViewStmt"];
-    LoadStmt load_stmt = 225 [json_name="LoadStmt"];
-    CreatedbStmt createdb_stmt = 226 [json_name="CreatedbStmt"];
-    AlterDatabaseStmt alter_database_stmt = 227 [json_name="AlterDatabaseStmt"];
-    AlterDatabaseRefreshCollStmt alter_database_refresh_coll_stmt = 228 [json_name="AlterDatabaseRefreshCollStmt"];
-    AlterDatabaseSetStmt alter_database_set_stmt = 229 [json_name="AlterDatabaseSetStmt"];
-    DropdbStmt dropdb_stmt = 230 [json_name="DropdbStmt"];
-    AlterSystemStmt alter_system_stmt = 231 [json_name="AlterSystemStmt"];
-    ClusterStmt cluster_stmt = 232 [json_name="ClusterStmt"];
-    VacuumStmt vacuum_stmt = 233 [json_name="VacuumStmt"];
-    VacuumRelation vacuum_relation = 234 [json_name="VacuumRelation"];
-    ExplainStmt explain_stmt = 235 [json_name="ExplainStmt"];
-    CreateTableAsStmt create_table_as_stmt = 236 [json_name="CreateTableAsStmt"];
-    RefreshMatViewStmt refresh_mat_view_stmt = 237 [json_name="RefreshMatViewStmt"];
-    CheckPointStmt check_point_stmt = 238 [json_name="CheckPointStmt"];
-    DiscardStmt discard_stmt = 239 [json_name="DiscardStmt"];
-    LockStmt lock_stmt = 240 [json_name="LockStmt"];
-    ConstraintsSetStmt constraints_set_stmt = 241 [json_name="ConstraintsSetStmt"];
-    ReindexStmt reindex_stmt = 242 [json_name="ReindexStmt"];
-    CreateConversionStmt create_conversion_stmt = 243 [json_name="CreateConversionStmt"];
-    CreateCastStmt create_cast_stmt = 244 [json_name="CreateCastStmt"];
-    CreateTransformStmt create_transform_stmt = 245 [json_name="CreateTransformStmt"];
-    PrepareStmt prepare_stmt = 246 [json_name="PrepareStmt"];
-    ExecuteStmt execute_stmt = 247 [json_name="ExecuteStmt"];
-    DeallocateStmt deallocate_stmt = 248 [json_name="DeallocateStmt"];
-    DropOwnedStmt drop_owned_stmt = 249 [json_name="DropOwnedStmt"];
-    ReassignOwnedStmt reassign_owned_stmt = 250 [json_name="ReassignOwnedStmt"];
-    AlterTSDictionaryStmt alter_tsdictionary_stmt = 251 [json_name="AlterTSDictionaryStmt"];
-    AlterTSConfigurationStmt alter_tsconfiguration_stmt = 252 [json_name="AlterTSConfigurationStmt"];
-    PublicationTable publication_table = 253 [json_name="PublicationTable"];
-    PublicationObjSpec publication_obj_spec = 254 [json_name="PublicationObjSpec"];
-    CreatePublicationStmt create_publication_stmt = 255 [json_name="CreatePublicationStmt"];
-    AlterPublicationStmt alter_publication_stmt = 256 [json_name="AlterPublicationStmt"];
-    CreateSubscriptionStmt create_subscription_stmt = 257 [json_name="CreateSubscriptionStmt"];
-    AlterSubscriptionStmt alter_subscription_stmt = 258 [json_name="AlterSubscriptionStmt"];
-    DropSubscriptionStmt drop_subscription_stmt = 259 [json_name="DropSubscriptionStmt"];
-    Integer integer = 260 [json_name="Integer"];
-    Float float = 261 [json_name="Float"];
-    Boolean boolean = 262 [json_name="Boolean"];
-    String string = 263 [json_name="String"];
-    BitString bit_string = 264 [json_name="BitString"];
-    List list = 265 [json_name="List"];
-    IntList int_list = 266 [json_name="IntList"];
-    OidList oid_list = 267 [json_name="OidList"];
-    A_Const a_const = 268 [json_name="A_Const"];
+    ReturningOption returning_option = 114 [json_name="ReturningOption"];
+    ReturningClause returning_clause = 115 [json_name="ReturningClause"];
+    TriggerTransition trigger_transition = 116 [json_name="TriggerTransition"];
+    JsonOutput json_output = 117 [json_name="JsonOutput"];
+    JsonArgument json_argument = 118 [json_name="JsonArgument"];
+    JsonFuncExpr json_func_expr = 119 [json_name="JsonFuncExpr"];
+    JsonTablePathSpec json_table_path_spec = 120 [json_name="JsonTablePathSpec"];
+    JsonTable json_table = 121 [json_name="JsonTable"];
+    JsonTableColumn json_table_column = 122 [json_name="JsonTableColumn"];
+    JsonKeyValue json_key_value = 123 [json_name="JsonKeyValue"];
+    JsonParseExpr json_parse_expr = 124 [json_name="JsonParseExpr"];
+    JsonScalarExpr json_scalar_expr = 125 [json_name="JsonScalarExpr"];
+    JsonSerializeExpr json_serialize_expr = 126 [json_name="JsonSerializeExpr"];
+    JsonObjectConstructor json_object_constructor = 127 [json_name="JsonObjectConstructor"];
+    JsonArrayConstructor json_array_constructor = 128 [json_name="JsonArrayConstructor"];
+    JsonArrayQueryConstructor json_array_query_constructor = 129 [json_name="JsonArrayQueryConstructor"];
+    JsonAggConstructor json_agg_constructor = 130 [json_name="JsonAggConstructor"];
+    JsonObjectAgg json_object_agg = 131 [json_name="JsonObjectAgg"];
+    JsonArrayAgg json_array_agg = 132 [json_name="JsonArrayAgg"];
+    RawStmt raw_stmt = 133 [json_name="RawStmt"];
+    InsertStmt insert_stmt = 134 [json_name="InsertStmt"];
+    DeleteStmt delete_stmt = 135 [json_name="DeleteStmt"];
+    UpdateStmt update_stmt = 136 [json_name="UpdateStmt"];
+    MergeStmt merge_stmt = 137 [json_name="MergeStmt"];
+    SelectStmt select_stmt = 138 [json_name="SelectStmt"];
+    SetOperationStmt set_operation_stmt = 139 [json_name="SetOperationStmt"];
+    ReturnStmt return_stmt = 140 [json_name="ReturnStmt"];
+    PLAssignStmt plassign_stmt = 141 [json_name="PLAssignStmt"];
+    CreateSchemaStmt create_schema_stmt = 142 [json_name="CreateSchemaStmt"];
+    AlterTableStmt alter_table_stmt = 143 [json_name="AlterTableStmt"];
+    AlterTableCmd alter_table_cmd = 144 [json_name="AlterTableCmd"];
+    ATAlterConstraint atalter_constraint = 145 [json_name="ATAlterConstraint"];
+    ReplicaIdentityStmt replica_identity_stmt = 146 [json_name="ReplicaIdentityStmt"];
+    AlterCollationStmt alter_collation_stmt = 147 [json_name="AlterCollationStmt"];
+    AlterDomainStmt alter_domain_stmt = 148 [json_name="AlterDomainStmt"];
+    GrantStmt grant_stmt = 149 [json_name="GrantStmt"];
+    ObjectWithArgs object_with_args = 150 [json_name="ObjectWithArgs"];
+    AccessPriv access_priv = 151 [json_name="AccessPriv"];
+    GrantRoleStmt grant_role_stmt = 152 [json_name="GrantRoleStmt"];
+    AlterDefaultPrivilegesStmt alter_default_privileges_stmt = 153 [json_name="AlterDefaultPrivilegesStmt"];
+    CopyStmt copy_stmt = 154 [json_name="CopyStmt"];
+    VariableSetStmt variable_set_stmt = 155 [json_name="VariableSetStmt"];
+    VariableShowStmt variable_show_stmt = 156 [json_name="VariableShowStmt"];
+    CreateStmt create_stmt = 157 [json_name="CreateStmt"];
+    Constraint constraint = 158 [json_name="Constraint"];
+    CreateTableSpaceStmt create_table_space_stmt = 159 [json_name="CreateTableSpaceStmt"];
+    DropTableSpaceStmt drop_table_space_stmt = 160 [json_name="DropTableSpaceStmt"];
+    AlterTableSpaceOptionsStmt alter_table_space_options_stmt = 161 [json_name="AlterTableSpaceOptionsStmt"];
+    AlterTableMoveAllStmt alter_table_move_all_stmt = 162 [json_name="AlterTableMoveAllStmt"];
+    CreateExtensionStmt create_extension_stmt = 163 [json_name="CreateExtensionStmt"];
+    AlterExtensionStmt alter_extension_stmt = 164 [json_name="AlterExtensionStmt"];
+    AlterExtensionContentsStmt alter_extension_contents_stmt = 165 [json_name="AlterExtensionContentsStmt"];
+    CreateFdwStmt create_fdw_stmt = 166 [json_name="CreateFdwStmt"];
+    AlterFdwStmt alter_fdw_stmt = 167 [json_name="AlterFdwStmt"];
+    CreateForeignServerStmt create_foreign_server_stmt = 168 [json_name="CreateForeignServerStmt"];
+    AlterForeignServerStmt alter_foreign_server_stmt = 169 [json_name="AlterForeignServerStmt"];
+    CreateForeignTableStmt create_foreign_table_stmt = 170 [json_name="CreateForeignTableStmt"];
+    CreateUserMappingStmt create_user_mapping_stmt = 171 [json_name="CreateUserMappingStmt"];
+    AlterUserMappingStmt alter_user_mapping_stmt = 172 [json_name="AlterUserMappingStmt"];
+    DropUserMappingStmt drop_user_mapping_stmt = 173 [json_name="DropUserMappingStmt"];
+    ImportForeignSchemaStmt import_foreign_schema_stmt = 174 [json_name="ImportForeignSchemaStmt"];
+    CreatePolicyStmt create_policy_stmt = 175 [json_name="CreatePolicyStmt"];
+    AlterPolicyStmt alter_policy_stmt = 176 [json_name="AlterPolicyStmt"];
+    CreateAmStmt create_am_stmt = 177 [json_name="CreateAmStmt"];
+    CreateTrigStmt create_trig_stmt = 178 [json_name="CreateTrigStmt"];
+    CreateEventTrigStmt create_event_trig_stmt = 179 [json_name="CreateEventTrigStmt"];
+    AlterEventTrigStmt alter_event_trig_stmt = 180 [json_name="AlterEventTrigStmt"];
+    CreatePLangStmt create_plang_stmt = 181 [json_name="CreatePLangStmt"];
+    CreateRoleStmt create_role_stmt = 182 [json_name="CreateRoleStmt"];
+    AlterRoleStmt alter_role_stmt = 183 [json_name="AlterRoleStmt"];
+    AlterRoleSetStmt alter_role_set_stmt = 184 [json_name="AlterRoleSetStmt"];
+    DropRoleStmt drop_role_stmt = 185 [json_name="DropRoleStmt"];
+    CreateSeqStmt create_seq_stmt = 186 [json_name="CreateSeqStmt"];
+    AlterSeqStmt alter_seq_stmt = 187 [json_name="AlterSeqStmt"];
+    DefineStmt define_stmt = 188 [json_name="DefineStmt"];
+    CreateDomainStmt create_domain_stmt = 189 [json_name="CreateDomainStmt"];
+    CreateOpClassStmt create_op_class_stmt = 190 [json_name="CreateOpClassStmt"];
+    CreateOpClassItem create_op_class_item = 191 [json_name="CreateOpClassItem"];
+    CreateOpFamilyStmt create_op_family_stmt = 192 [json_name="CreateOpFamilyStmt"];
+    AlterOpFamilyStmt alter_op_family_stmt = 193 [json_name="AlterOpFamilyStmt"];
+    DropStmt drop_stmt = 194 [json_name="DropStmt"];
+    TruncateStmt truncate_stmt = 195 [json_name="TruncateStmt"];
+    CommentStmt comment_stmt = 196 [json_name="CommentStmt"];
+    SecLabelStmt sec_label_stmt = 197 [json_name="SecLabelStmt"];
+    DeclareCursorStmt declare_cursor_stmt = 198 [json_name="DeclareCursorStmt"];
+    ClosePortalStmt close_portal_stmt = 199 [json_name="ClosePortalStmt"];
+    FetchStmt fetch_stmt = 200 [json_name="FetchStmt"];
+    IndexStmt index_stmt = 201 [json_name="IndexStmt"];
+    CreateStatsStmt create_stats_stmt = 202 [json_name="CreateStatsStmt"];
+    StatsElem stats_elem = 203 [json_name="StatsElem"];
+    AlterStatsStmt alter_stats_stmt = 204 [json_name="AlterStatsStmt"];
+    CreateFunctionStmt create_function_stmt = 205 [json_name="CreateFunctionStmt"];
+    FunctionParameter function_parameter = 206 [json_name="FunctionParameter"];
+    AlterFunctionStmt alter_function_stmt = 207 [json_name="AlterFunctionStmt"];
+    DoStmt do_stmt = 208 [json_name="DoStmt"];
+    InlineCodeBlock inline_code_block = 209 [json_name="InlineCodeBlock"];
+    CallStmt call_stmt = 210 [json_name="CallStmt"];
+    CallContext call_context = 211 [json_name="CallContext"];
+    RenameStmt rename_stmt = 212 [json_name="RenameStmt"];
+    AlterObjectDependsStmt alter_object_depends_stmt = 213 [json_name="AlterObjectDependsStmt"];
+    AlterObjectSchemaStmt alter_object_schema_stmt = 214 [json_name="AlterObjectSchemaStmt"];
+    AlterOwnerStmt alter_owner_stmt = 215 [json_name="AlterOwnerStmt"];
+    AlterOperatorStmt alter_operator_stmt = 216 [json_name="AlterOperatorStmt"];
+    AlterTypeStmt alter_type_stmt = 217 [json_name="AlterTypeStmt"];
+    RuleStmt rule_stmt = 218 [json_name="RuleStmt"];
+    NotifyStmt notify_stmt = 219 [json_name="NotifyStmt"];
+    ListenStmt listen_stmt = 220 [json_name="ListenStmt"];
+    UnlistenStmt unlisten_stmt = 221 [json_name="UnlistenStmt"];
+    TransactionStmt transaction_stmt = 222 [json_name="TransactionStmt"];
+    CompositeTypeStmt composite_type_stmt = 223 [json_name="CompositeTypeStmt"];
+    CreateEnumStmt create_enum_stmt = 224 [json_name="CreateEnumStmt"];
+    CreateRangeStmt create_range_stmt = 225 [json_name="CreateRangeStmt"];
+    AlterEnumStmt alter_enum_stmt = 226 [json_name="AlterEnumStmt"];
+    ViewStmt view_stmt = 227 [json_name="ViewStmt"];
+    LoadStmt load_stmt = 228 [json_name="LoadStmt"];
+    CreatedbStmt createdb_stmt = 229 [json_name="CreatedbStmt"];
+    AlterDatabaseStmt alter_database_stmt = 230 [json_name="AlterDatabaseStmt"];
+    AlterDatabaseRefreshCollStmt alter_database_refresh_coll_stmt = 231 [json_name="AlterDatabaseRefreshCollStmt"];
+    AlterDatabaseSetStmt alter_database_set_stmt = 232 [json_name="AlterDatabaseSetStmt"];
+    DropdbStmt dropdb_stmt = 233 [json_name="DropdbStmt"];
+    AlterSystemStmt alter_system_stmt = 234 [json_name="AlterSystemStmt"];
+    ClusterStmt cluster_stmt = 235 [json_name="ClusterStmt"];
+    VacuumStmt vacuum_stmt = 236 [json_name="VacuumStmt"];
+    VacuumRelation vacuum_relation = 237 [json_name="VacuumRelation"];
+    ExplainStmt explain_stmt = 238 [json_name="ExplainStmt"];
+    CreateTableAsStmt create_table_as_stmt = 239 [json_name="CreateTableAsStmt"];
+    RefreshMatViewStmt refresh_mat_view_stmt = 240 [json_name="RefreshMatViewStmt"];
+    CheckPointStmt check_point_stmt = 241 [json_name="CheckPointStmt"];
+    DiscardStmt discard_stmt = 242 [json_name="DiscardStmt"];
+    LockStmt lock_stmt = 243 [json_name="LockStmt"];
+    ConstraintsSetStmt constraints_set_stmt = 244 [json_name="ConstraintsSetStmt"];
+    ReindexStmt reindex_stmt = 245 [json_name="ReindexStmt"];
+    CreateConversionStmt create_conversion_stmt = 246 [json_name="CreateConversionStmt"];
+    CreateCastStmt create_cast_stmt = 247 [json_name="CreateCastStmt"];
+    CreateTransformStmt create_transform_stmt = 248 [json_name="CreateTransformStmt"];
+    PrepareStmt prepare_stmt = 249 [json_name="PrepareStmt"];
+    ExecuteStmt execute_stmt = 250 [json_name="ExecuteStmt"];
+    DeallocateStmt deallocate_stmt = 251 [json_name="DeallocateStmt"];
+    DropOwnedStmt drop_owned_stmt = 252 [json_name="DropOwnedStmt"];
+    ReassignOwnedStmt reassign_owned_stmt = 253 [json_name="ReassignOwnedStmt"];
+    AlterTSDictionaryStmt alter_tsdictionary_stmt = 254 [json_name="AlterTSDictionaryStmt"];
+    AlterTSConfigurationStmt alter_tsconfiguration_stmt = 255 [json_name="AlterTSConfigurationStmt"];
+    PublicationTable publication_table = 256 [json_name="PublicationTable"];
+    PublicationObjSpec publication_obj_spec = 257 [json_name="PublicationObjSpec"];
+    CreatePublicationStmt create_publication_stmt = 258 [json_name="CreatePublicationStmt"];
+    AlterPublicationStmt alter_publication_stmt = 259 [json_name="AlterPublicationStmt"];
+    CreateSubscriptionStmt create_subscription_stmt = 260 [json_name="CreateSubscriptionStmt"];
+    AlterSubscriptionStmt alter_subscription_stmt = 261 [json_name="AlterSubscriptionStmt"];
+    DropSubscriptionStmt drop_subscription_stmt = 262 [json_name="DropSubscriptionStmt"];
+    Integer integer = 263 [json_name="Integer"];
+    Float float = 264 [json_name="Float"];
+    Boolean boolean = 265 [json_name="Boolean"];
+    String string = 266 [json_name="String"];
+    BitString bit_string = 267 [json_name="BitString"];
+    List list = 268 [json_name="List"];
+    IntList int_list = 269 [json_name="IntList"];
+    OidList oid_list = 270 [json_name="OidList"];
+    A_Const a_const = 271 [json_name="A_Const"];
   }
 }
 
@@ -386,7 +389,7 @@ message IntoClause
   repeated Node options = 4 [json_name="options"];
   OnCommitAction on_commit = 5 [json_name="onCommit"];
   string table_space_name = 6 [json_name="tableSpaceName"];
-  Node view_query = 7 [json_name="viewQuery"];
+  Query view_query = 7 [json_name="viewQuery"];
   bool skip_data = 8 [json_name="skipData"];
 }
 
@@ -400,7 +403,8 @@ message Var
   uint32 varcollid = 6 [json_name="varcollid"];
   repeated uint64 varnullingrels = 7 [json_name="varnullingrels"];
   uint32 varlevelsup = 8 [json_name="varlevelsup"];
-  int32 location = 9 [json_name="location"];
+  VarReturningType varreturningtype = 9 [json_name="varreturningtype"];
+  int32 location = 10 [json_name="location"];
 }
 
 message Param
@@ -712,7 +716,9 @@ message ArrayExpr
   uint32 element_typeid = 4 [json_name="element_typeid"];
   repeated Node elements = 5 [json_name="elements"];
   bool multidims = 6 [json_name="multidims"];
-  int32 location = 7 [json_name="location"];
+  int32 list_start = 7 [json_name="list_start"];
+  int32 list_end = 8 [json_name="list_end"];
+  int32 location = 9 [json_name="location"];
 }
 
 message RowExpr
@@ -728,7 +734,7 @@ message RowExpr
 message RowCompareExpr
 {
   Node xpr = 1 [json_name="xpr"];
-  RowCompareType rctype = 2 [json_name="rctype"];
+  CompareType cmptype = 2 [json_name="cmptype"];
   repeated Node opnos = 3 [json_name="opnos"];
   repeated Node opfamilies = 4 [json_name="opfamilies"];
   repeated Node inputcollids = 5 [json_name="inputcollids"];
@@ -953,6 +959,14 @@ message InferenceElem
   uint32 inferopclass = 4 [json_name="inferopclass"];
 }
 
+message ReturningExpr
+{
+  Node xpr = 1 [json_name="xpr"];
+  int32 retlevelsup = 2 [json_name="retlevelsup"];
+  bool retold = 3 [json_name="retold"];
+  Node retexpr = 4 [json_name="retexpr"];
+}
+
 message TargetEntry
 {
   Node xpr = 1 [json_name="xpr"];
@@ -1017,34 +1031,37 @@ message Query
   bool has_modifying_cte = 12 [json_name="hasModifyingCTE"];
   bool has_for_update = 13 [json_name="hasForUpdate"];
   bool has_row_security = 14 [json_name="hasRowSecurity"];
-  bool is_return = 15 [json_name="isReturn"];
-  repeated Node cte_list = 16 [json_name="cteList"];
-  repeated Node rtable = 17 [json_name="rtable"];
-  repeated Node rteperminfos = 18 [json_name="rteperminfos"];
-  FromExpr jointree = 19 [json_name="jointree"];
-  repeated Node merge_action_list = 20 [json_name="mergeActionList"];
-  int32 merge_target_relation = 21 [json_name="mergeTargetRelation"];
-  Node merge_join_condition = 22 [json_name="mergeJoinCondition"];
-  repeated Node target_list = 23 [json_name="targetList"];
-  OverridingKind override = 24 [json_name="override"];
-  OnConflictExpr on_conflict = 25 [json_name="onConflict"];
-  repeated Node returning_list = 26 [json_name="returningList"];
-  repeated Node group_clause = 27 [json_name="groupClause"];
-  bool group_distinct = 28 [json_name="groupDistinct"];
-  repeated Node grouping_sets = 29 [json_name="groupingSets"];
-  Node having_qual = 30 [json_name="havingQual"];
-  repeated Node window_clause = 31 [json_name="windowClause"];
-  repeated Node distinct_clause = 32 [json_name="distinctClause"];
-  repeated Node sort_clause = 33 [json_name="sortClause"];
-  Node limit_offset = 34 [json_name="limitOffset"];
-  Node limit_count = 35 [json_name="limitCount"];
-  LimitOption limit_option = 36 [json_name="limitOption"];
-  repeated Node row_marks = 37 [json_name="rowMarks"];
-  Node set_operations = 38 [json_name="setOperations"];
-  repeated Node constraint_deps = 39 [json_name="constraintDeps"];
-  repeated Node with_check_options = 40 [json_name="withCheckOptions"];
-  int32 stmt_location = 41 [json_name="stmt_location"];
-  int32 stmt_len = 42 [json_name="stmt_len"];
+  bool has_group_rte = 15 [json_name="hasGroupRTE"];
+  bool is_return = 16 [json_name="isReturn"];
+  repeated Node cte_list = 17 [json_name="cteList"];
+  repeated Node rtable = 18 [json_name="rtable"];
+  repeated Node rteperminfos = 19 [json_name="rteperminfos"];
+  FromExpr jointree = 20 [json_name="jointree"];
+  repeated Node merge_action_list = 21 [json_name="mergeActionList"];
+  int32 merge_target_relation = 22 [json_name="mergeTargetRelation"];
+  Node merge_join_condition = 23 [json_name="mergeJoinCondition"];
+  repeated Node target_list = 24 [json_name="targetList"];
+  OverridingKind override = 25 [json_name="override"];
+  OnConflictExpr on_conflict = 26 [json_name="onConflict"];
+  string returning_old_alias = 27 [json_name="returningOldAlias"];
+  string returning_new_alias = 28 [json_name="returningNewAlias"];
+  repeated Node returning_list = 29 [json_name="returningList"];
+  repeated Node group_clause = 30 [json_name="groupClause"];
+  bool group_distinct = 31 [json_name="groupDistinct"];
+  repeated Node grouping_sets = 32 [json_name="groupingSets"];
+  Node having_qual = 33 [json_name="havingQual"];
+  repeated Node window_clause = 34 [json_name="windowClause"];
+  repeated Node distinct_clause = 35 [json_name="distinctClause"];
+  repeated Node sort_clause = 36 [json_name="sortClause"];
+  Node limit_offset = 37 [json_name="limitOffset"];
+  Node limit_count = 38 [json_name="limitCount"];
+  LimitOption limit_option = 39 [json_name="limitOption"];
+  repeated Node row_marks = 40 [json_name="rowMarks"];
+  Node set_operations = 41 [json_name="setOperations"];
+  repeated Node constraint_deps = 42 [json_name="constraintDeps"];
+  repeated Node with_check_options = 43 [json_name="withCheckOptions"];
+  int32 stmt_location = 44 [json_name="stmt_location"];
+  int32 stmt_len = 45 [json_name="stmt_len"];
 }
 
 message TypeName
@@ -1077,7 +1094,9 @@ message A_Expr
   repeated Node name = 2 [json_name="name"];
   Node lexpr = 3 [json_name="lexpr"];
   Node rexpr = 4 [json_name="rexpr"];
-  int32 location = 5 [json_name="location"];
+  int32 rexpr_list_start = 5 [json_name="rexpr_list_start"];
+  int32 rexpr_list_end = 6 [json_name="rexpr_list_end"];
+  int32 location = 7 [json_name="location"];
 }
 
 message TypeCast
@@ -1136,7 +1155,9 @@ message A_Indirection
 message A_ArrayExpr
 {
   repeated Node elements = 1 [json_name="elements"];
-  int32 location = 2 [json_name="location"];
+  int32 list_start = 2 [json_name="list_start"];
+  int32 list_end = 3 [json_name="list_end"];
+  int32 location = 4 [json_name="location"];
 }
 
 message ResTarget
@@ -1272,6 +1293,7 @@ message DefElem
   Node arg = 3 [json_name="arg"];
   DefElemAction defaction = 4 [json_name="defaction"];
   int32 location = 5 [json_name="location"];
+  int32 arg_location = 6 [json_name="arg_location"];
 }
 
 message LockingClause
@@ -1325,10 +1347,6 @@ message PartitionRangeDatum
   int32 location = 3 [json_name="location"];
 }
 
-message SinglePartitionSpec
-{
-}
-
 message PartitionCmd
 {
   RangeVar name = 1 [json_name="name"];
@@ -1367,9 +1385,10 @@ message RangeTblEntry
   repeated Node colcollations = 27 [json_name="colcollations"];
   string enrname = 28 [json_name="enrname"];
   double enrtuples = 29 [json_name="enrtuples"];
-  bool lateral = 30 [json_name="lateral"];
-  bool in_from_cl = 31 [json_name="inFromCl"];
-  repeated Node security_quals = 32 [json_name="securityQuals"];
+  repeated Node groupexprs = 30 [json_name="groupexprs"];
+  bool lateral = 31 [json_name="lateral"];
+  bool in_from_cl = 32 [json_name="inFromCl"];
+  repeated Node security_quals = 33 [json_name="securityQuals"];
 }
 
 message RTEPermissionInfo
@@ -1415,8 +1434,9 @@ message SortGroupClause
   uint32 tle_sort_group_ref = 1 [json_name="tleSortGroupRef"];
   uint32 eqop = 2 [json_name="eqop"];
   uint32 sortop = 3 [json_name="sortop"];
-  bool nulls_first = 4 [json_name="nulls_first"];
-  bool hashable = 5 [json_name="hashable"];
+  bool reverse_sort = 4 [json_name="reverse_sort"];
+  bool nulls_first = 5 [json_name="nulls_first"];
+  bool hashable = 6 [json_name="hashable"];
 }
 
 message GroupingSet
@@ -1523,6 +1543,19 @@ message MergeWhenClause
   Node condition = 4 [json_name="condition"];
   repeated Node target_list = 5 [json_name="targetList"];
   repeated Node values = 6 [json_name="values"];
+}
+
+message ReturningOption
+{
+  ReturningOptionKind option = 1 [json_name="option"];
+  string value = 2 [json_name="value"];
+  int32 location = 3 [json_name="location"];
+}
+
+message ReturningClause
+{
+  repeated Node options = 1 [json_name="options"];
+  repeated Node exprs = 2 [json_name="exprs"];
 }
 
 message TriggerTransition
@@ -1685,7 +1718,7 @@ message InsertStmt
   repeated Node cols = 2 [json_name="cols"];
   Node select_stmt = 3 [json_name="selectStmt"];
   OnConflictClause on_conflict_clause = 4 [json_name="onConflictClause"];
-  repeated Node returning_list = 5 [json_name="returningList"];
+  ReturningClause returning_clause = 5 [json_name="returningClause"];
   WithClause with_clause = 6 [json_name="withClause"];
   OverridingKind override = 7 [json_name="override"];
 }
@@ -1695,7 +1728,7 @@ message DeleteStmt
   RangeVar relation = 1 [json_name="relation"];
   repeated Node using_clause = 2 [json_name="usingClause"];
   Node where_clause = 3 [json_name="whereClause"];
-  repeated Node returning_list = 4 [json_name="returningList"];
+  ReturningClause returning_clause = 4 [json_name="returningClause"];
   WithClause with_clause = 5 [json_name="withClause"];
 }
 
@@ -1705,7 +1738,7 @@ message UpdateStmt
   repeated Node target_list = 2 [json_name="targetList"];
   Node where_clause = 3 [json_name="whereClause"];
   repeated Node from_clause = 4 [json_name="fromClause"];
-  repeated Node returning_list = 5 [json_name="returningList"];
+  ReturningClause returning_clause = 5 [json_name="returningClause"];
   WithClause with_clause = 6 [json_name="withClause"];
 }
 
@@ -1715,7 +1748,7 @@ message MergeStmt
   Node source_relation = 2 [json_name="sourceRelation"];
   Node join_condition = 3 [json_name="joinCondition"];
   repeated Node merge_when_clauses = 4 [json_name="mergeWhenClauses"];
-  repeated Node returning_list = 5 [json_name="returningList"];
+  ReturningClause returning_clause = 5 [json_name="returningClause"];
   WithClause with_clause = 6 [json_name="withClause"];
 }
 
@@ -1785,12 +1818,6 @@ message AlterTableStmt
   bool missing_ok = 4 [json_name="missing_ok"];
 }
 
-message ReplicaIdentityStmt
-{
-  string identity_type = 1 [json_name="identity_type"];
-  string name = 2 [json_name="name"];
-}
-
 message AlterTableCmd
 {
   AlterTableType subtype = 1 [json_name="subtype"];
@@ -1801,6 +1828,24 @@ message AlterTableCmd
   DropBehavior behavior = 6 [json_name="behavior"];
   bool missing_ok = 7 [json_name="missing_ok"];
   bool recurse = 8 [json_name="recurse"];
+}
+
+message ATAlterConstraint
+{
+  string conname = 1 [json_name="conname"];
+  bool alter_enforceability = 2 [json_name="alterEnforceability"];
+  bool is_enforced = 3 [json_name="is_enforced"];
+  bool alter_deferrability = 4 [json_name="alterDeferrability"];
+  bool deferrable = 5 [json_name="deferrable"];
+  bool initdeferred = 6 [json_name="initdeferred"];
+  bool alter_inheritability = 7 [json_name="alterInheritability"];
+  bool noinherit = 8 [json_name="noinherit"];
+}
+
+message ReplicaIdentityStmt
+{
+  string identity_type = 1 [json_name="identity_type"];
+  string name = 2 [json_name="name"];
 }
 
 message AlterCollationStmt
@@ -1878,7 +1923,9 @@ message VariableSetStmt
   VariableSetKind kind = 1 [json_name="kind"];
   string name = 2 [json_name="name"];
   repeated Node args = 3 [json_name="args"];
-  bool is_local = 4 [json_name="is_local"];
+  bool jumble_args = 4 [json_name="jumble_args"];
+  bool is_local = 5 [json_name="is_local"];
+  int32 location = 6 [json_name="location"];
 }
 
 message VariableShowStmt
@@ -1895,11 +1942,12 @@ message CreateStmt
   PartitionSpec partspec = 5 [json_name="partspec"];
   TypeName of_typename = 6 [json_name="ofTypename"];
   repeated Node constraints = 7 [json_name="constraints"];
-  repeated Node options = 8 [json_name="options"];
-  OnCommitAction oncommit = 9 [json_name="oncommit"];
-  string tablespacename = 10 [json_name="tablespacename"];
-  string access_method = 11 [json_name="accessMethod"];
-  bool if_not_exists = 12 [json_name="if_not_exists"];
+  repeated Node nnconstraints = 8 [json_name="nnconstraints"];
+  repeated Node options = 9 [json_name="options"];
+  OnCommitAction oncommit = 10 [json_name="oncommit"];
+  string tablespacename = 11 [json_name="tablespacename"];
+  string access_method = 12 [json_name="accessMethod"];
+  bool if_not_exists = 13 [json_name="if_not_exists"];
 }
 
 message Constraint
@@ -1908,33 +1956,37 @@ message Constraint
   string conname = 2 [json_name="conname"];
   bool deferrable = 3 [json_name="deferrable"];
   bool initdeferred = 4 [json_name="initdeferred"];
-  bool skip_validation = 5 [json_name="skip_validation"];
-  bool initially_valid = 6 [json_name="initially_valid"];
-  bool is_no_inherit = 7 [json_name="is_no_inherit"];
-  Node raw_expr = 8 [json_name="raw_expr"];
-  string cooked_expr = 9 [json_name="cooked_expr"];
-  string generated_when = 10 [json_name="generated_when"];
-  int32 inhcount = 11 [json_name="inhcount"];
-  bool nulls_not_distinct = 12 [json_name="nulls_not_distinct"];
-  repeated Node keys = 13 [json_name="keys"];
-  repeated Node including = 14 [json_name="including"];
-  repeated Node exclusions = 15 [json_name="exclusions"];
-  repeated Node options = 16 [json_name="options"];
-  string indexname = 17 [json_name="indexname"];
-  string indexspace = 18 [json_name="indexspace"];
-  bool reset_default_tblspc = 19 [json_name="reset_default_tblspc"];
-  string access_method = 20 [json_name="access_method"];
-  Node where_clause = 21 [json_name="where_clause"];
-  RangeVar pktable = 22 [json_name="pktable"];
-  repeated Node fk_attrs = 23 [json_name="fk_attrs"];
-  repeated Node pk_attrs = 24 [json_name="pk_attrs"];
-  string fk_matchtype = 25 [json_name="fk_matchtype"];
-  string fk_upd_action = 26 [json_name="fk_upd_action"];
-  string fk_del_action = 27 [json_name="fk_del_action"];
-  repeated Node fk_del_set_cols = 28 [json_name="fk_del_set_cols"];
-  repeated Node old_conpfeqop = 29 [json_name="old_conpfeqop"];
-  uint32 old_pktable_oid = 30 [json_name="old_pktable_oid"];
-  int32 location = 31 [json_name="location"];
+  bool is_enforced = 5 [json_name="is_enforced"];
+  bool skip_validation = 6 [json_name="skip_validation"];
+  bool initially_valid = 7 [json_name="initially_valid"];
+  bool is_no_inherit = 8 [json_name="is_no_inherit"];
+  Node raw_expr = 9 [json_name="raw_expr"];
+  string cooked_expr = 10 [json_name="cooked_expr"];
+  string generated_when = 11 [json_name="generated_when"];
+  string generated_kind = 12 [json_name="generated_kind"];
+  bool nulls_not_distinct = 13 [json_name="nulls_not_distinct"];
+  repeated Node keys = 14 [json_name="keys"];
+  bool without_overlaps = 15 [json_name="without_overlaps"];
+  repeated Node including = 16 [json_name="including"];
+  repeated Node exclusions = 17 [json_name="exclusions"];
+  repeated Node options = 18 [json_name="options"];
+  string indexname = 19 [json_name="indexname"];
+  string indexspace = 20 [json_name="indexspace"];
+  bool reset_default_tblspc = 21 [json_name="reset_default_tblspc"];
+  string access_method = 22 [json_name="access_method"];
+  Node where_clause = 23 [json_name="where_clause"];
+  RangeVar pktable = 24 [json_name="pktable"];
+  repeated Node fk_attrs = 25 [json_name="fk_attrs"];
+  repeated Node pk_attrs = 26 [json_name="pk_attrs"];
+  bool fk_with_period = 27 [json_name="fk_with_period"];
+  bool pk_with_period = 28 [json_name="pk_with_period"];
+  string fk_matchtype = 29 [json_name="fk_matchtype"];
+  string fk_upd_action = 30 [json_name="fk_upd_action"];
+  string fk_del_action = 31 [json_name="fk_del_action"];
+  repeated Node fk_del_set_cols = 32 [json_name="fk_del_set_cols"];
+  repeated Node old_conpfeqop = 33 [json_name="old_conpfeqop"];
+  uint32 old_pktable_oid = 34 [json_name="old_pktable_oid"];
+  int32 location = 35 [json_name="location"];
 }
 
 message CreateTableSpaceStmt
@@ -2297,12 +2349,13 @@ message IndexStmt
   bool nulls_not_distinct = 16 [json_name="nulls_not_distinct"];
   bool primary = 17 [json_name="primary"];
   bool isconstraint = 18 [json_name="isconstraint"];
-  bool deferrable = 19 [json_name="deferrable"];
-  bool initdeferred = 20 [json_name="initdeferred"];
-  bool transformed = 21 [json_name="transformed"];
-  bool concurrent = 22 [json_name="concurrent"];
-  bool if_not_exists = 23 [json_name="if_not_exists"];
-  bool reset_default_tblspc = 24 [json_name="reset_default_tblspc"];
+  bool iswithoutoverlaps = 19 [json_name="iswithoutoverlaps"];
+  bool deferrable = 20 [json_name="deferrable"];
+  bool initdeferred = 21 [json_name="initdeferred"];
+  bool transformed = 22 [json_name="transformed"];
+  bool concurrent = 23 [json_name="concurrent"];
+  bool if_not_exists = 24 [json_name="if_not_exists"];
+  bool reset_default_tblspc = 25 [json_name="reset_default_tblspc"];
 }
 
 message CreateStatsStmt
@@ -2346,6 +2399,7 @@ message FunctionParameter
   TypeName arg_type = 2 [json_name="argType"];
   FunctionParameterMode mode = 3 [json_name="mode"];
   Node defexpr = 4 [json_name="defexpr"];
+  int32 location = 5 [json_name="location"];
 }
 
 message AlterFunctionStmt
@@ -2445,6 +2499,7 @@ message NotifyStmt
 {
   string conditionname = 1 [json_name="conditionname"];
   string payload = 2 [json_name="payload"];
+  int32 payload_location = 3 [json_name="payload_location"];
 }
 
 message ListenStmt
@@ -2732,6 +2787,7 @@ message CreateSubscriptionStmt
   string conninfo = 2 [json_name="conninfo"];
   repeated Node publication = 3 [json_name="publication"];
   repeated Node options = 4 [json_name="options"];
+  int32 conninfo_location = 5 [json_name="conninfo_location"];
 }
 
 message AlterSubscriptionStmt
@@ -2741,6 +2797,7 @@ message AlterSubscriptionStmt
   string conninfo = 3 [json_name="conninfo"];
   repeated Node publication = 4 [json_name="publication"];
   repeated Node options = 5 [json_name="options"];
+  int32 conninfo_location = 6 [json_name="conninfo_location"];
 }
 
 message DropSubscriptionStmt
@@ -2866,6 +2923,7 @@ enum RTEKind
   RTE_CTE = 7;
   RTE_NAMEDTUPLESTORE = 8;
   RTE_RESULT = 9;
+  RTE_GROUP = 10;
 }
 
 enum WCOKind
@@ -2895,6 +2953,13 @@ enum CTEMaterialize
   CTEMaterializeDefault = 1;
   CTEMaterializeAlways = 2;
   CTEMaterializeNever = 3;
+}
+
+enum ReturningOptionKind
+{
+  RETURNING_OPTION_KIND_UNDEFINED = 0;
+  RETURNING_OPTION_OLD = 1;
+  RETURNING_OPTION_NEW = 2;
 }
 
 enum JsonQuotes
@@ -2999,65 +3064,64 @@ enum AlterTableType
   AT_SetNotNull = 6;
   AT_SetExpression = 7;
   AT_DropExpression = 8;
-  AT_CheckNotNull = 9;
-  AT_SetStatistics = 10;
-  AT_SetOptions = 11;
-  AT_ResetOptions = 12;
-  AT_SetStorage = 13;
-  AT_SetCompression = 14;
-  AT_DropColumn = 15;
-  AT_AddIndex = 16;
-  AT_ReAddIndex = 17;
-  AT_AddConstraint = 18;
-  AT_ReAddConstraint = 19;
-  AT_ReAddDomainConstraint = 20;
-  AT_AlterConstraint = 21;
-  AT_ValidateConstraint = 22;
-  AT_AddIndexConstraint = 23;
-  AT_DropConstraint = 24;
-  AT_ReAddComment = 25;
-  AT_AlterColumnType = 26;
-  AT_AlterColumnGenericOptions = 27;
-  AT_ChangeOwner = 28;
-  AT_ClusterOn = 29;
-  AT_DropCluster = 30;
-  AT_SetLogged = 31;
-  AT_SetUnLogged = 32;
-  AT_DropOids = 33;
-  AT_SetAccessMethod = 34;
-  AT_SetTableSpace = 35;
-  AT_SetRelOptions = 36;
-  AT_ResetRelOptions = 37;
-  AT_ReplaceRelOptions = 38;
-  AT_EnableTrig = 39;
-  AT_EnableAlwaysTrig = 40;
-  AT_EnableReplicaTrig = 41;
-  AT_DisableTrig = 42;
-  AT_EnableTrigAll = 43;
-  AT_DisableTrigAll = 44;
-  AT_EnableTrigUser = 45;
-  AT_DisableTrigUser = 46;
-  AT_EnableRule = 47;
-  AT_EnableAlwaysRule = 48;
-  AT_EnableReplicaRule = 49;
-  AT_DisableRule = 50;
-  AT_AddInherit = 51;
-  AT_DropInherit = 52;
-  AT_AddOf = 53;
-  AT_DropOf = 54;
-  AT_ReplicaIdentity = 55;
-  AT_EnableRowSecurity = 56;
-  AT_DisableRowSecurity = 57;
-  AT_ForceRowSecurity = 58;
-  AT_NoForceRowSecurity = 59;
-  AT_GenericOptions = 60;
-  AT_AttachPartition = 61;
-  AT_DetachPartition = 62;
-  AT_DetachPartitionFinalize = 63;
-  AT_AddIdentity = 64;
-  AT_SetIdentity = 65;
-  AT_DropIdentity = 66;
-  AT_ReAddStatistics = 67;
+  AT_SetStatistics = 9;
+  AT_SetOptions = 10;
+  AT_ResetOptions = 11;
+  AT_SetStorage = 12;
+  AT_SetCompression = 13;
+  AT_DropColumn = 14;
+  AT_AddIndex = 15;
+  AT_ReAddIndex = 16;
+  AT_AddConstraint = 17;
+  AT_ReAddConstraint = 18;
+  AT_ReAddDomainConstraint = 19;
+  AT_AlterConstraint = 20;
+  AT_ValidateConstraint = 21;
+  AT_AddIndexConstraint = 22;
+  AT_DropConstraint = 23;
+  AT_ReAddComment = 24;
+  AT_AlterColumnType = 25;
+  AT_AlterColumnGenericOptions = 26;
+  AT_ChangeOwner = 27;
+  AT_ClusterOn = 28;
+  AT_DropCluster = 29;
+  AT_SetLogged = 30;
+  AT_SetUnLogged = 31;
+  AT_DropOids = 32;
+  AT_SetAccessMethod = 33;
+  AT_SetTableSpace = 34;
+  AT_SetRelOptions = 35;
+  AT_ResetRelOptions = 36;
+  AT_ReplaceRelOptions = 37;
+  AT_EnableTrig = 38;
+  AT_EnableAlwaysTrig = 39;
+  AT_EnableReplicaTrig = 40;
+  AT_DisableTrig = 41;
+  AT_EnableTrigAll = 42;
+  AT_DisableTrigAll = 43;
+  AT_EnableTrigUser = 44;
+  AT_DisableTrigUser = 45;
+  AT_EnableRule = 46;
+  AT_EnableAlwaysRule = 47;
+  AT_EnableReplicaRule = 48;
+  AT_DisableRule = 49;
+  AT_AddInherit = 50;
+  AT_DropInherit = 51;
+  AT_AddOf = 52;
+  AT_DropOf = 53;
+  AT_ReplicaIdentity = 54;
+  AT_EnableRowSecurity = 55;
+  AT_DisableRowSecurity = 56;
+  AT_ForceRowSecurity = 57;
+  AT_NoForceRowSecurity = 58;
+  AT_GenericOptions = 59;
+  AT_AttachPartition = 60;
+  AT_DetachPartition = 61;
+  AT_DetachPartitionFinalize = 62;
+  AT_AddIdentity = 63;
+  AT_SetIdentity = 64;
+  AT_DropIdentity = 65;
+  AT_ReAddStatistics = 66;
 }
 
 enum GrantTargetType
@@ -3096,6 +3160,8 @@ enum ConstrType
   CONSTR_ATTR_NOT_DEFERRABLE = 12;
   CONSTR_ATTR_DEFERRED = 13;
   CONSTR_ATTR_IMMEDIATE = 14;
+  CONSTR_ATTR_ENFORCED = 15;
+  CONSTR_ATTR_NOT_ENFORCED = 16;
 }
 
 enum ImportForeignSchemaType
@@ -3240,6 +3306,14 @@ enum TableFuncType
   TFT_JSON_TABLE = 2;
 }
 
+enum VarReturningType
+{
+  VAR_RETURNING_TYPE_UNDEFINED = 0;
+  VAR_RETURNING_DEFAULT = 1;
+  VAR_RETURNING_OLD = 2;
+  VAR_RETURNING_NEW = 3;
+}
+
 enum ParamKind
 {
   PARAM_KIND_UNDEFINED = 0;
@@ -3286,17 +3360,6 @@ enum SubLinkType
   MULTIEXPR_SUBLINK = 6;
   ARRAY_SUBLINK = 7;
   CTE_SUBLINK = 8;
-}
-
-enum RowCompareType
-{
-  ROW_COMPARE_TYPE_UNDEFINED = 0;
-  ROWCOMPARE_LT = 1;
-  ROWCOMPARE_LE = 2;
-  ROWCOMPARE_EQ = 3;
-  ROWCOMPARE_GE = 4;
-  ROWCOMPARE_GT = 5;
-  ROWCOMPARE_NE = 6;
 }
 
 enum MinMaxOp
@@ -3464,9 +3527,10 @@ enum JoinType
   JOIN_RIGHT = 4;
   JOIN_SEMI = 5;
   JOIN_ANTI = 6;
-  JOIN_RIGHT_ANTI = 7;
-  JOIN_UNIQUE_OUTER = 8;
-  JOIN_UNIQUE_INNER = 9;
+  JOIN_RIGHT_SEMI = 7;
+  JOIN_RIGHT_ANTI = 8;
+  JOIN_UNIQUE_OUTER = 9;
+  JOIN_UNIQUE_INNER = 10;
 }
 
 enum AggStrategy
@@ -3543,6 +3607,20 @@ enum LockTupleMode
   LockTupleShare = 2;
   LockTupleNoKeyExclusive = 3;
   LockTupleExclusive = 4;
+}
+
+enum CompareType
+{
+  COMPARE_TYPE_UNDEFINED = 0;
+  COMPARE_INVALID = 1;
+  COMPARE_LT = 2;
+  COMPARE_LE = 3;
+  COMPARE_EQ = 4;
+  COMPARE_GE = 5;
+  COMPARE_GT = 6;
+  COMPARE_NE = 7;
+  COMPARE_OVERLAP = 8;
+  COMPARE_CONTAINED_BY = 9;
 }
 
 message ScanToken {
@@ -3733,378 +3811,428 @@ enum Token {
   ENCODING = 402;
   ENCRYPTED = 403;
   END_P = 404;
-  ENUM_P = 405;
-  ERROR_P = 406;
-  ESCAPE = 407;
-  EVENT = 408;
-  EXCEPT = 409;
-  EXCLUDE = 410;
-  EXCLUDING = 411;
-  EXCLUSIVE = 412;
-  EXECUTE = 413;
-  EXISTS = 414;
-  EXPLAIN = 415;
-  EXPRESSION = 416;
-  EXTENSION = 417;
-  EXTERNAL = 418;
-  EXTRACT = 419;
-  FALSE_P = 420;
-  FAMILY = 421;
-  FETCH = 422;
-  FILTER = 423;
-  FINALIZE = 424;
-  FIRST_P = 425;
-  FLOAT_P = 426;
-  FOLLOWING = 427;
-  FOR = 428;
-  FORCE = 429;
-  FOREIGN = 430;
-  FORMAT = 431;
-  FORWARD = 432;
-  FREEZE = 433;
-  FROM = 434;
-  FULL = 435;
-  FUNCTION = 436;
-  FUNCTIONS = 437;
-  GENERATED = 438;
-  GLOBAL = 439;
-  GRANT = 440;
-  GRANTED = 441;
-  GREATEST = 442;
-  GROUP_P = 443;
-  GROUPING = 444;
-  GROUPS = 445;
-  HANDLER = 446;
-  HAVING = 447;
-  HEADER_P = 448;
-  HOLD = 449;
-  HOUR_P = 450;
-  IDENTITY_P = 451;
-  IF_P = 452;
-  ILIKE = 453;
-  IMMEDIATE = 454;
-  IMMUTABLE = 455;
-  IMPLICIT_P = 456;
-  IMPORT_P = 457;
-  IN_P = 458;
-  INCLUDE = 459;
-  INCLUDING = 460;
-  INCREMENT = 461;
-  INDENT = 462;
-  INDEX = 463;
-  INDEXES = 464;
-  INHERIT = 465;
-  INHERITS = 466;
-  INITIALLY = 467;
-  INLINE_P = 468;
-  INNER_P = 469;
-  INOUT = 470;
-  INPUT_P = 471;
-  INSENSITIVE = 472;
-  INSERT = 473;
-  INSTEAD = 474;
-  INT_P = 475;
-  INTEGER = 476;
-  INTERSECT = 477;
-  INTERVAL = 478;
-  INTO = 479;
-  INVOKER = 480;
-  IS = 481;
-  ISNULL = 482;
-  ISOLATION = 483;
-  JOIN = 484;
-  JSON = 485;
-  JSON_ARRAY = 486;
-  JSON_ARRAYAGG = 487;
-  JSON_EXISTS = 488;
-  JSON_OBJECT = 489;
-  JSON_OBJECTAGG = 490;
-  JSON_QUERY = 491;
-  JSON_SCALAR = 492;
-  JSON_SERIALIZE = 493;
-  JSON_TABLE = 494;
-  JSON_VALUE = 495;
-  KEEP = 496;
-  KEY = 497;
-  KEYS = 498;
-  LABEL = 499;
-  LANGUAGE = 500;
-  LARGE_P = 501;
-  LAST_P = 502;
-  LATERAL_P = 503;
-  LEADING = 504;
-  LEAKPROOF = 505;
-  LEAST = 506;
-  LEFT = 507;
-  LEVEL = 508;
-  LIKE = 509;
-  LIMIT = 510;
-  LISTEN = 511;
-  LOAD = 512;
-  LOCAL = 513;
-  LOCALTIME = 514;
-  LOCALTIMESTAMP = 515;
-  LOCATION = 516;
-  LOCK_P = 517;
-  LOCKED = 518;
-  LOGGED = 519;
-  MAPPING = 520;
-  MATCH = 521;
-  MATCHED = 522;
-  MATERIALIZED = 523;
-  MAXVALUE = 524;
-  MERGE = 525;
-  MERGE_ACTION = 526;
-  METHOD = 527;
-  MINUTE_P = 528;
-  MINVALUE = 529;
-  MODE = 530;
-  MONTH_P = 531;
-  MOVE = 532;
-  NAME_P = 533;
-  NAMES = 534;
-  NATIONAL = 535;
-  NATURAL = 536;
-  NCHAR = 537;
-  NESTED = 538;
-  NEW = 539;
-  NEXT = 540;
-  NFC = 541;
-  NFD = 542;
-  NFKC = 543;
-  NFKD = 544;
-  NO = 545;
-  NONE = 546;
-  NORMALIZE = 547;
-  NORMALIZED = 548;
-  NOT = 549;
-  NOTHING = 550;
-  NOTIFY = 551;
-  NOTNULL = 552;
-  NOWAIT = 553;
-  NULL_P = 554;
-  NULLIF = 555;
-  NULLS_P = 556;
-  NUMERIC = 557;
-  OBJECT_P = 558;
-  OF = 559;
-  OFF = 560;
-  OFFSET = 561;
-  OIDS = 562;
-  OLD = 563;
-  OMIT = 564;
-  ON = 565;
-  ONLY = 566;
-  OPERATOR = 567;
-  OPTION = 568;
-  OPTIONS = 569;
-  OR = 570;
-  ORDER = 571;
-  ORDINALITY = 572;
-  OTHERS = 573;
-  OUT_P = 574;
-  OUTER_P = 575;
-  OVER = 576;
-  OVERLAPS = 577;
-  OVERLAY = 578;
-  OVERRIDING = 579;
-  OWNED = 580;
-  OWNER = 581;
-  PARALLEL = 582;
-  PARAMETER = 583;
-  PARSER = 584;
-  PARTIAL = 585;
-  PARTITION = 586;
-  PASSING = 587;
-  PASSWORD = 588;
-  PATH = 589;
-  PLACING = 590;
-  PLAN = 591;
-  PLANS = 592;
-  POLICY = 593;
-  POSITION = 594;
-  PRECEDING = 595;
-  PRECISION = 596;
-  PRESERVE = 597;
-  PREPARE = 598;
-  PREPARED = 599;
-  PRIMARY = 600;
-  PRIOR = 601;
-  PRIVILEGES = 602;
-  PROCEDURAL = 603;
-  PROCEDURE = 604;
-  PROCEDURES = 605;
-  PROGRAM = 606;
-  PUBLICATION = 607;
-  QUOTE = 608;
-  QUOTES = 609;
-  RANGE = 610;
-  READ = 611;
-  REAL = 612;
-  REASSIGN = 613;
-  RECHECK = 614;
-  RECURSIVE = 615;
-  REF_P = 616;
-  REFERENCES = 617;
-  REFERENCING = 618;
-  REFRESH = 619;
-  REINDEX = 620;
-  RELATIVE_P = 621;
-  RELEASE = 622;
-  RENAME = 623;
-  REPEATABLE = 624;
-  REPLACE = 625;
-  REPLICA = 626;
-  RESET = 627;
-  RESTART = 628;
-  RESTRICT = 629;
-  RETURN = 630;
-  RETURNING = 631;
-  RETURNS = 632;
-  REVOKE = 633;
-  RIGHT = 634;
-  ROLE = 635;
-  ROLLBACK = 636;
-  ROLLUP = 637;
-  ROUTINE = 638;
-  ROUTINES = 639;
-  ROW = 640;
-  ROWS = 641;
-  RULE = 642;
-  SAVEPOINT = 643;
-  SCALAR = 644;
-  SCHEMA = 645;
-  SCHEMAS = 646;
-  SCROLL = 647;
-  SEARCH = 648;
-  SECOND_P = 649;
-  SECURITY = 650;
-  SELECT = 651;
-  SEQUENCE = 652;
-  SEQUENCES = 653;
-  SERIALIZABLE = 654;
-  SERVER = 655;
-  SESSION = 656;
-  SESSION_USER = 657;
-  SET = 658;
-  SETS = 659;
-  SETOF = 660;
-  SHARE = 661;
-  SHOW = 662;
-  SIMILAR = 663;
-  SIMPLE = 664;
-  SKIP = 665;
-  SMALLINT = 666;
-  SNAPSHOT = 667;
-  SOME = 668;
-  SOURCE = 669;
-  SQL_P = 670;
-  STABLE = 671;
-  STANDALONE_P = 672;
-  START = 673;
-  STATEMENT = 674;
-  STATISTICS = 675;
-  STDIN = 676;
-  STDOUT = 677;
-  STORAGE = 678;
-  STORED = 679;
-  STRICT_P = 680;
-  STRING_P = 681;
-  STRIP_P = 682;
-  SUBSCRIPTION = 683;
-  SUBSTRING = 684;
-  SUPPORT = 685;
-  SYMMETRIC = 686;
-  SYSID = 687;
-  SYSTEM_P = 688;
-  SYSTEM_USER = 689;
-  TABLE = 690;
-  TABLES = 691;
-  TABLESAMPLE = 692;
-  TABLESPACE = 693;
-  TARGET = 694;
-  TEMP = 695;
-  TEMPLATE = 696;
-  TEMPORARY = 697;
-  TEXT_P = 698;
-  THEN = 699;
-  TIES = 700;
-  TIME = 701;
-  TIMESTAMP = 702;
-  TO = 703;
-  TRAILING = 704;
-  TRANSACTION = 705;
-  TRANSFORM = 706;
-  TREAT = 707;
-  TRIGGER = 708;
-  TRIM = 709;
-  TRUE_P = 710;
-  TRUNCATE = 711;
-  TRUSTED = 712;
-  TYPE_P = 713;
-  TYPES_P = 714;
-  UESCAPE = 715;
-  UNBOUNDED = 716;
-  UNCONDITIONAL = 717;
-  UNCOMMITTED = 718;
-  UNENCRYPTED = 719;
-  UNION = 720;
-  UNIQUE = 721;
-  UNKNOWN = 722;
-  UNLISTEN = 723;
-  UNLOGGED = 724;
-  UNTIL = 725;
-  UPDATE = 726;
-  USER = 727;
-  USING = 728;
-  VACUUM = 729;
-  VALID = 730;
-  VALIDATE = 731;
-  VALIDATOR = 732;
-  VALUE_P = 733;
-  VALUES = 734;
-  VARCHAR = 735;
-  VARIADIC = 736;
-  VARYING = 737;
-  VERBOSE = 738;
-  VERSION_P = 739;
-  VIEW = 740;
-  VIEWS = 741;
-  VOLATILE = 742;
-  WHEN = 743;
-  WHERE = 744;
-  WHITESPACE_P = 745;
-  WINDOW = 746;
-  WITH = 747;
-  WITHIN = 748;
-  WITHOUT = 749;
-  WORK = 750;
-  WRAPPER = 751;
-  WRITE = 752;
-  XML_P = 753;
-  XMLATTRIBUTES = 754;
-  XMLCONCAT = 755;
-  XMLELEMENT = 756;
-  XMLEXISTS = 757;
-  XMLFOREST = 758;
-  XMLNAMESPACES = 759;
-  XMLPARSE = 760;
-  XMLPI = 761;
-  XMLROOT = 762;
-  XMLSERIALIZE = 763;
-  XMLTABLE = 764;
-  YEAR_P = 765;
-  YES_P = 766;
-  ZONE = 767;
-  FORMAT_LA = 768;
-  NOT_LA = 769;
-  NULLS_LA = 770;
-  WITH_LA = 771;
-  WITHOUT_LA = 772;
-  MODE_TYPE_NAME = 773;
-  MODE_PLPGSQL_EXPR = 774;
-  MODE_PLPGSQL_ASSIGN1 = 775;
-  MODE_PLPGSQL_ASSIGN2 = 776;
-  MODE_PLPGSQL_ASSIGN3 = 777;
-  UMINUS = 778;
+  ENFORCED = 405;
+  ENUM_P = 406;
+  ERROR_P = 407;
+  ESCAPE = 408;
+  EVENT = 409;
+  EXCEPT = 410;
+  EXCLUDE = 411;
+  EXCLUDING = 412;
+  EXCLUSIVE = 413;
+  EXECUTE = 414;
+  EXISTS = 415;
+  EXPLAIN = 416;
+  EXPRESSION = 417;
+  EXTENSION = 418;
+  EXTERNAL = 419;
+  EXTRACT = 420;
+  FALSE_P = 421;
+  FAMILY = 422;
+  FETCH = 423;
+  FILTER = 424;
+  FINALIZE = 425;
+  FIRST_P = 426;
+  FLOAT_P = 427;
+  FOLLOWING = 428;
+  FOR = 429;
+  FORCE = 430;
+  FOREIGN = 431;
+  FORMAT = 432;
+  FORWARD = 433;
+  FREEZE = 434;
+  FROM = 435;
+  FULL = 436;
+  FUNCTION = 437;
+  FUNCTIONS = 438;
+  GENERATED = 439;
+  GLOBAL = 440;
+  GRANT = 441;
+  GRANTED = 442;
+  GREATEST = 443;
+  GROUP_P = 444;
+  GROUPING = 445;
+  GROUPS = 446;
+  HANDLER = 447;
+  HAVING = 448;
+  HEADER_P = 449;
+  HOLD = 450;
+  HOUR_P = 451;
+  IDENTITY_P = 452;
+  IF_P = 453;
+  ILIKE = 454;
+  IMMEDIATE = 455;
+  IMMUTABLE = 456;
+  IMPLICIT_P = 457;
+  IMPORT_P = 458;
+  IN_P = 459;
+  INCLUDE = 460;
+  INCLUDING = 461;
+  INCREMENT = 462;
+  INDENT = 463;
+  INDEX = 464;
+  INDEXES = 465;
+  INHERIT = 466;
+  INHERITS = 467;
+  INITIALLY = 468;
+  INLINE_P = 469;
+  INNER_P = 470;
+  INOUT = 471;
+  INPUT_P = 472;
+  INSENSITIVE = 473;
+  INSERT = 474;
+  INSTEAD = 475;
+  INT_P = 476;
+  INTEGER = 477;
+  INTERSECT = 478;
+  INTERVAL = 479;
+  INTO = 480;
+  INVOKER = 481;
+  IS = 482;
+  ISNULL = 483;
+  ISOLATION = 484;
+  JOIN = 485;
+  JSON = 486;
+  JSON_ARRAY = 487;
+  JSON_ARRAYAGG = 488;
+  JSON_EXISTS = 489;
+  JSON_OBJECT = 490;
+  JSON_OBJECTAGG = 491;
+  JSON_QUERY = 492;
+  JSON_SCALAR = 493;
+  JSON_SERIALIZE = 494;
+  JSON_TABLE = 495;
+  JSON_VALUE = 496;
+  KEEP = 497;
+  KEY = 498;
+  KEYS = 499;
+  LABEL = 500;
+  LANGUAGE = 501;
+  LARGE_P = 502;
+  LAST_P = 503;
+  LATERAL_P = 504;
+  LEADING = 505;
+  LEAKPROOF = 506;
+  LEAST = 507;
+  LEFT = 508;
+  LEVEL = 509;
+  LIKE = 510;
+  LIMIT = 511;
+  LISTEN = 512;
+  LOAD = 513;
+  LOCAL = 514;
+  LOCALTIME = 515;
+  LOCALTIMESTAMP = 516;
+  LOCATION = 517;
+  LOCK_P = 518;
+  LOCKED = 519;
+  LOGGED = 520;
+  MAPPING = 521;
+  MATCH = 522;
+  MATCHED = 523;
+  MATERIALIZED = 524;
+  MAXVALUE = 525;
+  MERGE = 526;
+  MERGE_ACTION = 527;
+  METHOD = 528;
+  MINUTE_P = 529;
+  MINVALUE = 530;
+  MODE = 531;
+  MONTH_P = 532;
+  MOVE = 533;
+  NAME_P = 534;
+  NAMES = 535;
+  NATIONAL = 536;
+  NATURAL = 537;
+  NCHAR = 538;
+  NESTED = 539;
+  NEW = 540;
+  NEXT = 541;
+  NFC = 542;
+  NFD = 543;
+  NFKC = 544;
+  NFKD = 545;
+  NO = 546;
+  NONE = 547;
+  NORMALIZE = 548;
+  NORMALIZED = 549;
+  NOT = 550;
+  NOTHING = 551;
+  NOTIFY = 552;
+  NOTNULL = 553;
+  NOWAIT = 554;
+  NULL_P = 555;
+  NULLIF = 556;
+  NULLS_P = 557;
+  NUMERIC = 558;
+  OBJECT_P = 559;
+  OBJECTS_P = 560;
+  OF = 561;
+  OFF = 562;
+  OFFSET = 563;
+  OIDS = 564;
+  OLD = 565;
+  OMIT = 566;
+  ON = 567;
+  ONLY = 568;
+  OPERATOR = 569;
+  OPTION = 570;
+  OPTIONS = 571;
+  OR = 572;
+  ORDER = 573;
+  ORDINALITY = 574;
+  OTHERS = 575;
+  OUT_P = 576;
+  OUTER_P = 577;
+  OVER = 578;
+  OVERLAPS = 579;
+  OVERLAY = 580;
+  OVERRIDING = 581;
+  OWNED = 582;
+  OWNER = 583;
+  PARALLEL = 584;
+  PARAMETER = 585;
+  PARSER = 586;
+  PARTIAL = 587;
+  PARTITION = 588;
+  PASSING = 589;
+  PASSWORD = 590;
+  PATH = 591;
+  PERIOD = 592;
+  PLACING = 593;
+  PLAN = 594;
+  PLANS = 595;
+  POLICY = 596;
+  POSITION = 597;
+  PRECEDING = 598;
+  PRECISION = 599;
+  PRESERVE = 600;
+  PREPARE = 601;
+  PREPARED = 602;
+  PRIMARY = 603;
+  PRIOR = 604;
+  PRIVILEGES = 605;
+  PROCEDURAL = 606;
+  PROCEDURE = 607;
+  PROCEDURES = 608;
+  PROGRAM = 609;
+  PUBLICATION = 610;
+  QUOTE = 611;
+  QUOTES = 612;
+  RANGE = 613;
+  READ = 614;
+  REAL = 615;
+  REASSIGN = 616;
+  RECURSIVE = 617;
+  REF_P = 618;
+  REFERENCES = 619;
+  REFERENCING = 620;
+  REFRESH = 621;
+  REINDEX = 622;
+  RELATIVE_P = 623;
+  RELEASE = 624;
+  RENAME = 625;
+  REPEATABLE = 626;
+  REPLACE = 627;
+  REPLICA = 628;
+  RESET = 629;
+  RESTART = 630;
+  RESTRICT = 631;
+  RETURN = 632;
+  RETURNING = 633;
+  RETURNS = 634;
+  REVOKE = 635;
+  RIGHT = 636;
+  ROLE = 637;
+  ROLLBACK = 638;
+  ROLLUP = 639;
+  ROUTINE = 640;
+  ROUTINES = 641;
+  ROW = 642;
+  ROWS = 643;
+  RULE = 644;
+  SAVEPOINT = 645;
+  SCALAR = 646;
+  SCHEMA = 647;
+  SCHEMAS = 648;
+  SCROLL = 649;
+  SEARCH = 650;
+  SECOND_P = 651;
+  SECURITY = 652;
+  SELECT = 653;
+  SEQUENCE = 654;
+  SEQUENCES = 655;
+  SERIALIZABLE = 656;
+  SERVER = 657;
+  SESSION = 658;
+  SESSION_USER = 659;
+  SET = 660;
+  SETS = 661;
+  SETOF = 662;
+  SHARE = 663;
+  SHOW = 664;
+  SIMILAR = 665;
+  SIMPLE = 666;
+  SKIP = 667;
+  SMALLINT = 668;
+  SNAPSHOT = 669;
+  SOME = 670;
+  SOURCE = 671;
+  SQL_P = 672;
+  STABLE = 673;
+  STANDALONE_P = 674;
+  START = 675;
+  STATEMENT = 676;
+  STATISTICS = 677;
+  STDIN = 678;
+  STDOUT = 679;
+  STORAGE = 680;
+  STORED = 681;
+  STRICT_P = 682;
+  STRING_P = 683;
+  STRIP_P = 684;
+  SUBSCRIPTION = 685;
+  SUBSTRING = 686;
+  SUPPORT = 687;
+  SYMMETRIC = 688;
+  SYSID = 689;
+  SYSTEM_P = 690;
+  SYSTEM_USER = 691;
+  TABLE = 692;
+  TABLES = 693;
+  TABLESAMPLE = 694;
+  TABLESPACE = 695;
+  TARGET = 696;
+  TEMP = 697;
+  TEMPLATE = 698;
+  TEMPORARY = 699;
+  TEXT_P = 700;
+  THEN = 701;
+  TIES = 702;
+  TIME = 703;
+  TIMESTAMP = 704;
+  TO = 705;
+  TRAILING = 706;
+  TRANSACTION = 707;
+  TRANSFORM = 708;
+  TREAT = 709;
+  TRIGGER = 710;
+  TRIM = 711;
+  TRUE_P = 712;
+  TRUNCATE = 713;
+  TRUSTED = 714;
+  TYPE_P = 715;
+  TYPES_P = 716;
+  UESCAPE = 717;
+  UNBOUNDED = 718;
+  UNCONDITIONAL = 719;
+  UNCOMMITTED = 720;
+  UNENCRYPTED = 721;
+  UNION = 722;
+  UNIQUE = 723;
+  UNKNOWN = 724;
+  UNLISTEN = 725;
+  UNLOGGED = 726;
+  UNTIL = 727;
+  UPDATE = 728;
+  USER = 729;
+  USING = 730;
+  VACUUM = 731;
+  VALID = 732;
+  VALIDATE = 733;
+  VALIDATOR = 734;
+  VALUE_P = 735;
+  VALUES = 736;
+  VARCHAR = 737;
+  VARIADIC = 738;
+  VARYING = 739;
+  VERBOSE = 740;
+  VERSION_P = 741;
+  VIEW = 742;
+  VIEWS = 743;
+  VIRTUAL = 744;
+  VOLATILE = 745;
+  WHEN = 746;
+  WHERE = 747;
+  WHITESPACE_P = 748;
+  WINDOW = 749;
+  WITH = 750;
+  WITHIN = 751;
+  WITHOUT = 752;
+  WORK = 753;
+  WRAPPER = 754;
+  WRITE = 755;
+  XML_P = 756;
+  XMLATTRIBUTES = 757;
+  XMLCONCAT = 758;
+  XMLELEMENT = 759;
+  XMLEXISTS = 760;
+  XMLFOREST = 761;
+  XMLNAMESPACES = 762;
+  XMLPARSE = 763;
+  XMLPI = 764;
+  XMLROOT = 765;
+  XMLSERIALIZE = 766;
+  XMLTABLE = 767;
+  YEAR_P = 768;
+  YES_P = 769;
+  ZONE = 770;
+  FORMAT_LA = 771;
+  NOT_LA = 772;
+  NULLS_LA = 773;
+  WITH_LA = 774;
+  WITHOUT_LA = 775;
+  MODE_TYPE_NAME = 776;
+  MODE_PLPGSQL_EXPR = 777;
+  MODE_PLPGSQL_ASSIGN1 = 778;
+  MODE_PLPGSQL_ASSIGN2 = 779;
+  MODE_PLPGSQL_ASSIGN3 = 780;
+  UMINUS = 781;
+}
+
+
+// protobuf-c doesn't support optional fields, so any optional strings
+// are just an empty string if it should be the equivalent of None/nil.
+//
+// These fields have `// optional` at the end of the line.
+//
+// Upstream issue: https://github.com/protobuf-c/protobuf-c/issues/476
+message SummaryResult {
+  enum Context {
+    None = 0;
+    Select = 1;
+    DML = 2;
+    DDL = 3;
+    Call = 4;
+  }
+
+  message Table {
+    string name = 1;
+    string schema_name = 2;
+    string table_name = 3;
+    Context context = 4;
+  }
+  repeated Table tables = 1;
+
+  // The value here is the table name (i.e. schema.table or just table).
+  map<string, string> aliases = 2;
+
+  repeated string cte_names = 3;
+
+  message Function {
+    string name = 1;
+    string function_name = 2;
+    string schema_name = 3; // optional
+    Context context = 4;
+  }
+  repeated Function functions = 4;
+
+  message FilterColumn {
+    string schema_name = 1; // optional
+    string table_name = 2; // optional
+    string column = 3;
+  }
+  repeated FilterColumn filter_columns = 5;
+  repeated string statement_types = 6;
+  string truncated_query = 7; /* optional, empty if truncation limit is -1 */
 }
