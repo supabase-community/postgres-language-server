@@ -1,7 +1,7 @@
 use pgls_query::{Node, protobuf::Alias};
 
 use super::string::string_values;
-use crate::resolve::scope::Columns;
+use crate::resolve::scope::{Columns, TypedColumns};
 
 /// Applies the column names of an alias (`AS t(a, b)`) to the first columns.
 pub(super) fn apply_alias(columns: Columns, alias: Option<&Alias>) -> Columns {
@@ -23,6 +23,22 @@ pub(super) fn rename_columns(columns: Columns, names: &[Node]) -> Columns {
     }
     for (column, name) in columns.iter_mut().zip(names) {
         *column = name;
+    }
+    Some(columns)
+}
+
+/// Like [`rename_columns`], for typed columns.
+pub(super) fn rename_typed_columns(columns: TypedColumns, names: &[Node]) -> TypedColumns {
+    if names.is_empty() {
+        return columns;
+    }
+    let mut columns = columns?;
+    let names = string_values(names)?;
+    if names.len() > columns.len() {
+        return None;
+    }
+    for (column, name) in columns.iter_mut().zip(names) {
+        column.name = name;
     }
     Some(columns)
 }

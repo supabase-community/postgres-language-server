@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_16_15: 41492 statements and 360 in SQL function bodies, 1699 findings on statements Postgres rejected
+REL_16_15: 41492 statements and 360 in SQL function bodies, 1701 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 banDuplicateColumnAssignments 42601: 1
@@ -14,7 +14,7 @@ insertColumnMismatch 42601: 6
 invalidCast 42846: 2
 missingFromClauseEntry 42P01: 13
 operatorTypeMismatch 42725: 1
-operatorTypeMismatch 42883: 9
+operatorTypeMismatch 42883: 11
 unknownColumn 42703: 38
 unknownColumn 42P01: 3
 unknownFunction 42704: 4
@@ -1703,6 +1703,8 @@ window.sql:989:1 42P01 unknownRelation
 window.sql:991:1 42P01 unknownRelation
 window.sql:1538:1 42P01 unknownRelation
 window.sql:1541:1 42P01 unknownRelation
+with.sql:91:1 42883 operatorTypeMismatch
+with.sql:91:1 42883 operatorTypeMismatch
 with.sql:233:1 42P01 unknownRelation
 with.sql:381:1 42P01 unknownRelation
 with.sql:390:1 42P01 unknownRelation
