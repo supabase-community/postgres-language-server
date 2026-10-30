@@ -9,8 +9,6 @@
 //! the workspace drops the caches of the least recently used documents when all of them keep more
 //! than [`DOCUMENT_CACHE_ENTRIES_MAX`], see [`CacheBudget`].
 
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use std::sync::Arc;
 
 use parking_lot::{Mutex, MutexGuard};
