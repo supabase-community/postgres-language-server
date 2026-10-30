@@ -1,8 +1,8 @@
 //! `LineIndex` maps flat `TextSize` offsets into `(Line, Column)`
 //! representation, with columns in UTF-8, UTF-16 or UTF-32 code units.
 //!
-//! Lines end at `\n`: a lone `\r` doesn't end a line, and the `\r` of a `\r\n` is the last
-//! column of its line.
+//! Lines end at `\n`, so a lone `\r` doesn't end a line. The `\r` of a `\r\n` belongs to the line
+//! break, like in the LSP: a position can't point between the `\r` and the `\n`.
 
 use std::mem;
 
@@ -13,6 +13,8 @@ use rustc_hash::FxHashMap;
 pub struct LineIndex {
     /// Offset the beginning of each line, zero-based.
     newlines: Vec<TextSize>,
+    /// The offsets of the `\n`s that follow a `\r`, in order.
+    crlf_newlines: Vec<TextSize>,
     /// List of non-ASCII characters on each line.
     line_wide_chars: FxHashMap<u32, Vec<WideChar>>,
     /// The length of the text.
@@ -25,6 +27,7 @@ impl LineIndex {
         let mut wide_chars = Vec::new();
 
         let mut newlines = vec![TextSize::from(0)];
+        let mut crlf_newlines = Vec::new();
 
         let mut current_col = TextSize::from(0);
 
@@ -39,6 +42,9 @@ impl LineIndex {
                 )]
                 let char_offset = TextSize::try_from(offset).expect("TextSize overflow");
                 newlines.push(char_offset + char_size);
+                if text[..offset].ends_with('\r') {
+                    crlf_newlines.push(char_offset);
+                }
 
                 // Save any utf-16 characters seen in the previous line
                 if !wide_chars.is_empty() {
@@ -68,12 +74,21 @@ impl LineIndex {
 
         LineIndex {
             newlines,
+            crlf_newlines,
             line_wide_chars,
             len: TextSize::of(text),
         }
     }
 
+    /// The line and UTF-8 column of `offset`. An offset between the `\r` and the `\n` of a line
+    /// break is the end of its line, and an offset past the end of the text is the end of the text.
     pub fn line_col(&self, offset: TextSize) -> Option<LineCol> {
+        let offset = offset.min(self.len);
+        let offset = if self.crlf_newlines.binary_search(&offset).is_ok() {
+            offset - TextSize::from(1)
+        } else {
+            offset
+        };
         let line = self.newlines.partition_point(|&it| it <= offset) - 1;
         let line_start_offset = self.newlines.get(line)?;
         let col = offset - line_start_offset;
@@ -91,20 +106,42 @@ impl LineIndex {
     }
 
     /// Like [`LineIndex::offset`], but a column past the end of its line is the end of the line,
-    /// as the LSP specifies, and a line past the end of the text is the end of the text.
+    /// as the LSP specifies, and a line past the end of the text is the end of the text. A column
+    /// inside a character is the start of that character.
     pub fn offset_clamped(&self, line_col: LineCol) -> TextSize {
         let line = line_col.line as usize;
-        let Some(start) = self.newlines.get(line) else {
+        let Some(&start) = self.newlines.get(line) else {
             return self.len;
         };
-        // The end of the line is its line break, or the end of the text.
-        let end = self
-            .newlines
-            .get(line + 1)
-            .map_or(self.len, |next| *next - TextSize::from(1));
-        start
-            .checked_add(TextSize::from(line_col.col))
-            .map_or(end, |offset| offset.min(end))
+        let col = TextSize::from(line_col.col).min(self.line_end(line) - start);
+        start + self.floor_char_boundary(line_col.line, col)
+    }
+
+    /// The end of `line`: the start of its line break, or the end of the text.
+    fn line_end(&self, line: usize) -> TextSize {
+        let Some(&next) = self.newlines.get(line + 1) else {
+            return self.len;
+        };
+        let newline = next - TextSize::from(1);
+        if self.crlf_newlines.binary_search(&newline).is_ok() {
+            newline - TextSize::from(1)
+        } else {
+            newline
+        }
+    }
+
+    /// The start of the character that contains column `col` of `line`.
+    fn floor_char_boundary(&self, line: u32, col: TextSize) -> TextSize {
+        let Some(wide_chars) = self.line_wide_chars.get(&line) else {
+            return col;
+        };
+        // The characters of a line are sorted, so the first one that ends after `col` is the only
+        // one that can contain it.
+        let index = wide_chars.partition_point(|c| c.end <= col);
+        match wide_chars.get(index) {
+            Some(c) if c.start < col => c.start,
+            _ => col,
+        }
     }
 
     pub fn to_wide(&self, enc: WideEncoding, line_col: LineCol) -> Option<WideLineCol> {
@@ -226,20 +263,28 @@ mod tests {
         let at = |line, col| LineCol { line, col };
 
         assert_eq!(line_col(2), at(0, 2));
-        assert_eq!(line_col(3), at(0, 3));
+        // Between the `\r` and the `\n`: the end of the line.
+        assert_eq!(line_col(3), at(0, 2));
         assert_eq!(line_col(4), at(1, 0));
         assert_eq!(line_col(6), at(1, 2));
         assert_eq!(line_col(8), at(2, 0));
         assert_eq!(line_col(10), at(2, 2));
         assert_eq!(line_col(14), at(2, 6));
         assert_eq!(line_col(15), at(2, 7));
+        assert_eq!(line_col(100), at(2, 7));
 
-        // Past the end of a line: its line break. Past the last line: the end of the text.
+        // Past the end of a line: the start of its line break. Past the last line: the end of the
+        // text.
         let clamped = |line, col| u32::from(line_index.offset_clamped(at(line, col)));
-        assert_eq!(clamped(0, 100), 3);
+        assert_eq!(clamped(0, 100), 2);
         assert_eq!(clamped(1, 100), 7);
         assert_eq!(clamped(2, 100), 15);
         assert_eq!(clamped(3, 0), 15);
+        // Inside a character: the start of the character.
+        assert_eq!(clamped(2, 1), 8);
+        assert_eq!(clamped(2, 4), 10);
+        let mid_surrogate_pair = line_index.to_utf8(Utf16, WideLineCol { line: 2, col: 2 });
+        assert_eq!(u32::from(line_index.offset_clamped(mid_surrogate_pair)), 10);
 
         for (offset, utf16, utf32) in [(8, 0, 0), (10, 1, 1), (14, 3, 2), (15, 4, 3)] {
             let utf8 = line_col(offset);

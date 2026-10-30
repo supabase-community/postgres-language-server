@@ -116,7 +116,7 @@ Inlay hints and semantic tokens of a single statement, built from the references
 - `crates/pgls_diagnostics` (+ `_categories`, `_macros`) — error and warning reporting model.
 - `crates/pgls_console` / `pgls_markup` — terminal output and markup.
 - `crates/pgls_text_edit`, `pgls_text_size` — text manipulation and byte/char range types.
-- `crates/pgls_line_index` — converts offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back.
+- `crates/pgls_line_index` — converts offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back, for the language server and the WASM bindings.
 - `crates/pgls_matcher` — Unix shell style pattern matching (glob).
 - `crates/pgls_test_utils`, `pgls_test_macros` — shared test helpers.
 - `crates/pgls_wasm` — WASM bindings for browser/editor integrations.

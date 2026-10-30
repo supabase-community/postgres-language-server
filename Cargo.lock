@@ -2976,6 +2976,7 @@ dependencies = [
  "pgls_configuration",
  "pgls_diagnostics",
  "pgls_fs",
+ "pgls_line_index",
  "pgls_query",
  "pgls_text_size",
  "pgls_treesitter_grammar",
