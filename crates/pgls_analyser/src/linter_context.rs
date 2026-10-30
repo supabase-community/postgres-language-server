@@ -216,6 +216,8 @@ pub struct AnalysedFileContext<'a> {
     /// don't parse.
     starts: Vec<TextSize>,
     end: Option<TextSize>,
+    /// Whether the last statement ends with a semicolon.
+    terminated: bool,
 }
 
 impl<'a> AnalysedFileContext<'a> {
@@ -228,20 +230,31 @@ impl<'a> AnalysedFileContext<'a> {
             session,
             starts: Vec::new(),
             end: None,
+            terminated: true,
         }
     }
 
-    /// Sets where the statements start in the file, and where the last one ends.
-    pub fn with_positions(mut self, starts: Vec<TextSize>, end: TextSize) -> Self {
+    /// Sets where the statements start in the file, where the last one ends, and whether it ends
+    /// with a semicolon.
+    pub fn with_positions(
+        mut self,
+        starts: Vec<TextSize>,
+        end: TextSize,
+        terminated: bool,
+    ) -> Self {
         self.starts = starts;
         self.end = Some(end);
+        self.terminated = terminated;
         self
     }
 
-    /// Where the last statement of the file, or of the section, ends, relative to the start of
-    /// the current statement. Fixes can insert text there.
-    pub fn end_offset(&self) -> Option<TextSize> {
-        self.end?.checked_sub(*self.starts.get(self.pos)?)
+    /// Where to insert what, relative to the start of the current statement, to add the
+    /// statement `sql` after the last statement of the file, or of the section: on a new line,
+    /// after a semicolon if the last statement doesn't end with one.
+    pub fn append_statement(&self, sql: &str) -> Option<(TextSize, String)> {
+        let offset = self.end?.checked_sub(*self.starts.get(self.pos)?)?;
+        let separator = if self.terminated { "\n" } else { ";\n" };
+        Some((offset, format!("{separator}{sql}")))
     }
 
     /// Sets the number of statements of the file, if it differs from the parsed statements, e.g.
