@@ -840,6 +840,62 @@ fn indexes_follow_renames_and_drops() {
 }
 
 #[test]
+fn indexes_follow_constraints_and_partitioned_indexes() {
+    let search_path = path(&["public"]);
+    let after = |sql: &str| catalog_after(sql, &search_path);
+    let found = |catalog: &Catalog, name| index_table(catalog, None, name, &search_path);
+    let is_found =
+        |catalog: &Catalog, name| catalog.index(None, name, &search_path).found().is_some();
+    let users = Some(("public".to_string(), "users".to_string()));
+
+    // `USING INDEX` renames the index to the name of the constraint.
+    let catalog = after(
+        "create unique index users_id_idx on users (id);
+         alter table users add constraint users_pkey primary key using index users_id_idx;",
+    );
+    assert!(!is_found(&catalog, "users_id_idx"));
+    assert_eq!(found(&catalog, "users_pkey"), users);
+    let catalog = after(
+        "create unique index users_id_idx on users (id);
+         alter table users add primary key using index users_id_idx;",
+    );
+    assert_eq!(found(&catalog, "users_id_idx"), users);
+
+    // A constraint may have an index with its name, which `RENAME CONSTRAINT` renames and
+    // `DROP CONSTRAINT` drops.
+    for sql in [
+        "alter table users rename constraint users_name_idx to users_name_key;",
+        "alter table users drop constraint users_name_idx;",
+    ] {
+        let catalog = after(sql);
+        assert_eq!(
+            catalog.index(None, "users_name_idx", &search_path),
+            Lookup::Unknown,
+            "{sql}"
+        );
+    }
+
+    // Dropping the index of a partitioned table drops the partition indexes attached to it.
+    let partitions = "create table p (id int) partition by range (id);
+         create table p1 partition of p for values from (1) to (10);
+         create index p1_id_idx on p1 (id);
+         create index p_id_idx on p (id);";
+    for drop in [
+        "drop index p_id_idx;",
+        "alter table p drop constraint p_pkey;",
+    ] {
+        let catalog = after(&format!("{partitions} {drop}"));
+        assert_eq!(
+            catalog.index(None, "p1_id_idx", &search_path),
+            Lookup::Unknown,
+            "{drop}"
+        );
+    }
+    let catalog = after(&format!("{partitions} drop index users_name_idx;"));
+    assert!(is_found(&catalog, "p1_id_idx"));
+}
+
+#[test]
 fn indexes_with_names_we_dont_know_make_missing_indexes_unknown() {
     let search_path = path(&["public"]);
     for sql in [

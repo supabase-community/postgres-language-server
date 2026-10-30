@@ -37,6 +37,20 @@ pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[
                 c.rename_index(range_var, &n.newname, search_path);
             }
         }
+        // `RENAME CONSTRAINT` also renames the index of a primary key, unique or exclusion
+        // constraint (`rename_constraint_internal`). We don't know which constraints have an
+        // index, so the index with the old name becomes unknown. The new name is unknown already,
+        // see `creates_implicit_indexes`.
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L4138
+        ObjectType::ObjectTabconstraint => {
+            if let Some(table) = n
+                .relation
+                .as_ref()
+                .and_then(|range_var| c.relation_of(range_var, search_path).found())
+            {
+                c.mark_index_unknown(&table.schema, &n.subname);
+            }
+        }
         ObjectType::ObjectColumn => {
             if let Some(range_var) = &n.relation {
                 rename_column(c, range_var, &n.subname, &n.newname, search_path);

@@ -413,6 +413,11 @@ impl CatalogBase {
         self.inheritance_children.contains(&key(schema, name))
     }
 
+    /// The partitions and inheritance children of the snapshot.
+    pub(super) fn inheritance_children(&self) -> impl Iterator<Item = &Key> {
+        self.inheritance_children.iter()
+    }
+
     pub(super) fn may_have_relation(&self, schema: &str, name: &str) -> bool {
         self.possible_relations.contains(&key(schema, name))
     }
