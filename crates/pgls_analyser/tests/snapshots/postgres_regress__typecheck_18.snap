@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_18_6: 47289 statements and 373 in SQL function bodies, 1847 findings on statements Postgres rejected
+REL_18_6: 47289 statements and 373 in SQL function bodies, 1869 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 banDuplicateColumnAssignments 42601: 1
@@ -15,19 +15,21 @@ invalidCast 42846: 2
 missingFromClauseEntry 42P01: 13
 operatorTypeMismatch 42725: 1
 operatorTypeMismatch 42883: 9
-unknownColumn 42703: 40
+unknownColumn 42703: 41
 unknownColumn 42P01: 3
 unknownFunction 42704: 4
-unknownFunction 42883: 96
+unknownFunction 42883: 97
 unknownFunction 42P01: 19
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
 unknownRelation 42501: 1
-unknownRelation 42P01: 1536
+unknownRelation 42P01: 1556
 unknownType 42704: 88
 unknownType 42P01: 2
 
 Known artefacts
+foreign_key.sql:1193:1
+  `CREATE TEMP TABLE fktable2 (fk int references pktable ENFORCED NOT ENFORCED)` fails, so no temporary `fktable2` shadows the one created later
 transactions.sql:108:1
   `DROP TABLE writetest` fails in a read-only session, so the table still exists
 transactions.sql:110:1
@@ -626,6 +628,27 @@ incremental_sort.sql:274:1 42P01 unknownRelation
 incremental_sort.sql:276:1 42P01 unknownRelation
 incremental_sort.sql:297:1 42P01 unknownRelation
 incremental_sort.sql:297:1 42P01 unknownRelation
+inherit.sql:611:1 42P01 unknownRelation
+inherit.sql:613:1 42P01 unknownRelation
+inherit.sql:617:1 42P01 unknownRelation
+inherit.sql:619:1 42P01 unknownRelation
+inherit.sql:713:1 42P01 unknownRelation
+inherit.sql:713:1 42P01 unknownRelation
+inherit.sql:719:1 42P01 unknownRelation
+inherit.sql:719:1 42P01 unknownRelation
+inherit.sql:725:1 42P01 unknownRelation
+inherit.sql:725:1 42P01 unknownRelation
+inherit.sql:732:1 42P01 unknownRelation
+inherit.sql:732:1 42P01 unknownRelation
+inherit.sql:738:1 42P01 unknownRelation
+inherit.sql:738:1 42P01 unknownRelation
+inherit.sql:745:1 42P01 unknownRelation
+inherit.sql:745:1 42P01 unknownRelation
+inherit.sql:785:1 42P01 unknownRelation
+inherit.sql:787:1 42P01 unknownRelation
+inherit.sql:802:1 42P01 unknownRelation
+inherit.sql:804:1 42P01 unknownRelation
+inherit.sql:1439:1 42883 unknownFunction
 insert.sql:16:1 42601 insertColumnMismatch
 insert.sql:17:1 42601 insertColumnMismatch
 insert.sql:18:1 42601 insertColumnMismatch
@@ -1260,6 +1283,7 @@ returning.sql:41:1 42P01 unknownRelation
 returning.sql:48:1 42P01 unknownRelation
 returning.sql:71:1 42P01 unknownRelation
 returning.sql:79:1 42P01 unknownRelation
+returning.sql:336:1 42703 unknownColumn
 rowtypes.sql:123:1 42P01 unknownRelation
 rowtypes.sql:123:1 42P01 unknownRelation
 rowtypes.sql:129:1 42P01 unknownRelation

@@ -27,11 +27,19 @@ use rayon::prelude::*;
 
 /// Findings on statements Postgres accepted only because an earlier statement of the file failed.
 /// The linter assumes every statement succeeds, like a migration that stops at the first error.
-const KNOWN_ARTEFACTS: &[(&str, &str, &str)] = &[(
-    "transactions",
-    "writetest",
-    "`DROP TABLE writetest` fails in a read-only session, so the table still exists",
-)];
+const KNOWN_ARTEFACTS: &[(&str, &str, &str)] = &[
+    (
+        "transactions",
+        "writetest",
+        "`DROP TABLE writetest` fails in a read-only session, so the table still exists",
+    ),
+    (
+        "foreign_key",
+        "insert into fktable2 values (4, 5)",
+        "`CREATE TEMP TABLE fktable2 (fk int references pktable ENFORCED NOT ENFORCED)` fails, so \
+         no temporary `fktable2` shadows the one created later",
+    ),
+];
 
 /// Known false positives in the bodies of SQL functions Postgres accepted: the file, a snippet of
 /// the function, the rule, and the root cause. Remove an entry once it is fixed; an entry that
