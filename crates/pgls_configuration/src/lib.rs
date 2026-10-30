@@ -227,12 +227,24 @@ impl PartialConfiguration {
 
     /// A message for each deprecated setting in use.
     pub fn deprecations(&self) -> Vec<String> {
-        let Some(linter) = &self.linter else {
-            return Vec::new();
+        let mut deprecations = match &self.linter {
+            Some(linter) => {
+                let rules = linter.get_rules();
+                let groups = linter.groups.clone().unwrap_or_default();
+                LinterRuleSettings::new(&rules, &groups).deprecations()
+            }
+            None => Vec::new(),
         };
-        let rules = linter.get_rules();
-        let groups = linter.groups.clone().unwrap_or_default();
-        LinterRuleSettings::new(&rules, &groups).deprecations()
+        if self
+            .migrations
+            .as_ref()
+            .is_some_and(|migrations| migrations.section_markers.is_some())
+        {
+            deprecations.push(
+                "`migrations.sectionMarkers` is deprecated. Use `migrations.tool` instead.".into(),
+            );
+        }
+        deprecations
     }
 }
 
@@ -308,5 +320,19 @@ mod tests {
             empty_objects.is_empty(),
             "init() configuration should not contain empty objects. Found at: {empty_objects:?}"
         );
+    }
+
+    #[test]
+    fn section_markers_are_deprecated() {
+        let config: PartialConfiguration =
+            serde_json::from_str(r#"{ "migrations": { "sectionMarkers": "goose" } }"#).unwrap();
+        assert_eq!(
+            config.deprecations(),
+            ["`migrations.sectionMarkers` is deprecated. Use `migrations.tool` instead."]
+        );
+
+        let config: PartialConfiguration =
+            serde_json::from_str(r#"{ "migrations": { "tool": "goose" } }"#).unwrap();
+        assert!(config.deprecations().is_empty());
     }
 }

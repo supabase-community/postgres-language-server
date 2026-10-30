@@ -11,7 +11,7 @@ use pgls_configuration::{
     PartialConfiguration, PartialFormatConfiguration, PartialTypecheckConfiguration,
     database::PartialDatabaseConfiguration,
     files::PartialFilesConfiguration,
-    migrations::{PartialMigrationsConfiguration, SectionMarkers},
+    migrations::{MigrationTool, PartialMigrationsConfiguration},
 };
 
 use pgls_configuration::ConfigurationPathHint;
@@ -173,14 +173,14 @@ fn test_suppresses_multiline_alter_table_drop_column() {
 /// The categories of the diagnostics of a migration file, sorted. Suppression errors have no
 /// category.
 fn migration_diagnostics(
-    section_markers: SectionMarkers,
+    tool: MigrationTool,
     lint_down: Option<bool>,
     content: &str,
 ) -> Vec<String> {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(section_markers),
+            tool: Some(tool),
             lint_down,
             ..Default::default()
         }),
@@ -242,7 +242,7 @@ fn drops_and_errors(categories: Vec<String>) -> Vec<String> {
 fn lints_down_sections_by_default() {
     assert_eq!(
         drops_and_errors(migration_diagnostics(
-            SectionMarkers::Dbmate,
+            MigrationTool::Dbmate,
             None,
             DBMATE_DROP_NAME
         )),
@@ -255,7 +255,7 @@ fn skips_down_sections_without_lint_down() {
     // The syntax error is still reported, and the suppression isn't reported as unused.
     assert_eq!(
         drops_and_errors(migration_diagnostics(
-            SectionMarkers::Dbmate,
+            MigrationTool::Dbmate,
             Some(false),
             DBMATE_DROP_NAME
         )),
@@ -282,18 +282,18 @@ DROP INDEX CONCURRENTLY IF EXISTS users_name_idx;
 
     // Both sections run in a transaction.
     assert_eq!(
-        in_transaction(migration_diagnostics(SectionMarkers::Goose, None, content)),
+        in_transaction(migration_diagnostics(MigrationTool::Goose, None, content)),
         4
     );
     let content = format!("-- +goose NO TRANSACTION\n{content}");
     assert_eq!(
-        in_transaction(migration_diagnostics(SectionMarkers::Goose, None, &content)),
+        in_transaction(migration_diagnostics(MigrationTool::Goose, None, &content)),
         0
     );
 }
 
 #[test]
-fn section_markers_follow_settings_changes() {
+fn the_migration_tool_follows_settings_changes() {
     let (workspace, project_key) =
         get_test_workspace(None).expect("Unable to create test workspace");
     let path = PgLSPath::new("20250301120000_migration.sql");
@@ -306,13 +306,13 @@ fn section_markers_follow_settings_changes() {
         })
         .expect("Unable to open test file");
 
-    let set_section_markers = |section_markers| {
+    let set_tool = |tool| {
         workspace
             .update_settings(UpdateSettingsParams {
                 project_key,
                 configuration: PartialConfiguration {
                     migrations: Some(PartialMigrationsConfiguration {
-                        section_markers: Some(section_markers),
+                        tool: Some(tool),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -345,9 +345,9 @@ fn section_markers_follow_settings_changes() {
     };
 
     assert_eq!(marker_diagnostics(), 0);
-    set_section_markers(SectionMarkers::Dbmate);
+    set_tool(MigrationTool::Dbmate);
     assert_eq!(marker_diagnostics(), 1);
-    set_section_markers(SectionMarkers::None);
+    set_tool(MigrationTool::None);
     assert_eq!(marker_diagnostics(), 0);
 }
 
@@ -2428,12 +2428,12 @@ async fn executed_statements_do_not_affect_the_server_connections(test_db: PgPoo
     assert_eq!(row.get::<String, _>(1), "\"$user\", public");
 }
 
-/// A workspace that reads the section markers of a migration tool.
-fn section_workspace(section_markers: SectionMarkers) -> (WorkspaceServer, ProjectKey) {
+/// A workspace with the section markers of a migration tool.
+fn section_workspace(tool: MigrationTool) -> (WorkspaceServer, ProjectKey) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(section_markers),
+            tool: Some(tool),
             ..Default::default()
         }),
         ..Default::default()
@@ -2478,7 +2478,7 @@ fn fixed(
 fn test_code_actions_fix_and_suppress_lint_diagnostics() {
     // A dbmate section with `transaction:false` and a single statement runs outside a
     // transaction, where `DROP INDEX CONCURRENTLY` works.
-    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let (workspace, project_key) = section_workspace(MigrationTool::Dbmate);
 
     let path = PgLSPath::new("test.sql");
     let content = "-- migrate:up transaction:false\n  drop index users_email_idx;";
@@ -2577,7 +2577,7 @@ fn test_no_concurrently_fix_in_a_transaction() {
 #[test]
 fn test_fix_file() {
     // goose sends the statements of a `NO TRANSACTION` migration one by one.
-    let (workspace, project_key) = section_workspace(SectionMarkers::Goose);
+    let (workspace, project_key) = section_workspace(MigrationTool::Goose);
     let content = "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;";
     let path = PgLSPath::new("test.sql");
     workspace
@@ -2626,7 +2626,7 @@ fn test_fix_file() {
 fn test_no_concurrently_fix_in_a_dbmate_section_with_several_statements() {
     // dbmate sends a section to Postgres as one query, which runs in a transaction block if it
     // has more than one statement.
-    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let (workspace, project_key) = section_workspace(MigrationTool::Dbmate);
     let content = "-- migrate:up transaction:false\ncreate index users_email_idx on users (email);\ncreate index users_name_idx on users (name);\n";
     assert_eq!(
         fixed(
@@ -2650,7 +2650,7 @@ fn test_concurrently_in_a_query_with_several_statements_is_flagged() {
     };
     assert_eq!(
         flagged(
-            SectionMarkers::Dbmate,
+            MigrationTool::Dbmate,
             "-- migrate:up transaction:false\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n\n-- migrate:down transaction:false\ndrop index concurrently users_email_idx;\n"
         ),
         2
@@ -2658,7 +2658,7 @@ fn test_concurrently_in_a_query_with_several_statements_is_flagged() {
     // goose sends a `StatementBegin` block as one query, and the other statements one by one.
     assert_eq!(
         flagged(
-            SectionMarkers::Goose,
+            MigrationTool::Goose,
             "-- +goose NO TRANSACTION\n-- +goose Up\n-- +goose StatementBegin\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n-- +goose StatementEnd\ncreate index concurrently users_age_idx on users (age);\n-- +goose StatementBegin\ndrop index concurrently users_id_idx;\n-- +goose StatementEnd\n"
         ),
         2
@@ -2669,7 +2669,7 @@ fn test_concurrently_in_a_query_with_several_statements_is_flagged() {
 fn test_concurrently_in_a_function_body() {
     // A function runs in the transaction of the statement that calls it, so `CONCURRENTLY`
     // fails in its body.
-    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let (workspace, project_key) = section_workspace(MigrationTool::Dbmate);
     let content = "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index users_email_idx on users (email) $$;\n";
     assert_eq!(
         fixed(
@@ -2683,7 +2683,7 @@ fn test_concurrently_in_a_function_body() {
     );
 
     let diagnostics = migration_diagnostics(
-        SectionMarkers::Dbmate,
+        MigrationTool::Dbmate,
         None,
         "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index concurrently users_email_idx on users (email) $$;\n",
     );
@@ -2806,7 +2806,7 @@ async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
             ..Default::default()
         }),
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Goose),
+            tool: Some(MigrationTool::Goose),
             ..Default::default()
         }),
         ..Default::default()
@@ -3473,7 +3473,7 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
             ..Default::default()
         }),
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Dbmate),
+            tool: Some(MigrationTool::Dbmate),
             ..Default::default()
         }),
         ..Default::default()
@@ -3523,7 +3523,7 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
 fn test_section_marker_problems_are_reported() {
     let content =
         "create table t (id int);\n-- migrate:up\nselect 1;\n-- Migrate:Down\nselect 2;\n";
-    let categories = migration_diagnostics(SectionMarkers::Dbmate, None, content);
+    let categories = migration_diagnostics(MigrationTool::Dbmate, None, content);
     assert_eq!(
         categories
             .iter()
@@ -3538,7 +3538,7 @@ fn test_section_marker_problems_are_reported() {
 fn test_non_transactional_statement_in_a_function_body() {
     // A function runs in the transaction of the statement that calls it.
     let categories = migration_diagnostics(
-        SectionMarkers::Dbmate,
+        MigrationTool::Dbmate,
         None,
         "-- migrate:up transaction:false\ncreate function clean_up() returns void language sql as $$ vacuum users $$;\n",
     );
@@ -4322,7 +4322,7 @@ ALTER TABLE users DROP COLUMN email;
         r#"{
             "migrations": {
                 "migrationsDir": "migrations",
-                "sectionMarkers": "dbmate",
+                "tool": "dbmate",
                 "lintDown": false,
                 "after": 20240101000000
             }
@@ -4353,7 +4353,7 @@ const GOOSE_ENVSUB: &str = "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SC
 
 #[test]
 fn test_goose_envsub_expansions_are_analysed_as_parameters() {
-    let categories = migration_diagnostics(SectionMarkers::Goose, None, GOOSE_ENVSUB);
+    let categories = migration_diagnostics(MigrationTool::Goose, None, GOOSE_ENVSUB);
     // Only the expansion after `ENVSUB OFF` is a syntax error, and the rules still run.
     assert_eq!(
         categories
@@ -4372,17 +4372,17 @@ fn test_goose_envsub_expansions_are_analysed_as_parameters() {
 }
 
 #[test]
-fn test_goose_envsub_needs_the_goose_section_markers() {
+fn test_goose_envsub_needs_the_goose_tool() {
     // Other tools don't replace the expansions, so they stay syntax errors.
-    for section_markers in [SectionMarkers::None, SectionMarkers::Dbmate] {
-        let categories = migration_diagnostics(section_markers, None, GOOSE_ENVSUB);
+    for tool in [MigrationTool::None, MigrationTool::Dbmate] {
+        let categories = migration_diagnostics(tool, None, GOOSE_ENVSUB);
         assert_eq!(
             categories
                 .iter()
                 .filter(|category| *category == "syntax")
                 .count(),
             3,
-            "{section_markers:?}: {categories:?}"
+            "{tool:?}: {categories:?}"
         );
     }
 }
@@ -4423,7 +4423,7 @@ fn test_goose_envsub_follows_settings_changes() {
             project_key,
             configuration: PartialConfiguration {
                 migrations: Some(PartialMigrationsConfiguration {
-                    section_markers: Some(SectionMarkers::Goose),
+                    tool: Some(MigrationTool::Goose),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -4442,7 +4442,7 @@ fn test_goose_envsub_expansions_stay_as_written() {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(
         serde_json::from_str::<PartialConfiguration>(
-            r#"{"linter": {"rules": {"all": true}}, "format": {"enabled": true}, "migrations": {"sectionMarkers": "goose"}}"#,
+            r#"{"linter": {"rules": {"all": true}}, "format": {"enabled": true}, "migrations": {"tool": "goose"}}"#,
         )
         .unwrap(),
     );
@@ -4498,7 +4498,7 @@ fn test_no_fix_inside_a_goose_envsub_expansion() {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(
         serde_json::from_str::<PartialConfiguration>(
-            r#"{"linter": {"rules": {"all": true}}, "migrations": {"sectionMarkers": "goose"}}"#,
+            r#"{"linter": {"rules": {"all": true}}, "migrations": {"tool": "goose"}}"#,
         )
         .unwrap(),
     );
