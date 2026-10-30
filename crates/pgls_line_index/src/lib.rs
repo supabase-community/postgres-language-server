@@ -1,8 +1,8 @@
 //! Converts flat `TextSize` offsets into `(Line, Column)` positions and back, with columns in
 //! UTF-8, UTF-16 or UTF-32 code units.
 //!
-//! Lines end at `\n`: a lone `\r` doesn't end a line, and the `\r` of a `\r\n` is the last
-//! column of its line.
+//! Lines end at `\n`, so a lone `\r` doesn't end a line. The `\r` of a `\r\n` belongs to the line
+//! break, like in the LSP: a position can't point between the `\r` and the `\n`.
 
 mod line_index;
 #[cfg(test)]

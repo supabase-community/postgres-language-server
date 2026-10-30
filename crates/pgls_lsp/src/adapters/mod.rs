@@ -111,6 +111,22 @@ mod tests {
     }
 
     #[test]
+    fn crlf_belongs_to_the_line_break() {
+        let line_index = LineIndex::new("ab\r\ncd");
+        let encoding = PositionEncoding::Wide(WideEncoding::Utf16);
+        // Past the end of the line: before the `\r`.
+        assert_eq!(
+            offset(&line_index, Position::new(0, 10), encoding).unwrap(),
+            TextSize::from(2)
+        );
+        // Between the `\r` and the `\n`: the end of the line.
+        assert_eq!(
+            position(&line_index, TextSize::from(3), encoding).unwrap(),
+            Position::new(0, 2)
+        );
+    }
+
+    #[test]
     fn with_tabs() {
         let line_index = LineIndex::new(
             r#"
