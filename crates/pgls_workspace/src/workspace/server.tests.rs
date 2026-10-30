@@ -515,6 +515,55 @@ async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
     );
 }
 
+/// A comment between two tokens the parser combines through lookahead (`U&"..." UESCAPE`,
+/// `NOT IN`, `NOT BETWEEN`, `NULLS FIRST`, `WITH ORDINALITY`) used to break parsing in the
+/// libpg_query 17 branch.
+#[tokio::test]
+async fn comments_between_lookahead_tokens_are_no_syntax_error() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("lookahead-comments.sql");
+    let content = r#"select U&"d!0061t!+000061" /* c */ UESCAPE '!' from t;
+select 1 where 1 not /* c */ in (2);
+select 1 where 1 not /* c */ between 0 and 2;
+select * from t order by a nulls /* c */ first;
+select * from unnest(array[1]) with -- c
+ordinality;
+"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let syntax_errors = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "syntax")
+        })
+        .map(|diagnostic| diagnostic.location().span)
+        .collect::<Vec<_>>();
+    assert_eq!(syntax_errors, vec![]);
+}
+
 #[tokio::test]
 async fn format_preserves_named_parameters() {
     let mut conf = PartialConfiguration::init();
@@ -769,7 +818,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
             result _fetch_cycle_continuation_data := null;
         begin
             result.next_id := 0;
-            result.next_state := '{}'::jsonb
+            result.next_state := '{}'::jsonb;
 
             return result;
         end;
