@@ -15,8 +15,8 @@
 //!
 //! The analyser walks a file statement by statement. For each statement it runs the rules,
 //! which resolve names against the current [`Catalog`] with the [`Session`]'s search path, and
-//! then applies the statement to both: `catalog.apply(stmt, session.search_path())` and
-//! `session.apply(stmt)`.
+//! then applies the statement to both: `catalog.apply(stmt, session.search_path())`, then
+//! `session.apply(stmt, &catalog)`, which resolves the names of the statement with the catalog.
 
 mod catalog;
 mod identifier;

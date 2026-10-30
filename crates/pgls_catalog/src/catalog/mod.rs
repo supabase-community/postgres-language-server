@@ -280,6 +280,20 @@ impl Catalog {
         self.relation(name.schema(), &name.name, search_path)
     }
 
+    /// The schema and name of the relation a `RangeVar` names: the relation it resolves to, or,
+    /// if the catalog doesn't know one, where `CREATE TABLE` would create it.
+    pub fn relation_name_of(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        search_path: &[String],
+    ) -> (String, String) {
+        match self.relation_of(range_var, search_path).found() {
+            Some(relation) => (relation.schema, relation.name),
+            None if range_var.relpersistence == "t" => key("pg_temp", &range_var.relname),
+            None => self.creation_key(&names::range_var_name(range_var), search_path),
+        }
+    }
+
     /// Whether the relation a `RangeVar` names is known to be a partitioned table.
     pub fn is_partitioned_table(
         &self,
