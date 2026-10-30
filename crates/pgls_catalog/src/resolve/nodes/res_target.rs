@@ -9,7 +9,7 @@ use super::{
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
-    scope::{Columns, Item, Level, find_item},
+    scope::{Columns, Item, Level, StarEntry, find_item},
 };
 
 /// The output columns of a select list or RETURNING list, whose `*` expands to the FROM items
@@ -100,37 +100,61 @@ pub(super) fn record_star_references(r: &mut Resolver, targets: &[Node]) {
     }
 }
 
-/// The columns of `*`, like [`ExpandAllTables`]. A column is qualified with the name of its FROM
-/// item when there are several. `None` if a column is not known, or if a column name doesn't
-/// reference the column with certainty.
-///
-/// Columns merged by `JOIN ... USING` and `NATURAL` joins are not supported: they come first in
-/// the output of their join, which the level doesn't record, and the bare name of a merged
-/// column can be ambiguous.
+/// The columns of `*`, like [`ExpandAllTables`], in the order of [`Level::star`]. A column is
+/// qualified with the name of its FROM item when there are several, and a column merged by
+/// `JOIN ... USING` or a `NATURAL` join is referenced by its bare name. `None` if a column is not
+/// known, or if a name doesn't reference the column with certainty.
 ///
 /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
 fn star_columns(level: &Level) -> Option<Vec<StarColumn>> {
-    if level.items.is_empty()
-        || level.has_natural_join
-        || level.has_opaque_items
-        || !level.merged_columns.is_empty()
-    {
+    if level.items.is_empty() || level.has_opaque_items {
         return None;
     }
+    let entries = level.star()?;
     if let [item] = level.items.as_slice() {
         return item_columns(item, &[]);
     }
+    let names = entries
+        .iter()
+        .map(|entry| level.star_column_name(entry))
+        .collect::<Option<Vec<_>>>()?;
     let mut columns = Vec::new();
-    for (i, item) in level.items.iter().enumerate() {
-        let name = item.name.as_ref()?;
-        // The qualifier must reference only this item.
-        if level.items[..i]
-            .iter()
-            .any(|other| other.name.as_ref() == Some(name))
-        {
-            return None;
-        }
-        columns.extend(item_columns(item, std::slice::from_ref(name))?);
+    for (entry, name) in entries.iter().zip(&names) {
+        let qualifier = match entry {
+            // The bare name must reference only the merged column.
+            StarEntry::Merged(_) => {
+                if names.iter().filter(|other| *other == name).count() != 1 {
+                    return None;
+                }
+                Vec::new()
+            }
+            StarEntry::Item { item, .. } => {
+                let item = level.items.get(*item)?;
+                let item_name = item.name.as_ref()?;
+                // The qualifier must reference only this item, and the name only this column.
+                if level
+                    .items
+                    .iter()
+                    .filter(|other| other.name.as_ref() == Some(item_name))
+                    .count()
+                    != 1
+                    || item
+                        .columns
+                        .as_ref()?
+                        .iter()
+                        .filter(|column| column == name)
+                        .count()
+                        != 1
+                {
+                    return None;
+                }
+                vec![item_name.clone()]
+            }
+        };
+        columns.push(StarColumn {
+            qualifier,
+            name: (*name).to_owned(),
+        });
     }
     Some(columns)
 }

@@ -441,6 +441,65 @@ fn names_of_sql_json_and_xml_expressions() {
     );
 }
 
+/// The output column names of a query, which must be the same as the names of its typed
+/// output columns.
+fn star_output_names(sql: &str) -> Option<Vec<String>> {
+    let catalog = Catalog::new(Some(database()));
+    let parsed = pgls_query::parse(sql).expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let names = query_output_columns(&query, &catalog, &search_path());
+    let typed = query_output_types(&query, &catalog, &search_path())
+        .map(|columns| columns.into_iter().map(|column| column.name).collect());
+    assert_eq!(names, typed, "{sql}");
+    names
+}
+
+#[test]
+fn joins_that_merge_columns_have_known_output_columns() {
+    // The merged columns come first, then the other columns of each side.
+    assert_eq!(
+        star_output_names("select * from users join posts using (id)"),
+        Some(vec![
+            "id".into(),
+            "name".into(),
+            "user_id".into(),
+            "title".into()
+        ])
+    );
+    assert_eq!(
+        star_output_names("select * from users natural join posts"),
+        Some(vec![
+            "id".into(),
+            "name".into(),
+            "user_id".into(),
+            "title".into()
+        ])
+    );
+    // A FROM item after the join keeps its own columns, even one with a merged name.
+    assert_eq!(
+        star_output_names("select * from users join posts using (id), users u2"),
+        Some(vec![
+            "id".into(),
+            "name".into(),
+            "user_id".into(),
+            "title".into(),
+            "id".into(),
+            "name".into()
+        ])
+    );
+    // The alias of a join sees its columns.
+    assert_eq!(
+        findings("select j.title, j.nope from (users join posts using (id)) j"),
+        [unknown_column(Some("j"), "nope")]
+    );
+    assert_eq!(
+        findings("select title, nope from (select * from users natural join posts) s"),
+        [unknown_column(None, "nope")]
+    );
+}
+
 #[test]
 fn functional_field_notation() {
     // `a(p)` is field `a` of the composite column `p` (`ParseFuncOrColumn`).
