@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
 
 /**
  * E2E tests for Monaco Editor with PGLS Language Server (Web Worker).
@@ -105,6 +105,18 @@ const TEST_SCHEMA = {
   triggers: [],
   roles: [],
 };
+
+/** Sets the content of the editor and waits for the language server to report `code`. */
+async function setValueAndWaitForDiagnostic(page: Page, value: string, code: string) {
+  await page.evaluate((value) => {
+    (window as any).lastDiagnostics = undefined;
+    (window as any).monacoEditor.setValue(value);
+  }, value);
+  await page.waitForFunction(
+    (code) => (window as any).lastDiagnostics?.some((d: any) => d.code === code),
+    code,
+  );
+}
 
 test.describe("Monaco Editor with PGLS Language Server (Web Worker)", () => {
   test.beforeEach(async ({ page }) => {
@@ -434,6 +446,65 @@ test.describe("Monaco Editor with PGLS Language Server (Web Worker)", () => {
     const labels = result.map((item: any) => item.label);
     expect(labels).toContain("users");
     expect(labels).toContain("orders");
+  });
+
+  test("quick fix menu applies a code action", async ({ page }) => {
+    // The statement isn't on the last line: Monaco 0.45's light bulb fails to update on the last
+    // line of a document ("Illegal value for lineNumber"), and the quick fix menu with it.
+    await setValueAndWaitForDiagnostic(
+      page,
+      "refresh materialized view user_stats;\n",
+      "lint/requireConcurrentRefreshMatview",
+    );
+
+    await page.evaluate(() => {
+      const editor = (window as any).monacoEditor;
+      editor.focus();
+      editor.setPosition({ lineNumber: 1, column: 3 });
+      editor.trigger("e2e", "editor.action.quickFix", null);
+    });
+    // The menu focuses the first action, the fix; Monaco blocks pointer events on it in tests.
+    await expect(page.locator(".action-widget .monaco-list-row.focused")).toContainText(
+      "Add CONCURRENTLY",
+    );
+    await page.keyboard.press("Enter");
+
+    await expect
+      .poll(() => page.evaluate(() => (window as any).monacoEditor.getValue().toLowerCase()))
+      .toBe("refresh materialized view concurrently user_stats;\n");
+  });
+
+  test("Fix All applies the safe fixes once section markers are configured", async ({ page }) => {
+    const migration = "-- migrate:up transaction:false\nreindex index my_index;\n";
+    // The action asks for the fixes and applies them after it returns.
+    const runFixAll = () =>
+      page.evaluate(async () => {
+        const editor = (window as any).monacoEditor;
+        editor.focus();
+        await editor.getAction("editor.action.fixAll").run();
+      });
+    const value = () => page.evaluate(() => (window as any).monacoEditor.getValue().toLowerCase());
+
+    // Without section markers, we don't know whether the migration runs in a transaction, so
+    // adding CONCURRENTLY is unsafe and there is nothing to fix.
+    await setValueAndWaitForDiagnostic(page, migration, "lint/requireConcurrentReindex");
+    await runFixAll();
+    await expect(page.locator(".monaco-editor-overlaymessage")).toContainText(
+      "No fix all action available",
+    );
+    expect(await value()).toBe(migration);
+
+    await page.evaluate(async () => {
+      await (window as any).pglsLspClient.sendMessage({
+        jsonrpc: "2.0",
+        method: "workspace/didChangeConfiguration",
+        params: { settings: { migrations: { sectionMarkers: "dbmate" } } },
+      });
+    });
+    await runFixAll();
+    await expect
+      .poll(value)
+      .toBe("-- migrate:up transaction:false\nreindex index concurrently my_index;\n");
   });
 
   test("hover with schema returns column type info", async ({ page }) => {
