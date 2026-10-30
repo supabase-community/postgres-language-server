@@ -14,7 +14,7 @@ use crate::workspace::StatementId;
 pub type ParseResult = Result<Arc<pgls_query::NodeEnum>, SyntaxDiagnostic>;
 
 /// The parse results of the statements of a document. They are kept until the statement is
-/// no longer in the document, see [`PgQueryStore::retain`].
+/// no longer in the document, see [`PgQueryStore::remove`].
 pub struct PgQueryStore {
     /// The tree is in an `Arc` of its own, so that the analyser can share it.
     ast_db: Mutex<FxHashMap<StatementId, Arc<ParseResult>>>,
@@ -53,32 +53,61 @@ impl PgQueryStore {
         self.embedded_db.lock().unwrap().clear();
     }
 
-    /// Drops the results of the statements for which `keep` returns `false`.
-    pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
-        self.ast_db.lock().unwrap().retain(|id, _| keep(id));
-        self.plpgsql_db.lock().unwrap().retain(|id, _| keep(id));
-        self.embedded_db.lock().unwrap().retain(|id, _| keep(id));
+    /// Drops the results of the top-level statement `statement` and of its embedded statements.
+    /// Returns the ids of the embedded statements, which are cached only if those of
+    /// `statement` are.
+    pub fn remove(&self, statement: &StatementId) -> Vec<StatementId> {
+        debug_assert!(statement.is_root());
+        let embedded: Vec<StatementId> = self
+            .embedded_db
+            .lock()
+            .unwrap()
+            .remove(statement)
+            .iter()
+            .flat_map(|embedded| embedded.iter())
+            .map(|embedded| statement.create_child(&embedded.sql))
+            .collect();
+        let mut asts = self.ast_db.lock().unwrap();
+        let mut plpgsql = self.plpgsql_db.lock().unwrap();
+        for id in embedded.iter().chain([statement]) {
+            asts.remove(id);
+            plpgsql.remove(id);
+        }
+        embedded
     }
 
     /// The statements embedded in the top-level statement `statement`, in order: the statements
-    /// of the body of a SQL function. Empty if it doesn't parse.
-    pub fn get_or_cache_embedded(&self, statement: &StatementId) -> Arc<[EmbeddedStatement]> {
+    /// of the body of a SQL function. Empty if it doesn't parse. They are only cached if
+    /// `may_insert` returns `true`, see [`get_or_cache_ast`](Self::get_or_cache_ast).
+    pub fn get_or_cache_embedded(
+        &self,
+        statement: &StatementId,
+        may_insert: impl Fn() -> bool,
+    ) -> Arc<[EmbeddedStatement]> {
         debug_assert!(statement.is_root());
         if let Some(existing) = self.embedded_db.lock().unwrap().get(statement) {
             return Arc::clone(existing);
         }
-        let embedded: Arc<[EmbeddedStatement]> = match self.get_or_cache_ast(statement).as_ref() {
-            Ok(ast) => sql_function_body(ast, statement.content()).into(),
-            Err(_) => Arc::default(),
-        };
-        self.embedded_db
-            .lock()
-            .unwrap()
-            .insert(statement.clone(), Arc::clone(&embedded));
+        let embedded: Arc<[EmbeddedStatement]> =
+            match self.get_or_cache_ast(statement, &may_insert).as_ref() {
+                Ok(ast) => sql_function_body(ast, statement.content()).into(),
+                Err(_) => Arc::default(),
+            };
+        let mut cache = self.embedded_db.lock().unwrap();
+        if may_insert() {
+            cache.insert(statement.clone(), Arc::clone(&embedded));
+        }
         embedded
     }
 
-    pub fn get_or_cache_ast(&self, statement: &StatementId) -> Arc<ParseResult> {
+    /// The tree of `statement`, or why it doesn't parse. It is only cached if `may_insert`
+    /// returns `true`, which is checked while the cache is locked, so that it can't be inserted
+    /// after [`Self::remove`] ran for an edit that `may_insert` doesn't know of yet.
+    pub fn get_or_cache_ast(
+        &self,
+        statement: &StatementId,
+        may_insert: impl Fn() -> bool,
+    ) -> Arc<ParseResult> {
         let mut cache = self.ast_db.lock().unwrap();
 
         if let Some(existing) = cache.get(statement) {
@@ -94,15 +123,18 @@ impl PgQueryStore {
                     })
                 }),
         );
-        cache.insert(statement.clone(), r.clone());
+        if may_insert() {
+            cache.insert(statement.clone(), r.clone());
+        }
         r
     }
 
     pub fn get_or_cache_plpgsql_parse(
         &self,
         statement: &StatementId,
+        may_insert: impl Fn() -> bool,
     ) -> Option<Result<(), SyntaxDiagnostic>> {
-        let ast = self.get_or_cache_ast(statement);
+        let ast = self.get_or_cache_ast(statement, &may_insert);
 
         let create_fn = match ast.as_ref().as_deref() {
             Ok(pgls_query::NodeEnum::CreateFunctionStmt(node)) => node,
@@ -134,7 +166,9 @@ impl PgQueryStore {
             })
             .map_err(|e| SyntaxDiagnostic::new(e.to_string(), range));
 
-        cache.insert(statement.clone(), r.clone());
+        if may_insert() {
+            cache.insert(statement.clone(), r.clone());
+        }
 
         Some(r)
     }
@@ -164,7 +198,7 @@ mod tests {
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_ast(&StatementId::new(input));
+        let res = store.get_or_cache_ast(&StatementId::new(input), || true);
 
         assert!(res.is_ok());
     }
@@ -186,7 +220,7 @@ CROSS JOIN :raw_data.migration_infos;
 
         let store = PgQueryStore::new();
         for input in cases {
-            let result = store.get_or_cache_ast(&StatementId::new(input));
+            let result = store.get_or_cache_ast(&StatementId::new(input), || true);
             assert!(result.is_ok(), "failed to parse {input:?}: {result:?}");
         }
     }
@@ -199,7 +233,7 @@ CROSS JOIN :raw_data.migration_infos;
         assert_eq!(normalized, input);
 
         let store = PgQueryStore::new();
-        let result = store.get_or_cache_ast(&StatementId::new(input));
+        let result = store.get_or_cache_ast(&StatementId::new(input), || true);
         assert!(result.is_ok(), "failed to parse {input:?}: {result:?}");
     }
 
@@ -222,7 +256,7 @@ $$;
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(matches!(res, Some(Err(_))));
     }
@@ -241,7 +275,8 @@ $$;
             ),
         ] {
             let store = PgQueryStore::new();
-            let Some(Err(diagnostic)) = store.get_or_cache_plpgsql_parse(&StatementId::new(input))
+            let Some(Err(diagnostic)) =
+                store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true)
             else {
                 panic!("expected a syntax error for {input}");
             };
@@ -275,7 +310,7 @@ $$;
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(matches!(res, Some(Ok(_))));
     }
@@ -293,7 +328,7 @@ CREATE FUNCTION add_numbers(a integer, b integer)
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(res.is_none());
     }
@@ -304,7 +339,7 @@ CREATE FUNCTION add_numbers(a integer, b integer)
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(res.is_none());
     }
@@ -326,11 +361,11 @@ $$;
         let statement_id = StatementId::new(input);
 
         // First call should parse
-        let res1 = store.get_or_cache_plpgsql_parse(&statement_id);
+        let res1 = store.get_or_cache_plpgsql_parse(&statement_id, || true);
         assert!(matches!(res1, Some(Ok(_))));
 
         // Second call should return cached result
-        let res2 = store.get_or_cache_plpgsql_parse(&statement_id);
+        let res2 = store.get_or_cache_plpgsql_parse(&statement_id, || true);
         assert!(matches!(res2, Some(Ok(_))));
     }
 
@@ -361,7 +396,7 @@ $$;
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(matches!(res, Some(Ok(_))));
     }
@@ -372,7 +407,7 @@ $$;
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(res.is_none());
     }

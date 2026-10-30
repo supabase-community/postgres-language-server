@@ -1,7 +1,7 @@
 //! Everything that is cached for a document.
 //!
 //! - Per statement text: the parse results and the tree-sitter trees. An edit only drops what
-//!   was cached for the statements it changed.
+//!   was cached for the statements it removed, see [`DocumentCache::remove_statements`].
 //! - Per [`CacheKey`]: what also depends on the settings and the database, like the analysis of
 //!   the document. It is dropped when the key changes, and the analysis when the content does.
 //!
@@ -9,7 +9,10 @@
 //! the workspace drops the caches of the least recently used documents when all of them keep more
 //! than [`DOCUMENT_CACHE_ENTRIES_MAX`], see [`CacheBudget`].
 
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    Arc, Mutex,
+    atomic::{AtomicU64, Ordering},
+};
 
 use pgls_catalog::CatalogBase;
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::EmbeddedStatement};
@@ -143,6 +146,17 @@ impl PartialEq for CacheKey {
 
 /// The caches of a document.
 pub(crate) struct DocumentCache {
+    /// The generation of the document's content that the caches are for, see
+    /// [`Document::generation`]. A request on a previous generation, which still runs while the
+    /// document changed, reads the parse results and trees, which are keyed by the statement's
+    /// text, but doesn't add to them: an edit only drops the statements it removed, so a statement
+    /// that only the previous generation has would stay. It neither reads nor writes the
+    /// [`KeyedCaches`].
+    ///
+    /// It changes while [`KeyedCaches`] is locked, and before the statements are dropped.
+    ///
+    /// [`Document::generation`]: super::document::Document::generation
+    generation: AtomicU64,
     parses: PgQueryStore,
     trees: TreeSitterStore,
     keyed: Mutex<KeyedCaches>,
@@ -156,12 +170,6 @@ pub(crate) struct DocumentCache {
 #[derive(Default)]
 struct KeyedCaches {
     key: Option<CacheKey>,
-    /// The generation of the document's content they are for, see [`Document::generation`].
-    /// A request on a previous generation, which still runs while the document changed, neither
-    /// reads nor writes them.
-    ///
-    /// [`Document::generation`]: super::document::Document::generation
-    generation: u64,
     analysis: Option<Arc<DocumentAnalysis>>,
     walk: WalkCache,
 }
@@ -169,6 +177,7 @@ struct KeyedCaches {
 impl DocumentCache {
     pub(crate) fn new() -> Self {
         Self {
+            generation: AtomicU64::new(0),
             parses: PgQueryStore::new(),
             trees: TreeSitterStore::new(),
             keyed: Mutex::default(),
@@ -199,7 +208,7 @@ impl DocumentCache {
         let analysis = Arc::new(analyse()?);
         // Unless the content or the key changed meanwhile.
         let mut keyed = self.keyed.lock().unwrap();
-        if keyed.generation == generation && keyed.key.as_ref() == Some(key) {
+        if self.is_current(generation) && keyed.key.as_ref() == Some(key) {
             keyed.analysis = Some(Arc::clone(&analysis));
         }
         drop(keyed);
@@ -219,11 +228,7 @@ impl DocumentCache {
     pub(crate) fn clear(&self) {
         self.parses.clear();
         self.trees.clear();
-        let mut keyed = self.keyed.lock().unwrap();
-        *keyed = KeyedCaches {
-            generation: keyed.generation,
-            ..KeyedCaches::default()
-        };
+        *self.keyed.lock().unwrap() = KeyedCaches::default();
     }
 
     /// What the caches hold for a document with the top-level statements `statements`. The
@@ -260,13 +265,12 @@ impl DocumentCache {
         generation: u64,
     ) -> Option<std::sync::MutexGuard<'_, KeyedCaches>> {
         let mut keyed = self.keyed.lock().unwrap();
-        if keyed.generation != generation {
+        if !self.is_current(generation) {
             return None;
         }
         if keyed.key.as_ref() != Some(key) {
             *keyed = KeyedCaches {
                 key: Some(key.clone()),
-                generation,
                 ..KeyedCaches::default()
             };
         }
@@ -288,43 +292,63 @@ impl DocumentCache {
         }
     }
 
+    /// Whether `generation` is the generation of the content the caches are for.
+    fn is_current(&self, generation: u64) -> bool {
+        self.generation.load(Ordering::Acquire) == generation
+    }
+
     /// The document's content changed to `generation`. Takes out what `change` invalidates, see
-    /// [`WalkCache::content_changed`], and the analysis. [`Self::retain_statements`] drops what
-    /// was cached for the statements.
+    /// [`WalkCache::content_changed`], and the analysis. [`Self::remove_statements`] then drops
+    /// what was cached for the statements that the change removed.
     pub(crate) fn content_changed(&self, change: ContentChange, generation: u64) -> StaleEntries {
         let mut keyed = self.keyed.lock().unwrap();
-        keyed.generation = generation;
+        self.generation.store(generation, Ordering::Release);
         StaleEntries {
             analysis: keyed.analysis.take(),
             walk: keyed.walk.content_changed(change),
         }
     }
 
-    /// The tree of the statement `id`, or why it doesn't parse.
-    pub(crate) fn parse(&self, id: &StatementId) -> Arc<ParseResult> {
-        self.parses.get_or_cache_ast(id)
+    /// The tree of the statement `id` of the content of `generation`, or why it doesn't parse.
+    pub(crate) fn parse(&self, id: &StatementId, generation: u64) -> Arc<ParseResult> {
+        self.parses
+            .get_or_cache_ast(id, || self.is_current(generation))
     }
 
     /// The syntax error of the PL/pgSQL body of the function that `id` creates, if it creates a
     /// PL/pgSQL function.
-    pub(crate) fn plpgsql_parse(&self, id: &StatementId) -> Option<Result<(), SyntaxDiagnostic>> {
-        self.parses.get_or_cache_plpgsql_parse(id)
+    pub(crate) fn plpgsql_parse(
+        &self,
+        id: &StatementId,
+        generation: u64,
+    ) -> Option<Result<(), SyntaxDiagnostic>> {
+        self.parses
+            .get_or_cache_plpgsql_parse(id, || self.is_current(generation))
     }
 
     /// The statements embedded in the top-level statement `id`, see
     /// [`PgQueryStore::get_or_cache_embedded`].
-    pub(crate) fn embedded(&self, id: &StatementId) -> Arc<[EmbeddedStatement]> {
-        self.parses.get_or_cache_embedded(id)
+    pub(crate) fn embedded(&self, id: &StatementId, generation: u64) -> Arc<[EmbeddedStatement]> {
+        self.parses
+            .get_or_cache_embedded(id, || self.is_current(generation))
     }
 
     /// The tree-sitter tree of the statement `id`.
-    pub(crate) fn tree(&self, id: &StatementId) -> Arc<tree_sitter::Tree> {
-        self.trees.get_or_cache_tree(id)
+    pub(crate) fn tree(&self, id: &StatementId, generation: u64) -> Arc<tree_sitter::Tree> {
+        self.trees
+            .get_or_cache_tree(id, || self.is_current(generation))
     }
 
-    /// Drops what is cached for the statements for which `keep` returns `false`.
-    pub(crate) fn retain_statements(&self, keep: impl Fn(&StatementId) -> bool) {
-        self.parses.retain(&keep);
-        self.trees.retain(&keep);
+    /// Drops what is cached for the top-level statements with the texts `removed`, and for the
+    /// statements of their function bodies. Called after [`Self::content_changed`], with the
+    /// statements that the change removed from the document.
+    pub(crate) fn remove_statements<'a>(&self, removed: impl IntoIterator<Item = &'a str>) {
+        for text in removed {
+            let statement = StatementId::new(text);
+            for embedded in self.parses.remove(&statement) {
+                self.trees.remove(&embedded);
+            }
+            self.trees.remove(&statement);
+        }
     }
 }

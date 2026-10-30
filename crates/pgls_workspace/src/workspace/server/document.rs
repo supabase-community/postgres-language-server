@@ -53,54 +53,52 @@ impl Document {
     /// for the caller to drop, see [`StaleEntries::drop_in_background`].
     pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
         let unchanged = common_prefix(&self.content, &content);
+        let unchanged_suffix = common_suffix(&self.content, &content, unchanged);
         // Only the statements around the change are split again.
         let split = pgls_statement_splitter::split_edited(&self.content, &self.split, &content);
-        let ranges = &split.ranges;
-        self.content = content;
-        self.version = version;
-        self.generation += 1;
-
+        let changed = changed_statements(
+            &self.split.ranges,
+            &split.ranges,
+            unchanged,
+            TextSize::of(self.content.as_str()) - unchanged_suffix,
+            content.len() as i64 - self.content.len() as i64,
+        );
         // The statements before the change keep what the walks cached for them. The splitter
         // looks ahead, so a statement before the change can still end elsewhere.
         let first_changed_statement = self
             .split
             .ranges
-            .iter()
-            .zip(ranges)
-            .find(|(old, new)| old != new || old.end() > unchanged)
-            .map_or_else(
-                || {
-                    self.split
-                        .ranges
-                        .get(ranges.len())
-                        .map_or(TextSize::from(u32::MAX), |range| range.start())
-                },
-                |(old, _)| old.start(),
-            );
+            .get(changed.start)
+            .map_or(TextSize::from(u32::MAX), |range| range.start());
+        let old_content = std::mem::replace(&mut self.content, content);
+        let old_split = std::mem::replace(&mut self.split, split);
+        self.version = version;
+        self.generation += 1;
         self.edited_at = Some(unchanged);
 
+        let ranges = &self.split.ranges;
         self.suppressions =
             Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
-        self.diagnostics = split_diagnostics(&split);
-        self.split = split;
-        // Keep what is cached for the statements that are still in the document. The bodies
-        // of SQL functions are kept with their function.
-        let statements: FxHashSet<&str> = self
-            .split
-            .ranges
-            .iter()
-            .map(|range| &self.content[*range])
-            .collect();
-        let is_present =
-            |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
-        self.cache.retain_statements(is_present);
-        self.cache.content_changed(
+        self.diagnostics = split_diagnostics(&self.split);
+        let stale = self.cache.content_changed(
             ContentChange {
                 unchanged,
                 first_changed_statement,
             },
             self.generation,
-        )
+        );
+        // The statements around the change that are no longer in the document drop what was
+        // cached for them, with the statements of their function bodies. The other statements
+        // have the same text as before.
+        let removed = statements_not_in(
+            old_split.ranges[changed]
+                .iter()
+                .map(|range| &old_content[*range]),
+            &self.content,
+            ranges,
+        );
+        self.cache.remove_statements(removed);
+        stale
     }
 
     /// Which version of the content this is: it is incremented on every change. Unlike the
@@ -326,7 +324,7 @@ where
 
             // The statements of a SQL function body follow the function. They are pushed in
             // reverse, so that they are popped in order.
-            let embedded = self.parser.cache.embedded(&root_id);
+            let embedded = self.parser.cache.embedded(&root_id, self.parser.generation);
             self.pending_embedded
                 .extend(embedded.iter().rev().map(|embedded| DocumentStatement {
                     id: root_id.create_child(&embedded.sql),
@@ -362,7 +360,7 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     );
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.cache.parse(&stmt.id);
+        let ast_result = doc.cache.parse(&stmt.id, doc.generation);
         let ast_option = match &*ast_result {
             Ok(node) => Some(node.clone()),
             Err(_) => None,
@@ -383,7 +381,7 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
     );
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.cache.parse(&stmt.id);
+        let ast_result = doc.cache.parse(&stmt.id, doc.generation);
         let result = match &*ast_result {
             Ok(node) => Ok(node.clone()),
             Err(diag) => Err(diag.clone().span(stmt.range)),
@@ -404,14 +402,14 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     );
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.cache.parse(&stmt.id);
+        let ast_result = doc.cache.parse(&stmt.id, doc.generation);
 
         let ast_option = match &*ast_result {
             Ok(node) => Some(node.clone()),
             Err(_) => None,
         };
 
-        let cst_result = doc.cache.tree(&stmt.id);
+        let cst_result = doc.cache.tree(&stmt.id, doc.generation);
 
         (stmt.id, stmt.range, ast_option, cst_result)
     }
@@ -429,11 +427,11 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
         let DocumentStatement { id, range, offsets } = stmt;
-        let maybe_node = doc.cache.parse(&id);
+        let maybe_node = doc.cache.parse(&id, doc.generation);
 
         let (ast_option, diagnostics) = match &*maybe_node {
             Ok(node) => {
-                let plpgsql_result = doc.cache.plpgsql_parse(&id);
+                let plpgsql_result = doc.cache.plpgsql_parse(&id, doc.generation);
                 if let Some(Err(diag)) = plpgsql_result {
                     // offset the pgpsql diagnostic from the parent statement start
                     let span = diag.location().span.map(|sp| sp + range.start());
@@ -452,7 +450,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
         // Statements in the body of a SQL function can reference its parameters.
         let function = id.parent().and_then(|root| {
-            let parent = doc.cache.parse(&root);
+            let parent = doc.cache.parse(&root, doc.generation);
             let Ok(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) =
                 parent.as_ref().as_deref()
             else {
@@ -483,7 +481,7 @@ impl<'a> StatementMapper<'a> for WithCSTMapper {
     type Output = (DocumentStatement, Arc<tree_sitter::Tree>);
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let tree = doc.cache.tree(&stmt.id);
+        let tree = doc.cache.tree(&stmt.id, doc.generation);
         (stmt, tree)
     }
 }
@@ -574,6 +572,82 @@ fn common_prefix(a: &str, b: &str) -> TextSize {
         equal -= 1;
     }
     TextSize::try_from(equal).unwrap_or_default()
+}
+
+/// The length of the longest common suffix of `a` and `b` that doesn't overlap the common
+/// prefix of length `prefix`, on a character boundary.
+fn common_suffix(a: &str, b: &str, prefix: TextSize) -> TextSize {
+    const BLOCK_BYTES: usize = 64;
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    let len = a.len().min(b.len()) - usize::from(prefix);
+    let mut equal = 0;
+    while equal + BLOCK_BYTES <= len
+        && a[a.len() - equal - BLOCK_BYTES..a.len() - equal]
+            == b[b.len() - equal - BLOCK_BYTES..b.len() - equal]
+    {
+        equal += BLOCK_BYTES;
+    }
+    while equal < len && a[a.len() - equal - 1] == b[b.len() - equal - 1] {
+        equal += 1;
+    }
+    // A change inside a character ends after its last byte.
+    while equal > 0 && (a[a.len() - equal] & 0xC0) == 0x80 {
+        equal -= 1;
+    }
+    TextSize::try_from(equal).unwrap_or_default()
+}
+
+/// The indexes of the statements of the split `old` that an edit changed, given the split `new`
+/// of the text after it. The text before `unchanged`, and from `unchanged_from` on in the old
+/// text, is the same, and `shift` is the change in length. A statement is unchanged if it is in
+/// the same text, and the same range there, as before. Only the statements around the change
+/// are compared.
+fn changed_statements(
+    old: &[TextRange],
+    new: &[TextRange],
+    unchanged: TextSize,
+    unchanged_from: TextSize,
+    shift: i64,
+) -> std::ops::Range<usize> {
+    let before = old
+        .iter()
+        .zip(new)
+        .take_while(|(old, new)| old == new && old.end() <= unchanged)
+        .count();
+    let shifted = |range: &TextRange| {
+        let start = u32::try_from(i64::from(u32::from(range.start())) + shift).ok()?;
+        Some(TextRange::at(start.into(), range.len()))
+    };
+    let after = old[before..]
+        .iter()
+        .rev()
+        .zip(new[before..].iter().rev())
+        .take_while(|(old, new)| old.start() >= unchanged_from && shifted(old) == Some(**new))
+        .count();
+    before..old.len() - after
+}
+
+/// The texts of `statements` that aren't the text of one of the statements at `ranges` of
+/// `content`. Only the statements of the same length as one of `statements` are compared.
+fn statements_not_in<'a>(
+    statements: impl Iterator<Item = &'a str>,
+    content: &str,
+    ranges: &[TextRange],
+) -> Vec<&'a str> {
+    let mut missing: FxHashSet<&str> = statements.collect();
+    if missing.is_empty() {
+        return Vec::new();
+    }
+    let lengths: FxHashSet<usize> = missing.iter().map(|text| text.len()).collect();
+    for range in ranges {
+        if lengths.contains(&usize::from(range.len())) {
+            missing.remove(&content[*range]);
+            if missing.is_empty() {
+                break;
+            }
+        }
+    }
+    missing.into_iter().collect()
 }
 
 /// The errors of the statement splitter as diagnostics.
@@ -933,16 +1007,25 @@ $$ LANGUAGE plpgsql;";
         let mut d = Document::new("select 1;\nselect 2;".to_string(), 1);
         let first = StatementId::new("select 1;");
         let second = StatementId::new("select 2;");
-        let first_ast = d.cache.parse(&first);
-        let second_ast = d.cache.parse(&second);
-        let first_tree = d.cache.tree(&first);
+        let first_ast = d.cache.parse(&first, d.generation);
+        let second_ast = d.cache.parse(&second, d.generation);
+        let first_tree = d.cache.tree(&first, d.generation);
 
         d.update_content("select 1;\nselect 3;".to_string(), 2)
             .drop_in_background();
 
-        assert!(Arc::ptr_eq(&first_ast, &d.cache.parse(&first)));
-        assert!(Arc::ptr_eq(&first_tree, &d.cache.tree(&first)));
-        assert!(!Arc::ptr_eq(&second_ast, &d.cache.parse(&second)));
+        assert!(Arc::ptr_eq(
+            &first_ast,
+            &d.cache.parse(&first, d.generation)
+        ));
+        assert!(Arc::ptr_eq(
+            &first_tree,
+            &d.cache.tree(&first, d.generation)
+        ));
+        assert!(!Arc::ptr_eq(
+            &second_ast,
+            &d.cache.parse(&second, d.generation)
+        ));
     }
 
     #[test]
@@ -1045,6 +1128,138 @@ $$ LANGUAGE plpgsql;";
                 format!("{:?}", split_diagnostics(&whole))
             );
         }
+    }
+
+    /// After every edit, the cache holds what it held for the statements that are still in the
+    /// document, and nothing for the others: an edit drops the statements it removed, also when
+    /// another statement has the same text, and the statements of their function bodies.
+    #[test]
+    fn edits_drop_only_the_statements_they_removed() {
+        let statements = [
+            "create table t (id bigint primary key, name text);",
+            "create function f(a int) returns int language sql as $$ select a; select 2 $$;",
+            "select 1;",
+            "select 1;",
+            "insert into t values (1, 'x');",
+            "-- comment\nselect 2;",
+        ];
+        let snippets = ["x", " ", "\n\n", ";", "select 1;", "1", "(", ""];
+        let mut seed: u64 = 0x9e37_79b9_7f4a_7c15;
+        let mut below = |n: usize| {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed % n as u64) as usize
+        };
+        let mut content: String = (0..60)
+            .map(|i| statements[i % statements.len()])
+            .collect::<Vec<_>>()
+            .join("\n");
+        let mut d = Document::new(content.clone(), 0);
+        let fill = |d: &Document| {
+            for (stmt, _) in d.iter(WithCSTMapper) {
+                d.cache.parse(&stmt.id, d.generation);
+            }
+        };
+        fill(&d);
+        for version in 1..300 {
+            let at = below(content.len() + 1);
+            let end = (at + below(30)).min(content.len());
+            let inserted = snippets[below(snippets.len())];
+            content = format!("{}{inserted}{}", &content[..at], &content[end..]);
+            d.update_content(content.clone(), version)
+                .drop_in_background();
+            // Nothing is cached for a statement that isn't in the document.
+            let stats = d.cache_stats();
+            assert!(stats.parse_results <= stats.statements, "{content}");
+            assert!(stats.trees <= stats.statements, "{content}");
+            // Every statement is cached once.
+            fill(&d);
+            let stats = d.cache_stats();
+            assert_eq!(stats.parse_results, stats.statements, "{content}");
+            assert_eq!(stats.trees, stats.statements, "{content}");
+        }
+    }
+
+    #[test]
+    fn finds_the_statements_an_edit_changed() {
+        fn changed<'a>(old: &'a str, new: &str) -> Vec<&'a str> {
+            let (old_split, new_split) = (
+                pgls_statement_splitter::split(old),
+                pgls_statement_splitter::split(new),
+            );
+            let unchanged = common_prefix(old, new);
+            let range = changed_statements(
+                &old_split.ranges,
+                &new_split.ranges,
+                unchanged,
+                TextSize::of(old) - common_suffix(old, new, unchanged),
+                new.len() as i64 - old.len() as i64,
+            );
+            old_split.ranges[range]
+                .iter()
+                .map(|range| &old[*range])
+                .collect()
+        }
+        assert_eq!(
+            changed(
+                "select 1;\nselect 2;\nselect 3;",
+                "select 1;\nselect 22;\nselect 3;"
+            ),
+            ["select 2;"]
+        );
+        // The same text as the statement before it.
+        assert_eq!(
+            changed(
+                "select 1;\nselect 1;\nselect 1;",
+                "select 1;\nselect 1;\n\nselect 1;"
+            ),
+            Vec::<&str>::new()
+        );
+        assert_eq!(
+            changed("select 1;\nselect 2;", "select 1;\nselect 2;\nselect 3;"),
+            Vec::<&str>::new()
+        );
+        // An edit across two statements changes both.
+        assert_eq!(
+            changed(
+                "select 1;\nselect 2;\nselect 3;",
+                "select 1;\nselect 4;\nselect 5;"
+            ),
+            ["select 2;", "select 3;"]
+        );
+        assert_eq!(
+            changed("select 1;\nselect 2;\nselect 3;", "select 1;\nselect 2;\n"),
+            ["select 3;"]
+        );
+        assert_eq!(changed("select 1;", ""), ["select 1;"]);
+        // A change in a multi-byte character.
+        assert_eq!(
+            changed("select 'é';\nselect 2;", "select 'è';\nselect 2;"),
+            ["select 'é';"]
+        );
+    }
+
+    #[test]
+    fn requests_on_a_previous_version_add_nothing_to_the_cache() {
+        let previous = Document::new("select 1;\nselect 2;".into(), 1);
+        let mut current = previous.clone();
+        current
+            .update_content("select 1;\nselect 3;".into(), 2)
+            .drop_in_background();
+        // `select 2;` is no longer in the document, so it stays out of the cache.
+        for (stmt, _) in previous.iter(WithCSTMapper) {
+            previous.cache.parse(&stmt.id, previous.generation);
+        }
+        let stats = current.cache_stats();
+        assert_eq!((stats.parse_results, stats.trees), (0, 0));
+        // It still reads what is cached for the current version.
+        let first = StatementId::new("select 1;");
+        let cached = current.cache.parse(&first, current.generation);
+        assert!(Arc::ptr_eq(
+            &cached,
+            &previous.cache.parse(&first, previous.generation)
+        ));
     }
 
     /// A clone of a document shares its cache, but a request on the previous version neither
