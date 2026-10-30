@@ -10,6 +10,9 @@ This is a Postgres Language Server implementation providing LSP features for SQL
 
 ### Development Setup
 ```bash
+# Fresh checkout or worktree: libpg_query submodule and JS dependencies
+just setup
+
 # Install development tools
 just install-tools
 
@@ -21,24 +24,27 @@ nix develop && docker-compose up -d
 ```
 
 ### Running Commands as an Agent
+In a fresh checkout or worktree, run `nix develop -c just setup` first. It checks out the `libpg_query` submodule and installs the JS dependencies.
+
 Building `pgls_query` needs libclang, and codegen needs nightly `rustfmt`, `taplo` and `bun`. Outside the Nix shell, builds fail with `Unable to find libclang`. The flake provides all of these and sets `LIBCLANG_PATH`. In a non-interactive shell, `nix develop` alone just opens a subshell, so wrap each command instead:
 
 ```bash
 nix develop -c cargo build -p pgls_analyser
 nix develop -c just gen-lint
-nix develop -c bash -c 'cargo clippy --all-targets --all-features && cargo test -p pgls_analyser'
+nix develop -c bash -c 'cargo clippy --workspace --all-targets -- -D warnings && cargo test -p pgls_analyser'
 ```
 
 - The first `nix develop` downloads the toolchain and takes a few minutes; give it a generous timeout. Later runs start in seconds.
-- `just format`, which `just gen-lint` ends with, runs `bun oxfmt`. In a fresh checkout or worktree, run `nix develop -c bun install --frozen-lockfile` first, otherwise it fails with `Script not found "oxfmt"` and leaves the generated TS files unformatted.
+- `just format`, which `just gen-lint` ends with, runs `bun oxfmt`. Without `just setup` it fails with `Script not found "oxfmt"` and leaves the generated TS files unformatted.
 - Tests that use `sqlx::test` need the database from `docker-compose up -d` (see `DATABASE_URL` in `.env`).
+- The WASM e2e tests (`bun run test:e2e` in `packages/@postgres-language-server/wasm`) serve the test page on port 3000. If that port is taken, e.g. by another worktree, set `PGLS_E2E_PORT`.
 - A worktree's `target/` takes about 6 GB after building every test. When several worktrees build at once, `CARGO_INCREMENTAL=0` saves about 2 GB more per worktree, at the cost of slower rebuilds. Don't point several worktrees at one `CARGO_TARGET_DIR`: the artifacts of the workspace crates have the same names in every worktree, so the builds overwrite each other.
 
 ### Building and Testing
 ```bash
 # Run all tests
 just test
-# or: cargo test run --no-fail-fast
+# or: cargo test --workspace --no-fail-fast
 
 # Test specific crate
 just test-crate pgls_lsp
@@ -58,6 +64,12 @@ just lint
 
 # Fix linting issues
 just lint-fix
+
+# What CI's Rust jobs gate on: format check, clippy with -D warnings, clean codegen
+just check
+
+# Lint the GitHub Actions workflows (actionlint)
+just lint-actions
 
 # Full ready check (run before committing)
 just ready
@@ -178,7 +190,7 @@ INSTA_UPDATE=always cargo test -p pgls_analyser --test rules_tests
 ## Development Notes
 
 ### Code Quality Guidelines
-**IMPORTANT**: Always run `cargo clippy --all-targets --all-features` and fix all warnings after making code changes. Clippy warnings must be resolved before committing code to maintain code quality standards.
+**IMPORTANT**: Always run `cargo clippy --workspace --all-targets -- -D warnings` (the command CI runs) and fix all warnings after making code changes. Clippy warnings must be resolved before committing code to maintain code quality standards. Before pushing, `just check` runs everything CI's Rust jobs gate on: the format check, this clippy command and the codegen check.
 
 ### Engineering Rules
 **IMPORTANT**: Follow the "Engineering rules" in `CONTRIBUTING.md`. In short: no recursion whose depth grows with the input (per statement, file or config); a named limit (`*_max`, unit last) on every loop, walk, queue and cache over external input, logged when hit; no `unwrap`/`expect`/indexing on data from the client, database, file system or config; paired `debug_assert!`s where ranges cross a boundary (statement → file offsets → LSP positions, fix edits → document); coalesce external events; set stack sizes, timeouts, pool sizes and recursion limits explicitly; state the cost and a 20k-statement timing for work on the request path; turn "Not covered" lists into issues.
