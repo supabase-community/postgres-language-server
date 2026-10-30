@@ -321,6 +321,16 @@ fn ctes() {
     assert_valid(
         "with recursive c(n) as (select 1 union all select n + 1 from c where n < 2) search depth first by n set ord select ord from c",
     );
+    // The recursive term sees the columns of the non-recursive term.
+    assert_eq!(
+        findings(
+            "with recursive c(n) as (select 1 union all select nope from c where n < 2) select n from c"
+        ),
+        [unknown_column(None, "nope")]
+    );
+    assert_valid(
+        "with recursive c as (select 1 as n union all select n + 1 from c where n < 2) select n from c",
+    );
 }
 
 #[test]

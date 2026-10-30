@@ -182,11 +182,69 @@ async fn infers_array_agg_result(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn infers_the_types_of_recursive_ctes(test_db: PgPool) {
+    let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let types = |catalog: &mut Catalog, query| output_types(catalog, "", query);
+    let some = |names: &[&str]| -> Vec<Option<String>> {
+        names.iter().map(|name| Some(name.to_string())).collect()
+    };
+    // The types of the non-recursive term, which the recursive term sees too.
+    assert_eq!(
+        types(
+            &mut catalog,
+            "with recursive x(n, s) as (select 1, 'a' union all select n + 1, s || 'b' from x \
+             where n < 3) select n, s, n + 1 from x"
+        ),
+        some(&["integer", "text", "integer"])
+    );
+    // Without a column list, the CTE is named after the non-recursive term.
+    assert_eq!(
+        types(
+            &mut catalog,
+            "with recursive x as (select 1::int8 as n union select n + 1 from x where n < 3) \
+             select n from x"
+        ),
+        some(&["bigint"])
+    );
+    // A CTE of WITH RECURSIVE that isn't a UNION can't be recursive.
+    assert_eq!(
+        types(
+            &mut catalog,
+            "with recursive x as (select 1.5 as n) select n from x"
+        ),
+        some(&["numeric"])
+    );
+    // The column list of a CTE names its typed columns.
+    assert_eq!(
+        types(&mut catalog, "with x(n) as (select 1 as a) select n from x"),
+        some(&["integer"])
+    );
+    // Postgres rejects a recursive CTE whose types differ from those of its non-recursive term,
+    // and a UNION that doesn't reference itself has the common type of both. We don't tell them
+    // apart.
+    assert_eq!(
+        types(
+            &mut catalog,
+            "with recursive x(n) as (select 1 union all select n + 1.5 from x where n < 3) \
+             select n from x"
+        ),
+        [None]
+    );
+    assert_eq!(
+        types(
+            &mut catalog,
+            "with recursive x(n) as (select 1 union select 2.5) select n from x"
+        ),
+        [None]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn unknown_output_types_stay_unknown(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
     for query in [
-        "with recursive x(n) as (select 1 union all select n + 1 from x) select n from x",
         "select missing from (values (1)) x",
         "select absent_function(1)",
     ] {
