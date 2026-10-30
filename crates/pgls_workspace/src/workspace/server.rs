@@ -794,16 +794,17 @@ impl WorkspaceServer {
                                     .await?;
 
                                     if let Some(diagnostic) = result {
-                                        let span = diagnostic
-                                            .location()
-                                            .span
-                                            .map(|span| span + range.start());
+                                        let span = database_span(
+                                            diagnostic.location().span,
+                                            id.content(),
+                                            range,
+                                        );
                                         diagnostics.push(
                                             diagnostic
                                                 .with_file_path(
                                                     path.as_path().display().to_string(),
                                                 )
-                                                .with_file_span(span.unwrap_or(range)),
+                                                .with_file_span(span),
                                         );
                                     }
                                 }
@@ -840,11 +841,11 @@ impl WorkspaceServer {
                                 }
 
                                 for diagnostic in results.unwrap_or_default() {
-                                    let span = diagnostic.span.map(|span| span + range.start());
+                                    let span = database_span(diagnostic.span, id.content(), range);
                                     diagnostics.push(
                                         diagnostic
                                             .with_file_path(path.as_path().display().to_string())
-                                            .with_file_span(span.unwrap_or(range)),
+                                            .with_file_span(span),
                                     );
                                 }
                             }
@@ -2289,6 +2290,21 @@ fn restore_named_parameters(
     } else {
         None
     }
+}
+
+/// Moves the span of a diagnostic from the database, which is relative to the text of the
+/// statement at `range`, into the file. The span is computed from positions that the database
+/// reports, so it may not fit the statement as we have it, e.g. after the file changed. A span
+/// that isn't inside the statement or not on char boundaries of its text becomes the statement.
+#[cfg(feature = "db")]
+fn database_span(span: Option<TextRange>, statement: &str, range: TextRange) -> TextRange {
+    span.filter(|span| {
+        span.end() <= range.len()
+            && statement
+                .get(std::ops::Range::<usize>::from(*span))
+                .is_some()
+    })
+    .map_or(range, |span| span + range.start())
 }
 
 #[cfg(all(test, feature = "db"))]
