@@ -17,6 +17,17 @@ pub use crate::configuration::PartialConfigurationExt;
 pub use crate::diagnostics::{TransportError, WorkspaceError};
 pub use crate::workspace::Workspace;
 
+/// The stack size of the threads that run the workspace: the tokio workers and blocking threads
+/// of the language server, the rayon workers of `check`, and the runtime of the workspace's
+/// database queries.
+///
+/// libpg_query serializes the parse tree recursively, so a long expression needs stack
+/// proportional to its length. In a release build, `select 1 + abs(1) + ...` overflows the 2 MiB
+/// default of tokio and rayon at about 10,000 terms, and the overflow aborts the whole process.
+/// With 8 MiB, the default stack of the main thread on Linux, it handles 20,000 terms. Postgres
+/// itself rejects that statement at 5,000 terms with its default `max_stack_depth` of 2 MB.
+pub const WORKER_STACK_SIZE_BYTES: usize = 8 * 1024 * 1024;
+
 /// This is the main entrypoint of the application.
 pub struct App<'app> {
     /// A reference to the internal virtual file system
