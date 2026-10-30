@@ -15,7 +15,7 @@ fn get_database_url(pool: &PgPool) -> String {
     )
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 #[cfg_attr(
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
@@ -26,7 +26,7 @@ async fn dblint_empty_database_snapshot(test_db: PgPool) {
     assert_snapshot!(output);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 #[cfg_attr(
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
@@ -37,7 +37,7 @@ async fn dblint_error_on_warnings_empty_database_snapshot(test_db: PgPool) {
     assert_snapshot!(output);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 #[cfg_attr(
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
@@ -54,7 +54,7 @@ async fn dblint_detects_issues_snapshot(test_db: PgPool) {
     assert_snapshot!(output);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 #[cfg_attr(
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"

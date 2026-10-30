@@ -93,7 +93,7 @@ mod tests {
 
     use crate::snapshot::{Snapshot, tables::TableKind};
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn includes_views_in_query(test_db: PgPool) {
         let setup = r#"
             create table public.base_table (
@@ -124,7 +124,7 @@ mod tests {
         assert_eq!(view.schema, "public");
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn includes_materialized_views_in_query(test_db: PgPool) {
         let setup = r#"
             create table public.base_table (

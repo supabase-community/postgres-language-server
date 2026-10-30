@@ -85,7 +85,7 @@ mod tests {
 
     use pgls_test_utils::QueryWithCursorPosition;
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_fn(pool: PgPool) {
         let setup = r#"
           create or replace function cool()
@@ -113,7 +113,7 @@ mod tests {
         assert_eq!(label, "cool");
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn prefers_fn_if_invocation(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -150,7 +150,7 @@ mod tests {
         assert_eq!(kind, CompletionItemKind::Function);
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn prefers_fn_in_select_clause(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -184,7 +184,7 @@ mod tests {
         assert_eq!(kind, CompletionItemKind::Function);
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn prefers_function_in_from_clause_if_invocation(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -221,7 +221,7 @@ mod tests {
         assert_eq!(kind, CompletionItemKind::Function);
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn only_allows_functions_and_procedures_in_policy_checks(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -303,7 +303,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn autocompletes_after_schema_in_quotes(pool: PgPool) {
         let setup = r#"
           create schema auth;

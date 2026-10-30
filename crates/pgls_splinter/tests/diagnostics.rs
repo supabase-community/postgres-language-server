@@ -127,7 +127,7 @@ impl TestSetup<'_> {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn unindexed_foreign_key(test_db: PgPool) {
     TestSetup {
         name: "unindexed_foreign_key",
@@ -149,7 +149,7 @@ async fn unindexed_foreign_key(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn no_primary_key(test_db: PgPool) {
     TestSetup {
         name: "no_primary_key",
@@ -165,7 +165,7 @@ async fn no_primary_key(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn rls_disabled_in_public(test_db: PgPool) {
     TestSetup {
         name: "rls_disabled_in_public",
@@ -181,7 +181,7 @@ async fn rls_disabled_in_public(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn policy_exists_rls_disabled(test_db: PgPool) {
     TestSetup {
         name: "policy_exists_rls_disabled",
@@ -203,7 +203,7 @@ async fn policy_exists_rls_disabled(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn no_issues(test_db: PgPool) {
     TestSetup {
         name: "no_issues",
@@ -219,7 +219,7 @@ async fn no_issues(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn multiple_issues(test_db: PgPool) {
     TestSetup {
         name: "multiple_issues",
@@ -245,7 +245,7 @@ async fn multiple_issues(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn missing_roles_runs_generic_checks_only(test_db: PgPool) {
     // Without Supabase roles, generic rules should still run
     // but Supabase-specific rules should be skipped
@@ -291,7 +291,7 @@ async fn missing_roles_runs_generic_checks_only(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn ignore_filtering_filters_matching_objects(test_db: PgPool) {
     // Create multiple tables without primary keys
     sqlx::raw_sql(
@@ -400,7 +400,7 @@ async fn ignore_filtering_filters_matching_objects(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn ignore_filtering_with_schema_wildcard(test_db: PgPool) {
     // Create a schema and tables
     sqlx::raw_sql(
@@ -481,7 +481,7 @@ async fn ignore_filtering_with_schema_wildcard(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn global_ignore_filters_all_rules(test_db: PgPool) {
     // Create tables in different schemas
     sqlx::raw_sql(
@@ -540,7 +540,7 @@ async fn global_ignore_filters_all_rules(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn global_ignore_combined_with_per_rule_ignore(test_db: PgPool) {
     // Create tables to test combined ignore behavior
     sqlx::raw_sql(
