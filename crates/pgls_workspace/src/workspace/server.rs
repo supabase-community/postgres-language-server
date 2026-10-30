@@ -2147,6 +2147,8 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             // The columns of a `*` can come from objects that the file changed, and so can the
             // relations behind CTEs and aliases.
             Reference::Star { .. } | Reference::Cte { .. } | Reference::Alias { .. } => false,
+            // The catalog doesn't tell where schemas and roles come from.
+            Reference::Schema { .. } | Reference::Role { .. } => false,
         })
 }
 

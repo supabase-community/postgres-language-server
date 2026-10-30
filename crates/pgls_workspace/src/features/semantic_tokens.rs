@@ -46,7 +46,7 @@ pub enum SemanticTokenKind {
     Parameter,
     /// A string literal that is coerced to an enum type.
     EnumMember,
-    /// The alias of a FROM item.
+    /// The alias of a FROM item, or a role.
     Variable,
 }
 
