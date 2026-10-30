@@ -89,16 +89,14 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             let mut first = true;
             for item in &n.table_elts {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
                 }
                 emit_node(e, item);
                 first = false;
             }
             for item in &n.constraints {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
                 }
                 emit_node(e, item);
                 first = false;
@@ -140,8 +138,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             let mut first = true;
             for item in &n.table_elts {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
                 }
                 // For typed tables, columns need WITH OPTIONS syntax
                 emit_typed_table_column_override(e, item);
@@ -149,8 +146,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             }
             for item in &n.constraints {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
                 }
                 emit_node(e, item);
                 first = false;
@@ -179,27 +175,22 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         if has_content {
             e.indent_start();
 
+            let separator = if multiple_items {
+                ListSeparatorSpacing::Hard
+            } else {
+                ListSeparatorSpacing::SoftOrSpace
+            };
             let mut first = true;
             for item in &n.table_elts {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    if multiple_items {
-                        e.line(LineType::Hard);
-                    } else {
-                        e.line(LineType::SoftOrSpace);
-                    }
+                    emit_list_comma(e, Some(item), separator);
                 }
                 emit_node(e, item);
                 first = false;
             }
             for item in &n.constraints {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    if multiple_items {
-                        e.line(LineType::Hard);
-                    } else {
-                        e.line(LineType::SoftOrSpace);
-                    }
+                    emit_list_comma(e, Some(item), separator);
                 }
                 emit_node(e, item);
                 first = false;

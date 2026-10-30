@@ -287,8 +287,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             e.indent_start();
             for (idx, window) in n.window_clause.iter().enumerate() {
                 if idx > 0 {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(window), ListSeparatorSpacing::SoftOrSpace);
                 }
 
                 if let Some(pgls_query::NodeEnum::WindowDef(window_def)) = window.node.as_ref() {
@@ -432,8 +431,7 @@ fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {
 
     for (idx, node) in distinct_exprs.iter().enumerate() {
         if idx > 0 {
-            e.token(TokenKind::COMMA);
-            e.line(LineType::SoftOrSpace);
+            emit_list_comma(e, Some(node), ListSeparatorSpacing::SoftOrSpace);
         }
         emit_node(e, node);
     }
