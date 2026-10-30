@@ -1,6 +1,6 @@
 use crate::adapters::PositionEncoding;
-use crate::adapters::line_index::LineIndex;
 use anyhow::{Context, Result};
+use pgls_line_index::LineIndex;
 use pgls_text_edit::{CompressedOp, DiffOp, TextEdit};
 use pgls_text_size::{TextRange, TextSize};
 use tower_lsp_server::ls_types;

@@ -113,6 +113,7 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_diagnostics` - Error and warning reporting
 - `pgls_console` - Terminal output and formatting
 - `pgls_text_edit` - Text manipulation utilities
+- `pgls_line_index` - Converts offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back
 - `pgls_suppressions` - Rule suppression handling
 
 ### TypeScript Packages

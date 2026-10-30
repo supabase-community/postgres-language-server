@@ -6,16 +6,16 @@ use std::mem;
 use pgls_text_size::TextSize;
 use rustc_hash::FxHashMap;
 
-use crate::adapters::{LineCol, WideChar, WideEncoding, WideLineCol};
+use crate::{LineCol, WideChar, WideEncoding, WideLineCol};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LineIndex {
     /// Offset the beginning of each line, zero-based.
-    pub newlines: Vec<TextSize>,
+    newlines: Vec<TextSize>,
     /// List of non-ASCII characters on each line.
-    pub line_wide_chars: FxHashMap<u32, Vec<WideChar>>,
+    line_wide_chars: FxHashMap<u32, Vec<WideChar>>,
     /// The length of the text.
-    pub len: TextSize,
+    len: TextSize,
 }
 
 impl LineIndex {
