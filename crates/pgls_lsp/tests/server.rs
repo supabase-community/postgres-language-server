@@ -1235,8 +1235,12 @@ async fn cancelled_requests_answer_request_cancelled(test_db: PgPool) -> Result<
             )
             .await?,
     );
-    // Let the server start working on it.
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    // Let the server start working on it: the test runs on one thread, so the spawned request
+    // only makes progress while this task yields. A timed wait would let a fast machine finish
+    // the request before it is cancelled.
+    for _ in 0..10 {
+        tokio::task::yield_now().await;
+    }
     assert!(
         !request.is_finished(),
         "the request took less than the wait"
