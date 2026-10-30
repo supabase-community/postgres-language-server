@@ -71,7 +71,7 @@ The language server provides semantic tokens for the names that resolve to exact
 
 Objects in `pg_catalog` and `information_schema` carry the `defaultLibrary` modifier. Names that match no object or several get no token and keep the highlighting of your editor's grammar.
 
-String literals are enum values only where the enum type is certain: casts (`'active'::status`), comparisons with an enum column or value (`=`, `<>`, `IN`, `BETWEEN`, `IS DISTINCT FROM`, `NULLIF`), arguments of function parameters with the enum type, and values assigned to enum columns in `INSERT ... VALUES`, `UPDATE ... SET`, and `ON CONFLICT DO UPDATE SET`.
+String literals are enum values only where the enum type is certain: casts (`'active'::status`), comparisons with an enum column or value (`=`, `<>`, `IN`, `BETWEEN`, `IS DISTINCT FROM`, `NULLIF`, a simple `CASE`, and `= ANY('{active,blocked}')`), arguments of function parameters with the enum type or a polymorphic type that the other arguments make the enum (`array_position(statuses, 'active')`), the results of `CASE` and the arguments of `COALESCE` whose common type is the enum, and values assigned to enum columns in `INSERT ... VALUES`, `INSERT ... SELECT`, `UPDATE ... SET`, and `ON CONFLICT DO UPDATE SET`.
 
 ## Expand `*`
 

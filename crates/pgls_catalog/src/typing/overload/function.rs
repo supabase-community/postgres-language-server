@@ -112,13 +112,19 @@ pub fn select_function(
     else {
         return Selection::Unknown;
     };
-    let result = match resolve_result(c, &pseudo, &inputs, &best.args, &result) {
-        Decision::Known(result) => result,
+    let resolve = |declared| match resolve_result(c, &pseudo, &inputs, &best.args, declared) {
+        Decision::Known(resolved) => resolved,
         Decision::Unknown => None,
     };
+    let result = resolve(&result);
+    // `enforce_generic_type_consistency` resolves the polymorphic argument types too, and the
+    // arguments are coerced to them (`make_fn_arguments`):
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1880
+    let arguments = best.args.iter().map(resolve).collect();
     Selection::Match(ResolvedFunction {
         function: best.item,
         result,
+        arguments,
     })
 }
 

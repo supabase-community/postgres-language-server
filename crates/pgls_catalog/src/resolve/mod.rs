@@ -224,10 +224,12 @@ pub enum Reference {
         /// The index of the parameter in [`FunctionContext::params`].
         index: usize,
     },
-    /// A string literal that is coerced to an enum type, like `'happy'` in `mood = 'happy'`.
-    /// Only recorded where the enum type is certain: casts, operators whose other operand is the
-    /// enum, function parameters of the enum type, and values assigned to enum columns in INSERT
-    /// and UPDATE.
+    /// A string literal that is coerced to an enum type, like `'happy'` in `mood = 'happy'`, or
+    /// to an array of it, like `'{happy,sad}'` in `mood = any('{happy,sad}')`. Only recorded
+    /// where the enum type is certain: casts, operators whose other operand is the enum,
+    /// function parameters of the enum type or of a polymorphic type that the other arguments
+    /// resolve to it, the values of `CASE` and `COALESCE` whose common type is the enum, and
+    /// values assigned to enum columns in INSERT (also from a plain SELECT) and UPDATE.
     EnumLiteral {
         /// The location of the literal in the statement.
         location: i32,

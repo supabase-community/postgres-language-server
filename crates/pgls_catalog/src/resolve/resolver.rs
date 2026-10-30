@@ -15,9 +15,9 @@ use super::{
     scope::{Cte, Level},
     span,
 };
+use crate::TypeKind;
 use crate::lookup::{CatalogView, Lookup, Origin};
-use crate::typing::TypeId;
-use crate::{FunctionInfo, TypeKind};
+use crate::typing::{ResolvedFunction, Type, TypeId};
 
 pub(super) struct Resolver<'a> {
     pub catalog: &'a dyn CatalogView,
@@ -131,8 +131,9 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    /// Records that `call` resolves to `function`, when references are being collected.
-    pub fn record_call(&mut self, call: &FuncCall, function: &FunctionInfo) {
+    /// Records that `call` resolves to `resolved`, when references are being collected.
+    pub fn record_call(&mut self, call: &FuncCall, resolved: &ResolvedFunction) {
+        let function = &resolved.function;
         if !self.collects_references() {
             return;
         }
@@ -169,20 +170,16 @@ impl<'a> Resolver<'a> {
             };
             arguments.push(ResolvedCallArgument { parameter, named });
         }
-        for (arg, argument) in call.args.iter().zip(&arguments) {
+        // The type each argument is coerced to, with polymorphic parameters like `anyelement`
+        // resolved from the other arguments.
+        for (arg, target) in call.args.iter().zip(&resolved.arguments) {
             let value = match arg.node.as_ref() {
                 Some(NodeEnum::NamedArgExpr(named)) => {
                     named.arg.as_deref().and_then(|arg| arg.node.as_ref())
                 }
                 value => value,
             };
-            let is_variadic = expanded && argument.parameter + 1 == parameters.len();
-            let target = if is_variadic {
-                signature.variadic_element.as_ref()
-            } else {
-                parameters[argument.parameter].ty.as_ref()
-            };
-            if let Some(target) = target {
+            if let Some(Type::Named(target)) = target {
                 self.record_enum_literal(value, target);
             }
         }
