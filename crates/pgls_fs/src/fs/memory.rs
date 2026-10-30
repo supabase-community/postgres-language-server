@@ -235,21 +235,21 @@ impl FileSystem for MemoryFileSystem {
     }
 
     fn get_changed_files(&self, _base: &str) -> io::Result<Vec<String>> {
-        let cb_arc = self.on_get_changed_files.as_ref().unwrap().clone();
-
-        let mut cb_guard = cb_arc.lock();
-
-        let cb = cb_guard.take().unwrap();
+        let cb = self
+            .on_get_changed_files
+            .as_ref()
+            .and_then(|cb| cb.lock().take())
+            .ok_or_else(|| io::Error::other("the changed files were already read"))?;
 
         Ok(cb())
     }
 
     fn get_staged_files(&self) -> io::Result<Vec<String>> {
-        let cb_arc = self.on_get_staged_files.as_ref().unwrap().clone();
-
-        let mut cb_guard = cb_arc.lock();
-
-        let cb = cb_guard.take().unwrap();
+        let cb = self
+            .on_get_staged_files
+            .as_ref()
+            .and_then(|cb| cb.lock().take())
+            .ok_or_else(|| io::Error::other("the staged files were already read"))?;
 
         Ok(cb())
     }
@@ -432,6 +432,16 @@ mod tests {
 
     use crate::{FileSystem, MemoryFileSystem, PathInterner, PgLSPath, TraversalContext};
     use crate::{OpenOptions, fs::FileSystemExt};
+
+    #[test]
+    fn changed_and_staged_files_can_only_be_read_once() {
+        let fs = MemoryFileSystem::default();
+
+        assert_eq!(fs.get_changed_files("main").unwrap(), Vec::<String>::new());
+        assert!(fs.get_changed_files("main").is_err());
+        assert_eq!(fs.get_staged_files().unwrap(), Vec::<String>::new());
+        assert!(fs.get_staged_files().is_err());
+    }
 
     #[test]
     fn fs_read_only() {

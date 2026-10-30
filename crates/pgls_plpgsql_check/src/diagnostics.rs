@@ -42,12 +42,13 @@ fn find_text_outside_strings(text: &str, target: &str) -> Option<ByteOffset> {
                 // potentially different byte offsets.
                 if candidate == target || candidate.eq_ignore_ascii_case(target) {
                     // Check if this is a complete word (not part of another identifier)
-                    let is_word_start =
-                        i == 0 || !bytes[i - 1].is_ascii_alphanumeric() && bytes[i - 1] != b'_';
-                    let target_end = i + target.len();
-                    let is_word_end = target_end >= bytes.len()
-                        || (!bytes[target_end].is_ascii_alphanumeric()
-                            && bytes[target_end] != b'_');
+                    let is_word_boundary =
+                        |byte: &u8| !byte.is_ascii_alphanumeric() && *byte != b'_';
+                    let is_word_start = i
+                        .checked_sub(1)
+                        .and_then(|before| bytes.get(before))
+                        .is_none_or(is_word_boundary);
+                    let is_word_end = bytes.get(i + target.len()).is_none_or(is_word_boundary);
 
                     if is_word_start && is_word_end {
                         return Some(ByteOffset(i));
@@ -218,30 +219,28 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
             let trailing_whitespace = fn_body.len() - fn_body.trim_ascii_end().len();
 
             return Some(TextRange::new(
-                (offset + leading_whitespace).try_into().unwrap(),
+                (offset + leading_whitespace).try_into().ok()?,
                 (offset + fn_body.len() - trailing_whitespace)
                     .try_into()
-                    .unwrap(),
+                    .ok()?,
             ));
         }
     };
 
-    let line_number = stmt
-        .line_number
-        .parse::<usize>()
-        .expect("Expected line number to be a valid usize");
+    // The line numbers start at 1. A statement without a valid one has no span.
+    let line_index = stmt.line_number.parse::<usize>().ok()?.checked_sub(1)?;
 
     let text = &stmt.text;
 
     // calculate the offset to the target line
     let line_offset: usize = fn_body
         .lines()
-        .take(line_number - 1)
+        .take(line_index)
         .map(|line| line.len() + 1) // +1 for newline
         .sum();
 
     // find the position within the target line
-    let line = fn_body.lines().nth(line_number - 1)?;
+    let line = fn_body.lines().nth(line_index)?;
     let start = line
         .to_lowercase()
         .find(&text.to_lowercase())
@@ -362,6 +361,33 @@ mod tests {
         let diagnostics = create_diagnostics_from_check_result(&result, fn_body, 0, None);
         let span = diagnostics[0].span.expect("expected diagnostic span");
         fn_body[usize::from(span.start())..usize::from(span.end())].to_string()
+    }
+
+    #[test]
+    fn a_statement_without_a_valid_line_number_has_no_span() {
+        for line_number in ["", "unknown", "0"] {
+            let result = PlpgSqlCheckResult {
+                function: "public.f1".to_string(),
+                issues: vec![PlpgSqlCheckIssue {
+                    level: "error".to_string(),
+                    message: "column does not exist".to_string(),
+                    detail: None,
+                    hint: None,
+                    statement: Some(Statement {
+                        line_number: line_number.to_string(),
+                        text: "RETURN".to_string(),
+                    }),
+                    query: None,
+                    sql_state: Some("42703".to_string()),
+                }],
+            };
+
+            let diagnostics =
+                create_diagnostics_from_check_result(&result, "BEGIN\n  RETURN 1;\nEND", 0, None);
+
+            assert_eq!(diagnostics.len(), 1);
+            assert_eq!(diagnostics[0].span, None, "line number {line_number:?}");
+        }
     }
 
     #[test]
