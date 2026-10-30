@@ -2686,6 +2686,25 @@ fn test_concurrently_fix_is_unsafe_without_section_markers() {
     );
 }
 
+/// Statements with psql variables get fixes: the fixed statement is checked with the variables
+/// read as parameters, like the statement itself, and they stay as written.
+#[test]
+fn test_fix_file_fixes_statements_with_psql_variables() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_tenant_idx on :\"schema\".users (email) where tenant = :'tenant' and plan = $plan;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        "create index concurrently users_tenant_idx on :\"schema\".users (email) where tenant = :'tenant' and plan = $plan;\n"
+    );
+}
+
 #[test]
 fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
     let mut conf = PartialConfiguration::init();
