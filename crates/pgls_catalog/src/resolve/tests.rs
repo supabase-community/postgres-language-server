@@ -501,6 +501,83 @@ fn joins_that_merge_columns_have_known_output_columns() {
 }
 
 #[test]
+fn natural_joins_merge_the_columns_both_sides_have() {
+    assert_eq!(
+        findings("select nme from users natural join posts"),
+        [unknown_column(None, "nme")]
+    );
+    // The merged column is not ambiguous, and both sides can still be qualified.
+    assert_valid("select id, name, title, users.id, posts.id from users natural join posts");
+    let setup = "create table people (id int8, name text, age int8);";
+    assert_eq!(
+        findings_after(
+            setup,
+            "select id, name, age, nope from users natural join people"
+        ),
+        [unknown_column(None, "nope")]
+    );
+    // With `USING`, a name that both sides have but that isn't merged is ambiguous.
+    assert_eq!(
+        findings_after(setup, "select id, name from users join people using (id)"),
+        [FindingKind::AmbiguousColumn {
+            column: "name".into(),
+            candidates: vec!["users".into(), "people".into()],
+        }]
+    );
+    // Nested natural joins.
+    assert_eq!(
+        findings_after(
+            setup,
+            "select id, name, user_id, age, nope from users natural join people natural join posts"
+        ),
+        [unknown_column(None, "nope")]
+    );
+    // The columns of a natural join have types, the merged ones their common type.
+    let catalog = Catalog::new(Some(database()));
+    let parsed = pgls_query::parse("select id, title from users natural join posts").unwrap();
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let types: Vec<_> = query_output_types(&query, &catalog, &search_path())
+        .expect("known columns")
+        .into_iter()
+        .map(|column| column.ty)
+        .collect();
+    let builtin = |name| {
+        catalog
+            .type_(Some("pg_catalog"), name, &[])
+            .found()
+            .and_then(|info| info.id)
+            .map(crate::typing::Type::Named)
+    };
+    assert_eq!(types, [builtin("int8"), builtin("text")]);
+    // A column that an inner join merged keeps its type in the outer one.
+    let mut catalog = Catalog::new(Some(database()));
+    for stmt in pgls_query::parse(setup).unwrap().stmts() {
+        catalog.apply(stmt, &search_path());
+    }
+    let parsed =
+        pgls_query::parse("select name from users natural join people natural join posts").unwrap();
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let types: Vec<_> = query_output_types(&query, &catalog, &search_path())
+        .expect("known columns")
+        .into_iter()
+        .map(|column| column.ty)
+        .collect();
+    assert_eq!(types, [builtin("text")]);
+    // If the columns of a side are unknown, so are the merged ones.
+    assert_eq!(
+        findings("select nme from users natural join nope"),
+        [FindingKind::UnknownRelation {
+            schema: None,
+            name: "nope".into()
+        }]
+    );
+}
+
+#[test]
 fn functional_field_notation() {
     // `a(p)` is field `a` of the composite column `p` (`ParseFuncOrColumn`).
     let setup = "create type pr as (a int, b text); create table tt (id int, p pr);";

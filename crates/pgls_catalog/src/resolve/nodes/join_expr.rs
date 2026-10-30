@@ -10,11 +10,13 @@ use crate::{
 };
 
 /// A join. Its ON clause sees both sides of the join, but not the FROM items before it, and
-/// `USING` merges the columns of both sides into their common type. Port of the `JoinExpr` case
-/// of [`transformFromClauseItem`], with [`transformJoinUsingClause`], [`buildMergedJoinVar`] and
-/// [`transformJoinOnClause`].
+/// `USING` merges the columns of both sides into their common type. `NATURAL` is `USING` with the
+/// columns of the left side that the right side has too ([`transformFromClauseItem`] builds that
+/// list in its [`isNatural`] case). Port of the `JoinExpr` case of [`transformFromClauseItem`],
+/// with [`transformJoinUsingClause`], [`buildMergedJoinVar`] and [`transformJoinOnClause`].
 ///
 /// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
+/// [`isNatural`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1240
 /// [`transformJoinUsingClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L306
 /// [`buildMergedJoinVar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1666
 /// [`transformJoinOnClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L365
@@ -31,8 +33,24 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
     let right = resolve_from_item(r, right, &preceding_right);
 
     let using_columns = string_values(&n.using_clause).unwrap_or_default();
-    let merged = using_columns
+    let merge = (n.is_natural || !using_columns.is_empty())
+        .then(|| merge_columns(&left, &right, n.is_natural, &using_columns));
+    // `NATURAL` merges the columns that both sides have, like `USING` with them. They are only
+    // known if all columns of both sides are known.
+    let merged_columns = if n.is_natural {
+        merge
+            .as_ref()
+            .and_then(|merge| merge.as_ref().map(|(names, _)| names.clone()))
+    } else {
+        Some(using_columns.clone())
+    };
+    let star_order = merge.map(|merge| match merge {
+        Some((_, columns)) => StarOrder::Columns(columns),
+        None => StarOrder::Unknown,
+    });
+    let merged = merged_columns
         .iter()
+        .flatten()
         .map(|name| {
             let left_ty = left
                 .items
@@ -55,21 +73,13 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
             }
         })
         .collect::<Vec<_>>();
-    let star_order = if n.is_natural || !using_columns.is_empty() {
-        Some(merged_star_order(
-            &left,
-            &right,
-            n.is_natural,
-            &using_columns,
-        ))
-    } else {
-        None
-    };
     let mut joined = left;
     joined.extend(right);
-    joined.merged_columns.extend(using_columns.iter().cloned());
+    joined.has_natural_join |= merged_columns.is_none();
+    joined
+        .merged_columns
+        .extend(merged_columns.into_iter().flatten());
     joined.merged_typed_columns.extend(merged);
-    joined.has_natural_join |= n.is_natural;
     if let Some(star_order) = star_order {
         joined.star_order = star_order;
     }
@@ -113,28 +123,27 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
     joined
 }
 
-/// The columns of `*` over a join that merges columns: the merged columns, then the other
+/// The columns a join merges, and the columns of `*` over it: the merged columns, then the other
 /// columns of the left side, then those of the right side. `NATURAL` merges the columns of the
 /// left side that the right side has too. Postgres rejects a merged column that either side
-/// doesn't have exactly once, so the order is unknown then. Port of the column lists of the
-/// `JoinExpr` case of [`transformFromClauseItem`].
+/// doesn't have exactly once, so they are unknown then, as they are when the columns of a side
+/// are. Port of the column lists of the `JoinExpr` case of [`transformFromClauseItem`].
 ///
 /// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
-fn merged_star_order(left: &Level, right: &Level, natural: bool, using: &[String]) -> StarOrder {
-    let (Some(left_columns), Some(right_columns)) = (left.star(), right.star()) else {
-        return StarOrder::Unknown;
-    };
+fn merge_columns(
+    left: &Level,
+    right: &Level,
+    natural: bool,
+    using: &[String],
+) -> Option<(Vec<String>, Vec<StarEntry>)> {
+    let (left_columns, right_columns) = (left.star()?, right.star()?);
     let names = |level: &Level, columns: &[StarEntry]| {
         columns
             .iter()
             .map(|column| level.star_column_name(column).map(str::to_owned))
             .collect::<Option<Vec<_>>>()
     };
-    let (Some(left_names), Some(right_names)) =
-        (names(left, &left_columns), names(right, &right_columns))
-    else {
-        return StarOrder::Unknown;
-    };
+    let (left_names, right_names) = (names(left, &left_columns)?, names(right, &right_columns)?);
     let merged = if natural {
         left_names
             .iter()
@@ -149,7 +158,7 @@ fn merged_star_order(left: &Level, right: &Level, natural: bool, using: &[String
         .iter()
         .all(|name| once(&left_names, name) && once(&right_names, name) && once(&merged, name))
     {
-        return StarOrder::Unknown;
+        return None;
     }
 
     let offset = left.items.len();
@@ -174,5 +183,5 @@ fn merged_star_order(left: &Level, right: &Level, natural: bool, using: &[String
                 merged => merged,
             }),
     );
-    StarOrder::Columns(columns)
+    Some((merged, columns))
 }

@@ -128,11 +128,13 @@ pub(super) struct Level {
     pub items: Vec<Item>,
     /// The order of the columns of `*`.
     pub star_order: StarOrder,
-    /// Columns merged by `JOIN ... USING`. An unqualified reference to them is not ambiguous.
+    /// Columns merged by `JOIN ... USING` and `NATURAL` joins. An unqualified reference to them
+    /// is not ambiguous.
     pub merged_columns: Vec<String>,
     /// Types of columns merged by USING, in USING-clause order.
     pub merged_typed_columns: Vec<TypedColumn>,
-    /// Set if the level contains a `NATURAL` join, whose merged columns we don't compute.
+    /// Set if the level contains a `NATURAL` join whose merged columns are not known, because
+    /// the columns of a side are not known.
     pub has_natural_join: bool,
     /// Set if the level contains items we don't model (`XMLTABLE`, `TABLESAMPLE`, ...), whose
     /// names we don't know.
@@ -237,7 +239,7 @@ impl Level {
     }
 
     /// Typed columns of `SELECT *`, including merged columns. The type of a merged column is
-    /// unknown if a `NATURAL` join merges it, or if nested joins merge the same name again.
+    /// unknown if nested joins merge the same name again.
     pub fn star_typed_columns(&self) -> TypedColumns {
         if self.items.is_empty() {
             return None;
@@ -340,6 +342,14 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
     None
 }
 
+/// Looks up an unqualified column, innermost query level first. Port of [`colNameToVar`] and
+/// [`scanNSItemForColumn`]: a name that more than one FROM item of a level has is ambiguous,
+/// unless a join merges it, since then only the join's merged column is visible
+/// ([`transformFromClauseItem`] hides the columns of the join's sides).
+///
+/// [`colNameToVar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L930
+/// [`scanNSItemForColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L720
+/// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1608
 pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
     for (depth, level) in levels.iter().rev().enumerate() {
         if depth == 0
