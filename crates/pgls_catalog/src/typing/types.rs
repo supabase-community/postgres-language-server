@@ -196,7 +196,7 @@ mod tests {
     use sqlx::PgPool;
     use std::sync::Arc;
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn formats_postgres_builtin_types(test_db: PgPool) {
         let snapshot = Snapshot::load(&test_db).await.unwrap();
         let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));

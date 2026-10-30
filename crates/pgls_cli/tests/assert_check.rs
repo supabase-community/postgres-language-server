@@ -180,7 +180,7 @@ fn create_temp_sql_file(contents: &str) -> PathBuf {
 }
 
 #[cfg(target_os = "linux")]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn check_accepts_tls_connection_strings(test_db: PgPool) {
     let sql_file = create_temp_sql_file("select 1;\n");
     let connection_string = format!(
@@ -226,7 +226,7 @@ async fn check_accepts_tls_connection_strings(test_db: PgPool) {
 const UNKNOWN_COLUMN_PATH: &str = "tests/fixtures/unknown_column.sql";
 
 #[cfg(target_os = "linux")]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn check_fails_when_database_login_fails(test_db: PgPool) {
     let opts = test_db.connect_options();
     let port = opts.get_port().to_string();
@@ -349,7 +349,7 @@ fn check_without_database_succeeds_with_disable_connection_in_config() {
 }
 
 #[cfg(target_os = "linux")]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn check_reads_the_password_from_pgpassfile(test_db: PgPool) {
     use std::os::unix::fs::PermissionsExt;
 

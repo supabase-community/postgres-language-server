@@ -16,11 +16,11 @@ just setup
 # Install development tools
 just install-tools
 
-# Start database for schema introspection
-docker-compose up -d
+# Start the test database and wait until it accepts connections
+just db
 
 # For Nix users
-nix develop && docker-compose up -d
+nix develop -c just db
 ```
 
 ### Running Commands as an Agent
@@ -36,7 +36,7 @@ nix develop -c bash -c 'cargo clippy --workspace --all-targets -- -D warnings &&
 
 - The first `nix develop` downloads the toolchain and takes a few minutes; give it a generous timeout. Later runs start in seconds.
 - `just format`, which `just gen-lint` ends with, runs `bun oxfmt`. Without `just setup` it fails with `Script not found "oxfmt"` and leaves the generated TS files unformatted.
-- Tests that use `sqlx::test` need the database from `docker-compose up -d` (see `DATABASE_URL` in `.env`).
+- Database tests need the database from `just db` (see `DATABASE_URL` in `.env`). All worktrees share one database: `docker-compose.yml` sets the project name, so `just db` in another worktree reuses the running container. If the database isn't running, the tests fail at once with `test database not reachable at <url>`.
 - The WASM e2e tests (`bun run test:e2e` in `packages/@postgres-language-server/wasm`) serve the test page on port 3000. If that port is taken, e.g. by another worktree, set `PGLS_E2E_PORT`.
 - A worktree's `target/` takes about 6 GB after building every test. When several worktrees build at once, `CARGO_INCREMENTAL=0` saves about 2 GB more per worktree, at the cost of slower rebuilds. Don't point several worktrees at one `CARGO_TARGET_DIR`: the artifacts of the workspace crates have the same names in every worktree, so the builds overwrite each other.
 
@@ -153,6 +153,9 @@ The server connects to a Postgres database and loads a snapshot of its schema (`
 
 ### Type Checking
 The type rules in `pgls_catalog::typing` and `pgls_catalog::resolve` port Postgres' parser from the latest supported version. Link the Postgres function next to each port, at the tag of the newest fixtures (e.g. `https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557`). Only report what Postgres would certainly reject; anything not modelled is unknown and never reported. `crates/pgls_analyser/tests/postgres_regress.rs` fails on any finding on a statement Postgres accepted, on every version.
+
+### Database Tests
+Write tests that need a database as `#[pgls_test_utils::db_test] async fn name(test_db: PgPool)`, not `#[sqlx::test]`. sqlx still creates a database per test from `template1` and runs the migrations of `pgls_test_utils`, but `db_test` fails fast when the database isn't running, and gives each test a pool of at most 2 connections that waits up to 2 minutes for one (see `pgls_test_utils::db`), so tests don't time out when several worktrees share the database.
 
 ### Snapshot Testing
 The project uses `insta` for snapshot testing. Update snapshots with:

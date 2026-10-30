@@ -781,7 +781,7 @@ mod typing_overlay_tests {
             .ty
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn created_table_columns_have_type_identities(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;
@@ -884,7 +884,7 @@ mod typing_overlay_tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn undeterminable_polymorphic_results_are_not_created(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;
@@ -912,7 +912,7 @@ mod typing_overlay_tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn overload_mutations_keep_signature_identity_and_invalidation(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;
@@ -960,7 +960,7 @@ mod typing_overlay_tests {
         assert!(out[0].signature.as_ref().unwrap().return_type.is_none());
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn derived_columns_and_ddl_invalidation_are_typed(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;
