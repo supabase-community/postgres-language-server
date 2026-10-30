@@ -9,6 +9,7 @@ use super::{
     range_var::resolve_target_relation,
     res_target::{check_target_column, resolve_returning_list},
     resolve_node,
+    select_stmt::resolve_insert_source,
     with_clause::resolve_with_clause,
 };
 use crate::resolve::{
@@ -56,7 +57,10 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     }
 
     if let Some(source) = n.select_stmt.as_deref() {
-        resolve_node(r, source);
+        match source.node.as_ref() {
+            Some(NodeEnum::SelectStmt(select)) => resolve_insert_source(r, select),
+            _ => resolve_node(r, source),
+        };
         let source_types = r.output.clone();
 
         // The type of each target column, in the order of the values.

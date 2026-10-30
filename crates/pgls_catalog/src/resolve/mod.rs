@@ -228,8 +228,9 @@ pub enum Reference {
     /// to an array of it, like `'{happy,sad}'` in `mood = any('{happy,sad}')`. Only recorded
     /// where the enum type is certain: casts, operators whose other operand is the enum,
     /// function parameters of the enum type or of a polymorphic type that the other arguments
-    /// resolve to it, the values of `CASE` and `COALESCE` whose common type is the enum, and
-    /// values assigned to enum columns in INSERT (also from a plain SELECT) and UPDATE.
+    /// resolve to it, the values of `CASE`, `COALESCE`, `GREATEST`, `LEAST` and the columns of
+    /// `VALUES` whose common type is the enum, and values assigned to enum columns in INSERT
+    /// (also from a plain SELECT) and UPDATE.
     EnumLiteral {
         /// The location of the literal in the statement.
         location: i32,
