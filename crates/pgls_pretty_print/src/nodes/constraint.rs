@@ -30,7 +30,27 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             e.token(TokenKind::NOT_KW);
             e.space();
             e.token(TokenKind::NULL_KW);
-            // Note: keys field may contain 'value' for domains, but it's not emitted
+            // A table constraint names its column (since Postgres 18). The keys of a domain
+            // constraint are `value`, which is not written.
+            if let [key] = n.keys.as_slice()
+                && let Some(NodeEnum::String(column)) = &key.node
+                && column.sval != "value"
+            {
+                e.space();
+                emit_identifier_maybe_quoted(e, &column.sval);
+            }
+            if n.is_no_inherit {
+                e.space();
+                e.token(TokenKind::NO_KW);
+                e.space();
+                e.token(TokenKind::INHERIT_KW);
+            }
+            if !n.initially_valid {
+                e.space();
+                e.token(TokenKind::NOT_KW);
+                e.space();
+                e.token(TokenKind::VALID_KW);
+            }
         }
         x if x == ConstrType::ConstrDefault as i32 => {
             e.token(TokenKind::DEFAULT_KW);
@@ -104,7 +124,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             }
         }
         x if x == ConstrType::ConstrGenerated as i32 => {
-            // GENERATED ALWAYS AS (expr) STORED
+            // GENERATED ALWAYS AS (expr) {STORED | VIRTUAL}
             e.token(TokenKind::GENERATED_KW);
             e.space();
             e.token(TokenKind::ALWAYS_KW);
@@ -119,7 +139,12 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             }
 
             e.space();
-            e.token(TokenKind::STORED_KW);
+            // generated_kind is "s" (STORED) or "v" (VIRTUAL, since Postgres 18)
+            if n.generated_kind == "v" {
+                e.token(TokenKind::VIRTUAL_KW);
+            } else {
+                e.token(TokenKind::STORED_KW);
+            }
         }
         x if x == ConstrType::ConstrCheck as i32 => {
             // CONSTRAINT name CHECK (expr) [NO INHERIT]
@@ -144,7 +169,11 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.token(TokenKind::INHERIT_KW);
             }
 
-            if !n.initially_valid {
+            // NOT ENFORCED implies NOT VALID
+            if !n.is_enforced {
+                e.space();
+                emit_not_enforced(e);
+            } else if !n.initially_valid {
                 e.space();
                 e.token(TokenKind::NOT_KW);
                 e.space();
@@ -166,7 +195,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
 
             if !n.keys.is_empty() {
                 e.space();
-                emit_parenthesized_list(e, &n.keys, super::emit_node);
+                emit_keys(e, n);
             }
 
             // INCLUDE (columns)
@@ -231,7 +260,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
 
             if !n.keys.is_empty() {
                 e.space();
-                emit_parenthesized_list(e, &n.keys, super::emit_node);
+                emit_keys(e, n);
             }
 
             // INCLUDE (columns)
@@ -333,7 +362,9 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.space();
                 e.token(TokenKind::KEY_KW);
                 e.space();
-                emit_parenthesized_list(e, &n.fk_attrs, super::emit_node);
+                emit_parenthesized_list(e, &n.fk_attrs, |node, e| {
+                    emit_period_column(e, node, &n.fk_attrs, n.fk_with_period);
+                });
                 continue_line(e, &mut continued);
             }
 
@@ -345,7 +376,9 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
 
                 if !n.pk_attrs.is_empty() {
                     e.space();
-                    emit_parenthesized_list(e, &n.pk_attrs, super::emit_node);
+                    emit_parenthesized_list(e, &n.pk_attrs, |node, e| {
+                        emit_period_column(e, node, &n.pk_attrs, n.pk_with_period);
+                    });
                 }
             }
 
@@ -401,7 +434,11 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 }
             }
 
-            if !n.initially_valid {
+            // NOT ENFORCED implies NOT VALID
+            if !n.is_enforced {
+                continue_line(e, &mut continued);
+                emit_not_enforced(e);
+            } else if !n.initially_valid {
                 continue_line(e, &mut continued);
                 e.token(TokenKind::NOT_KW);
                 e.space();
@@ -429,6 +466,14 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             e.token(TokenKind::INITIALLY_KW);
             e.space();
             e.token(TokenKind::IMMEDIATE_KW);
+        }
+        x if x == ConstrType::ConstrAttrEnforced as i32 => {
+            // ENFORCED constraint attribute (since Postgres 18)
+            e.token(TokenKind::ENFORCED_KW);
+        }
+        x if x == ConstrType::ConstrAttrNotEnforced as i32 => {
+            // NOT ENFORCED constraint attribute (since Postgres 18)
+            emit_not_enforced(e);
         }
         _ => {
             // Unknown constraint type - emit placeholder
@@ -487,6 +532,36 @@ fn emit_deferrable(e: &mut EventEmitter, n: &Constraint, continued: &mut bool) {
             e.token(TokenKind::DEFERRED_KW);
         }
     }
+}
+
+fn emit_not_enforced(e: &mut EventEmitter) {
+    e.token(TokenKind::NOT_KW);
+    e.space();
+    e.token(TokenKind::ENFORCED_KW);
+}
+
+/// Emits the columns of a primary key or unique constraint, the last one followed by
+/// `WITHOUT OVERLAPS` (since Postgres 18) if the constraint has it.
+fn emit_keys(e: &mut EventEmitter, n: &Constraint) {
+    emit_parenthesized_list(e, &n.keys, |node, e| {
+        super::emit_node(node, e);
+        if n.without_overlaps && n.keys.last().is_some_and(|last| std::ptr::eq(last, node)) {
+            e.space();
+            e.token(TokenKind::WITHOUT_KW);
+            e.space();
+            e.token(TokenKind::OVERLAPS_KW);
+        }
+    });
+}
+
+/// Emits a column of a foreign key, the last one preceded by `PERIOD` (since Postgres 18) if
+/// `with_period` is set.
+fn emit_period_column(e: &mut EventEmitter, node: &Node, columns: &[Node], with_period: bool) {
+    if with_period && columns.last().is_some_and(|last| std::ptr::eq(last, node)) {
+        e.token(TokenKind::PERIOD_KW);
+        e.space();
+    }
+    super::emit_node(node, e);
 }
 
 /// Emits one element of an exclusion constraint: `column WITH operator`.

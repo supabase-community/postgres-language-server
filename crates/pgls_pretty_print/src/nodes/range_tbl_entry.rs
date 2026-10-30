@@ -129,6 +129,7 @@ fn format_label(entry: &RangeTblEntry, kind: RteKind) -> String {
             }
         }
         RteKind::RteResult => "rte#result".to_string(),
+        RteKind::RteGroup => "rte#group".to_string(),
         RteKind::RtekindUndefined => "rte#unknown".to_string(),
     }
 }
@@ -141,6 +142,7 @@ fn join_label(join: JoinType) -> &'static str {
         JoinType::JoinRight => "right",
         JoinType::JoinSemi => "semi",
         JoinType::JoinAnti => "anti",
+        JoinType::JoinRightSemi => "right_semi",
         JoinType::JoinRightAnti => "right_anti",
         JoinType::JoinUniqueOuter => "unique_outer",
         JoinType::JoinUniqueInner => "unique_inner",
