@@ -204,7 +204,8 @@ pub enum Reference {
         span: Option<TextRange>,
         relation: crate::RelationInfo,
     },
-    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`.
+    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`, or a type in DDL,
+    /// like a column type in `CREATE TABLE` or a parameter type in `CREATE FUNCTION`.
     Type {
         /// The location of the type name in the statement.
         location: i32,

@@ -117,6 +117,35 @@ async fn functions_and_types(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn types_in_ddl(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted(
+            "create table t (id int8 primary key, m public.mood, n numeric(10, 2), \
+             at timestamp with time zone default now(), x nope)"
+        ),
+        "create table t (id [int8:type+] primary key, m [public:namespace].[mood:type], \
+         n [numeric:type+](10, 2), \
+         at [timestamp:type+] [with:type+] [time:type+] [zone:type+] default now(), x nope)"
+    );
+    assert_eq!(
+        f.highlighted("alter table users add column c mood, alter column name type varchar(20)"),
+        "alter table users add column c [mood:type], alter column name type [varchar:type+](20)"
+    );
+    assert_eq!(
+        f.highlighted(
+            "create function f(a mood, out b int) returns setof record language sql as 'select 1'"
+        ),
+        "create function f(a [mood:type], out b [int:type+]) returns setof [record:type+] \
+         language sql as 'select 1'"
+    );
+    assert_eq!(
+        f.highlighted("drop function make_point(int, integer)"),
+        "drop function make_point([int:type+], [integer:type+])"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn enum_members(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(

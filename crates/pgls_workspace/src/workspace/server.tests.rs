@@ -2899,14 +2899,19 @@ async fn test_semantic_tokens(test_db: PgPool) {
             .collect::<Vec<_>>()
     };
 
-    // The table and the enum created in the file, and the body of the SQL function.
+    // The table and the enum created in the file, the types of the DDL, and the body of the SQL
+    // function.
     assert_eq!(
         tokens(None),
         vec![
+            ("int", SemanticTokenKind::Type),
+            ("file_mood", SemanticTokenKind::Type),
             ("id", SemanticTokenKind::Property),
             ("file_items", SemanticTokenKind::Class),
             ("mood", SemanticTokenKind::Property),
             ("'up'", SemanticTokenKind::EnumMember),
+            ("int", SemanticTokenKind::Type),
+            ("text", SemanticTokenKind::Type),
             ("label", SemanticTokenKind::Property),
             ("public", SemanticTokenKind::Namespace),
             ("db_items", SemanticTokenKind::Class),
