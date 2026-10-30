@@ -75,6 +75,26 @@ workspace.insertFile("/query.sql", "select * from users");
 const { formatted } = workspace.format("/query.sql", { indentStyle: "tabs" });
 ```
 
+### Configuration
+
+Configure the workspace like a project, with an object in the shape of
+`postgres-language-server.jsonc` (typed as `Configuration`) or the text of such a file.
+`configure` replaces the previous configuration; `{}` goes back to the defaults.
+
+```typescript
+const workspace = await createWorkspace({
+  configuration: { migrations: { sectionMarkers: "dbmate" } },
+});
+
+// Later: replaces the configuration above
+workspace.configure({ format: { keywordCase: "upper" } });
+```
+
+For example, with migration section markers the linter knows whether a migration runs in a
+transaction, which makes fixes like adding `CONCURRENTLY` safe. There is no project folder, so
+`migrations.migrationsDir` and `migrations.after` don't apply, and `extends` isn't resolved. The
+options of `format` and `formatSql` go on top of the `format` section.
+
 ### With Schema
 
 For schema-aware completions and hover, provide your database schema.
@@ -158,6 +178,21 @@ lsp.handleMessage({
 });
 ```
 
+### Configuration via LSP
+
+Pass the configuration (see [Configuration](#configuration)) as the `initializationOptions` of
+`initialize`, or send it as the `settings` of `workspace/didChangeConfiguration`. The latter
+replaces the configuration and re-publishes the diagnostics of the open documents; an invalid
+configuration is reported with `window/showMessage` and ignored.
+
+```typescript
+lsp.handleMessage({
+  jsonrpc: "2.0",
+  method: "workspace/didChangeConfiguration",
+  params: { settings: { migrations: { sectionMarkers: "dbmate" } } },
+});
+```
+
 ## API Reference
 
 ### Workspace
@@ -173,6 +208,7 @@ lsp.handleMessage({
 | `formatSql(sql, options?)`  | Format a SQL string, returns `FormatResult` |
 | `complete(path, offset)`    | Get completions at position                 |
 | `hover(path, offset)`       | Get hover info at position                  |
+| `configure(configuration)`  | Set the configuration                       |
 | `setSchema(json)`           | Set database schema                         |
 | `clearSchema()`             | Clear the current schema                    |
 | `version()`                 | Get library version                         |
@@ -187,7 +223,7 @@ The top-level `format(sql, options?)` function returns a `Promise<string>` with 
 
 ### Supported LSP Methods
 
-- `initialize`
+- `initialize`, with the configuration as `initializationOptions`
 - `shutdown`
 - `textDocument/didOpen`
 - `textDocument/didChange`
@@ -195,6 +231,7 @@ The top-level `format(sql, options?)` function returns a `Promise<string>` with 
 - `textDocument/completion`
 - `textDocument/hover`
 - `textDocument/codeAction`: the fixes of the lint diagnostics at the cursor, an action that suppresses each of them, and with `context.only` set to `source.fixAll.pgls`, an action that applies all safe fixes
+- `workspace/didChangeConfiguration`, with the configuration as `settings`
 - `pgls/setSchema` (custom notification)
 
 ## Building

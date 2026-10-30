@@ -485,10 +485,8 @@ fn load_config(
     if let ConfigurationPathHint::FromUser(ref config_file_path) = base_path
         && file_system.path_is_file(config_file_path)
     {
-        let content = strip_jsonc(&file_system.read_file_from_path(config_file_path)?)?;
-
-        let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
-            .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+        let deserialized =
+            parse_configuration(&file_system.read_file_from_path(config_file_path)?)?;
 
         return Ok(Some(ConfigurationPayload {
             deserialized,
@@ -515,8 +513,7 @@ fn load_config(
     )? {
         let AutoSearchResult { content, file_path } = auto_search_result;
 
-        let deserialized = serde_json::from_str::<PartialConfiguration>(&strip_jsonc(&content)?)
-            .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+        let deserialized = parse_configuration(&content)?;
 
         Ok(Some(ConfigurationPayload {
             deserialized,
@@ -539,9 +536,7 @@ fn load_user_config(
             continue;
         }
 
-        let content = strip_jsonc(&file_system.read_file_from_path(&file_path)?)?;
-        let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
-            .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+        let deserialized = parse_configuration(&file_system.read_file_from_path(&file_path)?)?;
 
         return Ok(Some(ConfigurationPayload {
             deserialized,
@@ -627,6 +622,12 @@ pub fn to_analyser_rules(settings: &Settings) -> LinterRules {
         rules.push_to_analyser_rules(pgls_analyser::METADATA.deref(), &mut analyser_rules);
     }
     analyser_rules
+}
+
+/// Parses the content of a configuration file, which may have comments and trailing commas.
+pub fn parse_configuration(content: &str) -> Result<PartialConfiguration, ConfigurationDiagnostic> {
+    serde_json::from_str(&strip_jsonc(content)?)
+        .map_err(ConfigurationDiagnostic::new_deserialization_error)
 }
 
 /// Strips JSONC comments and trailing commas from input, returning valid JSON.
@@ -772,9 +773,7 @@ impl PartialConfigurationExt for PartialConfiguration {
 
             })?;
 
-            let deserialized =
-                serde_json::from_str::<PartialConfiguration>(&strip_jsonc(&content)?)
-                    .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+            let deserialized = parse_configuration(&content)?;
             deserialized_configurations.push((extend_configuration_file_path, deserialized))
         }
         Ok(deserialized_configurations)

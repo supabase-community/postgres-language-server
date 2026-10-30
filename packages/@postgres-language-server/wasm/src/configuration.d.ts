@@ -1,0 +1,1158 @@
+// Generated file, do not edit by hand, see `xtask/codegen`
+/**
+ * The configuration that is contained inside the configuration file.
+ */
+export interface PartialConfiguration {
+  /**
+   * A field for the [JSON schema](https://json-schema.org/) specification
+   */
+  $schema?: string;
+  /**
+   * The configuration of the database connection
+   */
+  db?: PartialDatabaseConfiguration;
+  /**
+   * A list of paths to other JSON files, used to extends the current configuration.
+   */
+  extends?: StringSet;
+  /**
+   * The configuration of the filesystem
+   */
+  files?: PartialFilesConfiguration;
+  /**
+   * The configuration for the SQL formatter
+   */
+  format?: PartialFormatConfiguration;
+  /**
+   * The configuration for inlay hints in editors
+   */
+  inlayHints?: PartialInlayHintsConfiguration;
+  /**
+   * The configuration for the linter
+   */
+  linter?: PartialLinterConfiguration;
+  /**
+   * Configure migrations
+   */
+  migrations?: PartialMigrationsConfiguration;
+  /**
+   * The configuration for pglinter
+   */
+  pglinter?: PartialPglinterConfiguration;
+  /**
+   * The configuration for type checking
+   */
+  plpgsqlCheck?: PartialPlPgSqlCheckConfiguration;
+  /**
+   * The configuration for semantic highlighting in editors
+   */
+  semanticTokens?: PartialSemanticTokensConfiguration;
+  /**
+   * The configuration for splinter
+   */
+  splinter?: PartialSplinterConfiguration;
+  /**
+   * The configuration for type checking
+   */
+  typecheck?: PartialTypecheckConfiguration;
+  /**
+   * The configuration of the VCS integration
+   */
+  vcs?: PartialVcsConfiguration;
+}
+/**
+ * The configuration of the database connection.
+ */
+export interface PartialDatabaseConfiguration {
+  /**
+   * Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
+   */
+  allowStatementExecutionsAgainst?: StringSet;
+  /**
+   * The connection timeout in seconds.
+   */
+  connTimeoutSecs?: number;
+  /**
+   * A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the `DATABASE_URL` environment variable.
+   */
+  connectionString?: string;
+  /**
+   * The name of the database. Can also be set via the `PGDATABASE` environment variable.
+   */
+  database?: string;
+  /**
+   * The host of the database. Required if you want database-related features. All else falls back to sensible defaults. Can also be set via the `PGHOST` environment variable.
+   */
+  host?: string;
+  /**
+   * The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
+   */
+  password?: string;
+  /**
+   * The port of the database. Can also be set via the `PGPORT` environment variable.
+   */
+  port?: number;
+  /**
+   * The username to connect to the database. Can also be set via the `PGUSER` environment variable.
+   */
+  username?: string;
+}
+export type StringSet = string[];
+/**
+ * The configuration of the filesystem
+ */
+export interface PartialFilesConfiguration {
+  /**
+   * A list of Unix shell style patterns. Will ignore files/folders that will match these patterns.
+   */
+  ignore?: StringSet;
+  /**
+   * A list of Unix shell style patterns. Will handle only those files/folders that will match these patterns.
+   */
+  include?: StringSet;
+  /**
+   * The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+   */
+  maxSize?: number;
+}
+/**
+ * The configuration for SQL formatting.
+ */
+export interface PartialFormatConfiguration {
+  /**
+   * How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
+   */
+  castStyle?: CastStyle;
+  /**
+   * Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
+   */
+  clauseBodyStyle?: ClauseBodyStyle;
+  /**
+   * Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
+   */
+  commaStyle?: CommaStyle;
+  /**
+   * Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
+   */
+  constantCase?: KeywordCase;
+  /**
+   * If `false`, it disables the formatter. `true` by default.
+   */
+  enabled?: boolean;
+  /**
+   * Function names mapped to the number of adjacent arguments in one logical group. `json_build_object` and `jsonb_build_object` are grouped in pairs by default; configure a size of `1` to opt out.
+   */
+  functionArgumentGroups?: { [key: string]: number };
+  /**
+   * A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
+   */
+  ignore?: StringSet;
+  /**
+   * A list of Unix shell style patterns. The formatter will include files/folders that will match these patterns.
+   */
+  include?: StringSet;
+  /**
+   * Number of spaces (or tab width) for indentation. Default: 2.
+   */
+  indentSize?: number;
+  /**
+   * Indentation style: "spaces" or "tabs". Default: "spaces".
+   */
+  indentStyle?: IndentStyle;
+  /**
+   * If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
+   */
+  isolateSemicolon?: boolean;
+  /**
+   * Keyword casing: "upper" or "lower". Default: "lower".
+   */
+  keywordCase?: KeywordCase;
+  /**
+   * How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: "fit".
+   */
+  layout?: Layout;
+  /**
+   * Maximum line width before breaking. Default: 100.
+   */
+  lineWidth?: number;
+  /**
+   * Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
+   */
+  logicalOperatorPlacement?: LogicalOperatorPlacement;
+  /**
+   * If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
+   */
+  skipFnBodies?: boolean;
+  /**
+   * Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
+   */
+  typeCase?: KeywordCase;
+  /**
+   * How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
+   */
+  valuesRowLayout?: Layout;
+}
+/**
+ * The configuration for inlay hints.
+ */
+export interface PartialInlayHintsConfiguration {
+  /**
+   * if `false`, the language server sends no inlay hints. `true` by default
+   */
+  enabled?: boolean;
+}
+export interface PartialLinterConfiguration {
+  /**
+   * if `false`, it disables the feature and the linter won't be executed. `true` by default
+   */
+  enabled?: boolean;
+  /**
+   * The level of all rules of a group, unless a rule is configured individually.
+   */
+  groups?: LinterGroups;
+  /**
+   * A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.
+   */
+  ignore?: StringSet;
+  /**
+   * A list of Unix shell style patterns. The linter will include files/folders that will match these patterns.
+   */
+  include?: StringSet;
+  /**
+   * List of rules
+   */
+  rules?: LinterRules;
+}
+/**
+ * The configuration of the filesystem
+ */
+export interface PartialMigrationsConfiguration {
+  /**
+   * Ignore any migrations before this timestamp
+   */
+  after?: number;
+  /**
+   * If `false`, the down sections of migration files are not linted. Default: `true`.
+   */
+  lintDown?: boolean;
+  /**
+   * The directory where the migration files are stored
+   */
+  migrationsDir?: string;
+  /**
+   * The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
+   */
+  sectionMarkers?: SectionMarkers;
+}
+export interface PartialPglinterConfiguration {
+  /**
+   * if `false`, it disables the feature and the linter won't be executed. `true` by default
+   */
+  enabled?: boolean;
+  /**
+   * List of rules
+   */
+  rules?: PglinterRules;
+}
+/**
+ * The configuration for plpgsql_check.
+ */
+export interface PartialPlPgSqlCheckConfiguration {
+  /**
+   * Enable all warnings, overriding individual warning parameters. `false` by default.
+   */
+  allWarnings?: boolean;
+  /**
+   * Detect deprecated patterns like explicit cursor name assignments in refcursor variables. `false` by default.
+   */
+  compatibilityWarnings?: boolean;
+  /**
+   * Permit variables holding constant values to be used like constants. `true` by default.
+   */
+  constantTracing?: boolean;
+  /**
+   * if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default
+   */
+  enabled?: boolean;
+  /**
+   * Show warnings regarding missing RETURN statements, shadowed variables, dead code, and unused parameters. `true` by default.
+   */
+  extraWarnings?: boolean;
+  /**
+   * Stop processing at the first error. `true` by default.
+   */
+  fatalErrors?: boolean;
+  /**
+   * Raise warnings when in-comment options are utilized. `false` by default.
+   */
+  incommentOptionsUsageWarning?: boolean;
+  /**
+   * Show warnings about attribute count mismatches, variable overlaps, unused variables, and unwanted casting. `true` by default.
+   */
+  otherWarnings?: boolean;
+  /**
+   * Flag performance issues like declared types with modifiers and implicit casts that may prevent index usage. `false` by default.
+   */
+  performanceWarnings?: boolean;
+  /**
+   * Identify potential SQL injection vulnerabilities in dynamic statements. `false` by default.
+   */
+  securityWarnings?: boolean;
+  /**
+   * Activate in-comment options embedded in function source code. `true` by default.
+   */
+  useIncommentOptions?: boolean;
+  /**
+   * Disable all warnings, overriding individual warning parameters. `false` by default.
+   */
+  withoutWarnings?: boolean;
+}
+/**
+ * The configuration for semantic highlighting.
+ */
+export interface PartialSemanticTokensConfiguration {
+  /**
+   * if `false`, the language server sends no semantic tokens, and editors keep the highlighting of their grammar. `true` by default
+   */
+  enabled?: boolean;
+}
+export interface PartialSplinterConfiguration {
+  /**
+   * if `false`, it disables the feature and the linter won't be executed. `true` by default
+   */
+  enabled?: boolean;
+  /**
+   * A list of glob patterns for database objects to ignore across all rules. Patterns use Unix-style globs where `*` matches any sequence of characters. Format: `schema.object_name`, e.g., "public.my_table", "audit.*"
+   */
+  ignore?: StringSet;
+  /**
+   * List of rules
+   */
+  rules?: SplinterRules;
+}
+/**
+ * The configuration for type checking.
+ */
+export interface PartialTypecheckConfiguration {
+  /**
+   * if `false`, it disables the feature and the typechecker won't be executed. `true` by default
+   */
+  enabled?: boolean;
+  /**
+   * Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
+   */
+  searchPath?: StringSet;
+}
+/**
+ * Set of properties to integrate with a VCS software.
+ */
+export interface PartialVcsConfiguration {
+  /**
+   * The kind of client.
+   */
+  clientKind?: VcsClientKind;
+  /**
+   * The main branch of the project
+   */
+  defaultBranch?: string;
+  /**
+   * Whether we should integrate itself with the VCS client
+   */
+  enabled?: boolean;
+  /**
+	 * The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.
+
+If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
+	 */
+  root?: string;
+  /**
+   * Whether we should use the VCS ignore file. When [true], we will ignore the files specified in the ignore file.
+   */
+  useIgnoreFile?: boolean;
+}
+/**
+ * How an explicit cast is spelled.
+ */
+export type CastStyle = "cast" | "operator";
+/**
+ * Where the body of a clause starts.
+ */
+export type ClauseBodyStyle = "break" | "compact";
+/**
+ * Where a comma sits when a list breaks across lines.
+ */
+export type CommaStyle = "trailing" | "leading";
+/**
+ * Keyword casing style for the formatter.
+ */
+export type KeywordCase = "upper" | "lower";
+/**
+ * Indentation style for the formatter.
+ */
+export type IndentStyle = "spaces" | "tabs";
+/**
+ * How a statement is laid out across lines.
+ */
+export type Layout = "fit" | "expanded";
+/**
+ * Where a boolean operator sits when a condition breaks across lines.
+ */
+export type LogicalOperatorPlacement = "trailing" | "leading";
+/**
+ * The level of all rules of a group, unless a rule is configured individually.
+ */
+export interface LinterGroups {
+  /**
+   * Code that fails at runtime for reasons other than names or types.
+   */
+  correctness?: RulePlainConfiguration;
+  /**
+   * Code that loses data or breaks existing clients.
+   */
+  destructive?: RulePlainConfiguration;
+  /**
+   * New rules that are still being tested. Never enabled by presets.
+   */
+  nursery?: RulePlainConfiguration;
+  /**
+   * Valid code that may be dangerous against a live database: locks, rewrites, or blocking.
+   */
+  safety?: RulePlainConfiguration;
+  /**
+   * Schema design preferences. Not enabled by the recommended preset.
+   */
+  style?: RulePlainConfiguration;
+  /**
+   * Code that fails at runtime because of names or types. Needs a database connection.
+   */
+  typecheck?: RulePlainConfiguration;
+}
+export interface LinterRules {
+  /**
+   * Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.
+   */
+  addSerialColumn?: RuleConfiguration_for_Null;
+  /**
+   * Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
+   */
+  addingFieldWithDefault?: RuleConfiguration_for_Null;
+  /**
+   * Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.
+   */
+  addingForeignKeyConstraint?: RuleConfiguration_for_Null;
+  /**
+   * Setting a column NOT NULL blocks reads while the table is scanned.
+   */
+  addingNotNullField?: RuleConfiguration_for_Null;
+  /**
+   * Adding a primary key constraint results in locks and table rewrites.
+   */
+  addingPrimaryKeyConstraint?: RuleConfiguration_for_Null;
+  /**
+   * Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.
+   */
+  addingRequiredField?: RuleConfiguration_for_Null;
+  /**
+   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+   */
+  all?: boolean;
+  /**
+   * An unqualified column name matches columns of more than one relation in scope.
+   */
+  ambiguousColumn?: RuleConfiguration_for_Null;
+  /**
+   * An expression assigned to a column cannot be coerced to that column's type.
+   */
+  assignmentTypeMismatch?: RuleConfiguration_for_Null;
+  /**
+   * Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.
+   */
+  avoidAddingExclusionConstraint?: RuleConfiguration_for_Null;
+  /**
+   * ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older Postgres versions.
+   */
+  avoidAlterEnumAddValue?: RuleConfiguration_for_Null;
+  /**
+   * Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.
+   */
+  avoidAttachingPartition?: RuleConfiguration_for_Null;
+  /**
+   * Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.
+   */
+  avoidCreateTrigger?: RuleConfiguration_for_Null;
+  /**
+   * Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.
+   */
+  avoidEnableDisableTrigger?: RuleConfiguration_for_Null;
+  /**
+   * Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.
+   */
+  avoidWideLockWindow?: RuleConfiguration_for_Null;
+  /**
+   * Adding a constraint to a domain has poor support for online migrations.
+   */
+  banAlterDomainWithAddConstraint?: RuleConfiguration_for_Null;
+  /**
+   * Changing the identity of a column may break inserts from existing clients.
+   */
+  banAlterIdentity?: RuleConfiguration_for_Null;
+  /**
+   * Using CHAR(n) or CHARACTER(n) types is discouraged.
+   */
+  banCharField?: RuleConfiguration_for_Null;
+  /**
+   * Concurrent index operations are not allowed within a transaction.
+   */
+  banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
+  /**
+   * Domains with constraints have poor support for online migrations.
+   */
+  banCreateDomainWithConstraint?: RuleConfiguration_for_Null;
+  /**
+   * A DELETE statement without a WHERE clause will remove all rows from the table.
+   */
+  banDeleteWithoutWhere?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a column may break existing clients.
+   */
+  banDropColumn?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a constraint may break existing clients.
+   */
+  banDropConstraint?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a database may break existing clients (and everything else, really).
+   */
+  banDropDatabase?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a column or domain default may break existing clients.
+   */
+  banDropDefault?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a domain may break existing clients.
+   */
+  banDropDomain?: RuleConfiguration_for_Null;
+  /**
+   * Dropping an extension may break existing clients.
+   */
+  banDropExtension?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a function, procedure, routine, or aggregate may break existing clients.
+   */
+  banDropFunction?: RuleConfiguration_for_Null;
+  /**
+   * Dropping the expression of a generated column may break existing clients.
+   */
+  banDropGeneratedExpression?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a NOT NULL constraint may break existing clients.
+   */
+  banDropNotNull?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a schema will remove all objects within it and may break existing clients.
+   */
+  banDropSchema?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a sequence may break existing clients.
+   */
+  banDropSequence?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a table may break existing clients.
+   */
+  banDropTable?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table.
+   */
+  banDropTrigger?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a type, cast, operator, operator class, or operator family may break existing clients.
+   */
+  banDropType?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a view or materialized view may break existing clients.
+   */
+  banDropView?: RuleConfiguration_for_Null;
+  /**
+   * A column is assigned or declared more than once.
+   */
+  banDuplicateColumnAssignments?: RuleConfiguration_for_Null;
+  /**
+   * Statements that Postgres can't run inside a transaction block.
+   */
+  banNonTransactionalStatementInTransaction?: RuleConfiguration_for_Null;
+  /**
+   * Moving an object to another schema may break existing clients.
+   */
+  banSetSchema?: RuleConfiguration_for_Null;
+  /**
+   * Truncating a table removes all rows and can cause data loss in production.
+   */
+  banTruncate?: RuleConfiguration_for_Null;
+  /**
+   * Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.
+   */
+  banTruncateCascade?: RuleConfiguration_for_Null;
+  /**
+   * A transaction is started but never committed or rolled back.
+   */
+  banUncommittedTransaction?: RuleConfiguration_for_Null;
+  /**
+   * An UPDATE statement without a WHERE clause will modify all rows in the table.
+   */
+  banUpdateWithoutWhere?: RuleConfiguration_for_Null;
+  /**
+   * VACUUM FULL rewrites the entire table and acquires an ACCESS EXCLUSIVE lock.
+   */
+  banVacuumFull?: RuleConfiguration_for_Null;
+  /**
+   * Changing a column type may require a table rewrite and break existing clients.
+   */
+  changingColumnType?: RuleConfiguration_for_Null;
+  /**
+   * Adding constraints without NOT VALID blocks all reads and writes.
+   */
+  constraintMissingNotValid?: RuleConfiguration_for_Null;
+  /**
+   * Creating enum types is not recommended for new applications.
+   */
+  creatingEnum?: RuleConfiguration_for_Null;
+  /**
+   * Disallow adding a UNIQUE constraint without using an existing index.
+   */
+  disallowUniqueConstraint?: RuleConfiguration_for_Null;
+  /**
+   * A function name and argument count exist, but its argument types do not select exactly one overload.
+   */
+  functionArgumentMismatch?: RuleConfiguration_for_Null;
+  /**
+   * The final statement of a SQL function doesn't return what the function is declared to return.
+   */
+  functionReturnTypeMismatch?: RuleConfiguration_for_Null;
+  /**
+   * Identifiers longer than 63 bytes are silently truncated.
+   */
+  identifierTooLong?: RuleConfiguration_for_Null;
+  /**
+   * An INSERT has a different number of target columns than values.
+   */
+  insertColumnMismatch?: RuleConfiguration_for_Null;
+  /**
+   * An explicit cast is not permitted between the source and target types.
+   */
+  invalidCast?: RuleConfiguration_for_Null;
+  /**
+   * DROP TYPE and DROP DOMAIN don't take a parameter list.
+   */
+  invalidDropTypeSignature?: RuleConfiguration_for_Null;
+  /**
+   * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
+   */
+  lockTimeoutWarning?: RuleConfiguration_for_Null;
+  /**
+   * A column is qualified with a name that is not in the FROM clause.
+   */
+  missingFromClauseEntry?: RuleConfiguration_for_Null;
+  /**
+   * Multiple ALTER TABLE statements on the same table should be combined into a single statement.
+   */
+  multipleAlterTable?: RuleConfiguration_for_Null;
+  /**
+   * An operator exists by name but cannot be resolved for the operand types, or has multiple equally suitable candidates.
+   */
+  operatorTypeMismatch?: RuleConfiguration_for_Null;
+  /**
+   * Prefer BIGINT over smaller integer types.
+   */
+  preferBigInt?: RuleConfiguration_for_PreferBigIntOptions;
+  /**
+   * Prefer using IDENTITY columns over serial columns.
+   */
+  preferIdentity?: RuleConfiguration_for_Null;
+  /**
+   * Prefer JSONB over JSON types.
+   */
+  preferJsonb?: RuleConfiguration_for_Null;
+  /**
+   * Prefer statements with guards for robustness in migrations.
+   */
+  preferRobustStmts?: RuleConfiguration_for_Null;
+  /**
+   * Prefer using TEXT over VARCHAR(n) types.
+   */
+  preferTextField?: RuleConfiguration_for_Null;
+  /**
+   * Prefer TIMESTAMPTZ over TIMESTAMP types.
+   */
+  preferTimestamptz?: RuleConfiguration_for_Null;
+  /**
+   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+   */
+  recommended?: boolean;
+  /**
+   * Renaming columns may break existing queries and application code.
+   */
+  renamingColumn?: RuleConfiguration_for_Null;
+  /**
+   * Renaming an object or an enum value may break existing clients.
+   */
+  renamingObject?: RuleConfiguration_for_Null;
+  /**
+   * Renaming tables may break existing queries and application code.
+   */
+  renamingTable?: RuleConfiguration_for_Null;
+  /**
+   * Detaching a partition without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.
+   */
+  requireConcurrentDetachPartition?: RuleConfiguration_for_Null;
+  /**
+   * Creating indexes non-concurrently can lock the table for writes.
+   */
+  requireConcurrentIndexCreation?: RuleConfiguration_for_Null;
+  /**
+   * Dropping indexes non-concurrently can lock the table for reads.
+   */
+  requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
+  /**
+   * REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.
+   */
+  requireConcurrentRefreshMatview?: RuleConfiguration_for_Null;
+  /**
+   * REINDEX without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock on the table.
+   */
+  requireConcurrentReindex?: RuleConfiguration_for_Null;
+  /**
+   * ALTER TYPE ... ADD VALUE without BEFORE or AFTER appends the value to the end of the enum.
+   */
+  requireEnumValueOrdering?: RuleConfiguration_for_Null;
+  /**
+   * Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.
+   */
+  requireIdleInTransactionTimeout?: RuleConfiguration_for_Null;
+  /**
+   * Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.
+   */
+  requireSeparateConstraintValidation?: RuleConfiguration_for_Null;
+  /**
+   * Dangerous lock statements should be preceded by SET statement_timeout.
+   */
+  requireStatementTimeout?: RuleConfiguration_for_Null;
+  /**
+   * Table names in DDL should be schema-qualified.
+   */
+  requireTableSchema?: RuleConfiguration_for_Null;
+  /**
+   * Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.
+   */
+  runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
+  /**
+   * Deprecated: configure rules directly in `linter.rules`, and groups in `linter.groups`.
+   */
+  safety?: Safety;
+  /**
+   * Detects problematic transaction nesting that could lead to unexpected behavior.
+   */
+  transactionNesting?: RuleConfiguration_for_Null;
+  /**
+   * A column does not exist on the relation or record it is taken from.
+   */
+  unknownColumn?: RuleConfiguration_for_Null;
+  /**
+   * No function with this name accepts this number of arguments.
+   */
+  unknownFunction?: RuleConfiguration_for_Null;
+  /**
+   * A table, view, or materialized view does not exist.
+   */
+  unknownRelation?: RuleConfiguration_for_Null;
+  /**
+   * A schema does not exist.
+   */
+  unknownSchema?: RuleConfiguration_for_Null;
+  /**
+   * A type does not exist.
+   */
+  unknownType?: RuleConfiguration_for_Null;
+}
+/**
+ * The marker comments of a migration tool.
+ */
+export type SectionMarkers = "none" | "dbmate" | "goose";
+export interface PglinterRules {
+  /**
+   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+   */
+  all?: boolean;
+  base?: Base;
+  cluster?: Cluster;
+  /**
+   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+   */
+  recommended?: boolean;
+  schema?: Schema;
+}
+export interface SplinterRules {
+  /**
+   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+   */
+  all?: boolean;
+  performance?: Performance;
+  /**
+   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+   */
+  recommended?: boolean;
+  security?: Security;
+}
+export type VcsClientKind = "git";
+export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
+export type RuleConfiguration_for_Null = RulePlainConfiguration | RuleWithOptions_for_Null;
+export type RuleConfiguration_for_PreferBigIntOptions =
+  | RulePlainConfiguration
+  | RuleWithOptions_for_PreferBigIntOptions;
+/**
+ * The former `linter.rules.safety` group, which contained all rules at the time.
+ */
+export interface Safety {
+  addSerialColumn?: RuleConfiguration_for_Null;
+  addingFieldWithDefault?: RuleConfiguration_for_Null;
+  addingForeignKeyConstraint?: RuleConfiguration_for_Null;
+  addingNotNullField?: RuleConfiguration_for_Null;
+  addingPrimaryKeyConstraint?: RuleConfiguration_for_Null;
+  addingRequiredField?: RuleConfiguration_for_Null;
+  all?: boolean;
+  avoidAddingExclusionConstraint?: RuleConfiguration_for_Null;
+  avoidAlterEnumAddValue?: RuleConfiguration_for_Null;
+  avoidAttachingPartition?: RuleConfiguration_for_Null;
+  avoidCreateTrigger?: RuleConfiguration_for_Null;
+  avoidEnableDisableTrigger?: RuleConfiguration_for_Null;
+  avoidWideLockWindow?: RuleConfiguration_for_Null;
+  banCharField?: RuleConfiguration_for_Null;
+  banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
+  banDeleteWithoutWhere?: RuleConfiguration_for_Null;
+  banDropColumn?: RuleConfiguration_for_Null;
+  banDropDatabase?: RuleConfiguration_for_Null;
+  banDropNotNull?: RuleConfiguration_for_Null;
+  banDropSchema?: RuleConfiguration_for_Null;
+  banDropTable?: RuleConfiguration_for_Null;
+  banDropTrigger?: RuleConfiguration_for_Null;
+  banTruncate?: RuleConfiguration_for_Null;
+  banTruncateCascade?: RuleConfiguration_for_Null;
+  banUpdateWithoutWhere?: RuleConfiguration_for_Null;
+  banVacuumFull?: RuleConfiguration_for_Null;
+  changingColumnType?: RuleConfiguration_for_Null;
+  concurrentRefreshMatviewLock?: RuleConfiguration_for_Null;
+  constraintMissingNotValid?: RuleConfiguration_for_Null;
+  creatingEnum?: RuleConfiguration_for_Null;
+  disallowUniqueConstraint?: RuleConfiguration_for_Null;
+  lockTimeoutWarning?: RuleConfiguration_for_Null;
+  multipleAlterTable?: RuleConfiguration_for_Null;
+  preferBigInt?: RuleConfiguration_for_PreferBigIntOptions;
+  preferBigintOverInt?: RuleConfiguration_for_Null;
+  preferBigintOverSmallint?: RuleConfiguration_for_Null;
+  preferIdentity?: RuleConfiguration_for_Null;
+  preferJsonb?: RuleConfiguration_for_Null;
+  preferRobustStmts?: RuleConfiguration_for_Null;
+  preferTextField?: RuleConfiguration_for_Null;
+  preferTimestamptz?: RuleConfiguration_for_Null;
+  recommended?: boolean;
+  renamingColumn?: RuleConfiguration_for_Null;
+  renamingTable?: RuleConfiguration_for_Null;
+  requireConcurrentDetachPartition?: RuleConfiguration_for_Null;
+  requireConcurrentIndexCreation?: RuleConfiguration_for_Null;
+  requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
+  requireConcurrentRefreshMatview?: RuleConfiguration_for_Null;
+  requireConcurrentReindex?: RuleConfiguration_for_Null;
+  requireIdleInTransactionTimeout?: RuleConfiguration_for_Null;
+  requireSeparateConstraintValidation?: RuleConfiguration_for_Null;
+  requireStatementTimeout?: RuleConfiguration_for_Null;
+  runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
+  transactionNesting?: RuleConfiguration_for_Null;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Base {
+  /**
+   * It enables ALL rules for this group.
+   */
+  all?: boolean;
+  /**
+   * CompositePrimaryKeyTooManyColumns (B012): Detect tables with composite primary keys involving more than 4 columns
+   */
+  compositePrimaryKeyTooManyColumns?: RuleConfiguration_for_Null;
+  /**
+   * HowManyObjectsWithUppercase (B005): Count number of objects with uppercase in name or in columns.
+   */
+  howManyObjectsWithUppercase?: RuleConfiguration_for_Null;
+  /**
+   * HowManyRedudantIndex (B002): Count number of redundant index vs nb index.
+   */
+  howManyRedudantIndex?: RuleConfiguration_for_Null;
+  /**
+   * HowManyTableWithoutIndexOnFk (B003): Count number of tables without index on foreign key.
+   */
+  howManyTableWithoutIndexOnFk?: RuleConfiguration_for_Null;
+  /**
+   * HowManyTableWithoutPrimaryKey (B001): Count number of tables without primary key.
+   */
+  howManyTableWithoutPrimaryKey?: RuleConfiguration_for_Null;
+  /**
+   * HowManyTablesNeverSelected (B006): Count number of table(s) that has never been selected.
+   */
+  howManyTablesNeverSelected?: RuleConfiguration_for_Null;
+  /**
+   * HowManyTablesWithFkMismatch (B008): Count number of tables with foreign keys that do not match the key reference type.
+   */
+  howManyTablesWithFkMismatch?: RuleConfiguration_for_Null;
+  /**
+   * HowManyTablesWithFkOutsideSchema (B007): Count number of tables with foreign keys outside their schema.
+   */
+  howManyTablesWithFkOutsideSchema?: RuleConfiguration_for_Null;
+  /**
+   * HowManyTablesWithReservedKeywords (B010): Count number of database objects using reserved keywords in their names.
+   */
+  howManyTablesWithReservedKeywords?: RuleConfiguration_for_Null;
+  /**
+   * HowManyTablesWithSameTrigger (B009): Count number of tables using the same trigger vs nb table with their own triggers.
+   */
+  howManyTablesWithSameTrigger?: RuleConfiguration_for_Null;
+  /**
+   * HowManyUnusedIndex (B004): Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)
+   */
+  howManyUnusedIndex?: RuleConfiguration_for_Null;
+  /**
+   * It enables the recommended rules for this group
+   */
+  recommended?: boolean;
+  /**
+   * SeveralTableOwnerInSchema (B011): In a schema there are several tables owned by different owners.
+   */
+  severalTableOwnerInSchema?: RuleConfiguration_for_Null;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Cluster {
+  /**
+   * It enables ALL rules for this group.
+   */
+  all?: boolean;
+  /**
+   * PasswordEncryptionIsMd5 (C003): This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.
+   */
+  passwordEncryptionIsMd5?: RuleConfiguration_for_Null;
+  /**
+   * PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists (C002): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
+   */
+  pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists?: RuleConfiguration_for_Null;
+  /**
+   * PgHbaEntriesWithMethodTrustShouldNotExists (C001): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
+   */
+  pgHbaEntriesWithMethodTrustShouldNotExists?: RuleConfiguration_for_Null;
+  /**
+   * It enables the recommended rules for this group
+   */
+  recommended?: boolean;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Schema {
+  /**
+   * It enables ALL rules for this group.
+   */
+  all?: boolean;
+  /**
+   * OwnerSchemaIsInternalRole (S004): Owner of schema should not be any internal pg roles, or owner is a superuser (not sure it is necesary).
+   */
+  ownerSchemaIsInternalRole?: RuleConfiguration_for_Null;
+  /**
+   * It enables the recommended rules for this group
+   */
+  recommended?: boolean;
+  /**
+   * SchemaOwnerDoNotMatchTableOwner (S005): The schema owner and tables in the schema do not match.
+   */
+  schemaOwnerDoNotMatchTableOwner?: RuleConfiguration_for_Null;
+  /**
+   * SchemaPrefixedOrSuffixedWithEnvt (S002): The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
+   */
+  schemaPrefixedOrSuffixedWithEnvt?: RuleConfiguration_for_Null;
+  /**
+   * SchemaWithDefaultRoleNotGranted (S001): The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.
+   */
+  schemaWithDefaultRoleNotGranted?: RuleConfiguration_for_Null;
+  /**
+   * UnsecuredPublicSchema (S003): Only authorized users should be allowed to create objects.
+   */
+  unsecuredPublicSchema?: RuleConfiguration_for_Null;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Performance {
+  /**
+   * It enables ALL rules for this group.
+   */
+  all?: boolean;
+  /**
+   * Auth RLS Initialization Plan: Detects if calls to `current_setting()` and `auth.()` in RLS policies are being unnecessarily re-evaluated for each row
+   */
+  authRlsInitplan?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Duplicate Index: Detects cases where two ore more identical indexes exist.
+   */
+  duplicateIndex?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Multiple Permissive Policies: Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.
+   */
+  multiplePermissivePolicies?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * No Primary Key: Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.
+   */
+  noPrimaryKey?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * It enables the recommended rules for this group
+   */
+  recommended?: boolean;
+  /**
+   * Table Bloat: Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.
+   */
+  tableBloat?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Unindexed foreign keys: Identifies foreign key constraints without a covering index, which can impact database performance.
+   */
+  unindexedForeignKeys?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Unused Index: Detects if an index has never been used and may be a candidate for removal.
+   */
+  unusedIndex?: RuleConfiguration_for_SplinterRuleOptions;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Security {
+  /**
+   * It enables ALL rules for this group.
+   */
+  all?: boolean;
+  /**
+   * Exposed Auth Users: Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.
+   */
+  authUsersExposed?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Extension in Public: Detects extensions installed in the `public` schema.
+   */
+  extensionInPublic?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Extension Versions Outdated: Detects extensions that are not using the default (recommended) version.
+   */
+  extensionVersionsOutdated?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Foreign Key to Auth Unique Constraint: Detects user defined foreign keys to unique constraints in the auth schema.
+   */
+  fkeyToAuthUnique?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Foreign Table in API: Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.
+   */
+  foreignTableInApi?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Function Search Path Mutable: Detects functions where the search_path parameter is not set.
+   */
+  functionSearchPathMutable?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Insecure Queue Exposed in API: Detects cases where an insecure Queue is exposed over Data APIs
+   */
+  insecureQueueExposedInApi?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Materialized View in API: Detects materialized views that are accessible over the Data APIs.
+   */
+  materializedViewInApi?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Policy Exists RLS Disabled: Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.
+   */
+  policyExistsRlsDisabled?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * It enables the recommended rules for this group
+   */
+  recommended?: boolean;
+  /**
+   * RLS Disabled in Public: Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST
+   */
+  rlsDisabledInPublic?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * RLS Enabled No Policy: Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.
+   */
+  rlsEnabledNoPolicy?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * RLS Policy Always True: Detects RLS policies that use overly permissive expressions like USING (true) or WITH CHECK (true) for UPDATE, DELETE, or INSERT operations. SELECT policies with USING (true) are intentionally excluded as this pattern is often used deliberately for public read access.
+   */
+  rlsPolicyAlwaysTrue?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.
+   */
+  rlsReferencesUserMetadata?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user
+   */
+  securityDefinerView?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Sensitive Columns Exposed: Detects tables exposed via API that contain columns with potentially sensitive data (PII, credentials, financial info) without RLS protection.
+   */
+  sensitiveColumnsExposed?: RuleConfiguration_for_SplinterRuleOptions;
+  /**
+   * Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.
+   */
+  unsupportedRegTypes?: RuleConfiguration_for_SplinterRuleOptions;
+}
+export interface RuleWithOptions_for_Null {
+  /**
+   * The severity of the emitted diagnostics by the rule
+   */
+  level: RulePlainConfiguration;
+  /**
+   * Rule's options
+   */
+  options: null;
+}
+export interface RuleWithOptions_for_PreferBigIntOptions {
+  /**
+   * The severity of the emitted diagnostics by the rule
+   */
+  level: RulePlainConfiguration;
+  /**
+   * Rule's options
+   */
+  options: PreferBigIntOptions;
+}
+export type RuleConfiguration_for_SplinterRuleOptions =
+  | RulePlainConfiguration
+  | RuleWithOptions_for_SplinterRuleOptions;
+export interface PreferBigIntOptions {
+  checkInt?: boolean;
+  checkSmallint?: boolean;
+}
+export interface RuleWithOptions_for_SplinterRuleOptions {
+  /**
+   * The severity of the emitted diagnostics by the rule
+   */
+  level: RulePlainConfiguration;
+  /**
+   * Rule's options
+   */
+  options: SplinterRuleOptions;
+}
+/**
+ * Shared options for all splinter rules.
+
+These options allow configuring per-rule filtering of database objects.
+ */
+export interface SplinterRuleOptions {
+  /**
+	 * A list of glob patterns for database objects to ignore.
+
+Patterns use Unix-style globs where: - `*` matches any sequence of characters - `?` matches any single character
+
+Each pattern should be in the format `schema.object_name`, for example: - `"public.my_table"` - ignores a specific table - `"audit.*"` - ignores all objects in the audit schema - `"*.audit_*"` - ignores objects with audit_ prefix in any schema
+	 */
+  ignore?: string[];
+}

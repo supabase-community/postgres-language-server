@@ -79,6 +79,7 @@ EXPORTED_FUNCTIONS="[
   '_pgls_free_string',
   '_pgls_set_schema',
   '_pgls_clear_schema',
+  '_pgls_configure',
   '_pgls_insert_file',
   '_pgls_remove_file',
   '_pgls_lint',
