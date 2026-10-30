@@ -83,7 +83,7 @@ select * from users u join posts p on p.user_id = u.id;
 select u.id, u.name, p.id, p.user_id, p.title from users u join posts p on p.user_id = u.id;
 ```
 
-Columns are qualified with the name or alias of their table when there are several in `FROM`, and quoted where needed. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for joins with `USING` or `NATURAL`, tables whose columns are unknown, or sources with two columns of the same name.
+Columns are qualified with the name or alias of their table when there are several in `FROM`, and quoted where needed. Joins with `USING` or `NATURAL` expand to the merged columns first, by their bare name, as Postgres orders them. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for tables whose columns are unknown, sources with two columns of the same name, or a merged column whose name another table in `FROM` has too.
 
 Like hover, it requires a database connection.
 
