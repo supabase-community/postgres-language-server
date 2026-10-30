@@ -1,8 +1,6 @@
 use pgls_query::protobuf::a_const::Val;
 use pgls_query::protobuf::{CoercionForm, FuncCall};
 
-use crate::CommaStyle;
-
 use super::prelude::*;
 
 /// Get the last part of the function name (the actual function name without schema)
@@ -47,13 +45,6 @@ fn configured_argument_group_size(e: &EventEmitter, n: &FuncCall) -> Option<usiz
 }
 
 fn emit_grouped_arguments(e: &mut EventEmitter, args: &[pgls_query::Node], group_size: usize) {
-    // Within a group, trailing commas fill. Leading commas break before every argument of a group
-    // that doesn't fit on its line.
-    let within_group = match e.config().comma_style {
-        CommaStyle::Leading => ListSeparatorSpacing::SoftOrSpace,
-        CommaStyle::Trailing => ListSeparatorSpacing::Fill,
-    };
-
     for (group_index, arguments) in args.chunks(group_size).enumerate() {
         if group_index > 0 {
             emit_list_comma(e, arguments.first(), ListSeparatorSpacing::SoftOrSpace);
@@ -62,9 +53,9 @@ fn emit_grouped_arguments(e: &mut EventEmitter, args: &[pgls_query::Node], group
         e.group_start();
         for (argument_index, argument) in arguments.iter().enumerate() {
             if argument_index > 0 {
-                // `Fill` keeps the pair on one line when it fits and falls back to one
-                // argument per line when it does not, instead of exceeding the line width.
-                emit_list_comma(e, Some(argument), within_group);
+                // `Fill` keeps the group on one line when it fits, and otherwise puts as many of
+                // its arguments on each line as fit, with either comma style.
+                emit_list_comma(e, Some(argument), ListSeparatorSpacing::Fill);
             }
             emit_node(e, argument);
         }
