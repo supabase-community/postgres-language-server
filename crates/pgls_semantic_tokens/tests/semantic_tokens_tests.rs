@@ -66,6 +66,7 @@ impl Fixture {
                 SemanticTokenKind::Type => "type",
                 SemanticTokenKind::Parameter => "parameter",
                 SemanticTokenKind::EnumMember => "enumMember",
+                SemanticTokenKind::Variable => "variable",
             };
             let builtin = if token.default_library { "+" } else { "" };
             result.insert_str(
@@ -83,8 +84,8 @@ async fn relations_and_columns(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
         f.highlighted("select u.name, title from public.users u join posts on true"),
-        "select u.[name:property], [title:property] \
-         from [public:namespace].[users:class] u join [posts:class] on true"
+        "select [u:variable].[name:property], [title:property] \
+         from [public:namespace].[users:class] [u:variable] join [posts:class] on true"
     );
     assert_eq!(
         f.highlighted("select users.id from users"),
@@ -98,6 +99,30 @@ async fn relations_and_columns(test_db: PgPool) {
     assert_eq!(
         f.highlighted(r#"select "name" from "active_users""#),
         r#"select ["name":property] from ["active_users":class]"#
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn ctes_and_aliases(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted(
+            "with recent as (select id from posts) \
+             select r.id, recent.id, u.name from recent r, recent, users as u"
+        ),
+        "with [recent:class] as (select [id:property] from [posts:class]) \
+         select [r:variable].[id:property], [recent:class].[id:property], [u:variable].[name:property] \
+         from [recent:class] [r:variable], [recent:class], [users:class] as [u:variable]"
+    );
+    assert_eq!(
+        f.highlighted("update users \"U\" set name = 'x' where \"U\".id = 1"),
+        "update [users:class] [\"U\":variable] set name = 'x' \
+         where [\"U\":variable].[id:property] = 1"
+    );
+    // The alias of a subquery has no reference where it is defined.
+    assert_eq!(
+        f.highlighted("select s.id from (select id from users) s"),
+        "select [s:variable].[id:property] from (select [id:property] from [users:class]) s"
     );
 }
 
@@ -158,7 +183,7 @@ async fn comments_inside_qualified_names(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
         f.highlighted("select u.name from public /* c */ . users u"),
-        "select u.[name:property] from [public:namespace] /* c */ . [users:class] u"
+        "select [u:variable].[name:property] from [public:namespace] /* c */ . [users:class] [u:variable]"
     );
     assert_eq!(
         f.highlighted("select users -- c\n .id from users"),

@@ -1,7 +1,7 @@
 use pgls_query::{NodeEnum, protobuf::WithClause};
 
 use super::{Resolver, common_table_expr::resolve_common_table_expr};
-use crate::resolve::scope::Cte;
+use crate::resolve::{Reference, scope::Cte};
 
 /// Resolves the CTEs of a WITH clause and brings them into scope. The query that owns the
 /// clause removes them again. Port of [`transformWithClause`].
@@ -27,6 +27,13 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
     }
 
     for cte in definitions {
+        if r.collects_references() {
+            r.record(Reference::Cte {
+                location: cte.location,
+                span: r.name_span(cte.location),
+                name: cte.ctename.clone(),
+            });
+        }
         let columns = resolve_common_table_expr(r, cte);
         let resolved = Cte {
             name: cte.ctename.clone(),

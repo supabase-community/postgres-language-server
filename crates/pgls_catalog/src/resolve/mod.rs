@@ -235,6 +235,25 @@ pub enum Reference {
         span: Option<TextRange>,
         type_info: crate::TypeInfo,
     },
+    /// The name of a common table expression, where the WITH clause defines it and where FROM
+    /// references it.
+    Cte {
+        /// The location of the name in the statement.
+        location: i32,
+        /// The span of the name.
+        span: Option<TextRange>,
+        name: String,
+    },
+    /// The alias of a table or CTE in FROM, or of the target of INSERT, UPDATE, or DELETE, where
+    /// it is defined, like `u` in `from users as u`. References to it, like `u` in `u.name`,
+    /// are part of their column reference.
+    Alias {
+        /// The location of the alias in the statement.
+        location: i32,
+        /// The span of the alias.
+        span: Option<TextRange>,
+        name: String,
+    },
     /// A `*` or `t.*` in a select list or RETURNING list whose columns are all known, and each
     /// can be referenced by a name that resolves to it.
     Star {
@@ -265,6 +284,8 @@ impl Reference {
             | Self::Type { location, .. }
             | Self::Parameter { location, .. }
             | Self::EnumLiteral { location, .. }
+            | Self::Cte { location, .. }
+            | Self::Alias { location, .. }
             | Self::Star { location, .. } => *location,
         }
     }
@@ -277,6 +298,8 @@ impl Reference {
             | Self::Type { span, .. }
             | Self::Parameter { span, .. }
             | Self::EnumLiteral { span, .. }
+            | Self::Cte { span, .. }
+            | Self::Alias { span, .. }
             | Self::Star { span, .. } => *span,
         }
     }
