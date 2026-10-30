@@ -21,6 +21,7 @@ pgls_configuration       = { workspace = true }
 pgls_console             = { workspace = true }
 pgls_diagnostics         = { workspace = true }
 pgls_fs                  = { workspace = true }
+pgls_line_index          = { workspace = true }
 pgls_text_edit           = { workspace = true }
 pgls_text_size.workspace = true
 pgls_workspace           = { workspace = true }

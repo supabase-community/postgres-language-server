@@ -1,4 +1,4 @@
-use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
+use crate::adapters::{PositionEncoding, negotiated_encoding};
 use crate::configuration::{ClientOverrides, merge_layers};
 use crate::diagnostics::LspError;
 use crate::documents::Document;
@@ -11,6 +11,7 @@ use pgls_analyse::RuleCategoriesBuilder;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, PgLSPath};
+use pgls_line_index::WideEncoding;
 use pgls_workspace::PartialConfigurationExt;
 use pgls_workspace::Workspace;
 use pgls_workspace::configuration::{
