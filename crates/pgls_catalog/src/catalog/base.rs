@@ -376,6 +376,10 @@ impl CatalogBase {
         &self.snapshot
     }
 
+    pub(super) fn has_role(&self, name: &str) -> bool {
+        self.snapshot.roles.iter().any(|role| role.name == name)
+    }
+
     pub(super) fn has_schema(&self, name: &str) -> bool {
         self.schemas.contains(name)
     }

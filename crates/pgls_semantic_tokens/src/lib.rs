@@ -40,7 +40,7 @@ pub enum SemanticTokenKind {
     Parameter,
     /// A string literal that is coerced to an enum type.
     EnumMember,
-    /// The alias of a FROM item, like `u` in `from users u` and in `u.name`.
+    /// The alias of a FROM item, like `u` in `from users u` and in `u.name`, or a role.
     Variable,
 }
 
@@ -180,6 +180,10 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
             }
             Reference::Cte { .. } => push(parts.last(), SemanticTokenKind::Class, None),
             Reference::Alias { .. } => push(parts.last(), SemanticTokenKind::Variable, None),
+            Reference::Schema { name, .. } => {
+                push(parts.last(), SemanticTokenKind::Namespace, Some(name))
+            }
+            Reference::Role { .. } => push(parts.last(), SemanticTokenKind::Variable, None),
             Reference::EnumLiteral { .. } => {}
             // A `*` is not a name, and its qualifier is a table or alias that has a reference of
             // its own where it is defined.

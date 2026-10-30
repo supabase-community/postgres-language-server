@@ -61,10 +61,11 @@ The language server provides semantic tokens for the names that resolve to exact
 
 | Token | LSP token type | Example |
 | --- | --- | --- |
-| Schema | `namespace` | `public` in `public.users` |
+| Schema | `namespace` | `public` in `public.users`, `create schema app`, `set search_path to app` |
 | Table, view, or other relation | `class` | `users` in `from users`, `users.id` |
 | Common table expression | `class` | `recent` in `with recent as (...)`, `from recent`, `recent.id` |
 | Alias of a table or CTE | `variable` | `u` in `from users u` and in `u.name` |
+| Role | `variable` | `reader` in `grant select on users to reader` |
 | Column | `property` | `name`, `u.name`, `public.users.id` |
 | Function | `function` | the overload that a call resolves to |
 | Type | `type` | `int8` in `x::int8`, `cast(x as text)`, `date 'today'` |

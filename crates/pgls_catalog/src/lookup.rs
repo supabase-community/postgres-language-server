@@ -149,6 +149,11 @@ pub trait CatalogView {
     /// Looks up a schema. `pg_temp` and `pg_catalog` always exist.
     fn schema(&self, name: &str) -> Lookup<()>;
 
+    /// Looks up a role. Never `Missing`, since roles that the file creates aren't followed.
+    fn role(&self, _: &str) -> Lookup<()> {
+        Lookup::Unknown
+    }
+
     /// Returns all overloads with this name that are visible. With `schema: None`, all schemas
     /// on the search path are considered.
     fn functions(

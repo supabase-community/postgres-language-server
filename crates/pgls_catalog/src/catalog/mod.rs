@@ -322,6 +322,14 @@ impl CatalogView for Catalog {
         }
     }
 
+    fn role(&self, name: &str) -> Lookup<()> {
+        // The file can create and drop roles, which the catalog doesn't follow.
+        match &self.base {
+            Some(base) if base.has_role(name) => Lookup::Found(()),
+            _ => Lookup::Unknown,
+        }
+    }
+
     fn schema(&self, name: &str) -> Lookup<()> {
         if name == "pg_catalog" || name == "pg_temp" {
             return Lookup::Found(());
