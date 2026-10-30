@@ -85,8 +85,8 @@ impl LinterRule for BanUncommittedTransaction {
             .note("Add a COMMIT or ROLLBACK statement to complete the transaction.")
             .maybe_fix(
                 file_context
-                    .end_offset()
-                    .map(|end| RuleFix::new("Add COMMIT at the end").insert(end, "\ncommit;")),
+                    .append_statement("commit;")
+                    .map(|(at, text)| RuleFix::new("Add COMMIT at the end").insert(at, text)),
             ),
         ]
     }
