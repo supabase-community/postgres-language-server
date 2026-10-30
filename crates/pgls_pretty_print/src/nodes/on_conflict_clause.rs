@@ -15,6 +15,15 @@ pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause
         super::emit_infer_clause(e, infer);
     }
 
+    // No node starts between `ON` and `DO` other than those of the conflict target.
+    let before_do = n
+        .infer
+        .as_deref()
+        .and_then(|infer| {
+            crate::comments::last_node_location(pgls_query::NodeRef::InferClause(infer))
+        })
+        .unwrap_or(n.location);
+    emit_comments_before_keyword_after(e, "do", before_do);
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::DO_KW);
 
@@ -35,6 +44,7 @@ pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause
             }
 
             if let Some(ref where_clause) = n.where_clause {
+                emit_comments_before_keyword(e, "where", where_clause);
                 e.line(crate::emitter::LineType::SoftOrSpace);
                 e.token(TokenKind::WHERE_KW);
                 emit_clause_condition(e, where_clause);

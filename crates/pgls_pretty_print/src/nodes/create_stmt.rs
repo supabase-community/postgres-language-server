@@ -115,6 +115,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
 
         // Add PARTITION BY for sub-partitioned tables
         if let Some(ref partspec) = n.partspec {
+            emit_comments_before_clause(e, partspec.location);
             e.line(LineType::SoftOrSpace);
             super::emit_partition_spec(e, partspec);
         }
@@ -217,6 +218,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
 
         // Add PARTITION BY clause for regular partitioned tables
         if let Some(ref partspec) = n.partspec {
+            emit_comments_before_clause(e, partspec.location);
             e.line(LineType::Hard);
             super::emit_partition_spec(e, partspec);
         }

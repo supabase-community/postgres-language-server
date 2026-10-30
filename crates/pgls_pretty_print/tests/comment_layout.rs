@@ -396,3 +396,68 @@ fn lists_that_wrote_their_own_commas_follow_the_comma_style() {
         "alter table t\n  add column a int\n  , add column b int;"
     );
 }
+
+#[test]
+fn a_comment_before_a_dml_keyword_stays_before_the_keyword() {
+    for (sql, expected) in [
+        (
+            "select a /* c */ into t2 from t",
+            "select a /* c */ into t2 from t;",
+        ),
+        (
+            "insert into t values (1) /* c */ on conflict do nothing",
+            "insert into t values (1) /* c */ on conflict do nothing;",
+        ),
+        (
+            "insert into t values (1) on conflict (a) /* c */ do update set b = 1 /* d */ where t.b > 0",
+            "insert into t values (1) on conflict (a) /* c */ do update set b = 1 /* d */ where t.b > 0;",
+        ),
+        (
+            "insert into t values (1) on conflict (a) /* c */ where a > 0 do nothing",
+            "insert into t values (1) on conflict (a) /* c */ where a > 0 do nothing;",
+        ),
+        (
+            "merge into t using u on t.id = u.id when matched then delete /* d */ \
+             when not matched then insert values (1)",
+            "merge into t\nusing u\non t.id = u.id\nwhen matched then delete /* d */\n\
+             when not matched by target then insert values (1);",
+        ),
+        (
+            "merge into t using u on t.id = u.id when matched and t.a > 0 /* c */ \
+             then update set a = 1",
+            "merge into t using u on t.id = u.id when matched and t.a > 0 /* c */ then update set a = 1;",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}
+
+#[test]
+fn a_comment_before_a_ddl_keyword_stays_before_the_keyword() {
+    for (sql, expected) in [
+        (
+            "create index i on t /* c */ using btree (a) /* d */ where a > 0",
+            "create index i on t /* c */ using btree (a) /* d */ where a > 0;",
+        ),
+        (
+            "create view v /* c */ as select 1",
+            "create view v /* c */\nas select 1;",
+        ),
+        (
+            "create table t2 /* c */ as select 1",
+            "create table t2 /* c */ as select 1;",
+        ),
+        (
+            "create table t (a int) /* c */ partition by range (a)",
+            "create table t (a int) /* c */\npartition by range(a);",
+        ),
+        (
+            "create policy p on t /* c */ for select to u /* d */ using (true) /* e */ \
+             with check (true)",
+            "create policy p\non t\nas permissive /* c */\nfor select\nto u /* d */\n\
+             using (true) /* e */\nwith check (true);",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}

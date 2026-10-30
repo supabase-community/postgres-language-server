@@ -263,6 +263,13 @@ impl EventEmitter {
         self.emit_trailing_comments(before_keyword);
     }
 
+    /// Emits and consumes the comments before `location` the way trailing comments of the previous
+    /// node are emitted.
+    pub fn take_leading_comments_as_trailing_at(&mut self, location: i32) {
+        let comments = self.leading_comments.remove(&location).unwrap_or_default();
+        self.emit_trailing_comments(comments);
+    }
+
     /// Emits and consumes comments that follow `location`, if any.
     pub fn take_trailing_comments_at(&mut self, location: i32) {
         let comments = self.remove_trailing_comments_at(location);
