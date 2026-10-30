@@ -330,30 +330,17 @@ mod tests {
     async fn failing_snapshot_queries_are_backed_off(test_db: sqlx::PgPool) {
         use sqlx::Executor;
 
-        // Roles belong to the cluster, but the privileges on `pg_proc` to the test's database.
+        // The pool's connections run as `test_login`, a role of the test migrations that isn't a
+        // superuser. The revoke only affects the test's own database.
         test_db
-            .execute(
-                r#"
-                do $$
-                begin
-                    if not exists (
-                        select from pg_roles where rolname = 'pgls_snapshot_without_pg_proc'
-                    ) then
-                        create role pgls_snapshot_without_pg_proc login password 'pgls';
-                    end if;
-                end
-                $$;
-                revoke select on pg_catalog.pg_proc from public;
-                "#,
-            )
+            .execute("revoke select on pg_catalog.pg_proc from public")
             .await
             .unwrap();
         let options = test_db
             .connect_options()
             .as_ref()
             .clone()
-            .username("pgls_snapshot_without_pg_proc")
-            .password("pgls");
+            .options([("role", "test_login")]);
         let pool = sqlx::PgPool::connect_lazy_with(options);
         let manager = SnapshotManager::new();
 
