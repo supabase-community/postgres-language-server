@@ -1,5 +1,6 @@
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{Arc, LazyLock};
 
+use parking_lot::Mutex;
 use pgls_lexer::convert_to_positional_params;
 use pgls_query_ext::{
     diagnostics::*,
@@ -36,35 +37,34 @@ impl PgQueryStore {
     pub fn cached_embedded_len(&self, statement: &StatementId) -> Option<usize> {
         self.embedded_db
             .lock()
-            .unwrap()
             .get(statement)
             .map(|embedded| embedded.len())
     }
 
     /// The number of statements with a cached parse result.
     pub fn len(&self) -> usize {
-        self.ast_db.lock().unwrap().len()
+        self.ast_db.lock().len()
     }
 
     /// Drops every cached result.
     pub fn clear(&self) {
-        self.ast_db.lock().unwrap().clear();
-        self.plpgsql_db.lock().unwrap().clear();
-        self.embedded_db.lock().unwrap().clear();
+        self.ast_db.lock().clear();
+        self.plpgsql_db.lock().clear();
+        self.embedded_db.lock().clear();
     }
 
     /// Drops the results of the statements for which `keep` returns `false`.
     pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
-        self.ast_db.lock().unwrap().retain(|id, _| keep(id));
-        self.plpgsql_db.lock().unwrap().retain(|id, _| keep(id));
-        self.embedded_db.lock().unwrap().retain(|id, _| keep(id));
+        self.ast_db.lock().retain(|id, _| keep(id));
+        self.plpgsql_db.lock().retain(|id, _| keep(id));
+        self.embedded_db.lock().retain(|id, _| keep(id));
     }
 
     /// The statements embedded in the top-level statement `statement`, in order: the statements
     /// of the body of a SQL function. Empty if it doesn't parse.
     pub fn get_or_cache_embedded(&self, statement: &StatementId) -> Arc<[EmbeddedStatement]> {
         debug_assert!(statement.is_root());
-        if let Some(existing) = self.embedded_db.lock().unwrap().get(statement) {
+        if let Some(existing) = self.embedded_db.lock().get(statement) {
             return Arc::clone(existing);
         }
         let embedded: Arc<[EmbeddedStatement]> = match self.get_or_cache_ast(statement).as_ref() {
@@ -73,13 +73,12 @@ impl PgQueryStore {
         };
         self.embedded_db
             .lock()
-            .unwrap()
             .insert(statement.clone(), Arc::clone(&embedded));
         embedded
     }
 
     pub fn get_or_cache_ast(&self, statement: &StatementId) -> Arc<ParseResult> {
-        let mut cache = self.ast_db.lock().unwrap();
+        let mut cache = self.ast_db.lock();
 
         if let Some(existing) = cache.get(statement) {
             return existing.clone();
@@ -115,7 +114,7 @@ impl PgQueryStore {
             return None;
         }
 
-        let mut cache = self.plpgsql_db.lock().unwrap();
+        let mut cache = self.plpgsql_db.lock();
 
         if let Some(existing) = cache.get(statement) {
             return Some(existing.clone());
@@ -140,6 +139,10 @@ impl PgQueryStore {
     }
 }
 
+#[expect(
+    clippy::unwrap_used,
+    reason = "the pattern is a constant, which `recognises_composite_type_errors` compiles"
+)]
 static COMPOSITE_TYPE_ERROR_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"\\?"([^"\\]+\.[^"\\]+)\\?" is not a known variable"#).unwrap());
 
@@ -375,5 +378,29 @@ $$;
         let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
 
         assert!(res.is_none());
+    }
+
+    #[test]
+    fn recognises_composite_type_errors() {
+        assert!(is_composite_type_error(
+            r#""v_row.id" is not a known variable"#
+        ));
+        assert!(!is_composite_type_error(
+            r#""v_id" is not a known variable"#
+        ));
+    }
+
+    #[test]
+    fn a_panic_while_the_cache_is_locked_does_not_break_it() {
+        let store = PgQueryStore::new();
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _cache = store.ast_db.lock();
+            panic!("a request panicked while it held the cache");
+        }));
+        assert!(panicked.is_err());
+
+        let res = store.get_or_cache_ast(&StatementId::new("select 1;"));
+
+        assert!(res.is_ok());
     }
 }
