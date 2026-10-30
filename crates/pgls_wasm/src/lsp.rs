@@ -21,7 +21,7 @@ use lsp_types::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::Workspace;
+use crate::{WasmError, Workspace};
 
 /// JSON-RPC request/notification structure
 #[derive(Debug, Deserialize)]
@@ -76,6 +76,13 @@ struct DocumentState {
 /// Use the `pgls/setSchema` notification to set the database schema:
 /// ```json
 /// {"jsonrpc":"2.0","method":"pgls/setSchema","params":{"schema":"..."}}
+/// ```
+///
+/// The configuration, in the shape of `postgres-language-server.jsonc`, comes as the
+/// `initializationOptions` of `initialize`, or as the `settings` of
+/// `workspace/didChangeConfiguration`, which replaces it:
+/// ```json
+/// {"jsonrpc":"2.0","method":"workspace/didChangeConfiguration","params":{"settings":{"migrations":{"sectionMarkers":"dbmate"}}}}
 /// ```
 pub struct LspHandler {
     workspace: Workspace,
@@ -164,6 +171,7 @@ impl LspHandler {
             "textDocument/didOpen" => self.did_open(params),
             "textDocument/didChange" => self.did_change(params),
             "textDocument/didClose" => self.did_close(params),
+            "workspace/didChangeConfiguration" => self.did_change_configuration(params),
             "pgls/setSchema" => self.set_schema_notification(params),
             "pgls/clearSchema" => self.clear_schema_notification(),
             _ => vec![],
@@ -175,8 +183,17 @@ impl LspHandler {
     // -------------------------------------------------------------------------
 
     fn initialize(&mut self, params: Option<Value>, id: Value) -> JsonRpcResponse {
+        let params =
+            params.and_then(|params| serde_json::from_value::<InitializeParams>(params).ok());
+        if let Some(options) = params
+            .as_ref()
+            .and_then(|params| params.initialization_options.clone())
+            .filter(|options| !options.is_null())
+            && let Err(e) = self.configure(options)
+        {
+            return self.error_response(id, -32602, &e.to_string());
+        }
         self.versioned_edits = params
-            .and_then(|params| serde_json::from_value::<InitializeParams>(params).ok())
             .and_then(|params| params.capabilities.workspace)
             .and_then(|workspace| workspace.workspace_edit)
             .and_then(|workspace_edit| workspace_edit.document_changes)
@@ -532,11 +549,33 @@ impl LspHandler {
             eprintln!("Failed to set schema: {e}");
         }
 
-        // Re-publish diagnostics for all open documents
-        let uris: Vec<String> = self.documents.keys().cloned().collect();
-        uris.into_iter()
-            .flat_map(|uri| self.publish_diagnostics(&uri))
-            .collect()
+        self.publish_all_diagnostics()
+    }
+
+    /// Replaces the configuration with `settings`, like the native language server, and
+    /// re-publishes the diagnostics. An invalid configuration is reported and ignored.
+    fn did_change_configuration(&mut self, params: Option<Value>) -> Vec<JsonRpcNotification> {
+        let Some(settings) = params
+            .and_then(|params| serde_json::from_value::<DidChangeConfigurationParams>(params).ok())
+            .map(|params| params.settings)
+            .filter(|settings| !settings.is_null())
+        else {
+            return vec![];
+        };
+
+        if let Err(e) = self.configure(settings) {
+            return vec![JsonRpcNotification {
+                jsonrpc: "2.0".into(),
+                method: "window/showMessage".into(),
+                params: serde_json::to_value(ShowMessageParams {
+                    typ: MessageType::WARNING,
+                    message: e.to_string(),
+                })
+                .unwrap(),
+            }];
+        }
+
+        self.publish_all_diagnostics()
     }
 
     fn clear_schema_notification(&mut self) -> Vec<JsonRpcNotification> {
@@ -547,6 +586,22 @@ impl LspHandler {
     // -------------------------------------------------------------------------
     // Helper methods
     // -------------------------------------------------------------------------
+
+    /// Replaces the configuration with `configuration`, in the shape of
+    /// `postgres-language-server.jsonc`.
+    fn configure(&mut self, configuration: Value) -> Result<(), WasmError> {
+        let configuration = serde_json::from_value(configuration)
+            .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?;
+        self.workspace.set_configuration(configuration)
+    }
+
+    /// The diagnostics of all open documents.
+    fn publish_all_diagnostics(&self) -> Vec<JsonRpcNotification> {
+        self.documents
+            .keys()
+            .flat_map(|uri| self.publish_diagnostics(uri))
+            .collect()
+    }
 
     fn publish_diagnostics(&self, uri: &str) -> Vec<JsonRpcNotification> {
         let content = match self.documents.get(uri) {
@@ -1019,6 +1074,123 @@ mod tests {
                 .all(|action| action.title != "Apply all safe fixes"),
             "{actions:#?}"
         );
+    }
+
+    const DBMATE_MIGRATION: &str = "-- migrate:up transaction:false\nreindex index my_index;\n";
+
+    /// Applies the edit of the fix-all action to `text`.
+    fn apply_fix_all(text: &str, actions: &[CodeAction]) -> String {
+        assert_eq!(actions.len(), 1, "{actions:#?}");
+        let edit = &actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap()
+            [&Uri::from_str("file:///test.sql").unwrap()][0];
+        let mut applied = text.to_string();
+        applied.replace_range(
+            position_to_offset(text, edit.range.start)..position_to_offset(text, edit.range.end),
+            &edit.new_text,
+        );
+        applied.to_lowercase()
+    }
+
+    #[test]
+    fn test_initialization_options_configure_the_workspace() {
+        let mut handler = test_handler();
+        handler.handle_message(
+            &serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "capabilities": {},
+                    "initializationOptions": { "migrations": { "sectionMarkers": "dbmate" } }
+                }
+            })
+            .to_string(),
+        );
+        handler.handle_message(
+            &serde_json::json!({
+                "jsonrpc": "2.0",
+                "method": "textDocument/didOpen",
+                "params": {
+                    "textDocument": {
+                        "uri": "file:///test.sql",
+                        "languageId": "sql",
+                        "version": 1,
+                        "text": DBMATE_MIGRATION,
+                    }
+                }
+            })
+            .to_string(),
+        );
+
+        // With section markers, the migration surely runs outside a transaction, so the fix is
+        // safe: preferred, and applied by fix-all.
+        let actions = code_actions_at(&mut handler, Position::new(1, 2), None);
+        assert_eq!(actions[0].title, "Add CONCURRENTLY", "{actions:#?}");
+        assert_eq!(actions[0].is_preferred, Some(true));
+        let actions = code_actions(&mut handler, Some(&["source.fixAll"]));
+        assert_eq!(
+            apply_fix_all(DBMATE_MIGRATION, &actions),
+            "-- migrate:up transaction:false\nreindex index concurrently my_index;\n"
+        );
+    }
+
+    #[test]
+    fn test_invalid_initialization_options() {
+        let mut handler = test_handler();
+        let response = handler.handle_message(
+            r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{},"initializationOptions":{"unknown":true}}}"#,
+        );
+        let msgs: Vec<Value> = serde_json::from_str(&response).unwrap();
+        assert_eq!(msgs[0]["error"]["code"], -32602, "{msgs:?}");
+    }
+
+    #[test]
+    fn test_did_change_configuration() {
+        let mut handler = test_handler();
+        open(&mut handler, "{}", DBMATE_MIGRATION);
+        let change_configuration = |handler: &mut LspHandler, settings: Value| -> Vec<Value> {
+            let response = handler.handle_message(
+                &serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "method": "workspace/didChangeConfiguration",
+                    "params": { "settings": settings }
+                })
+                .to_string(),
+            );
+            serde_json::from_str(&response).unwrap()
+        };
+
+        // Without section markers, the fix is unsafe.
+        assert!(code_actions(&mut handler, Some(&["source.fixAll"])).is_empty());
+
+        let msgs = change_configuration(
+            &mut handler,
+            serde_json::json!({ "migrations": { "sectionMarkers": "dbmate" } }),
+        );
+        assert_eq!(msgs.len(), 1, "{msgs:?}");
+        assert_eq!(msgs[0]["method"], "textDocument/publishDiagnostics");
+        assert_eq!(msgs[0]["params"]["uri"], "file:///test.sql");
+        let actions = code_actions(&mut handler, Some(&["source.fixAll"]));
+        assert_eq!(
+            apply_fix_all(DBMATE_MIGRATION, &actions),
+            "-- migrate:up transaction:false\nreindex index concurrently my_index;\n"
+        );
+
+        // An invalid configuration is reported and keeps the previous one.
+        let msgs = change_configuration(
+            &mut handler,
+            serde_json::json!({ "migrations": { "sectionMarkers": "flyway" } }),
+        );
+        assert_eq!(msgs.len(), 1, "{msgs:?}");
+        assert_eq!(msgs[0]["method"], "window/showMessage");
+        assert_eq!(
+            code_actions(&mut handler, Some(&["source.fixAll"])).len(),
+            1
+        );
+
+        // The settings replace the configuration.
+        change_configuration(&mut handler, serde_json::json!({}));
+        assert!(code_actions(&mut handler, Some(&["source.fixAll"])).is_empty());
     }
 
     #[test]

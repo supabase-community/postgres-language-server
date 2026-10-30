@@ -20,6 +20,7 @@
 import { allocateString, loadWasm, parseResult, readAndFreeString } from "./common.js";
 import type {
   CompletionItem,
+  Configuration,
   Diagnostic,
   FormatOptions,
   FormatResult,
@@ -30,6 +31,7 @@ import type {
 } from "./types.js";
 
 export type {
+  Configuration,
   Diagnostic,
   CompletionItem,
   FormatOptions,
@@ -73,6 +75,27 @@ export class Workspace {
    */
   clearSchema(): void {
     this.module._pgls_clear_schema();
+  }
+
+  /**
+   * Set the configuration, in the shape of `postgres-language-server.jsonc`, as an object
+   * or as the text of a configuration file (comments are allowed).
+   *
+   * It replaces the previous configuration; `{}` goes back to the defaults. Throws if the
+   * configuration is invalid, and keeps the previous one then.
+   */
+  configure(configuration: Configuration | string): void {
+    const json = typeof configuration === "string" ? configuration : JSON.stringify(configuration);
+    const jsonPtr = allocateString(this.module, json);
+    try {
+      const resultPtr = this.module._pgls_configure(jsonPtr);
+      const result = readAndFreeString(this.module, resultPtr);
+      if (result !== null) {
+        throw new Error(result);
+      }
+    } finally {
+      this.module._free(jsonPtr);
+    }
   }
 
   /**
@@ -122,6 +145,7 @@ export class Workspace {
   /**
    * Format a file in the workspace.
    *
+   * The options go on top of the `format` section of the configuration.
    * Statements that cannot be formatted (e.g. syntax errors) are kept verbatim
    * and reported in `diagnostics`. Throws if the file does not exist or the
    * options are invalid.
@@ -238,6 +262,9 @@ export async function createWorkspace(options?: WorkspaceOptions): Promise<Works
   const module = await loadWasm();
   const workspace = new Workspace(module);
 
+  if (options?.configuration) {
+    workspace.configure(options.configuration);
+  }
   if (options?.schema) {
     workspace.setSchema(options.schema);
   }

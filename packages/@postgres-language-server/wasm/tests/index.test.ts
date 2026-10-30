@@ -2,10 +2,16 @@
  * Tests for the Postgres Language Server WASM bindings.
  */
 
-import { beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 
 import { type LanguageServer, createLanguageServer } from "../src/lsp";
-import { type FormatOptions, type Workspace, createWorkspace, format } from "../src/workspace";
+import {
+  type Configuration,
+  type FormatOptions,
+  type Workspace,
+  createWorkspace,
+  format,
+} from "../src/workspace";
 
 // =============================================================================
 // Workspace API Tests
@@ -324,6 +330,48 @@ describe("Format", () => {
 });
 
 // =============================================================================
+// Configuration Tests
+// =============================================================================
+
+/** A dbmate migration that runs without a transaction. */
+const DBMATE_MIGRATION = "-- migrate:up transaction:false\nreindex index my_index;\n";
+
+describe("Configuration", () => {
+  let workspace: Workspace;
+
+  beforeAll(async () => {
+    workspace = await createWorkspace();
+  });
+
+  afterAll(() => {
+    // The WASM module and its workspace are shared by all tests.
+    workspace.configure({});
+  });
+
+  test("format options go on top of the configuration", () => {
+    workspace.configure('{\n  // comments are allowed\n  "format": { "keywordCase": "upper" },\n}');
+    const sql = 'CREATE TABLE "public"."t" ("id" "uuid" NOT NULL)';
+    expect(workspace.formatSql(sql).formatted).toBe("CREATE TABLE public.t (id uuid NOT NULL);");
+    expect(workspace.formatSql(sql, { typeCase: "upper" }).formatted).toBe(
+      "CREATE TABLE public.t (id UUID NOT NULL);",
+    );
+  });
+
+  test("an invalid configuration throws", () => {
+    expect(() =>
+      workspace.configure({ migrations: { sectionMarkers: "flyway" } } as unknown as Configuration),
+    ).toThrow("Invalid configuration");
+  });
+
+  test("createWorkspace applies the configuration", async () => {
+    const configured = await createWorkspace({
+      configuration: { format: { keywordCase: "upper" } },
+    });
+    expect(configured.formatSql("select 1").formatted).toBe("SELECT 1;");
+  });
+});
+
+// =============================================================================
 // Language Server API Tests
 // =============================================================================
 
@@ -463,6 +511,50 @@ describe("LanguageServer API", () => {
       "Add CONCURRENTLY",
       "Suppress rule requireConcurrentRefreshMatview for this statement",
     ]);
+  });
+
+  test("didChangeConfiguration with section markers makes fix-all add CONCURRENTLY", () => {
+    const uri = "file:///migration.sql";
+    lsp.handleMessage({
+      jsonrpc: "2.0",
+      method: "textDocument/didOpen",
+      params: {
+        textDocument: { uri, languageId: "sql", version: 1, text: DBMATE_MIGRATION },
+      },
+    });
+    const fixAll = () =>
+      lsp.handleMessage({
+        jsonrpc: "2.0",
+        id: 11,
+        method: "textDocument/codeAction",
+        params: {
+          textDocument: { uri },
+          range: { start: { line: 1, character: 0 }, end: { line: 1, character: 0 } },
+          context: { diagnostics: [], only: ["source.fixAll"] },
+        },
+      })[0].result as {
+        title: string;
+        edit: { changes: Record<string, { newText: string }[]> };
+      }[];
+    const changeConfiguration = (settings: Configuration) =>
+      lsp.handleMessage({
+        jsonrpc: "2.0",
+        method: "workspace/didChangeConfiguration",
+        params: { settings },
+      });
+
+    // Without section markers, the fix is unsafe.
+    expect(fixAll()).toEqual([]);
+
+    const messages = changeConfiguration({ migrations: { sectionMarkers: "dbmate" } });
+    expect(messages.map((m) => m.method)).toContain("textDocument/publishDiagnostics");
+    const actions = fixAll();
+    expect(actions.map((action) => action.title)).toEqual(["Apply all safe fixes"]);
+    expect(actions[0].edit.changes[uri][0].newText.toLowerCase()).toContain("concurrently");
+
+    // The LSP handler is shared by all tests.
+    changeConfiguration({});
+    expect(fixAll()).toEqual([]);
   });
 
   test("unknown method returns error", () => {

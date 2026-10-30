@@ -14,6 +14,7 @@
 //! ```ignore
 //! // JavaScript/TypeScript usage (via Emscripten bindings)
 //! const workspace = new Workspace();
+//! workspace.configure('{"migrations":{"sectionMarkers":"dbmate"}}');
 //! workspace.set_schema(schemaJson);
 //! workspace.insert_file("/query.sql", "SELECT * FROM users;");
 //! const errors = workspace.parse("SELECT * FROM users;");
@@ -22,7 +23,7 @@
 use std::path::PathBuf;
 
 use pgls_analyse::RuleCategories;
-use pgls_configuration::{PartialConfiguration, PartialFormatConfiguration};
+use pgls_configuration::{Merge, PartialConfiguration, PartialFormatConfiguration};
 use pgls_diagnostics::Diagnostic as _;
 use pgls_fs::PgLSPath;
 use pgls_text_size::TextSize;
@@ -36,7 +37,7 @@ use pgls_workspace::features::format::PullFileFormattingParams;
 use pgls_workspace::features::on_hover::OnHoverParams;
 use pgls_workspace::workspace::{
     ChangeFileParams, CloseFileParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams,
-    UpdateSettingsParams,
+    UnregisterProjectFolderParams, UpdateSettingsParams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -207,6 +208,8 @@ pub struct Workspace {
     /// The project that every file belongs to
     project_key: ProjectKey,
     fs: MemoryFs,
+    /// The configuration set with [`Workspace::configure`]
+    configuration: PartialConfiguration,
 }
 
 impl Default for Workspace {
@@ -229,7 +232,62 @@ impl Workspace {
             inner,
             project_key,
             fs: MemoryFs::new(),
+            configuration: PartialConfiguration::default(),
         }
+    }
+
+    /// Set the configuration, in the shape of `postgres-language-server.jsonc`, e.g.
+    /// `{"migrations":{"sectionMarkers":"dbmate"}}`. It replaces the previous configuration;
+    /// an empty string goes back to the defaults.
+    ///
+    /// There is no project folder, so `migrationsDir` and `after` don't apply: every file can be a
+    /// migration, as without `migrationsDir` in a project.
+    ///
+    /// # Returns
+    /// An error if the configuration is invalid. The previous configuration then stays.
+    pub fn configure(&mut self, json: &str) -> Result<(), WasmError> {
+        let configuration = if json.trim().is_empty() {
+            PartialConfiguration::default()
+        } else {
+            pgls_workspace::configuration::parse_configuration(json)
+                .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?
+        };
+        self.set_configuration(configuration)
+    }
+
+    /// Set the configuration. See [`Workspace::configure`].
+    pub fn set_configuration(
+        &mut self,
+        configuration: PartialConfiguration,
+    ) -> Result<(), WasmError> {
+        // Settings only change section by section, so check the configuration against fresh
+        // settings before dropping the current ones.
+        pgls_workspace::settings::Settings::default()
+            .merge_with_configuration(configuration.clone(), None, None, &[])
+            .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?;
+
+        // A fresh project has the default settings, so that the sections of the previous
+        // configuration that the new one leaves out go back to their defaults.
+        let _ = self
+            .inner
+            .unregister_project_folder(UnregisterProjectFolderParams {
+                path: PgLSPath::new(PathBuf::new()),
+            });
+        self.project_key = self
+            .inner
+            .register_project_folder(RegisterProjectFolderParams { path: None })
+            .map_err(|e| WasmError::Internal(format!("Failed to register the project: {e}")))?;
+        self.inner
+            .update_settings(UpdateSettingsParams {
+                project_key: self.project_key,
+                configuration: configuration.clone(),
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+                workspace_directory: None,
+            })
+            .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?;
+        self.configuration = configuration;
+        Ok(())
     }
 
     /// Set the database schema from JSON.
@@ -423,7 +481,9 @@ impl Workspace {
         path: PgLSPath,
         options_json: &str,
     ) -> Result<FormatResult, WasmError> {
-        let mut format = parse_format_options(options_json)?;
+        // The options of the call go on top of the `format` section of the configuration.
+        let mut format = self.configuration.format.clone().unwrap_or_default();
+        format.merge_with(parse_format_options(options_json)?);
         format.enabled = Some(true);
         // File matching does not apply to in-memory formatting.
         format.ignore = None;
@@ -704,6 +764,112 @@ mod tests {
             workspace.format_sql("select 1", r#"{"unknownOption":true}"#),
             Err(WasmError::InvalidOptions(_))
         ));
+    }
+
+    /// A dbmate migration that runs without a transaction.
+    const DBMATE_MIGRATION: &str = "-- migrate:up transaction:false\nreindex index my_index;\n";
+
+    fn safe_fixes(workspace: &Workspace, path: &str) -> String {
+        workspace.fix_file(path, false).unwrap().code.to_lowercase()
+    }
+
+    #[test]
+    fn test_workspace_configure_section_markers() {
+        let mut workspace = Workspace::new();
+        workspace.insert_file("/dbmate.sql", DBMATE_MIGRATION);
+        let goose = "-- +goose NO TRANSACTION\n-- +goose Up\nreindex index my_index;\n";
+        workspace.insert_file("/goose.sql", goose);
+
+        // Without section markers, we don't know whether the migration tool runs the file in a
+        // transaction, so the fix that adds CONCURRENTLY is unsafe.
+        assert_eq!(safe_fixes(&workspace, "/dbmate.sql"), DBMATE_MIGRATION);
+
+        workspace
+            .configure(r#"{"migrations":{"sectionMarkers":"dbmate"}}"#)
+            .unwrap();
+        assert_eq!(
+            safe_fixes(&workspace, "/dbmate.sql"),
+            "-- migrate:up transaction:false\nreindex index concurrently my_index;\n"
+        );
+
+        // Comments and trailing commas are allowed, like in the configuration file.
+        workspace
+            .configure("{\n  // goose\n  \"migrations\": { \"sectionMarkers\": \"goose\" },\n}")
+            .unwrap();
+        assert_eq!(
+            safe_fixes(&workspace, "/goose.sql"),
+            "-- +goose no transaction\n-- +goose up\nreindex index concurrently my_index;\n"
+        );
+    }
+
+    #[test]
+    fn test_workspace_configure_replaces_configuration() {
+        let mut workspace = Workspace::new();
+        workspace.insert_file("/dbmate.sql", DBMATE_MIGRATION);
+        workspace
+            .configure(r#"{"migrations":{"sectionMarkers":"dbmate"}}"#)
+            .unwrap();
+
+        // An invalid configuration keeps the previous one.
+        assert!(matches!(
+            workspace.configure(r#"{"migrations":{"sectionMarkers":"flyway"}}"#),
+            Err(WasmError::InvalidConfiguration(_))
+        ));
+        assert!(matches!(
+            workspace.configure(r#"{"files":{"ignore":["["]}}"#),
+            Err(WasmError::InvalidConfiguration(_))
+        ));
+        assert_ne!(safe_fixes(&workspace, "/dbmate.sql"), DBMATE_MIGRATION);
+
+        // A configuration without `migrations` drops the section markers.
+        workspace
+            .configure(r#"{"linter":{"enabled":true}}"#)
+            .unwrap();
+        assert_eq!(safe_fixes(&workspace, "/dbmate.sql"), DBMATE_MIGRATION);
+
+        workspace
+            .configure(r#"{"linter":{"enabled":false}}"#)
+            .unwrap();
+        assert!(workspace.lint("/dbmate.sql").unwrap().is_empty());
+        workspace.configure("").unwrap();
+        assert!(!workspace.lint("/dbmate.sql").unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_workspace_format_keeps_configuration() {
+        let mut workspace = Workspace::new();
+        workspace.insert_file("/dbmate.sql", DBMATE_MIGRATION);
+        workspace
+            .configure(
+                r#"{"format":{"keywordCase":"upper"},"migrations":{"sectionMarkers":"dbmate"}}"#,
+            )
+            .unwrap();
+
+        // The options of a call go on top of the `format` section of the configuration.
+        let result = workspace.format_sql(FORMAT_INPUT, "").unwrap();
+        assert_eq!(
+            result.formatted,
+            "CREATE TABLE public.t (id uuid NOT NULL);"
+        );
+        let result = workspace
+            .format_sql(FORMAT_INPUT, r#"{"typeCase":"upper"}"#)
+            .unwrap();
+        assert_eq!(
+            result.formatted,
+            "CREATE TABLE public.t (id UUID NOT NULL);"
+        );
+        let result = workspace.format_sql(FORMAT_INPUT, "").unwrap();
+        assert_eq!(
+            result.formatted,
+            "CREATE TABLE public.t (id uuid NOT NULL);"
+        );
+        workspace.format("/dbmate.sql", "").unwrap();
+
+        // Formatting keeps the rest of the configuration.
+        assert_eq!(
+            safe_fixes(&workspace, "/dbmate.sql"),
+            "-- migrate:up transaction:false\nreindex index concurrently my_index;\n"
+        );
     }
 
     #[test]
