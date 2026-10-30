@@ -1,5 +1,6 @@
 use pgls_pretty_print::{
-    FormatConfig, IndentStyle, KeywordCase, Layout, LogicalOperatorPlacement, format_statement,
+    CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout, LogicalOperatorPlacement,
+    format_statement,
 };
 
 fn expanded_config() -> FormatConfig {
@@ -204,5 +205,45 @@ fn a_comment_before_on_in_a_grant_stays_before_on() {
     assert_eq!(
         format_idempotently("grant r1 /* c */ to u", &FormatConfig::default()),
         "grant r1 /* c */ to u;"
+    );
+}
+
+fn leading_comma_config() -> FormatConfig {
+    FormatConfig {
+        comma_style: CommaStyle::Leading,
+        ..Default::default()
+    }
+}
+
+#[test]
+fn a_fill_list_with_leading_commas_keeps_an_own_line_comment_before_the_comma() {
+    for sql in [
+        "select * from t where x in (1, 2\n-- c\n, 3)",
+        "select * from t where x in (1, 2,\n-- c\n3)",
+    ] {
+        assert_eq!(
+            format_idempotently(sql, &leading_comma_config()),
+            "select\n  *\nfrom\n  t\nwhere\n  x\n  in (\n    1, 2\n    -- c\n    , 3\n  );"
+        );
+    }
+    // The comment leads `y`, the first node of the item, not the operator the item's location
+    // points to.
+    assert_eq!(
+        format_idempotently(
+            "select * from t where x in (1, 2\n-- c\n, y + 3)",
+            &leading_comma_config()
+        ),
+        "select\n  *\nfrom\n  t\nwhere\n  x\n  in (\n    1, 2\n    -- c\n    , y + 3\n  );"
+    );
+    assert_eq!(
+        format_idempotently("select array[1, 2\n-- c\n, 3]", &leading_comma_config()),
+        "select\n  array[\n    1, 2\n    -- c\n    , 3\n  ];"
+    );
+    assert_eq!(
+        format_idempotently(
+            "grant select on t1, t2\n-- c\n, t3 to u",
+            &leading_comma_config()
+        ),
+        "grant select\n  on table t1, t2\n    -- c\n    , t3\n  to u;"
     );
 }
