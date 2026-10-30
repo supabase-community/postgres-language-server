@@ -1,5 +1,8 @@
-use std::sync::{Arc, RwLock};
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
+use std::sync::Arc;
+
+use parking_lot::RwLock;
 use pgls_catalog::Snapshot;
 
 use crate::WorkspaceError;
@@ -55,18 +58,18 @@ impl SnapshotManager {
     pub fn set(&self, json: &str) -> Result<(), WorkspaceError> {
         let schema: Snapshot = serde_json::from_str(json)
             .map_err(|e| WorkspaceError::runtime(&format!("Invalid schema JSON: {e}")))?;
-        *self.schema.write().unwrap() = Some(Arc::new(schema));
+        *self.schema.write() = Some(Arc::new(schema));
         Ok(())
     }
 
     /// Get the current schema if available.
     pub fn get(&self) -> Option<Arc<Snapshot>> {
-        self.schema.read().unwrap().clone()
+        self.schema.read().clone()
     }
 
     /// Clear the current schema.
     pub fn clear(&self) {
-        *self.schema.write().unwrap() = None;
+        *self.schema.write() = None;
     }
 
     // ==================== DB-only API ====================
@@ -78,14 +81,12 @@ impl SnapshotManager {
         let key: ConnectionKey = pool.into();
 
         // Try read lock first for cache hit
-        if let Ok(schemas) = self.db_schemas.read()
-            && let Some(cache) = schemas.get(&key)
-        {
+        if let Some(cache) = self.db_schemas.read().get(&key) {
             return Ok(Arc::clone(cache));
         }
 
         // Cache miss - need write lock to insert
-        let mut schemas = self.db_schemas.write().unwrap();
+        let mut schemas = self.db_schemas.write();
 
         // Double-check after acquiring write lock
         if let Some(cache) = schemas.get(&key) {
@@ -105,7 +106,7 @@ impl SnapshotManager {
     /// Clear all connection-based snapshots.
     #[cfg(feature = "db")]
     pub fn clear_all_connections(&self) {
-        let mut schemas = self.db_schemas.write().unwrap();
+        let mut schemas = self.db_schemas.write();
         schemas.clear();
     }
 

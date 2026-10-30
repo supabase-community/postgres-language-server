@@ -5,6 +5,8 @@
 //! document keeps, and what it resolves is kept for the next requests, see
 //! [`super::document_cache::WalkCache`]. A request that only needs what is cached doesn't walk.
 
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use std::sync::Arc;
 
 use pgls_analyser::{AnalysableStatement, AnalysedFileContext, STOP_CHECK_INTERVAL, WalkParams};
@@ -54,7 +56,7 @@ impl WorkspaceServer {
 
     /// The indexed database snapshot, built once per snapshot.
     pub(super) fn catalog_base(&self, snapshot: &Arc<Snapshot>) -> Arc<CatalogBase> {
-        let mut cached = self.catalog_base.lock().unwrap();
+        let mut cached = self.catalog_base.lock();
         if let Some(base) = cached.as_ref().filter(|base| base.is_built_from(snapshot)) {
             return Arc::clone(base);
         }
@@ -195,11 +197,13 @@ impl WorkspaceServer {
                 .with_walk(&request.key, doc.generation(), |walk| {
                     tops.iter().map(|top| walk.resolved(top.start())).collect()
                 });
-        let Some(first_missing) = cached.iter().position(Option::is_none) else {
+        let Some(missing_start) = tops
+            .iter()
+            .zip(&cached)
+            .find_map(|(top, cached)| cached.is_none().then(|| top.start()))
+        else {
             return cached.into_iter().flatten().collect();
         };
-
-        let missing_start = tops[first_missing].start();
         let end = tops.last().map_or(range.end(), |top| top.end());
         // The index in `tops` of the top-level statement of a statement.
         let top_of = |stmt: &AnalysableStatement| {
@@ -212,7 +216,9 @@ impl WorkspaceServer {
                 return;
             };
             if stmt.has_identifier_parameters
-                || top_of(stmt).is_none_or(|top| cached[top].is_some())
+                || top_of(stmt)
+                    .and_then(|top| cached.get(top))
+                    .is_none_or(Option::is_some)
             {
                 return;
             }
@@ -243,8 +249,8 @@ impl WorkspaceServer {
             else {
                 continue;
             };
-            if let Some(top) = top_of(&stmt) {
-                resolved[top].push(ResolvedStatement {
+            if let Some(resolved) = top_of(&stmt).and_then(|top| resolved.get_mut(top)) {
+                resolved.push(ResolvedStatement {
                     stmt,
                     references: stmt_references,
                 });

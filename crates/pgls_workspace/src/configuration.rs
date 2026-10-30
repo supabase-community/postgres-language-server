@@ -1,3 +1,5 @@
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use std::{
     ffi::OsStr,
     io::ErrorKind,
@@ -679,12 +681,14 @@ impl PartialConfigurationExt for PartialConfiguration {
         file_path: &Path,
         external_resolution_base_path: &Path,
     ) -> Result<Vec<PathBuf>, WorkspaceError> {
+        let directory = file_path.parent().ok_or_else(|| {
+            ConfigurationDiagnostic::invalid_configuration(format!(
+                "The configuration file {} is not in a directory.",
+                file_path.display()
+            ))
+        })?;
         let (extended_files, configurations): (Vec<_>, Vec<_>) = self
-            .deserialize_extends(
-                fs,
-                file_path.parent().expect("file path should have a parent"),
-                external_resolution_base_path,
-            )?
+            .deserialize_extends(fs, directory, external_resolution_base_path)?
             .into_iter()
             .unzip();
 
@@ -945,6 +949,16 @@ mod tests {
 
     fn files_config(max_size: u32) -> String {
         format!(r#"{{ "files": {{ "maxSize": {max_size} }} }}"#)
+    }
+
+    #[test]
+    fn extends_of_a_configuration_without_a_directory_is_an_error() {
+        let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(file_system()));
+        let mut configuration = PartialConfiguration::init();
+
+        let result = configuration.apply_extends(&fs, Path::new(""), Path::new(""));
+
+        assert!(matches!(result, Err(WorkspaceError::Configuration(_))));
     }
 
     #[test]
