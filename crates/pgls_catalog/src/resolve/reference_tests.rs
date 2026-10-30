@@ -649,6 +649,50 @@ async fn enum_literals_coerced_to_a_common_or_resolved_type(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn enum_literals_in_greatest_least_and_values(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let enum_literals = |sql: &str| -> Vec<String> {
+        references(&catalog, &search_path, sql)
+            .into_iter()
+            .filter(|reference| reference.contains("enum literal"))
+            .collect()
+    };
+    // GREATEST, LEAST and the columns of VALUES coerce their values to the common type.
+    assert_eq!(
+        enum_literals("select greatest(current, 'happy'), least('sad', current) from people"),
+        [
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+        ]
+    );
+    assert_eq!(
+        enum_literals("select * from (values (1, 'happy'::mood), (2, 'sad')) v"),
+        [
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+        ]
+    );
+    assert_eq!(
+        enum_literals(
+            "select * from people where (id, current) in (values (1, 'sad'), (2, current))"
+        ),
+        ["'sad' => enum literal public.mood"]
+    );
+    // Without a common enum type they are no enum literals.
+    for sql in [
+        "select greatest('happy', 'sad')",
+        "select * from (values ('happy'), ('sad')) v",
+    ] {
+        assert_eq!(enum_literals(sql), [""; 0], "{sql}");
+    }
+    // The rows of `INSERT ... VALUES` are coerced to the target columns, each on its own.
+    assert_eq!(
+        enum_literals("insert into users (name) values ('happy'::mood), ('sad')"),
+        ["'happy' => enum literal public.mood"]
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn parameter_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let param = |name: &str| FunctionParam {

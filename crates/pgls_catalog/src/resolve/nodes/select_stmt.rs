@@ -13,10 +13,24 @@ use super::{
     with_clause::resolve_with_clause,
 };
 use crate::resolve::column_name::figure_column_name;
+use crate::resolve::expr::record_enum_values;
 use crate::resolve::scope::Columns;
 
 /// Resolves a query and returns its output columns, if known.
 pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
+    resolve_query(r, n, false)
+}
+
+/// Resolves the source of an INSERT, like [`resolve_select_stmt`]. Except that the rows of a
+/// plain `VALUES` are not coerced to a common type, but each row to the target columns
+/// ([`transformInsertStmt`]).
+///
+/// [`transformInsertStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L838
+pub(super) fn resolve_insert_source(r: &mut Resolver, n: &SelectStmt) -> Columns {
+    resolve_query(r, n, true)
+}
+
+fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Columns {
     let ctes = r.ctes.len();
     if let Some(with) = &n.with_clause {
         resolve_with_clause(r, with);
@@ -25,7 +39,7 @@ pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
     let columns = if n.op() != SetOperation::SetopNone {
         resolve_set_operation(r, n)
     } else if !n.values_lists.is_empty() {
-        resolve_values(r, n)
+        resolve_values(r, n, !insert_source)
     } else {
         resolve_select(r, n)
     };
@@ -77,10 +91,10 @@ fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
 }
 
 /// `VALUES` names its columns `column1`, `column2`, ..., and types each as the common type of
-/// its rows. Port of [`transformValuesClause`].
+/// its rows. With `coerce`, the values are coerced to it. Port of [`transformValuesClause`].
 ///
 /// [`transformValuesClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1532
-fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
+fn resolve_values(r: &mut Resolver, n: &SelectStmt, coerce: bool) -> Columns {
     let mut width = None;
     for row in &n.values_lists {
         if let Some(NodeEnum::List(row)) = &row.node {
@@ -98,7 +112,7 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
             .iter()
             .enumerate()
             .map(|(index, name)| {
-                let values = n
+                let values: Vec<Option<&NodeEnum>> = n
                     .values_lists
                     .iter()
                     .filter_map(|row| row.node.as_ref())
@@ -106,18 +120,21 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
                         NodeEnum::List(row) => row.items.get(index),
                         _ => None,
                     })
-                    .map(|node| {
-                        node.node
-                            .as_ref()
-                            .and_then(|expr| super::super::expr::infer_expr(r, expr))
-                    })
+                    .map(|node| node.node.as_ref())
+                    .collect();
+                let types = values
+                    .iter()
+                    .map(|value| value.and_then(|expr| super::super::expr::infer_expr(r, expr)))
                     .collect::<Option<Vec<_>>>();
-                let ty = values.and_then(|values| {
-                    match crate::typing::select_common_type(r.catalog, &values) {
+                let ty = types.and_then(|types| {
+                    match crate::typing::select_common_type(r.catalog, &types) {
                         crate::typing::Selection::Match(ty) => Some(ty),
                         _ => None,
                     }
                 });
+                if coerce {
+                    record_enum_values(r, values, ty.as_ref());
+                }
                 crate::typing::TypedColumn {
                     name: name.clone(),
                     ty,
