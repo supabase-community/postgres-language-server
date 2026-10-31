@@ -519,16 +519,20 @@ impl Session {
         let categories = RuleCategoriesBuilder::default().all();
 
         let diagnostics: Vec<ls_types::Diagnostic> = {
-            let result = self.workspace.pull_file_diagnostics(
-                features::diagnostics::PullFileDiagnosticsParams {
-                    project_key: self.project_key(&pgls_path),
-                    path: pgls_path.clone(),
-                    max_diagnostics: u32::MAX,
-                    categories: categories.build(),
-                    only: Vec::new(),
-                    skip: Vec::new(),
-                },
-            )?;
+            // The analysis takes long on large files, so it runs on the blocking thread pool. It
+            // stops early if the document changes meanwhile.
+            let workspace = Arc::clone(&self.workspace);
+            let params = features::diagnostics::PullFileDiagnosticsParams {
+                project_key: self.project_key(&pgls_path),
+                path: pgls_path.clone(),
+                max_diagnostics: u32::MAX,
+                categories: categories.build(),
+                only: Vec::new(),
+                skip: Vec::new(),
+            };
+            let result = spawn_blocking(move || workspace.pull_file_diagnostics(params))
+                .await
+                .map_err(anyhow::Error::from)??;
 
             result
                 .diagnostics
@@ -551,14 +555,17 @@ impl Session {
                 .collect()
         };
 
-        let current_version = match self.document(&url) {
-            Ok(doc) => doc.version,
+        // A change, or closing and opening the document again, which can reset its version to
+        // the same or a lower number, makes the diagnostics outdated.
+        let current = match self.document(&url) {
+            Ok(current) => current,
             Err(_) => return Ok(()),
         };
-        if is_stale_diagnostics(captured_version, current_version) {
+        if current.revision != doc.revision {
             debug!(
-                "discarding stale diagnostics for {}: computed for version {captured_version}, current is {current_version}",
-                url.as_str()
+                "discarding stale diagnostics for {}: computed for version {captured_version}, current is {}",
+                url.as_str(),
+                current.version
             );
             return Ok(());
         }
@@ -1280,17 +1287,6 @@ impl Drop for RunningTransition<'_> {
     }
 }
 
-/// Returns `true` when diagnostics computed for `captured_version` no longer
-/// match the document's `current_version` and must therefore be discarded.
-///
-/// Any mismatch is treated as stale, not just a strictly newer version: a
-/// document that is closed and reopened may have its version reset to a lower
-/// number, so an in-flight run captured at a higher version must not publish
-/// over the freshly reopened document.
-fn is_stale_diagnostics(captured_version: i32, current_version: i32) -> bool {
-    captured_version != current_version
-}
-
 /// The path of the workspace document for `url`.
 ///
 /// Only `file:` URIs are files. Documents of other schemes, like `untitled:` buffers, the `git:`
@@ -1317,7 +1313,7 @@ mod tests {
 
     use tower_lsp_server::ls_types::Uri;
 
-    use super::{document_path, is_stale_diagnostics};
+    use super::document_path;
 
     fn path(uri: &str) -> std::path::PathBuf {
         document_path(&Uri::from_str(uri).expect("a valid URI"))
@@ -1354,16 +1350,5 @@ mod tests {
             path("untitled:Untitled-1"),
             Path::new("untitled:Untitled-1")
         );
-    }
-
-    #[test]
-    fn stale_diagnostics_are_detected_by_version() {
-        // A newer version arrived while diagnostics were computed.
-        assert!(is_stale_diagnostics(1, 2));
-        // Same version: the result still matches the live document.
-        assert!(!is_stale_diagnostics(2, 2));
-        // Reopened document reset to a lower version: still stale, the
-        // captured result no longer matches the live document.
-        assert!(is_stale_diagnostics(5, 3));
     }
 }
