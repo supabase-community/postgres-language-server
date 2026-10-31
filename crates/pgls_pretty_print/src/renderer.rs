@@ -386,6 +386,11 @@ impl<W: Write> Renderer<W> {
                     length += token.render(&self.config).len();
                 }
                 LayoutEvent::Space => length += 1,
+                // A break of the list itself ends the item's line: the own-line comments a leading
+                // comma keeps before itself are followed by one.
+                LayoutEvent::Line(LineType::Hard) if depth == 0 => {
+                    return Some((length, false));
+                }
                 LayoutEvent::Line(LineType::Hard) => return None,
                 LayoutEvent::Line(LineType::Soft) => {}
                 LayoutEvent::Line(LineType::SoftOrSpace) => length += 1,
