@@ -380,12 +380,16 @@ impl<'a> Analyser<'a> {
 /// Whether the statement `sql` still parses with the fix applied. The edits are relative to the
 /// statement. A fix that also edits outside of the statement, e.g. to add a `COMMIT` after it,
 /// can't be checked on the statement alone and is kept.
+///
+/// Like the statements themselves, the fixed statement is parsed with its placeholders (psql
+/// variables such as `:name`, `$name`) converted to parameters, see
+/// [pgls_lexer::convert_to_positional_params].
 fn keeps_statement_valid(fix: &RuleFix, sql: &str) -> bool {
     let len = TextSize::of(sql);
     if fix.edits.iter().any(|edit| edit.range.end() > len) {
         return true;
     }
-    pgls_query::parse(&fix.apply(sql)).is_ok()
+    pgls_query::parse(&pgls_lexer::convert_to_positional_params(&fix.apply(sql))).is_ok()
 }
 
 /// Statements that run together: those before the first section marker, then each section.
@@ -561,6 +565,28 @@ mod tests {
             &RuleFix::new("").insert(at(47), "\ncommit;"),
             sql
         ));
+    }
+
+    /// Placeholders are converted to parameters before the fixed statement is parsed, like
+    /// before the statement itself is parsed.
+    #[test]
+    fn fixes_of_statements_with_placeholders_are_checked_with_parameters() {
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        for sql in [
+            "create index users_tenant_idx on users (email) where tenant = :tenant",
+            "create index users_tenant_idx on users (email) where tenant = :'tenant'",
+            "create index users_tenant_idx on users (email) where tenant = $tenant",
+            "create index users_tenant_idx on :\"table\" (email)",
+        ] {
+            assert!(
+                keeps_statement_valid(&RuleFix::new("").insert(at(12), " concurrently"), sql),
+                "{sql}"
+            );
+            assert!(
+                !keeps_statement_valid(&RuleFix::new("").insert(at(12), " concurrently ("), sql),
+                "{sql}"
+            );
+        }
     }
 
     #[ignore]
