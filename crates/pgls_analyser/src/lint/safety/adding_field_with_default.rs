@@ -179,13 +179,17 @@ fn is_safe_default_expr(
                 let Some(first) = candidates.first() else {
                     return false;
                 };
+                // Postgres passes the defaults of the parameters the call leaves out, which may
+                // be volatile even if the function isn't. We don't know them, so only functions
+                // without parameters are safe.
                 candidates
                     .iter()
                     .filter(|function| function.schema == first.schema)
                     .all(|function| {
-                        function
-                            .volatility
-                            .is_some_and(|volatility| volatility != Behavior::Volatile)
+                        function.max_args == Some(0)
+                            && function
+                                .volatility
+                                .is_some_and(|volatility| volatility != Behavior::Volatile)
                     })
             }
             // everything else is potentially unsafe
@@ -319,6 +323,25 @@ mod tests {
                 "create function public.one() returns int language sql immutable as 'select 1';
                  alter function public.one() volatile;
                  alter table t add column c int default one()"
+            ),
+            1
+        );
+    }
+
+    #[test]
+    fn functions_with_defaulted_parameters_are_unsafe() {
+        // Postgres passes `random()` for `x`, so the default is volatile.
+        assert_eq!(
+            diagnostics(
+                "create function public.f(x float8 default random()) returns float8 language sql immutable as 'select x';
+                 alter table t add column c float8 default f()"
+            ),
+            1
+        );
+        assert_eq!(
+            diagnostics(
+                "create function public.f(variadic xs int[] default '{}') returns int language sql immutable as 'select 1';
+                 alter table t add column c int default f()"
             ),
             1
         );
