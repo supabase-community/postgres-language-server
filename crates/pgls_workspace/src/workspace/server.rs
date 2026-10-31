@@ -377,7 +377,7 @@ impl WorkspaceServer {
         let Some(snapshot) = snapshot else {
             return Vec::new();
         };
-        let request = self.editor_request(project_key, settings, snapshot);
+        let request = self.editor_request(project_key, settings, snapshot, doc);
         let (stmt_start, references) = self.references_at(&request, doc, position);
         references
             .iter()
@@ -921,6 +921,8 @@ impl Workspace for WorkspaceServer {
             .ok_or(WorkspaceError::not_found())?;
 
         let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        // Finding the statement parsed the statements before it.
+        self.charge_document_caches(&documents, &params.path);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
@@ -1345,7 +1347,8 @@ impl Workspace for WorkspaceServer {
             }
             Some((stmt, cst)) => {
                 let position = stmt.statement_offset(params.position);
-                let request = self.editor_request(params.project_key, settings, snapshot);
+                let request =
+                    self.editor_request(params.project_key, settings, snapshot, parsed_doc);
                 let snapshot = self.snapshot_before(&request, parsed_doc, &stmt);
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
@@ -1397,7 +1400,7 @@ impl Workspace for WorkspaceServer {
         match doc.iter_at(WithCSTMapper, params.position).last() {
             Some((stmt, ts_tree)) => {
                 let position_in_stmt = stmt.statement_offset(params.position);
-                let request = self.editor_request(params.project_key, settings, snapshot);
+                let request = self.editor_request(params.project_key, settings, snapshot, doc);
                 let (references, snapshot) =
                     self.hover_references(&request, doc, &stmt, params.position);
 
@@ -1455,7 +1458,7 @@ impl Workspace for WorkspaceServer {
             return Ok(PullInlayHintsResult::default());
         };
 
-        let request = self.editor_request(params.project_key, settings, snapshot);
+        let request = self.editor_request(params.project_key, settings, snapshot, doc);
         let mut hints = Vec::new();
         for statements in self.resolved_statements(&request, doc, params.range) {
             for resolved in statements.iter() {
@@ -1524,7 +1527,7 @@ impl Workspace for WorkspaceServer {
         let range = params
             .range
             .unwrap_or_else(|| TextRange::up_to(TextSize::of(doc.get_document_content())));
-        let request = self.editor_request(params.project_key, settings, snapshot);
+        let request = self.editor_request(params.project_key, settings, snapshot, doc);
         let mut tokens = Vec::new();
         for statements in self.resolved_statements(&request, doc, range) {
             for resolved in statements.iter() {
