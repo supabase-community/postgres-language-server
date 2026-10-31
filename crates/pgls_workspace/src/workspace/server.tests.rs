@@ -4527,3 +4527,18 @@ fn test_no_fix_inside_a_goose_envsub_expansion() {
         .code;
     assert_eq!(fixed, content);
 }
+
+#[test]
+fn named_parameter_in_a_join_condition_is_a_value() {
+    // A value: the relations are still checked.
+    let categories = migration_diagnostics(
+        SectionMarkers::None,
+        None,
+        "select * from orders join customers on :enabled;",
+    );
+    assert_eq!(
+        categories,
+        ["lint/unknownRelation", "lint/unknownRelation"],
+        "{categories:?}"
+    );
+}

@@ -3,13 +3,13 @@ use std::collections::{HashMap, HashSet};
 use crate::{SyntaxKind, lex};
 
 // Keywords that, when preceding a named parameter, indicate that the parameter should be treated
-// as an identifier rather than a positional parameter.
-const IDENTIFIER_CONTEXT: [SyntaxKind; 27] = [
+// as an identifier rather than a positional parameter. `ON` does too, unless it introduces a
+// condition, see [`on_introduces_condition`].
+const IDENTIFIER_CONTEXT: [SyntaxKind; 26] = [
     SyntaxKind::TO_KW,
     SyntaxKind::FROM_KW,
     SyntaxKind::INTO_KW,
     SyntaxKind::JOIN_KW,
-    SyntaxKind::ON_KW,
     SyntaxKind::UPDATE_KW,
     SyntaxKind::TRUNCATE_KW,
     SyntaxKind::REFERENCES_KW,
@@ -94,9 +94,16 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
                 }
                 Some(NamedParamFlavor::ColonIdentifier) => true,
                 _ if next == Some(SyntaxKind::DOT) => true,
+                _ if previous == Some(SyntaxKind::ON_KW) => {
+                    !on_introduces_condition(&lexed, token_idx)
+                }
                 _ if previous.is_some_and(|kind| IDENTIFIER_CONTEXT.contains(&kind)) => true,
                 _ => false,
             };
+            // A value parameter whose index doesn't fit in its text, like a tenth `:a`, is read
+            // as an identifier instead: the statement still parses, and isn't typechecked.
+            let index = value_params.get(token_text).copied().unwrap_or(value_index);
+            let is_identifier = is_identifier || format!("${index}").len() > token_text.len();
 
             if is_identifier {
                 has_identifier_parameters = true;
@@ -174,6 +181,25 @@ impl NamedParamFlavor {
             _ => None,
         }
     }
+}
+
+/// Whether the `ON` before the named parameter at `token_idx` introduces a condition, like in
+/// `join customers on :enabled` or `merge into items using :source on :condition`, rather than
+/// an object, like in `create index on :items (id)` or `grant select on :items to app`.
+fn on_introduces_condition(lexed: &crate::Lexed<'_>, token_idx: usize) -> bool {
+    let mut first = None;
+    for kind in (0..token_idx)
+        .rev()
+        .map(|idx| lexed.kind(idx))
+        .take_while(|kind| *kind != SyntaxKind::SEMICOLON)
+        .filter(|kind| !kind.is_trivia())
+    {
+        if kind == SyntaxKind::JOIN_KW {
+            return true;
+        }
+        first = Some(kind);
+    }
+    first == Some(SyntaxKind::MERGE_KW)
 }
 
 fn previous_non_trivia_kind(lexed: &crate::Lexed<'_>, token_idx: usize) -> Option<SyntaxKind> {
@@ -296,6 +322,10 @@ mod tests {
             "alter table orders add foreign key (parent_id) references $parent",
             "insert into :items values (1)",
             "create index on $items (id)",
+            "create index orders_idx on :rel using btree (id)",
+            "grant select on :items to app",
+            "create trigger audit after insert on :items for each row execute function audit()",
+            "create policy own on :items using (owner = current_user)",
             "drop view if exists $report",
             "select * from orders join :customers using (id)",
             "update :items set id = 1",
@@ -305,6 +335,43 @@ mod tests {
             assert!(!conversion.sql.contains('$'), "{}", conversion.sql);
             assert_eq!(conversion.sql.len(), input.len());
         }
+    }
+
+    #[test]
+    fn parameters_after_on_of_a_condition_are_values() {
+        for input in [
+            "select * from orders join customers on :enabled",
+            "select * from orders o join :customers c on :enabled",
+            "merge into items using source on :matched when matched then delete",
+        ] {
+            let conversion = convert_to_positional_params_with_metadata(input);
+            assert!(conversion.sql.contains("$1"), "{}", conversion.sql);
+        }
+        assert!(
+            !convert_to_positional_params_with_metadata(
+                "select * from orders join customers on :enabled"
+            )
+            .has_identifier_parameters
+        );
+        // The `JOIN` of an earlier statement doesn't count.
+        assert!(
+            convert_to_positional_params_with_metadata(
+                "select * from a join b on true; create index on :items (id)"
+            )
+            .has_identifier_parameters
+        );
+    }
+
+    #[test]
+    fn value_parameters_whose_index_does_not_fit_are_identifiers() {
+        let input = "select :a, :b, :c, :d, :e, :f, :g, :h, :i, :j, :long_name";
+        let conversion = convert_to_positional_params_with_metadata(input);
+
+        assert_eq!(
+            conversion.sql,
+            "select $1, $2, $3, $4, $5, $6, $7, $8, $9, j , $10       "
+        );
+        assert!(conversion.has_identifier_parameters);
     }
 
     #[test]
