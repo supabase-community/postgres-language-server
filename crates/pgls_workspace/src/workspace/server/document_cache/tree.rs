@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use rustc_hash::FxHashMap;
 
-use super::statement_identifier::StatementId;
+use crate::workspace::StatementId;
 
 /// The tree-sitter trees of the statements of a document. They are kept until the statement is
 /// no longer in the document, see [`TreeSitterStore::retain`].
