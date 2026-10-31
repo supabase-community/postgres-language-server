@@ -279,7 +279,7 @@ fn format_statement_once(
         attached.trailing_by_location,
     );
     emitter.set_truncated_identifiers(identifiers::truncated_identifiers(sql));
-    nodes::emit_node_enum(ast, &mut emitter);
+    nodes::emit_statement(&mut emitter, ast);
     let pending = emitter.pending_comments();
     if pending > 0 {
         return Err(FormatError::UnplaceableComment { count: pending });

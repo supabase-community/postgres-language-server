@@ -41,7 +41,7 @@ drop rule qqq on copydml_test;
 create rule qqq
 as on insert to copydml_test
 do
-  delete from copydml_test;;
+  delete from copydml_test;
 
 copy (insert into copydml_test default values) to stdout;
 
@@ -50,8 +50,8 @@ drop rule qqq on copydml_test;
 create rule qqq
 as on insert to copydml_test
 do instead
-  (delete from copydml_test;;
-  delete from copydml_test;);
+  (delete from copydml_test;
+  delete from copydml_test);
 
 copy (insert into copydml_test default values) to stdout;
 
@@ -61,7 +61,7 @@ create rule qqq
 as on insert to copydml_test where
   new.t <> 'f'
 do instead
-  delete from copydml_test;;
+  delete from copydml_test;
 
 copy (insert into copydml_test default values) to stdout;
 
@@ -79,7 +79,7 @@ drop rule qqq on copydml_test;
 create rule qqq
 as on update to copydml_test
 do
-  delete from copydml_test;;
+  delete from copydml_test;
 
 copy (update copydml_test set t = 'f') to stdout;
 
@@ -88,8 +88,8 @@ drop rule qqq on copydml_test;
 create rule qqq
 as on update to copydml_test
 do instead
-  (delete from copydml_test;;
-  delete from copydml_test;);
+  (delete from copydml_test;
+  delete from copydml_test);
 
 copy (update copydml_test set t = 'f') to stdout;
 
@@ -99,7 +99,7 @@ create rule qqq
 as on update to copydml_test where
   new.t <> 'f'
 do instead
-  delete from copydml_test;;
+  delete from copydml_test;
 
 copy (update copydml_test set t = 'f') to stdout;
 
@@ -117,7 +117,7 @@ drop rule qqq on copydml_test;
 create rule qqq
 as on delete to copydml_test
 do
-  insert into copydml_test default values;;
+  insert into copydml_test default values;
 
 copy (delete from copydml_test) to stdout;
 
@@ -126,8 +126,8 @@ drop rule qqq on copydml_test;
 create rule qqq
 as on delete to copydml_test
 do instead
-  (insert into copydml_test default values;;
-  insert into copydml_test default values;);
+  (insert into copydml_test default values;
+  insert into copydml_test default values);
 
 copy (delete from copydml_test) to stdout;
 
@@ -137,7 +137,7 @@ create rule qqq
 as on delete to copydml_test where
   old.t <> 'f'
 do instead
-  insert into copydml_test default values;;
+  insert into copydml_test default values;
 
 copy (delete from copydml_test) to stdout;
 
@@ -146,7 +146,7 @@ drop rule qqq on copydml_test;
 create rule qqq
 as on insert to copydml_test
 do instead
-  notify copydml_test;;
+  notify copydml_test;
 
 copy (insert into copydml_test default values) to stdout;
 

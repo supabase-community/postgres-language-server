@@ -32,7 +32,5 @@ pub(super) fn emit_alter_ts_dictionary_stmt(e: &mut EventEmitter, n: &AlterTsDic
         e.token(TokenKind::R_PAREN);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

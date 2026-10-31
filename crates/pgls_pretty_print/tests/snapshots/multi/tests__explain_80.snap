@@ -144,7 +144,7 @@ select
     'explain (memory, analyze, format json) select * from int8_tbl i8'
   );
 
-prepare int8_query as select * from int8_tbl as i8;;
+prepare int8_query as select * from int8_tbl as i8;
 
 select explain_filter('explain (memory) execute int8_query');
 

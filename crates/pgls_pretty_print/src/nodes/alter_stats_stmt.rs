@@ -34,7 +34,5 @@ pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
         super::emit_node(target, e);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

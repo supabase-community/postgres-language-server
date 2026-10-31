@@ -101,7 +101,6 @@ pub(super) fn emit_transaction_stmt(e: &mut EventEmitter, n: &TransactionStmt) {
         TransactionStmtKind::Undefined => {}
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
 

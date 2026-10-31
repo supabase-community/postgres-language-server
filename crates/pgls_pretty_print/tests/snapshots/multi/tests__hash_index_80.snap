@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/hash_index.sql
-snapshot_kind: text
 ---
 create table hash_i4_heap (
   seqno int4,
@@ -207,7 +206,7 @@ set enable_seqscan = off;
 
 set enable_bitmapscan = off;
 
-declare c cursor for select * from hash_split_heap where keycol = 1;;
+declare c cursor for select * from hash_split_heap where keycol = 1;
 
 move forward all from c;
 

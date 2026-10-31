@@ -59,12 +59,7 @@ pub(super) fn emit_json_array_query_constructor(
     let mut has_content = false;
 
     if let Some(ref query) = n.query {
-        // Emit select without semicolon since it's inside JSON_ARRAY()
-        if let Some(pgls_query::NodeEnum::SelectStmt(select)) = query.node.as_ref() {
-            super::select_stmt::emit_select_stmt_no_semicolon(e, select);
-        } else {
-            super::emit_node(query, e);
-        }
+        super::emit_node(query, e);
         has_content = true;
     }
 

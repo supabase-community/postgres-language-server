@@ -21,7 +21,5 @@ pub(super) fn emit_alter_database_stmt(e: &mut EventEmitter, n: &AlterDatabaseSt
         emit_comma_separated_list(e, &n.options, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

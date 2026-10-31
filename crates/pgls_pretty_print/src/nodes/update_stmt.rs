@@ -4,14 +4,6 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 use crate::nodes::node_list::emit_comma_separated_list;
 pub(super) fn emit_update_stmt(e: &mut EventEmitter, n: &UpdateStmt) {
-    emit_update_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_update_stmt_no_semicolon(e: &mut EventEmitter, n: &UpdateStmt) {
-    emit_update_stmt_impl(e, n, false);
-}
-
-fn emit_update_stmt_impl(e: &mut EventEmitter, n: &UpdateStmt, with_semicolon: bool) {
     e.group_start(GroupKind::UpdateStmt);
 
     if let Some(ref with_clause) = n.with_clause {
@@ -55,10 +47,6 @@ fn emit_update_stmt_impl(e: &mut EventEmitter, n: &UpdateStmt, with_semicolon: b
         e.token(TokenKind::RETURNING_KW);
         e.space();
         emit_comma_separated_list(e, &n.returning_list, super::emit_node);
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
     }
 
     e.group_end();

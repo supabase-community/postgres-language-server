@@ -17,7 +17,5 @@ pub(super) fn emit_deallocate_stmt(e: &mut EventEmitter, n: &DeallocateStmt) {
         super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

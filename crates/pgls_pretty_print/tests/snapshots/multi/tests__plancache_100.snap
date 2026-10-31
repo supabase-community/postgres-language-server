@@ -4,11 +4,11 @@ input_file: crates/pgls_pretty_print/tests/data/multi/plancache.sql
 ---
 create temporary table pcachetest as select * from int8_tbl;
 
-prepare prepstmt as select * from pcachetest;;
+prepare prepstmt as select * from pcachetest;
 
 execute prepstmt;
 
-prepare prepstmt2 (bigint) as select * from pcachetest where q1 = $1;;
+prepare prepstmt2 (bigint) as select * from pcachetest where q1 = $1;
 
 execute prepstmt2 (123);
 
@@ -41,7 +41,7 @@ execute prepstmt2 (123);
 create temporary view pcacheview
 as select * from pcachetest;
 
-prepare vprep as select * from pcacheview;;
+prepare vprep as select * from pcacheview;
 
 execute vprep;
 
@@ -110,7 +110,7 @@ insert into s2.abc values (456);
 
 set search_path to s1;
 
-prepare p1 as select f1 from abc;;
+prepare p1 as select f1 from abc;
 
 execute p1;
 
@@ -133,7 +133,7 @@ reset search_path;
 
 create temporary sequence seq;
 
-prepare p2 as select nextval('seq');;
+prepare p2 as select nextval('seq');
 
 execute p2;
 
@@ -202,7 +202,7 @@ create index on test_mode using btree (a);
 
 analyze test_mode;
 
-prepare test_mode_pp (int) as select count(*) from test_mode where a = $1;;
+prepare test_mode_pp (int) as select count(*) from test_mode where a = $1;
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 

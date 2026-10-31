@@ -24,7 +24,5 @@ pub(super) fn emit_alter_database_refresh_coll_stmt(
     e.space();
     e.token(TokenKind::VERSION_KW);
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

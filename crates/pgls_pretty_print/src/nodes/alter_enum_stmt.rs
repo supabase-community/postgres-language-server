@@ -65,7 +65,5 @@ pub(super) fn emit_alter_enum_stmt(e: &mut EventEmitter, n: &AlterEnumStmt) {
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

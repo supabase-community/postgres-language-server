@@ -43,7 +43,5 @@ pub(super) fn emit_create_subscription_stmt(e: &mut EventEmitter, n: &CreateSubs
     }
     e.indent_end();
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

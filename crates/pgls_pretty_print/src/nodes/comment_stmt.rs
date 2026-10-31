@@ -220,7 +220,5 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
     }
     e.indent_end();
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

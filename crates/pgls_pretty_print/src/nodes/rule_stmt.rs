@@ -78,7 +78,5 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
 
     e.indent_end();
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

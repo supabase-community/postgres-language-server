@@ -69,7 +69,6 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
     e.indent_end();
     e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

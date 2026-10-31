@@ -42,7 +42,5 @@ pub(super) fn emit_alter_user_mapping_stmt(e: &mut EventEmitter, n: &AlterUserMa
         e.indent_end();
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

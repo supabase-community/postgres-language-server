@@ -1165,7 +1165,7 @@ do instead
       new.country_name,
       new.continent
     )
-  returning *;;
+  returning *;
 
 create rule european_city_update_rule
 as on update to european_city_view
@@ -1176,12 +1176,12 @@ do instead
   country_name = new.country_name
   where
     city_id = old.city_id
-  returning new.*;;
+  returning new.*;
 
 create rule european_city_delete_rule
 as on delete to european_city_view
 do instead
-  delete from city_view where city_id = old.city_id returning *;;
+  delete from city_view where city_id = old.city_id returning *;
 
 insert into european_city_view (city_name, country_name)
 values ('Cambridge', 'USA')

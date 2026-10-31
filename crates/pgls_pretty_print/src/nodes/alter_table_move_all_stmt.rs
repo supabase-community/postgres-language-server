@@ -56,7 +56,5 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
         e.token(TokenKind::NOWAIT_KW);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

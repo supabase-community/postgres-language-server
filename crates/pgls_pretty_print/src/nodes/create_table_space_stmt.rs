@@ -41,6 +41,5 @@ pub(super) fn emit_create_table_space_stmt(e: &mut EventEmitter, n: &CreateTable
         super::node_list::emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

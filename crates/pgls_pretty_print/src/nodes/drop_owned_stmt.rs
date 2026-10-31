@@ -29,6 +29,5 @@ pub(super) fn emit_drop_owned_stmt(e: &mut EventEmitter, n: &DropOwnedStmt) {
         e.token(TokenKind::CASCADE_KW);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

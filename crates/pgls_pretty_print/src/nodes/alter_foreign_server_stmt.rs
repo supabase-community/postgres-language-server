@@ -40,7 +40,5 @@ pub(super) fn emit_alter_foreign_server_stmt(e: &mut EventEmitter, n: &AlterFore
         e.indent_end();
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

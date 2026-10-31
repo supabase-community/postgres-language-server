@@ -68,7 +68,5 @@ pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
