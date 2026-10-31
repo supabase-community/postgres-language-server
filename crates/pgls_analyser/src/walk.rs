@@ -159,27 +159,32 @@ pub fn walk_statements(
             }
         };
         let stmts = &params.stmts[unit.stmts.clone()];
-        let unit_range = TextRange::new(unit.start, unit.end);
-        let last_end = params
-            .unparsable
+        let unit_unparsable = {
+            let starts = |end: TextSize| {
+                params
+                    .unparsable
+                    .partition_point(|skipped| skipped.range.start() < end)
+            };
+            &params.unparsable[starts(unit.start)..starts(unit.end)]
+        };
+        let last_end = unit_unparsable
             .iter()
-            .filter(|skipped| unit_range.contains(skipped.range.start()))
             .map(|skipped| skipped.range.end())
             .chain(stmts.last().map(|stmt| stmt.range.end()))
             .max()
             .unwrap_or_default();
-        // The statements the unit runs, including those that don't parse, but not those in
-        // function bodies.
+        // The starts of the statements the unit runs, in order, including those that don't
+        // parse, but not those in function bodies.
+        let mut starts: Vec<TextSize> = stmts
+            .iter()
+            .filter(|stmt| stmt.function.is_none())
+            .map(|stmt| stmt.range.start())
+            .chain(unit_unparsable.iter().map(|skipped| skipped.range.start()))
+            .collect();
+        starts.sort_unstable();
         let stmt_count = |range: TextRange| {
-            stmts
-                .iter()
-                .filter(|stmt| stmt.function.is_none() && range.contains(stmt.range.start()))
-                .count()
-                + params
-                    .unparsable
-                    .iter()
-                    .filter(|skipped| range.contains(skipped.range.start()))
-                    .count()
+            starts.partition_point(|start| *start < range.end())
+                - starts.partition_point(|start| *start < range.start())
         };
         // Outside a transaction, the queries with more than one statement run in an implicit
         // transaction block.
@@ -195,13 +200,15 @@ pub fn walk_statements(
                     .collect()
             })
             .unwrap_or_default();
+        // The blocks that don't end before the statement, which comes after those before it.
+        let mut implicit_blocks = implicit_blocks.into_iter().peekable();
         let mut file_context =
             AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
                 .with_positions(
                     stmts.iter().map(|stmt| stmt.range.start()).collect(),
                     last_end,
                 )
-                .with_stmt_count(stmt_count(unit_range));
+                .with_stmt_count(stmt_count(TextRange::new(unit.start, unit.end)));
         let mut implicit_block = None;
         let state =
             |at: TextSize, file_context: &AnalysedFileContext, catalog: &Catalog| WalkState {
@@ -222,9 +229,14 @@ pub fn walk_statements(
             }
             let runs = stmt.function.is_none();
             if runs {
+                while implicit_blocks
+                    .next_if(|block| block.end() <= stmt.range.start())
+                    .is_some()
+                {}
                 let block = implicit_blocks
-                    .iter()
-                    .position(|block| block.contains(stmt.range.start()));
+                    .peek()
+                    .copied()
+                    .filter(|block| block.contains(stmt.range.start()));
                 if block != implicit_block {
                     if implicit_block.is_some() {
                         file_context.end_implicit_block();
@@ -391,5 +403,107 @@ pub(crate) fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
         | NodeEnum::DeleteStmt(_)
         | NodeEnum::MergeStmt(_) => true,
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, Instant};
+
+    use pgls_text_size::{TextRange, TextSize};
+
+    use super::{WalkParams, walk_statements};
+    use crate::{AnalysableStatement, Direction, MigrationSection, UnparsableStatement};
+
+    /// Walks the statements of `sql` in a section without a transaction, with the given queries.
+    /// Returns each statement that parses with whether it runs in an implicit transaction block,
+    /// and how long the walk took.
+    fn walk_queries(sql: &str, queries: Vec<TextRange>) -> (Vec<(String, bool)>, Duration) {
+        let mut stmts = Vec::new();
+        let mut unparsable = Vec::new();
+        for range in pgls_statement_splitter::split(sql).ranges {
+            let text = &sql[range];
+            match pgls_query::parse(text) {
+                Ok(parsed) => stmts.push(
+                    AnalysableStatement::new(parsed.into_root().unwrap(), range).with_sql(text),
+                ),
+                Err(_) => unparsable.push(UnparsableStatement {
+                    range,
+                    sql: text.to_string(),
+                }),
+            }
+        }
+        let sections = [MigrationSection {
+            range: TextRange::up_to(TextSize::of(sql)),
+            direction: Direction::Up,
+            transaction: false,
+            queries,
+        }];
+        let mut visited = Vec::new();
+        let start = Instant::now();
+        walk_statements(
+            WalkParams {
+                stmts: &stmts,
+                unparsable: &unparsable,
+                catalog_base: None,
+                search_path: &[],
+                sections: &sections,
+                end: TextSize::of(sql),
+                best_effort: false,
+                from: None,
+                checkpoints: &[],
+            },
+            |stmt, file_context| {
+                visited.push((
+                    stmt.sql.clone().unwrap_or_default(),
+                    file_context.session().in_implicit_block(),
+                ))
+            },
+        );
+        (visited, start.elapsed())
+    }
+
+    #[test]
+    fn queries_with_several_statements_run_in_implicit_blocks() {
+        let sql = "select 1; select 2; select 3; selec 4; select 5; select 6;";
+        let query = |from: &str, to: &str| {
+            TextRange::new(
+                TextSize::try_from(sql.find(from).unwrap()).unwrap(),
+                TextSize::try_from(sql.find(to).unwrap() + to.len()).unwrap(),
+            )
+        };
+        let (visited, _) = walk_queries(
+            sql,
+            vec![
+                query("select 1", "select 2;"),
+                // A single statement, and one with a statement that doesn't parse.
+                query("select 3", "select 3;"),
+                query("selec 4", "select 5;"),
+            ],
+        );
+        assert_eq!(
+            visited,
+            [
+                ("select 1;".to_string(), true),
+                ("select 2;".to_string(), true),
+                ("select 3;".to_string(), false),
+                ("select 5;".to_string(), true),
+                ("select 6;".to_string(), false),
+            ]
+        );
+    }
+
+    #[test]
+    fn many_queries_are_walked_in_linear_time() {
+        // Two statements per query, like goose `StatementBegin` blocks. Looking up the
+        // statements of each query among all statements took seconds.
+        let queries = 8_000;
+        let sql = "select 1; select 2;\n".repeat(queries);
+        let blocks = (0..queries)
+            .map(|i| TextRange::at(TextSize::try_from(i * 20).unwrap(), 19.into()))
+            .collect();
+        let (visited, elapsed) = walk_queries(&sql, blocks);
+        assert!(visited.iter().all(|(_, in_block)| *in_block));
+        assert!(elapsed < Duration::from_secs(1), "{elapsed:?}");
     }
 }
