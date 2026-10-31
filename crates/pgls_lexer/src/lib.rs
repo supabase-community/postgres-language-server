@@ -11,6 +11,11 @@ pub use crate::params::{
     convert_to_positional_params_with_metadata,
 };
 
+/// The category of the keyword `word`, compared case-insensitively. `None` if it's no keyword.
+pub fn keyword_category(word: &str) -> Option<KeywordCategory> {
+    SyntaxKind::from_keyword(word)?.keyword_category()
+}
+
 /// Lex the input string into tokens and diagnostics
 pub fn lex(input: &str) -> Lexed<'_> {
     Lexer::new(input).lex()

@@ -33,7 +33,7 @@ email - private.users.email (Column)
 id - private.users.id (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+pg_catalog."RI_FKey_cascade_del"() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
 
 --------------
 
@@ -104,10 +104,10 @@ private.users - private.users (Table)
 select "email" from "|
 
 Results:
-private - private (Schema)
-information_schema - information_schema (Schema)
-pg_catalog - pg_catalog (Schema)
-pg_toast - pg_toast (Schema)
+private" - private (Schema)
+information_schema" - information_schema (Schema)
+pg_catalog" - pg_catalog (Schema)
+pg_toast" - pg_toast (Schema)
 private"."users" - private.users (Table)
 
 --------------

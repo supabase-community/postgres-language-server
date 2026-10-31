@@ -2394,6 +2394,7 @@ dependencies = [
  "futures-util",
  "globset",
  "insta",
+ "pgls_lexer",
  "pgls_query",
  "pgls_test_utils",
  "pgls_text_size",

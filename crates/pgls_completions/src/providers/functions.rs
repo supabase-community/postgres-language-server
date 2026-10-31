@@ -1,4 +1,4 @@
-use pgls_catalog::{Function, Snapshot};
+use pgls_catalog::{Function, NamePosition, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::with_schema_or_alias;
+use super::helper::{Qualifier, with_schema_or_alias};
 
 pub fn complete_functions<'a>(
     ctx: &'a TreesitterContext,
@@ -35,7 +35,12 @@ pub fn complete_functions<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionText {
-    let mut text = with_schema_or_alias(ctx, func.name.as_str(), Some(func.schema.as_str()));
+    let mut text = with_schema_or_alias(
+        ctx,
+        func.name.as_str(),
+        Some(Qualifier::Schema(func.schema.as_str())),
+        NamePosition::TypeFunctionName,
+    );
 
     let mut range = get_range_to_replace(ctx);
 
