@@ -86,6 +86,10 @@ mod async_helper;
 #[cfg(feature = "db")]
 mod connection_key;
 #[cfg(feature = "db")]
+use crate::settings::DatabaseSettings;
+#[cfg(feature = "db")]
+use connection_key::ConnectionKey;
+#[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
 mod expand_star;
@@ -1798,29 +1802,78 @@ impl Workspace for WorkspaceServer {
         &self,
         params: CheckDatabaseConnectionParams,
     ) -> Result<CheckDatabaseConnectionResult, WorkspaceError> {
-        // Every configuration file of the project can have its own database, so check all of them.
-        let settings = self.workspaces();
-        for settings in settings.as_ref().get_all_settings(params.project_key) {
+        // Every configuration file of the project can have its own database, so check each of
+        // them once, with the folders that use it.
+        let mut connections: Vec<(DatabaseSettings, Vec<PathBuf>)> = Vec::new();
+        let mut errors = Vec::new();
+        for (folder, settings) in self
+            .workspaces()
+            .as_ref()
+            .get_all_settings(params.project_key)
+        {
+            // An invalid connection string disables the connection, so say why.
             if let Some(error) = &settings.db.connection_string_error {
-                return Ok(CheckDatabaseConnectionResult {
-                    error: Some(error.clone()),
-                });
+                if !errors.contains(error) {
+                    errors.push(error.clone());
+                }
+                continue;
             }
+            if !settings.db.enable_connection {
+                continue;
+            }
+            let existing = connections.iter_mut().find(|(db, _)| {
+                ConnectionKey::from(db) == ConnectionKey::from(&settings.db)
+                    && db.connection_string == settings.db.connection_string
+                    && db.password == settings.db.password
+                    && db.conn_timeout_secs == settings.db.conn_timeout_secs
+            });
+            match existing {
+                Some((_, folders)) => folders.push(folder.to_path_buf()),
+                None => connections.push((settings.db.clone(), vec![folder.to_path_buf()])),
+            }
+        }
 
-            let result = self
-                .connection
-                .try_with_pool(&settings.db, |pool| self.snapshot.load(pool).map(|_| ()));
+        // Concurrently, so that unreachable databases time out together rather than one after
+        // the other.
+        let results: Vec<_> = std::thread::scope(|scope| {
+            let checks: Vec<_> = connections
+                .iter()
+                .map(|(db, _)| {
+                    scope.spawn(|| {
+                        self.connection
+                            .try_with_pool(db, |pool| self.snapshot.load(pool).map(|_| ()))
+                    })
+                })
+                .collect();
+            checks
+                .into_iter()
+                .map(|check| check.join().expect("a connection check panicked"))
+                .collect()
+        });
+
+        for ((db, folders), result) in connections.iter().zip(results) {
             match result {
                 None | Some(Ok(())) => {}
                 Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
-                    return Ok(CheckDatabaseConnectionResult {
-                        error: Some(err.to_string()),
-                    });
+                    let folders: Vec<_> = folders
+                        .iter()
+                        .filter(|folder| !folder.as_os_str().is_empty())
+                        .map(|folder| folder.display().to_string())
+                        .collect();
+                    let used_by = if folders.is_empty() {
+                        String::new()
+                    } else {
+                        format!(", the database of {}", folders.join(", "))
+                    };
+                    errors.push(format!(
+                        "Could not connect to {}@{}:{}/{}{used_by}: {err}",
+                        db.username, db.host, db.port, db.database
+                    ));
                 }
                 Some(Err(err)) => return Err(err),
             }
         }
-        Ok(CheckDatabaseConnectionResult::default())
+        Ok(CheckDatabaseConnectionResult { errors })
     }
 
     #[cfg(not(feature = "db"))]
