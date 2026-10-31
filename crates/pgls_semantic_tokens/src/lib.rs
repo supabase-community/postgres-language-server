@@ -51,7 +51,8 @@ pub struct SemanticToken {
     pub default_library: bool,
 }
 
-/// The semantic tokens of a statement, ordered by their start. Tokens don't overlap.
+/// The semantic tokens of a statement, ordered by their start. Tokens don't overlap, and each is
+/// on a single line.
 pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
     let references = resolve(ResolveParams {
         stmt: params.stmt,
@@ -184,6 +185,36 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
         keep
     });
     tokens
+        .into_iter()
+        .flat_map(|token| split_lines(params.sql, token))
+        .collect()
+}
+
+/// Splits a token that spans several lines, like a string constant continued on the next line
+/// (`'a'` newline `'b'`), into one token per line, since clients only support tokens on a single
+/// line by default. Each part leaves out the whitespace at the start and end of its line.
+fn split_lines(sql: &str, token: SemanticToken) -> Vec<SemanticToken> {
+    let Some(text) = sql.get(std::ops::Range::<usize>::from(token.range)) else {
+        return vec![token];
+    };
+    if !text.contains('\n') {
+        return vec![token];
+    }
+    let mut parts = Vec::new();
+    let mut line_start = token.range.start();
+    for line in text.split('\n') {
+        let trimmed = line.trim_start();
+        let start = line_start + TextSize::of(&line[..line.len() - trimmed.len()]);
+        let trimmed = trimmed.trim_end();
+        if !trimmed.is_empty() {
+            parts.push(SemanticToken {
+                range: TextRange::at(start, TextSize::of(trimmed)),
+                ..token.clone()
+            });
+        }
+        line_start += TextSize::of(line) + TextSize::of('\n');
+    }
+    parts
 }
 
 fn is_builtin_schema(schema: &str) -> bool {
@@ -253,7 +284,9 @@ fn identifier(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{name_parts, scan};
+    use pgls_text_size::{TextRange, TextSize};
+
+    use super::{SemanticToken, SemanticTokenKind, name_parts, scan, split_lines};
 
     /// The parts of the name at the start of `sql`.
     fn parts(sql: &str) -> Vec<&str> {
@@ -280,5 +313,27 @@ mod tests {
         assert_eq!(parts("$1"), ["$1"]);
         assert_eq!(parts("f(x).y"), ["f"]);
         assert!(parts("(u).name").is_empty());
+    }
+
+    /// The text of each part of a token that covers all of `sql`.
+    fn lines(sql: &str) -> Vec<&str> {
+        let token = SemanticToken {
+            range: TextRange::up_to(TextSize::of(sql)),
+            kind: SemanticTokenKind::EnumMember,
+            default_library: false,
+        };
+        split_lines(sql, token)
+            .into_iter()
+            .map(|part| &sql[part.range])
+            .collect()
+    }
+
+    #[test]
+    fn splits_tokens_into_lines() {
+        assert_eq!(lines("'happy'"), ["'happy'"]);
+        assert_eq!(lines("'hap'\n'py'"), ["'hap'", "'py'"]);
+        assert_eq!(lines("'hap'  \r\n\n   'py'"), ["'hap'", "'py'"]);
+        assert_eq!(lines("e'ä'\n\t'ö'"), ["e'ä'", "'ö'"]);
+        assert_eq!(lines("$$a\n  b$$"), ["$$a", "b$$"]);
     }
 }
