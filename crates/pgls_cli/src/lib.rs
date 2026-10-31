@@ -76,7 +76,8 @@ pub struct CliSession<'app> {
     /// The files settings of the root configuration, which decide the folders to search for
     /// nested configuration files
     root_files: Option<FilesSettings>,
-    /// The layers laid over each configuration file: the environment and the arguments
+    /// The layers laid over each configuration file: the environment and the arguments, which
+    /// replace what they set like the client overrides of the language server
     layers: ConfigurationLayers,
 }
 
@@ -262,7 +263,6 @@ impl<'app> CliSession<'app> {
         self.layers = ConfigurationLayers {
             environment: PartialDatabaseConfiguration::from_env(),
             overrides: cli_configuration,
-            ..Default::default()
         };
         let project = configure_project(
             self.workspace(),

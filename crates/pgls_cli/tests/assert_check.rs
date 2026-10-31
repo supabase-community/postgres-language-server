@@ -777,6 +777,115 @@ fn the_environment_does_not_replace_the_database_of_a_nested_configuration() {
     }
 }
 
+/// `--search_path` replaces the `typecheck.searchPath` of the configuration file instead of being
+/// appended to it, like the client overrides of the language server.
+#[cfg(target_os = "linux")]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn the_search_path_argument_replaces_the_search_path_of_the_configuration_file(
+    test_db: PgPool,
+) {
+    for statement in [
+        "create schema other",
+        "create table public.items (a int)",
+        "create table other.items (b int)",
+    ] {
+        sqlx::query(statement).execute(&test_db).await.unwrap();
+    }
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "typecheck": { "searchPath": ["public"] } }"#,
+        ),
+        ("a.sql", "select b from items;\n"),
+    ]);
+    let opts = test_db.connect_options();
+    let port = opts.get_port().to_string();
+    let connection = [
+        "--host",
+        opts.get_host(),
+        "--port",
+        &port,
+        "--username",
+        "postgres",
+        "--password",
+        "postgres",
+        "--database",
+        opts.get_database().unwrap_or("postgres"),
+    ];
+
+    // The search path of the file finds `public.items`, which has no column `b`.
+    let (_, output) = check_in(root.path(), &[&connection[..], &["a.sql"]].concat(), &[]);
+    assert!(output.contains("lint/unknownColumn"), "{output}");
+
+    let (_, output) = check_in(
+        root.path(),
+        &[&connection[..], &["--search_path", "other", "a.sql"]].concat(),
+        &[],
+    );
+    assert!(!output.contains("database/connection"), "{output}");
+    assert!(!output.contains("lint/unknownColumn"), "{output}");
+}
+
+/// A connection argument such as `--host` replaces its part of the `connectionString` of the
+/// configuration file, which would otherwise win over it, like the client overrides of the
+/// language server.
+#[cfg(target_os = "linux")]
+#[test]
+fn connection_arguments_win_over_the_connection_string_of_the_configuration_file() {
+    // Nothing listens on ports 1 and 2.
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "connectionString": "postgres://postgres@127.0.0.1:1/from_the_file", "connTimeoutSecs": 1 } }"#,
+        ),
+        ("a.sql", "select 1;\n"),
+    ]);
+    let (success, output) = check_in(
+        root.path(),
+        &[
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "2",
+            "--database",
+            "from_the_arguments",
+            "a.sql",
+        ],
+        &[],
+    );
+    assert!(!success, "{output}");
+    assert!(
+        output.contains("127.0.0.1:2/from_the_arguments"),
+        "the arguments didn't replace the connection string:\n{output}"
+    );
+    assert!(!output.contains("from_the_file"), "{output}");
+}
+
+/// A connection argument replaces only its part of the `connectionString` of the configuration
+/// file: `--database` alone still connects to the host of the file, and reports that it can't.
+#[cfg(target_os = "linux")]
+#[test]
+fn a_connection_argument_keeps_the_rest_of_the_connection_string() {
+    // Nothing listens on port 1.
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "connectionString": "postgres://postgres@127.0.0.1:1/from_the_file", "connTimeoutSecs": 1 } }"#,
+        ),
+        ("a.sql", "select 1;\n"),
+    ]);
+    let (success, output) = check_in(
+        root.path(),
+        &["--database", "from_the_arguments", "a.sql"],
+        &[],
+    );
+    assert!(!success, "the connection was skipped:\n{output}");
+    assert!(
+        output.contains("127.0.0.1:1/from_the_arguments"),
+        "the argument didn't replace the database of the connection string:\n{output}"
+    );
+}
+
 /// Without a project configuration, `check` says that it uses the user configuration, on stderr
 /// so that it stays out of the reporters' output.
 #[cfg(unix)]
