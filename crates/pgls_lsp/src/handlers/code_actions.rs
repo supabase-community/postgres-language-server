@@ -152,11 +152,28 @@ pub fn get_actions(
         })
         .collect();
 
+    // Editors ask for some kinds only, e.g. the quick fixes for a diagnostic.
     Ok(actions
         .into_iter()
         .chain(fix_all)
+        .filter(|action| is_requested(action.kind.as_ref(), requested))
         .map(CodeActionOrCommand::CodeAction)
         .collect())
+}
+
+/// Whether an action of `kind` is of one of the kinds in the request's `context.only`, see
+/// [`covers`]. The empty kind requests every action.
+fn is_requested(
+    kind: Option<&ls_types::CodeActionKind>,
+    requested: Option<&[ls_types::CodeActionKind]>,
+) -> bool {
+    let Some(requested) = requested else {
+        return true;
+    };
+    let kind = kind.map_or("", |kind| kind.as_str());
+    requested
+        .iter()
+        .any(|requested| requested.as_str().is_empty() || covers(requested, kind))
 }
 
 /// The kind of the action that applies all safe fixes, e.g. on save with
@@ -368,7 +385,7 @@ pub async fn execute_command(
 
 #[cfg(test)]
 mod tests {
-    use super::{FIX_ALL_KIND, changed_range, covers};
+    use super::{FIX_ALL_KIND, changed_range, covers, is_requested};
     use pgls_text_size::TextRange;
     use tower_lsp_server::ls_types::CodeActionKind;
 
@@ -380,6 +397,29 @@ mod tests {
         for kind in ["quickfix", "source.fix", "source.fixAll.other"] {
             assert!(!covers(&CodeActionKind::from(kind), FIX_ALL_KIND), "{kind}");
         }
+    }
+
+    #[test]
+    fn requested_kinds_are_hierarchical() {
+        let fix = CodeActionKind::from("quickfix.pgls.banDropTable".to_string());
+        let requested = |only: &[&str]| {
+            let only: Vec<_> = only
+                .iter()
+                .map(|kind| CodeActionKind::from(kind.to_string()))
+                .collect();
+            is_requested(Some(&fix), Some(&only))
+        };
+        assert!(is_requested(Some(&fix), None));
+        assert!(requested(&["quickfix"]));
+        assert!(requested(&["quickfix.pgls"]));
+        assert!(requested(&["source", "quickfix.pgls.banDropTable"]));
+        assert!(requested(&[""]));
+        assert!(!requested(&["quick"]));
+        assert!(!requested(&["source.fixAll"]));
+        assert!(!is_requested(
+            Some(&CodeActionKind::EMPTY),
+            Some(&[CodeActionKind::QUICKFIX])
+        ));
     }
 
     #[test]

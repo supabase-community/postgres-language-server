@@ -200,7 +200,7 @@ where
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 /// Utility type implementing [Advices] that emits a
 /// code suggestion with the provided text
 pub struct CodeSuggestionAdvice<M> {
