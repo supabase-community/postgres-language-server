@@ -293,6 +293,65 @@ DROP INDEX CONCURRENTLY IF EXISTS users_name_idx;
 }
 
 #[test]
+fn section_markers_follow_settings_changes() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "select 1;\n-- migrate:up\nselect 2;\n".into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let set_section_markers = |section_markers| {
+        workspace
+            .update_settings(UpdateSettingsParams {
+                project_key,
+                configuration: PartialConfiguration {
+                    migrations: Some(PartialMigrationsConfiguration {
+                        section_markers: Some(section_markers),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                gitignore_matches: vec![],
+                vcs_base_path: None,
+                workspace_directory: None,
+            })
+            .expect("Unable to update the settings");
+    };
+    // The statement before the first marker.
+    let marker_diagnostics = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter(|d| {
+                d.category()
+                    .is_some_and(|c| c.name() == "migrations/sectionMarkers")
+            })
+            .count()
+    };
+
+    assert_eq!(marker_diagnostics(), 0);
+    set_section_markers(SectionMarkers::Dbmate);
+    assert_eq!(marker_diagnostics(), 1);
+    set_section_markers(SectionMarkers::None);
+    assert_eq!(marker_diagnostics(), 0);
+}
+
+#[test]
 fn test_legacy_suppression_still_suppresses_and_warns() {
     let (workspace, project_key) =
         get_test_workspace(None).expect("Unable to create test workspace");
