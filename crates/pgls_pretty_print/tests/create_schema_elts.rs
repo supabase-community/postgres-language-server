@@ -1,10 +1,4 @@
-use pgls_pretty_print::{
-    FormatConfig,
-    emitter::EventEmitter,
-    nodes::emit_statement,
-    normalize::normalize_ast,
-    renderer::{RenderConfig, Renderer},
-};
+use pgls_pretty_print::{FormatConfig, format_statement_unchecked, normalize_ast};
 
 /// `CREATE SCHEMA` takes a list of `schema_element`s. Per the PostgreSQL
 /// grammar (`OptSchemaEltList: OptSchemaEltList schema_stmt`) the elements are
@@ -28,16 +22,11 @@ fn create_schema_with_elements_emits_valid_sql() {
     let parsed = pgls_query::parse(content).expect("Failed to parse SQL");
     let mut ast = parsed.into_root().expect("No root node found");
 
-    let mut emitter = EventEmitter::new(FormatConfig::default());
-    emit_statement(&mut emitter, &ast);
-
-    let mut output = String::new();
-    let config = RenderConfig {
-        max_line_length: 80,
+    let config = FormatConfig {
+        line_width: 80,
         ..Default::default()
     };
-    let mut renderer = Renderer::new(&mut output, config);
-    renderer.render(emitter.events).expect("Failed to render");
+    let output = format_statement_unchecked(&ast, &config).expect("Failed to render");
 
     assert_eq!(output.matches(';').count(), 1, "{output}");
 

@@ -1,11 +1,7 @@
-use pgls_query::{NodeEnum, protobuf::CreateTableAsStmt};
+use pgls_query::protobuf::CreateTableAsStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::{emit_node, node_list::emit_parenthesized_list, string::emit_string};
+use super::emit_string;
+use super::prelude::*;
 
 pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsStmt) {
     e.group_start(GroupKind::CreateTableAsStmt);
@@ -68,7 +64,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
             e.space();
             e.token(TokenKind::USING_KW);
             e.space();
-            super::emit_identifier_maybe_quoted(e, &into.access_method);
+            emit_identifier_maybe_quoted(e, &into.access_method);
         }
 
         // WITH (options) - like fillfactor
@@ -133,7 +129,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::TABLESPACE_KW);
             e.space();
-            super::emit_identifier_maybe_quoted(e, &into.table_space_name);
+            emit_identifier_maybe_quoted(e, &into.table_space_name);
         }
     }
 
@@ -150,7 +146,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
     if !expanded {
         e.indent_start();
     }
-    super::emit_layout_break(e);
+    emit_layout_break(e);
 
     if let Some(ref query) = n.query {
         emit_node(query, e);

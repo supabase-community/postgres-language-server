@@ -1,8 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::{AlterTableMoveAllStmt, ObjectType};
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTableMoveAllStmt) {
     e.group_start(GroupKind::AlterTableMoveAllStmt);
@@ -29,7 +27,7 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
     e.space();
     e.token(TokenKind::TABLESPACE_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.orig_tablespacename);
+    emit_identifier_maybe_quoted(e, &n.orig_tablespacename);
 
     // Emit OWNED BY roles if specified
     if !n.roles.is_empty() {
@@ -38,7 +36,7 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        super::node_list::emit_comma_separated_list(e, &n.roles, |node, e| {
+        emit_comma_separated_list(e, &n.roles, |node, e| {
             let role_spec = assert_node_variant!(RoleSpec, node);
             super::emit_role_spec(e, role_spec);
         });
@@ -49,7 +47,7 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
     e.space();
     e.token(TokenKind::TABLESPACE_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.new_tablespacename);
+    emit_identifier_maybe_quoted(e, &n.new_tablespacename);
 
     if n.nowait {
         e.space();

@@ -1,10 +1,6 @@
 use pgls_query::protobuf::DropRoleStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
-};
+use super::prelude::*;
 
 pub(super) fn emit_drop_role_stmt(e: &mut EventEmitter, n: &DropRoleStmt) {
     e.group_start(GroupKind::DropRoleStmt);
@@ -22,7 +18,7 @@ pub(super) fn emit_drop_role_stmt(e: &mut EventEmitter, n: &DropRoleStmt) {
 
     if !n.roles.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.roles, super::emit_node);
+        emit_comma_separated_list(e, &n.roles, emit_node);
     }
 
     e.group_end();

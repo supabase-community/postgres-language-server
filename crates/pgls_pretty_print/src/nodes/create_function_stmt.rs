@@ -1,10 +1,6 @@
 use pgls_query::protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParameterMode};
 
-use super::node_list::emit_dot_separated_list;
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunctionStmt) {
     e.group_start(GroupKind::CreateFunctionStmt);
@@ -97,7 +93,7 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
         match sql_body.node.as_ref() {
             Some(pgls_query::NodeEnum::ReturnStmt(_)) => {
                 e.line(LineType::Hard);
-                super::emit_node(sql_body, e);
+                emit_node(sql_body, e);
             }
             _ => {
                 e.line(LineType::Hard);
@@ -112,7 +108,7 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
                 // line of its own when that statement breaks.
                 for stmt in begin_atomic_statements(sql_body) {
                     e.line(LineType::Hard);
-                    super::emit_node_with(stmt, e, |stmt, e| super::emit_statement(e, stmt));
+                    emit_node_with(stmt, e, |stmt, e| super::emit_statement(e, stmt));
                 }
                 e.indent_end();
                 e.line(LineType::Hard);
@@ -140,65 +136,13 @@ fn begin_atomic_statements(sql_body: &pgls_query::protobuf::Node) -> &[pgls_quer
     }
 }
 
-pub(super) fn emit_function_parameter(e: &mut EventEmitter, fp: &FunctionParameter) {
-    // Parameter mode (IN, OUT, INOUT, VARIADIC)
-    match fp.mode() {
-        FunctionParameterMode::FuncParamIn => {
-            e.token(TokenKind::IN_KW);
-            e.space();
-        }
-        FunctionParameterMode::FuncParamOut => {
-            e.token(TokenKind::OUT_KW);
-            e.space();
-        }
-        FunctionParameterMode::FuncParamInout => {
-            e.token(TokenKind::INOUT_KW);
-            e.space();
-        }
-        FunctionParameterMode::FuncParamVariadic => {
-            e.token(TokenKind::VARIADIC_KW);
-            e.space();
-        }
-        FunctionParameterMode::FuncParamTable => {
-            // TABLE mode is not emitted as a prefix
-        }
-        FunctionParameterMode::FuncParamDefault => {
-            // Default mode doesn't emit anything
-        }
-        FunctionParameterMode::Undefined => {}
-    }
-
-    // Parameter name, which the grammar spells as a function or type name
-    if !fp.name.is_empty() {
-        if super::string::needs_quoting_as_function_or_type_name(&fp.name) {
-            super::emit_identifier(e, &fp.name);
-        } else {
-            e.token(TokenKind::IDENT(fp.name.clone()));
-        }
-        e.space();
-    }
-
-    // Parameter type
-    if let Some(ref arg_type) = fp.arg_type {
-        super::emit_type_name(e, arg_type);
-    }
-
-    // Default value
-    if let Some(ref defexpr) = fp.defexpr {
-        e.space();
-        e.token(TokenKind::DEFAULT_KW);
-        e.space();
-        super::emit_node(defexpr, e);
-    }
-}
-
 fn emit_function_parameter_list(e: &mut EventEmitter, params: &[&FunctionParameter]) {
     for (index, param) in params.iter().enumerate() {
         if index > 0 {
             e.token(TokenKind::COMMA);
             e.line(LineType::SoftOrSpace);
         }
-        emit_function_parameter(e, param);
+        super::emit_function_parameter(e, param);
     }
 }
 
@@ -266,31 +210,31 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                         // Single item: either library name (C) or SQL body (SQL/plpgsql)
                         if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
                             // Use dollar quotes for function bodies (they handle embedded quotes better)
-                            super::emit_body_literal(e, &s.sval);
+                            emit_body_literal(e, &s.sval);
                         } else {
-                            super::emit_node(&list.items[0], e);
+                            emit_node(&list.items[0], e);
                         }
                     } else if list.items.len() == 2 {
                         // Two items: library and symbol for C functions
                         // C functions use regular string literals for library paths
                         if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
-                            super::emit_string_literal(e, s);
+                            emit_string_literal(e, s);
                         } else {
-                            super::emit_node(&list.items[0], e);
+                            emit_node(&list.items[0], e);
                         }
                         e.token(TokenKind::COMMA);
                         e.space();
                         if let Some(pgls_query::NodeEnum::String(s)) = &list.items[1].node {
-                            super::emit_string_literal(e, s);
+                            emit_string_literal(e, s);
                         } else {
-                            super::emit_node(&list.items[1], e);
+                            emit_node(&list.items[1], e);
                         }
                     } else {
                         // Fallback: emit the list as-is
-                        super::emit_node(arg, e);
+                        emit_node(arg, e);
                     }
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -300,9 +244,9 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
                     // Language names like 'sql', 'plpgsql', 'c' don't need quotes
-                    super::emit_identifier_maybe_quoted(e, &s.sval);
+                    emit_identifier_maybe_quoted(e, &s.sval);
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -314,10 +258,10 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                         "IMMUTABLE" => e.token(TokenKind::IMMUTABLE_KW),
                         "STABLE" => e.token(TokenKind::STABLE_KW),
                         "VOLATILE" => e.token(TokenKind::VOLATILE_KW),
-                        _ => super::emit_keyword(e, &s.sval),
+                        _ => emit_keyword(e, &s.sval),
                     }
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -353,7 +297,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                         e.token(TokenKind::INVOKER_KW);
                     }
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -379,9 +323,9 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
             e.space();
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                    super::emit_keyword(e, &s.sval);
+                    emit_keyword(e, &s.sval);
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -389,27 +333,27 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
             e.token(TokenKind::COST_KW);
             e.space();
             if let Some(ref arg) = d.arg {
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "rows" => {
             e.token(TokenKind::ROWS_KW);
             e.space();
             if let Some(ref arg) = d.arg {
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "support" => {
             e.token(TokenKind::IDENT("support".to_string()));
             e.space();
             if let Some(ref arg) = d.arg {
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "set" => {
             // The arg is a VariableSetStmt which will emit SET/RESET itself
             if let Some(ref arg) = d.arg {
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "transform" => {
@@ -430,7 +374,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                     e.space();
                     e.token(TokenKind::TYPE_KW);
                     e.space();
-                    super::emit_node(item, e);
+                    emit_node(item, e);
                 }
                 e.indent_end();
                 e.group_end();
@@ -446,10 +390,10 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
         }
         _ => {
             // Default: emit option name and value
-            super::emit_keyword(e, &d.defname);
+            emit_keyword(e, &d.defname);
             if let Some(ref arg) = d.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
     }

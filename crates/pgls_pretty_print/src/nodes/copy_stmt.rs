@@ -1,12 +1,6 @@
-use super::{
-    node_list::{emit_comma_separated_list, emit_parenthesized_list},
-    string::{emit_keyword, emit_single_quoted_str},
-};
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::{NodeEnum, protobuf::CopyStmt};
+use pgls_query::protobuf::CopyStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
     e.group_start(GroupKind::CopyStmt);
@@ -25,7 +19,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
             e.token(TokenKind::L_PAREN);
             e.line(LineType::Soft);
             e.indent_start();
-            emit_comma_separated_list(e, &n.attlist, super::emit_node);
+            emit_comma_separated_list(e, &n.attlist, emit_node);
             e.indent_end();
             e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
@@ -33,7 +27,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
         }
     } else if let Some(ref query) = n.query {
         e.token(TokenKind::L_PAREN);
-        super::emit_node(query, e);
+        emit_node(query, e);
         e.token(TokenKind::R_PAREN);
     }
 
@@ -81,7 +75,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
     if let Some(ref where_clause) = n.where_clause {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, where_clause);
+        emit_clause_condition(e, where_clause);
     }
 
     e.group_end();
@@ -92,7 +86,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
 fn emit_copy_option(e: &mut EventEmitter, n: &pgls_query::protobuf::DefElem) {
     e.group_start(GroupKind::DefElem);
 
-    super::emit_keyword(e, &n.defname);
+    emit_keyword(e, &n.defname);
 
     // Handle the value based on its type
     if let Some(ref arg) = n.arg
@@ -111,16 +105,16 @@ fn emit_copy_option(e: &mut EventEmitter, n: &pgls_query::protobuf::DefElem) {
             }
             NodeEnum::String(s) => {
                 e.space();
-                super::emit_string_literal(e, s);
+                emit_string_literal(e, s);
             }
             NodeEnum::List(list) => {
                 // For options like FORCE_QUOTE (column_list)
                 e.space();
-                emit_parenthesized_list(e, &list.items, super::emit_node);
+                emit_parenthesized_list(e, &list.items, emit_node);
             }
             _ => {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
     }

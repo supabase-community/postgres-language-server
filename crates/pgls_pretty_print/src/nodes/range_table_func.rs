@@ -1,9 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
-};
-use pgls_query::{NodeEnum, protobuf::RangeTableFunc};
+use pgls_query::protobuf::RangeTableFunc;
+
+use super::prelude::*;
 
 pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
     e.group_start(GroupKind::RangeTableFunc);
@@ -31,20 +28,20 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
                     emitter.token(TokenKind::DEFAULT_KW);
                     emitter.space();
                     if let Some(ref val) = rt.val {
-                        super::emit_node(val, emitter);
+                        emit_node(val, emitter);
                     }
                 } else {
                     // Named namespace: 'uri' AS prefix
                     if let Some(ref val) = rt.val {
-                        super::emit_node(val, emitter);
+                        emit_node(val, emitter);
                     }
                     emitter.space();
                     emitter.token(TokenKind::AS_KW);
                     emitter.space();
-                    super::emit_identifier_maybe_quoted(emitter, &rt.name);
+                    emit_identifier_maybe_quoted(emitter, &rt.name);
                 }
             } else {
-                super::emit_node(node, emitter);
+                emit_node(node, emitter);
             }
         });
         e.token(TokenKind::COMMA);
@@ -64,7 +61,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
         if needs_parens {
             e.token(TokenKind::L_PAREN);
         }
-        super::emit_node(rowexpr, e);
+        emit_node(rowexpr, e);
         if needs_parens {
             e.token(TokenKind::R_PAREN);
         }
@@ -75,7 +72,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::PASSING_KW);
         e.space();
-        super::emit_node(docexpr, e);
+        emit_node(docexpr, e);
     }
 
     // COLUMNS clause
@@ -86,9 +83,9 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
         e.line(LineType::SoftOrSpace);
         emit_comma_separated_list(e, &n.columns, |node, emitter| {
             if let Some(NodeEnum::RangeTableFuncCol(col)) = node.node.as_ref() {
-                super::range_table_func_col::emit_range_table_func_col(emitter, col);
+                super::emit_range_table_func_col(emitter, col);
             } else {
-                super::emit_node(node, emitter);
+                emit_node(node, emitter);
             }
         });
         e.indent_end();

@@ -1,11 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
-use pgls_query::{
-    NodeEnum,
-    protobuf::{JsonExpr, JsonExprOp, JsonWrapper},
-};
+use pgls_query::protobuf::{JsonExpr, JsonExprOp, JsonWrapper};
+
+use super::prelude::*;
 
 pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
     e.group_start(GroupKind::JsonExpr);
@@ -16,10 +11,10 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
     let mut wrote_value = false;
 
     if let Some(ref formatted_expr) = n.formatted_expr {
-        super::emit_node(formatted_expr, e);
+        emit_node(formatted_expr, e);
         wrote_value = true;
     } else if let Some(ref xpr) = n.xpr {
-        super::emit_node(xpr, e);
+        emit_node(xpr, e);
         wrote_value = true;
     }
 
@@ -28,7 +23,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
             e.token(TokenKind::COMMA);
             e.space();
         }
-        super::emit_node(path_spec, e);
+        emit_node(path_spec, e);
         wrote_value = true;
     }
 
@@ -37,7 +32,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
             e.token(TokenKind::COMMA);
             e.space();
         }
-        super::emit_identifier_maybe_quoted(e, &n.column_name);
+        emit_identifier_maybe_quoted(e, &n.column_name);
         wrote_value = true;
     }
 
@@ -61,7 +56,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
                 e.space();
             }
 
-            super::emit_node(value, e);
+            emit_node(value, e);
 
             if let Some(ref inner) = name.node {
                 match inner {
@@ -69,13 +64,13 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
                         e.space();
                         e.token(TokenKind::AS_KW);
                         e.space();
-                        super::emit_string_identifier(e, s);
+                        emit_string_identifier(e, s);
                     }
                     _ => {
                         e.space();
                         e.token(TokenKind::AS_KW);
                         e.space();
-                        super::emit_node_enum(inner, e);
+                        emit_node_enum(inner, e);
                     }
                 }
             }
@@ -92,7 +87,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
         if clause_has_content {
             e.space();
         }
-        super::json_table::emit_json_behavior(e, on_empty);
+        super::emit_json_behavior(e, on_empty);
         e.space();
         e.token(TokenKind::ON_KW);
         e.space();
@@ -104,7 +99,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
         if clause_has_content {
             e.space();
         }
-        super::json_table::emit_json_behavior(e, on_error);
+        super::emit_json_behavior(e, on_error);
         e.space();
         e.token(TokenKind::ON_KW);
         e.space();
@@ -158,7 +153,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
 
     if n.collation != 0 {
         e.space();
-        super::emit_identifier(e, &format!("coll#{}", n.collation));
+        emit_identifier(e, &format!("coll#{}", n.collation));
     }
 
     e.group_end();

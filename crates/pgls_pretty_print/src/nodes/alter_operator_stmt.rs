@@ -1,13 +1,6 @@
-use pgls_query::NodeEnum;
 use pgls_query::protobuf::{AlterOperatorStmt, DefElem, List, ObjectWithArgs};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_parenthesized_list,
-};
-
-use super::string::emit_identifier_maybe_quoted;
+use super::prelude::*;
 
 pub(super) fn emit_alter_operator_stmt(e: &mut EventEmitter, n: &AlterOperatorStmt) {
     e.group_start(GroupKind::AlterOperatorStmt);
@@ -22,7 +15,7 @@ pub(super) fn emit_alter_operator_stmt(e: &mut EventEmitter, n: &AlterOperatorSt
 
         if !oper.objargs.is_empty() || !oper.args_unspecified {
             e.space();
-            emit_parenthesized_list(e, &oper.objargs, super::emit_node);
+            emit_parenthesized_list(e, &oper.objargs, emit_node);
         }
     }
 
@@ -54,7 +47,7 @@ fn emit_operator_fqn(e: &mut EventEmitter, oper: &ObjectWithArgs) {
                     emit_identifier_maybe_quoted(e, &s.sval);
                 }
             }
-            _ => super::emit_node(node, e),
+            _ => emit_node(node, e),
         }
     }
 }
@@ -102,8 +95,8 @@ fn emit_operator_option_arg(e: &mut EventEmitter, arg: &pgls_query::protobuf::No
             }));
         }
         Some(NodeEnum::List(list)) => emit_operator_list(e, list),
-        Some(NodeEnum::String(s)) => super::emit_string_literal(e, s),
-        _ => super::emit_node(arg, e),
+        Some(NodeEnum::String(s)) => emit_string_literal(e, s),
+        _ => emit_node(arg, e),
     }
 }
 
@@ -115,7 +108,7 @@ fn emit_operator_list(e: &mut EventEmitter, list: &List) {
 
         match item.node.as_ref() {
             Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-            _ => super::emit_node(item, e),
+            _ => emit_node(item, e),
         }
     }
 }

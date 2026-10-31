@@ -1,15 +1,7 @@
 use pgls_query::protobuf::{IntoClause, OnCommitAction};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::{
-    emit_node,
-    node_list::emit_comma_separated_list,
-    string::{emit_identifier_maybe_quoted, emit_string},
-};
+use super::emit_string;
+use super::prelude::*;
 
 pub(super) fn emit_into_clause(e: &mut EventEmitter, n: &IntoClause) {
     e.group_start(GroupKind::IntoClause);

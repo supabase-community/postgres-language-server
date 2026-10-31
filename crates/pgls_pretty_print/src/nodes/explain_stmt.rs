@@ -1,10 +1,6 @@
-use pgls_query::NodeEnum;
 use pgls_query::protobuf::ExplainStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
     e.group_start(GroupKind::ExplainStmt);
@@ -15,15 +11,13 @@ pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
     // EXPLAIN options use "name value" syntax without equals sign
     if !n.options.is_empty() {
         e.space();
-        super::node_list::emit_parenthesized_list(e, &n.options, |opt, e| {
-            emit_explain_option(e, opt)
-        });
+        emit_parenthesized_list(e, &n.options, |opt, e| emit_explain_option(e, opt));
     }
 
     // The query to explain
     if let Some(ref query) = n.query {
         e.line(LineType::SoftOrSpace);
-        super::emit_node(query, e);
+        emit_node(query, e);
     }
 
     e.group_end();
@@ -32,7 +26,7 @@ pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
 fn emit_explain_option(e: &mut EventEmitter, node: &pgls_query::Node) {
     if let Some(NodeEnum::DefElem(def)) = &node.node {
         if !def.defname.is_empty() {
-            super::emit_keyword(e, &def.defname);
+            emit_keyword(e, &def.defname);
         }
 
         // Emit the option value if present (no equals sign for EXPLAIN)
@@ -50,15 +44,15 @@ fn emit_explain_option(e: &mut EventEmitter, node: &pgls_query::Node) {
                     }
                     NodeEnum::String(s) => {
                         // String values should be quoted
-                        super::emit_string_literal(e, s);
+                        emit_string_literal(e, s);
                     }
                     _ => {
-                        super::emit_node(arg, e);
+                        emit_node(arg, e);
                     }
                 }
             }
         }
     } else {
-        super::emit_node(node, e);
+        emit_node(node, e);
     }
 }

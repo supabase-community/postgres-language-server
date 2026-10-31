@@ -1,10 +1,6 @@
 use pgls_query::protobuf::FuncExpr;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_comma_separated_list,
-};
+use super::prelude::*;
 
 /// Emit a FuncExpr (planner function call node)
 /// These are internal planner representations with function OIDs
@@ -22,7 +18,7 @@ pub(super) fn emit_func_expr(e: &mut EventEmitter, n: &FuncExpr) {
 
     e.token(TokenKind::L_PAREN);
     if !n.args.is_empty() {
-        emit_comma_separated_list(e, &n.args, super::emit_node);
+        emit_comma_separated_list(e, &n.args, emit_node);
     }
     e.token(TokenKind::R_PAREN);
 

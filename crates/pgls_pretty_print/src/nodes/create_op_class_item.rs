@@ -1,9 +1,8 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::protobuf::CreateOpClassItem;
 
-use super::node_list::{emit_dot_separated_list, emit_parenthesized_list};
-use super::object_with_args::{emit_object_name_only, emit_object_with_args};
+use super::emit_object_with_args;
+use super::object_with_args::emit_object_name_only;
+use super::prelude::*;
 
 pub(super) fn emit_create_op_class_item(e: &mut EventEmitter, n: &CreateOpClassItem) {
     e.group_start(GroupKind::CreateOpClassItem);
@@ -27,12 +26,12 @@ pub(super) fn emit_create_op_class_item(e: &mut EventEmitter, n: &CreateOpClassI
                 if !name.objargs.is_empty() {
                     e.space();
                     e.group_start(GroupKind::CreateOpClassItem);
-                    emit_parenthesized_list(e, &name.objargs, super::emit_node);
+                    emit_parenthesized_list(e, &name.objargs, emit_node);
                     e.group_end();
                 }
             } else if !n.class_args.is_empty() {
                 // DROP case: no operator name, just emit (left_type, right_type) from class_args
-                emit_parenthesized_list(e, &n.class_args, super::emit_node);
+                emit_parenthesized_list(e, &n.class_args, emit_node);
             }
 
             // Optional FOR ORDER BY opfamily
@@ -58,7 +57,7 @@ pub(super) fn emit_create_op_class_item(e: &mut EventEmitter, n: &CreateOpClassI
             // class_args come first (for ADD or DROP)
             if !n.class_args.is_empty() {
                 e.space();
-                emit_parenthesized_list(e, &n.class_args, super::emit_node);
+                emit_parenthesized_list(e, &n.class_args, emit_node);
             }
 
             if let Some(ref name) = n.name {

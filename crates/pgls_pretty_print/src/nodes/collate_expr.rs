@@ -1,15 +1,12 @@
 use pgls_query::protobuf::CollateExpr;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_collate_expr(e: &mut EventEmitter, n: &CollateExpr) {
     e.group_start(GroupKind::CollateExpr);
 
     if let Some(ref arg) = n.arg {
-        super::emit_node(arg, e);
+        emit_node(arg, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -20,7 +17,7 @@ pub(super) fn emit_collate_expr(e: &mut EventEmitter, n: &CollateExpr) {
         e.token(TokenKind::DEFAULT_KW);
     } else {
         let placeholder = format!("coll#{}", n.coll_oid);
-        super::emit_identifier(e, &placeholder);
+        emit_identifier(e, &placeholder);
     }
 
     e.group_end();

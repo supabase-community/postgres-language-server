@@ -1,14 +1,6 @@
-use pgls_query::{
-    NodeEnum,
-    protobuf::{CoercionForm, MultiAssignRef, ResTarget},
-};
+use pgls_query::protobuf::{CoercionForm, MultiAssignRef, ResTarget};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::{emit_identifier_maybe_quoted, emit_node};
+use super::prelude::*;
 
 pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
     e.group_start(GroupKind::ResTarget);
@@ -21,7 +13,7 @@ pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
                 matches!(val.node.as_ref(), Some(NodeEnum::CaseExpr(_)))
                     && matches!(e.config().layout, crate::Layout::Expanded);
 
-            if super::is_window_expression(val) {
+            if is_window_expression(val) {
                 e.group_start(GroupKind::List);
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AS_KW);
@@ -47,7 +39,7 @@ pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
 pub(super) fn emit_set_clause(e: &mut EventEmitter, n: &ResTarget) {
     // The SET list emits its ResTargets itself rather than through emit_node, so this is the only
     // place that can emit the comments written next to an assignment.
-    super::emit_with_comments_at(e, n.location, |e| {
+    emit_with_comments_at(e, n.location, |e| {
         e.group_start(GroupKind::ResTarget);
 
         if !n.name.is_empty() {
@@ -195,9 +187,9 @@ pub(super) fn emit_column_name_with_indirection(e: &mut EventEmitter, n: &ResTar
             // Field selection - emit dot before the field name
             Some(pgls_query::NodeEnum::String(s)) => {
                 e.token(TokenKind::DOT);
-                super::emit_string_identifier(e, s);
+                emit_string_identifier(e, s);
             }
-            Some(n) => super::emit_node_enum(n, e),
+            Some(n) => emit_node_enum(n, e),
             None => {}
         }
     }
@@ -207,7 +199,7 @@ pub(super) fn emit_column_name_with_indirection(e: &mut EventEmitter, n: &ResTar
 pub(super) fn emit_column_name(e: &mut EventEmitter, n: &ResTarget) {
     // The INSERT column list emits its ResTargets itself rather than through emit_node, so this is
     // the only place that can emit the comments written next to a column name.
-    super::emit_with_comments_at(e, n.location, |e| {
+    emit_with_comments_at(e, n.location, |e| {
         e.group_start(GroupKind::ResTarget);
         emit_column_name_with_indirection(e, n);
         e.group_end();

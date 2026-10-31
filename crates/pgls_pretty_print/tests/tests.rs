@@ -5,11 +5,8 @@ use dir_test::{Fixture, dir_test};
 use insta::{assert_snapshot, with_settings};
 
 use pgls_pretty_print::{
-    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, Layout, LogicalOperatorPlacement,
-    emitter::EventEmitter,
-    nodes::emit_statement,
-    normalize::normalize_ast,
-    renderer::{IndentStyle, KeywordCase, RenderConfig, Renderer},
+    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout,
+    LogicalOperatorPlacement, format_statement_unchecked, normalize_ast,
 };
 
 /// Line widths to test - each test file is run at both widths
@@ -145,18 +142,11 @@ fn test_single(fixture: Fixture<&str>) {
 
         println!("Parsed AST: {ast:#?}");
 
-        // The emitter gets the fixture config, not the default one: an option that decides which
-        // tokens exist is read here, before the renderer ever sees the events.
-        let mut emitter = EventEmitter::new(fixture_config.clone());
-        emit_statement(&mut emitter, &ast);
-
-        let mut output = String::new();
-        let config = RenderConfig {
-            max_line_length,
-            ..RenderConfig::from(fixture_config.clone())
+        let config = FormatConfig {
+            line_width: max_line_length,
+            ..fixture_config.clone()
         };
-        let mut renderer = Renderer::new(&mut output, config);
-        renderer.render(emitter.events).expect("Failed to render");
+        let output = format_statement_unchecked(&ast, &config).expect("Failed to render");
 
         println!("Formatted content (width={max_line_length}):\n{output}");
 
@@ -236,18 +226,11 @@ fn test_multi(fixture: Fixture<&str>) {
 
             println!("Parsed AST: {ast:#?}");
 
-            // The emitter gets the fixture config, not the default one: an option that decides
-            // which tokens exist is read here, before the renderer ever sees the events.
-            let mut emitter = EventEmitter::new(fixture_config.clone());
-            emit_statement(&mut emitter, &ast);
-
-            let mut output = String::new();
-            let config = RenderConfig {
-                max_line_length,
-                ..RenderConfig::from(fixture_config.clone())
+            let config = FormatConfig {
+                line_width: max_line_length,
+                ..fixture_config.clone()
             };
-            let mut renderer = Renderer::new(&mut output, config);
-            renderer.render(emitter.events).expect("Failed to render");
+            let output = format_statement_unchecked(&ast, &config).expect("Failed to render");
 
             // Verify line length
             assert_line_lengths(&output, max_line_length, fixture_config.indent_size);

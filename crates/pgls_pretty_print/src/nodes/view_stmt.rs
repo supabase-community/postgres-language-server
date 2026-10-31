@@ -1,11 +1,6 @@
 use pgls_query::protobuf::{ViewCheckOption, ViewStmt};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
+use super::prelude::*;
 
 pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
     e.group_start(GroupKind::ViewStmt);
@@ -49,7 +44,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
         e.indent_start();
         emit_comma_separated_list(e, &n.aliases, |alias_node, emitter| {
             let alias = assert_node_variant!(String, alias_node);
-            super::string::emit_identifier_maybe_quoted(emitter, &alias.sval);
+            emit_identifier_maybe_quoted(emitter, &alias.sval);
         });
         e.indent_end();
         e.line(LineType::Soft);
@@ -61,7 +56,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
         e.indent_start();
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, super::emit_node);
+        emit_parenthesized_list(e, &n.options, emit_node);
         e.indent_end();
     }
 
@@ -71,7 +66,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
         e.token(TokenKind::AS_KW);
         e.space();
 
-        super::emit_node(query, e);
+        emit_node(query, e);
     }
 
     // WITH CHECK OPTION

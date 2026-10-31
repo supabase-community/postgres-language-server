@@ -1,9 +1,6 @@
 use pgls_query::protobuf::CreateDomainStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_create_domain_stmt(e: &mut EventEmitter, n: &CreateDomainStmt) {
     e.group_start(GroupKind::CreateDomainStmt);
@@ -15,7 +12,7 @@ pub(super) fn emit_create_domain_stmt(e: &mut EventEmitter, n: &CreateDomainStmt
     // Emit domain name (qualified name as a list)
     if !n.domainname.is_empty() {
         e.space();
-        super::node_list::emit_dot_separated_list(e, &n.domainname);
+        emit_dot_separated_list(e, &n.domainname);
     }
 
     // Emit AS type_name
@@ -37,7 +34,7 @@ pub(super) fn emit_create_domain_stmt(e: &mut EventEmitter, n: &CreateDomainStmt
         e.indent_start();
         for constraint in &n.constraints {
             e.line(LineType::SoftOrSpace);
-            super::emit_node(constraint, e);
+            emit_node(constraint, e);
         }
         e.indent_end();
     }

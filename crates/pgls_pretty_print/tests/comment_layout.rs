@@ -1,6 +1,5 @@
 use pgls_pretty_print::{
-    FormatConfig, Layout, LogicalOperatorPlacement, format_statement,
-    renderer::{IndentStyle, KeywordCase},
+    FormatConfig, IndentStyle, KeywordCase, Layout, LogicalOperatorPlacement, format_statement,
 };
 
 fn expanded_config() -> FormatConfig {

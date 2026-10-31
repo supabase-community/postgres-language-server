@@ -1,9 +1,8 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-use pgls_query::{NodeEnum, protobuf::AlterRoleStmt};
+use pgls_query::protobuf::AlterRoleStmt;
 
 use super::def_elem::emit_role_option;
-use super::role_spec::emit_role_spec;
+use super::emit_role_spec;
+use super::prelude::*;
 
 pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
     e.group_start(GroupKind::AlterRoleStmt);
@@ -45,7 +44,7 @@ pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
             && let Some(ref arg) = def.arg
         {
             e.space();
-            super::emit_node(arg, e);
+            emit_node(arg, e);
         }
     } else {
         // Standard ALTER ROLE syntax

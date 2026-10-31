@@ -1,12 +1,8 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::AlterTableSpaceOptionsStmt;
 
-use super::node_list::emit_parenthesized_list;
+use super::prelude::*;
 
-pub(super) fn emit_alter_tablespace_options_stmt(
+pub(super) fn emit_alter_table_space_options_stmt(
     e: &mut EventEmitter,
     n: &AlterTableSpaceOptionsStmt,
 ) {
@@ -16,7 +12,7 @@ pub(super) fn emit_alter_tablespace_options_stmt(
     e.space();
     e.token(TokenKind::TABLESPACE_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.tablespacename);
+    emit_identifier_maybe_quoted(e, &n.tablespacename);
 
     e.line(LineType::SoftOrSpace);
     if n.is_reset {
@@ -27,7 +23,7 @@ pub(super) fn emit_alter_tablespace_options_stmt(
 
     if !n.options.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.options, super::emit_node);
+        emit_parenthesized_list(e, &n.options, emit_node);
     }
 
     e.group_end();

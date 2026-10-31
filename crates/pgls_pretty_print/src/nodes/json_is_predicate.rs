@@ -1,14 +1,12 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::{JsonIsPredicate, JsonValueType};
+
+use super::prelude::*;
 
 pub(super) fn emit_json_is_predicate(e: &mut EventEmitter, n: &JsonIsPredicate) {
     e.group_start(GroupKind::JsonIsPredicate);
 
     if let Some(ref expr) = n.expr {
-        super::emit_node(expr, e);
+        emit_node(expr, e);
     }
 
     e.space();

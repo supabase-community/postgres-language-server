@@ -1,8 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterPublicationStmt;
 
-use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
+use super::prelude::*;
 
 pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublicationStmt) {
     e.group_start(GroupKind::AlterPublicationStmt);
@@ -14,7 +12,7 @@ pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublica
 
     // Publication name
     if !n.pubname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.pubname);
+        emit_identifier_maybe_quoted(e, &n.pubname);
     }
 
     // action: 0=Undefined, 1=AP_AddObjects, 2=AP_DropObjects, 3=AP_SetObjects
@@ -52,7 +50,7 @@ pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublica
             e.token(TokenKind::TABLES_KW);
         } else if !n.pubobjects.is_empty() {
             e.line(LineType::SoftOrSpace);
-            emit_comma_separated_list(e, &n.pubobjects, super::emit_node);
+            emit_comma_separated_list(e, &n.pubobjects, emit_node);
         }
 
         // WITH options after objects (e.g., ADD TABLE t WITH (publish = true))
@@ -60,14 +58,14 @@ pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublica
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::WITH_KW);
             e.space();
-            emit_parenthesized_list(e, &n.options, super::emit_node);
+            emit_parenthesized_list(e, &n.options, emit_node);
         }
     } else {
         // Just options - use SET for setting publication options
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, super::emit_node);
+        emit_parenthesized_list(e, &n.options, emit_node);
     }
 
     e.group_end();

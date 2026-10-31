@@ -1,9 +1,6 @@
 use pgls_query::protobuf::UnlistenStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_unlisten_stmt(e: &mut EventEmitter, n: &UnlistenStmt) {
     e.group_start(GroupKind::UnlistenStmt);
@@ -14,7 +11,7 @@ pub(super) fn emit_unlisten_stmt(e: &mut EventEmitter, n: &UnlistenStmt) {
     if n.conditionname.is_empty() || n.conditionname == "*" {
         e.token(TokenKind::IDENT("*".to_string()));
     } else {
-        super::emit_identifier_maybe_quoted(e, &n.conditionname);
+        emit_identifier_maybe_quoted(e, &n.conditionname);
     }
 
     e.group_end();

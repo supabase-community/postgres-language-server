@@ -1,10 +1,7 @@
 use pgls_query::protobuf::AConst;
 use pgls_query::protobuf::a_const::Val;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_a_const(e: &mut EventEmitter, n: &AConst) {
     e.group_start(GroupKind::AConst);
@@ -32,10 +29,10 @@ fn emit_val(e: &mut EventEmitter, n: &Val) {
             super::emit_boolean(e, boolean);
         }
         Val::Sval(string) => {
-            super::emit_string_literal(e, string);
+            emit_string_literal(e, string);
         }
         Val::Bsval(bsval) => {
-            super::emit_bitstring(e, bsval);
+            super::emit_bit_string(e, bsval);
         }
     }
 }

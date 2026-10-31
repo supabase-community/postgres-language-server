@@ -1,10 +1,6 @@
-use pgls_query::{Node, NodeEnum, protobuf::ObjectWithArgs};
+use pgls_query::protobuf::ObjectWithArgs;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
-};
+use super::prelude::*;
 
 pub(super) fn emit_object_with_args(e: &mut EventEmitter, n: &ObjectWithArgs) {
     emit_object_with_args_impl(e, n, true, false);
@@ -78,7 +74,7 @@ fn emit_object_with_args_impl(
 /// Emit an operator argument, with NONE for missing types
 fn emit_objarg_or_none(node: &pgls_query::Node, e: &mut EventEmitter) {
     if node.node.is_some() {
-        super::emit_node(node, e);
+        emit_node(node, e);
     } else {
         // A Node with node: None represents NONE (no argument type)
         // Used for unary operators
@@ -107,7 +103,7 @@ fn emit_object_name(e: &mut EventEmitter, items: &[Node]) {
             Some(NodeEnum::String(s)) if is_operator_symbol(&s.sval) => {
                 e.token(TokenKind::IDENT(s.sval.clone()));
             }
-            _ => super::emit_node(node, e),
+            _ => emit_node(node, e),
         }
     }
 }

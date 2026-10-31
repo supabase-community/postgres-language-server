@@ -1,9 +1,6 @@
 use pgls_query::protobuf::GroupingFunc;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_grouping_func(e: &mut EventEmitter, n: &GroupingFunc) {
     e.group_start(GroupKind::GroupingFunc);
@@ -12,7 +9,7 @@ pub(super) fn emit_grouping_func(e: &mut EventEmitter, n: &GroupingFunc) {
     e.token(TokenKind::L_PAREN);
 
     if !n.args.is_empty() {
-        super::node_list::emit_comma_separated_list(e, &n.args, super::emit_node);
+        emit_comma_separated_list(e, &n.args, emit_node);
     }
 
     e.token(TokenKind::R_PAREN);

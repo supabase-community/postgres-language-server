@@ -1,12 +1,11 @@
-use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::protobuf::List;
 
-use super::node_list::emit_comma_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_list(e: &mut EventEmitter, n: &List) {
     e.group_start(GroupKind::List);
 
-    emit_comma_separated_list(e, &n.items, super::emit_node);
+    emit_comma_separated_list(e, &n.items, emit_node);
 
     e.group_end();
 }

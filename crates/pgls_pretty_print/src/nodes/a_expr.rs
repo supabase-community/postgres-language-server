@@ -1,12 +1,6 @@
 use pgls_query::protobuf::{AExpr, AExprKind};
-use pgls_query::{Node, NodeEnum};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::emit_fill_comma_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_a_expr(e: &mut EventEmitter, n: &AExpr) {
     if let Some(location) = n
@@ -44,13 +38,13 @@ pub(super) fn emit_a_expr(e: &mut EventEmitter, n: &AExpr) {
 fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
     if n.name.is_empty() {
         if let Some(ref lexpr) = n.lexpr {
-            super::emit_node(lexpr, e);
+            emit_node(lexpr, e);
         }
         if let Some(ref rexpr) = n.rexpr {
             if n.lexpr.is_some() {
                 e.space();
             }
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
         return;
     }
@@ -65,8 +59,7 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                 // Keep the operator attached to the left-hand side and allow the
                 // right-hand side to wrap underneath when the expression exceeds
                 // the line width.
-                let grouped_suffix =
-                    super::is_window_expression(lexpr) || super::is_window_expression(rexpr);
+                let grouped_suffix = is_window_expression(lexpr) || is_window_expression(rexpr);
                 if grouped_suffix {
                     e.group_start(GroupKind::List);
                 }
@@ -108,8 +101,13 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                         } else {
                             e.space();
                         }
-                    } else if !needs_parentheses(rexpr, parent_info, OperandSide::Unary)
-                        && starts_with_operator_char(rexpr)
+                    } else if !needs_parentheses(
+                        rexpr,
+                        Position::Operand {
+                            parent: parent_info,
+                            side: OperandSide::Unary,
+                        },
+                    ) && starts_with_operator_char(rexpr)
                     {
                         // Without a space the two operators would lex as one token, or as the
                         // start of a comment when both are minus signs.
@@ -154,7 +152,7 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
 // expr op ANY (subquery)
 fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -172,7 +170,7 @@ fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::L_PAREN);
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 
     e.token(TokenKind::R_PAREN);
@@ -181,7 +179,7 @@ fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
 // expr op ALL (subquery)
 fn emit_aexpr_op_all(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -199,7 +197,7 @@ fn emit_aexpr_op_all(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::L_PAREN);
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 
     e.token(TokenKind::R_PAREN);
@@ -265,14 +263,14 @@ fn emit_aexpr_nullif(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::L_PAREN);
 
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
     }
 
     e.token(TokenKind::COMMA);
     e.space();
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 
     e.token(TokenKind::R_PAREN);
@@ -281,7 +279,7 @@ fn emit_aexpr_nullif(e: &mut EventEmitter, n: &AExpr) {
 // expr IN (values)
 fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -301,13 +299,13 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
     // We need to wrap it in parentheses for IN clause
     if let Some(ref rexpr) = n.rexpr {
         match rexpr.node.as_ref() {
-            Some(NodeEnum::SubLink(_)) => super::emit_node(rexpr, e),
+            Some(NodeEnum::SubLink(_)) => emit_node(rexpr, e),
             Some(NodeEnum::List(list)) => {
                 e.token(TokenKind::L_PAREN);
                 e.indent_start();
                 e.line(LineType::Soft);
                 e.group_start(GroupKind::List);
-                emit_fill_comma_separated_list(e, &list.items, super::emit_node);
+                emit_fill_comma_separated_list(e, &list.items, emit_node);
                 e.group_end();
                 e.indent_end();
                 e.line(LineType::Soft);
@@ -317,7 +315,7 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
                 e.token(TokenKind::L_PAREN);
                 e.indent_start();
                 e.line(LineType::Soft);
-                super::emit_node(rexpr, e);
+                emit_node(rexpr, e);
                 e.indent_end();
                 e.line(LineType::Soft);
                 e.token(TokenKind::R_PAREN);
@@ -329,7 +327,7 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
 // expr LIKE pattern [ESCAPE escape]
 fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -347,14 +345,14 @@ fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 }
 
 // expr ILIKE pattern [ESCAPE escape]
 fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -372,14 +370,14 @@ fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 }
 
 // expr SIMILAR TO pattern [ESCAPE escape]
 fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.space();
     }
 
@@ -407,26 +405,26 @@ fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
             }) {
                 // Emit just the pattern (first argument)
                 if !func.args.is_empty() {
-                    super::emit_node(&func.args[0], e);
+                    emit_node(&func.args[0], e);
                 }
                 // If there's a second argument, it's the ESCAPE character
                 if func.args.len() >= 2 {
                     e.space();
                     e.token(TokenKind::ESCAPE_KW);
                     e.space();
-                    super::emit_node(&func.args[1], e);
+                    emit_node(&func.args[1], e);
                 }
                 return;
             }
         // Fallback for other patterns
-        super::emit_node(rexpr, e);
+        emit_node(rexpr, e);
     }
 }
 
 // expr BETWEEN expr2 AND expr3
 fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -437,16 +435,16 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
             if !list.items.is_empty() {
-                super::emit_node(&list.items[0], e);
+                emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                super::emit_node(&list.items[1], e);
+                emit_node(&list.items[1], e);
             }
         } else {
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
     }
 }
@@ -454,7 +452,7 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
 // expr NOT BETWEEN expr2 AND expr3
 fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -467,16 +465,16 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
             if !list.items.is_empty() {
-                super::emit_node(&list.items[0], e);
+                emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                super::emit_node(&list.items[1], e);
+                emit_node(&list.items[1], e);
             }
         } else {
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
     }
 }
@@ -484,7 +482,7 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
 // expr BETWEEN SYMMETRIC expr2 AND expr3
 fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -497,16 +495,16 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
             if !list.items.is_empty() {
-                super::emit_node(&list.items[0], e);
+                emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                super::emit_node(&list.items[1], e);
+                emit_node(&list.items[1], e);
             }
         } else {
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
     }
 }
@@ -514,7 +512,7 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
 // expr NOT BETWEEN SYMMETRIC expr2 AND expr3
 fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_node(lexpr, e);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -529,16 +527,16 @@ fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
             if !list.items.is_empty() {
-                super::emit_node(&list.items[0], e);
+                emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                super::emit_node(&list.items[1], e);
+                emit_node(&list.items[1], e);
             }
         } else {
-            super::emit_node(rexpr, e);
+            emit_node(rexpr, e);
         }
     }
 }
@@ -568,7 +566,7 @@ fn emit_qualified_operator(e: &mut EventEmitter, name: &[Node]) {
 fn emit_operator_part(e: &mut EventEmitter, node: &Node) {
     match node.node.as_ref() {
         Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-        _ => super::emit_node(node, e),
+        _ => emit_node(node, e),
     }
 }
 
@@ -640,149 +638,17 @@ fn operator_prefers_line_break(name: &[Node]) -> bool {
     }
 }
 
-const PREC_UNARY: u8 = 90;
-const PREC_POWER: u8 = 80;
-const PREC_MULTIPLICATIVE: u8 = 70;
-const PREC_ADDITIVE: u8 = 60;
-const PREC_OTHER: u8 = 55;
-const PREC_COMPARISON: u8 = 45;
-const PREC_IS: u8 = 40;
-const PREC_NOT: u8 = 35;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct OperatorInfo {
-    precedence: u8,
-    associativity: OperatorAssociativity,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum OperatorAssociativity {
-    Left,
-    Right,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum OperatorArity {
-    Unary,
-    Binary,
-}
-
-impl OperatorArity {
-    fn from_aexpr(expr: &AExpr) -> Self {
-        match (expr.lexpr.as_ref(), expr.rexpr.as_ref()) {
-            (Some(_), Some(_)) => OperatorArity::Binary,
-            (None, Some(_)) | (Some(_), None) => OperatorArity::Unary,
-            (None, None) => OperatorArity::Unary,
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum OperandSide {
-    Left,
-    Right,
-    Unary,
-}
-
 fn emit_operand_with_parens(
     e: &mut EventEmitter,
     node: &Node,
     parent: Option<OperatorInfo>,
     side: OperandSide,
 ) {
-    if needs_parentheses(node, parent, side) {
+    if needs_parentheses(node, Position::Operand { parent, side }) {
         e.token(TokenKind::L_PAREN);
-        super::emit_node(node, e);
+        emit_node(node, e);
         e.token(TokenKind::R_PAREN);
     } else {
-        super::emit_node(node, e);
+        emit_node(node, e);
     }
-}
-
-fn needs_parentheses(node: &Node, parent: Option<OperatorInfo>, side: OperandSide) -> bool {
-    let Some(parent_info) = parent else {
-        return false;
-    };
-
-    let Some(child_info) = node_operator_info(node) else {
-        return false;
-    };
-
-    if matches!(side, OperandSide::Unary) {
-        return child_info.precedence < parent_info.precedence;
-    }
-
-    if child_info.precedence < parent_info.precedence {
-        return true;
-    }
-
-    if child_info.precedence > parent_info.precedence {
-        return false;
-    }
-
-    // Same precedence - PostgreSQL comparison operators are non-associative
-    // (you can't chain a < b < c), so always need parens when nesting
-    // comparison expressions at the same level
-    if parent_info.precedence == PREC_COMPARISON && child_info.precedence == PREC_COMPARISON {
-        return true;
-    }
-
-    match parent_info.associativity {
-        OperatorAssociativity::Left => matches!(side, OperandSide::Right),
-        OperatorAssociativity::Right => matches!(side, OperandSide::Left),
-    }
-}
-
-fn node_operator_info(node: &Node) -> Option<OperatorInfo> {
-    match node.node.as_ref()? {
-        NodeEnum::AExpr(expr) if matches!(expr.kind(), AExprKind::AexprOp) => {
-            operator_info(&expr.name, OperatorArity::from_aexpr(expr))
-        }
-        // IS NULL / IS NOT NULL have PREC_IS precedence
-        NodeEnum::NullTest(_) => Some(OperatorInfo {
-            precedence: PREC_IS,
-            associativity: OperatorAssociativity::Left,
-        }),
-        // Boolean expressions (AND/OR) need parens when nested in comparison
-        // Use a low precedence so they get wrapped
-        NodeEnum::BoolExpr(_) => Some(OperatorInfo {
-            precedence: 20, // Lower than PREC_NOT (35)
-            associativity: OperatorAssociativity::Left,
-        }),
-        _ => None,
-    }
-}
-
-fn operator_info(name: &[Node], arity: OperatorArity) -> Option<OperatorInfo> {
-    let symbol = operator_symbol(name)?.to_ascii_lowercase();
-
-    let (precedence, associativity) = match symbol.as_str() {
-        "+" | "-" if matches!(arity, OperatorArity::Unary) => {
-            (PREC_UNARY, OperatorAssociativity::Right)
-        }
-        "~" if matches!(arity, OperatorArity::Unary) => (PREC_UNARY, OperatorAssociativity::Right),
-        "!" if matches!(arity, OperatorArity::Unary) => (PREC_UNARY, OperatorAssociativity::Left),
-        "^" => (PREC_POWER, OperatorAssociativity::Left),
-        "*" | "/" | "%" => (PREC_MULTIPLICATIVE, OperatorAssociativity::Left),
-        "+" | "-" => (PREC_ADDITIVE, OperatorAssociativity::Left),
-        "||" | "<<" | ">>" | "#" | "&" | "|" => (PREC_OTHER, OperatorAssociativity::Left),
-        "not" => (PREC_NOT, OperatorAssociativity::Right),
-        "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" => {
-            (PREC_COMPARISON, OperatorAssociativity::Left)
-        }
-        "is" | "isnull" | "notnull" => (PREC_IS, OperatorAssociativity::Left),
-        _ => (PREC_OTHER, OperatorAssociativity::Left),
-    };
-
-    Some(OperatorInfo {
-        precedence,
-        associativity,
-    })
-}
-
-fn operator_symbol(name: &[Node]) -> Option<&str> {
-    name.last().and_then(|node| match node.node.as_ref()? {
-        NodeEnum::String(s) => Some(s.sval.as_str()),
-        _ => None,
-    })
 }

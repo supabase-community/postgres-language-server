@@ -1,11 +1,8 @@
 use pgls_query::protobuf::{SqlValueFunction, SqlValueFunctionOp};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
-pub(super) fn emit_sql_value_function(e: &mut EventEmitter, n: &SqlValueFunction) {
+pub(super) fn emit_sqlvalue_function(e: &mut EventEmitter, n: &SqlValueFunction) {
     e.group_start(GroupKind::SqlvalueFunction);
 
     // Map function type to SQL keyword

@@ -1,8 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::{JsonObjectAgg, JsonObjectConstructor};
+
+use super::prelude::*;
 
 pub(super) fn emit_json_object_constructor(e: &mut EventEmitter, n: &JsonObjectConstructor) {
     e.group_start(GroupKind::JsonObjectConstructor);
@@ -13,7 +11,7 @@ pub(super) fn emit_json_object_constructor(e: &mut EventEmitter, n: &JsonObjectC
     let mut has_content = false;
 
     if !n.exprs.is_empty() {
-        super::node_list::emit_comma_separated_list(e, &n.exprs, super::emit_node);
+        emit_comma_separated_list(e, &n.exprs, emit_node);
         has_content = true;
     }
 
@@ -71,7 +69,7 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
     let has_arg = n.arg.is_some();
 
     if let Some(ref arg) = n.arg {
-        super::json_key_value::emit_json_key_value(e, arg);
+        super::emit_json_key_value(e, arg);
     }
 
     if let Some(ref constructor) = n.constructor
@@ -84,7 +82,7 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        super::node_list::emit_comma_separated_list(e, &constructor.agg_order, super::emit_node);
+        emit_comma_separated_list(e, &constructor.agg_order, emit_node);
     }
 
     // NULL ON NULL / ABSENT ON NULL goes inside the parentheses

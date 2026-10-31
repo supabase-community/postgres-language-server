@@ -1,9 +1,6 @@
 use pgls_query::protobuf::TableLikeClause;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_table_like_clause(e: &mut EventEmitter, n: &TableLikeClause) {
     e.group_start(GroupKind::TableLikeClause);
@@ -57,7 +54,7 @@ pub(super) fn emit_table_like_clause(e: &mut EventEmitter, n: &TableLikeClause) 
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::INCLUDING_KW);
                 e.space();
-                super::emit_keyword(e, name);
+                emit_keyword(e, name);
             }
         }
     }

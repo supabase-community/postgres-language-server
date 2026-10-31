@@ -66,17 +66,10 @@ pub struct EventEmitter {
 }
 
 impl EventEmitter {
+    /// An emitter without comments, for unit tests that look at the events.
+    #[cfg(test)]
     pub fn new(config: FormatConfig) -> Self {
-        Self {
-            events: Vec::new(),
-            configured_layout: config.layout.clone(),
-            config,
-            leading_comments: HashMap::new(),
-            trailing_comments: HashMap::new(),
-            truncated_identifiers: HashMap::new(),
-            leading_line_comments_require_break: false,
-            comments_after_separator: Vec::new(),
-        }
+        Self::with_comments(config, HashMap::new(), HashMap::new())
     }
 
     // Later option PRs inspect this while deciding which layout events to emit.

@@ -1,9 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_dot_separated_list,
-};
 use pgls_query::protobuf::CreatePLangStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_plang_stmt(e: &mut EventEmitter, n: &CreatePLangStmt) {
     e.group_start(GroupKind::CreatePlangStmt);
@@ -25,7 +22,7 @@ pub(super) fn emit_create_plang_stmt(e: &mut EventEmitter, n: &CreatePLangStmt) 
 
     e.token(TokenKind::LANGUAGE_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.plname);
+    emit_identifier_maybe_quoted(e, &n.plname);
 
     if !n.plhandler.is_empty() {
         e.space();
