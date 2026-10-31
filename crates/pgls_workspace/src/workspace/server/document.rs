@@ -1,3 +1,5 @@
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
@@ -197,7 +199,7 @@ impl Document {
             .split
             .ranges
             .partition_point(|range| range.end() <= position);
-        let ranges = &self.split.ranges[first..self.split.ranges.len().min(first + 1)];
+        let ranges = self.split.ranges.get(first..=first).unwrap_or_default();
         ParseIterator {
             ranges: ranges.iter(),
             ..ParseIterator::new(self, mapper, CursorPositionFilter::new(position))
@@ -214,7 +216,7 @@ impl Document {
             .ranges
             .partition_point(|range| range.start() < offset);
         ParseIterator {
-            ranges: self.split.ranges[first..].iter(),
+            ranges: self.split.ranges.get(first..).unwrap_or_default().iter(),
             ..ParseIterator::new(self, mapper, NoFilter)
         }
     }
@@ -233,9 +235,12 @@ impl Document {
         // functions are inside their top-level statement.
         let ranges = &self.split.ranges;
         let first = ranges.partition_point(|range| range.end() + TextSize::from(2) <= position);
-        let last = first + ranges[first..].partition_point(|range| range.start() <= position);
+        let near = ranges.get(first..).unwrap_or_default();
+        let near = near
+            .get(..near.partition_point(|range| range.start() <= position))
+            .unwrap_or_default();
         ParseIterator {
-            ranges: ranges[first..last].iter(),
+            ranges: near.iter(),
             ..ParseIterator::new(
                 self,
                 mapper,
@@ -571,18 +576,22 @@ fn common_prefix(a: &str, b: &str) -> TextSize {
     /// Compares this many bytes at a time, which is faster than comparing each byte.
     const BLOCK_BYTES: usize = 64;
     let (a, b) = (a.as_bytes(), b.as_bytes());
-    let len = a.len().min(b.len());
-    let mut equal = 0;
-    while equal + BLOCK_BYTES <= len
-        && a[equal..equal + BLOCK_BYTES] == b[equal..equal + BLOCK_BYTES]
-    {
-        equal += BLOCK_BYTES;
-    }
-    while equal < len && a[equal] == b[equal] {
-        equal += 1;
-    }
+    let blocks = a
+        .as_chunks::<BLOCK_BYTES>()
+        .0
+        .iter()
+        .zip(b.as_chunks::<BLOCK_BYTES>().0)
+        .take_while(|(a, b)| a == b)
+        .count();
+    let mut equal = blocks * BLOCK_BYTES;
+    equal += a
+        .iter()
+        .skip(equal)
+        .zip(b.iter().skip(equal))
+        .take_while(|(a, b)| a == b)
+        .count();
     // A change inside a character starts at its first byte.
-    while equal > 0 && (equal < a.len() && (a[equal] & 0xC0) == 0x80) {
+    while equal > 0 && a.get(equal).is_some_and(|byte| (byte & 0xC0) == 0x80) {
         equal -= 1;
     }
     TextSize::try_from(equal).unwrap_or_default()
@@ -600,6 +609,23 @@ fn split_diagnostics(split: &SplitResult) -> Vec<SDiagnostic> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn common_prefix_stops_at_the_first_difference_on_a_char_boundary() {
+        let long = "select 1;\n".repeat(20);
+        assert_eq!(common_prefix("", ""), TextSize::from(0));
+        assert_eq!(common_prefix(&long, &long), TextSize::of(long.as_str()));
+        assert_eq!(common_prefix(&long, "select 2;"), TextSize::from(7));
+        assert_eq!(
+            common_prefix(&format!("{long}x"), &format!("{long}y")),
+            TextSize::of(long.as_str())
+        );
+        // `ä` and `ö` share their first byte, so the change starts at that byte.
+        assert_eq!(
+            common_prefix(&format!("{long}ä"), &format!("{long}ö")),
+            TextSize::of(long.as_str())
+        );
+    }
 
     #[test]
     fn sql_function_body() {
