@@ -107,13 +107,12 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
                 e.indent_start();
                 // A BEGIN ATOMIC body is a single-item list wrapping the list of statements. Each
                 // statement ends with a semicolon, which the statement itself doesn't write. It
-                // goes before the comments that follow the statement, as it does in the source.
+                // goes before the comments that follow the statement, as it does in the source,
+                // and in a group with the statement, so that `isolateSemicolon` only puts it on a
+                // line of its own when that statement breaks.
                 for stmt in begin_atomic_statements(sql_body) {
                     e.line(LineType::Hard);
-                    super::emit_node_with(stmt, e, |stmt, e| {
-                        super::emit_node_enum(stmt, e);
-                        e.token(TokenKind::SEMICOLON);
-                    });
+                    super::emit_node_with(stmt, e, |stmt, e| super::emit_statement(e, stmt));
                 }
                 e.indent_end();
                 e.line(LineType::Hard);
