@@ -923,6 +923,54 @@ fn indexes_with_names_we_dont_know_make_missing_indexes_unknown() {
 }
 
 #[test]
+fn create_index_if_not_exists_skips_names_of_other_relations() {
+    let search_path = path(&["public"]);
+    let after = |sql| catalog_after(sql, &search_path);
+    // Indexes share their namespace with the other relations, so the index is skipped.
+    for (sql, name) in [
+        ("create index if not exists users on users (id);", "users"),
+        (
+            "create view v as select 1; create index if not exists v on users (id);",
+            "v",
+        ),
+        (
+            "create sequence s; create index if not exists s on users (id);",
+            "s",
+        ),
+    ] {
+        assert_eq!(
+            after(sql).index(None, name, &search_path),
+            Lookup::Missing,
+            "{sql}"
+        );
+    }
+    // A composite type is a relation, but the catalog doesn't track it as one.
+    let catalog = after("create type c as (a int); create index if not exists c on users (id);");
+    assert_eq!(catalog.index(None, "c", &search_path), Lookup::Unknown);
+
+    // On a partitioned table, the indexes of the partitions are skipped with it.
+    let catalog = after(
+        "create table p (id int) partition by range (id); create index if not exists users on p (id);",
+    );
+    assert_eq!(catalog.index(None, "nope", &search_path), Lookup::Missing);
+}
+
+#[test]
+fn create_index_if_not_exists_on_partitioned_table_keeps_its_index() {
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create table p (id int) partition by range (id); create index if not exists p_id_idx on p (id);",
+        &search_path,
+    );
+    assert_eq!(
+        index_table(&catalog, None, "p_id_idx", &search_path),
+        Some(("public".into(), "p".into()))
+    );
+    // Its partitions get indexes with generated names.
+    assert_eq!(catalog.index(None, "nope", &search_path), Lookup::Unknown);
+}
+
+#[test]
 fn functions_know_their_volatility() {
     let search_path = path(&["public"]);
     let catalog = catalog_after(
