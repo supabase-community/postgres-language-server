@@ -17,10 +17,9 @@ pub enum Error {
     Scan(String),
     #[error("Error splitting: {0}")]
     Split(String),
-    #[error(
-        "The statement is nested too deeply: its parse tree may be at most {} levels deep",
-        crate::MAX_NESTING
-    )]
+    /// The parse tree is nested deeper than prost decodes: it stops at a depth of 100 messages,
+    /// e.g. at about 50 terms of `select 1 + 1 + ...`.
+    #[error("The statement is nested too deeply to parse")]
     TooDeep,
 }
 

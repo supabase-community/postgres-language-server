@@ -16,10 +16,7 @@ pub(super) fn infer_sub_link(
             protobuf::SubLinkType::ExistsSublink => named(r, "bool"),
             protobuf::SubLinkType::ExprSublink => {
                 let query = n.subselect.as_deref()?;
-                let columns = match r.subquery_output(query) {
-                    Some(columns) => columns.clone()?,
-                    None => crate::resolve::query_output_types(query, r.catalog, r.search_path)?,
-                };
+                let columns = crate::resolve::query_output_types(query, r.catalog, r.search_path)?;
                 (columns.len() == 1)
                     .then(|| columns[0].ty.clone())
                     .flatten()

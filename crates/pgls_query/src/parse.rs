@@ -3,7 +3,6 @@ use std::ffi::{CStr, CString};
 use crate::NodeEnum;
 use crate::bindings::*;
 use crate::error::*;
-use crate::nesting::{MAX_NESTING, TooDeep, check_nesting};
 use crate::protobuf;
 
 use prost::Message;
@@ -35,15 +34,23 @@ pub fn parse(statement: &str) -> Result<ParseResult> {
         let stderr = unsafe { CStr::from_ptr(result.stderr_buffer) }
             .to_string_lossy()
             .to_string();
-        // prost's own recursion limit is off: it would reject a tree that is 100 messages deep,
-        // e.g. `select 1 + 1 + ...` with 50 terms.
-        check_nesting(data, MAX_NESTING)
-            .map_err(|TooDeep| Error::TooDeep)
-            .and_then(|()| protobuf::ParseResult::decode(data).map_err(Error::Decode))
+        protobuf::ParseResult::decode(data)
+            .map_err(decode_error)
             .map(|result| ParseResult::new(result, stderr))
     };
     unsafe { pg_query_free_protobuf_parse_result(result) };
     parse_result
+}
+
+/// prost reports a tree deeper than its recursion limit of 100 messages like a malformed message,
+/// "failed to decode Protobuf message: ...: recursion limit reached". prost has no other way to
+/// tell, so this looks at the message.
+fn decode_error(err: prost::DecodeError) -> Error {
+    if err.to_string().ends_with("recursion limit reached") {
+        Error::TooDeep
+    } else {
+        Error::Decode(err)
+    }
 }
 
 /// The result of parsing a SQL query
@@ -146,5 +153,17 @@ mod tests {
     #[test]
     fn it_parses_parameter_queries() {
         assert!(parse("select $0 + $1 + $2 + $3 + $4 + $5").is_ok());
+    }
+
+    /// Each term of `+` nests two messages deeper, so prost stops at about 50 terms.
+    #[test]
+    fn statements_nested_deeper_than_prost_decodes_are_too_deep() {
+        assert!(parse(&format!("select 1{};", " + 1".repeat(40))).is_ok());
+        let err = parse(&format!("select 1{};", " + 1".repeat(60))).unwrap_err();
+        assert_eq!(err, crate::Error::TooDeep);
+        assert_eq!(
+            err.to_string(),
+            "The statement is nested too deeply to parse"
+        );
     }
 }

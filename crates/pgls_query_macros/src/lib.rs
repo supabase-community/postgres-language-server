@@ -1,6 +1,5 @@
 use iter_mut::iter_mut_mod;
 use iter_ref::iter_ref_mod;
-use nesting::nesting_mod;
 use node_enum::node_enum_mod;
 use node_mut::node_mut_mod;
 use node_ref::node_ref_mod;
@@ -11,7 +10,6 @@ use std::path;
 
 mod iter_mut;
 mod iter_ref;
-mod nesting;
 mod node_enum;
 mod node_mut;
 mod node_ref;
@@ -100,13 +98,6 @@ pub fn iter_mut_codegen(_input: proc_macro::TokenStream) -> proc_macro::TokenStr
         #iterator
     }
     .into()
-}
-
-#[proc_macro]
-pub fn nesting_codegen(_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let analyser = ProtoAnalyzer::from(&proto_file_path()).unwrap();
-
-    nesting_mod(analyser).into()
 }
 
 fn proto_file_path() -> path::PathBuf {

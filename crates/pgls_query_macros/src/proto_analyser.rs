@@ -115,24 +115,6 @@ impl ProtoAnalyzer {
         nodes
     }
 
-    /// Every message with the number and message type of each of its message-typed fields
-    /// (including repeated ones and the variants of a oneof), by unqualified name.
-    pub fn message_fields(&self) -> Vec<(String, Vec<(u32, String)>)> {
-        self.pool
-            .all_messages()
-            .map(|msg| {
-                let fields = msg
-                    .fields()
-                    .filter_map(|field| {
-                        let message = field.kind().as_message()?.clone();
-                        Some((field.number(), message.name().to_string()))
-                    })
-                    .collect();
-                (msg.name().to_string(), fields)
-            })
-            .collect()
-    }
-
     pub fn enum_variants(&self) -> Vec<EnumVariant> {
         let node = self
             .pool

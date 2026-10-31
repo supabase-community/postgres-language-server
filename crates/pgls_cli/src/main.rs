@@ -36,18 +36,7 @@ fn main() -> ExitCode {
     console.set_color(to_color_mode(command.get_color()));
 
     let is_verbose = command.is_verbose();
-    // The command runs on a thread with the stack of the workers: some commands, such as `check`
-    // with `--stdin-file-path` and `dblint`, analyse SQL on this thread, and the main thread has
-    // only 1 MiB on Windows and 8 MiB elsewhere.
-    let result = std::thread::scope(|scope| {
-        std::thread::Builder::new()
-            .name("pgls::main".to_string())
-            .stack_size(pgls_workspace::WORKER_STACK_SIZE_BYTES)
-            .spawn_scoped(scope, || run_workspace(&mut console, command))
-            .map_err(CliDiagnostic::io_error)?
-            .join()
-            .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
-    });
+    let result = run_workspace(&mut console, command);
     match result {
         Err(termination) => {
             if termination.tags().is_verbose() && is_verbose {
