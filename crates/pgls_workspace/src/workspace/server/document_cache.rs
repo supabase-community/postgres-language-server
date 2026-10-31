@@ -28,7 +28,7 @@ pub(crate) use budget::CacheBudget;
 pub(crate) use parse::ParseResult;
 use parse::PgQueryStore;
 use tree::TreeSitterStore;
-pub(crate) use walk::{ContentChange, ResolvedStatement, WalkCache};
+pub(crate) use walk::{ContentChange, MigrationContext, ResolvedStatement, WalkCache};
 
 /// The number of cache entries that all open documents keep together, beyond the document in
 /// use, see [`DocumentCache::usage`]. When they keep more, the caches of the least recently used
@@ -234,10 +234,25 @@ impl DocumentCache {
         keyed
     }
 
-    /// Runs `f` on what the walks over the document left for `key`. It is not held while
+    /// Runs `f` on what the walks over the document left for `key`, without what was computed
+    /// in another migration `context`, see [`WalkCache::set_context`]. It is not held while
     /// walking, so that requests on the same document don't wait for each other.
-    pub(crate) fn with_walk<R>(&self, key: &CacheKey, f: impl FnOnce(&mut WalkCache) -> R) -> R {
-        f(&mut self.keyed(key).walk)
+    pub(crate) fn with_walk<R>(
+        &self,
+        key: &CacheKey,
+        context: &MigrationContext,
+        f: impl FnOnce(&mut WalkCache) -> R,
+    ) -> R {
+        let mut keyed = self.keyed(key);
+        let stale = keyed.walk.set_context(context);
+        let result = f(&mut keyed.walk);
+        drop(keyed);
+        StaleEntries {
+            analysis: None,
+            walk: stale,
+        }
+        .drop_in_background();
+        result
     }
 
     /// Takes out what `change` invalidates, see [`WalkCache::content_changed`], and the
