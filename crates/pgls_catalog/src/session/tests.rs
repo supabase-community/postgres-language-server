@@ -49,6 +49,25 @@ fn created_objects_and_schema_use_search_path() {
     assert!(s.has_created_object("app", "made_idx"));
 }
 #[test]
+fn names_are_compared_exactly() {
+    // The parser folds unquoted names to lower case, so `"Users"` and `users` are different
+    // tables.
+    let mut s = Session::new(vec!["public".into()]);
+    apply(&mut s, r#"CREATE TABLE "Users" (id int)"#);
+    apply(&mut s, r#"CREATE TABLE "App".events (id int)"#);
+    apply(
+        &mut s,
+        r#"ALTER TABLE "Things" ADD CONSTRAINT "Things_fk" FOREIGN KEY (id) REFERENCES other(id) NOT VALID"#,
+    );
+    assert!(s.has_created_object("", "Users"));
+    assert!(!s.has_created_object("", "users"));
+    assert!(s.has_created_object("App", "events"));
+    assert!(!s.has_created_object("app", "events"));
+    assert!(s.has_not_valid_constraint("", "Things", "Things_fk"));
+    assert!(!s.has_not_valid_constraint("", "things", "Things_fk"));
+    assert!(!s.has_not_valid_constraint("", "Things", "things_fk"));
+}
+#[test]
 fn altered_tables_use_the_search_path_of_their_statement() {
     let mut s = Session::new(vec!["public".into()]);
     apply(&mut s, "ALTER TABLE things ADD COLUMN a int");
