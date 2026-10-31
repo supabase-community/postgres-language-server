@@ -142,19 +142,11 @@ impl Catalog {
         change: impl Fn(&mut Option<Vec<ColumnInfo>>),
     ) {
         // Column changes of a database table also change its children in the database.
-        let is_database_table = self
-            .base
-            .as_ref()
-            .is_some_and(|base| base.relation(&relation.schema, &relation.name).is_some());
-        if is_database_table {
+        if self.is_database_relation(relation) {
             self.database_columns_changed = true;
         }
 
-        let mut pending = vec![key(&relation.schema, &relation.name)];
-        while let Some(key) = pending.pop() {
-            if let Some(children) = self.children.get(&key) {
-                pending.extend(children.iter().cloned());
-            }
+        for key in self.with_file_children(relation) {
             let Some(mut relation) = self.relation_in(&key.0, &key.1).found() else {
                 continue;
             };
@@ -162,6 +154,26 @@ impl Catalog {
             relation.origin = Origin::File;
             self.define_relation(relation);
         }
+    }
+
+    fn is_database_relation(&self, relation: &RelationInfo) -> bool {
+        self.base
+            .as_ref()
+            .is_some_and(|base| base.relation(&relation.schema, &relation.name).is_some())
+    }
+
+    /// A relation, and its inheritance children and partitions that the file created, at any
+    /// depth.
+    fn with_file_children(&self, relation: &RelationInfo) -> Vec<Key> {
+        let mut relations = Vec::new();
+        let mut pending = vec![key(&relation.schema, &relation.name)];
+        while let Some(key) = pending.pop() {
+            if let Some(children) = self.children.get(&key) {
+                pending.extend(children.iter().cloned());
+            }
+            relations.push(key);
+        }
+        relations
     }
 
     /// Moves a relation to a new schema or name.
@@ -256,6 +268,79 @@ impl Catalog {
         for index in self.table_indexes(schema, table) {
             self.indexes
                 .insert(key(&index.schema, &index.name), Entry::Dropped);
+        }
+    }
+
+    /// Dropping a column drops the indexes that use it, since [`index_create`] makes them depend
+    /// on it, and so does dropping the column from the inheritance children and partitions
+    /// ([`ATExecDropColumn`]). Indexes whose columns we don't know become unknown, and so do the
+    /// indexes of all children in the database, since we don't know which tables they inherit
+    /// from. With `may_fail`, Postgres may reject the statement, so the indexes that use the
+    /// column become unknown instead of dropped.
+    ///
+    /// [`index_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L1132
+    /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
+    pub(super) fn drop_column_indexes(
+        &mut self,
+        relation: &RelationInfo,
+        column: &str,
+        recurse: bool,
+        may_fail: bool,
+    ) {
+        let tables = if recurse {
+            self.with_file_children(relation)
+        } else {
+            vec![key(&relation.schema, &relation.name)]
+        };
+        for (schema, table) in tables {
+            for index in self.table_indexes(&schema, &table) {
+                let entry = match &index.columns {
+                    Some(columns) if !columns.iter().any(|name| name == column) => continue,
+                    Some(_) if !may_fail => Entry::Dropped,
+                    _ => Entry::Unknown,
+                };
+                self.indexes.insert(key(&index.schema, &index.name), entry);
+            }
+        }
+        if recurse && self.is_database_relation(relation) {
+            let children: Vec<Key> = self
+                .base
+                .iter()
+                .flat_map(|base| base.inheritance_children().cloned())
+                .collect();
+            for (schema, table) in children {
+                for index in self.table_indexes(&schema, &table) {
+                    self.indexes
+                        .insert(key(&index.schema, &index.name), Entry::Unknown);
+                }
+            }
+        }
+    }
+
+    /// Renaming a column renames it in the indexes that use it, on the table and on the
+    /// inheritance children and partitions that it is renamed in too ([`renameatt`]).
+    ///
+    /// [`renameatt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L4018
+    pub(super) fn rename_index_column(
+        &mut self,
+        relation: &RelationInfo,
+        old_name: &str,
+        new_name: &str,
+    ) {
+        for (schema, table) in self.with_file_children(relation) {
+            for mut index in self.table_indexes(&schema, &table) {
+                let Some(columns) = index.columns.as_mut() else {
+                    continue;
+                };
+                if !columns.iter().any(|name| name == old_name) {
+                    continue;
+                }
+                for name in columns.iter_mut().filter(|name| *name == old_name) {
+                    *name = new_name.to_owned();
+                }
+                self.indexes
+                    .insert(key(&index.schema, &index.name), Entry::Defined(index));
+            }
         }
     }
 
