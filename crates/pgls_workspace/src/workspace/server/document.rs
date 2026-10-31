@@ -7,7 +7,10 @@ use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
-use super::{document_cache::DocumentCache, statement_identifier::StatementId};
+use super::{
+    document_cache::{ContentChange, DocumentCache, StaleEntries},
+    statement_identifier::StatementId,
+};
 
 pub struct Document {
     content: String,
@@ -16,6 +19,8 @@ pub struct Document {
     diagnostics: Vec<SDiagnostic>,
     cache: DocumentCache,
     suppressions: Suppressions,
+    /// Where the last change of the content starts.
+    edited_at: Option<TextSize>,
 }
 
 impl Document {
@@ -30,14 +35,35 @@ impl Document {
             version,
             cache: DocumentCache::new(),
             suppressions,
+            edited_at: None,
         }
     }
 
-    pub fn update_content(&mut self, content: String, version: i32) {
+    /// Replaces the content of the document. Returns what the change invalidated in its cache,
+    /// for the caller to drop, see [`StaleEntries::drop_in_background`].
+    pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
+        let unchanged = common_prefix(&self.content, &content);
         self.content = content;
         self.version = version;
 
         let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
+
+        // The statements before the change keep what the walks cached for them. The splitter
+        // looks ahead, so a statement before the change can still end elsewhere.
+        let first_changed_statement = self
+            .ranges
+            .iter()
+            .zip(&ranges)
+            .find(|(old, new)| old != new || old.end() > unchanged)
+            .map_or_else(
+                || {
+                    self.ranges
+                        .get(ranges.len())
+                        .map_or(TextSize::from(u32::MAX), |range| range.start())
+                },
+                |(old, _)| old.start(),
+            );
+        self.edited_at = Some(unchanged);
 
         self.suppressions =
             Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
@@ -53,7 +79,15 @@ impl Document {
         let is_present =
             |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
         self.cache.retain_statements(is_present);
-        self.cache.content_changed();
+        self.cache.content_changed(ContentChange {
+            unchanged,
+            first_changed_statement,
+        })
+    }
+
+    /// Where the last change of the content starts.
+    pub fn edited_at(&self) -> Option<TextSize> {
+        self.edited_at
     }
 
     /// What is cached for the document.
@@ -121,8 +155,43 @@ impl Document {
         }
     }
 
-    pub fn count(&self) -> usize {
-        self.iter(DefaultMapper).count()
+    /// The statements from the first top-level statement that starts at or after `offset` on.
+    pub fn iter_from<'a, M>(&'a self, mapper: M, offset: TextSize) -> ParseIterator<'a, M, NoFilter>
+    where
+        M: StatementMapper<'a>,
+    {
+        let first = self.ranges.partition_point(|range| range.start() < offset);
+        ParseIterator {
+            ranges: self.ranges[first..].iter(),
+            ..ParseIterator::new(self, mapper, NoFilter)
+        }
+    }
+
+    /// The statements that [`GetCompletionsFilter`] accepts for `position`, without looking at
+    /// the statements far from it.
+    pub fn iter_for_completions<'a, M>(
+        &'a self,
+        mapper: M,
+        position: TextSize,
+    ) -> ParseIterator<'a, M, GetCompletionsFilter>
+    where
+        M: StatementMapper<'a>,
+    {
+        // The filter accepts a statement up to two characters after its end. The bodies of SQL
+        // functions are inside their top-level statement.
+        let ranges = &self.ranges;
+        let first = ranges.partition_point(|range| range.end() + TextSize::from(2) <= position);
+        let last = first + ranges[first..].partition_point(|range| range.start() <= position);
+        ParseIterator {
+            ranges: ranges[first..last].iter(),
+            ..ParseIterator::new(
+                self,
+                mapper,
+                GetCompletionsFilter {
+                    cursor_position: position,
+                },
+            )
+        }
     }
 }
 
@@ -443,6 +512,28 @@ impl StatementFilter<'_> for IdFilter {
     fn predicate(&self, stmt: &DocumentStatement) -> bool {
         stmt.id == self.id
     }
+}
+
+/// The length of the longest common prefix of `a` and `b`, on a character boundary.
+fn common_prefix(a: &str, b: &str) -> TextSize {
+    /// Compares this many bytes at a time, which is faster than comparing each byte.
+    const BLOCK_BYTES: usize = 64;
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    let len = a.len().min(b.len());
+    let mut equal = 0;
+    while equal + BLOCK_BYTES <= len
+        && a[equal..equal + BLOCK_BYTES] == b[equal..equal + BLOCK_BYTES]
+    {
+        equal += BLOCK_BYTES;
+    }
+    while equal < len && a[equal] == b[equal] {
+        equal += 1;
+    }
+    // A change inside a character starts at its first byte.
+    while equal > 0 && (equal < a.len() && (a[equal] & 0xC0) == 0x80) {
+        equal -= 1;
+    }
+    TextSize::try_from(equal).unwrap_or_default()
 }
 
 /// Helper function that wraps the statement splitter and returns the ranges with unified
@@ -839,7 +930,8 @@ $$ LANGUAGE plpgsql;";
         let second_ast = d.cache.parse(&second);
         let first_tree = d.cache.tree(&first);
 
-        d.update_content("select 1;\nselect 3;".to_string(), 2);
+        d.update_content("select 1;\nselect 3;".to_string(), 2)
+            .drop_in_background();
 
         assert!(Arc::ptr_eq(&first_ast, &d.cache.parse(&first)));
         assert!(Arc::ptr_eq(&first_tree, &d.cache.tree(&first)));
