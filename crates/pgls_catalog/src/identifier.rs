@@ -33,7 +33,10 @@ pub enum NamePosition {
     /// reserved ones and those that name types or functions.
     ColId,
     /// An unqualified function or type name (`type_function_name`): any keyword except the
-    /// reserved ones and those that name columns.
+    /// reserved ones and those that name columns, and except `operator`, which starts an
+    /// operator like `OPERATOR(pg_catalog.+)` when a `(` follows ([`qual_Op`]).
+    ///
+    /// [`qual_Op`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L16658
     TypeFunctionName,
     /// A name after a dot (`attr_name`, a `ColLabel`): any keyword.
     ColLabel,
@@ -62,6 +65,9 @@ pub fn needs_quotes(name: &str, position: NamePosition) -> bool {
     };
     let is_start = |c: char| c.is_ascii_lowercase() || c == '_' || !c.is_ascii();
     if !is_start(first) || !chars.all(|c| is_start(c) || c.is_ascii_digit() || c == '$') {
+        return true;
+    }
+    if position == NamePosition::TypeFunctionName && name == "operator" {
         return true;
     }
     match keyword_category(name) {
@@ -132,5 +138,40 @@ mod tests {
             );
             assert!(!needs_quotes(name, ColLabel), "{name}");
         }
+    }
+
+    /// Every keyword, written by [`quote_identifier`] at each position, parses, e.g. a function
+    /// named `operator` is called as `"operator"()`.
+    #[test]
+    fn keywords_round_trip_through_the_parser() {
+        use NamePosition::*;
+        let kwlist = include_str!(
+            "../../pgls_query/vendor/libpg_query/src/postgres/include/parser/kwlist.h"
+        );
+        let keywords = kwlist
+            .lines()
+            .filter_map(|line| line.strip_prefix("PG_KEYWORD(\""))
+            .filter_map(|line| line.split('"').next());
+        let mut failures = Vec::new();
+        for keyword in keywords {
+            let col_id = quote_identifier(keyword, ColId);
+            let function = quote_identifier(keyword, TypeFunctionName);
+            let label = quote_identifier(keyword, ColLabel);
+            for sql in [
+                format!("select {col_id} from {col_id}.t {col_id} where {col_id} = 1"),
+                format!("select {col_id}.{label}, s.{label}() from {col_id}"),
+                format!("select {function}(), a + {function}(1)"),
+            ] {
+                if pgls_query::parse(&sql).is_err() {
+                    failures.push(sql);
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+        assert_eq!(
+            quote_identifier("operator", TypeFunctionName),
+            r#""operator""#
+        );
+        assert_eq!(quote_identifier("operator", ColId), "operator");
     }
 }

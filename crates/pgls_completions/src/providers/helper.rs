@@ -37,16 +37,29 @@ pub(crate) fn only_leading_quote(ctx: &TreesitterContext) -> bool {
     is_sanitized_token_with_quote(node_under_cursor_txt)
 }
 
-/// The text to insert for `item_name`, prefixed with the schema or alias name unless it is
-/// `public` or the user already wrote a qualifier. Names are quoted where Postgres would read
+/// The name that qualifies a completed item.
+pub(crate) enum Qualifier<'a> {
+    /// The schema of a table or function, left out if it is `public`.
+    Schema(&'a str),
+    /// The alias of the table of a column, also if it is named `public`.
+    Alias(&'a str),
+}
+
+/// The text to insert for `item_name`, prefixed with its qualifier unless that is the `public`
+/// schema or the user already wrote a qualifier. Names are quoted where Postgres would read
 /// another name unquoted. `position` is where an unqualified `item_name` stands.
 pub(crate) fn with_schema_or_alias(
     ctx: &TreesitterContext,
     item_name: &str,
-    schema_or_alias_name: Option<&str>,
+    qualifier: Option<Qualifier>,
     position: NamePosition,
 ) -> String {
     let is_already_prefixed_with_schema_name = ctx.has_any_qualifier();
+
+    let prefix = match qualifier {
+        Some(Qualifier::Schema("public")) | None => None,
+        Some(Qualifier::Schema(name) | Qualifier::Alias(name)) => Some(name),
+    };
 
     let with_quotes = node_text_surrounded_by_quotes(ctx);
     let single_leading_quote = only_leading_quote(ctx);
@@ -54,8 +67,8 @@ pub(crate) fn with_schema_or_alias(
     // Inside quotes the user already typed, a name only needs its `"` escaped.
     let escaped = |name: &str| name.replace('"', r#""""#);
 
-    match schema_or_alias_name {
-        Some(prefix) if prefix != "public" && !is_already_prefixed_with_schema_name => {
+    match prefix {
+        Some(prefix) if !is_already_prefixed_with_schema_name => {
             if single_leading_quote {
                 format!(r#"{}"."{}""#, escaped(prefix), escaped(item_name))
             } else if with_quotes {
@@ -85,21 +98,28 @@ pub(crate) fn with_schema_or_alias(
 #[cfg(test)]
 mod tests {
     use pgls_test_utils::QueryWithCursorPosition;
+    use pgls_text_size::TextRange;
     use sqlx::{Executor, PgPool};
 
     use crate::{
-        complete,
+        CompletionItem, complete,
         test_helper::{get_test_deps, get_test_params},
     };
 
-    /// The text inserted for the completion item `label` at `{c}` in `query`.
-    async fn inserted(pool: &PgPool, query: &str, label: &str) -> Option<String> {
+    /// The completion item `label` at `{c}` in `query`.
+    async fn item(pool: &PgPool, query: &str, label: &str) -> Option<CompletionItem> {
         let query = query.replace("{c}", &QueryWithCursorPosition::cursor_marker().to_string());
         let (tree, cache) = get_test_deps(None, query.as_str().into(), pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
         complete(params)
             .into_iter()
             .find(|item| item.label == label)
+    }
+
+    /// The text inserted for the completion item `label` at `{c}` in `query`.
+    async fn inserted(pool: &PgPool, query: &str, label: &str) -> Option<String> {
+        item(pool, query, label)
+            .await
             .map(|item| item.completion_text.map_or(item.label, |text| text.text))
     }
 
@@ -112,6 +132,7 @@ mod tests {
             create table "My Schema"."Other" (x int);
             create function "MyFunc"() returns int language sql as 'select 1';
             create function "My Schema".helper() returns int language sql as 'select 1';
+            create function "operator"() returns int language sql as 'select 1';
             "#,
         )
         .await
@@ -132,13 +153,48 @@ mod tests {
             (r#"select {c} from "MyTable""#, "plain", "plain"),
             (r#"select t.{c} from "MyTable" t"#, "select", "select"),
             (r#"select t.{c} from "MyTable" t"#, "Id", r#""Id""#),
-            // Functions.
+            // An alias named `public` still qualifies its columns.
+            (
+                r#"select {c} from "MyTable" "public""#,
+                "plain",
+                "public.plain",
+            ),
+            (
+                r#"select {c} from "MyTable" PUBLIC"#,
+                "plain",
+                "public.plain",
+            ),
+            // Functions. `operator(` would start an operator.
             ("select {c}", "MyFunc", r#""MyFunc"()"#),
             ("select {c}", "helper", r#""My Schema".helper()"#),
+            ("select {c}", "operator", r#""operator"()"#),
         ] {
             assert_eq!(
                 inserted(&pool, query, label).await.as_deref(),
                 Some(expected),
+                "{query} → {label}"
+            );
+        }
+    }
+
+    /// The range to replace is in bytes, like the cursor, also after multibyte characters.
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn replaces_at_the_cursor_after_multibyte_characters(pool: PgPool) {
+        pool.execute("create schema private; create table people (name text);")
+            .await
+            .unwrap();
+
+        for (query, label) in [
+            ("select 'é' from {c}  ;", "private"),
+            ("select 'é' from {c}", "private"),
+            ("select 'é', {c} from people", "name"),
+        ] {
+            let cursor = query.find("{c}").unwrap() as u32;
+            let item = item(&pool, query, label).await;
+            assert_eq!(
+                item.and_then(|item| item.completion_text)
+                    .map(|text| text.range),
+                Some(TextRange::empty(cursor.into())),
                 "{query} → {label}"
             );
         }
