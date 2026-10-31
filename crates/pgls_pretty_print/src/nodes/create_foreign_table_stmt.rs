@@ -63,12 +63,7 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
     // OPTIONS clause
     if !n.options.is_empty() {
         e.space();
-        e.token(TokenKind::OPTIONS_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, |e, n| {
-            let def_elem = assert_node_variant!(DefElem, n);
-            super::emit_options_def_elem(e, def_elem);
-        });
+        emit_options_clause(e, &n.options);
     }
 
     e.group_end();

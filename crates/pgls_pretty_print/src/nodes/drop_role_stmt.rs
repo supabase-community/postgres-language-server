@@ -11,9 +11,7 @@ pub(super) fn emit_drop_role_stmt(e: &mut EventEmitter, n: &DropRoleStmt) {
 
     if n.missing_ok {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_exists(e);
     }
 
     if !n.roles.is_empty() {

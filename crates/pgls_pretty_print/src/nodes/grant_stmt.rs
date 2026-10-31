@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{DropBehavior, GrantStmt, GrantTargetType, ObjectType};
+use pgls_query::protobuf::{GrantStmt, GrantTargetType, ObjectType};
 
 use super::prelude::*;
 
@@ -30,7 +30,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     } else {
         emit_grant_list(e, &n.privileges, |e, node| {
             if let Some(pgls_query::NodeEnum::AccessPriv(priv_node)) = &node.node {
-                emit_access_priv(e, priv_node);
+                emit_privilege(e, priv_node);
             }
         });
     }
@@ -103,73 +103,14 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
         }
         // No space here - will be added by line break before TO/FROM
     } else {
-        // Add explicit object type (singular)
-        match objtype {
-            ObjectType::ObjectTable => {
-                e.token(TokenKind::TABLE_KW);
-                e.space();
-            }
-            ObjectType::ObjectSequence => {
-                e.token(TokenKind::SEQUENCE_KW);
-                e.space();
-            }
-            ObjectType::ObjectDatabase => {
-                e.token(TokenKind::DATABASE_KW);
-                e.space();
-            }
-            ObjectType::ObjectSchema => {
-                e.token(TokenKind::SCHEMA_KW);
-                e.space();
-            }
-            ObjectType::ObjectFunction => {
-                e.token(TokenKind::FUNCTION_KW);
-                e.space();
-            }
-            ObjectType::ObjectProcedure => {
-                e.token(TokenKind::PROCEDURE_KW);
-                e.space();
-            }
-            ObjectType::ObjectType => {
-                e.token(TokenKind::TYPE_KW);
-                e.space();
-            }
-            ObjectType::ObjectLargeobject => {
-                e.token(TokenKind::LARGE_KW);
-                e.space();
-                e.token(TokenKind::OBJECT_KW);
-                e.space();
-            }
-            ObjectType::ObjectFdw => {
-                e.token(TokenKind::FOREIGN_KW);
-                e.space();
-                e.token(TokenKind::DATA_KW);
-                e.space();
-                e.token(TokenKind::WRAPPER_KW);
-                e.space();
-            }
-            ObjectType::ObjectForeignServer => {
-                e.token(TokenKind::FOREIGN_KW);
-                e.space();
-                e.token(TokenKind::SERVER_KW);
-                e.space();
-            }
-            ObjectType::ObjectLanguage => {
-                e.token(TokenKind::LANGUAGE_KW);
-                e.space();
-            }
-            ObjectType::ObjectTablespace => {
-                e.token(TokenKind::TABLESPACE_KW);
-                e.space();
-            }
-            ObjectType::ObjectDomain => {
-                e.token(TokenKind::DOMAIN_KW);
-                e.space();
-            }
-            ObjectType::ObjectRoutine => {
-                e.token(TokenKind::ROUTINE_KW);
-                e.space();
-            }
-            _ => {}
+        // Add explicit object type (singular). GRANT names a foreign server `FOREIGN SERVER`.
+        let keywords = match objtype {
+            ObjectType::ObjectForeignServer => Some("FOREIGN SERVER"),
+            objtype => object_type_keywords(objtype),
+        };
+        if let Some(keywords) = keywords {
+            emit_keywords(e, keywords);
+            e.space();
         }
     }
 
@@ -218,53 +159,11 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     }
 
     // CASCADE/RESTRICT (for revoke)
-    if !n.is_grant && matches!(n.behavior(), DropBehavior::DropCascade) {
-        e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::CASCADE_KW);
+    if !n.is_grant {
+        emit_drop_behavior(e, n.behavior(), Separator::SoftOrSpace, Restrict::Omitted);
     }
 
     e.indent_end();
 
     e.group_end();
-}
-
-/// Emits the privileges, objects, or roles of a `GRANT` or `REVOKE`. The list is its own group, so
-/// it stays on one line when it fits even though the statement broke, and otherwise fills each line
-/// with as many items as fit, wrapping one level deeper than its clause.
-///
-/// The deeper level starts after the first item, which shares the clause's line: a column list
-/// such as `insert (a, b)` that breaks closes its parenthesis under the line that opened it.
-pub(super) fn emit_grant_list<F>(e: &mut EventEmitter, nodes: &[pgls_query::Node], render: F)
-where
-    F: Fn(&mut EventEmitter, &pgls_query::Node),
-{
-    let Some((first, rest)) = nodes.split_first() else {
-        return;
-    };
-
-    e.group_start();
-    render(e, first);
-    if !rest.is_empty() {
-        e.indent_start();
-        for node in rest {
-            emit_list_comma(e, Some(node), ListSeparatorSpacing::Fill);
-            render(e, node);
-        }
-        e.indent_end();
-    }
-    e.group_end();
-}
-
-fn emit_access_priv(e: &mut EventEmitter, priv_node: &pgls_query::protobuf::AccessPriv) {
-    if priv_node.priv_name.is_empty() && !priv_node.cols.is_empty() {
-        e.token(TokenKind::ALL_KW);
-    } else if !priv_node.priv_name.is_empty() {
-        emit_keywords(e, &priv_node.priv_name);
-    }
-
-    // Handle column privileges
-    if !priv_node.cols.is_empty() {
-        e.space();
-        emit_parenthesized_list(e, &priv_node.cols, emit_node);
-    }
 }

@@ -73,57 +73,20 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
 
     if n.replace {
         e.space();
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
     }
 
     e.space();
 
     let kind = n.kind();
-    match kind {
-        ObjectType::ObjectAggregate => e.token(TokenKind::AGGREGATE_KW),
-        ObjectType::ObjectOperator => e.token(TokenKind::OPERATOR_KW),
-        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
-        ObjectType::ObjectCollation => e.token(TokenKind::COLLATION_KW),
-        ObjectType::ObjectTsdictionary => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::DICTIONARY_KW);
-        }
-        ObjectType::ObjectTsconfiguration => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::CONFIGURATION_KW);
-        }
-        ObjectType::ObjectTsparser => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::PARSER_KW);
-        }
-        ObjectType::ObjectTstemplate => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::TEMPLATE_KW);
-        }
-        _ => e.token(TokenKind::IDENT(format!("{kind:?}"))),
+    match object_type_keywords(kind) {
+        Some(keywords) => emit_keywords(e, keywords),
+        None => e.token(TokenKind::IDENT(format!("{kind:?}"))),
     }
 
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     let is_operator = kind == ObjectType::ObjectOperator;
@@ -178,25 +141,6 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
     }
 
     e.group_end();
-}
-
-fn emit_operator_name(e: &mut EventEmitter, defnames: &[Node]) {
-    for (idx, node) in defnames.iter().enumerate() {
-        if idx > 0 {
-            e.token(TokenKind::DOT);
-        }
-
-        match node.node.as_ref() {
-            Some(NodeEnum::String(s)) => {
-                if idx == defnames.len() - 1 {
-                    e.token(TokenKind::IDENT(s.sval.clone()));
-                } else {
-                    emit_identifier_maybe_quoted(e, &s.sval);
-                }
-            }
-            _ => emit_node(e, node),
-        }
-    }
 }
 
 fn emit_operator_def_elem(e: &mut EventEmitter, def: &DefElem) {

@@ -30,9 +30,7 @@ pub(super) fn emit_alter_tsconfiguration_stmt(e: &mut EventEmitter, n: &AlterTsC
 
     if kind == AlterTsConfigType::AlterTsconfigDropMapping && n.missing_ok {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_exists(e);
     }
 
     // FOR token types (every form except the token-less REPLACE)

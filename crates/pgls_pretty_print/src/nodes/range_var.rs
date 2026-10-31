@@ -6,21 +6,16 @@ use super::prelude::*;
 /// table, SELECT, UPDATE, DELETE and LOCK, know it. DDL that names a type, CREATE TYPE for
 /// instance, doesn't.
 #[derive(Clone, Copy)]
-enum Only {
+pub(super) enum Only {
     Allowed,
     Omitted,
 }
 
 pub(super) fn emit_range_var(e: &mut EventEmitter, n: &RangeVar) {
-    emit_relation(e, n, Only::Allowed);
+    emit_range_var_as(e, n, Only::Allowed);
 }
 
-/// Emit a RangeVar without ONLY keyword (for DDL contexts like CREATE TYPE)
-pub(super) fn emit_range_var_name(e: &mut EventEmitter, n: &RangeVar) {
-    emit_relation(e, n, Only::Omitted);
-}
-
-fn emit_relation(e: &mut EventEmitter, n: &RangeVar, only: Only) {
+pub(super) fn emit_range_var_as(e: &mut EventEmitter, n: &RangeVar, only: Only) {
     // The parents of a RangeVar call this helper directly rather than emit_node, so this is the
     // only place that can emit the comments written next to the relation name.
     emit_with_comments_at(e, n.location, |e| emit_range_var_tokens(e, n, only));

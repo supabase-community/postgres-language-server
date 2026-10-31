@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{AlterTableMoveAllStmt, ObjectType};
+use pgls_query::protobuf::AlterTableMoveAllStmt;
 
 use super::prelude::*;
 
@@ -9,16 +9,7 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
     e.space();
 
     // Emit object type (TABLE, INDEX, MATERIALIZED VIEW)
-    match n.objtype() {
-        ObjectType::ObjectTable => e.token(TokenKind::TABLE_KW),
-        ObjectType::ObjectIndex => e.token(TokenKind::INDEX_KW),
-        ObjectType::ObjectMatview => {
-            e.token(TokenKind::MATERIALIZED_KW);
-            e.space();
-            e.token(TokenKind::VIEW_KW);
-        }
-        _ => e.token(TokenKind::TABLE_KW), // Default to TABLE
-    }
+    emit_keywords(e, object_type_keywords(n.objtype()).unwrap_or("TABLE"));
 
     e.space();
     e.token(TokenKind::ALL_KW);

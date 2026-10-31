@@ -17,13 +17,7 @@ pub(super) fn emit_drop_owned_stmt(e: &mut EventEmitter, n: &DropOwnedStmt) {
         emit_comma_separated_list(e, &n.roles, emit_node);
     }
 
-    // CASCADE or RESTRICT
-    // behavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
-    // RESTRICT is the default, so only emit CASCADE explicitly
-    if n.behavior == 2 {
-        e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::CASCADE_KW);
-    }
+    emit_drop_behavior(e, n.behavior(), Separator::SoftOrSpace, Restrict::Omitted);
 
     e.group_end();
 }

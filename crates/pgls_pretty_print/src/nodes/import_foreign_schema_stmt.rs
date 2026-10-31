@@ -54,12 +54,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
     // OPTIONS
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::OPTIONS_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, |e, n| {
-            let def_elem = assert_node_variant!(DefElem, n);
-            super::emit_options_def_elem(e, def_elem);
-        });
+        emit_options_clause(e, &n.options);
     }
 
     e.group_end();

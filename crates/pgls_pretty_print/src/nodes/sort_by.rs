@@ -25,17 +25,7 @@ pub(super) fn emit_sort_by(e: &mut EventEmitter, n: &SortBy) {
             e.token(TokenKind::USING_KW);
             e.space();
 
-            // Emit operator - could be qualified like schema.op
-            if n.use_op.len() > 1 {
-                // Multiple parts: use OPERATOR(schema.op) syntax
-                e.token(TokenKind::OPERATOR_KW);
-                e.token(TokenKind::L_PAREN);
-                emit_operator_name(e, &n.use_op);
-                e.token(TokenKind::R_PAREN);
-            } else if n.use_op.len() == 1 {
-                // Single part: use direct operator syntax
-                emit_operator_name(e, &n.use_op);
-            }
+            emit_operator(e, &n.use_op);
         }
         _ => {
             // Default - no explicit direction
@@ -62,15 +52,4 @@ pub(super) fn emit_sort_by(e: &mut EventEmitter, n: &SortBy) {
     }
 
     e.group_end();
-}
-
-fn emit_operator_name(e: &mut EventEmitter, use_op: &[pgls_query::protobuf::Node]) {
-    emit_dot_separated_list_with(e, use_op, |e, node| {
-        if let Some(pgls_query::NodeEnum::String(s)) = node.node.as_ref() {
-            // Operator name - emit as identifier
-            e.token(TokenKind::IDENT(s.sval.clone()));
-        } else {
-            emit_node(e, node);
-        }
-    });
 }

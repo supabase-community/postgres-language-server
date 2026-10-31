@@ -1,6 +1,5 @@
 use pgls_query::protobuf::AlterRoleStmt;
 
-use super::def_elem::emit_role_option;
 use super::emit_role_spec;
 use super::prelude::*;
 

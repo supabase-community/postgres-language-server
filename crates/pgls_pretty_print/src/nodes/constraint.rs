@@ -92,7 +92,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                     }
                     if let Some(NodeEnum::DefElem(def)) = &opt.node {
                         // Emit sequence option like START 7, INCREMENT 5
-                        super::emit_sequence_option(e, def);
+                        emit_sequence_option(e, def);
                     }
                 }
                 e.token(TokenKind::R_PAREN);
@@ -451,7 +451,7 @@ fn emit_check_condition(e: &mut EventEmitter, condition: &Node) {
     e.with_layout(Layout::Fit, |e| {
         emit_parenthesized_condition_with(e, condition, |e, node| match node {
             NodeEnum::BoolExpr(n) if expanded => {
-                super::bool_expr::emit_bool_expr_in_enclosing_group(e, n);
+                super::emit_bool_expr_as(e, n, super::OperandGroup::Enclosing);
             }
             _ => emit_node_enum(e, node),
         });
@@ -503,18 +503,11 @@ fn emit_exclusion(e: &mut EventEmitter, exclusion: &pgls_query::Node) {
                         e.token(TokenKind::COMMA);
                         e.space();
                     }
-                    emit_exclusion_operator(e, op);
+                    emit_operator_part(e, op);
                 }
             }
-            _ => emit_exclusion_operator(e, operators),
+            _ => emit_operator_part(e, operators),
         }
-    }
-}
-
-fn emit_exclusion_operator(e: &mut EventEmitter, node: &pgls_query::Node) {
-    match node.node.as_ref() {
-        Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-        _ => emit_node(e, node),
     }
 }
 

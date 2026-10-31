@@ -3,7 +3,6 @@ use pgls_query::protobuf::{LimitOption, SelectStmt, SetOperation};
 use crate::{ClauseBodyStyle, Comment, Layout};
 
 use super::prelude::*;
-use super::window_def::emit_window_definition;
 
 pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
     e.group_start();
@@ -276,7 +275,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                 }
 
                 if let Some(pgls_query::NodeEnum::WindowDef(window_def)) = window.node.as_ref() {
-                    emit_window_definition(e, window_def);
+                    super::emit_window_def_as(e, window_def, super::WindowForm::Named);
                 } else {
                     emit_node(e, window);
                 }
