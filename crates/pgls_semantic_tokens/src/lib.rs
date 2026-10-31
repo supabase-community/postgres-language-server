@@ -7,6 +7,10 @@
 //! match no object or several, and constructs the resolver doesn't model, get no token and keep
 //! the highlighting of the editor's grammar.
 
+// Semantic tokens read the client's SQL and the database's catalog, so a panic on unexpected
+// input takes down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use pgls_catalog::CatalogView;
 use pgls_catalog::resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
 use pgls_query::NodeEnum;
@@ -95,7 +99,7 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
             }
         };
         // The schema qualifier of a name, like `public` in `public.users`.
-        let qualifier = |parts: &[TextRange]| parts.len().checked_sub(2).map(|i| parts[i]);
+        let qualifier = |parts: &[TextRange]| parts.iter().rev().nth(1).copied();
         match reference {
             Reference::Relation { relation, .. } => {
                 let schema = Some(relation.schema.as_str());
@@ -128,7 +132,9 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                 let end = reference
                     .span()
                     .map_or(TextSize::default(), |span| span.end());
-                for token in scanned[next..]
+                for token in scanned
+                    .get(next..)
+                    .unwrap_or_default()
                     .iter()
                     .take_while(|token| token_range(token).is_some_and(|range| range.end() <= end))
                 {
@@ -216,7 +222,7 @@ fn name_parts(tokens: &[ScanToken], location: i32) -> Option<(Vec<TextRange>, us
     if !is_name(first) {
         return None;
     }
-    while let [dot, name, ..] = &tokens[index..]
+    while let Some([dot, name, ..]) = tokens.get(index..)
         && dot.token() == Token::Ascii46
         && is_name(name)
     {

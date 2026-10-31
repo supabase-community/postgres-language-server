@@ -1,5 +1,5 @@
 use pgls_diagnostics::{Diagnostic, MessageAndDescription};
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 
 use crate::SyntaxKind;
 
@@ -49,27 +49,16 @@ impl Lexed<'_> {
         self.kind.iter().copied()
     }
 
-    /// Returns the kind of token at the given index
+    /// Returns the kind of token at the given index, `EOF` past the last token
     pub fn kind(&self, idx: usize) -> SyntaxKind {
-        assert!(
-            idx < self.len(),
-            "expected index < {}, got {}",
-            self.len(),
-            idx
-        );
-        self.kind[idx]
+        self.kind.get(idx).copied().unwrap_or(SyntaxKind::EOF)
     }
 
-    /// Returns the number of line endings in the token at the given index
+    /// Returns the number of line endings in the token at the given index, 0 if it isn't a line
+    /// ending
     pub fn line_ending_count(&self, idx: usize) -> usize {
-        assert!(
-            idx < self.len(),
-            "expected index < {}, got {}",
-            self.len(),
-            idx
-        );
-        assert!(self.kind(idx) == SyntaxKind::LINE_ENDING);
-        self.line_ending_counts[idx]
+        debug_assert!(self.kind(idx) == SyntaxKind::LINE_ENDING);
+        self.line_ending_counts.get(idx).copied().unwrap_or(0)
     }
 
     /// Returns whether the source contains at least one blank line.
@@ -77,14 +66,18 @@ impl Lexed<'_> {
         self.has_blank_line
     }
 
-    /// Returns the text range of token at the given index
+    /// Returns the text range of token at the given index, an empty range at the end of the text
+    /// for `EOF` and past the last token
     pub fn range(&self, idx: usize) -> TextRange {
         self.text_range(idx)
     }
 
-    /// Returns the text of token at the given index
+    /// Returns the text of token at the given index, empty for `EOF` and past the last token
     pub fn text(&self, idx: usize) -> &str {
-        self.range_text(idx..idx + 1)
+        let range = self.text_range(idx);
+        self.text
+            .get(usize::from(range.start())..usize::from(range.end()))
+            .unwrap_or_default()
     }
 
     /// Returns all lexing errors with their text ranges
@@ -98,17 +91,10 @@ impl Lexed<'_> {
             .collect()
     }
 
+    /// A token ends where the next one starts, and `EOF` at the end of the text.
     pub(crate) fn text_range(&self, i: usize) -> TextRange {
-        assert!(i < self.len() - 1);
-        let lo = self.start[i];
-        let hi = self.start[i + 1];
-        TextRange::new(lo.into(), hi.into())
-    }
-
-    fn range_text(&self, r: std::ops::Range<usize>) -> &str {
-        assert!(r.start < r.end && r.end <= self.len());
-        let lo = self.start[r.start] as usize;
-        let hi = self.start[r.end] as usize;
-        &self.text[lo..hi]
+        let end = TextSize::of(self.text);
+        let start = |i: usize| self.start.get(i).map_or(end, |&start| start.into());
+        TextRange::new(start(i), start(i + 1))
     }
 }
