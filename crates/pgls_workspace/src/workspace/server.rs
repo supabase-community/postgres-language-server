@@ -27,10 +27,10 @@ use pgls_analyse::{
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix,
+    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix, WalkParams,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
-use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
+use pgls_catalog::{Catalog, CatalogBase, Origin, Session};
 use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
@@ -458,12 +458,10 @@ impl WorkspaceServer {
             .collect()
     }
 
-    /// Walks the statements of `doc` that start before `end` like the analyser does: the catalog
-    /// and the session follow the statements, so that each statement sees the objects created
-    /// earlier in the file. Each migration section gets a session of its own, and the changes of
-    /// a down section don't carry into the next section. `visit` gets every parsed statement with
-    /// the catalog and the session as they are before it. `settings` are the ones of the file.
-    /// Returns the catalog after the walked statements.
+    /// Walks the statements of `doc` that start before `end` like the analyser does, see
+    /// [`pgls_analyser::walk_statements`]. `visit` gets every parsed statement, except those with
+    /// identifier parameters, with the catalog and the session as they are before it. `settings`
+    /// are the ones of the file. Returns the catalog as a statement at `end` sees it.
     fn walk_statements(
         &self,
         settings: Option<&Settings>,
@@ -480,69 +478,43 @@ impl WorkspaceServer {
                 )
             })
             .unwrap_or_default();
-        let search_path = snapshot.expand_search_path(&search_path);
-        let new_session = |section: Option<&MigrationSection>| {
-            Session::new(search_path.clone()).with_transaction_mode(
-                section.map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-            )
-        };
-
-        // Editor features show what names most likely refer to, so a `DO` block or a statement
-        // that doesn't parse doesn't turn them off for the rest of the file.
-        let mut catalog = Catalog::new(Some(self.catalog_base(snapshot))).best_effort();
-        let mut session = new_session(None);
-        let mut section: Option<&MigrationSection> = None;
-        // The catalog after the up sections so far, while walking a down section.
-        let mut up_catalog: Option<Catalog> = None;
-        for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
-            let Some(start) = stmt.as_ref().map(|stmt| stmt.range.start()).or_else(|| {
-                unparsable
-                    .as_ref()
-                    .map(|unparsable| unparsable.range.start())
-            }) else {
+        let mut stmts = Vec::new();
+        let mut unparsable = Vec::new();
+        for (stmt, _, skipped) in doc.iter(AnalyserDiagnosticsMapper) {
+            let Some(start) = stmt
+                .as_ref()
+                .map(|stmt| stmt.range.start())
+                .or_else(|| skipped.as_ref().map(|skipped| skipped.range.start()))
+            else {
                 continue;
             };
             if start >= end {
                 break;
             }
-            let current = sections
-                .iter()
-                .find(|section| section.range.contains(start));
-            if current != section {
-                if let Some(up_catalog) = up_catalog.take() {
-                    catalog = up_catalog;
-                }
-                if current.is_some_and(|section| section.direction == Direction::Down) {
-                    up_catalog = Some(catalog.clone());
-                }
-                session = new_session(current);
-                section = current;
-            }
-
-            if let Some(unparsable) = unparsable {
-                if pgls_analyser::may_change_catalog(&unparsable.sql) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            let Some(stmt) = stmt else {
-                continue;
-            };
-            // The names of statements with identifier parameters like `:name` are placeholders.
-            if stmt.has_identifier_parameters {
-                if !pgls_analyser::is_plain_query(&stmt.root) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            visit(&stmt, &catalog, &session);
-            // Statements in the bodies of SQL functions are not executed.
-            if stmt.function.is_none() {
-                catalog.apply(&stmt.root, session.search_path());
-                session.apply(&stmt.root);
-            }
+            stmts.extend(stmt);
+            unparsable.extend(skipped);
         }
-        catalog
+
+        pgls_analyser::walk_statements(
+            WalkParams {
+                stmts: &stmts,
+                unparsable: &unparsable,
+                catalog_base: Some(self.catalog_base(snapshot)),
+                search_path: &snapshot.expand_search_path(&search_path),
+                sections: &sections,
+                end,
+                // Editor features show what names most likely refer to, so a `DO` block or a
+                // statement that doesn't parse doesn't turn them off for the rest of the file.
+                best_effort: true,
+            },
+            |stmt, file_context| {
+                // The names of statements with identifier parameters like `:name` are
+                // placeholders.
+                if !stmt.has_identifier_parameters {
+                    visit(stmt, file_context.catalog(), file_context.session());
+                }
+            },
+        )
     }
 
     /// For hover on the statement `id` at `range`: the references whose span contains
