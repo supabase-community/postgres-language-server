@@ -41,7 +41,7 @@ use crate::{
     workspace::{
         IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
         UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
-        server::WorkspaceServer,
+        server::{PLACEHOLDER_EXECUTION_DISABLED, WorkspaceServer},
     },
 };
 
@@ -2171,6 +2171,60 @@ async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool)
     .await
     .unwrap();
     assert!(!table_exists, "A disabled statement must not be executed");
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_refuses_goose_envsub_expansions(test_db: PgPool) {
+    test_db
+        .execute("create table audit_log (message text);")
+        .await
+        .unwrap();
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: PartialConfiguration {
+                migrations: Some(PartialMigrationsConfiguration {
+                    section_markers: Some(SectionMarkers::Goose),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+        })
+        .expect("Unable to update the settings");
+
+    // goose inserts the value of `MESSAGE`, which we don't know.
+    let sql = "-- +goose Up\n-- +goose ENVSUB ON\ninsert into audit_log (message) values ('${MESSAGE}');\n";
+    let (disabled_reason, result) = execute_sql_at(
+        &workspace,
+        project_key,
+        sql,
+        TextSize::try_from(sql.find("insert").unwrap()).unwrap(),
+    );
+
+    assert_eq!(
+        disabled_reason.as_deref(),
+        Some(PLACEHOLDER_EXECUTION_DISABLED)
+    );
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: PLACEHOLDER_EXECUTION_DISABLED.into(),
+            ..Default::default()
+        }
+    );
+    let rows: i64 = sqlx::query_scalar("select count(*) from audit_log")
+        .fetch_one(&test_db)
+        .await
+        .unwrap();
+    assert_eq!(
+        rows, 0,
+        "A statement with an expansion must not be executed"
+    );
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
