@@ -3,6 +3,8 @@ use pgls_query::{
     protobuf::{CreateFunctionStmt, FunctionParameterMode as Mode},
 };
 
+use super::alter_function_stmt::volatility_option;
+use crate::Behavior;
 use crate::catalog::{
     Catalog,
     names::{qualified_name, type_label, type_name},
@@ -120,6 +122,9 @@ pub(super) fn apply_create_function_stmt(
     );
     function.returns_set = returns_set;
     function.return_columns = return_columns;
+    // Functions are volatile unless they say otherwise (`CreateFunction`):
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L1083
+    function.volatility = Some(volatility_option(&n.options).unwrap_or(Behavior::Volatile));
     let return_type = if n.is_procedure {
         // Procedures return `record` with output parameters and `void` without (`CreateFunction`):
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L1188

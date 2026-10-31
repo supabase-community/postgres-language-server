@@ -1,5 +1,6 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::{Behavior, CatalogView, Lookup};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -47,7 +48,7 @@ impl LinterRule for AddingFieldWithDefault {
         let mut diagnostics = Vec::new();
 
         // Check Postgres version - in 11+, non-volatile defaults are safe
-        let pg_version = ctx.snapshot().and_then(|sc| sc.version.major_version);
+        let pg_version = ctx.catalog().server_version_num();
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
@@ -86,7 +87,7 @@ impl LinterRule for AddingFieldWithDefault {
                                 );
                     } else if has_default {
                         // For PG 11+, check if the default is volatile
-                        if pg_version.is_some_and(|v| v >= 11) {
+                        if pg_version.is_some_and(|v| v >= 110000) {
                             // Check if default is non-volatile
                             let is_safe_default = col_def.constraints.iter().any(|constraint| {
                                 if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node
@@ -96,7 +97,7 @@ impl LinterRule for AddingFieldWithDefault {
                                 {
                                     return is_safe_default_expr(
                                         &raw_expr.node.as_ref().map(|n| Box::new(n.clone())),
-                                        ctx.snapshot(),
+                                        ctx,
                                     );
                                 }
                                 false
@@ -140,7 +141,7 @@ impl LinterRule for AddingFieldWithDefault {
 
 fn is_safe_default_expr(
     expr: &Option<Box<pgls_query::NodeEnum>>,
-    snapshot: Option<&pgls_catalog::Snapshot>,
+    ctx: &LinterRuleContext<AddingFieldWithDefault>,
 ) -> bool {
     match expr {
         Some(node) => match node.as_ref() {
@@ -149,7 +150,7 @@ fn is_safe_default_expr(
             // Type casts of constants are safe
             pgls_query::NodeEnum::TypeCast(tc) => is_safe_default_expr(
                 &tc.arg.as_ref().and_then(|a| a.node.clone()).map(Box::new),
-                snapshot,
+                ctx,
             ),
             // function calls might be safe if they are non-volatile and have no args
             pgls_query::NodeEnum::FuncCall(fc) => {
@@ -158,34 +159,191 @@ fn is_safe_default_expr(
                     return false;
                 }
 
-                let Some(sc) = snapshot else {
-                    return false;
-                };
-
                 let Some((schema, name)) = pgls_query_ext::utils::parse_name(&fc.funcname) else {
                     return false;
                 };
 
-                // check if function is a non-volatile function
-                sc.functions.iter().any(|f| {
-                    // no args only
-                    if !f.args.args.is_empty() {
-                        return false;
-                    }
+                let Lookup::Found(functions) =
+                    ctx.catalog()
+                        .functions(schema.as_deref(), &name, ctx.session().search_path())
+                else {
+                    return false;
+                };
 
-                    // must be non-volatile
-                    if f.behavior == pgls_catalog::Behavior::Volatile {
-                        return false;
-                    }
-
-                    // check name and schema (if given)
-                    f.name.eq_ignore_ascii_case(&name)
-                        && schema.as_ref().is_none_or(|s| &f.schema == s)
-                })
+                // The functions come in the order of the search path, and the call resolves to
+                // one in the first schema that has a function callable without arguments.
+                let candidates: Vec<_> = functions
+                    .iter()
+                    .filter(|function| function.min_args == 0)
+                    .collect();
+                let Some(first) = candidates.first() else {
+                    return false;
+                };
+                // Postgres passes the defaults of the parameters the call leaves out, which may
+                // be volatile even if the function isn't. We don't know them, so only functions
+                // without parameters are safe.
+                candidates
+                    .iter()
+                    .filter(|function| function.schema == first.schema)
+                    .all(|function| {
+                        function.max_args == Some(0)
+                            && function
+                                .volatility
+                                .is_some_and(|volatility| volatility != Behavior::Volatile)
+                    })
             }
             // everything else is potentially unsafe
             _ => false,
         },
         None => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use pgls_analyse::{AnalysisFilter, RuleFilter};
+    use pgls_catalog::{Behavior, CatalogBase, Function, Schema, Snapshot, Version};
+    use pgls_text_size::TextRange;
+
+    use crate::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterOptions};
+
+    /// A Postgres 17 database with the functions `pg_catalog.now()` (stable),
+    /// `pg_catalog.random()` (volatile), and `app.now()` (volatile).
+    fn database() -> Arc<CatalogBase> {
+        let function = |schema: &str, name: &str, behavior| Function {
+            schema: schema.into(),
+            name: name.into(),
+            behavior,
+            ..Default::default()
+        };
+        let schema = |name: &str| Schema {
+            name: name.into(),
+            ..Default::default()
+        };
+        Arc::new(CatalogBase::new(Arc::new(Snapshot {
+            schemas: vec![schema("pg_catalog"), schema("public"), schema("app")],
+            functions: vec![
+                function("pg_catalog", "now", Behavior::Stable),
+                function("pg_catalog", "random", Behavior::Volatile),
+                function("app", "now", Behavior::Volatile),
+            ],
+            version: Version {
+                version_num: Some(170000),
+                major_version: Some(17),
+                ..Default::default()
+            },
+            ..Default::default()
+        })))
+    }
+
+    /// The number of diagnostics for the statements, separated by `;`.
+    fn diagnostics(sql: &str) -> usize {
+        let rule_filter = RuleFilter::Rule("safety", "addingFieldWithDefault");
+        let options = LinterOptions::default();
+        let analyser = Analyser::new(AnalyserConfig {
+            options: &options,
+            filter: AnalysisFilter {
+                enabled_rules: Some(std::slice::from_ref(&rule_filter)),
+                ..Default::default()
+            },
+        });
+        let stmts = pgls_query::parse(sql)
+            .unwrap()
+            .stmts()
+            .into_iter()
+            .map(|stmt| AnalysableStatement::new(stmt.clone(), TextRange::default()))
+            .collect();
+        analyser
+            .run(AnalyserParams {
+                stmts,
+                catalog_base: Some(database()),
+                search_path: vec!["public".into()],
+                ..Default::default()
+            })
+            .len()
+    }
+
+    #[test]
+    fn non_volatile_functions_are_safe_defaults() {
+        assert_eq!(
+            diagnostics("alter table t add column c timestamptz default now()"),
+            0
+        );
+        assert_eq!(
+            diagnostics("alter table t add column c float8 default random()"),
+            1
+        );
+        assert_eq!(
+            diagnostics("alter table t add column c timestamptz default app.now()"),
+            1
+        );
+        assert_eq!(
+            diagnostics("alter table t add column c int default missing()"),
+            1
+        );
+    }
+
+    #[test]
+    fn functions_follow_the_search_path() {
+        // `pg_catalog` comes first, unless the search path lists it later.
+        assert_eq!(
+            diagnostics(
+                "set search_path = app; alter table t add column c timestamptz default now()"
+            ),
+            0
+        );
+        assert_eq!(
+            diagnostics(
+                "set search_path = app, pg_catalog; alter table t add column c timestamptz default now()"
+            ),
+            1
+        );
+    }
+
+    #[test]
+    fn functions_of_the_file_are_known() {
+        assert_eq!(
+            diagnostics(
+                "create function public.one() returns int language sql immutable as 'select 1';
+                 alter table t add column c int default one()"
+            ),
+            0
+        );
+        assert_eq!(
+            diagnostics(
+                "create function public.one() returns int language sql as 'select 1';
+                 alter table t add column c int default one()"
+            ),
+            1
+        );
+        assert_eq!(
+            diagnostics(
+                "create function public.one() returns int language sql immutable as 'select 1';
+                 alter function public.one() volatile;
+                 alter table t add column c int default one()"
+            ),
+            1
+        );
+    }
+
+    #[test]
+    fn functions_with_defaulted_parameters_are_unsafe() {
+        // Postgres passes `random()` for `x`, so the default is volatile.
+        assert_eq!(
+            diagnostics(
+                "create function public.f(x float8 default random()) returns float8 language sql immutable as 'select x';
+                 alter table t add column c float8 default f()"
+            ),
+            1
+        );
+        assert_eq!(
+            diagnostics(
+                "create function public.f(variadic xs int[] default '{}') returns int language sql immutable as 'select 1';
+                 alter table t add column c int default f()"
+            ),
+            1
+        );
     }
 }

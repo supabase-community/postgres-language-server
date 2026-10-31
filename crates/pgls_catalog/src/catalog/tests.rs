@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::Snapshot;
 
 use super::{Catalog, CatalogBase};
+use crate::Behavior;
 use crate::lookup::{CatalogView, FunctionKind, Lookup, Origin, RelationKind};
 
 fn schema(name: &str) -> crate::Schema {
@@ -12,8 +13,8 @@ fn schema(name: &str) -> crate::Schema {
     }
 }
 
-/// A database with the schemas `public` and `app`, the table `public.users (id, name)`, and the
-/// function `public.greet(text, text default)`.
+/// A database with the schemas `public` and `app`, the table `public.users (id, name)` with the
+/// index `users_name_idx`, and the function `public.greet(text, text default)`.
 fn base() -> Arc<CatalogBase> {
     let schemas = vec![schema("public"), schema("app"), schema("pg_catalog")];
     let tables = vec![crate::Table {
@@ -63,11 +64,18 @@ fn base() -> Arc<CatalogBase> {
         },
         ..Default::default()
     }];
+    let indexes = vec![crate::Index {
+        id: 2,
+        schema: "public".into(),
+        name: "users_name_idx".into(),
+        table_name: "users".into(),
+    }];
     let cache = Snapshot {
         schemas,
         tables,
         columns,
         functions,
+        indexes,
         typing_metadata: true,
         ..Default::default()
     };
@@ -720,6 +728,236 @@ fn snapshot_includes_the_changes_of_the_file() {
             .iter()
             .any(|sequence| sequence.name == "counter")
     );
+}
+
+/// The table of an index, or `None` if the index is not found.
+fn index_table(
+    catalog: &Catalog,
+    schema: Option<&str>,
+    name: &str,
+    search_path: &[String],
+) -> Option<(String, String)> {
+    let index = catalog.index(schema, name, search_path).found()?;
+    assert_eq!(index.schema, catalog.index_table(&index).found()?.schema);
+    Some((index.schema, index.table))
+}
+
+#[test]
+fn indexes_are_in_the_schema_of_their_table() {
+    let search_path = path(&["app", "public"]);
+    let catalog = catalog_after(
+        "create table app.events (id int); create index events_id_idx on events (id); create index users_id_idx on users (id);",
+        &search_path,
+    );
+    let found = |schema, name| index_table(&catalog, schema, name, &search_path);
+    assert_eq!(
+        found(None, "users_name_idx"),
+        Some(("public".into(), "users".into()))
+    );
+    assert_eq!(
+        found(None, "events_id_idx"),
+        Some(("app".into(), "events".into()))
+    );
+    assert_eq!(
+        found(None, "users_id_idx"),
+        Some(("public".into(), "users".into()))
+    );
+    assert_eq!(
+        catalog.index(Some("app"), "users_id_idx", &search_path),
+        Lookup::Missing
+    );
+    assert_eq!(catalog.index(None, "nope", &search_path), Lookup::Missing);
+    // The snapshot leaves out the indexes of the system catalogs.
+    assert_eq!(
+        catalog.index(Some("pg_catalog"), "pg_class_oid_index", &search_path),
+        Lookup::Unknown
+    );
+
+    let catalog = Catalog::new(None);
+    assert_eq!(
+        catalog.index(None, "users_name_idx", &search_path),
+        Lookup::Unknown
+    );
+}
+
+#[test]
+fn indexes_follow_renames_and_drops() {
+    let search_path = path(&["public"]);
+    let after = |sql| catalog_after(sql, &search_path);
+    let found = |catalog: &Catalog, schema, name| index_table(catalog, schema, name, &search_path);
+
+    let catalog = after("alter index users_name_idx rename to users_by_name;");
+    assert_eq!(
+        catalog.index(None, "users_name_idx", &search_path),
+        Lookup::Missing
+    );
+    assert_eq!(
+        found(&catalog, None, "users_by_name"),
+        Some(("public".into(), "users".into()))
+    );
+
+    let catalog = after("alter table users rename to people;");
+    assert_eq!(
+        found(&catalog, None, "users_name_idx"),
+        Some(("public".into(), "people".into()))
+    );
+
+    let catalog = after("alter table users set schema app;");
+    assert_eq!(
+        catalog.index(None, "users_name_idx", &search_path),
+        Lookup::Missing
+    );
+    assert_eq!(
+        found(&catalog, Some("app"), "users_name_idx"),
+        Some(("app".into(), "users".into()))
+    );
+
+    let catalog = after("drop table users;");
+    assert_eq!(
+        catalog.index(None, "users_name_idx", &search_path),
+        Lookup::Missing
+    );
+
+    let catalog = after("drop index public.users_name_idx;");
+    assert_eq!(
+        catalog.index(None, "users_name_idx", &search_path),
+        Lookup::Missing
+    );
+
+    let catalog = after(
+        "begin; drop index users_name_idx; create index users_id_idx on users (id); rollback;",
+    );
+    assert!(
+        catalog
+            .index(None, "users_name_idx", &search_path)
+            .found()
+            .is_some()
+    );
+    assert_eq!(
+        catalog.index(None, "users_id_idx", &search_path),
+        Lookup::Missing
+    );
+}
+
+#[test]
+fn indexes_with_names_we_dont_know_make_missing_indexes_unknown() {
+    let search_path = path(&["public"]);
+    for sql in [
+        "create index on users (id);",
+        "create table t (id int primary key);",
+        "create table t (id int, unique (id));",
+        "create table t (like users including all);",
+        "create table p (id int) partition by range (id); create index p_id_idx on p (id);",
+        "alter table users add constraint users_id_key unique (id);",
+        "alter table users add column code text unique;",
+        "alter table users rename constraint a to b;",
+    ] {
+        let catalog = catalog_after(sql, &search_path);
+        assert_eq!(
+            catalog.index(None, "nope", &search_path),
+            Lookup::Unknown,
+            "{sql}"
+        );
+    }
+    let catalog = catalog_after(
+        "create table t (id int); create index t_id_idx on t (id); alter table t add column name text;",
+        &search_path,
+    );
+    assert_eq!(catalog.index(None, "nope", &search_path), Lookup::Missing);
+}
+
+#[test]
+fn create_index_if_not_exists_skips_names_of_other_relations() {
+    let search_path = path(&["public"]);
+    let after = |sql| catalog_after(sql, &search_path);
+    // Indexes share their namespace with the other relations, so the index is skipped.
+    for (sql, name) in [
+        ("create index if not exists users on users (id);", "users"),
+        (
+            "create view v as select 1; create index if not exists v on users (id);",
+            "v",
+        ),
+        (
+            "create sequence s; create index if not exists s on users (id);",
+            "s",
+        ),
+    ] {
+        assert_eq!(
+            after(sql).index(None, name, &search_path),
+            Lookup::Missing,
+            "{sql}"
+        );
+    }
+    // A composite type is a relation, but the catalog doesn't track it as one.
+    let catalog = after("create type c as (a int); create index if not exists c on users (id);");
+    assert_eq!(catalog.index(None, "c", &search_path), Lookup::Unknown);
+
+    // On a partitioned table, the indexes of the partitions are skipped with it.
+    let catalog = after(
+        "create table p (id int) partition by range (id); create index if not exists users on p (id);",
+    );
+    assert_eq!(catalog.index(None, "nope", &search_path), Lookup::Missing);
+}
+
+#[test]
+fn create_index_if_not_exists_on_partitioned_table_keeps_its_index() {
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create table p (id int) partition by range (id); create index if not exists p_id_idx on p (id);",
+        &search_path,
+    );
+    assert_eq!(
+        index_table(&catalog, None, "p_id_idx", &search_path),
+        Some(("public".into(), "p".into()))
+    );
+    // Its partitions get indexes with generated names.
+    assert_eq!(catalog.index(None, "nope", &search_path), Lookup::Unknown);
+}
+
+#[test]
+fn functions_know_their_volatility() {
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create function pure() returns int language sql immutable as 'select 1';
+         create function plain() returns int language sql as 'select 1';
+         create function later() returns int language sql stable as 'select 1';
+         alter function later() volatile;
+         alter function greet(text, text) immutable;",
+        &search_path,
+    );
+    let volatility = |name| match catalog.functions(None, name, &search_path) {
+        Lookup::Found(overloads) => overloads[0].volatility,
+        _ => panic!("{name} is not found"),
+    };
+    assert_eq!(volatility("pure"), Some(Behavior::Immutable));
+    assert_eq!(volatility("plain"), Some(Behavior::Volatile));
+    assert_eq!(volatility("later"), Some(Behavior::Volatile));
+    assert_eq!(volatility("greet"), Some(Behavior::Immutable));
+    let snapshot = catalog.snapshot().unwrap();
+    let pure = snapshot
+        .functions
+        .iter()
+        .find(|function| function.name == "pure");
+    assert_eq!(
+        pure.map(|function| function.behavior),
+        Some(Behavior::Immutable)
+    );
+}
+
+#[test]
+fn snapshot_includes_indexes_of_the_file() {
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create index users_id_idx on users (id); drop index users_name_idx;",
+        &search_path,
+    );
+    let snapshot = catalog.snapshot().unwrap();
+    let indexes: Vec<_> = snapshot
+        .indexes
+        .iter()
+        .map(|index| (index.name.as_str(), index.table_name.as_str()))
+        .collect();
+    assert_eq!(indexes, [("users_id_idx", "users")]);
 }
 
 #[test]
