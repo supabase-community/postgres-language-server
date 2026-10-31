@@ -257,9 +257,18 @@ impl<'a> Analyser<'a> {
             })
             .collect();
 
+        let mut statement_ranges: Vec<TextRange> = params
+            .stmts
+            .iter()
+            .filter(|stmt| stmt.function.is_none())
+            .map(|stmt| stmt.range)
+            .chain(params.unparsable.iter().map(|skipped| skipped.range))
+            .collect();
+        statement_ranges.sort_unstable_by_key(|range| range.start());
         let walk = WalkParams {
             stmts: &params.stmts,
             unparsable: &params.unparsable,
+            statement_ranges: &statement_ranges,
             catalog_base: params.catalog_base.clone(),
             search_path: &params.search_path,
             sections: &params.sections,

@@ -1662,6 +1662,18 @@ async fn test_format_sql_function_bodies_with_quotes_and_atomic_bodies() {
     assert_eq!(format_content(&formatted), formatted);
 }
 
+#[tokio::test]
+async fn test_format_continued_string_body_is_idempotent() {
+    // The two strings are one, `'select 1'`.
+    let content = "create function f() returns int language sql as 'select   1'\n'';";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $$\nselect 1;\n$$;"
+    );
+    assert_eq!(format_content(&formatted), formatted);
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -1910,6 +1922,60 @@ select * from auth.users;
         completions.items[0].completion_text.as_ref().unwrap().range,
         TextRange::new(position, position),
         "Expected no syntax diagnostic"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn completions_after_the_end_of_an_unterminated_statement(test_db: PgPool) {
+    test_db
+        .execute("create table completed_table (id int);")
+        .await
+        .expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+
+    // The statement ends before the space, and the cursor is after it.
+    let content = "select * from ";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let completions = workspace
+        .get_completions(crate::workspace::GetCompletionsParams {
+            project_key,
+            path: path.clone(),
+            position: TextSize::of(content),
+        })
+        .expect("Unable to request completions");
+
+    assert!(
+        completions
+            .items
+            .iter()
+            .any(|item| item.label == "completed_table"),
+        "{:?}",
+        completions.items
     );
 }
 
@@ -2589,6 +2655,69 @@ fn document_caches_stay_within_the_budget() {
         })
         .expect("Unable to close test file");
     assert_eq!(workspace.document_caches.total(), 0);
+}
+
+/// Executing a statement parses the statements before it to find it, and charges them to the
+/// budget, also when it returns early, like without a database connection.
+#[test]
+fn executing_a_statement_charges_the_document_caches() {
+    let (mut workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    workspace.document_caches = super::document_cache::CacheBudget::new(8);
+
+    let content = "drop table a;\ndrop table b;\ndrop table c;\nselect 1;\nselect 2;\nselect 3;\n";
+    let paths = [PgLSPath::new("a.sql"), PgLSPath::new("b.sql")];
+    for path in &paths {
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+    }
+    workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: paths[0].clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics");
+    assert_eq!(
+        workspace
+            .document_cache_stats(&paths[0])
+            .unwrap()
+            .parse_results,
+        6
+    );
+
+    workspace
+        .execute_statement(ExecuteStatementParams {
+            project_key,
+            path: paths[1].clone(),
+            statement_id: StatementId::new("select 3;"),
+        })
+        .expect("Unable to execute statement");
+
+    // Both documents together keep 12 parse results, so the first one's caches are dropped.
+    assert_eq!(
+        workspace
+            .document_cache_stats(&paths[1])
+            .unwrap()
+            .parse_results,
+        6
+    );
+    assert_eq!(
+        workspace
+            .document_cache_stats(&paths[0])
+            .unwrap()
+            .parse_results,
+        0
+    );
 }
 
 /// Code actions are requested on every cursor move. They reuse the analysis that the
@@ -5108,9 +5237,9 @@ async fn test_editor_requests_use_document_snapshots(test_db: PgPool) {
     let snapshot = workspace
         .database_snapshot(settings.unwrap())
         .expect("a database snapshot");
-    let request = workspace.editor_request(project_key, &path, settings, snapshot);
-
     let outdated = workspace.document(&path).expect("an open document");
+    let request = workspace.editor_request(project_key, &path, settings, snapshot, &outdated);
+
     workspace
         .change_file(crate::workspace::ChangeFileParams {
             project_key,
@@ -5328,4 +5457,147 @@ fn test_edit_during_analysis_does_not_wait_for_it() {
         .expect("the edit waited for the analysis of the previous version");
     // The analysis stopped, since the document changed.
     assert!(analysis.join().expect("the analysis panicked").is_empty());
+}
+
+/// Whether a statement runs in an implicit transaction block depends on the query it is in,
+/// also on its statements after it. Cached walks see the blocks like a walk from the start.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn cached_walks_see_the_implicit_blocks_of_queries(test_db: PgPool) {
+    test_db
+        .execute(
+            "create schema alt; create table public.t (pub_col int); create table alt.t (alt_col int);",
+        )
+        .await
+        .expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Goose),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let edited = PgLSPath::new("20250301120000_edited.sql");
+    let fresh = PgLSPath::new("20250301120000_fresh.sql");
+
+    let open = |path: &PgLSPath, content: &str| {
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+    };
+    // Hover on the table of the `nth` `from t`.
+    let hover = |path: &PgLSPath, content: &str, nth: usize| {
+        let (offset, _) = content.match_indices("from t").nth(nth).expect("needle");
+        workspace
+            .on_hover(OnHoverParams {
+                project_key,
+                path: path.clone(),
+                position: u32::try_from(offset + 5).unwrap().into(),
+            })
+            .expect("Unable to hover")
+            .markdown_blocks
+            .join("\n")
+    };
+    let fresh_hover = |content: &str, nth: usize| {
+        open(&fresh, content);
+        let blocks = hover(&fresh, content, nth);
+        workspace
+            .close_file(crate::workspace::CloseFileParams {
+                project_key,
+                path: fresh.clone(),
+            })
+            .expect("Unable to close test file");
+        blocks
+    };
+
+    // `SET LOCAL` only lasts until the end of the implicit block of its query. Without
+    // `StatementEnd`, the statements are sent one by one, and it does nothing.
+    let unfinished = "-- +goose NO TRANSACTION\n-- +goose Up\n-- +goose StatementBegin\nset local search_path = alt;\nselect * from t;\n";
+    open(&edited, unfinished);
+    let blocks = hover(&edited, unfinished, 0);
+    assert!(blocks.contains("pub_col"), "{blocks}");
+    // Ending the block after the statement puts it in the implicit block.
+    let finished = format!("{unfinished}-- +goose StatementEnd\nselect * from t;\n");
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: edited.clone(),
+            content: finished.clone(),
+            version: 2,
+        })
+        .expect("Unable to change test file");
+    let blocks = hover(&edited, &finished, 0);
+    assert!(blocks.contains("alt_col"), "{blocks}");
+    assert_eq!(blocks, fresh_hover(&finished, 0));
+
+    // The hover in the block recorded a checkpoint in it. The walk to the statement after the
+    // block resumes from it, and counts the statements of the block before the checkpoint: the
+    // block ends before that statement.
+    let blocks = hover(&edited, &finished, 1);
+    assert!(blocks.contains("pub_col"), "{blocks}");
+    assert_eq!(blocks, fresh_hover(&finished, 1));
+
+    // That hover recorded a checkpoint before the statement after the block, where the block
+    // hasn't ended yet. After an edit in the statement, the walk resumes from it.
+    let edited_after = format!("{unfinished}-- +goose StatementEnd\nselect *  from t;\n");
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: edited.clone(),
+            content: edited_after.clone(),
+            version: 3,
+        })
+        .expect("Unable to change test file");
+    let blocks = hover(&edited, &edited_after, 1);
+    assert!(blocks.contains("pub_col"), "{blocks}");
+    assert_eq!(blocks, fresh_hover(&edited_after, 1));
+}
+
+/// A request on a document that was closed and opened again is outdated, also if it has the same
+/// content and version.
+#[test]
+fn requests_on_a_reopened_document_are_outdated() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let open = || {
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: "select 1;".into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+    };
+
+    open();
+    let doc = workspace.document(&path).expect("an open document");
+    assert!(!workspace.is_outdated(&path, &doc));
+    workspace
+        .close_file(crate::workspace::CloseFileParams {
+            project_key,
+            path: path.clone(),
+        })
+        .expect("Unable to close test file");
+    open();
+    assert!(workspace.is_outdated(&path, &doc));
 }
