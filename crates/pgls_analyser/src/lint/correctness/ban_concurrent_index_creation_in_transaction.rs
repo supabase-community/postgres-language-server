@@ -14,7 +14,7 @@ declare_lint_rule! {
     ///
     /// Migration tools usually run each migration in a transaction, so using `CONCURRENTLY` will fail in such tools.
     ///
-    /// With `migrations.sectionMarkers`, the rule knows whether the migration runs in a transaction:
+    /// With `migrations.tool`, the rule knows whether the migration runs in a transaction:
     /// dbmate's `-- migrate:up transaction:false` and goose's `-- +goose NO TRANSACTION` disable it.
     /// dbmate still sends the whole section to Postgres as one query, which Postgres runs in a
     /// transaction block if it has more than one statement.

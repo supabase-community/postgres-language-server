@@ -71,7 +71,7 @@ fn marker(line: &str) -> Option<(Direction, bool)> {
 #[cfg(test)]
 mod tests {
     use pgls_analyser::Direction;
-    use pgls_configuration::migrations::SectionMarkers;
+    use pgls_configuration::migrations::MigrationTool::{self as Tool};
 
     use crate::migrations::{
         migration_tool,
@@ -82,7 +82,7 @@ mod tests {
     fn dbmate_sections() {
         let text = "-- migrate:up\ncreate table t (id int);\n\n-- migrate:down transaction:false\ndrop table t;\n";
         assert_eq!(
-            sections(text, SectionMarkers::Dbmate),
+            sections(text, Tool::Dbmate),
             vec![
                 (
                     "-- migrate:up\ncreate table t (id int);\n\n",
@@ -101,7 +101,7 @@ mod tests {
     #[test]
     fn dbmate_options_and_spacing() {
         let directions = |text| {
-            sections(text, SectionMarkers::Dbmate)
+            sections(text, Tool::Dbmate)
                 .into_iter()
                 .map(|(_, direction, transaction)| (direction, transaction))
                 .collect::<Vec<_>>()
@@ -122,7 +122,7 @@ mod tests {
     fn queries_sent_at_once() {
         let text =
             "-- migrate:up transaction:false\nselect 1;\nselect 2;\n-- migrate:down\nselect 3;\n";
-        let queries = migration_tool(SectionMarkers::Dbmate)
+        let queries = migration_tool(Tool::Dbmate)
             .map_or_else(Vec::new, |tool| tool.sections(text))
             .into_iter()
             .map(|section| {
@@ -148,7 +148,7 @@ mod tests {
         let text =
             "create table t (id int);\n-- migrate:up\nselect 1;\n-- migrate:down\nselect 2;\n";
         assert_eq!(
-            marker_problems(text, SectionMarkers::Dbmate),
+            marker_problems(text, Tool::Dbmate),
             vec![(
                 "create table t (id int);",
                 "dbmate rejects a migration with statements before the first `-- migrate:up`."
@@ -156,13 +156,13 @@ mod tests {
             )]
         );
         // Without markers, the file is one migration.
-        assert!(marker_problems("select 1;\n", SectionMarkers::Dbmate).is_empty());
+        assert!(marker_problems("select 1;\n", Tool::Dbmate).is_empty());
     }
 
     #[test]
     fn lines_that_look_like_markers() {
         let text = "-- migrate:up\nselect 1;\n-- Migrate:Down\n  -- migrate:down\nselect 2;\n-- migrate:upgrade\n";
-        let problems = marker_problems(text, SectionMarkers::Dbmate);
+        let problems = marker_problems(text, Tool::Dbmate);
         assert_eq!(
             problems.iter().map(|(line, _)| *line).collect::<Vec<_>>(),
             ["-- Migrate:Down", "  -- migrate:down"]

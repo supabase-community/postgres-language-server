@@ -234,7 +234,7 @@ impl WorkspaceServer {
         self.workspaces()
             .settings_for(project_key, path)
             .and_then(|settings| settings.migrations.as_ref())
-            .and_then(|migrations| migrations::migration_tool(migrations.section_markers))
+            .and_then(|migrations| migrations::migration_tool(migrations.tool))
     }
 
     /// Applies the changed settings of a project to its open documents.
