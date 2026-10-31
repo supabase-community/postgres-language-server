@@ -668,7 +668,8 @@ impl PartialConfigurationExt for PartialConfiguration {
     /// filled in with their values from configs listed in the `extends` field.
     ///
     /// The `extends` configs are applied from left to right, each with its own `extends` applied
-    /// first. Relative paths in an extended file are relative to that file.
+    /// first. Relative paths in an extended file are relative to that file, and it resolves
+    /// packages from its folder.
     ///
     /// If a configuration can't be resolved from the file system, extends itself, or is extended
     /// more than [EXTENDS_DEPTH_MAX] levels deep, the operation will fail.
@@ -894,11 +895,14 @@ fn apply_extends_transitively(
                 .into());
             }
             extended_files.push(path.clone());
+            // Like `require` in Node.js, an extended file resolves the packages in its own
+            // `extends` from its folder, e.g. from the `node_modules` of the package it is in.
+            let package_resolution_base_path = path.parent().unwrap_or(Path::new("")).to_owned();
             chain.push(ExtendingFile::new(
                 path,
                 extended,
                 fs,
-                external_resolution_base_path,
+                &package_resolution_base_path,
             )?);
             continue;
         }
@@ -1149,6 +1153,50 @@ mod tests {
         )
         .expect_err("a cycle can't be applied");
         assert!(error.to_string().contains("extend each other"), "{error}");
+    }
+
+    /// A package that an extended file extends is resolved from the folder of that file, like
+    /// `require` in Node.js, so a shared configuration can depend on a package of its own.
+    #[test]
+    fn extended_files_resolve_packages_from_their_folder() {
+        let directory = tempfile::tempdir().unwrap();
+        let project = directory.path().join("project");
+        let config_package = project.join("node_modules/@acme/pgls-config");
+        let base_package = config_package.join("node_modules/@acme/pgls-base");
+        for (path, content) in [
+            (
+                project.join(ConfigName::pgls_jsonc()),
+                r#"{ "extends": ["@acme/pgls-config"] }"#,
+            ),
+            (
+                config_package.join("package.json"),
+                r#"{ "name": "@acme/pgls-config", "main": "config.jsonc" }"#,
+            ),
+            (
+                config_package.join("config.jsonc"),
+                r#"{ "extends": ["@acme/pgls-base"], "db": { "database": "config" } }"#,
+            ),
+            (
+                base_package.join("package.json"),
+                r#"{ "name": "@acme/pgls-base", "main": "base.jsonc" }"#,
+            ),
+            (
+                base_package.join("base.jsonc"),
+                r#"{ "db": { "host": "base" } }"#,
+            ),
+        ] {
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, content).unwrap();
+        }
+
+        let loaded = load_configuration(
+            &DynRef::Owned(Box::new(pgls_fs::OsFileSystem::new(project.clone()))),
+            ConfigurationPathHint::FromWorkspace(project),
+        )
+        .expect("configuration should load");
+        let db = loaded.configuration.db.as_ref().unwrap();
+        assert_eq!(db.database.as_deref(), Some("config"));
+        assert_eq!(db.host.as_deref(), Some("base"));
     }
 
     #[test]
