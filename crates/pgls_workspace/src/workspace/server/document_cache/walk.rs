@@ -3,13 +3,15 @@
 //! it.
 //!
 //! All of it depends on the text before its top-level statement, and the resolved references
-//! also on the statement itself. An edit keeps what comes before it, see [`ContentChange`].
+//! also on the statement itself. An edit keeps what comes before it, see [`ContentChange`]. It
+//! also depends on the migration sections before it, and on whether the queries it is in run in
+//! an implicit transaction block, which text after it can change, see [`MigrationContext`].
 
 use std::{collections::BTreeMap, sync::Arc};
 
-use pgls_analyser::{AnalysableStatement, MigrationSection, WalkState};
+use pgls_analyser::{AnalysableStatement, Direction, MigrationSection, WalkState};
 use pgls_catalog::{Snapshot, resolve::Reference};
-use pgls_text_size::TextSize;
+use pgls_text_size::{TextRange, TextSize};
 
 /// The states a document keeps to resume walks from. Each holds a copy of the catalog's maps of
 /// the objects that the file changed before it (the objects themselves are shared), so they are
@@ -33,6 +35,83 @@ pub(crate) struct ContentChange {
     pub(crate) first_changed_statement: TextSize,
 }
 
+/// The migration sections of a document, and the queries that run in an implicit transaction
+/// block, as boundaries in file order. A walk to a statement depends on the boundaries before
+/// it. Text after the statement can change them: a `StatementEnd` after it puts it in a query,
+/// a statement added to its query makes the query run in an implicit block, and goose's
+/// `NO TRANSACTION` applies to the whole file.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct MigrationContext {
+    /// Ordered by offset.
+    boundaries: Vec<Boundary>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum Boundary {
+    Section {
+        start: TextSize,
+        down: bool,
+        transaction: bool,
+    },
+    ImplicitBlockStart(TextSize),
+    ImplicitBlockEnd(TextSize),
+}
+
+impl Boundary {
+    fn offset(&self) -> TextSize {
+        match *self {
+            Boundary::Section { start, .. } => start,
+            Boundary::ImplicitBlockStart(offset) | Boundary::ImplicitBlockEnd(offset) => offset,
+        }
+    }
+}
+
+impl MigrationContext {
+    /// The context of `sections`. `statement_ranges` are the ranges of the top-level statements
+    /// of the document.
+    ///
+    /// Cost: O(log statements) per query of the sections.
+    pub(crate) fn new(sections: &[MigrationSection], statement_ranges: &[TextRange]) -> Self {
+        let mut boundaries: Vec<Boundary> = sections
+            .iter()
+            .flat_map(|section| {
+                std::iter::once(Boundary::Section {
+                    start: section.range.start(),
+                    down: section.direction == Direction::Down,
+                    transaction: section.transaction,
+                })
+                .chain(section.implicit_blocks(statement_ranges).flat_map(
+                    |block| {
+                        [
+                            Boundary::ImplicitBlockStart(block.start()),
+                            Boundary::ImplicitBlockEnd(block.end()),
+                        ]
+                    },
+                ))
+            })
+            .collect();
+        boundaries.sort_unstable_by_key(|boundary| (boundary.offset(), *boundary));
+        Self { boundaries }
+    }
+
+    /// The first offset from which the two contexts can differ: they have the same boundaries
+    /// before it. `None` if they are the same.
+    fn first_difference(&self, other: &Self) -> Option<TextSize> {
+        let same = self
+            .boundaries
+            .iter()
+            .zip(&other.boundaries)
+            .take_while(|(this, other)| this == other)
+            .count();
+        self.boundaries
+            .get(same)
+            .into_iter()
+            .chain(other.boundaries.get(same))
+            .map(Boundary::offset)
+            .min()
+    }
+}
+
 #[derive(Default)]
 pub(crate) struct WalkCache {
     /// Least recently used first.
@@ -43,6 +122,8 @@ pub(crate) struct WalkCache {
     resolved: BTreeMap<TextSize, Arc<[ResolvedStatement]>>,
     /// The database snapshot as the statements of one top-level statement see it.
     snapshot: Option<SnapshotBefore>,
+    /// The context of the document that the entries were computed in.
+    context: MigrationContext,
 }
 
 struct SnapshotBefore {
@@ -110,6 +191,25 @@ impl WalkCache {
         });
     }
 
+    /// Takes out the entries that `context` invalidates, and returns them: those of the
+    /// statements from the first boundary where it differs from the context of the entries.
+    pub(crate) fn set_context(&mut self, context: &MigrationContext) -> WalkCache {
+        let Some(changed) = self.context.first_difference(context) else {
+            return WalkCache::default();
+        };
+        self.context = context.clone();
+        let (checkpoints, invalid) = std::mem::take(&mut self.checkpoints)
+            .into_iter()
+            .partition(|checkpoint| checkpoint.at() < changed);
+        self.checkpoints = checkpoints;
+        WalkCache {
+            checkpoints: invalid,
+            resolved: self.resolved.split_off(&changed),
+            snapshot: self.snapshot.take_if(|cached| cached.at >= changed),
+            context: MigrationContext::default(),
+        }
+    }
+
     /// Takes out what `change` invalidates, and returns it. A checkpoint, and the snapshot of a
     /// top-level statement, stay valid while the text before their statement and the statements
     /// before it are the same. The resolved statements, and the snapshot of a function body,
@@ -133,6 +233,7 @@ impl WalkCache {
             checkpoints: invalid,
             resolved,
             snapshot,
+            context: MigrationContext::default(),
         }
     }
 

@@ -29,7 +29,7 @@ pub(crate) use budget::CacheBudget;
 pub(crate) use parse::ParseResult;
 use parse::PgQueryStore;
 use tree::TreeSitterStore;
-pub(crate) use walk::{ContentChange, ResolvedStatement, WalkCache};
+pub(crate) use walk::{ContentChange, MigrationContext, ResolvedStatement, WalkCache};
 
 /// The number of cache entries that all open documents keep together, beyond the document in
 /// use, see [`DocumentCache::usage`]. When they keep more, the caches of the least recently used
@@ -164,11 +164,15 @@ struct KeyedCaches {
 }
 
 impl DocumentCache {
-    pub(crate) fn new() -> Self {
+    /// The caches of a document whose content is of `generation`.
+    pub(crate) fn new(generation: u64) -> Self {
         Self {
             parses: PgQueryStore::new(),
             trees: TreeSitterStore::new(),
-            keyed: Mutex::default(),
+            keyed: Mutex::new(KeyedCaches {
+                generation,
+                ..KeyedCaches::default()
+            }),
         }
     }
 
@@ -254,19 +258,29 @@ impl DocumentCache {
         Some(keyed)
     }
 
-    /// Runs `f` on what the walks over the content of `generation` left for `key`. It is not
+    /// Runs `f` on what the walks over the content of `generation` left for `key`, without what
+    /// was computed in another migration `context`, see [`WalkCache::set_context`]. It is not
     /// held while walking, so that requests on the same document don't wait for each other. A
     /// request on a previous generation gets an empty cache, which is dropped.
     pub(crate) fn with_walk<R>(
         &self,
         key: &CacheKey,
         generation: u64,
+        context: &MigrationContext,
         f: impl FnOnce(&mut WalkCache) -> R,
     ) -> R {
-        match self.keyed(key, generation) {
-            Some(mut keyed) => f(&mut keyed.walk),
-            None => f(&mut WalkCache::default()),
+        let Some(mut keyed) = self.keyed(key, generation) else {
+            return f(&mut WalkCache::default());
+        };
+        let stale = keyed.walk.set_context(context);
+        let result = f(&mut keyed.walk);
+        drop(keyed);
+        StaleEntries {
+            analysis: None,
+            walk: stale,
         }
+        .drop_in_background();
+        result
     }
 
     /// The document's content changed to `generation`. Takes out what `change` invalidates, see
