@@ -720,6 +720,8 @@ fn run_check_without_db_env(args: &[&str], envs: &[(&str, &str)]) -> String {
     run_check_without_db_env_with(args, envs, None)
 }
 
+/// [`run_check_without_db_env`] with `stdin`.
+#[cfg(target_os = "linux")]
 fn run_check_without_db_env_with(
     args: &[&str],
     envs: &[(&str, &str)],
