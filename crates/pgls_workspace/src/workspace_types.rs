@@ -40,6 +40,10 @@ impl<'a> ModuleQueue<'a> {
 }
 
 /// Generate a TS type string from the `instance_type` of a [SchemaObject]
+#[expect(
+    clippy::unwrap_used,
+    reason = "the bindings are generated at build time from the workspace's own types, which all have these parts, so one without them is a bug in the generator, like the failed `assert!`s"
+)]
 fn instance_type<'a>(
     queue: &mut ModuleQueue<'a>,
     root_schema: &'a RootSchema,
@@ -111,7 +115,9 @@ fn value_type(value: &Value) -> String {
         Value::Null => "null".to_string(),
         Value::Bool(true) => "true".to_string(),
         Value::Bool(false) => "false".to_string(),
-        Value::Number(value) => format!("{}", value.as_f64().unwrap()),
+        Value::Number(value) => value
+            .as_f64()
+            .map_or_else(|| value.to_string(), |value| value.to_string()),
         Value::String(value) => format!("\"{value}\""),
         Value::Array(items) => {
             let items: Vec<_> = items.iter().map(value_type).collect();
@@ -272,6 +278,10 @@ fn schema_type<'a>(
 }
 
 /// Generate and emit all the types defined in `root_schema` into the `module`
+#[expect(
+    clippy::unwrap_used,
+    reason = "the bindings are generated at build time from the workspace's own types, which all have these parts, so one without them is a bug in the generator, like the failed `assert!`s"
+)]
 pub fn generate_type<'a>(
     module: &mut Vec<(String, Option<&'a String>)>,
     queue: &mut ModuleQueue<'a>,

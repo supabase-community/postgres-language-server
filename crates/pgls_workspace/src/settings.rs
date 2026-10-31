@@ -1,5 +1,3 @@
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use globset::Glob;
 use pgls_configuration::StringSet;
 use pgls_diagnostics::Category;

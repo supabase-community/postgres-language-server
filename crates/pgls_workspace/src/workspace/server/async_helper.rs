@@ -1,5 +1,3 @@
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use std::{future::Future, sync::LazyLock};
 
 use tokio::runtime::Runtime;

@@ -1642,6 +1642,8 @@ fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
     }
 }
 
-#[cfg(all(test, feature = "db"))]
+// Two attributes, because clippy only exempts tests from the panic lints under a plain `cfg(test)`.
+#[cfg(test)]
+#[cfg(feature = "db")]
 #[path = "server.tests.rs"]
 mod tests;

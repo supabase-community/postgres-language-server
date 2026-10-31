@@ -5,8 +5,6 @@
 //! document keeps, and what it resolves is kept for the next requests, see
 //! [`super::document_cache::WalkCache`]. A request that only needs what is cached doesn't walk.
 
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use std::sync::Arc;
 
 use pgls_analyser::{

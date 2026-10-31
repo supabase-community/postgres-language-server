@@ -37,12 +37,13 @@ fn sql_fn_body_mut(ast: &mut pgls_query::NodeEnum) -> Option<&mut String> {
 
     match def_elem.arg.as_mut()?.node.as_mut()? {
         pgls_query::NodeEnum::String(s) => Some(&mut s.sval),
-        pgls_query::NodeEnum::List(list) if list.items.len() == 1 => {
-            match list.items[0].node.as_mut()? {
+        pgls_query::NodeEnum::List(list) => match list.items.as_mut_slice() {
+            [item] => match item.node.as_mut()? {
                 pgls_query::NodeEnum::String(s) => Some(&mut s.sval),
                 _ => None,
-            }
-        }
+            },
+            _ => None,
+        },
         _ => None,
     }
 }

@@ -62,11 +62,16 @@ fn is_at_star_in(text: &str, cursor: usize) -> bool {
         return true;
     };
     // In the body of a function on one line, like `as 'select * from t'`.
-    if let Some([_, string]) = scan.tokens.windows(2).find(|pair| {
-        pair[0].token() == Token::As
-            && pair[1].token() == Token::Sconst
-            && usize::try_from(pair[1].start).is_ok_and(|start| start < cursor)
-            && usize::try_from(pair[1].end).is_ok_and(|end| cursor < end)
+    if let Some(string) = scan.tokens.windows(2).find_map(|pair| match pair {
+        [as_, string]
+            if as_.token() == Token::As
+                && string.token() == Token::Sconst
+                && usize::try_from(string.start).is_ok_and(|start| start < cursor)
+                && usize::try_from(string.end).is_ok_and(|end| cursor < end) =>
+        {
+            Some(string)
+        }
+        _ => None,
     }) {
         let (Ok(start), Ok(end)) = (usize::try_from(string.start), usize::try_from(string.end))
         else {
@@ -95,26 +100,31 @@ fn is_at_star_in(text: &str, cursor: usize) -> bool {
             return false;
         }
         // What comes before a `*` of a select list: nothing on this line, `SELECT`, `,`, `.`,
-        // `RETURNING`, `DISTINCT`, `ALL`, or the `)` of `DISTINCT ON (...)`.
-        let mut first = i;
-        while first >= 2
-            && tokens[first - 1].token() == Token::Ascii46
-            && is_name(tokens[first - 2])
+        // `RETURNING`, `DISTINCT`, `ALL`, or the `)` of `DISTINCT ON (...)`. `before` ends
+        // before the qualifier of the `*`, if it has one.
+        let mut before = tokens.get(..i).unwrap_or_default();
+        while let [rest @ .., name, dot] = before
+            && dot.token() == Token::Ascii46
+            && is_name(name)
         {
-            first -= 2;
+            before = rest;
         }
-        let star_like = first < i
-            || first == 0
-            || matches!(
-                tokens[first - 1].token(),
-                Token::Select
-                    | Token::Ascii44
-                    | Token::Returning
-                    | Token::Distinct
-                    | Token::All
-                    | Token::Ascii41
-            );
-        let start = usize::try_from(tokens[first].start).unwrap_or(usize::MAX);
+        let star_like = before.len() < i
+            || before.last().is_none_or(|token| {
+                matches!(
+                    token.token(),
+                    Token::Select
+                        | Token::Ascii44
+                        | Token::Returning
+                        | Token::Distinct
+                        | Token::All
+                        | Token::Ascii41
+                )
+            });
+        let start = tokens
+            .get(before.len())
+            .and_then(|first| usize::try_from(first.start).ok())
+            .unwrap_or(usize::MAX);
         let end = usize::try_from(star.end).unwrap_or(0);
         star_like && (start..=end).contains(&cursor)
     })
