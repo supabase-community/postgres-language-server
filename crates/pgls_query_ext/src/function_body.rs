@@ -29,8 +29,9 @@ pub struct EmbeddedStatement {
 
 /// Maps offsets between the text of a statement and its source, both relative to their start.
 /// The two differ where the source escapes characters, like `''` for `'` in a string constant,
-/// or where the statement replaces a part of the source, like `select` for `return`. Without
-/// those, an offset is the same in both, and the map is empty.
+/// or where the statement replaces a part of the source, like `select` for `return`. The gap
+/// between the parts of a string constant continued on the next line is an escape that stands
+/// for nothing. Without those, an offset is the same in both, and the map is empty.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct OffsetMap {
     /// In ascending order, and they don't overlap.
@@ -88,9 +89,27 @@ impl OffsetMap {
         }
     }
 
-    /// The range in the source of `range` in the statement.
+    /// The range in the source of `range` in the statement. It doesn't include the gaps of a
+    /// continued string constant at its start and end.
     pub fn range_to_source(&self, range: TextRange) -> TextRange {
-        TextRange::new(self.to_source(range.start()), self.to_source(range.end()))
+        let start = self.to_source(range.start());
+        TextRange::new(start, self.to_source_end(range.end()).max(start))
+    }
+
+    /// Like [`Self::to_source`], but for the end of a range: the offset in the source before a
+    /// gap at `offset` rather than after it.
+    fn to_source_end(&self, offset: TextSize) -> TextSize {
+        let index = self
+            .escapes
+            .partition_point(|escape| escape.statement.start() < offset);
+        let Some(escape) = index.checked_sub(1).and_then(|i| self.escapes.get(i)) else {
+            return offset;
+        };
+        if offset < escape.statement.end() {
+            escape.source.end()
+        } else {
+            offset - escape.statement.end() + escape.source.end()
+        }
     }
 
     /// The offset in the statement of `offset` in the source. An offset inside an escape maps to
@@ -110,14 +129,20 @@ impl OffsetMap {
     }
 
     /// The map of the part of the statement at `range`, relative to its start. `range` doesn't
-    /// cut through what an escape stands for, since it is on character boundaries.
+    /// cut through what an escape stands for, since it is on character boundaries. A gap at the
+    /// start or the end of `range` is outside of it.
     fn slice(&self, range: TextRange) -> OffsetMap {
         let source_start = self.to_source(range.start());
         OffsetMap {
             escapes: self
                 .escapes
                 .iter()
-                .filter(|escape| range.contains_range(escape.statement))
+                .filter(|escape| {
+                    range.contains_range(escape.statement)
+                        && (!escape.statement.is_empty()
+                            || (range.start() < escape.statement.start()
+                                && escape.statement.end() < range.end()))
+                })
                 .map(|escape| Escape {
                     statement: escape.statement - range.start(),
                     source: escape.source - source_start,
@@ -149,8 +174,8 @@ pub fn sql_function_body(stmt: &pgls_query::NodeEnum, sql: &str) -> Vec<Embedded
         .and_then(|body| body.node.as_ref())
     {
         Some(pgls_query::NodeEnum::List(body)) => atomic_body(body, &tokens, sql),
-        Some(pgls_query::NodeEnum::ReturnStmt(_)) => {
-            return_body(&tokens, sql).into_iter().collect()
+        Some(pgls_query::NodeEnum::ReturnStmt(stmt)) => {
+            return_body(stmt, &tokens, sql).into_iter().collect()
         }
         Some(_) => Vec::new(),
         None => string_body(create_fn, &tokens, sql)
@@ -358,8 +383,8 @@ enum Escapes {
 
 /// The value of the inside of a string constant, and where its escapes are. The escapes of
 /// `E'...'` strings are read like the `xe` rules of Postgres' lexer ([`scan.l`]), those of
-/// `U&'...'` strings like [`str_udeescape`]. `None` if a quote ends the constant before its end,
-/// like in a constant continued on the next line, if an escape is invalid, or if the value isn't
+/// `U&'...'` strings like [`str_udeescape`]. A constant continued on the next line, like `'a'`
+/// and `'b'` in `'a'\n'b'`, is one value. `None` if an escape is invalid, or if the value isn't
 /// valid UTF-8.
 ///
 /// [`scan.l`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L262
@@ -372,7 +397,8 @@ fn unescape(inner: &str, escapes: Escapes) -> Option<(String, OffsetMap)> {
     while let Some(&byte) = bytes.get(cursor) {
         let (decoded, len): (Vec<u8>, usize) = match (byte, escapes) {
             (b'\'', _) if bytes.get(cursor + 1) == Some(&b'\'') => (vec![b'\''], 2),
-            (b'\'', _) => return None,
+            // The constant goes on after a gap, which stands for nothing.
+            (b'\'', _) => (Vec::new(), quote_continuation(bytes.get(cursor..)?)?),
             (b'\\', Escapes::Backslash) => escape_sequence(bytes.get(cursor..)?)?,
             (_, Escapes::Unicode(escape)) if byte == escape => {
                 unicode_escape(bytes.get(cursor..)?, escape)?
@@ -442,6 +468,33 @@ fn char_bytes(code_point: u32) -> Option<Vec<u8>> {
         return None;
     }
     Some(char::from_u32(code_point)?.to_string().into_bytes())
+}
+
+/// The length of the gap at the start of `text` between two parts of a string constant: a quote,
+/// whitespace with a newline, and a quote. Like `quotecontinue` in Postgres' lexer ([`scan.l`]),
+/// the whitespace can contain `--` comments.
+///
+/// [`scan.l`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L226
+fn quote_continuation(text: &[u8]) -> Option<usize> {
+    let mut cursor = 1;
+    let mut newline = false;
+    loop {
+        match *text.get(cursor)? {
+            b'\n' | b'\r' => newline = true,
+            b' ' | b'\t' | b'\x0B' | b'\x0C' => {}
+            b'-' if text.get(cursor + 1) == Some(&b'-') => {
+                // A comment, up to the newline that must follow it.
+                cursor += text
+                    .get(cursor..)?
+                    .iter()
+                    .position(|byte| matches!(byte, b'\n' | b'\r'))?;
+                continue;
+            }
+            b'\'' if newline => return Some(cursor + 1),
+            _ => return None,
+        }
+        cursor += 1;
+    }
 }
 
 /// The bytes that the backslash escape at the start of `text` stands for, and its length.
@@ -541,49 +594,99 @@ fn atomic_body(
         }
     }
     // `BEGIN ATOMIC ... END` is a list that holds the list of statements.
-    let expected = match body.items.as_slice() {
+    let statements = match body.items.as_slice() {
         [list] => match list.node.as_ref() {
-            Some(pgls_query::NodeEnum::List(list)) => list.items.len(),
+            Some(pgls_query::NodeEnum::List(list)) => &list.items,
             _ => return Vec::new(),
         },
         _ => return Vec::new(),
     };
-    if ranges.len() != expected {
+    if ranges.len() != statements.len() {
         return Vec::new();
     }
     ranges
         .into_iter()
-        .filter_map(|range| {
-            Some(EmbeddedStatement {
+        .zip(statements)
+        .filter_map(|(range, statement)| match statement.node.as_ref() {
+            // A `RETURN` statement starts with its keyword.
+            Some(pgls_query::NodeEnum::ReturnStmt(_)) => returned_expression(range, sql),
+            _ => Some(EmbeddedStatement {
                 sql: sql
                     .get(usize::from(range.start())..usize::from(range.end()))?
                     .to_owned(),
                 range,
                 offsets: OffsetMap::default(),
-            })
+            }),
         })
         .collect()
 }
 
-/// The expression of a `RETURN` body, as a `SELECT` of the same length: `return x + 1` is
-/// resolved as `select x + 1`.
-fn return_body(tokens: &[ScanToken], sql: &str) -> Option<EmbeddedStatement> {
-    let return_token = tokens.iter().find(|token| token.token() == Token::Return)?;
+/// The expression of a `RETURN` body. `RETURN` is not a reserved keyword, so a function, a
+/// parameter or an option value can be called `return`: the body's keyword is the one that is
+/// followed by the expression of `stmt`.
+fn return_body(
+    stmt: &pgls_query::protobuf::ReturnStmt,
+    tokens: &[ScanToken],
+    sql: &str,
+) -> Option<EmbeddedStatement> {
+    let returned = stmt.returnval.as_deref()?;
     let last = tokens
         .iter()
         .rev()
         .find(|token| token.token() != Token::Ascii59)?;
-    let range = token_range(return_token)?.cover(token_range(last)?);
-    let expression = sql.get(usize::try_from(return_token.end).ok()?..usize::from(range.end()))?;
+    let end = token_range(last)?.end();
+    tokens
+        .iter()
+        .filter(|token| token.token() == Token::Return)
+        .find_map(|keyword| {
+            let body = returned_expression(token_range(keyword)?.cover_offset(end), sql)?;
+            selects(&body, returned).then_some(body)
+        })
+}
+
+/// The `RETURN` statement at `range` of `sql`, which starts with its keyword, as a `SELECT` of
+/// the same length: `return x + 1` is resolved as `select x + 1`.
+fn returned_expression(range: TextRange, sql: &str) -> Option<EmbeddedStatement> {
+    let keyword = TextSize::of("return");
+    let expression = sql.get(usize::from(range.start() + keyword)..usize::from(range.end()))?;
     // `select` stands for `return`, which has the same length.
-    let keyword = TextSize::of("select");
     let mut offsets = OffsetMap::default();
-    offsets.push_escape(0.into(), keyword, token_range(return_token)?.len());
+    offsets.push_escape(0.into(), TextSize::of("select"), keyword);
     Some(EmbeddedStatement {
         sql: format!("select{expression}"),
         range,
         offsets,
     })
+}
+
+/// Whether `body`, a `SELECT` of one expression, selects `expression`, at the locations it has
+/// in the text of the statement that contains `body`.
+fn selects(body: &EmbeddedStatement, expression: &pgls_query::protobuf::Node) -> bool {
+    // Spaces in front of the statement give its nodes the locations they have in the source.
+    let padded = format!(
+        "{}{}",
+        " ".repeat(usize::from(body.range.start())),
+        body.sql
+    );
+    let Ok(parsed) = pgls_query::parse(&padded) else {
+        return false;
+    };
+    let [raw] = parsed.protobuf.stmts.as_slice() else {
+        return false;
+    };
+    let Some(pgls_query::NodeEnum::SelectStmt(select)) =
+        raw.stmt.as_ref().and_then(|stmt| stmt.node.as_ref())
+    else {
+        return false;
+    };
+    match select.target_list.as_slice() {
+        [target] => matches!(
+            target.node.as_ref(),
+            Some(pgls_query::NodeEnum::ResTarget(target))
+                if target.name.is_empty() && target.val.as_deref() == Some(expression)
+        ),
+        _ => false,
+    }
 }
 
 #[cfg(test)]
@@ -653,9 +756,56 @@ mod tests {
             bodies("create function f() returns int language sql as $body$ select 1 $body$"),
             [(" select 1 ", " select 1 ".to_string())]
         );
-        // A continued string isn't found.
-        assert!(
-            bodies("create function f() returns int language sql as 'select '\n'1'").is_empty()
+    }
+
+    #[test]
+    fn continued_string_bodies_are_one_value() {
+        let input = "create function f() returns int language sql as 'select 1'\n'';";
+        assert_eq!(bodies(input), [("select 1", "select 1".to_string())]);
+
+        let input =
+            "create function f() returns text language sql as 'select 1;'\n  ' select ''a'''";
+        let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+        let [first, second] = sql_function_body(&ast, input).try_into().unwrap();
+        assert_eq!(first.sql, "select 1;");
+        assert_eq!(&input[first.range], "select 1;");
+        assert!(first.offsets.is_verbatim());
+        assert_eq!(second.sql, "select 'a'");
+        assert_eq!(&input[second.range], "select ''a''");
+        let a = TextSize::of("select '");
+        assert_eq!(
+            &input[second.range][usize::from(second.offsets.to_source(a))..],
+            "a''"
+        );
+
+        // The parts of `E'...'` and `U&'...'` strings have their escapes.
+        assert_eq!(
+            statements(
+                "create function f() returns text language sql as E'select ''\\x41'''\n' || ''b'''"
+            ),
+            ["select 'A' || 'b'"]
+        );
+        assert_eq!(
+            statements(
+                "create function f() returns text language sql as U&'select ''\\00e9'''\n' || ''x'''"
+            ),
+            ["select '\u{e9}' || 'x'"]
+        );
+
+        // A gap inside a statement stands for nothing.
+        let input = "create function f() returns int language sql as 'select'\n' 1'";
+        let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+        let [body] = sql_function_body(&ast, input).try_into().unwrap();
+        assert_eq!(body.sql, "select 1");
+        assert_eq!(&input[body.range], "select'\n' 1");
+        let source = &input[body.range];
+        assert_eq!(
+            &source[usize::from(body.offsets.to_source(TextSize::of("select ")))..],
+            "1"
+        );
+        assert_eq!(
+            body.offsets.to_statement(TextSize::of("select'\n")),
+            TextSize::of("select")
         );
     }
 
@@ -713,10 +863,14 @@ mod tests {
         assert_eq!(value(r"a\tb\x41\101\q\\"), Some("a\tbAAq\\".to_string()));
         assert_eq!(value(r"\U0001F600 é"), Some("\u{1F600} \u{e9}".to_string()));
         assert_eq!(value(r"\xc3\xa9"), Some("\u{e9}".to_string()));
-        // Not UTF-8, a `\u` without four digits, and a quote that ends the constant.
+        // Not UTF-8, and a `\u` without four digits.
         assert_eq!(value(r"\xff"), None);
         assert_eq!(value(r"\u12"), None);
-        assert_eq!(value("a'\n'b"), None);
+        // A constant continued on the next line, with a comment and a vertical tab, and quotes
+        // without a newline between them, which don't continue it.
+        assert_eq!(value("a' -- c\n\x0B'b\\n"), Some("ab\n".to_string()));
+        assert_eq!(value("a' 'b"), None);
+        assert_eq!(value("a' -- c'b"), None);
         // Without backslash escapes, backslashes are themselves.
         assert_eq!(
             unescape(r"a\n''", Escapes::None).map(|(value, _)| value),
@@ -815,6 +969,39 @@ mod tests {
         // The text is not the source, but offsets are the same.
         assert!(!body.offsets.is_verbatim());
         assert_eq!(body.offsets.to_source(TextSize::of("select ")), 7.into());
+    }
+
+    #[test]
+    fn the_return_keyword_of_the_body_is_found() {
+        // `return` names the function, a parameter, an option value and a column.
+        assert_eq!(
+            bodies("create function return(p int) returns int return p + 1;"),
+            [("return p + 1", "select p + 1".to_string())]
+        );
+        assert_eq!(
+            bodies("create function f(return int) returns int return return + 1;"),
+            [("return return + 1", "select return + 1".to_string())]
+        );
+        assert_eq!(
+            bodies(
+                "create function f(return int) returns int set search_path = return return return"
+            ),
+            [("return return", "select return".to_string())]
+        );
+    }
+
+    #[test]
+    fn return_statements_of_atomic_bodies_are_selects() {
+        let input =
+            "create function f(p int) returns int begin atomic select 1; return p + 1; end;";
+        let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+        let [first, second] = sql_function_body(&ast, input).try_into().unwrap();
+        assert_eq!(first.sql, "select 1;");
+        assert!(first.offsets.is_verbatim());
+        assert_eq!(&input[second.range], "return p + 1;");
+        assert_eq!(second.sql, "select p + 1;");
+        assert!(!second.offsets.is_verbatim());
+        assert!(pgls_query::parse(&second.sql).is_ok());
     }
 
     #[test]

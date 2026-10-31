@@ -1662,6 +1662,18 @@ async fn test_format_sql_function_bodies_with_quotes_and_atomic_bodies() {
     assert_eq!(format_content(&formatted), formatted);
 }
 
+#[tokio::test]
+async fn test_format_continued_string_body_is_idempotent() {
+    // The two strings are one, `'select 1'`.
+    let content = "create function f() returns int language sql as 'select   1'\n'';";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $$\nselect 1;\n$$;"
+    );
+    assert_eq!(format_content(&formatted), formatted);
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -1910,6 +1922,60 @@ select * from auth.users;
         completions.items[0].completion_text.as_ref().unwrap().range,
         TextRange::new(position, position),
         "Expected no syntax diagnostic"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn completions_after_the_end_of_an_unterminated_statement(test_db: PgPool) {
+    test_db
+        .execute("create table completed_table (id int);")
+        .await
+        .expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+
+    // The statement ends before the space, and the cursor is after it.
+    let content = "select * from ";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let completions = workspace
+        .get_completions(crate::workspace::GetCompletionsParams {
+            project_key,
+            path: path.clone(),
+            position: TextSize::of(content),
+        })
+        .expect("Unable to request completions");
+
+    assert!(
+        completions
+            .items
+            .iter()
+            .any(|item| item.label == "completed_table"),
+        "{:?}",
+        completions.items
     );
 }
 
