@@ -277,3 +277,17 @@ fn assert_line_lengths(output: &str, max_line_length: usize, tab_width: usize) {
         problems.join("\n")
     );
 }
+
+#[test]
+fn empty_statements_are_found_across_comments_but_not_in_literals() {
+    for sql in [
+        "select 1;;",
+        "select 1; /* comment */;",
+        "select 1; -- comment\n;",
+    ] {
+        assert_eq!(common::empty_statements(sql).len(), 1, "{sql}");
+    }
+    for sql in ["select ';;';", "select 1; /* ; */", "select 1; -- ;\n"] {
+        assert!(common::empty_statements(sql).is_empty(), "{sql}");
+    }
+}
