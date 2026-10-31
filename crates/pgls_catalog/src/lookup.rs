@@ -86,7 +86,8 @@ pub struct IndexInfo {
     /// The table or materialized view the index is on.
     pub table: String,
     /// The columns of the table that the index uses, in its keys, expressions or predicate.
-    /// `None` if we don't know them, like for the indexes of the database.
+    /// `None` if we don't know them, like for an index the file created with a whole-row
+    /// reference in an expression.
     pub columns: Option<Vec<String>>,
     pub origin: Origin,
 }
