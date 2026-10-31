@@ -1,5 +1,6 @@
 use assert_cmd::cargo_bin_cmd;
 use insta::assert_snapshot;
+use std::path::Path;
 use std::process::ExitStatus;
 
 const CONFIG_PATH: &str = "tests/fixtures/postgres-language-server.jsonc";
@@ -212,4 +213,71 @@ fn normalize_output(status: ExitStatus, stdout: &str, stderr: &str) -> String {
         normalize_durations(stdout).trim_end(),
         stderr.trim_end()
     )
+}
+
+/// Commits a configuration and an unformatted file to a new git repository below a new
+/// temporary directory.
+fn git_repo() -> tempfile::TempDir {
+    let root = tempfile::tempdir().unwrap();
+    std::fs::write(
+        root.path().join("postgres-language-server.jsonc"),
+        r#"{ "db": { "disableConnection": true } }"#,
+    )
+    .unwrap();
+    std::fs::write(root.path().join("a.sql"), "SELECT a,b FROM t;\n").unwrap();
+    for args in [
+        &["init", "--quiet"][..],
+        &["add", "--all"],
+        &["commit", "--quiet", "--no-verify", "--message", "init"],
+    ] {
+        let status = std::process::Command::new("git")
+            .current_dir(root.path())
+            .args(["-c", "user.name=test", "-c", "user.email=test@example.com"])
+            .args(["-c", "commit.gpgsign=false"])
+            .args(args)
+            .status()
+            .expect("failed to run git");
+        assert!(status.success(), "git {args:?} failed");
+    }
+    root
+}
+
+fn run_format_in(cwd: &Path, args: &[&str]) -> String {
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .current_dir(cwd)
+        .args(["format", "--log-level", "none"])
+        .args(args)
+        .output()
+        .expect("failed to run CLI");
+
+    normalize_output(
+        output.status,
+        &String::from_utf8_lossy(&output.stdout),
+        &String::from_utf8_lossy(&output.stderr),
+    )
+}
+
+/// With nothing staged there is nothing to format, which is not an error: a pre-commit hook runs
+/// on every commit.
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn format_staged_without_staged_files_snapshot() {
+    let repo = git_repo();
+    assert_snapshot!(run_format_in(repo.path(), &["--staged"]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn format_changed_without_changed_files_snapshot() {
+    let repo = git_repo();
+    assert_snapshot!(run_format_in(
+        repo.path(),
+        &["--changed", "--since", "HEAD"]
+    ));
 }

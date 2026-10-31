@@ -422,7 +422,7 @@ impl FileTargets {
     }
 
     /// The paths to process: the changed or staged files, else the given paths, else the working
-    /// directory. Empty for the code piped to `stdin`.
+    /// directory. Empty for the code piped to `stdin`, and when no file is changed or staged.
     pub(crate) fn resolve_paths(
         &self,
         fs: &DynRef<'_, dyn FileSystem>,
@@ -432,14 +432,14 @@ impl FileTargets {
             return Ok(Vec::new());
         }
 
-        let mut paths = if self.changed {
-            get_changed_files(fs, configuration, self.since.as_deref())?
-        } else if self.staged {
-            get_staged_files(fs)?
-        } else {
-            self.paths.clone()
-        };
+        if self.changed {
+            return get_changed_files(fs, configuration, self.since.as_deref());
+        }
+        if self.staged {
+            return get_staged_files(fs);
+        }
 
+        let mut paths = self.paths.clone();
         if paths.is_empty()
             && let Some(current_dir) = fs.working_directory()
         {
@@ -467,7 +467,9 @@ impl FileTargets {
 }
 
 /// Fails the command if the report has errors, warnings with `--error-on-warnings`, or, for the
-/// commands that process files, no processed file without `--no-errors-on-unmatched`.
+/// commands that process files, no successfully processed file without
+/// `--no-errors-on-unmatched`. With `--staged` or `--changed`, selecting no file is not an error:
+/// a commit can stage only files of other languages. Selected files that all fail still are.
 pub(crate) fn enforce_exit_codes(
     cli_options: &CliOptions,
     report: &Report,
@@ -475,7 +477,11 @@ pub(crate) fn enforce_exit_codes(
 ) -> Result<(), CliDiagnostic> {
     if let Some(traversal) = &report.traversal {
         let processed = traversal.changed + traversal.unchanged;
-        if processed.saturating_sub(traversal.skipped) == 0 && !cli_options.no_errors_on_unmatched {
+        let nothing_selected = traversal.vcs_targeted && processed == 0;
+        if processed.saturating_sub(traversal.skipped) == 0
+            && !nothing_selected
+            && !cli_options.no_errors_on_unmatched
+        {
             return Err(CliDiagnostic::no_files_processed());
         }
     }
@@ -553,6 +559,7 @@ mod tests {
             writes: false,
             diagnostics_not_printed: 0,
             workspace_root: None,
+            vcs_targeted: false,
         }
     }
 
@@ -620,6 +627,28 @@ mod tests {
             )
             .is_ok()
         );
+    }
+
+    /// With `--staged` or `--changed`, selecting no file passes, but selected files that all
+    /// failed to process don't.
+    #[test]
+    fn vcs_targeted_runs_fail_only_when_every_selected_file_failed() {
+        let vcs_targeted = |unchanged, skipped| {
+            let traversal = TraversalData {
+                skipped,
+                vcs_targeted: true,
+                ..traversal(unchanged)
+            };
+            Report::new(Vec::new(), Duration::ZERO, 0, Some(traversal))
+        };
+        let check = category!("check");
+
+        assert!(enforce_exit_codes(&cli_options(&[]), &vcs_targeted(0, 0), check).is_ok());
+        assert!(matches!(
+            enforce_exit_codes(&cli_options(&[]), &vcs_targeted(1, 1), check),
+            Err(CliDiagnostic::NoFilesWereProcessed(_))
+        ));
+        assert!(enforce_exit_codes(&cli_options(&[]), &vcs_targeted(2, 1), check).is_ok());
     }
 
     /// Tests that all CLI options adhere to the invariants expected by `bpaf`.
