@@ -165,15 +165,13 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
                 // Emit non-variadic args first
                 for (idx, arg) in leading.iter().enumerate() {
                     if idx > 0 {
-                        e.token(TokenKind::COMMA);
-                        e.line(LineType::SoftOrSpace);
+                        emit_list_comma(e, Some(arg), ListSeparatorSpacing::SoftOrSpace);
                     }
                     emit_node(e, arg);
                 }
 
                 if !leading.is_empty() {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(variadic), ListSeparatorSpacing::SoftOrSpace);
                 }
 
                 // Emit VARIADIC with the last argument

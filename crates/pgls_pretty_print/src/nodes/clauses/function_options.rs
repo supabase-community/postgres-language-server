@@ -224,8 +224,7 @@ pub(crate) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                 e.indent_start();
                 for (index, item) in list.items.iter().enumerate() {
                     if index > 0 {
-                        e.token(TokenKind::COMMA);
-                        e.line(LineType::SoftOrSpace);
+                        emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
                     }
                     e.token(TokenKind::FOR_KW);
                     e.space();

@@ -758,8 +758,7 @@ pub(super) fn emit_alter_table_cmd_of(
             {
                 for (i, opt) in list.items.iter().enumerate() {
                     if i > 0 {
-                        e.token(TokenKind::COMMA);
-                        e.space();
+                        emit_list_comma(e, Some(opt), ListSeparatorSpacing::Space);
                     }
                     if let Some(NodeEnum::DefElem(de)) = &opt.node {
                         emit_options_def_elem(e, de);
@@ -778,8 +777,7 @@ pub(super) fn emit_alter_table_cmd_of(
             {
                 for (i, opt) in list.items.iter().enumerate() {
                     if i > 0 {
-                        e.token(TokenKind::COMMA);
-                        e.space();
+                        emit_list_comma(e, Some(opt), ListSeparatorSpacing::Space);
                     }
                     if let Some(NodeEnum::DefElem(de)) = &opt.node {
                         emit_options_def_elem(e, de);

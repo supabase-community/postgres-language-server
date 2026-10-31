@@ -34,8 +34,7 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
 
         for (i, cmd_node) in n.cmds.iter().enumerate() {
             if i > 0 {
-                e.token(TokenKind::COMMA);
-                e.line(LineType::Hard);
+                emit_list_comma(e, Some(cmd_node), ListSeparatorSpacing::Hard);
             }
 
             // Extract AlterTableCmd from Node

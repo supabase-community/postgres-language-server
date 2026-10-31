@@ -43,8 +43,7 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
         // Each item should stay on its own line
         for (idx, item) in n.items.iter().enumerate() {
             if idx > 0 {
-                e.token(TokenKind::COMMA);
-                e.line(crate::emitter::LineType::SoftOrSpace);
+                emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
             }
             emit_node(e, item);
         }

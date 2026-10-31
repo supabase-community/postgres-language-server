@@ -31,8 +31,7 @@ pub(crate) fn emit_set_clause_list(e: &mut EventEmitter, nodes: &[pgls_query::No
 
     while index < nodes.len() {
         if index > 0 {
-            e.token(TokenKind::COMMA);
-            e.line(LineType::SoftOrSpace);
+            emit_list_comma(e, nodes.get(index), ListSeparatorSpacing::SoftOrSpace);
         }
 
         let node = &nodes[index];
@@ -104,8 +103,7 @@ fn emit_multi_assign_clause(
     e.indent_start();
     for (idx, node) in nodes[start..end].iter().enumerate() {
         if idx > 0 {
-            e.token(TokenKind::COMMA);
-            e.line(LineType::SoftOrSpace);
+            emit_list_comma(e, Some(node), ListSeparatorSpacing::SoftOrSpace);
         }
 
         match node.node.as_ref() {
@@ -131,8 +129,7 @@ fn emit_multi_assign_clause(
             e.indent_start();
             for (idx, expr) in row_expr.args.iter().enumerate() {
                 if idx > 0 {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(expr), ListSeparatorSpacing::SoftOrSpace);
                 }
                 emit_node(e, expr);
             }
