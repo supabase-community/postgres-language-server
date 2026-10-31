@@ -300,7 +300,7 @@ impl<'a> AnalysedFileContext<'a> {
         if applies_effects && self.pos < self.stmts.len() {
             let stmt = &self.stmts[self.pos];
             self.catalog.apply(stmt, self.session.search_path());
-            self.session.apply(stmt);
+            self.session.apply(stmt, &self.catalog);
         }
         self.pos += 1;
     }

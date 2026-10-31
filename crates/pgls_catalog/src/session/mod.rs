@@ -8,6 +8,8 @@ mod tests;
 
 use pgls_query::{NodeEnum, protobuf};
 
+use crate::Catalog;
+
 use locks::Locks;
 pub use locks::{is_reindex_concurrent, is_vacuum_full};
 use settings::Settings;
@@ -126,19 +128,27 @@ impl Session {
     pub fn has_idle_in_transaction_timeout(&self) -> bool {
         self.locks.idle_in_transaction_timeout_set
     }
-    /// Returns true if a constraint with the given name on the given table was added with NOT VALID
-    pub fn has_not_valid_constraint(&self, schema: &str, table: &str, name: &str) -> bool {
+    /// Returns true if a constraint with the given name on the given table was added with NOT VALID.
+    /// `catalog` resolves the name of the table.
+    pub fn has_not_valid_constraint(
+        &self,
+        table: &protobuf::RangeVar,
+        name: &str,
+        catalog: &Catalog,
+    ) -> bool {
         self.locks
-            .has_not_valid_constraint(schema, table, name, self.search_path())
+            .has_not_valid_constraint(table, name, catalog, self.search_path())
     }
     /// Returns the tables currently holding ACCESS EXCLUSIVE locks
     pub fn access_exclusive_tables(&self) -> &[(String, String)] {
         &self.locks.access_exclusive_tables
     }
-    /// Returns true if an object with the given schema and name was created in this transaction
-    pub fn has_created_object(&self, schema: &str, name: &str) -> bool {
+    /// Returns true if the relation was created in this transaction. `catalog` resolves its
+    /// name, like Postgres: an unqualified name is the first relation with that name on the
+    /// search path.
+    pub fn has_created_relation(&self, relation: &protobuf::RangeVar, catalog: &Catalog) -> bool {
         self.locks
-            .has_created_object(schema, name, self.search_path())
+            .has_created_relation(relation, catalog, self.search_path())
     }
     /// Returns true if the transaction is currently holding an ACCESS EXCLUSIVE lock
     pub fn is_holding_access_exclusive(&self) -> bool {
@@ -150,28 +160,31 @@ impl Session {
     /// Covers: AlterTableStmt, non-concurrent IndexStmt, DropStmt (table/index),
     /// TruncateStmt, VacuumStmt, non-concurrent ReindexStmt, RenameStmt (with relation),
     /// and non-concurrent RefreshMatViewStmt.
-    pub fn is_dangerous_lock_stmt(&self, stmt: &NodeEnum) -> bool {
-        self.locks.is_dangerous_lock_stmt(stmt, self.search_path())
+    pub fn is_dangerous_lock_stmt(&self, stmt: &NodeEnum, catalog: &Catalog) -> bool {
+        self.locks
+            .is_dangerous_lock_stmt(stmt, catalog, self.search_path())
     }
 
     /// Returns the existing table targeted by an ALTER TABLE command that takes ACCESS EXCLUSIVE.
     pub fn access_exclusive_table_for_alter(
         &self,
         stmt: &protobuf::AlterTableStmt,
+        catalog: &Catalog,
     ) -> Option<(String, String)> {
         self.locks
-            .access_exclusive_table_for_alter(stmt, self.search_path())
+            .access_exclusive_table_for_alter(stmt, catalog, self.search_path())
     }
 
-    /// Update session state based on a statement.
-    pub fn apply(&mut self, stmt: &NodeEnum) {
+    /// Update session state based on a statement. `catalog` is the catalog after the statement,
+    /// see [`Catalog::apply`].
+    pub fn apply(&mut self, stmt: &NodeEnum, catalog: &Catalog) {
         match stmt {
             NodeEnum::TransactionStmt(stmt) => self.apply_transaction(stmt),
             NodeEnum::VariableSetStmt(stmt) => {
                 self.locks.apply_variable_set(stmt);
                 self.settings.apply_variable_set(stmt);
             }
-            _ => self.locks.apply(stmt, self.settings.search_path()),
+            _ => self.locks.apply(stmt, catalog, self.settings.search_path()),
         }
         // Outside a transaction block, the statement commits on its own.
         if self.in_transaction() == Some(false) && !matches!(stmt, NodeEnum::TransactionStmt(_)) {

@@ -8,6 +8,8 @@ use pgls_query::{
     protobuf::{self, VariableSetKind},
 };
 
+use crate::Catalog;
+
 #[derive(Debug, Default, Clone)]
 pub(super) struct Locks {
     /// Whether `SET lock_timeout` has been called in this transaction
@@ -16,7 +18,7 @@ pub(super) struct Locks {
     pub(super) statement_timeout_set: bool,
     /// Whether `SET idle_in_transaction_session_timeout` has been called in this transaction
     pub(super) idle_in_transaction_timeout_set: bool,
-    /// Objects (schema, name) created in this transaction
+    /// Objects (schema, name) created in this transaction, in the schema Postgres created them in
     created_objects: Vec<(String, String)>,
     /// Whether an ACCESS EXCLUSIVE lock is currently being held
     /// This is set when an ALTER TABLE is executed on an existing table
@@ -27,36 +29,46 @@ pub(super) struct Locks {
     pub(super) access_exclusive_tables: Vec<(String, String)>,
 }
 
+// The parser folds unquoted names to lower case, so names are compared exactly: `"Users"` and
+// `users` are different tables.
 impl Locks {
     pub(super) fn has_not_valid_constraint(
         &self,
-        schema: &str,
-        table: &str,
+        table: &protobuf::RangeVar,
         name: &str,
+        catalog: &Catalog,
         search_path: &[String],
     ) -> bool {
-        self.not_valid_constraints.iter().any(|(s, t, n)| {
-            normalized_schema(schema, search_path).eq_ignore_ascii_case(s)
-                && table.eq_ignore_ascii_case(t)
-                && name.eq_ignore_ascii_case(n)
-        })
+        let (schema, table) = catalog.relation_name_of(table, search_path);
+        self.not_valid_constraints
+            .iter()
+            .any(|(s, t, n)| *s == schema && *t == table && n == name)
     }
 
-    pub(super) fn has_created_object(
+    pub(super) fn has_created_relation(
         &self,
-        schema: &str,
-        name: &str,
+        relation: &protobuf::RangeVar,
+        catalog: &Catalog,
         search_path: &[String],
     ) -> bool {
-        self.created_objects.iter().any(|(s, n)| {
-            normalized_schema(schema, search_path).eq_ignore_ascii_case(s)
-                && name.eq_ignore_ascii_case(n)
-        })
+        let (schema, name) = catalog.relation_name_of(relation, search_path);
+        self.has_created_object(&schema, &name)
     }
 
-    pub(super) fn is_dangerous_lock_stmt(&self, stmt: &NodeEnum, search_path: &[String]) -> bool {
+    pub(super) fn has_created_object(&self, schema: &str, name: &str) -> bool {
+        self.created_objects
+            .iter()
+            .any(|(s, n)| s == schema && n == name)
+    }
+
+    pub(super) fn is_dangerous_lock_stmt(
+        &self,
+        stmt: &NodeEnum,
+        catalog: &Catalog,
+        search_path: &[String],
+    ) -> bool {
         let is_new = |relation: &protobuf::RangeVar| {
-            self.has_created_object(&relation.schemaname, &relation.relname, search_path)
+            self.has_created_relation(relation, catalog, search_path)
         };
         match stmt {
             NodeEnum::AlterTableStmt(s) => s.relation.as_ref().is_none_or(|r| !is_new(r)),
@@ -81,6 +93,7 @@ impl Locks {
     pub(super) fn access_exclusive_table_for_alter(
         &self,
         stmt: &protobuf::AlterTableStmt,
+        catalog: &Catalog,
         search_path: &[String],
     ) -> Option<(String, String)> {
         let relation = stmt.relation.as_ref()?;
@@ -92,9 +105,8 @@ impl Locks {
         if !has_access_exclusive_cmd {
             return None;
         }
-        let schema = normalized_schema(&relation.schemaname, search_path).to_string();
-        let name = relation.relname.clone();
-        if self.has_created_object(&schema, &name, search_path) {
+        let (schema, name) = catalog.relation_name_of(relation, search_path);
+        if self.has_created_object(&schema, &name) {
             return None;
         }
         Some((schema, name))
@@ -142,31 +154,38 @@ impl Locks {
         *flag = sets;
     }
 
-    pub(super) fn apply(&mut self, stmt: &NodeEnum, search_path: &[String]) {
+    /// Applies a statement. `catalog` is the catalog after the statement, which knows where
+    /// the statement created its objects.
+    pub(super) fn apply(&mut self, stmt: &NodeEnum, catalog: &Catalog, search_path: &[String]) {
+        let name_of =
+            |relation: &protobuf::RangeVar| catalog.relation_name_of(relation, search_path);
         match stmt {
             NodeEnum::CreateStmt(s) => {
                 if let Some(r) = &s.relation {
-                    self.add_created_object(&r.schemaname, &r.relname, search_path);
+                    self.created_objects.push(name_of(r));
                 }
             }
+            // An index is in the schema of its table.
             NodeEnum::IndexStmt(s) => {
-                if !s.idxname.is_empty() {
-                    let schema = s
-                        .relation
-                        .as_ref()
-                        .map(|r| r.schemaname.as_str())
-                        .unwrap_or_default();
-                    self.add_created_object(schema, &s.idxname, search_path);
+                if !s.idxname.is_empty()
+                    && let Some(r) = &s.relation
+                {
+                    let (schema, _) = name_of(r);
+                    self.created_objects.push((schema, s.idxname.clone()));
                 }
             }
             NodeEnum::CreateTableAsStmt(s) => {
                 if let Some(r) = s.into.as_ref().and_then(|into| into.rel.as_ref()) {
-                    self.add_created_object(&r.schemaname, &r.relname, search_path);
+                    self.created_objects.push(name_of(r));
                 }
             }
             NodeEnum::AlterTableStmt(s) => {
-                self.add_not_valid_constraints(s, search_path);
-                if let Some((schema, name)) = self.access_exclusive_table_for_alter(s, search_path)
+                if let Some(r) = &s.relation {
+                    let (schema, table) = name_of(r);
+                    self.add_not_valid_constraints(s, &schema, &table);
+                }
+                if let Some((schema, name)) =
+                    self.access_exclusive_table_for_alter(s, catalog, search_path)
                 {
                     self.holding_access_exclusive = true;
                     if !self
@@ -182,28 +201,12 @@ impl Locks {
         }
     }
 
-    fn add_created_object(&mut self, schema: &str, name: &str, search_path: &[String]) {
-        self.created_objects.push((
-            normalized_schema(schema, search_path).to_string(),
-            name.to_owned(),
-        ));
-    }
-
     fn add_not_valid_constraints(
         &mut self,
         stmt: &protobuf::AlterTableStmt,
-        search_path: &[String],
+        schema: &str,
+        table: &str,
     ) {
-        let (schema, table) = stmt
-            .relation
-            .as_ref()
-            .map(|r| {
-                (
-                    normalized_schema(&r.schemaname, search_path).to_string(),
-                    r.relname.clone(),
-                )
-            })
-            .unwrap_or_default();
         for item in &stmt.cmds {
             if let Some(NodeEnum::AlterTableCmd(c)) = &item.node
                 && c.subtype() == protobuf::AlterTableType::AtAddConstraint
@@ -211,24 +214,13 @@ impl Locks {
                 && c.skip_validation
                 && !c.conname.is_empty()
             {
-                self.not_valid_constraints
-                    .push((schema.clone(), table.clone(), c.conname.clone()));
+                self.not_valid_constraints.push((
+                    schema.to_owned(),
+                    table.to_owned(),
+                    c.conname.clone(),
+                ));
             }
         }
-    }
-}
-
-/// The schema of an object name. Unqualified names are created in the first schema of the
-/// search path.
-fn normalized_schema<'a>(schema: &'a str, search_path: &'a [String]) -> &'a str {
-    if schema.is_empty() {
-        search_path
-            .iter()
-            .map(String::as_str)
-            .find(|schema| *schema != "$user")
-            .unwrap_or("public")
-    } else {
-        schema
     }
 }
 

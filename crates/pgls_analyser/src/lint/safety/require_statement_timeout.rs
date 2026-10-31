@@ -42,7 +42,7 @@ impl LinterRule for RequireStatementTimeout {
             return vec![];
         }
 
-        if !tx_state.is_dangerous_lock_stmt(ctx.stmt()) {
+        if !tx_state.is_dangerous_lock_stmt(ctx.stmt(), ctx.catalog()) {
             return vec![];
         }
 
