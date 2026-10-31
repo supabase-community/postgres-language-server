@@ -13,7 +13,7 @@ use analysis::AnalysisRequest;
 #[cfg(feature = "db")]
 use analysis::DocumentAnalysis;
 #[cfg(feature = "db")]
-use async_helper::run_async;
+use async_helper::{run_async, run_async_until};
 #[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
@@ -419,8 +419,10 @@ impl WorkspaceServer {
     }
 
     /// Diagnostics from the database: EXPLAIN for top-level statements whose references are all
-    /// unchanged database objects, and plpgsql_check. Also returns the ranges of the
-    /// statements that plpgsql_check checked.
+    /// unchanged database objects, and plpgsql_check.
+    ///
+    /// `None` if `should_stop` stopped it: no new check starts then, and the ones that run
+    /// finish, since a query can't be stopped half way through.
     #[cfg(feature = "db")]
     fn database_diagnostics(
         &self,
@@ -428,13 +430,15 @@ impl WorkspaceServer {
         path: &PgLSPath,
         doc: &Document,
         analysis: &DocumentAnalysis,
-    ) -> Result<(Vec<SDiagnostic>, Vec<TextRange>), WorkspaceError> {
+        should_stop: &dyn Fn() -> bool,
+    ) -> Result<Option<DatabaseDiagnostics>, WorkspaceError> {
         let typecheck_enabled = settings.typecheck.enabled;
         let plpgsql_check = settings.plpgsql_check.clone();
         if !typecheck_enabled && !plpgsql_check.enabled {
-            return Ok((Vec::new(), Vec::new()));
+            return Ok(Some(DatabaseDiagnostics::default()));
         }
 
+        let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let db_diagnostics = self.connection.with_pool(&settings.db, |pool| {
             let snapshot = self.snapshot.load(pool)?;
             let input = doc
@@ -451,48 +455,96 @@ impl WorkspaceServer {
                 .collect::<Vec<_>>();
             let pool = pool.clone();
             let path = path.clone();
+            let stopped = Arc::clone(&stop);
 
-            run_async(async move {
-                stream::iter(input)
-                    .map(|(id, range, ast, cst, statement)| {
-                        let pool = pool.clone();
-                        let path = path.clone();
-                        let snapshot = Arc::clone(&snapshot);
-                        let plpgsql_check = plpgsql_check.clone();
+            run_async_until(
+                async move {
+                    stream::iter(input)
+                        .take_while(move |_| std::future::ready(!stopped.load(Ordering::Relaxed)))
+                        .map(|(id, range, ast, cst, statement)| {
+                            let pool = pool.clone();
+                            let path = path.clone();
+                            let snapshot = Arc::clone(&snapshot);
+                            let plpgsql_check = plpgsql_check.clone();
 
-                        async move {
-                            let mut diagnostics = Vec::new();
-                            let mut plpgsql_checked = None;
-                            let Some(ast) = ast else {
-                                return Ok((diagnostics, plpgsql_checked));
-                            };
+                            async move {
+                                let mut diagnostics = Vec::new();
+                                let mut plpgsql_checked = None;
+                                let Some(ast) = ast else {
+                                    return Ok((diagnostics, plpgsql_checked));
+                                };
 
-                            // The static typecheck rules cover everything else, including the
-                            // statements of SQL function bodies, whose parameters they resolve.
-                            let statement = statement.filter(|statement| {
-                                typecheck_enabled && statement.database_only && !id.is_child()
-                            });
-                            if let Some(statement) = statement {
-                                let conversion =
-                                    convert_to_positional_params_with_metadata(id.content());
+                                // The static typecheck rules cover everything else, including the
+                                // statements of SQL function bodies, whose parameters they resolve.
+                                let statement = statement.filter(|statement| {
+                                    typecheck_enabled && statement.database_only && !id.is_child()
+                                });
+                                if let Some(statement) = statement {
+                                    let conversion =
+                                        convert_to_positional_params_with_metadata(id.content());
 
-                                if !conversion.has_identifier_parameters {
-                                    let result = pgls_typecheck::check_sql(TypecheckParams {
-                                        conn: &pool,
-                                        sql: conversion.sql.as_str(),
-                                        ast: &ast,
-                                        tree: &cst,
-                                        snapshot: snapshot.as_ref(),
-                                        search_path: &statement.search_path,
-                                        identifiers: Vec::new(),
-                                    })
-                                    .await?;
+                                    if !conversion.has_identifier_parameters {
+                                        let result = pgls_typecheck::check_sql(TypecheckParams {
+                                            conn: &pool,
+                                            sql: conversion.sql.as_str(),
+                                            ast: &ast,
+                                            tree: &cst,
+                                            snapshot: snapshot.as_ref(),
+                                            search_path: &statement.search_path,
+                                            identifiers: Vec::new(),
+                                        })
+                                        .await?;
 
-                                    if let Some(diagnostic) = result {
-                                        let span = diagnostic
-                                            .location()
-                                            .span
-                                            .map(|span| span + range.start());
+                                        if let Some(diagnostic) = result {
+                                            let span = diagnostic
+                                                .location()
+                                                .span
+                                                .map(|span| span + range.start());
+                                            diagnostics.push(
+                                                diagnostic
+                                                    .with_file_path(
+                                                        path.as_path().display().to_string(),
+                                                    )
+                                                    .with_file_span(span.unwrap_or(range)),
+                                            );
+                                        }
+                                    }
+                                }
+
+                                if plpgsql_check.enabled {
+                                    let results = pgls_plpgsql_check::check_plpgsql(
+                                        pgls_plpgsql_check::PlPgSqlCheckParams {
+                                            conn: &pool,
+                                            sql: id.content(),
+                                            ast: &ast,
+                                            snapshot: snapshot.as_ref(),
+                                            fatal_errors: plpgsql_check.fatal_errors,
+                                            other_warnings: plpgsql_check.other_warnings,
+                                            extra_warnings: plpgsql_check.extra_warnings,
+                                            performance_warnings: plpgsql_check
+                                                .performance_warnings,
+                                            security_warnings: plpgsql_check.security_warnings,
+                                            compatibility_warnings: plpgsql_check
+                                                .compatibility_warnings,
+                                            without_warnings: plpgsql_check.without_warnings,
+                                            all_warnings: plpgsql_check.all_warnings,
+                                            use_incomment_options: plpgsql_check
+                                                .use_incomment_options,
+                                            incomment_options_usage_warning: plpgsql_check
+                                                .incomment_options_usage_warning,
+                                            constant_tracing: plpgsql_check.constant_tracing,
+                                        },
+                                    )
+                                    .await
+                                    .ok()
+                                    .flatten();
+
+                                    if results.is_some() {
+                                        plpgsql_checked = Some(range);
+                                    }
+
+                                    for diagnostic in results.unwrap_or_default() {
+                                        let span = diagnostic.span.map(|span| span + range.start());
                                         diagnostics.push(
                                             diagnostic
                                                 .with_file_path(
@@ -502,60 +554,25 @@ impl WorkspaceServer {
                                         );
                                     }
                                 }
+
+                                Ok::<_, sqlx::Error>((diagnostics, plpgsql_checked))
                             }
-
-                            if plpgsql_check.enabled {
-                                let results = pgls_plpgsql_check::check_plpgsql(
-                                    pgls_plpgsql_check::PlPgSqlCheckParams {
-                                        conn: &pool,
-                                        sql: id.content(),
-                                        ast: &ast,
-                                        snapshot: snapshot.as_ref(),
-                                        fatal_errors: plpgsql_check.fatal_errors,
-                                        other_warnings: plpgsql_check.other_warnings,
-                                        extra_warnings: plpgsql_check.extra_warnings,
-                                        performance_warnings: plpgsql_check.performance_warnings,
-                                        security_warnings: plpgsql_check.security_warnings,
-                                        compatibility_warnings: plpgsql_check
-                                            .compatibility_warnings,
-                                        without_warnings: plpgsql_check.without_warnings,
-                                        all_warnings: plpgsql_check.all_warnings,
-                                        use_incomment_options: plpgsql_check.use_incomment_options,
-                                        incomment_options_usage_warning: plpgsql_check
-                                            .incomment_options_usage_warning,
-                                        constant_tracing: plpgsql_check.constant_tracing,
-                                    },
-                                )
-                                .await
-                                .ok()
-                                .flatten();
-
-                                if results.is_some() {
-                                    plpgsql_checked = Some(range);
-                                }
-
-                                for diagnostic in results.unwrap_or_default() {
-                                    let span = diagnostic.span.map(|span| span + range.start());
-                                    diagnostics.push(
-                                        diagnostic
-                                            .with_file_path(path.as_path().display().to_string())
-                                            .with_file_span(span.unwrap_or(range)),
-                                    );
-                                }
-                            }
-
-                            Ok::<_, sqlx::Error>((diagnostics, plpgsql_checked))
-                        }
-                    })
-                    .buffer_unordered(10)
-                    .try_collect::<Vec<_>>()
-                    .await
-            })?
+                        })
+                        .buffer_unordered(10)
+                        .try_collect::<Vec<_>>()
+                        .await
+                },
+                &stop,
+                should_stop,
+            )?
             .map_err(WorkspaceError::from)
         });
+        if stop.load(Ordering::Relaxed) {
+            return Ok(None);
+        }
 
         match db_diagnostics {
-            None => Ok((Vec::new(), Vec::new())),
+            None => Ok(Some(DatabaseDiagnostics::default())),
             Some(Ok(batches)) => {
                 let mut diagnostics = Vec::new();
                 let mut plpgsql_checked = Vec::new();
@@ -563,14 +580,17 @@ impl WorkspaceServer {
                     diagnostics.extend(batch.into_iter().map(SDiagnostic::new));
                     plpgsql_checked.extend(checked);
                 }
-                Ok((diagnostics, plpgsql_checked))
+                Ok(Some(DatabaseDiagnostics {
+                    diagnostics,
+                    plpgsql_checked,
+                }))
             }
             Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
                 // Database-backed diagnostics are best-effort. If the connection is
                 // unreachable, keep publishing parser/static diagnostics instead of
                 // failing the whole edit-triggered diagnostics request.
                 debug!("Skipping database-backed diagnostics: {err}");
-                Ok((Vec::new(), Vec::new()))
+                Ok(Some(DatabaseDiagnostics::default()))
             }
             Some(Err(err)) => Err(err),
         }
@@ -582,6 +602,15 @@ impl WorkspaceServer {
             .and_then(|s| s.to_str())
             .is_some_and(|file_name| ConfigName::file_names().contains(&file_name))
     }
+}
+
+/// See [`WorkspaceServer::database_diagnostics`].
+#[cfg(feature = "db")]
+#[derive(Default)]
+struct DatabaseDiagnostics {
+    diagnostics: Vec<SDiagnostic>,
+    /// The ranges of the statements that plpgsql_check checked.
+    plpgsql_checked: Vec<TextRange>,
 }
 
 /// Check whether a file is a migration before `migrations.after`
@@ -1105,10 +1134,14 @@ impl Workspace for WorkspaceServer {
          */
         #[cfg(feature = "db")]
         let plpgsql_checked = {
-            let (db_diagnostics, plpgsql_checked) =
-                self.database_diagnostics(settings, &params.path, doc, &analysis)?;
-            diagnostics.extend(db_diagnostics);
-            plpgsql_checked
+            let Some(database) =
+                self.database_diagnostics(settings, &params.path, doc, &analysis, &should_stop)?
+            else {
+                // The document changed or the request was cancelled.
+                return Ok(PullDiagnosticsResult::default());
+            };
+            diagnostics.extend(database.diagnostics);
+            database.plpgsql_checked
         };
         #[cfg(not(feature = "db"))]
         let plpgsql_checked: Vec<TextRange> = Vec::new();
@@ -1282,14 +1315,18 @@ impl Workspace for WorkspaceServer {
 
         let doc = &*document;
 
+        let should_stop = self.should_stop(&params.path, doc);
         let result = formatting::format_document(
             doc,
             &settings.formatter,
             params.range,
             &params.path.as_path().display().to_string(),
+            &should_stop,
         );
         self.charge_document_caches(&params.path, doc);
-        Ok(result)
+        // The document changed or the request was cancelled, so the result would be discarded.
+        // An empty result has no edits.
+        Ok(result.unwrap_or_default())
     }
 
     #[cfg(feature = "db")]
