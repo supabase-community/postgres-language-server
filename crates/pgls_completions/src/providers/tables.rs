@@ -9,7 +9,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::with_schema_or_alias;
+use super::helper::{Qualifier, with_schema_or_alias};
 
 pub fn complete_tables<'a>(
     ctx: &'a TreesitterContext,
@@ -45,7 +45,7 @@ fn get_completion_text(ctx: &TreesitterContext, table: &Table) -> CompletionText
     let text = with_schema_or_alias(
         ctx,
         table.name.as_str(),
-        Some(table.schema.as_str()),
+        Some(Qualifier::Schema(table.schema.as_str())),
         NamePosition::ColId,
     );
 

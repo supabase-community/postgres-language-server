@@ -8,7 +8,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::with_schema_or_alias;
+use super::helper::{Qualifier, with_schema_or_alias};
 
 pub fn complete_columns<'a>(
     ctx: &TreesitterContext<'a>,
@@ -43,7 +43,7 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
     let with_schema_or_alias = with_schema_or_alias(
         ctx,
         col.name.as_str(),
-        alias.as_deref(),
+        alias.as_deref().map(Qualifier::Alias),
         NamePosition::ColId,
     );
 
