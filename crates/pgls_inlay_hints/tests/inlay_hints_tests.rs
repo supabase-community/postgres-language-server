@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use pgls_catalog::{Catalog, CatalogBase, Snapshot};
-use pgls_inlay_hints::{InlayHintKind, InlayHintsParams, inlay_hints};
+use pgls_inlay_hints::{InlayHintKind, InlayHintsParams, ParameterNameHints, inlay_hints};
 use sqlx::{Executor, PgPool};
 
 const SETUP: &str = r#"
@@ -24,6 +24,7 @@ const SETUP: &str = r#"
 struct Fixture {
     catalog: Catalog,
     search_path: Vec<String>,
+    parameter_names: ParameterNameHints,
 }
 
 async fn fixture(test_db: &PgPool) -> Fixture {
@@ -37,6 +38,7 @@ async fn fixture(test_db: &PgPool) -> Fixture {
     Fixture {
         search_path: snapshot.expand_search_path(&["public".to_string()]),
         catalog: Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot))))),
+        parameter_names: ParameterNameHints::All,
     }
 }
 
@@ -54,6 +56,7 @@ impl Fixture {
             catalog: &self.catalog,
             search_path: &self.search_path,
             function: None,
+            parameter_names: self.parameter_names,
         });
 
         let mut result = sql.to_string();
@@ -225,5 +228,21 @@ async fn only_ascii_letters_of_unquoted_arguments_are_downcased(test_db: PgPool)
     assert_eq!(
         f.hinted(r#"select accent(t.ÉA) from (select 1 as "Éa") t"#),
         r#"select accent(t.ÉA) from (select 1 as "Éa") t"#
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn literals_only(test_db: PgPool) {
+    let f = Fixture {
+        parameter_names: ParameterNameHints::Literals,
+        ..fixture(&test_db).await
+    };
+    assert_eq!(
+        f.hinted("select make_point(1, -2), make_point(x, y), greet('bob', null) from points"),
+        "select make_point(x: 1, y: -2), make_point(x, y), greet(name: 'bob', greeting: null) from points"
+    );
+    assert_eq!(
+        f.hinted("select make_point(1 + 2, abs(3))"),
+        "select make_point(1 + 2, abs(3))"
     );
 }

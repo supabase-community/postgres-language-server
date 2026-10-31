@@ -717,6 +717,17 @@
             "boolean",
             "null"
           ]
+        },
+        "parameterNames": {
+          "description": "Which arguments of function calls show the name of their parameter: \"all\", \"literals\" (only constants like `1`, `'a'`, `true` or `null`) or \"none\". Default: \"all\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ParameterNameHints"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -1871,6 +1882,32 @@
         }
       },
       "additionalProperties": false
+    },
+    "ParameterNameHints": {
+      "description": "Which arguments of function calls show the name of their parameter.",
+      "oneOf": [
+        {
+          "description": "Every positional argument (default).",
+          "type": "string",
+          "enum": [
+            "all"
+          ]
+        },
+        {
+          "description": "Only constants, like `1`, `'a'`, `true` or `null`.",
+          "type": "string",
+          "enum": [
+            "literals"
+          ]
+        },
+        {
+          "description": "No argument.",
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        }
+      ]
     },
     "Performance": {
       "description": "A list of rules that belong to this group",
