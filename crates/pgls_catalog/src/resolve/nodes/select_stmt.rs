@@ -15,8 +15,16 @@ use super::{
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::scope::Columns;
 
+#[cfg(test)]
+thread_local! {
+    /// How many queries this thread resolved, for tests of how much work a statement takes.
+    pub(crate) static RESOLVED_QUERIES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 /// Resolves a query and returns its output columns, if known.
 pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
+    #[cfg(test)]
+    RESOLVED_QUERIES.with(|count| count.set(count.get() + 1));
     let ctes = r.ctes.len();
     if let Some(with) = &n.with_clause {
         resolve_with_clause(r, with);
