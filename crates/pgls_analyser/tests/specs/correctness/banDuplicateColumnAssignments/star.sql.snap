@@ -1,0 +1,152 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- A `*` gives the columns it expands to, which the catalog knows.
+create table a (id int, x int);
+create table b (id int, y int);
+create table one (id int);
+-- expect_lint/banDuplicateColumnAssignments
+create view qualified as select a.*, b.* from a, b;
+-- expect_lint/banDuplicateColumnAssignments
+create view unqualified as select * from a, b;
+-- expect_lint/banDuplicateColumnAssignments
+create table table_as as select * from a, b;
+-- expect_lint/banDuplicateColumnAssignments
+select a.*, b.* into select_into from a, b;
+-- expect_lint/banDuplicateColumnAssignments
+create view set_operation as select a.*, b.* from a, b union select 1, 2, 3, 4;
+-- Both `id` and `x`.
+-- expect_lint/banDuplicateColumnAssignments
+-- expect_lint/banDuplicateColumnAssignments
+create view star_twice as select *, a.* from a;
+-- expect_lint/banDuplicateColumnAssignments
+create view with_expression as select a.*, 1 as x from a;
+-- expect_lint/banDuplicateColumnAssignments
+create view using_join as select a.*, b.* from a join b using (id);
+-- `(select * from one)` after a `*` is named `id` too.
+-- expect_lint/banDuplicateColumnAssignments
+create view subquery_after_star as select a.*, (select * from one) from a;
+-- The explicit names rename the first columns, the others keep theirs.
+-- expect_lint/banDuplicateColumnAssignments
+create view renamed_into_duplicate (y) as select a.*, b.* from a, b;
+create view renamed (p, q, id2) as select a.*, b.* from a, b;
+-- A plain SELECT may have duplicate names, and `USING` merges the column.
+select a.*, b.* from a, b;
+create view merged as select * from a join b using (id);
+create view other_names as select a.*, b.y, (select * from one) as z from a, b;
+-- The columns of `nope` are unknown, the others don't collide.
+create view unknown_table as select nope.*, a.id from a, nope;
+
+```
+
+# Diagnostics
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column id is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column id is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column id is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column id is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column id is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column id is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column x is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column x is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column id is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column id is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
+  
+
+
+lint/banDuplicateColumnAssignments ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column y is specified more than once.
+  
+  i Postgres rejects relations with duplicate column names.
+  
+  i Give each column a distinct name.
