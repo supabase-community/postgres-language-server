@@ -578,6 +578,39 @@ fn natural_joins_merge_the_columns_both_sides_have() {
 }
 
 #[test]
+fn merged_columns_are_ambiguous_next_to_another_column_of_the_name() {
+    let setup = "create table people (id int8, name text, age int8);";
+    let ambiguous = |column: &str, candidates: &[&str]| FindingKind::AmbiguousColumn {
+        column: column.into(),
+        candidates: candidates.iter().map(|name| (*name).to_owned()).collect(),
+    };
+    // Postgres: column reference "id" is ambiguous
+    for sql in [
+        "select id from users natural join people, posts",
+        "select id from users join people using (id), posts",
+        "select id from users join people using (id) join posts on true",
+    ] {
+        assert_eq!(
+            findings_after(setup, sql),
+            [ambiguous("id", &["users", "people", "posts"])],
+            "{sql}"
+        );
+    }
+    // A column only one side has, a merged column, and qualified columns are fine.
+    assert_eq!(
+        findings_after(
+            setup,
+            "select age, title, users.id, posts.id from users natural join people, posts"
+        ),
+        []
+    );
+    assert_eq!(
+        findings_after(setup, "select id, nope from users natural join people"),
+        [unknown_column(None, "nope")]
+    );
+}
+
+#[test]
 fn functional_field_notation() {
     // `a(p)` is field `a` of the composite column `p` (`ParseFuncOrColumn`).
     let setup = "create type pr as (a int, b text); create table tt (id int, p pr);";

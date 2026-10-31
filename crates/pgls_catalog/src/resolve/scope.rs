@@ -238,6 +238,35 @@ impl Level {
         }
     }
 
+    /// The columns that an unqualified reference to `column` can mean, if the level has a join
+    /// that merges columns and all columns are known. A join shows its merged columns once and
+    /// hides the columns of its sides, so these are the columns of `*` with that name. `None`
+    /// otherwise, and for system columns, which joins don't have.
+    fn visible_columns(&self, column: &str) -> Option<Vec<StarEntry>> {
+        let StarOrder::Columns(columns) = &self.star_order else {
+            return None;
+        };
+        if is_system_column(column) {
+            return None;
+        }
+        Some(
+            columns
+                .iter()
+                .filter(|entry| self.star_column_name(entry) == Some(column))
+                .cloned()
+                .collect(),
+        )
+    }
+
+    /// The names of the items that have `column`, for the message of an ambiguous reference.
+    fn items_with_column(&self, column: &str) -> Vec<String> {
+        self.items
+            .iter()
+            .filter(|item| item.has_column(column) == Some(true))
+            .map(|item| item.name.clone().unwrap_or_default())
+            .collect()
+    }
+
     /// Typed columns of `SELECT *`, including merged columns. The type of a merged column is
     /// unknown if nested joins merge the same name again.
     pub fn star_typed_columns(&self) -> TypedColumns {
@@ -311,6 +340,16 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
         {
             return None;
         }
+        if let Some(visible) = level.visible_columns(column) {
+            match visible.as_slice() {
+                [] => continue,
+                [entry] => {
+                    let position = level.star()?.iter().position(|other| other == entry)?;
+                    return level.star_typed_columns()?.get(position)?.ty.clone();
+                }
+                _ => return None,
+            }
+        }
         if level.merged_columns.iter().any(|c| c == column) {
             return level
                 .merged_typed_columns
@@ -343,9 +382,10 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
 }
 
 /// Looks up an unqualified column, innermost query level first. Port of [`colNameToVar`] and
-/// [`scanNSItemForColumn`]: a name that more than one FROM item of a level has is ambiguous,
-/// unless a join merges it, since then only the join's merged column is visible
-/// ([`transformFromClauseItem`] hides the columns of the join's sides).
+/// [`scanNSItemForColumn`]: a name that more than one visible column of a level has is
+/// ambiguous. A join that merges columns shows its merged column once and hides the columns of
+/// its sides ([`transformFromClauseItem`]), so a merged column is ambiguous only if another FROM
+/// item, or the other columns of a join, have its name too.
 ///
 /// [`colNameToVar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L930
 /// [`scanNSItemForColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L720
@@ -357,6 +397,14 @@ pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
             && level.output_names.iter().any(|name| name == column)
         {
             return ColumnLookup::Found;
+        }
+
+        if let Some(visible) = level.visible_columns(column) {
+            match visible.len() {
+                0 => continue,
+                1 => return ColumnLookup::Found,
+                _ => return ColumnLookup::Ambiguous(level.items_with_column(column)),
+            }
         }
 
         let mut matches = Vec::new();
@@ -392,6 +440,13 @@ pub(super) fn find_column_item<'a>(levels: &'a [Level], column: &str) -> Option<
             && level.output_names.iter().any(|name| name == column)
         {
             return None;
+        }
+        if let Some(visible) = level.visible_columns(column) {
+            match visible.as_slice() {
+                [] => continue,
+                [StarEntry::Item { item, .. }] => return level.items.get(*item),
+                _ => return None,
+            }
         }
         if level.merged_columns.iter().any(|c| c == column) {
             return None;
