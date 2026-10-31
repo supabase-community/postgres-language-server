@@ -46,18 +46,26 @@ impl PgQueryStore {
         self.ast_db.lock().unwrap().len()
     }
 
-    /// Drops every cached result.
+    /// Drops every cached result, and the memory of the maps.
     pub fn clear(&self) {
-        self.ast_db.lock().unwrap().clear();
-        self.plpgsql_db.lock().unwrap().clear();
-        self.embedded_db.lock().unwrap().clear();
+        drop(std::mem::take(&mut *self.ast_db.lock().unwrap()));
+        drop(std::mem::take(&mut *self.plpgsql_db.lock().unwrap()));
+        drop(std::mem::take(&mut *self.embedded_db.lock().unwrap()));
     }
 
     /// Drops the results of the statements for which `keep` returns `false`.
     pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
-        self.ast_db.lock().unwrap().retain(|id, _| keep(id));
-        self.plpgsql_db.lock().unwrap().retain(|id, _| keep(id));
-        self.embedded_db.lock().unwrap().retain(|id, _| keep(id));
+        retain(&mut self.ast_db.lock().unwrap(), &keep);
+        retain(&mut self.plpgsql_db.lock().unwrap(), &keep);
+        retain(&mut self.embedded_db.lock().unwrap(), &keep);
+    }
+
+    /// The number of entries that the maps have room for.
+    #[cfg(test)]
+    pub fn capacity(&self) -> usize {
+        self.ast_db.lock().unwrap().capacity()
+            + self.plpgsql_db.lock().unwrap().capacity()
+            + self.embedded_db.lock().unwrap().capacity()
     }
 
     /// The statements embedded in the top-level statement `statement`, in order: the statements
@@ -143,6 +151,16 @@ impl PgQueryStore {
 static COMPOSITE_TYPE_ERROR_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"\\?"([^"\\]+\.[^"\\]+)\\?" is not a known variable"#).unwrap());
 
+/// Keeps the entries of `map` for which `keep` returns `true`. A map that is less than a quarter
+/// full is shrunk, so that a document that got much shorter doesn't keep the memory of the
+/// statements it had.
+pub(super) fn retain<V>(map: &mut FxHashMap<StatementId, V>, keep: impl Fn(&StatementId) -> bool) {
+    map.retain(|id, _| keep(id));
+    if map.capacity() > 4 * map.len().max(16) {
+        map.shrink_to_fit();
+    }
+}
+
 fn is_composite_type_error(err: &str) -> bool {
     COMPOSITE_TYPE_ERROR_RE.is_match(err)
 }
@@ -150,6 +168,33 @@ fn is_composite_type_error(err: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dropping_results_releases_the_maps() {
+        let store = PgQueryStore::new();
+        let statements: Vec<StatementId> = (0..200)
+            .map(|i| {
+                StatementId::new(&format!(
+                    "create function f{i}() returns int language sql as 'select {i}';"
+                ))
+            })
+            .collect();
+        let fill = || {
+            for id in &statements {
+                store.get_or_cache_embedded(id);
+                store.get_or_cache_plpgsql_parse(id);
+            }
+        };
+
+        fill();
+        store.retain(|id| *id == statements[0]);
+        assert_eq!(store.len(), 1);
+        assert!(store.capacity() < 3 * 64, "{}", store.capacity());
+
+        fill();
+        store.clear();
+        assert_eq!(store.capacity(), 0);
+    }
 
     #[test]
     fn test_positional_params_in_grant() {
