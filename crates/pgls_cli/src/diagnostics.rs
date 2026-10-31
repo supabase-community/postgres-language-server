@@ -7,6 +7,7 @@ use pgls_diagnostics::{
 use pgls_text_edit::TextEdit;
 use pgls_workspace::WorkspaceError;
 use std::fmt::{self, Formatter};
+use std::path::Path;
 use std::process::{ExitCode, Termination};
 use std::{env::current_exe, fmt::Debug};
 
@@ -36,6 +37,8 @@ pub enum CliDiagnostic {
     EmptyArguments(EmptyArguments),
     /// Returned when a subcommand is called with an unsupported combination of arguments
     IncompatibleArguments(IncompatibleArguments),
+    /// Returned when `--staged` or `--changed` is used outside a git repository
+    GitRepositoryRequired(GitRepositoryRequired),
     /// Returned by a traversal command when error diagnostics were emitted
     CheckError(CheckError),
     /// Emitted when a file is fixed, but it still contains diagnostics.
@@ -149,6 +152,20 @@ pub struct EmptyArguments;
 pub struct IncompatibleArguments {
     first_argument: String,
     second_argument: String,
+}
+
+#[derive(Debug, Diagnostic)]
+#[diagnostic(
+    category = "flags/invalid",
+    severity = Error,
+    message(
+        description = "{argument} needs a git repository, but {directory} is not inside one.",
+        message(<Emphasis>{self.argument}</Emphasis>" needs a git repository, but "{self.directory}" is not inside one.")
+    )
+)]
+pub struct GitRepositoryRequired {
+    argument: String,
+    directory: String,
 }
 
 #[derive(Debug, Diagnostic)]
@@ -312,6 +329,14 @@ impl CliDiagnostic {
         Self::IncompatibleArguments(IncompatibleArguments {
             first_argument: first_argument.into(),
             second_argument: second_argument.into(),
+        })
+    }
+
+    /// Emitted when `argument` asks git for files, but `directory` is not inside a git repository
+    pub fn git_repository_required(argument: impl Into<String>, directory: &Path) -> Self {
+        Self::GitRepositoryRequired(GitRepositoryRequired {
+            argument: argument.into(),
+            directory: directory.display().to_string(),
         })
     }
 

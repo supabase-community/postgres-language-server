@@ -601,6 +601,25 @@ fn check_changed_fails_for_an_unknown_base() {
     assert!(output.contains("git diff failed"), "{output}");
 }
 
+/// Outside a git repository, `--staged` and `--changed` say that they need one, instead of
+/// passing on what `git diff` says about its options there.
+#[test]
+fn staged_and_changed_need_a_git_repository() {
+    let root = write_tree(DROP_COLUMN_REPO);
+    for (args, argument) in [
+        (&["--staged"][..], "--staged"),
+        (&["--changed", "--since", "main"][..], "--changed"),
+    ] {
+        let (success, output) = check_in(root.path(), args, &[]);
+        assert!(!success, "{output}");
+        assert!(
+            output.contains(&format!("{argument} needs a git repository, but ")),
+            "{output}"
+        );
+        assert!(output.contains("is not inside one."), "{output}");
+    }
+}
+
 /// A staged or changed file that can't be read fails the run, also when `--max-diagnostics 0`
 /// prints none of the diagnostics.
 #[test]
