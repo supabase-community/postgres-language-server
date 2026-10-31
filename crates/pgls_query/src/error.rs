@@ -17,6 +17,10 @@ pub enum Error {
     Scan(String),
     #[error("Error splitting: {0}")]
     Split(String),
+    /// The parse tree is nested deeper than prost decodes: it stops at a depth of 100 messages,
+    /// e.g. at about 50 terms of `select 1 + 1 + ...`.
+    #[error("The statement is nested too deeply to parse")]
+    TooDeep,
 }
 
 /// Convenient Result alias for returning `pg_query::Error`.
