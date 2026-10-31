@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cmp::max};
+use std::borrow::Cow;
 
 use pgls_text_size::TextSize;
 
@@ -73,48 +73,44 @@ where
     'larger: 'smaller,
 {
     fn with_adjusted_sql(params: CompletionParams<'larger>) -> Self {
+        // the position is a byte offset: the text is walked by its bytes, not by its chars,
+        // or a multi-byte char before the cursor puts the token after it
         let cursor_pos: usize = params.position.into();
         let mut sql = String::new();
 
-        let mut sql_iter = params.text.chars();
-
-        let max = max(cursor_pos + 1, params.text.len());
-
         let has_uneven_quotes = params.text.chars().filter(|c| *c == '"').count() % 2 != 0;
         let mut opened_quote = false;
+        let mut inserted = false;
 
-        for idx in 0..max {
-            match sql_iter.next() {
-                Some(c) => {
-                    if c == '"' {
-                        opened_quote = !opened_quote;
-                    }
+        for (idx, c) in params.text.char_indices() {
+            if c == '"' {
+                opened_quote = !opened_quote;
+            }
 
-                    if idx == cursor_pos {
-                        if opened_quote && has_uneven_quotes {
-                            sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
-                            opened_quote = false;
-                        } else {
-                            sql.push_str(SANITIZED_TOKEN);
-                        }
-                    }
-
-                    sql.push(c);
+            if idx == cursor_pos {
+                if opened_quote && has_uneven_quotes {
+                    sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
+                    opened_quote = false;
+                } else {
+                    sql.push_str(SANITIZED_TOKEN);
                 }
-                None => {
-                    // the cursor is outside the statement,
-                    // we want to push spaces until we arrive at the cursor position.
-                    // we'll then add the SANITIZED_TOKEN
-                    if idx == cursor_pos {
-                        if opened_quote && has_uneven_quotes {
-                            sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
-                        } else {
-                            sql.push_str(SANITIZED_TOKEN);
-                        }
-                    } else {
-                        sql.push(' ');
-                    }
-                }
+                inserted = true;
+            }
+
+            sql.push(c);
+        }
+
+        if !inserted {
+            // the cursor is outside the statement,
+            // we want to push spaces until we arrive at the cursor position.
+            // we'll then add the SANITIZED_TOKEN
+            for _ in params.text.len()..cursor_pos {
+                sql.push(' ');
+            }
+            if opened_quote && has_uneven_quotes {
+                sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
+            } else {
+                sql.push_str(SANITIZED_TOKEN);
             }
         }
 
@@ -142,6 +138,16 @@ where
     }
 }
 
+/// The char that ends right at the byte offset `position`, if any.
+fn char_before(sql: &str, position: usize) -> Option<char> {
+    sql.get(..position).and_then(|s| s.chars().next_back())
+}
+
+/// The char that starts at the byte offset `position`, if any.
+fn char_at(sql: &str, position: usize) -> Option<char> {
+    sql.get(position..).and_then(|s| s.chars().next())
+}
+
 /// Checks if the cursor is positioned inbetween two SQL nodes.
 ///
 /// ```sql
@@ -151,13 +157,10 @@ where
 /// ```
 fn cursor_inbetween_nodes(sql: &str, position: TextSize) -> bool {
     let position: usize = position.into();
-    let mut chars = sql.chars();
 
-    let previous_whitespace = chars
-        .nth(position.saturating_sub(1))
-        .is_some_and(|c| c.is_ascii_whitespace());
+    let previous_whitespace = char_before(sql, position).is_some_and(|c| c.is_ascii_whitespace());
 
-    let current_whitespace = chars.next().is_some_and(|c| c.is_ascii_whitespace());
+    let current_whitespace = char_at(sql, position).is_some_and(|c| c.is_ascii_whitespace());
 
     previous_whitespace && current_whitespace
 }
@@ -177,9 +180,7 @@ fn cursor_prepared_to_write_token_after_last_node(sql: &str, position: TextSize)
 
 fn cursor_on_a_dot(sql: &str, position: TextSize) -> bool {
     let position: usize = position.into();
-    sql.chars()
-        .nth(position.saturating_sub(1))
-        .is_some_and(|c| c == '.')
+    char_before(sql, position).is_some_and(|c| c == '.')
 }
 
 fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool {
@@ -230,7 +231,7 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
     let mut matching_open_idx = None;
     let mut matching_close_idx = None;
 
-    for (idx, char) in sql.chars().enumerate() {
+    for (idx, char) in sql.char_indices() {
         if char == '(' {
             tracking_open_idx = Some(idx);
             level += 1;
@@ -253,11 +254,8 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
 
     // early check: '(|)'
     // however, we want to check this after the level nesting.
-    let mut chars = sql.chars();
-    if chars
-        .nth(position.saturating_sub(1))
-        .is_some_and(|c| c == '(')
-        && chars.next().is_some_and(|c| c == ')')
+    if char_before(sql, position).is_some_and(|c| c == '(')
+        && char_at(sql, position).is_some_and(|c| c == ')')
     {
         return true;
     }
@@ -276,8 +274,9 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
         .unwrap_or_default();
 
     let after = sql
+        .get(position..)
+        .unwrap_or_default()
         .chars()
-        .skip(position)
         .find(|c| !c.is_whitespace())
         .unwrap_or_default();
 
@@ -678,9 +677,53 @@ mod tests {
 
             assert_eq!(
                 sanitized.text,
-                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é; "#
+                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é;"#
             );
             assert_eq!(sanitized.position, TextSize::new(22)); // leaves cursor position as is
+        }
+
+        {
+            // multi-byte chars before the cursor: the position is a byte offset
+            // select 'щщ', u.id from users u where u.|
+            let input = "select 'щщ', u.id from users u where u.";
+            let position = TextSize::new(input.len() as u32);
+
+            assert!(cursor_on_a_dot(input, position));
+
+            let params = get_test_params(input, position);
+
+            let sanitized = SanitizedCompletionParams::from(params);
+
+            assert_eq!(
+                sanitized.text,
+                "select 'щщ', u.id from users u where u.REPLACED_TOKEN"
+            );
+        }
+
+        {
+            // -- заказы
+            // select | from users;
+            let input = "-- заказы\nselect  from users;";
+            let position = TextSize::new("-- заказы\nselect ".len() as u32);
+
+            assert!(cursor_inbetween_nodes(input, position));
+
+            let params = get_test_params(input, position);
+
+            let sanitized = SanitizedCompletionParams::from(params);
+
+            assert_eq!(
+                sanitized.text,
+                "-- заказы\nselect REPLACED_TOKEN from users;"
+            );
+        }
+
+        {
+            // select 'щ' in (|)
+            let input = "select 'щ' in ()";
+            let position = TextSize::new("select 'щ' in (".len() as u32);
+
+            assert!(cursor_between_parentheses(input, position));
         }
 
         {

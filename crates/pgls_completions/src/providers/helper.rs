@@ -85,21 +85,28 @@ pub(crate) fn with_schema_or_alias(
 #[cfg(test)]
 mod tests {
     use pgls_test_utils::QueryWithCursorPosition;
+    use pgls_text_size::TextRange;
     use sqlx::{Executor, PgPool};
 
     use crate::{
-        complete,
+        CompletionItem, complete,
         test_helper::{get_test_deps, get_test_params},
     };
 
-    /// The text inserted for the completion item `label` at `{c}` in `query`.
-    async fn inserted(pool: &PgPool, query: &str, label: &str) -> Option<String> {
+    /// The completion item `label` at `{c}` in `query`.
+    async fn item(pool: &PgPool, query: &str, label: &str) -> Option<CompletionItem> {
         let query = query.replace("{c}", &QueryWithCursorPosition::cursor_marker().to_string());
         let (tree, cache) = get_test_deps(None, query.as_str().into(), pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
         complete(params)
             .into_iter()
             .find(|item| item.label == label)
+    }
+
+    /// The text inserted for the completion item `label` at `{c}` in `query`.
+    async fn inserted(pool: &PgPool, query: &str, label: &str) -> Option<String> {
+        item(pool, query, label)
+            .await
             .map(|item| item.completion_text.map_or(item.label, |text| text.text))
     }
 
@@ -139,6 +146,29 @@ mod tests {
             assert_eq!(
                 inserted(&pool, query, label).await.as_deref(),
                 Some(expected),
+                "{query} → {label}"
+            );
+        }
+    }
+
+    /// The range to replace is in bytes, like the cursor, also after multibyte characters.
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn replaces_at_the_cursor_after_multibyte_characters(pool: PgPool) {
+        pool.execute("create schema private; create table people (name text);")
+            .await
+            .unwrap();
+
+        for (query, label) in [
+            ("select 'é' from {c}  ;", "private"),
+            ("select 'é' from {c}", "private"),
+            ("select 'é', {c} from people", "name"),
+        ] {
+            let cursor = query.find("{c}").unwrap() as u32;
+            let item = item(&pool, query, label).await;
+            assert_eq!(
+                item.and_then(|item| item.completion_text)
+                    .map(|text| text.range),
+                Some(TextRange::empty(cursor.into())),
                 "{query} → {label}"
             );
         }
