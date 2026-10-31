@@ -944,17 +944,29 @@ impl Workspace for WorkspaceServer {
     #[tracing::instrument(level = "trace", skip(self), err)]
     fn update_settings(&self, params: UpdateSettingsParams) -> Result<(), WorkspaceError> {
         let mut workspace = self.workspaces_mut();
-
-        workspace
+        let settings = workspace
             .as_mut()
             .get_settings_mut(params.project_key)
-            .ok_or_else(WorkspaceError::no_project)?
-            .merge_with_configuration(
+            .ok_or_else(WorkspaceError::no_project)?;
+
+        if params.replace {
+            // A configuration that can't be applied leaves the settings as they were.
+            let mut replacement = Settings::default();
+            replacement.merge_with_configuration(
                 params.configuration,
                 params.workspace_directory,
                 params.vcs_base_path,
                 params.gitignore_matches.as_slice(),
             )?;
+            *settings = replacement;
+        } else {
+            settings.merge_with_configuration(
+                params.configuration,
+                params.workspace_directory,
+                params.vcs_base_path,
+                params.gitignore_matches.as_slice(),
+            )?;
+        }
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
 

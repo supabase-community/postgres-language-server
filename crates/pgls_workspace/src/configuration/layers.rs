@@ -22,9 +22,6 @@ pub struct ConfigurationLayers {
     pub overrides: Option<PartialConfiguration>,
     /// How [ConfigurationLayers::overrides] applies.
     pub override_mode: OverrideMode,
-    /// The sections that are reset to their defaults if no layer sets them, see
-    /// [SectionMask::materialize_defaults].
-    pub default_sections: SectionMask,
 }
 
 /// How the overrides of [ConfigurationLayers] apply to the layers below them.
@@ -81,8 +78,6 @@ impl ConfigurationLayers {
                 OverrideMode::Replace => apply_override(&mut configuration, overrides),
             }
         }
-        self.default_sections
-            .materialize_defaults(&mut configuration);
         configuration
     }
 }
@@ -142,57 +137,9 @@ fn apply_override(base: &mut PartialConfiguration, override_layer: &PartialConfi
     base.merge_with(override_layer.clone());
 }
 
-macro_rules! define_section_mask {
-    ($($section:ident),+ $(,)?) => {
-        /// A set of the sections of a [PartialConfiguration].
-        #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-        pub struct SectionMask { $( $section: bool, )+ }
-        impl SectionMask {
-            /// The sections that `configuration` sets.
-            pub fn of(configuration: &PartialConfiguration) -> Self {
-                Self { $( $section: configuration.$section.is_some(), )+ }
-            }
-            pub fn union(self, other: Self) -> Self {
-                Self { $( $section: self.$section || other.$section, )+ }
-            }
-            /// Materialises every section in this mask that `configuration` omits, using that
-            /// section's defaults.
-            ///
-            /// `Settings::merge_with_configuration` leaves an existing section untouched when the
-            /// incoming configuration omits it, and re-registering a project preserves its
-            /// settings. Without this step, clearing an override would not restore the baseline:
-            /// with an empty configuration file and no environment configuration, `db` would keep
-            /// pointing at the overridden database. An all-`None` `Partial*` section maps to that
-            /// section's defaults, so materialising it resets the section.
-            pub fn materialize_defaults(self, configuration: &mut PartialConfiguration) {
-                $( if self.$section && configuration.$section.is_none() {
-                    configuration.$section = Some(Default::default());
-                } )+
-            }
-        }
-    };
-}
-define_section_mask!(
-    vcs,
-    files,
-    migrations,
-    linter,
-    splinter,
-    format,
-    pglinter,
-    typecheck,
-    plpgsql_check,
-    db,
-    inlay_hints,
-    semantic_tokens
-);
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pgls_configuration::{
-        PartialTypecheckConfiguration, database::PartialDatabaseConfiguration,
-    };
     use serde_json::json;
 
     fn parse(value: serde_json::Value) -> PartialConfiguration {
@@ -208,7 +155,6 @@ mod tests {
             environment: environment.map(|environment| parse(environment).db.unwrap()),
             overrides: overrides.map(parse),
             override_mode: OverrideMode::Replace,
-            default_sections: SectionMask::default(),
         }
     }
 
@@ -286,19 +232,6 @@ mod tests {
         assert_eq!(actual, ["file", "argument"]);
     }
 
-    #[test]
-    fn default_sections_are_materialized() {
-        let layers = ConfigurationLayers {
-            default_sections: SectionMask::of(&PartialConfiguration {
-                db: Some(PartialDatabaseConfiguration::default()),
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-        let applied = layers.apply(PartialConfiguration::default());
-        assert_eq!(applied.db, Some(PartialDatabaseConfiguration::default()));
-    }
-
     /// The environment overrides the root configuration file, but only fills in a nested one.
     #[test]
     fn environment_fills_in_nested_configurations() {
@@ -312,14 +245,5 @@ mod tests {
         let nested = layers.apply_nested(file(), file().db.as_ref()).db.unwrap();
         assert_eq!(nested.host.as_deref(), Some("file"));
         assert_eq!(nested.database.as_deref(), Some("env"));
-    }
-
-    #[test]
-    fn mask_tracks_sections() {
-        let mask = SectionMask::of(&PartialConfiguration {
-            typecheck: Some(PartialTypecheckConfiguration::default()),
-            ..Default::default()
-        });
-        assert!(mask.typecheck);
     }
 }

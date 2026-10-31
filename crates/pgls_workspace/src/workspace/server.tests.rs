@@ -60,6 +60,7 @@ fn get_test_workspace(
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     })?;
 
     Ok((workspace, project_key))
@@ -939,6 +940,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     });
 
     let diagnostics = workspace
@@ -1034,6 +1036,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     });
 
     let diagnostics = workspace
@@ -3653,6 +3656,7 @@ impl TestProject {
                 gitignore_matches: vec![],
                 vcs_base_path: None,
                 workspace_directory: Some(root.to_path_buf()),
+                replace: false,
             })
             .unwrap();
 
@@ -3831,6 +3835,37 @@ fn files_use_the_nearest_configuration_file() {
     // A relative path is relative to the root of the project, like the paths of the CLI.
     assert_eq!(project.severities("db2/a.sql"), [Severity::Error]);
     assert!(project.is_ignored("/repo/legacy/a.sql"));
+}
+
+/// Updating the root settings with `replace` resets what the configuration doesn't set, while a
+/// merge keeps it, which the wasm `format` call relies on.
+#[test]
+fn updating_the_settings_replaces_or_merges_them() {
+    let fs = file_system_with_configurations(&[(
+        "/repo",
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+    assert_eq!(project.severities("/repo/a.sql"), [Severity::Error]);
+
+    let update = |replace: bool| {
+        project
+            .workspace
+            .update_settings(UpdateSettingsParams {
+                project_key: project.project_key,
+                configuration: PartialConfiguration::default(),
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+                workspace_directory: Some(PathBuf::from("/repo")),
+                replace,
+            })
+            .unwrap();
+    };
+    update(false);
+    assert_eq!(project.severities("/repo/b.sql"), [Severity::Error]);
+    update(true);
+    assert_eq!(project.severities("/repo/c.sql"), [Severity::Warning]);
 }
 
 /// The search doesn't descend into the folders that the root configuration ignores, except below
@@ -4143,6 +4178,7 @@ fn projects_have_their_own_nested_settings() {
             gitignore_matches: vec![],
             vcs_base_path: None,
             workspace_directory: None,
+            replace: false,
         })
         .unwrap();
 
@@ -4195,6 +4231,7 @@ fn updating_the_settings_of_an_unknown_project_fails() {
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     });
     assert!(matches!(result, Err(WorkspaceError::NoProject(_))));
 }
