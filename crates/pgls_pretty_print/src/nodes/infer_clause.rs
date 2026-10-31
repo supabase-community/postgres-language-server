@@ -16,6 +16,7 @@ pub(super) fn emit_infer_clause(e: &mut EventEmitter, n: &InferClause) {
     }
 
     if let Some(ref where_clause) = n.where_clause {
+        emit_comments_before_keyword(e, "where", where_clause);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
         emit_clause_condition(e, where_clause);
