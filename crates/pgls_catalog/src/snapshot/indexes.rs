@@ -13,6 +13,11 @@ pub struct Index {
     pub schema: String,
     pub name: String,
     pub table_name: String,
+    /// The columns of the table that the index uses: those of its keys and `INCLUDE` list, and
+    /// those its expressions and predicate reference. Dropping any of them drops the index.
+    /// Always set for the indexes of the database; `None` for an index the file created whose
+    /// columns the catalog doesn't know.
+    pub columns: Option<Vec<String>>,
 }
 
 #[cfg(feature = "db")]

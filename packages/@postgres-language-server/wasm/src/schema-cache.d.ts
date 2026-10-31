@@ -138,6 +138,10 @@ export interface Function {
   variadic_type_id?: number;
 }
 export interface Index {
+  /**
+   * The columns of the table that the index uses: those of its keys and `INCLUDE` list, and those its expressions and predicate reference. Dropping any of them drops the index. Always set for the indexes of the database; `None` for an index the file created whose columns the catalog doesn't know.
+   */
+  columns?: string[];
   id: number;
   name: string;
   schema: string;
