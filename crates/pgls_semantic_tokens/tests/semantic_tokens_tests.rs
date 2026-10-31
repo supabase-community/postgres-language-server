@@ -14,6 +14,7 @@ const SETUP: &str = r#"
     create function amb(a int, b text) returns int language sql as 'select 1';
     create function amb(c text, d int) returns int language sql as 'select 1';
     create table "cafÉ" (größe int, "Ölstand" int);
+    create table customer_subscription_billing_cycle_adjustments_history_archive (id int);
 "#;
 
 struct Fixture {
@@ -187,5 +188,17 @@ async fn non_ascii_identifiers(test_db: PgPool) {
     assert_eq!(
         f.highlighted(r#"select CAFÉ.größe, "Ölstand" from CAFÉ"#),
         r#"select [CAFÉ:class].[größe:property], ["Ölstand":property] from [CAFÉ:class]"#
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn identifiers_longer_than_postgres_keeps(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    // Postgres truncates both names to 63 bytes, so they name the same table.
+    let long = "customer_subscription_billing_cycle_adjustments_history_archives";
+    let sql = format!("select {long}.id from {long}_v2");
+    assert_eq!(
+        f.highlighted(&sql),
+        format!("select [{long}:class].[id:property] from [{long}_v2:class]")
     );
 }
