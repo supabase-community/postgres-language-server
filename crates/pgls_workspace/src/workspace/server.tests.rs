@@ -4582,6 +4582,46 @@ fn test_no_fix_inside_a_goose_envsub_expansion() {
     assert_eq!(fixed, content);
 }
 
+/// The diagnostics of a goose migration with `ENVSUB` on for `sql`.
+fn goose_envsub_diagnostics(sql: &str) -> Vec<String> {
+    migration_diagnostics(
+        SectionMarkers::Goose,
+        None,
+        &format!("-- +goose Up\n-- +goose ENVSUB ON\n{sql}\n"),
+    )
+}
+
+#[test]
+fn test_goose_envsub_default_with_a_brace() {
+    // interpolate reads the `{` as text, so goose runs `create schema public;` with
+    // `SCHEMA=public`.
+    let categories = goose_envsub_diagnostics("create schema ${SCHEMA:-app{test};");
+    assert!(!categories.iter().any(|c| c == "syntax"), "{categories:?}");
+}
+
+#[test]
+fn test_goose_envsub_expansion_in_an_identifier() {
+    // goose runs `create table app_events (id bigint);` with `PREFIX=app`.
+    let categories = goose_envsub_diagnostics("create table ${PREFIX}_events (id bigint);");
+    assert!(!categories.iter().any(|c| c == "syntax"), "{categories:?}");
+}
+
+#[test]
+fn test_goose_envsub_quoted_expansion() {
+    // goose runs `select * from "public".events;` with `SCHEMA=public`, so the schema isn't
+    // `$SCHEMA` or `${SCHEMA}`.
+    let categories = goose_envsub_diagnostics("select * from \"${SCHEMA}\".events;");
+    assert_eq!(categories, Vec::<String>::new());
+}
+
+#[test]
+fn test_goose_envsub_more_than_nine_expansions() {
+    let categories = goose_envsub_diagnostics(
+        "select ${A}, ${B}, ${C}, ${D}, ${E}, ${F}, ${G}, ${H}, ${I}, ${J};",
+    );
+    assert_eq!(categories, Vec::<String>::new());
+}
+
 #[test]
 fn named_parameter_in_a_join_condition_is_a_value() {
     // A value: the relations are still checked.

@@ -1,7 +1,10 @@
 //! goose: `-- +goose Up`, `-- +goose Down` and the other `-- +goose` annotations, see
 //! https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go
 
+mod interpolate;
+
 use pgls_analyser::{Direction, MigrationSection};
+use pgls_lexer::SyntaxKind;
 use pgls_text_size::{TextRange, TextSize};
 
 use super::{
@@ -78,23 +81,24 @@ impl MigrationTool for Goose {
         markers::marker_diagnostics(&SYNTAX, text, sections, statements)
     }
 
-    /// Between `-- +goose ENVSUB ON` and `-- +goose ENVSUB OFF`, goose replaces `${NAME}`,
-    /// `${NAME:-default}` and the other braced forms of [interpolate] with environment variables
-    /// before it runs the SQL, see
+    /// Between `-- +goose ENVSUB ON` and `-- +goose ENVSUB OFF`, goose replaces the expansions
+    /// of [interpolate], like `$NAME`, `${NAME}` and `${NAME:-default}`, with environment
+    /// variables before it runs the SQL, see
     /// https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L211
     ///
-    /// We don't know their values, so each braced expansion becomes the named parameter `$NAME`,
-    /// padded with spaces to the same length. Named parameters are analysed like psql
-    /// variables: as values, or as identifiers that aren't typechecked. `$NAME` is a named
-    /// parameter already.
+    /// We don't know their values, so an identifier with expansions, like `${SCHEMA}`,
+    /// `${PREFIX}_events` or `"${SCHEMA}"`, becomes the named parameter `$SCHEMA`,
+    /// `$PREFIX_events` or `$SCHEMA`, padded with `_` to the same length, so that the whole
+    /// identifier is one token with room for the index of a parameter. Named parameters are
+    /// analysed like psql variables: as values, or as identifiers that aren't typechecked.
+    /// Expansions in string literals and comments stay as written.
     ///
     /// [interpolate]: https://github.com/mfridman/interpolate/blob/v0.0.2/parser.go
     fn preprocess(&self, text: &str) -> Option<Preprocessed> {
         if !text.contains("+goose") {
             return None;
         }
-        let mut substituted = String::with_capacity(text.len());
-        let mut placeholders = Vec::new();
+        let mut expansions = Vec::new();
         let mut envsub = false;
         for (range, line) in lines(text) {
             let annotation = annotation(line);
@@ -103,81 +107,117 @@ impl MigrationTool for Goose {
                 Some(annotation) if annotation.eq_ignore_ascii_case("envsub off") => envsub = false,
                 _ => {}
             }
-            if envsub && annotation.is_none() {
-                substitute_line(
-                    &text[range],
-                    range.start(),
-                    &mut substituted,
-                    &mut placeholders,
-                );
-            } else {
-                substituted.push_str(&text[range]);
+            if !envsub || annotation.is_some() {
+                continue;
+            }
+            // goose fails on a line that interpolate rejects, so it stays as written.
+            for expansion in interpolate::expansions(line).unwrap_or_default() {
+                expansions.push(Expansion {
+                    range: TextRange::new(
+                        range.start() + TextSize::try_from(expansion.range.start).unwrap(),
+                        range.start() + TextSize::try_from(expansion.range.end).unwrap(),
+                    ),
+                    name: expansion.name,
+                });
             }
         }
-        debug_assert_eq!(substituted.len(), text.len());
-        debug_assert!(placeholders.iter().all(|placeholder| {
-            text.get(usize::from(placeholder.start())..usize::from(placeholder.end()))
-                .is_some()
-        }));
-        (!placeholders.is_empty()).then_some(Preprocessed {
-            text: substituted,
-            placeholders,
-        })
+        (!expansions.is_empty()).then(|| substitute(text, &expansions))
     }
 }
 
-/// Replaces the braced expansions of a line that starts at `start`, see [`Goose::preprocess`].
-fn substitute_line(line: &str, start: TextSize, out: &mut String, expansions: &mut Vec<TextRange>) {
-    let mut rest = line;
-    while let Some(dollar) = rest.find(['$', '\\']) {
-        let (before, from) = rest.split_at(dollar);
-        out.push_str(before);
-        // `\\`, `\$` and `$$` are escapes, and `$(` is left alone.
-        let escape = ["\\\\", "\\$", "$$", "$("]
-            .iter()
-            .find(|escape| from.starts_with(**escape));
-        if let Some(escape) = escape {
-            out.push_str(escape);
-            rest = &from[escape.len()..];
+/// An `ENVSUB` expansion in the file.
+struct Expansion<'a> {
+    range: TextRange,
+    name: &'a str,
+}
+
+/// Replaces the identifiers with `expansions` with named parameters, see [`Goose::preprocess`].
+fn substitute(text: &str, expansions: &[Expansion]) -> Preprocessed {
+    // Lex the text with each expansion as an identifier of the same length, to find the tokens
+    // that the expansions are part of.
+    let mut filled = String::with_capacity(text.len());
+    let mut end = 0;
+    for expansion in expansions {
+        let range = std::ops::Range::<usize>::from(expansion.range);
+        filled.push_str(&text[end..range.start]);
+        filled.extend(std::iter::repeat_n('x', range.len()));
+        end = range.end;
+    }
+    filled.push_str(&text[end..]);
+    let lexed = pgls_lexer::lex(&filled);
+
+    // The identifiers with expansions, extended to whole expansions.
+    let mut identifiers: Vec<TextRange> = Vec::new();
+    for index in 0..lexed.len() {
+        if lexed.kind(index) != SyntaxKind::IDENT {
             continue;
         }
-        let Some(body) = from.strip_prefix("${") else {
-            out.push_str(&from[..1]);
-            rest = &from[1..];
+        let token = lexed.range(index);
+        let first = expansions.partition_point(|expansion| expansion.range.end() <= token.start());
+        let Some(range) = expansions[first..]
+            .iter()
+            .take_while(|expansion| expansion.range.start() < token.end())
+            .fold(None, |range: Option<TextRange>, expansion| {
+                Some(range.unwrap_or(token).cover(expansion.range))
+            })
+        else {
             continue;
         };
-        // The expansion ends at the matching brace, defaults can hold expansions too.
-        let mut depth = 1;
-        let end = body.char_indices().find_map(|(index, c)| {
-            match c {
-                '{' => depth += 1,
-                '}' => depth -= 1,
-                _ => {}
-            }
-            (depth == 0).then_some(index)
-        });
-        let Some(end) = end else {
-            out.push_str(from);
-            return;
-        };
-        let expansion = &from[..end + 3];
-        let name: String = body
-            .chars()
-            .take_while(|c| c.is_alphanumeric() || *c == '_')
-            .collect();
-        let name = if name.starts_with(|c: char| c.is_alphabetic()) {
-            name
-        } else {
-            "e".to_string()
-        };
-        let placeholder = format!("${name}");
-        out.push_str(&placeholder);
-        out.push_str(&" ".repeat(expansion.len().saturating_sub(placeholder.len())));
-        let expansion_start = start + TextSize::of(&line[..line.len() - from.len()]);
-        expansions.push(TextRange::at(expansion_start, TextSize::of(expansion)));
-        rest = &from[expansion.len()..];
+        match identifiers.last_mut() {
+            Some(last) if last.end() > range.start() => *last = last.cover(range),
+            _ => identifiers.push(range),
+        }
     }
-    out.push_str(rest);
+
+    let mut substituted = String::with_capacity(text.len());
+    let mut placeholders = Vec::new();
+    let mut end = TextSize::from(0);
+    let mut expansions = expansions.iter().peekable();
+    for identifier in identifiers {
+        substituted.push_str(&text[TextRange::new(end, identifier.start())]);
+        // Expansions outside of identifiers stay as written.
+        while let Some(expansion) =
+            expansions.next_if(|expansion| expansion.range.start() < identifier.start())
+        {
+            placeholders.push(expansion.range);
+        }
+        let mut name = String::new();
+        let mut written = identifier.start();
+        while let Some(expansion) =
+            expansions.next_if(|expansion| expansion.range.start() < identifier.end())
+        {
+            name.extend(name_chars(
+                &text[TextRange::new(written, expansion.range.start())],
+            ));
+            name.extend(name_chars(expansion.name));
+            written = expansion.range.end();
+        }
+        name.extend(name_chars(&text[TextRange::new(written, identifier.end())]));
+        if !name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_') {
+            name.insert(0, 'e');
+        }
+        let mut parameter = format!("${name}");
+        let len = usize::from(identifier.len());
+        parameter.truncate(len);
+        substituted.push_str(&parameter);
+        substituted.extend(std::iter::repeat_n('_', len - parameter.len()));
+        placeholders.push(identifier);
+        end = identifier.end();
+    }
+    substituted.push_str(&text[usize::from(end)..]);
+    placeholders.extend(expansions.map(|expansion| expansion.range));
+
+    debug_assert_eq!(substituted.len(), text.len());
+    Preprocessed {
+        text: substituted,
+        placeholders,
+    }
+}
+
+/// The characters of `text` that a named parameter can hold.
+fn name_chars(text: &str) -> impl Iterator<Item = char> + '_ {
+    text.chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '_')
 }
 
 /// The annotation of a `-- +goose <annotation>` line. See
@@ -259,26 +299,81 @@ mod tests {
         assert!(problems[1].1.starts_with("goose rejects a migration"));
     }
 
-    #[test]
-    fn goose_envsub_replaces_braced_expansions_with_named_parameters() {
-        let goose = migration_tool(SectionMarkers::Goose).unwrap();
-        let text = "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema ${SCHEMA};\ngrant usage on schema ${SCHEMA:-${FALLBACK}} to $ROLE, \\${KEPT}, $${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n";
-        let preprocessed = goose.preprocess(text).unwrap();
+    /// The text that is analysed for `text`, and the parts that goose replaces.
+    fn envsub(text: &str) -> Option<(String, Vec<&str>)> {
+        let preprocessed = migration_tool(SectionMarkers::Goose)
+            .unwrap()
+            .preprocess(text)?;
         assert_eq!(preprocessed.text.len(), text.len());
+        let placeholders = preprocessed
+            .placeholders
+            .iter()
+            .map(|range| &text[*range])
+            .collect();
+        Some((preprocessed.text, placeholders))
+    }
+
+    #[test]
+    fn goose_envsub_replaces_expansions_with_named_parameters() {
+        let text = "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema ${SCHEMA};\ngrant usage on schema ${SCHEMA:-${FALLBACK}} to $ROLE, \\${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n";
         assert_eq!(
-            preprocessed.text,
-            "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema $SCHEMA  ;\ngrant usage on schema $SCHEMA                to $ROLE, \\${KEPT}, $${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n"
+            envsub(text),
+            Some((
+                "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema $SCHEMA__;\ngrant usage on schema $SCHEMA_______________ to $ROLE, \\${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n".to_string(),
+                vec!["${SCHEMA}", "${SCHEMA:-${FALLBACK}}", "$ROLE"]
+            ))
         );
+        assert_eq!(envsub("-- +goose Up\nselect ${A};\n"), None);
+        assert_eq!(envsub("select 1;"), None);
+    }
+
+    #[test]
+    fn goose_envsub_reads_defaults_like_interpolate() {
+        // interpolate reads `{` in a default as text, and goose runs `create schema public;`
+        // with `SCHEMA=public`.
         assert_eq!(
-            preprocessed
-                .placeholders
-                .iter()
-                .map(|range| &text[*range])
-                .collect::<Vec<_>>(),
-            ["${SCHEMA}", "${SCHEMA:-${FALLBACK}}"]
+            envsub("-- +goose Up\n-- +goose ENVSUB ON\ncreate schema ${SCHEMA:-app{test};\n"),
+            Some((
+                "-- +goose Up\n-- +goose ENVSUB ON\ncreate schema $SCHEMA____________;\n"
+                    .to_string(),
+                vec!["${SCHEMA:-app{test}"]
+            ))
         );
-        assert!(goose.preprocess("-- +goose Up\nselect ${A};\n").is_none());
-        assert!(goose.preprocess("select 1;").is_none());
+        // interpolate rejects `${A:?}`, so goose fails on the line, and it stays as written.
+        assert_eq!(
+            envsub("-- +goose Up\n-- +goose ENVSUB ON\nselect ${A:?};\n"),
+            None
+        );
+    }
+
+    #[test]
+    fn goose_envsub_replaces_whole_identifiers() {
+        // goose runs `create table app_events (id bigint);` with `PREFIX=app`, and
+        // `select * from "public".events` with `SCHEMA=public`.
+        assert_eq!(
+            envsub(
+                "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${PREFIX}_events (id bigint);\nselect * from \"${SCHEMA}\".events, app_$PREFIX.${A}${B};\n"
+            ),
+            Some((
+                "-- +goose Up\n-- +goose ENVSUB ON\ncreate table $PREFIX_events__ (id bigint);\nselect * from $SCHEMA____.events, $app_PREFIX.$AB_____;\n"
+                    .to_string(),
+                vec![
+                    "${PREFIX}_events",
+                    "\"${SCHEMA}\"",
+                    "app_$PREFIX",
+                    "${A}${B}"
+                ]
+            ))
+        );
+    }
+
+    #[test]
+    fn goose_envsub_keeps_expansions_in_strings_and_comments() {
+        let text = "-- +goose Up\n-- +goose ENVSUB ON\ninsert into audit_log (message) values ('${MESSAGE}'); -- ${NOTE}\n";
+        assert_eq!(
+            envsub(text),
+            Some((text.to_string(), vec!["${MESSAGE}", "${NOTE}"]))
+        );
     }
 
     #[test]
