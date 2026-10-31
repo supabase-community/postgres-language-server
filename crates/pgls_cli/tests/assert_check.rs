@@ -939,6 +939,40 @@ fn nested_configurations_ignore_gitignore_without_vcs() {
     );
 }
 
+/// A relative path in the arguments is relative to the working directory, like any other path
+/// typed on the command line, not to the folder of the configuration file.
+#[test]
+fn relative_path_arguments_are_relative_to_the_working_directory() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        (
+            "sub/migrations/0009_later.sql",
+            "alter table users drop column name;\n",
+        ),
+    ]);
+
+    let migration = Path::new("migrations").join("0009_later.sql");
+    let (_, output) = check_in(
+        &root.path().join("sub"),
+        &[
+            "--migrations-dir",
+            "migrations",
+            "--after",
+            "5",
+            migration.to_str().unwrap(),
+        ],
+        &[],
+    );
+    // `banDropColumn` only runs on migrations once `migrations` is configured.
+    assert!(
+        output.contains("lint/banDropColumn"),
+        "the file is not recognised as a migration:\n{output}"
+    );
+}
+
 /// Runs `check` with the database settings given in `args` only, without the connection
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]
