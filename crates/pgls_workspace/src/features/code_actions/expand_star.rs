@@ -9,7 +9,7 @@ use crate::features::code_actions::{CodeAction, CodeActionKind, EditAction, Text
 
 /// The action that replaces the `*` or `t.*` of `reference` with its columns. `content` is the
 /// text of the file, and the statement of the reference starts at `stmt_start`.
-pub(super) fn expand_star_action(
+pub(crate) fn expand_star_action(
     reference: &Reference,
     content: &str,
     stmt_start: TextSize,
@@ -44,7 +44,7 @@ pub(super) fn expand_star_action(
 /// `select *` or `select u.*`. The line of the cursor is scanned on its own: `*` in comments
 /// and strings, `count(*)`, and multiplications don't count. If the line doesn't scan, like
 /// a line inside a multi-line string, any `*` on it counts.
-pub(super) fn is_at_star(content: &str, position: TextSize) -> bool {
+pub(crate) fn is_at_star(content: &str, position: TextSize) -> bool {
     let offset = usize::from(position).min(content.len());
     let line_start = content[..offset].rfind('\n').map_or(0, |i| i + 1);
     let line_end = content[offset..]
