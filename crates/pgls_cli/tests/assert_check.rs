@@ -826,8 +826,9 @@ async fn the_search_path_argument_replaces_the_search_path_of_the_configuration_
     assert!(!output.contains("lint/unknownColumn"), "{output}");
 }
 
-/// A connection argument such as `--host` unsets the `connectionString` of the configuration
-/// file, which would otherwise win over it, like the client overrides of the language server.
+/// A connection argument such as `--host` replaces its part of the `connectionString` of the
+/// configuration file, which would otherwise win over it, like the client overrides of the
+/// language server.
 #[cfg(target_os = "linux")]
 #[test]
 fn connection_arguments_win_over_the_connection_string_of_the_configuration_file() {
@@ -858,6 +859,31 @@ fn connection_arguments_win_over_the_connection_string_of_the_configuration_file
         "the arguments didn't replace the connection string:\n{output}"
     );
     assert!(!output.contains("from_the_file"), "{output}");
+}
+
+/// A connection argument replaces only its part of the `connectionString` of the configuration
+/// file: `--database` alone still connects to the host of the file, and reports that it can't.
+#[cfg(target_os = "linux")]
+#[test]
+fn a_connection_argument_keeps_the_rest_of_the_connection_string() {
+    // Nothing listens on port 1.
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "connectionString": "postgres://postgres@127.0.0.1:1/from_the_file", "connTimeoutSecs": 1 } }"#,
+        ),
+        ("a.sql", "select 1;\n"),
+    ]);
+    let (success, output) = check_in(
+        root.path(),
+        &["--database", "from_the_arguments", "a.sql"],
+        &[],
+    );
+    assert!(!success, "the connection was skipped:\n{output}");
+    assert!(
+        output.contains("127.0.0.1:1/from_the_arguments"),
+        "the argument didn't replace the database of the connection string:\n{output}"
+    );
 }
 
 /// Without a project configuration, `check` says that it uses the user configuration, on stderr

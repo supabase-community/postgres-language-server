@@ -70,7 +70,8 @@ impl ConfigurationLayers {
 /// Plain [`Merge`] is not enough for that, in two ways:
 ///
 /// * `Merge for Option<T>` ignores `None`, so an override can only set values, never unset them.
-///   The one case where that matters in practice is the connection string handled below.
+///   The one case where that matters in practice is the connection string handled below, which
+///   wins over the connection options that an override sets.
 /// * `Merge for StringSet` *unions* the two sets, so entries of a lower layer survive — and for an
 ///   ordered list such as `typecheck.searchPath` they even come first. Every set the override
 ///   specifies therefore replaces the one below it, by clearing the base set before merging.
@@ -104,7 +105,9 @@ fn apply_override(base: &mut PartialConfiguration, override_layer: &PartialConfi
     // derives host, port, username and database from them (see `DatabaseSettings::from`), so a
     // connection string inherited from the configuration file or the environment would silently
     // win over an override that names a concrete target. An override that names one therefore
-    // unsets the inherited connection string — unless it brings its own, which simply wins.
+    // replaces that part of the inherited connection string, like libpq does for the options
+    // that follow a connection string, and keeps the rest of it — unless it brings its own
+    // connection string, which simply wins.
     if let Some(db) = override_layer.db.as_ref()
         && db.connection_string.is_none()
         && (db.host.is_some()
@@ -114,10 +117,66 @@ fn apply_override(base: &mut PartialConfiguration, override_layer: &PartialConfi
             || db.database.is_some())
         && let Some(base_db) = base.db.as_mut()
     {
-        base_db.connection_string = None;
+        base_db.connection_string = base_db
+            .connection_string
+            .take()
+            .and_then(|connection_string| override_connection_string(&connection_string, db));
     }
 
     base.merge_with(override_layer.clone());
+}
+
+/// `connection_string` with the connection options that `db` sets instead of its own. They are
+/// set as query parameters, which take precedence over the rest of the URL, so that a host can
+/// also be a socket folder or an IPv6 address. `None` if the connection string isn't a URL, so
+/// that only the options of `db` apply.
+#[cfg(feature = "db")]
+fn override_connection_string(
+    connection_string: &str,
+    db: &PartialDatabaseConfiguration,
+) -> Option<String> {
+    let mut url = url::Url::parse(connection_string.trim()).ok()?;
+    // The query parameters of each option, the first of which is set.
+    let options: [(&[&str], Option<String>); 5] = [
+        (&["host", "hostaddr"], db.host.clone()),
+        (&["port"], db.port.map(|port| port.to_string())),
+        (&["user"], db.username.clone()),
+        (&["password"], db.password.clone()),
+        (&["dbname"], db.database.clone()),
+    ];
+    let overridden: Vec<&str> = options
+        .iter()
+        .filter(|(_, value)| value.is_some())
+        .flat_map(|(keys, _)| keys.iter().copied())
+        .collect();
+    let kept: Vec<(String, String)> = url
+        .query_pairs()
+        .filter(|(key, _)| !overridden.contains(&key.as_ref()))
+        .map(|(key, value)| (key.into_owned(), value.into_owned()))
+        .collect();
+    if db.password.is_some() {
+        // An empty password counts as none, so it can't be left to the URL.
+        url.set_password(None).ok()?;
+    }
+    url.set_query(None);
+    {
+        let mut query = url.query_pairs_mut();
+        query.extend_pairs(&kept);
+        for (keys, value) in &options {
+            if let Some(value) = value.as_ref().filter(|value| !value.is_empty()) {
+                query.append_pair(keys[0], value);
+            }
+        }
+    }
+    if url.query() == Some("") {
+        url.set_query(None);
+    }
+    Some(url.to_string())
+}
+
+#[cfg(not(feature = "db"))]
+fn override_connection_string(_: &str, _: &PartialDatabaseConfiguration) -> Option<String> {
+    None
 }
 
 #[cfg(test)]
@@ -168,20 +227,70 @@ mod tests {
         assert_eq!(actual, ["client_b", "client_a"]);
     }
 
+    /// An override of a connection option replaces it in an inherited connection string and
+    /// keeps the others, so that `--database app_test` still connects to the host of the file.
+    #[cfg(feature = "db")]
     #[test]
-    fn individual_database_fields_clear_inherited_connection_string() {
-        let inherited = || parse(json!({"db":{"connectionString":"postgres://inherited"}}));
+    fn individual_database_fields_replace_their_part_of_the_inherited_connection_string() {
+        use crate::settings::DatabaseSettings;
+
+        let inherited = || {
+            parse(json!({"db":{
+                "connectionString":"postgres://alice:secret@db.internal:6543/app?sslmode=require&dbname=app&application_name=pgls"
+            }}))
+        };
+        let settings = |overrides: serde_json::Value| {
+            let db = layers(None, Some(overrides)).apply(inherited()).db.unwrap();
+            assert!(db.connection_string.is_some());
+            DatabaseSettings::from(db)
+        };
+
+        let database = settings(json!({"db":{"database":"app_test"}}));
+        assert!(database.enable_connection);
+        assert_eq!(
+            (
+                database.host.as_str(),
+                database.port,
+                database.username.as_str(),
+                database.database.as_str()
+            ),
+            ("db.internal", 6543, "alice", "app_test")
+        );
+        let url = database.connection_string.unwrap();
+        assert!(url.contains("sslmode=require"), "{url}");
+        assert!(url.contains("application_name=pgls"), "{url}");
+        assert!(url.contains("secret"), "{url}");
+
+        let all = settings(json!({"db":{
+            "host":"::1",
+            "port":5432,
+            "username":"bob",
+            "password":"",
+            "database":"other"
+        }}));
+        assert_eq!(
+            (
+                all.host.as_str(),
+                all.port,
+                all.username.as_str(),
+                all.database.as_str()
+            ),
+            ("::1", 5432, "bob", "other")
+        );
+        let url = all.connection_string.unwrap();
+        assert!(!url.contains("secret"), "{url}");
+        assert!(url.contains("sslmode=require"), "{url}");
+    }
+
+    #[test]
+    fn own_connection_string_wins_over_the_inherited_one() {
         let merged = layers(
             None,
-            Some(json!({"db":{"host":"localhost", "database":"db"}})),
+            Some(json!({"db":{"connectionString":"postgres://own", "host":"localhost"}})),
         )
-        .apply(inherited());
-        assert_eq!(merged.db.unwrap().connection_string, None);
-        let merged = layers(
-            None,
-            Some(json!({"db":{"connectionString":"postgres://own"}})),
-        )
-        .apply(inherited());
+        .apply(parse(
+            json!({"db":{"connectionString":"postgres://inherited"}}),
+        ));
         assert_eq!(
             merged.db.unwrap().connection_string.as_deref(),
             Some("postgres://own")
