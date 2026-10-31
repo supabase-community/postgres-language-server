@@ -107,6 +107,10 @@ pub struct ServerInfo {
 pub struct RegisterProjectFolderParams {
     /// The folder of the project. A project without a folder contains every path.
     pub path: Option<PathBuf>,
+    /// The folder with symlinks resolved, if that differs from `path`, e.g. for a folder opened
+    /// through a symlink. The paths below it belong to the project too.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub real_path: Option<PathBuf>,
 }
 
 /// The configuration file of a folder below the root of a project.
