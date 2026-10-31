@@ -1,3 +1,7 @@
+// The tokenizer runs on the client's SQL on every change, so a panic on unexpected input takes
+// down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 mod cursor;
 mod token;
 use cursor::{Cursor, EOF_CHAR};
@@ -517,7 +521,7 @@ impl Cursor<'_> {
     // https://www.postgresql.org/docs/16/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
     fn dollar_quoted_string(&mut self, start: Vec<char>) -> TokenKind {
         // we have a dollar quoted string deliminated with `$$`
-        if start.is_empty() {
+        let Some(&first) = start.first() else {
             loop {
                 self.eat_while(|c| c != '$');
                 if self.is_eof() {
@@ -534,35 +538,34 @@ impl Cursor<'_> {
                     };
                 }
             }
-        } else {
-            loop {
-                self.eat_while(|c| c != start[0]);
-                if self.is_eof() {
-                    return TokenKind::Literal {
-                        kind: LiteralKind::DollarQuotedString { terminated: false },
-                    };
-                }
+        };
+        loop {
+            self.eat_while(|c| c != first);
+            if self.is_eof() {
+                return TokenKind::Literal {
+                    kind: LiteralKind::DollarQuotedString { terminated: false },
+                };
+            }
 
-                // might be the start of our start/end sequence
-                let mut match_count = 0;
-                for start_char in &start {
-                    if self.first() == *start_char {
-                        self.bump();
-                        match_count += 1;
-                    } else {
-                        self.bump();
-                        break;
-                    }
-                }
-
-                // closing '$'
-                let terminated = match_count == start.len();
-                if self.first() == '$' && terminated {
+            // might be the start of our start/end sequence
+            let mut match_count = 0;
+            for start_char in &start {
+                if self.first() == *start_char {
                     self.bump();
-                    return TokenKind::Literal {
-                        kind: LiteralKind::DollarQuotedString { terminated },
-                    };
+                    match_count += 1;
+                } else {
+                    self.bump();
+                    break;
                 }
+            }
+
+            // closing '$'
+            let terminated = match_count == start.len();
+            if self.first() == '$' && terminated {
+                self.bump();
+                return TokenKind::Literal {
+                    kind: LiteralKind::DollarQuotedString { terminated },
+                };
             }
         }
     }
