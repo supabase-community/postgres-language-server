@@ -1,8 +1,6 @@
-use crate::{
-    LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::is_reindex_concurrent,
-};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::{CatalogView, RelationKind};
+use pgls_catalog::{CatalogView, RelationKind, is_reindex_concurrent};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::{NodeEnum, protobuf};

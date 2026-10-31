@@ -1,4 +1,5 @@
 use crate::fix::StatementTokens;
+use crate::utils::{alter_table_cmds, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -44,18 +45,8 @@ impl LinterRule for ConstraintMissingNotValid {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() else {
-            return diagnostics;
-        };
-
-        for cmd in &stmt.cmds {
-            let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node else {
-                continue;
-            };
-
-            let Some(pgls_query::NodeEnum::Constraint(constraint)) =
-                cmd.def.as_ref().and_then(|d| d.node.as_ref())
-            else {
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            let Some(pgls_query::NodeEnum::Constraint(constraint)) = cmd_def(cmd) else {
                 continue;
             };
 

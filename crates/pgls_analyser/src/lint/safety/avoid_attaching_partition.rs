@@ -1,3 +1,4 @@
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -40,25 +41,21 @@ impl LinterRule for AvoidAttachingPartition {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAttachPartition
-                {
-                    diagnostics.push(
-                        LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Attaching a partition acquires an "<Emphasis>"ACCESS EXCLUSIVE"</Emphasis>" lock on the parent table."
-                            },
-                        )
-                        .detail(
-                            None,
-                            "This blocks all reads and writes on the parent table. Consider adding a matching CHECK constraint to the child table before attaching to minimize lock duration.",
-                        ),
-                    );
-                }
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAttachPartition {
+                diagnostics.push(
+                    LinterDiagnostic::new(
+                        rule_category!(),
+                        None,
+                        markup! {
+                            "Attaching a partition acquires an "<Emphasis>"ACCESS EXCLUSIVE"</Emphasis>" lock on the parent table."
+                        },
+                    )
+                    .detail(
+                        None,
+                        "This blocks all reads and writes on the parent table. Consider adding a matching CHECK constraint to the child table before attaching to minimize lock duration.",
+                    ),
+                );
             }
         }
 

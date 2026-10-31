@@ -55,14 +55,7 @@ impl LinterRule for FunctionReturnTypeMismatch {
         if !ctx.session().check_function_bodies() {
             return Vec::new();
         }
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
-
-        resolution
-            .findings
-            .iter()
-            .filter_map(|finding| match &finding.kind {
+        ctx.findings().filter_map(|finding| match &finding.kind {
                 FindingKind::FunctionReturnMismatch { declared, mismatch } => {
                     let detail = match mismatch {
                         ReturnMismatch::ColumnCount { expected: 1, .. } => {

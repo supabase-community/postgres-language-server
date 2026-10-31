@@ -1,3 +1,4 @@
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -48,25 +49,21 @@ impl LinterRule for AvoidEnableDisableTrigger {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && TRIGGER_SUBTYPES.contains(&cmd.subtype())
-                {
-                    diagnostics.push(
-                        LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Enabling or disabling a trigger acquires a "<Emphasis>"SHARE ROW EXCLUSIVE"</Emphasis>" lock."
-                            },
-                        )
-                        .detail(
-                            None,
-                            "This blocks concurrent writes. Consider the impact on busy tables and use SET lock_timeout.",
-                        ),
-                    );
-                }
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if TRIGGER_SUBTYPES.contains(&cmd.subtype()) {
+                diagnostics.push(
+                    LinterDiagnostic::new(
+                        rule_category!(),
+                        None,
+                        markup! {
+                            "Enabling or disabling a trigger acquires a "<Emphasis>"SHARE ROW EXCLUSIVE"</Emphasis>" lock."
+                        },
+                    )
+                    .detail(
+                        None,
+                        "This blocks concurrent writes. Consider the impact on busy tables and use SET lock_timeout.",
+                    ),
+                );
             }
         }
 

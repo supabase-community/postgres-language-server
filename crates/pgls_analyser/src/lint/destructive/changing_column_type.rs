@@ -1,4 +1,4 @@
-use crate::linter_context::builtin_type_name;
+use crate::utils::{alter_table_cmds, builtin_type_name, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -49,26 +49,21 @@ impl LinterRule for ChangingColumnType {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAlterColumnType
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAlterColumnType {
+                if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd)
+                    && is_safe_type_widening(col_def)
                 {
-                    if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                        cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                        && is_safe_type_widening(col_def)
-                    {
-                        continue;
-                    }
-
-                    diagnostics.push(LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Changing a column type requires a table rewrite and blocks reads and writes."
-                            }
-                        ).detail(None, "Consider creating a new column with the desired type, migrating data, and then dropping the old column."));
+                    continue;
                 }
+
+                diagnostics.push(LinterDiagnostic::new(
+                        rule_category!(),
+                        None,
+                        markup! {
+                            "Changing a column type requires a table rewrite and blocks reads and writes."
+                        }
+                    ).detail(None, "Consider creating a new column with the desired type, migrating data, and then dropping the old column."));
             }
         }
 

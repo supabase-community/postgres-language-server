@@ -1,3 +1,4 @@
+use crate::utils::{alter_table_cmds, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -50,38 +51,28 @@ impl LinterRule for AddingForeignKeyConstraint {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    match cmd.subtype() {
-                        pgls_query::protobuf::AlterTableType::AtAddConstraint => {
-                            if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
-                                cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                                && let Some(diagnostic) =
-                                    check_foreign_key_constraint(constraint, false)
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            match cmd.subtype() {
+                pgls_query::protobuf::AlterTableType::AtAddConstraint => {
+                    if let Some(pgls_query::NodeEnum::Constraint(constraint)) = cmd_def(cmd)
+                        && let Some(diagnostic) = check_foreign_key_constraint(constraint, false)
+                    {
+                        diagnostics.push(diagnostic);
+                    }
+                }
+                pgls_query::protobuf::AlterTableType::AtAddColumn => {
+                    if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd) {
+                        // check constraints on the column
+                        for constraint in &col_def.constraints {
+                            if let Some(pgls_query::NodeEnum::Constraint(constr)) = &constraint.node
+                                && let Some(diagnostic) = check_foreign_key_constraint(constr, true)
                             {
                                 diagnostics.push(diagnostic);
                             }
                         }
-                        pgls_query::protobuf::AlterTableType::AtAddColumn => {
-                            if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                                cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                            {
-                                // check constraints on the column
-                                for constraint in &col_def.constraints {
-                                    if let Some(pgls_query::NodeEnum::Constraint(constr)) =
-                                        &constraint.node
-                                        && let Some(diagnostic) =
-                                            check_foreign_key_constraint(constr, true)
-                                    {
-                                        diagnostics.push(diagnostic);
-                                    }
-                                }
-                            }
-                        }
-                        _ => {}
                     }
                 }
+                _ => {}
             }
         }
 

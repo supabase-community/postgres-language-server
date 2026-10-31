@@ -1,3 +1,4 @@
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -40,17 +41,9 @@ impl LinterRule for BanDropConstraint {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let constraints: Vec<&str> = match ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => stmt
-                .cmds
-                .iter()
-                .filter_map(|cmd| match &cmd.node {
-                    Some(pgls_query::NodeEnum::AlterTableCmd(cmd))
-                        if cmd.subtype() == AlterTableType::AtDropConstraint =>
-                    {
-                        Some(cmd.name.as_str())
-                    }
-                    _ => None,
-                })
+            pgls_query::NodeEnum::AlterTableStmt(_) => alter_table_cmds(ctx.stmt())
+                .filter(|cmd| cmd.subtype() == AlterTableType::AtDropConstraint)
+                .map(|cmd| cmd.name.as_str())
                 .collect(),
             // 'X' is `DROP CONSTRAINT`.
             pgls_query::NodeEnum::AlterDomainStmt(stmt) if stmt.subtype == "X" => {
