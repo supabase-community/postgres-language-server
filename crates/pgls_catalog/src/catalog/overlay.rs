@@ -259,6 +259,39 @@ impl Catalog {
         }
     }
 
+    /// Makes an index unknown, unless it is known to be missing: a statement may have renamed or
+    /// dropped it.
+    pub(super) fn mark_index_unknown(&mut self, schema: &str, name: &str) {
+        if !self.index_in(schema, name).is_missing() {
+            self.indexes.insert(key(schema, name), Entry::Unknown);
+        }
+    }
+
+    /// Dropping the index of a partitioned table also drops the indexes of the partitions that
+    /// are attached to it, since they depend on it ([`IndexSetParentIndex`]). We don't know which
+    /// they are, so the indexes of all partitions and inheritance children become unknown.
+    ///
+    /// [`IndexSetParentIndex`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/indexcmds.c#L4463
+    pub(super) fn drop_partition_indexes(&mut self) {
+        let children: Vec<Key> = self
+            .children
+            .values()
+            .flatten()
+            .cloned()
+            .chain(
+                self.base
+                    .iter()
+                    .flat_map(|base| base.inheritance_children().cloned()),
+            )
+            .collect();
+        for (schema, table) in children {
+            for index in self.table_indexes(&schema, &table) {
+                self.indexes
+                    .insert(key(&index.schema, &index.name), Entry::Unknown);
+            }
+        }
+    }
+
     /// Renames an index. If we can't tell which index it is, we no longer know which indexes
     /// are missing.
     pub(super) fn rename_index(
@@ -268,7 +301,7 @@ impl Catalog {
         search_path: &[String],
     ) {
         let name = range_var_name(range_var);
-        let mut index = match self.index(name.schema(), &name.name, search_path) {
+        let index = match self.index(name.schema(), &name.name, search_path) {
             Lookup::Found(index) => index,
             Lookup::Missing => return,
             Lookup::Unknown => {
@@ -276,6 +309,11 @@ impl Catalog {
                 return;
             }
         };
+        self.move_index(index, new_name);
+    }
+
+    /// Gives an index a new name in its schema.
+    pub(super) fn move_index(&mut self, mut index: IndexInfo, new_name: &str) {
         self.indexes
             .insert(key(&index.schema, &index.name), Entry::Dropped);
         index.name = new_name.to_owned();

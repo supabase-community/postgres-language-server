@@ -17,9 +17,11 @@
 //! - Renaming a schema makes the rest of the file unknown.
 //! - Only indexes created with `CREATE INDEX` and a name are tracked. Once the file may have
 //!   created others (constraints, partitions, generated names), no index is known to be missing.
-//!   `ADD CONSTRAINT ... USING INDEX` and `RENAME CONSTRAINT` rename an index without the catalog
-//!   noticing, and dropping the index of a partitioned table leaves the indexes of its
-//!   partitions in the database.
+//!   We don't know which constraints have an index, so `RENAME CONSTRAINT` and
+//!   `DROP CONSTRAINT` make the index with the constraint's name unknown, and we don't know
+//!   which partition indexes are attached to an index, so dropping the index of a partitioned
+//!   table makes the indexes of all partitions unknown. `DROP COLUMN` doesn't drop the indexes
+//!   on the column.
 
 mod alter_function_stmt;
 mod alter_object_schema_stmt;
