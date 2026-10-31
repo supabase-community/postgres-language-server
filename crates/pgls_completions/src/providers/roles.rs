@@ -1,13 +1,15 @@
 use crate::{
-    CompletionItemKind,
+    CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
-use pgls_catalog::Snapshot;
+use pgls_catalog::{NamePosition, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
+use super::helper::{get_range_to_replace, with_schema_or_alias};
+
 pub fn complete_roles<'a>(
-    _ctx: &TreesitterContext<'a>,
+    ctx: &TreesitterContext<'a>,
     snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,
 ) {
@@ -22,7 +24,14 @@ pub fn complete_roles<'a>(
             filter: CompletionFilter::from(relevance),
             description: role.name.clone(),
             kind: CompletionItemKind::Role,
-            completion_text: None,
+            // A role is a `RoleSpec` (`NonReservedWord`), which also takes the keywords that name
+            // types or functions unquoted. Quoting like a `ColId` quotes those few names without
+            // need, but never leaves a name unquoted that needs quotes.
+            completion_text: Some(CompletionText {
+                text: with_schema_or_alias(ctx, &role.name, None, NamePosition::ColId),
+                range: get_range_to_replace(ctx),
+                is_snippet: false,
+            }),
             detail: None,
         };
 
