@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use crate::cli_options::CliOptions;
+use crate::commands::enforce_exit_codes;
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
 use pgls_analyse::RuleCategoriesBuilder;
@@ -45,23 +46,7 @@ pub fn dblint(
         None,
     );
 
-    let exit_result = enforce_exit_codes(cli_options, &report);
+    let exit_result = enforce_exit_codes(cli_options, &report, category!("check"));
     session.report("dblint", cli_options, &report)?;
     exit_result
-}
-
-fn enforce_exit_codes(cli_options: &CliOptions, payload: &Report) -> Result<(), CliDiagnostic> {
-    let errors = payload.errors;
-    let warnings = payload.warnings;
-    let category = category!("check");
-
-    if errors > 0 {
-        return Err(CliDiagnostic::check_error(category));
-    }
-
-    if warnings > 0 && cli_options.error_on_warnings {
-        return Err(CliDiagnostic::check_warnings(category));
-    }
-
-    Ok(())
 }

@@ -5,6 +5,7 @@
 //! execute the traversal of directory and files, based on the command that was passed.
 
 use cli_options::CliOptions;
+use commands::FileTargets;
 use commands::check::{self, CheckArgs};
 use commands::format::{self, FormatArgs};
 use pgls_configuration::PartialConfiguration;
@@ -126,11 +127,13 @@ impl<'app> CliSession<'app> {
                 &cli_options,
                 CheckArgs {
                     configuration,
-                    paths,
-                    stdin_file_path,
-                    staged,
-                    changed,
-                    since,
+                    targets: FileTargets {
+                        paths,
+                        stdin_file_path,
+                        staged,
+                        changed,
+                        since,
+                    },
                     fix,
                     unsafe_,
                     only,
@@ -151,12 +154,14 @@ impl<'app> CliSession<'app> {
                 &cli_options,
                 FormatArgs {
                     configuration,
-                    paths,
+                    targets: FileTargets {
+                        paths,
+                        stdin_file_path,
+                        staged,
+                        changed,
+                        since,
+                    },
                     write,
-                    stdin_file_path,
-                    staged,
-                    changed,
-                    since,
                 },
             ),
             PgLSCommand::Parse {

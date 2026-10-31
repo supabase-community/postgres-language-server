@@ -1,0 +1,11 @@
+---
+source: crates/pgls_cli/tests/assert_check.rs
+expression: "run_check_with(&[\"--config-path\", CONFIG_PATH, \"--stdin-file-path\",\n\"virtual.sql\", \"--log-level\", \"none\", \"tests/fixtures/test.sql\"],\nSome(\"select 1;\\n\"), None)"
+---
+status: failure
+stdout:
+
+stderr:
+flags/invalid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Incompatible arguments stdin-file-path and PATH
