@@ -1,9 +1,11 @@
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::str::FromStr;
-use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
+use parking_lot::RwLock;
 use sqlx::{PgPool, Postgres, pool::PoolOptions, postgres::PgConnectOptions};
 
 use crate::{
@@ -135,15 +137,14 @@ impl ConnectionManager {
         }
 
         {
-            if let Ok(pools) = self.pools.read()
-                && let Some(cached_pool) = pools.get(&key)
+            if let Some(cached_pool) = self.pools.read().get(&key)
                 && cached_pool.settings_fingerprint == settings_fingerprint
             {
                 return Some(cached_pool.pools.clone());
             }
         }
 
-        let mut pools = self.pools.write().unwrap();
+        let mut pools = self.pools.write();
 
         // Drop a pool created with stale connection parameters.
         if pools
@@ -284,7 +285,7 @@ impl ConnectionManager {
         error: &DatabaseConnectionError,
         message: &str,
     ) {
-        let mut failures = self.failures.write().unwrap();
+        let mut failures = self.failures.write();
         let now = Instant::now();
         let attempts = failures.get(key).map_or(1, |failure| failure.attempts + 1);
         let multiplier = 1u32
@@ -329,7 +330,7 @@ impl ConnectionManager {
         key: &ConnectionKey,
         settings_fingerprint: u64,
     ) -> Option<DatabaseConnectionError> {
-        let mut failures = self.failures.write().unwrap();
+        let mut failures = self.failures.write();
         if failures
             .get(key)
             .is_some_and(|failure| failure.settings_fingerprint != settings_fingerprint)
@@ -353,7 +354,7 @@ impl ConnectionManager {
     }
 
     fn clear_failure(&self, key: &ConnectionKey) {
-        self.failures.write().unwrap().remove(key);
+        self.failures.write().remove(key);
     }
 }
 
@@ -378,7 +379,7 @@ mod tests {
         let second = manager.get_pool(&settings).unwrap();
 
         assert!(second.is_closed());
-        assert_eq!(manager.pools.read().unwrap().len(), 1);
+        assert_eq!(manager.pools.read().len(), 1);
     }
 
     #[tokio::test]
@@ -394,7 +395,7 @@ mod tests {
         let pool = manager.get_pool(&settings).unwrap();
 
         assert!(!pool.is_closed());
-        let pools = manager.pools.read().unwrap();
+        let pools = manager.pools.read();
         let cached = pools.get(&ConnectionKey::from(&settings)).unwrap();
         assert_ne!(first_fingerprint, changed_fingerprint);
         assert_eq!(cached.settings_fingerprint, changed_fingerprint);
@@ -411,7 +412,7 @@ mod tests {
         let mut settings = settings();
         let key = ConnectionKey::from(&settings);
         let old_fingerprint = settings_fingerprint(&settings);
-        manager.failures.write().unwrap().insert(
+        manager.failures.write().insert(
             key.clone(),
             CachedFailure {
                 error: authentication_failed(),
@@ -425,7 +426,7 @@ mod tests {
         settings.password = Some("corrected-password".to_string());
         let new_fingerprint = settings_fingerprint(&settings);
         assert!(!manager.connection_is_in_backoff(&key, new_fingerprint));
-        assert!(!manager.failures.read().unwrap().contains_key(&key));
+        assert!(!manager.failures.read().contains_key(&key));
         assert!(manager.get_pool(&settings).is_some());
     }
 

@@ -3,7 +3,7 @@ use std::{
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
     sync::{
-        Arc, Mutex, RwLock,
+        Arc,
         atomic::{AtomicU64, Ordering},
     },
 };
@@ -23,6 +23,7 @@ use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
+use parking_lot::{Mutex, RwLock};
 use pgls_analyse::{ActionCategory, AnalysisFilter, Applicability, SUPPRESSION_ACTION_CATEGORY};
 use pgls_analyser::{LinterDiagnostic, MigrationSection, RuleFix};
 use pgls_catalog::CatalogBase;
@@ -186,13 +187,13 @@ impl WorkspaceServer {
     /// What the caches of the open document at `path` hold, for tests of their memory.
     #[doc(hidden)]
     pub fn document_cache_stats(&self, path: &PgLSPath) -> Option<DocumentCacheStats> {
-        let documents = self.documents.read().unwrap();
+        let documents = self.documents.read();
         documents.get(path).map(|doc| doc.cache_stats())
     }
 
     /// The open document at `path`. The lock of the documents is only held to look it up.
     fn document(&self, path: &PgLSPath) -> Result<Arc<Document>, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
+        let documents = self.documents.read();
         documents
             .get(path)
             .cloned()
@@ -212,7 +213,7 @@ impl WorkspaceServer {
     /// Whether `doc` is no longer the content of the document at `path`, e.g. because the client
     /// changed it while a request was running.
     pub(super) fn is_outdated(&self, path: &PgLSPath, doc: &Document) -> bool {
-        let documents = self.documents.read().unwrap();
+        let documents = self.documents.read();
         documents
             .get(path)
             .is_none_or(|current| current.generation() != doc.generation())
@@ -227,7 +228,7 @@ impl WorkspaceServer {
         if evicted.is_empty() {
             return;
         }
-        let documents = self.documents.read().unwrap();
+        let documents = self.documents.read();
         for evicted in evicted {
             if let Some(doc) = documents.get(&evicted) {
                 tracing::debug!(
@@ -714,7 +715,7 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        let mut documents = self.documents.write().unwrap();
+        let mut documents = self.documents.write();
         documents
             .entry(params.path.clone())
             .or_insert_with(|| Arc::new(Document::new(params.content, params.version)));
@@ -725,7 +726,7 @@ impl Workspace for WorkspaceServer {
     /// Remove a file from the workspace
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
-        let mut documents = self.documents.write().unwrap();
+        let mut documents = self.documents.write();
         documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
@@ -741,7 +742,7 @@ impl Workspace for WorkspaceServer {
     ), err)]
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        let mut documents = self.documents.write().unwrap();
+        let mut documents = self.documents.write();
 
         let stale = match documents.entry(params.path.clone()) {
             // A request that still works on the previous version keeps it. The copy shares the
@@ -951,15 +952,12 @@ impl Workspace for WorkspaceServer {
         let stmt = doc.find(params.statement_id, ExecuteStatementMapper);
         // Finding the statement parsed the statements before it.
         self.charge_document_caches(&params.path, doc);
-
-        if stmt.is_none() {
+        let Some((_id, range, content, ast)) = stmt else {
             return Ok(ExecuteStatementResult {
                 message: "Statement was not found in document.".into(),
                 ..Default::default()
             });
         };
-
-        let (_id, range, content, ast) = stmt.unwrap();
 
         if ast.is_none() {
             return Ok(ExecuteStatementResult {
@@ -1619,27 +1617,24 @@ fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
         _ => "\n",
     };
 
-    let start = usize::from(start);
-    let line_start = content[..start]
-        .rfind('\n')
-        .map_or(0, |newline| newline + 1);
-    let before = &content[line_start..start];
+    let before_start = &content[..usize::from(start)];
+    let line_start = before_start.rfind('\n').map_or(0, |newline| newline + 1);
+    let before = &before_start[line_start..];
     let indentation: String = before
         .chars()
         .take_while(|c| *c == ' ' || *c == '\t')
         .collect();
-    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
     if before.trim().is_empty() {
         TextEdit {
-            range: TextRange::empty(offset(line_start)),
+            range: TextRange::empty(start - TextSize::of(before)),
             new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
         }
     } else {
         // The statement starts after another one on the same line, so it moves to a line of its
         // own.
-        let previous_end = line_start + before.trim_end().len();
+        let previous_end = start - (TextSize::of(before) - TextSize::of(before.trim_end()));
         TextEdit {
-            range: TextRange::new(offset(previous_end), offset(start)),
+            range: TextRange::new(previous_end, start),
             new_text: format!(
                 "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
             ),

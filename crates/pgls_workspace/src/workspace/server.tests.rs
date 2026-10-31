@@ -170,6 +170,41 @@ fn test_suppresses_multiline_alter_table_drop_column() {
     );
 }
 
+#[test]
+fn a_panic_while_the_workspace_is_locked_does_not_break_it() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _settings = workspace.settings.write();
+        let _documents = workspace.documents.write();
+        panic!("a request panicked while it held the locks");
+    }));
+    assert!(panicked.is_err());
+
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "alter table users drop column name;".into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec!["safety/banDropColumn".parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+}
+
 /// The categories of the diagnostics of a migration file, sorted. Suppression errors have no
 /// category.
 fn migration_diagnostics(
@@ -2737,7 +2772,7 @@ fn code_actions_reuse_the_analysis() {
         .expect("Unable to open test file");
 
     let cached = || {
-        let documents = workspace.documents.read().unwrap();
+        let documents = workspace.documents.read();
         documents.get(&path).unwrap().cache().cached_analysis()
     };
     let lint_actions = || {

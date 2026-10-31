@@ -1,12 +1,14 @@
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use std::{future::Future, sync::LazyLock};
 
 use tokio::runtime::Runtime;
 
 use crate::WorkspaceError;
 
-// Global Tokio Runtime
-static RUNTIME: LazyLock<Runtime> =
-    LazyLock::new(|| Runtime::new().expect("Failed to create Tokio runtime"));
+// Global Tokio Runtime. Creating it fails if the OS can't start its threads, which every request
+// that needs it reports.
+static RUNTIME: LazyLock<std::io::Result<Runtime>> = LazyLock::new(Runtime::new);
 
 /// Use this function to run async functions in the workspace, which is a sync trait called from an
 /// async context.
@@ -17,5 +19,8 @@ where
     F: Future<Output = R> + Send + 'static,
     R: Send + 'static,
 {
-    futures::executor::block_on(async { RUNTIME.spawn(future).await.map_err(|e| e.into()) })
+    let runtime = RUNTIME.as_ref().map_err(|err| {
+        WorkspaceError::runtime(&format!("Failed to create the Tokio runtime: {err}"))
+    })?;
+    futures::executor::block_on(async { runtime.spawn(future).await.map_err(|e| e.into()) })
 }

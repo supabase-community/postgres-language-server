@@ -1,3 +1,5 @@
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use globset::Glob;
 use pgls_configuration::StringSet;
 use pgls_diagnostics::Category;
@@ -7,12 +9,12 @@ use std::{
     borrow::Cow,
     num::NonZeroU64,
     path::{Path, PathBuf},
-    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
     time::Duration,
 };
 use tracing::{trace, warn};
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use pgls_configuration::{
     ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration, TypecheckConfiguration,
     database::PartialDatabaseConfiguration,
@@ -153,7 +155,7 @@ pub struct WorkspaceSettingsHandle<'a> {
 impl<'a> WorkspaceSettingsHandle<'a> {
     pub(crate) fn new(settings: &'a RwLock<WorkspaceSettings>) -> Self {
         Self {
-            inner: settings.read().unwrap(),
+            inner: settings.read(),
         }
     }
 
@@ -181,7 +183,7 @@ pub struct WorkspaceSettingsHandleMut<'a> {
 impl<'a> WorkspaceSettingsHandleMut<'a> {
     pub(crate) fn new(settings: &'a RwLock<WorkspaceSettings>) -> Self {
         Self {
-            inner: settings.write().unwrap(),
+            inner: settings.write(),
         }
     }
 }
