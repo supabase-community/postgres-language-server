@@ -921,6 +921,8 @@ impl Workspace for WorkspaceServer {
             .ok_or(WorkspaceError::not_found())?;
 
         let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        // Finding the statement parsed the statements before it.
+        self.charge_document_caches(&documents, &params.path);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
