@@ -20,7 +20,7 @@ mod walk;
 pub(crate) use parse::ParseResult;
 use parse::PgQueryStore;
 use tree::TreeSitterStore;
-pub(crate) use walk::{ContentChange, ResolvedStatement, WalkCache};
+pub(crate) use walk::{ContentChange, MigrationContext, ResolvedStatement, WalkCache};
 
 /// What an edit invalidated in a document's cache. On a long file, the analysis, the copies of
 /// the catalog in the walk checkpoints and the snapshot hold every object the file defines, and
@@ -166,10 +166,25 @@ impl DocumentCache {
         keyed
     }
 
-    /// Runs `f` on what the walks over the document left for `key`. It is not held while
+    /// Runs `f` on what the walks over the document left for `key`, without what was computed
+    /// in another migration `context`, see [`WalkCache::set_context`]. It is not held while
     /// walking, so that requests on the same document don't wait for each other.
-    pub(crate) fn with_walk<R>(&self, key: &CacheKey, f: impl FnOnce(&mut WalkCache) -> R) -> R {
-        f(&mut self.keyed(key).walk)
+    pub(crate) fn with_walk<R>(
+        &self,
+        key: &CacheKey,
+        context: &MigrationContext,
+        f: impl FnOnce(&mut WalkCache) -> R,
+    ) -> R {
+        let mut keyed = self.keyed(key);
+        let stale = keyed.walk.set_context(context);
+        let result = f(&mut keyed.walk);
+        drop(keyed);
+        StaleEntries {
+            analysis: None,
+            walk: stale,
+        }
+        .drop_in_background();
+        result
     }
 
     /// Takes out what `change` invalidates, see [`WalkCache::content_changed`], and the

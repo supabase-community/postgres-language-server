@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use pgls_analyser::{AnalysableStatement, AnalysedFileContext, WalkParams};
+use pgls_analyser::{AnalysableStatement, AnalysedFileContext, MigrationSection, WalkParams};
 use pgls_catalog::{
     Catalog, CatalogBase, Origin, Snapshot,
     resolve::{ColumnSource, Reference, ResolveParams, resolve},
@@ -17,7 +17,7 @@ use pgls_text_size::{TextRange, TextSize};
 use super::{
     WorkspaceServer,
     document::{AnalyserDiagnosticsMapper, Document, DocumentStatement},
-    document_cache::{CacheKey, ResolvedStatement},
+    document_cache::{CacheKey, MigrationContext, ResolvedStatement, WalkCache},
     document_sections,
 };
 use crate::settings::Settings;
@@ -29,21 +29,40 @@ pub(super) struct EditorRequest<'a> {
     /// The database snapshot the catalog starts from.
     pub(super) snapshot: Arc<Snapshot>,
     pub(super) key: CacheKey,
+    /// The migration sections of the document.
+    sections: Vec<MigrationSection>,
+    context: MigrationContext,
+}
+
+impl EditorRequest<'_> {
+    /// Runs `f` on what the walks over `doc` left for this request, see
+    /// [`super::document_cache::DocumentCache::with_walk`].
+    fn with_walk<R>(&self, doc: &Document, f: impl FnOnce(&mut WalkCache) -> R) -> R {
+        doc.cache().with_walk(&self.key, &self.context, f)
+    }
 }
 
 impl WorkspaceServer {
-    /// What a request of `project_key` on a document with `settings` walks with, starting from
-    /// the database `snapshot`.
+    /// What a request of `project_key` on `doc` with `settings` walks with, starting from the
+    /// database `snapshot`.
+    ///
+    /// Cost: O(lines) to find the migration sections of the document.
     pub(super) fn editor_request<'a>(
         &self,
         project_key: crate::workspace::ProjectKey,
         settings: Option<&'a Settings>,
         snapshot: Arc<Snapshot>,
+        doc: &Document,
     ) -> EditorRequest<'a> {
+        let sections = settings
+            .map(|settings| document_sections(settings, doc))
+            .unwrap_or_default();
         EditorRequest {
             settings,
             key: self.cache_key(project_key, Some(&snapshot)),
             snapshot,
+            context: MigrationContext::new(&sections, doc.statement_ranges()),
+            sections,
         }
     }
 
@@ -75,15 +94,11 @@ impl WorkspaceServer {
         end: TextSize,
         visit: impl FnMut(&AnalysableStatement, &AnalysedFileContext),
     ) -> (Catalog, Vec<AnalysableStatement>) {
-        let (search_path, sections) = request
+        let search_path = request
             .settings
-            .map(|settings| {
-                (
-                    settings.typecheck.search_path.clone(),
-                    document_sections(settings, doc),
-                )
-            })
+            .map(|settings| settings.typecheck.search_path.clone())
             .unwrap_or_default();
+        let sections = &request.sections;
 
         let ranges = doc.statement_ranges();
         let request_at = ranges
@@ -98,9 +113,7 @@ impl WorkspaceServer {
             })
             .filter(|edit_at| *edit_at < request_at);
         let checkpoints: Vec<TextSize> = edit_at.into_iter().chain([request_at]).collect();
-        let from = doc.cache().with_walk(&request.key, |walk| {
-            walk.checkpoint_before(request_at, &sections)
-        });
+        let from = request.with_walk(doc, |walk| walk.checkpoint_before(request_at, sections));
 
         let mut stmts = Vec::new();
         let mut unparsable = Vec::new();
@@ -129,9 +142,10 @@ impl WorkspaceServer {
             WalkParams {
                 stmts: &stmts,
                 unparsable: &unparsable,
+                statement_ranges: ranges,
                 catalog_base: Some(self.catalog_base(&request.snapshot)),
                 search_path: &request.snapshot.expand_search_path(&search_path),
-                sections: &sections,
+                sections,
                 end,
                 // Editor features show what names most likely refer to, so a `DO` block or a
                 // statement that doesn't parse doesn't turn them off for the rest of the file.
@@ -141,7 +155,7 @@ impl WorkspaceServer {
             },
             visit,
         );
-        doc.cache().with_walk(&request.key, |cache| {
+        request.with_walk(doc, |cache| {
             for state in walk.checkpoints {
                 cache.record_checkpoint(state);
             }
@@ -170,10 +184,9 @@ impl WorkspaceServer {
             statement.start() < range.end() || statement.start() <= range.start()
         });
         let tops = ranges.get(first..last).unwrap_or_default();
-        let mut cached: Vec<Option<Arc<[ResolvedStatement]>>> =
-            doc.cache().with_walk(&request.key, |walk| {
-                tops.iter().map(|top| walk.resolved(top.start())).collect()
-            });
+        let mut cached: Vec<Option<Arc<[ResolvedStatement]>>> = request.with_walk(doc, |walk| {
+            tops.iter().map(|top| walk.resolved(top.start())).collect()
+        });
         let Some(first_missing) = cached.iter().position(Option::is_none) else {
             return cached.into_iter().flatten().collect();
         };
@@ -225,7 +238,7 @@ impl WorkspaceServer {
                 });
             }
         }
-        doc.cache().with_walk(&request.key, |walk| {
+        request.with_walk(doc, |walk| {
             for ((top, statements), cached) in tops.iter().zip(resolved).zip(&mut cached) {
                 if cached.is_none() {
                     let statements: Arc<[ResolvedStatement]> = statements.into();
@@ -254,17 +267,14 @@ impl WorkspaceServer {
             .get(ranges.partition_point(|range| range.end() <= stmt.range.start()))
             .map_or(stmt.range.start(), |range| range.start());
         let in_body = stmt.id.is_child();
-        if let Some(snapshot) = doc
-            .cache()
-            .with_walk(&request.key, |walk| walk.snapshot(top, in_body))
-        {
+        if let Some(snapshot) = request.with_walk(doc, |walk| walk.snapshot(top, in_body)) {
             return snapshot;
         }
         let (catalog, _) = self.walk(request, doc, top, stmt.range.start(), |_, _| {});
         let snapshot = catalog
             .snapshot()
             .unwrap_or_else(|| Arc::clone(&request.snapshot));
-        doc.cache().with_walk(&request.key, |walk| {
+        request.with_walk(doc, |walk| {
             walk.record_snapshot(top, in_body, Arc::clone(&snapshot))
         });
         snapshot
