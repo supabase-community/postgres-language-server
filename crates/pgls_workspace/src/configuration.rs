@@ -886,7 +886,7 @@ fn apply_extends_transitively(
                 ))
                 .into());
             }
-            if chain.len() > EXTENDS_DEPTH_MAX {
+            if chain.len() >= EXTENDS_DEPTH_MAX {
                 return Err(ConfigurationDiagnostic::invalid_configuration(format!(
                     "The configuration files extend each other more than {EXTENDS_DEPTH_MAX} \
                      levels deep, at {}",
@@ -1155,6 +1155,24 @@ mod tests {
         assert!(error.to_string().contains("extend each other"), "{error}");
     }
 
+    /// A file system with a chain of `files` configuration files, each extending the next.
+    fn extends_chain(files: usize) -> MemoryFileSystem {
+        let mut fs = file_system();
+        let name = |level: usize| match level {
+            0 => ConfigName::pgls_jsonc().to_string(),
+            level => format!("{level}.jsonc"),
+        };
+        for level in 0..files {
+            let content = if level + 1 < files {
+                format!(r#"{{ "extends": ["./{}"] }}"#, name(level + 1))
+            } else {
+                "{}".to_string()
+            };
+            fs.insert(project_directory().join(name(level)), content);
+        }
+        fs
+    }
+
     /// A package that an extended file extends is resolved from the folder of that file, like
     /// `require` in Node.js, so a shared configuration can depend on a package of its own.
     #[test]
@@ -1200,25 +1218,18 @@ mod tests {
     }
 
     #[test]
-    fn extends_fails_when_too_deep() {
-        let mut fs = file_system();
-        fs.insert(
-            project_directory().join(ConfigName::pgls_jsonc()),
-            r#"{ "extends": ["./0.jsonc"] }"#,
+    fn extends_applies_a_chain_as_deep_as_the_limit() {
+        let loaded = load(
+            extends_chain(EXTENDS_DEPTH_MAX),
+            ConfigurationPathHint::FromWorkspace(project_directory()),
         );
-        for level in 0..=EXTENDS_DEPTH_MAX {
-            fs.insert(
-                project_directory().join(format!("{level}.jsonc")),
-                format!(r#"{{ "extends": ["./{}.jsonc"] }}"#, level + 1),
-            );
-        }
-        fs.insert(
-            project_directory().join(format!("{}.jsonc", EXTENDS_DEPTH_MAX + 1)),
-            "{}",
-        );
+        assert_eq!(loaded.extended_files.len(), EXTENDS_DEPTH_MAX - 1);
+    }
 
+    #[test]
+    fn extends_fails_when_too_deep() {
         let error = load_configuration(
-            &DynRef::Owned(Box::new(fs)),
+            &DynRef::Owned(Box::new(extends_chain(EXTENDS_DEPTH_MAX + 1))),
             ConfigurationPathHint::FromWorkspace(project_directory()),
         )
         .expect_err("too deep");
