@@ -2,12 +2,13 @@
 //! what the walk resolves follow the statements that the document has now, and don't grow with
 //! the number of edits.
 //!
-//! Counts every allocation of the test binary with the allocator in `common`, so the test runs
-//! on its own in this file. `CHURN_STATEMENTS` and `CHURN_EDITS` change the size of the workload.
+//! Counts every allocation of the test binary with the allocator in `common`, including
+//! tree-sitter's, so the test runs on its own in this file. `CHURN_STATEMENTS` and `CHURN_EDITS`
+//! change the size of the workload.
 
 mod common;
 
-use common::{current, mib};
+use common::{count_native_allocations, current, mib};
 use pgls_analyse::RuleCategories;
 use pgls_configuration::{Merge, PartialConfiguration, database::PartialDatabaseConfiguration};
 use pgls_fs::PgLSPath;
@@ -252,6 +253,7 @@ fn all_tokens((workspace, project_key): &(WorkspaceServer, ProjectKey), path: &P
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn caches_follow_the_document_through_many_edits(test_db: PgPool) {
+    count_native_allocations();
     let len = env("CHURN_STATEMENTS", 1_000);
     let edits = env("CHURN_EDITS", 2_000);
     let workspace = workspace(&test_db);
