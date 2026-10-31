@@ -961,6 +961,76 @@ fn snapshot_includes_indexes_of_the_file() {
 }
 
 #[test]
+fn snapshot_lists_changed_database_functions_once() {
+    let search_path = path(&["public"]);
+    let mut snapshot = Snapshot::clone(base().snapshot());
+    snapshot.functions[0].id = 10;
+    snapshot.functions[0].body = Some("select 1".into());
+    snapshot.functions.push(crate::Function {
+        id: 11,
+        schema: "public".into(),
+        name: "ping".into(),
+        ..Default::default()
+    });
+    let base = Arc::new(CatalogBase::new(Arc::new(snapshot)));
+    let snapshot_after = |sql: &str| {
+        let mut catalog = Catalog::new(Some(Arc::clone(&base)));
+        for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
+            catalog.apply(stmt, &search_path);
+        }
+        catalog.snapshot().unwrap()
+    };
+    let functions = |snapshot: &Snapshot| -> Vec<(String, i64)> {
+        let mut functions: Vec<_> = snapshot
+            .functions
+            .iter()
+            .map(|function| {
+                (
+                    format!("{}.{}", function.schema, function.name),
+                    function.id,
+                )
+            })
+            .collect();
+        functions.sort();
+        functions
+    };
+
+    // An altered function keeps its database definition.
+    let snapshot = snapshot_after("alter function greet(text, text) immutable;");
+    assert_eq!(
+        functions(&snapshot),
+        [("public.greet".into(), 10), ("public.ping".into(), 11)]
+    );
+    let greet = &snapshot.functions[0];
+    assert_eq!(greet.behavior, Behavior::Immutable);
+    assert_eq!(greet.body.as_deref(), Some("select 1"));
+
+    // A renamed or moved function is listed under its new name only.
+    let snapshot = snapshot_after(
+        "alter function greet(text, text) rename to hello;
+         alter function ping() set schema app;",
+    );
+    assert_eq!(
+        functions(&snapshot),
+        [("app.ping".into(), 11), ("public.hello".into(), 10)]
+    );
+
+    // A replaced function is the one of the file.
+    let snapshot =
+        snapshot_after("create or replace function ping() returns int language sql as 'select 1';");
+    let ping: Vec<_> = functions(&snapshot)
+        .into_iter()
+        .filter(|(name, _)| name == "public.ping")
+        .collect();
+    assert_eq!(ping.len(), 1);
+    assert!(ping[0].1 < 0);
+
+    // Dropping one function of a schema keeps the others.
+    let snapshot = snapshot_after("drop function ping();");
+    assert_eq!(functions(&snapshot), [("public.greet".into(), 10)]);
+}
+
+#[test]
 fn snapshot_excludes_dropped_objects() {
     let search_path = path(&["public"]);
     let catalog = catalog_after(
