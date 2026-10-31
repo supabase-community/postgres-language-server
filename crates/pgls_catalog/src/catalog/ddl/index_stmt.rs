@@ -23,36 +23,51 @@ pub(super) fn apply_index_stmt(c: &mut Catalog, n: &IndexStmt, search_path: &[St
             return;
         }
     };
-    // Without a name, Postgres generates one (`ChooseIndexName`). On a partitioned table, it
-    // also creates an index with a generated name on each partition (`DefineIndex`).
-    if n.idxname.is_empty() || table.kind == RelationKind::PartitionedTable {
-        c.indexes_incomplete = true;
-    }
+    // Without a name, Postgres generates one (`ChooseIndexName`).
     if n.idxname.is_empty() {
+        c.indexes_incomplete = true;
         return;
     }
     let index_key = key(&table.schema, &n.idxname);
-    if n.if_not_exists {
-        match c.index_in(&index_key.0, &index_key.1) {
-            Lookup::Found(_) => return,
-            Lookup::Unknown => {
-                c.indexes.insert(index_key, Entry::Unknown);
-                return;
-            }
-            Lookup::Missing => {}
-        }
+    // With `IF NOT EXISTS`, `index_create` skips the index if any relation in the schema has its
+    // name, not only an index, and `DefineIndex` then skips the indexes of the partitions too.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L894
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/indexcmds.c#L1276
+    let taken = if n.if_not_exists {
+        name_taken(c, &index_key.0, &index_key.1)
+    } else {
+        Lookup::Missing
+    };
+    if let Lookup::Found(()) = taken {
+        return;
+    }
+    // On a partitioned table, Postgres also creates an index with a generated name on each
+    // partition.
+    if table.kind == RelationKind::PartitionedTable {
+        c.indexes_incomplete = true;
     }
     let columns = index_columns(n, &table);
-    c.indexes.insert(
-        index_key,
-        Entry::Defined(IndexInfo {
+    let entry = match taken {
+        Lookup::Unknown => Entry::Unknown,
+        _ => Entry::Defined(IndexInfo {
             schema: table.schema,
             name: n.idxname.clone(),
             table: table.name,
             columns,
             origin: Origin::File,
         }),
-    );
+    };
+    c.indexes.insert(index_key, entry);
+}
+
+/// Whether a relation of any kind has the name in the schema. Indexes share their namespace with
+/// tables, views, sequences and composite types.
+fn name_taken(c: &Catalog, schema: &str, name: &str) -> Lookup<()> {
+    match (c.index_in(schema, name), c.relation_in(schema, name)) {
+        (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(()),
+        (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
+        (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
+    }
 }
 
 /// The columns an index uses: those of its keys and `INCLUDE` list, and those its expressions
