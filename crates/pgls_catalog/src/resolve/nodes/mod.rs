@@ -39,6 +39,8 @@ use delete_stmt::resolve_delete_stmt;
 use explain_stmt::resolve_explain_stmt;
 use func_call::resolve_func_call;
 use insert_stmt::resolve_insert_stmt;
+#[cfg(test)]
+pub(crate) use select_stmt::RESOLVED_QUERIES;
 use select_stmt::resolve_select_stmt;
 use type_name::resolve_type_name;
 use update_stmt::resolve_update_stmt;
@@ -77,7 +79,15 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         }
         NodeEnum::SubLink(n) => {
             resolve_opt(r, &n.testexpr);
-            resolve_opt(r, &n.subselect);
+            if let Some(query) = n.subselect.as_deref() {
+                // The subquery sees the enclosing queries, like in Postgres, where
+                // `transformSubLink` analyses it with the enclosing query as its parent.
+                let enclosing_output = r.output.take();
+                resolve_node(r, query);
+                let output = crate::resolve::resolve_unknown_outputs(r.catalog, r.output.take());
+                r.output = enclosing_output;
+                r.remember_subquery_output(query, output);
+            }
         }
         NodeEnum::ResTarget(n) => resolve_opt(r, &n.val),
         NodeEnum::AExpr(n) => {
