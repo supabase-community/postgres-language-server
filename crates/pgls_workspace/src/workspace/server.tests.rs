@@ -5384,6 +5384,81 @@ async fn test_cancelled_analysis_stops() {
     assert!(actions() > 0);
 }
 
+/// An edit while the diagnostics of the previous version are computed doesn't wait for them.
+/// The analysis checks whether the document changed, which needs the documents, so an edit that
+/// waited for the analysis while it holds the documents would never finish.
+#[test]
+fn test_edit_during_analysis_does_not_wait_for_it() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let workspace = Arc::new(workspace);
+    let diagnostics = move |workspace: &WorkspaceServer, path: PgLSPath| {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path,
+                categories: RuleCategories::all(),
+                max_diagnostics: 1_000,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+    };
+    // The first diagnostics also look for the database, which takes a while.
+    let warm_up = PgLSPath::new("warm_up.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: warm_up.clone(),
+            content: "select 1;".into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    diagnostics(&workspace, warm_up);
+
+    let path = PgLSPath::new("test.sql");
+    let content = "alter table items drop column name;\n".repeat(5_000);
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let analysis = std::thread::spawn({
+        let (workspace, path) = (Arc::clone(&workspace), path.clone());
+        move || diagnostics(&workspace, path)
+    });
+    // Let the analysis start.
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    assert!(
+        !analysis.is_finished(),
+        "the analysis took less than the wait"
+    );
+
+    let (changed, edit) = std::sync::mpsc::channel();
+    std::thread::spawn({
+        let workspace = Arc::clone(&workspace);
+        move || {
+            workspace
+                .change_file(crate::workspace::ChangeFileParams {
+                    project_key,
+                    path,
+                    version: 2,
+                    content: format!("{content}select 1;\n"),
+                })
+                .expect("Unable to change test file");
+            changed.send(()).unwrap();
+        }
+    });
+    edit.recv_timeout(std::time::Duration::from_secs(30))
+        .expect("the edit waited for the analysis of the previous version");
+    // The analysis stopped, since the document changed.
+    assert!(analysis.join().expect("the analysis panicked").is_empty());
+}
+
 /// Whether a statement runs in an implicit transaction block depends on the query it is in,
 /// also on its statements after it. Cached walks see the blocks like a walk from the start.
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
