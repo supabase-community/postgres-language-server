@@ -17,6 +17,25 @@ pub use crate::configuration::PartialConfigurationExt;
 pub use crate::diagnostics::{TransportError, WorkspaceError};
 pub use crate::workspace::Workspace;
 
+/// The stack size of the threads that run the workspace: the tokio workers and blocking threads
+/// of the language server, the rayon workers of `check`, the thread of the other CLI commands,
+/// and the runtime of the workspace's database queries.
+///
+/// The parse tree is decoded and walked recursively (type inference, lint rules, hover, the
+/// formatter), so the stack a statement needs grows with its nesting, which `pgls_query` limits
+/// to `MAX_NESTING`: as deep as Postgres accepts with its default `max_stack_depth`. A stack
+/// overflow aborts the whole process. Running every feature on the deepest statements of several
+/// shapes, the most stack measured was 27 MiB in a release build (8,187 `not`s) and 56 MiB in a
+/// debug build (8,187 terms of `+`), where the frames are larger.
+///
+/// The stack is virtual memory that is only committed as it is used, so a thread that never
+/// sees such a statement doesn't cost more than with a small stack.
+pub const WORKER_STACK_SIZE_BYTES: usize = if cfg!(debug_assertions) {
+    256 * 1024 * 1024
+} else {
+    64 * 1024 * 1024
+};
+
 /// This is the main entrypoint of the application.
 pub struct App<'app> {
     /// A reference to the internal virtual file system

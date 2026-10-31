@@ -58,6 +58,27 @@ describe("Workspace API", () => {
     expect(diagnostics.length).toBeGreaterThan(0);
   });
 
+  test("statements as deep as the WASM build accepts go through every feature", () => {
+    // The WASM build accepts 1,000 levels of nesting; `select 1` takes 9 and each term two.
+    for (const [path, sql] of [
+      ["/deep-plus.sql", `select 1${" + 1".repeat(495)};`],
+      ["/deep-not.sql", `select ${"not ".repeat(495)}true;`],
+      ["/deep-sub.sql", `select ${"(select ".repeat(160)}1${")".repeat(160)};`],
+    ]) {
+      workspace.insertFile(path, sql);
+      const middle = Math.floor(sql.length / 2);
+      expect(workspace.lint(path)).toEqual([]);
+      workspace.hover(path, middle);
+      workspace.complete(path, middle);
+      workspace.format(path);
+    }
+
+    workspace.insertFile("/too-deep.sql", `select 1${" + 1".repeat(496)};`);
+    expect(workspace.lint("/too-deep.sql").map((d) => d.message)).toEqual([
+      "The statement is nested too deeply: its parse tree may be at most 1000 levels deep",
+    ]);
+  });
+
   test("removeFile", () => {
     workspace.insertFile("/to-remove.sql", "SELECT 1;");
     // Should not throw
