@@ -29,14 +29,25 @@ impl TreeSitterStore {
         self.db.lock().unwrap().len()
     }
 
-    /// Drops every cached tree.
+    /// Drops every cached tree, and the memory of the map.
     pub fn clear(&self) {
-        self.db.lock().unwrap().clear();
+        drop(std::mem::take(&mut *self.db.lock().unwrap()));
     }
 
     /// Drops the tree of `statement`.
     pub fn remove(&self, statement: &StatementId) {
         self.db.lock().unwrap().remove(statement);
+    }
+
+    /// Shrinks the map if it is less than a quarter full, see [`super::parse::shrink`].
+    pub fn shrink(&self) {
+        super::parse::shrink(&mut self.db.lock().unwrap());
+    }
+
+    /// The number of trees that the map has room for.
+    #[cfg(test)]
+    pub fn capacity(&self) -> usize {
+        self.db.lock().unwrap().capacity()
     }
 
     /// The tree of `statement`. It is only cached if `may_insert` returns `true`, see
@@ -72,5 +83,35 @@ impl TreeSitterStore {
         }
 
         tree
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dropping_trees_releases_the_map() {
+        let store = TreeSitterStore::new();
+        let statements: Vec<StatementId> = (0..200)
+            .map(|i| StatementId::new(&format!("select {i};")))
+            .collect();
+        let fill = || {
+            for id in &statements {
+                store.get_or_cache_tree(id, || true);
+            }
+        };
+
+        fill();
+        for id in &statements[1..] {
+            store.remove(id);
+        }
+        store.shrink();
+        assert_eq!(store.len(), 1);
+        assert!(store.capacity() < 64, "{}", store.capacity());
+
+        fill();
+        store.clear();
+        assert_eq!(store.capacity(), 0);
     }
 }

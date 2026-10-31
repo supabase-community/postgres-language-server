@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
@@ -18,7 +21,7 @@ use super::{
 #[derive(Clone)]
 pub struct Document {
     content: String,
-    /// Incremented on every change of the content.
+    /// Changes on every change of the content, see [`Document::generation`].
     generation: u64,
     version: i32,
     /// The statements of `content`, kept to split the next version of it incrementally.
@@ -30,6 +33,12 @@ pub struct Document {
     edited_at: Option<TextSize>,
 }
 
+/// A generation that no document had before, see [`Document::generation`].
+fn next_generation() -> u64 {
+    static GENERATIONS: AtomicU64 = AtomicU64::new(0);
+    GENERATIONS.fetch_add(1, Ordering::Relaxed)
+}
+
 impl Document {
     pub fn new(content: String, version: i32) -> Document {
         let split = pgls_statement_splitter::split(&content);
@@ -37,13 +46,14 @@ impl Document {
         let suppressions =
             Suppressions::from(content.as_str()).with_statements(split.ranges.clone());
 
+        let generation = next_generation();
         Document {
             split,
             diagnostics,
             content,
-            generation: 0,
+            generation,
             version,
-            cache: Arc::new(DocumentCache::new()),
+            cache: Arc::new(DocumentCache::new(generation)),
             suppressions,
             edited_at: None,
         }
@@ -73,7 +83,7 @@ impl Document {
         let old_content = std::mem::replace(&mut self.content, content);
         let old_split = std::mem::replace(&mut self.split, split);
         self.version = version;
-        self.generation += 1;
+        self.generation = next_generation();
         self.edited_at = Some(unchanged);
 
         let ranges = &self.split.ranges;
@@ -101,8 +111,9 @@ impl Document {
         stale
     }
 
-    /// Which version of the content this is: it is incremented on every change. Unlike the
-    /// client's version, it always increases.
+    /// Which version of the content this is. Unlike the client's version, it is unique across
+    /// all documents: it changes on every change, and a document that is closed and opened
+    /// again gets a new one.
     pub fn generation(&self) -> u64 {
         self.generation
     }
@@ -256,16 +267,17 @@ impl DocumentStatement {
         }
     }
 
-    /// The range in the document of `range` in the statement text.
+    /// The range in the document of `range` in the statement text. Like [`Self::statement_offset`],
+    /// it can end after the statement text.
     pub fn document_range(&self, range: TextRange) -> TextRange {
-        debug_assert!(range.end() <= TextSize::of(self.id.content()));
         self.offsets.range_to_source(range) + self.range.start()
     }
 
     /// The offset in the statement text of `offset` in the document, which is in the
-    /// statement's range.
+    /// statement's range, or up to two bytes after the end of an unterminated statement, where
+    /// [`GetCompletionsFilter`] finds the cursor of a completion.
     pub fn statement_offset(&self, offset: TextSize) -> TextSize {
-        debug_assert!(self.range.contains_inclusive(offset));
+        debug_assert!(self.range.start() <= offset);
         self.offsets
             .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())
     }
@@ -729,6 +741,24 @@ mod tests {
             results[2].0.as_ref().unwrap().sql.as_deref(),
             Some("select a;")
         );
+    }
+
+    #[test]
+    fn return_bodies_have_no_syntax_error() {
+        for input in [
+            "create function f(p int) returns int begin atomic return p + 1; end;",
+            "create function return(p int) returns int return p + 1;",
+            "create function f(return int) returns int return return + 1;",
+        ] {
+            let d = Document::new(input.to_string(), 1);
+
+            let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+            assert_eq!(results.len(), 2, "{input}");
+            for (_, syntax_error, _) in &results {
+                assert!(syntax_error.is_none(), "{input}: {syntax_error:?}");
+            }
+        }
     }
 
     #[test]
@@ -1268,7 +1298,7 @@ $$ LANGUAGE plpgsql;";
     fn clones_only_see_the_cache_of_their_content() {
         use crate::workspace::{
             ProjectKey,
-            server::document_cache::{CacheKey, ResolvedStatement},
+            server::document_cache::{CacheKey, MigrationContext, ResolvedStatement},
         };
 
         let previous = Document::new("select 1;".into(), 1);
@@ -1277,34 +1307,38 @@ $$ LANGUAGE plpgsql;";
             .update_content("select 2;".into(), 2)
             .drop_in_background();
         let key = CacheKey::new(0, ProjectKey::default(), None);
+        let context = MigrationContext::default();
         let resolved = || -> Arc<[ResolvedStatement]> { Arc::from(Vec::new()) };
 
         previous
             .cache()
-            .with_walk(&key, previous.generation(), |walk| {
+            .with_walk(&key, previous.generation(), &context, |walk| {
                 walk.record_resolved(0.into(), resolved())
             });
         assert!(
             current
                 .cache()
-                .with_walk(&key, current.generation(), |walk| walk.resolved(0.into()))
+                .with_walk(&key, current.generation(), &context, |walk| walk
+                    .resolved(0.into()))
                 .is_none()
         );
         current
             .cache()
-            .with_walk(&key, current.generation(), |walk| {
+            .with_walk(&key, current.generation(), &context, |walk| {
                 walk.record_resolved(0.into(), resolved())
             });
         assert!(
             previous
                 .cache()
-                .with_walk(&key, previous.generation(), |walk| walk.resolved(0.into()))
+                .with_walk(&key, previous.generation(), &context, |walk| walk
+                    .resolved(0.into()))
                 .is_none()
         );
         assert!(
             current
                 .cache()
-                .with_walk(&key, current.generation(), |walk| walk.resolved(0.into()))
+                .with_walk(&key, current.generation(), &context, |walk| walk
+                    .resolved(0.into()))
                 .is_some()
         );
     }
