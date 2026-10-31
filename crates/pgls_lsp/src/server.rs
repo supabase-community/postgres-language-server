@@ -56,7 +56,7 @@ impl LSPServer {
             }
         }
 
-        let version = self.session.document(uri).ok().map(|doc| doc.version);
+        let revision = self.session.document(uri).ok().map(|doc| doc.revision);
         let session = Arc::clone(&self.session);
         let span = tracing::Span::current();
         let cancelled = Arc::new(AtomicBool::new(false));
@@ -76,7 +76,7 @@ impl LSPServer {
                 });
             }
         };
-        if self.session.document(uri).ok().map(|doc| doc.version) != version {
+        if self.session.document(uri).ok().map(|doc| doc.revision) != revision {
             return Err(jsonrpc::Error::content_modified());
         }
         Ok(result)
