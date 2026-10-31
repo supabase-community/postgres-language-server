@@ -154,7 +154,7 @@ impl OffsetMap {
 
 /// The statements of the body of the SQL function that `stmt` creates, in order. `sql` is the
 /// text of `stmt`. Empty if `stmt` doesn't create a SQL function, if the body is empty, or if
-/// the body can't be found in `sql`, like a string continued on the next line.
+/// the body can't be found in `sql`, like a string with an invalid escape.
 ///
 /// A string body with a single statement, or one that doesn't parse, is a single statement over
 /// the whole body, so that its syntax error is reported for the body.
@@ -187,7 +187,7 @@ pub fn sql_function_body(stmt: &pgls_query::NodeEnum, sql: &str) -> Vec<Embedded
 /// Where the string constant of the body of `create_fn` is in `sql`, the text of the statement,
 /// and how offsets in the body's value map to it. Works for functions in any language. `None`
 /// for `BEGIN ATOMIC` and `RETURN` bodies, and if the constant can't be found, like for a
-/// `U&'...'` string.
+/// string with an invalid escape.
 pub fn function_body_location(
     create_fn: &CreateFunctionStmt,
     sql: &str,
