@@ -163,11 +163,15 @@ struct KeyedCaches {
 }
 
 impl DocumentCache {
-    pub(crate) fn new() -> Self {
+    /// The caches of a document whose content is of `generation`.
+    pub(crate) fn new(generation: u64) -> Self {
         Self {
             parses: PgQueryStore::new(),
             trees: TreeSitterStore::new(),
-            keyed: Mutex::default(),
+            keyed: Mutex::new(KeyedCaches {
+                generation,
+                ..KeyedCaches::default()
+            }),
         }
     }
 

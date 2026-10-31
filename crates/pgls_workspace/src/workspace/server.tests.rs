@@ -5495,3 +5495,34 @@ async fn cached_walks_see_the_implicit_blocks_of_queries(test_db: PgPool) {
     assert!(blocks.contains("pub_col"), "{blocks}");
     assert_eq!(blocks, fresh_hover(&edited_after, 1));
 }
+
+/// A request on a document that was closed and opened again is outdated, also if it has the same
+/// content and version.
+#[test]
+fn requests_on_a_reopened_document_are_outdated() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let open = || {
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: "select 1;".into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+    };
+
+    open();
+    let doc = workspace.document(&path).expect("an open document");
+    assert!(!workspace.is_outdated(&path, &doc));
+    workspace
+        .close_file(crate::workspace::CloseFileParams {
+            project_key,
+            path: path.clone(),
+        })
+        .expect("Unable to close test file");
+    open();
+    assert!(workspace.is_outdated(&path, &doc));
+}

@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
@@ -18,7 +21,7 @@ use super::{
 #[derive(Clone)]
 pub struct Document {
     content: String,
-    /// Incremented on every change of the content.
+    /// Changes on every change of the content, see [`Document::generation`].
     generation: u64,
     version: i32,
     /// The statements of `content`, kept to split the next version of it incrementally.
@@ -30,6 +33,12 @@ pub struct Document {
     edited_at: Option<TextSize>,
 }
 
+/// A generation that no document had before, see [`Document::generation`].
+fn next_generation() -> u64 {
+    static GENERATIONS: AtomicU64 = AtomicU64::new(0);
+    GENERATIONS.fetch_add(1, Ordering::Relaxed)
+}
+
 impl Document {
     pub fn new(content: String, version: i32) -> Document {
         let split = pgls_statement_splitter::split(&content);
@@ -37,13 +46,14 @@ impl Document {
         let suppressions =
             Suppressions::from(content.as_str()).with_statements(split.ranges.clone());
 
+        let generation = next_generation();
         Document {
             split,
             diagnostics,
             content,
-            generation: 0,
+            generation,
             version,
-            cache: Arc::new(DocumentCache::new()),
+            cache: Arc::new(DocumentCache::new(generation)),
             suppressions,
             edited_at: None,
         }
@@ -58,7 +68,7 @@ impl Document {
         let ranges = &split.ranges;
         self.content = content;
         self.version = version;
-        self.generation += 1;
+        self.generation = next_generation();
 
         // The statements before the change keep what the walks cached for them. The splitter
         // looks ahead, so a statement before the change can still end elsewhere.
@@ -103,8 +113,9 @@ impl Document {
         )
     }
 
-    /// Which version of the content this is: it is incremented on every change. Unlike the
-    /// client's version, it always increases.
+    /// Which version of the content this is. Unlike the client's version, it is unique across
+    /// all documents: it changes on every change, and a document that is closed and opened
+    /// again gets a new one.
     pub fn generation(&self) -> u64 {
         self.generation
     }
