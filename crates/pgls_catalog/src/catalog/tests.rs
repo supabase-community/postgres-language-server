@@ -912,7 +912,10 @@ fn dropping_a_column_drops_the_indexes_that_use_it() {
          create index t_qualified_idx on t (abs(t.b));
          create index t_where_idx on t (a) where c > 0;
          create index t_include_idx on t (a) include (c);
-         create index t_row_idx on t (md5(t::text));";
+         create function whole_row(t) returns int immutable language sql as 'select 1';
+         create index t_row_idx on t (whole_row(t));
+         create index t_star_idx on t (whole_row(t.*));
+         create index t_row_where_idx on t (whole_row(t)) where b > 0;";
 
     // The column of a key, an INCLUDE column, or a column in an expression or the predicate.
     let catalog = after(&format!("{table} alter table t drop column c;"));
@@ -920,11 +923,15 @@ fn dropping_a_column_drops_the_indexes_that_use_it() {
     assert_eq!(state(&catalog, "t_include_idx"), "missing");
     assert_eq!(state(&catalog, "t_a_idx"), "found");
     assert_eq!(state(&catalog, "t_b_idx"), "found");
-    // `t` is the whole row. We don't follow what it depends on, so the index becomes unknown.
-    assert_eq!(state(&catalog, "t_row_idx"), "unknown");
+    // `t` and `t.*` are the whole row, which adds no column to the index.
+    assert_eq!(state(&catalog, "t_row_idx"), "found");
+    assert_eq!(state(&catalog, "t_star_idx"), "found");
+    assert_eq!(state(&catalog, "t_row_where_idx"), "found");
     let catalog = after(&format!("{table} alter table t drop column b;"));
     assert_eq!(state(&catalog, "t_b_idx"), "missing");
     assert_eq!(state(&catalog, "t_qualified_idx"), "missing");
+    assert_eq!(state(&catalog, "t_row_where_idx"), "missing");
+    assert_eq!(state(&catalog, "t_row_idx"), "found");
     assert_eq!(state(&catalog, "t_a_idx"), "found");
     let catalog = after(&format!(
         "{table} alter table t drop column if exists nope;"
