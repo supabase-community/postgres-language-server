@@ -151,16 +151,17 @@ impl DocumentStatement {
         }
     }
 
-    /// The range in the document of `range` in the statement text.
+    /// The range in the document of `range` in the statement text. Like [`Self::statement_offset`],
+    /// it can end after the statement text.
     pub fn document_range(&self, range: TextRange) -> TextRange {
-        debug_assert!(range.end() <= TextSize::of(self.id.content()));
         self.offsets.range_to_source(range) + self.range.start()
     }
 
     /// The offset in the statement text of `offset` in the document, which is in the
-    /// statement's range.
+    /// statement's range, or up to two bytes after the end of an unterminated statement, where
+    /// [`GetCompletionsFilter`] finds the cursor of a completion.
     pub fn statement_offset(&self, offset: TextSize) -> TextSize {
-        debug_assert!(self.range.contains_inclusive(offset));
+        debug_assert!(self.range.start() <= offset);
         self.offsets
             .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())
     }
@@ -541,6 +542,24 @@ mod tests {
             results[2].0.as_ref().unwrap().sql.as_deref(),
             Some("select a;")
         );
+    }
+
+    #[test]
+    fn return_bodies_have_no_syntax_error() {
+        for input in [
+            "create function f(p int) returns int begin atomic return p + 1; end;",
+            "create function return(p int) returns int return p + 1;",
+            "create function f(return int) returns int return return + 1;",
+        ] {
+            let d = Document::new(input.to_string(), 1);
+
+            let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+            assert_eq!(results.len(), 2, "{input}");
+            for (_, syntax_error, _) in &results {
+                assert!(syntax_error.is_none(), "{input}: {syntax_error:?}");
+            }
+        }
     }
 
     #[test]
