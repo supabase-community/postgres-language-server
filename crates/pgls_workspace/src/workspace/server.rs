@@ -118,6 +118,10 @@ pub struct WorkspaceServer {
     connection: ConnectionManager,
 }
 
+/// Why a statement with placeholders, like goose `ENVSUB` expansions, can't be executed: neither
+/// the text as written nor the analysed text with placeholders is what the migration tool runs.
+const PLACEHOLDER_EXECUTION_DISABLED: &str = "The migration tool replaces parts of this statement before it runs it, like goose's `ENVSUB` expansions, so it can't be executed here.";
+
 /// A database snapshot with the changes of the statements before a statement.
 struct SnapshotBefore {
     /// The database snapshot it is built from.
@@ -403,7 +407,12 @@ impl WorkspaceServer {
             let category = diagnostic.get_category_name();
             let rule = category.strip_prefix("lint/").unwrap_or(category);
 
-            if let Some(fix) = diagnostic.get_fix() {
+            // A fix must not write the placeholder of an `ENVSUB` expansion into the file.
+            if let Some(fix) = diagnostic.get_fix().filter(|fix| {
+                !fix.edits
+                    .iter()
+                    .any(|edit| doc.touches_placeholder(edit.range))
+            }) {
                 actions.push(CodeAction {
                     title: fix.message.clone(),
                     kind: CodeActionKind::Edit(EditAction {
@@ -1154,7 +1163,7 @@ impl Workspace for WorkspaceServer {
 
         let mut actions: Vec<CodeAction> = parser
             .iter_at(DefaultMapper, params.cursor_position)
-            .map(|(stmt, _, txt)| {
+            .map(|(stmt, range, txt)| {
                 let title = format!(
                     "Execute Statement: {}...",
                     txt.chars().take(50).collect::<String>()
@@ -1165,7 +1174,11 @@ impl Workspace for WorkspaceServer {
                     kind: CodeActionKind::Command(CommandAction {
                         category: CommandActionCategory::ExecuteStatement(stmt),
                     }),
-                    disabled_reason: disabled_reason.clone(),
+                    disabled_reason: if parser.touches_placeholder(range) {
+                        Some(PLACEHOLDER_EXECUTION_DISABLED.into())
+                    } else {
+                        disabled_reason.clone()
+                    },
                 }
             })
             .collect();
@@ -1241,7 +1254,15 @@ impl Workspace for WorkspaceServer {
 
             skipped_suggested_fixes = 0;
             let mut fixes: Vec<&RuleFix> = Vec::new();
-            for fix in diagnostics.iter().filter_map(LinterDiagnostic::get_fix) {
+            for fix in diagnostics
+                .iter()
+                .filter_map(LinterDiagnostic::get_fix)
+                .filter(|fix| {
+                    !fix.edits
+                        .iter()
+                        .any(|edit| doc.touches_placeholder(edit.range))
+                })
+            {
                 if fix.applicability == Applicability::Always
                     || params.fix_file_mode == FixFileMode::SafeAndUnsafeFixes
                 {
@@ -1317,6 +1338,15 @@ impl Workspace for WorkspaceServer {
                 ..Default::default()
             });
         };
+
+        // The content is the analysed text, which is the statement as written outside of the
+        // parts that the migration tool replaces. With such parts, neither is what it runs.
+        if parser.touches_placeholder(range) {
+            return Ok(ExecuteStatementResult {
+                message: PLACEHOLDER_EXECUTION_DISABLED.into(),
+                ..Default::default()
+            });
+        }
 
         let settings = self.workspaces();
         let no_connection = ExecuteStatementResult {
@@ -1730,11 +1760,14 @@ impl Workspace for WorkspaceServer {
             }
             last_end = stmt_end;
 
-            // Leave statements outside the requested range untouched.
-            if let Some(filter_range) = params.range
-                && stmt_range.intersect(filter_range).is_none()
+            // Leave statements outside the requested range untouched, and those with `ENVSUB`
+            // expansions, whose text holds placeholders.
+            if params
+                .range
+                .is_some_and(|filter_range| stmt_range.intersect(filter_range).is_none())
+                || doc.touches_placeholder(stmt_range)
             {
-                formatted_output.push_str(&text);
+                formatted_output.push_str(&source[stmt_start..stmt_end]);
                 continue;
             }
 
