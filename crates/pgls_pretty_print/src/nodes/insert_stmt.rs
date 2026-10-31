@@ -81,7 +81,8 @@ pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
         super::emit_on_conflict_clause(e, on_conflict);
     }
 
-    if !n.returning_list.is_empty() {
+    if let Some(first) = n.returning_list.first() {
+        emit_comments_before_keyword(e, "returning", first);
         emit_layout_break(e);
         e.token(TokenKind::RETURNING_KW);
         e.space();
