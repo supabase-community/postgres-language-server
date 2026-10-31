@@ -163,7 +163,7 @@ The entries can point at files in different places:
 - Entries starting with `~/` (or `~\` on Windows) are resolved against your home directory. This works on every platform, so a project can extend your user configuration with the same path on macOS and Linux. Only your own home directory is supported: `~user/` is not expanded.
 - Entries starting with `.` or ending in `.jsonc` are resolved relative to the directory of the configuration file that declares them. Absolute paths are used as they are.
 - Any other entry is resolved as a package, like `require` would in Node.js.
-- An extended file can itself use `extends`; its entries are resolved relative to that file and applied before it. Files that extend each other in a cycle, or more than 10 levels deep, are an error.
+- An extended file can itself use `extends`; its entries are resolved relative to that file, packages from its folder, and applied before it. Files that extend each other in a cycle, or more than 10 levels deep, are an error.
 
 ## Configuring a database connection
 

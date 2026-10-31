@@ -668,7 +668,8 @@ impl PartialConfigurationExt for PartialConfiguration {
     /// filled in with their values from configs listed in the `extends` field.
     ///
     /// The `extends` configs are applied from left to right, each with its own `extends` applied
-    /// first. Relative paths in an extended file are relative to that file.
+    /// first. Relative paths in an extended file are relative to that file, and it resolves
+    /// packages from its folder.
     ///
     /// If a configuration can't be resolved from the file system, extends itself, or is extended
     /// more than [EXTENDS_DEPTH_MAX] levels deep, the operation will fail.
@@ -885,7 +886,7 @@ fn apply_extends_transitively(
                 ))
                 .into());
             }
-            if chain.len() > EXTENDS_DEPTH_MAX {
+            if chain.len() >= EXTENDS_DEPTH_MAX {
                 return Err(ConfigurationDiagnostic::invalid_configuration(format!(
                     "The configuration files extend each other more than {EXTENDS_DEPTH_MAX} \
                      levels deep, at {}",
@@ -894,11 +895,14 @@ fn apply_extends_transitively(
                 .into());
             }
             extended_files.push(path.clone());
+            // Like `require` in Node.js, an extended file resolves the packages in its own
+            // `extends` from its folder, e.g. from the `node_modules` of the package it is in.
+            let package_resolution_base_path = path.parent().unwrap_or(Path::new("")).to_owned();
             chain.push(ExtendingFile::new(
                 path,
                 extended,
                 fs,
-                external_resolution_base_path,
+                &package_resolution_base_path,
             )?);
             continue;
         }
@@ -1151,26 +1155,81 @@ mod tests {
         assert!(error.to_string().contains("extend each other"), "{error}");
     }
 
+    /// A file system with a chain of `files` configuration files, each extending the next.
+    fn extends_chain(files: usize) -> MemoryFileSystem {
+        let mut fs = file_system();
+        let name = |level: usize| match level {
+            0 => ConfigName::pgls_jsonc().to_string(),
+            level => format!("{level}.jsonc"),
+        };
+        for level in 0..files {
+            let content = if level + 1 < files {
+                format!(r#"{{ "extends": ["./{}"] }}"#, name(level + 1))
+            } else {
+                "{}".to_string()
+            };
+            fs.insert(project_directory().join(name(level)), content);
+        }
+        fs
+    }
+
+    /// A package that an extended file extends is resolved from the folder of that file, like
+    /// `require` in Node.js, so a shared configuration can depend on a package of its own.
+    #[test]
+    fn extended_files_resolve_packages_from_their_folder() {
+        let directory = tempfile::tempdir().unwrap();
+        let project = directory.path().join("project");
+        let config_package = project.join("node_modules/@acme/pgls-config");
+        let base_package = config_package.join("node_modules/@acme/pgls-base");
+        for (path, content) in [
+            (
+                project.join(ConfigName::pgls_jsonc()),
+                r#"{ "extends": ["@acme/pgls-config"] }"#,
+            ),
+            (
+                config_package.join("package.json"),
+                r#"{ "name": "@acme/pgls-config", "main": "config.jsonc" }"#,
+            ),
+            (
+                config_package.join("config.jsonc"),
+                r#"{ "extends": ["@acme/pgls-base"], "db": { "database": "config" } }"#,
+            ),
+            (
+                base_package.join("package.json"),
+                r#"{ "name": "@acme/pgls-base", "main": "base.jsonc" }"#,
+            ),
+            (
+                base_package.join("base.jsonc"),
+                r#"{ "db": { "host": "base" } }"#,
+            ),
+        ] {
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, content).unwrap();
+        }
+
+        let loaded = load_configuration(
+            &DynRef::Owned(Box::new(pgls_fs::OsFileSystem::new(project.clone()))),
+            ConfigurationPathHint::FromWorkspace(project),
+        )
+        .expect("configuration should load");
+        let db = loaded.configuration.db.as_ref().unwrap();
+        assert_eq!(db.database.as_deref(), Some("config"));
+        assert_eq!(db.host.as_deref(), Some("base"));
+    }
+
+    #[test]
+    fn extends_applies_a_chain_as_deep_as_the_limit() {
+        let loaded = load(
+            extends_chain(EXTENDS_DEPTH_MAX),
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        );
+        assert_eq!(loaded.extended_files.len(), EXTENDS_DEPTH_MAX - 1);
+    }
+
     #[test]
     fn extends_fails_when_too_deep() {
-        let mut fs = file_system();
-        fs.insert(
-            project_directory().join(ConfigName::pgls_jsonc()),
-            r#"{ "extends": ["./0.jsonc"] }"#,
-        );
-        for level in 0..=EXTENDS_DEPTH_MAX {
-            fs.insert(
-                project_directory().join(format!("{level}.jsonc")),
-                format!(r#"{{ "extends": ["./{}.jsonc"] }}"#, level + 1),
-            );
-        }
-        fs.insert(
-            project_directory().join(format!("{}.jsonc", EXTENDS_DEPTH_MAX + 1)),
-            "{}",
-        );
-
         let error = load_configuration(
-            &DynRef::Owned(Box::new(fs)),
+            &DynRef::Owned(Box::new(extends_chain(EXTENDS_DEPTH_MAX + 1))),
             ConfigurationPathHint::FromWorkspace(project_directory()),
         )
         .expect_err("too deep");
