@@ -400,17 +400,16 @@ pub fn to_color_mode(color: Option<&ColorsArg>) -> ColorMode {
 
 #[cfg(test)]
 mod runtime_tests {
-    /// A long expression needs more stack than the 2 MiB default of tokio's threads. In a debug
+    /// A deep expression needs more stack than the 2 MiB default of tokio's threads. In a debug
     /// build, 2,000 terms already overflow 2 MiB.
     #[test]
     fn workers_parse_long_expressions() {
-        let sql = format!("select 1{};", " + abs(1)".repeat(2_000));
+        // Postgres accepts 4,090 terms with its default `max_stack_depth`.
+        let sql = format!("select 1{};", " + abs(1)".repeat(4_090));
         let runtime = super::runtime().unwrap();
         let parsed = runtime
             .block_on(runtime.spawn(async move { pgls_query::parse(&sql).is_ok() }))
             .unwrap();
-        // The tree is nested too deeply to be decoded, so it doesn't parse, but the parser
-        // returns instead of overflowing the stack.
-        assert!(!parsed);
+        assert!(parsed);
     }
 }

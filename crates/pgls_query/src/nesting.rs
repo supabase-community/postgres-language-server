@@ -8,14 +8,36 @@
 pgls_query_macros::nesting_codegen!();
 
 /// How deeply the messages of a parse tree may nest. Each level of an expression takes two: the
-/// `Node` and the node it holds, e.g. an `A_Expr`. With this limit, `select 1 + 1 + ...` may have
-/// about 500 terms, a chain of `union`s about 1,000 and nested subqueries about 140.
+/// `Node` and the node it holds, e.g. an `A_Expr`.
 ///
-/// The deepest tree must fit into the stack of the threads that decode and walk it. In a release
-/// build, the language server needs about 1.1 MiB of stack for such a statement (hover, inlay
-/// hints, diagnostics, code actions and formatting), well within the 8 MiB of its threads.
-/// Postgres accepts about 4,000 terms with its default `max_stack_depth` of 2 MB.
-pub const MAX_NESTING: usize = 1_000;
+/// This accepts what Postgres accepts with its default `max_stack_depth` of 2 MB, which limits
+/// the stack rather than the depth. Asked for the deepest statement of each shape, Postgres 15
+/// accepts (the nesting in messages in parentheses):
+///
+/// | statement | Postgres accepts | nesting |
+/// |---|---|---|
+/// | `select 1 + 1 + ...`, `'a' \|\| 'a' \|\| ...`, `abs(abs(...))` | 4,091 terms | 8,191 |
+/// | `select not not ... true` | 7,703 | 15,415 |
+/// | `select (select (select ...))` | 2,111 | 12,675 |
+/// | `select 1 union all select 1 ...` | 7,273 | 7,282 |
+/// | `... join ... using (a)` | 6,545 | 13,103 |
+/// | `case when ... else case ...` | 2,498 | 5,007 |
+/// | `1::int::int...` | 13,096 | 26,201 |
+///
+/// Only the chain of casts is cut short: this limit allows about 8,190 casts, or `1 + 1 + ...`
+/// with twice the terms Postgres accepts.
+///
+/// The deepest tree must fit into the stack of the threads that decode and walk it, see
+/// `WORKER_STACK_SIZE_BYTES` in `pgls_workspace`.
+///
+/// The WASM build accepts 1,000 levels. Its stack can't grow: WebAssembly runs on the stack of the
+/// JavaScript engine, whose size the browser decides, and Emscripten's own stack has 1 MiB (see
+/// `build-wasm.sh`).
+pub const MAX_NESTING: usize = if cfg!(target_os = "emscripten") {
+    1_000
+} else {
+    16_384
+};
 
 /// The message nesting of the tree is deeper than [`MAX_NESTING`].
 #[derive(Debug)]
@@ -141,23 +163,53 @@ mod tests {
         assert_eq!(depth(&serialized(&long)), 11);
     }
 
-    /// prost's own limit of 100 rejected these.
+    /// Runs `f` on a thread with the stack of the language server's threads: decoding a tree as
+    /// deep as [`MAX_NESTING`] needs more than a test thread has.
+    fn on_worker_stack<T: Send>(f: impl FnOnce() -> T + Send) -> T {
+        std::thread::scope(|scope| {
+            std::thread::Builder::new()
+                .stack_size(64 * 1024 * 1024)
+                .spawn_scoped(scope, f)
+                .unwrap()
+                .join()
+                .unwrap()
+        })
+    }
+
+    /// The deepest statements Postgres accepts with its default `max_stack_depth`. prost's own
+    /// recursion limit of 100 rejected them.
     #[test]
-    fn parses_deeply_nested_statements() {
-        for sql in [
-            format!("select 1{};", " + abs(1)".repeat(400)),
-            format!("select 'a'{};", " || 'a'".repeat(400)),
-            format!("select 1{};", " union select 1".repeat(900)),
-            format!("select {}1{};", "(select ".repeat(130), ")".repeat(130)),
-        ] {
-            let result = crate::parse(&sql);
-            assert!(result.is_ok(), "{}: {result:?}", &sql[..40]);
-        }
+    fn parses_what_postgres_accepts() {
+        on_worker_stack(|| {
+            for sql in [
+                format!("select 1{};", " + 1".repeat(4_091)),
+                format!("select 'a'{};", " || 'a'".repeat(4_091)),
+                format!("select {}1{};", "abs(".repeat(4_091), ")".repeat(4_091)),
+                format!("select {}true;", "not ".repeat(7_703)),
+                format!("select {}1{};", "(select ".repeat(2_111), ")".repeat(2_111)),
+                format!("select 1{};", " union all select 1".repeat(7_273)),
+                format!(
+                    "select {}1{};",
+                    "case when true then 1 else ".repeat(2_498),
+                    " end".repeat(2_498)
+                ),
+            ] {
+                let result = crate::parse(&sql);
+                assert!(result.is_ok(), "{}: {result:?}", &sql[..40]);
+            }
+        });
     }
 
     #[test]
     fn rejects_statements_nested_too_deeply() {
-        let result = crate::parse(&format!("select 1{};", " + abs(1)".repeat(600)));
-        assert_eq!(result.unwrap_err(), crate::Error::TooDeep);
+        on_worker_stack(|| {
+            // `select 1` nests 9 messages deep, and each term adds two.
+            let at_limit = |terms: usize| format!("select 1{};", " + 1".repeat(terms));
+            assert!(crate::parse(&at_limit((MAX_NESTING - 9) / 2)).is_ok());
+            assert_eq!(
+                crate::parse(&at_limit((MAX_NESTING - 9) / 2 + 1)).unwrap_err(),
+                crate::Error::TooDeep
+            );
+        });
     }
 }
