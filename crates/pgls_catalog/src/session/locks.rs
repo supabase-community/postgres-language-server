@@ -29,6 +29,8 @@ pub(super) struct Locks {
     pub(super) access_exclusive_tables: Vec<(String, String)>,
 }
 
+// The parser folds unquoted names to lower case, so names are compared exactly: `"Users"` and
+// `users` are different tables.
 impl Locks {
     pub(super) fn has_not_valid_constraint(
         &self,
@@ -38,11 +40,9 @@ impl Locks {
         search_path: &[String],
     ) -> bool {
         let (schema, table) = catalog.relation_name_of(table, search_path);
-        self.not_valid_constraints.iter().any(|(s, t, n)| {
-            schema.eq_ignore_ascii_case(s)
-                && table.eq_ignore_ascii_case(t)
-                && name.eq_ignore_ascii_case(n)
-        })
+        self.not_valid_constraints
+            .iter()
+            .any(|(s, t, n)| *s == schema && *t == table && n == name)
     }
 
     pub(super) fn has_created_relation(
@@ -58,7 +58,7 @@ impl Locks {
     pub(super) fn has_created_object(&self, schema: &str, name: &str) -> bool {
         self.created_objects
             .iter()
-            .any(|(s, n)| schema.eq_ignore_ascii_case(s) && name.eq_ignore_ascii_case(n))
+            .any(|(s, n)| s == schema && n == name)
     }
 
     pub(super) fn is_dangerous_lock_stmt(

@@ -68,6 +68,25 @@ fn created_objects_and_schema_use_search_path() {
     assert!(s.locks.has_created_object("app", "made_idx"));
 }
 #[test]
+fn names_are_compared_exactly() {
+    // The parser folds unquoted names to lower case, so `"Users"` and `users` are different
+    // tables.
+    let mut s = Session::new(vec!["public".into()]);
+    apply(&mut s, r#"CREATE TABLE "Users" (id int)"#);
+    apply(&mut s, r#"CREATE TABLE "App".events (id int)"#);
+    apply(
+        &mut s,
+        r#"ALTER TABLE "Things" ADD CONSTRAINT "Things_fk" FOREIGN KEY (id) REFERENCES other(id) NOT VALID"#,
+    );
+    assert!(created(&s, "", "Users"));
+    assert!(!created(&s, "", "users"));
+    assert!(created(&s, "App", "events"));
+    assert!(!created(&s, "app", "events"));
+    assert!(not_valid(&s, "Things", "Things_fk"));
+    assert!(!not_valid(&s, "things", "Things_fk"));
+    assert!(!not_valid(&s, "Things", "things_fk"));
+}
+#[test]
 fn not_valid_and_access_exclusive_are_tracked() {
     let mut s = Session::new(vec!["app".into()]);
     apply(
