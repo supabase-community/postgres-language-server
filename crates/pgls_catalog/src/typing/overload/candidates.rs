@@ -13,7 +13,10 @@ use crate::{FunctionInfo, OperatorInfo, OperatorKind};
 /// arguments later in the search path. Returns `None` when a candidate can't be evaluated.
 ///
 /// With `expand_variadic` unset, as for a call that marks its last argument `VARIADIC`, the
-/// variadic parameter takes the array itself.
+/// variadic parameter takes the array itself. With `include_out_arguments` set, as for `CALL`,
+/// the output arguments of functions are matched too, see [`FunctionSignature::call_arguments`].
+///
+/// [`FunctionSignature::call_arguments`]: crate::FunctionSignature::call_arguments
 ///
 /// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
 pub(super) fn expand_candidates(
@@ -21,13 +24,14 @@ pub(super) fn expand_candidates(
     nargs: usize,
     names: &[String],
     expand_variadic: bool,
+    include_out_arguments: bool,
 ) -> Option<Vec<Candidate<FunctionInfo>>> {
     // Candidates, and whether each expands variadic arguments.
     let mut expanded: Vec<(Candidate<FunctionInfo>, bool)> = Vec::new();
     for function in functions {
         let signature = function.signature.as_ref()?;
-        let params = signature
-            .arguments
+        let arguments = signature.call_arguments(include_out_arguments);
+        let params = arguments
             .iter()
             .map(|arg| arg.ty.clone())
             .collect::<Option<Vec<_>>>()?;
@@ -60,11 +64,8 @@ pub(super) fn expand_candidates(
             if pronargs != nargs && !use_defaults {
                 continue;
             }
-            let names_of: Vec<Option<&str>> = signature
-                .arguments
-                .iter()
-                .map(|arg| arg.name.as_deref())
-                .collect();
+            let names_of: Vec<Option<&str>> =
+                arguments.iter().map(|arg| arg.name.as_deref()).collect();
             let Some(order) = match_named_call(&names_of, nargs, names, defaults) else {
                 continue;
             };

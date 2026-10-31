@@ -32,7 +32,8 @@ pub(super) fn apply_create_function_stmt(
     let mut variadic = false;
     let mut outputs = Vec::new();
     let mut arguments = Vec::new();
-    for parameter in &n.parameters {
+    let mut output_arguments = Vec::new();
+    for (position, parameter) in n.parameters.iter().enumerate() {
         let Some(NodeEnum::FunctionParameter(parameter)) = &parameter.node else {
             continue;
         };
@@ -58,7 +59,7 @@ pub(super) fn apply_create_function_stmt(
         let argument_mode = match mode {
             Mode::FuncParamInout => crate::FunctionArgumentMode::InOut,
             Mode::FuncParamVariadic => crate::FunctionArgumentMode::Variadic,
-            Mode::FuncParamOut => crate::FunctionArgumentMode::Out,
+            Mode::FuncParamOut | Mode::FuncParamTable => crate::FunctionArgumentMode::Out,
             _ => crate::FunctionArgumentMode::In,
         };
         let is_output = matches!(mode, Mode::FuncParamOut | Mode::FuncParamTable);
@@ -71,15 +72,17 @@ pub(super) fn apply_create_function_stmt(
         {
             return;
         }
-        // `CALL` passes the output arguments of procedures too.
-        if is_output && !(n.is_procedure && mode == Mode::FuncParamOut) {
-            continue;
-        }
-        arguments.push(crate::FunctionArgument {
+        let argument = crate::FunctionArgument {
             name: (!parameter.name.is_empty()).then(|| parameter.name.clone()),
             ty: argument_type,
             mode: argument_mode,
-        });
+        };
+        // `CALL` passes the output arguments of procedures too. Functions keep theirs apart.
+        if is_output && !(n.is_procedure && mode == Mode::FuncParamOut) {
+            output_arguments.push((position, argument));
+            continue;
+        }
+        arguments.push(argument);
         inputs += 1;
         variadic |= mode == Mode::FuncParamVariadic;
         if parameter.defexpr.is_some() {
@@ -169,6 +172,7 @@ pub(super) fn apply_create_function_stmt(
     // A variadic function whose element type is unknown can't be matched.
     function.signature = variadic_element.map(|variadic_element| crate::FunctionSignature {
         arguments,
+        output_arguments,
         input_defaults: defaults,
         variadic_element,
         return_type,

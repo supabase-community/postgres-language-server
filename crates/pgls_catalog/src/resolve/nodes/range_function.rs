@@ -255,6 +255,7 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
             name,
             &args,
             call.func_variadic,
+            false,
             r.search_path,
         ) else {
             return None;
