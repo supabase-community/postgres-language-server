@@ -9,10 +9,10 @@ Statements that Postgres can't run inside a transaction block.
 `VACUUM`, `CREATE DATABASE`, `DROP DATABASE`, `ALTER DATABASE ... SET TABLESPACE`,
 `CREATE TABLESPACE`, `DROP TABLESPACE`, `ALTER SYSTEM`, `CLUSTER` without a table or on a
 partitioned table, `REINDEX SCHEMA`, `REINDEX SYSTEM`, `REINDEX DATABASE`, `REINDEX TABLE`
-on a partitioned table, `DISCARD ALL`, `COMMIT PREPARED`, `ROLLBACK PREPARED`,
-`CREATE SUBSCRIPTION` that creates a replication slot, and
-`ALTER SUBSCRIPTION ... REFRESH PUBLICATION` fail in a transaction block and in the body
-of a function. The statements with `CONCURRENTLY` are covered by
+on a partitioned table, `REINDEX INDEX` on a partitioned index, `DISCARD ALL`,
+`COMMIT PREPARED`, `ROLLBACK PREPARED`, `CREATE SUBSCRIPTION` that creates a replication
+slot, and `ALTER SUBSCRIPTION ... REFRESH PUBLICATION` fail in a transaction block and in
+the body of a function. The statements with `CONCURRENTLY` are covered by
 `banConcurrentIndexCreationInTransaction`.
 
 The rule only reports statements that surely run in a transaction block: between `BEGIN`

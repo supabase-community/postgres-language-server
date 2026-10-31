@@ -330,7 +330,22 @@ impl Catalog {
         names: &[pgls_query::protobuf::Node],
         search_path: &[String],
     ) -> bool {
-        self.index_of(names, search_path)
+        self.is_partitioned(self.index_of(names, search_path))
+    }
+
+    /// Whether the index a `RangeVar` names, like the index of `REINDEX INDEX`, is known to be a
+    /// partitioned index.
+    pub fn is_partitioned_index_of(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        search_path: &[String],
+    ) -> bool {
+        let name = names::range_var_name(range_var);
+        self.is_partitioned(self.index(name.schema(), &name.name, search_path))
+    }
+
+    fn is_partitioned(&self, index: Lookup<IndexInfo>) -> bool {
+        index
             .found()
             .and_then(|index| self.index_table(&index).found())
             .is_some_and(|table| table.kind == RelationKind::PartitionedTable)
