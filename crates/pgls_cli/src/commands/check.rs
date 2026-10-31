@@ -36,13 +36,15 @@ pub fn check(
 ) -> Result<(), CliDiagnostic> {
     validate_args(&args)?;
 
-    let configuration = session.prepare_with_config(cli_options, args.configuration.clone())?;
-    session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
+    let configuration = session.configure_workspace(
+        cli_options,
+        args.configuration.clone(),
+        VcsIntegration::Enabled,
+    )?;
 
     let paths = resolve_paths(session.fs(), &configuration, &args)?;
     let configuration_errors = session.apply_nested_configurations(
         cli_options,
-        args.configuration.clone(),
         &nested_configuration_paths(&args.stdin_file_path, &paths),
     )?;
 
