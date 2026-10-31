@@ -14,7 +14,7 @@ use pgls_console::{ColorMode, Console, ConsoleExt, markup};
 use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use pgls_workspace::configuration::{
@@ -245,15 +245,21 @@ impl<'app> CliSession<'app> {
     /// Registers the project of the working directory and applies the configuration file, with
     /// the database configuration of the environment and then the arguments laid over it, to it
     /// and the VCS integration. Relative paths in the configuration file are relative to its
-    /// folder. Returns the configuration as applied.
+    /// folder, and relative paths in the arguments to the working directory. Returns the
+    /// configuration as applied.
     pub fn configure_workspace(
         &mut self,
         cli_options: &CliOptions,
-        cli_configuration: Option<PartialConfiguration>,
+        mut cli_configuration: Option<PartialConfiguration>,
         vcs: VcsIntegration,
     ) -> Result<PartialConfiguration, CliDiagnostic> {
         setup_cli_subscriber(cli_options.log_level, cli_options.log_kind);
 
+        if let (Some(configuration), Some(working_directory)) =
+            (cli_configuration.as_mut(), self.fs().working_directory())
+        {
+            resolve_path_arguments(configuration, &working_directory);
+        }
         self.layers = ConfigurationLayers {
             environment: PartialDatabaseConfiguration::from_env(),
             overrides: cli_configuration,
@@ -369,6 +375,24 @@ impl<'app> CliSession<'app> {
     ) -> Result<(), CliDiagnostic> {
         let mut reporter = Reporter::from_cli_options(cli_options);
         reporter.report(self.console(), command_name, payload)
+    }
+}
+
+/// Makes the relative paths in the arguments absolute against the working directory. Otherwise
+/// they would be relative to the folder of the configuration file that they are laid over, like
+/// the paths in it.
+fn resolve_path_arguments(configuration: &mut PartialConfiguration, working_directory: &Path) {
+    let paths = [
+        configuration
+            .migrations
+            .as_mut()
+            .and_then(|migrations| migrations.migrations_dir.as_mut()),
+        configuration.vcs.as_mut().and_then(|vcs| vcs.root.as_mut()),
+    ];
+    for path in paths.into_iter().flatten() {
+        if !path.is_empty() && Path::new(path.as_str()).is_relative() {
+            *path = working_directory.join(path.as_str()).display().to_string();
+        }
     }
 }
 
