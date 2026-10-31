@@ -1,14 +1,14 @@
 //! The memory that the workspace keeps for open documents.
 //!
-//! Counts every allocation of the test binary with the allocator in `common`, so the test runs
-//! on its own in this file. `MEMORY_DOCUMENTS` and `MEMORY_GROUPS` (four statements and one SQL function
-//! body each) change the size of the workload, e.g. `MEMORY_DOCUMENTS=20 MEMORY_GROUPS=1250` for
-//! 20 documents with 5,000 statements each. Run it in a release build for numbers that match
-//! what users see.
+//! Counts every allocation of the test binary with the allocator in `common`, including
+//! tree-sitter's, so the test runs on its own in this file. `MEMORY_DOCUMENTS` and
+//! `MEMORY_GROUPS` (four statements and one SQL function body each) change the size of the
+//! workload, e.g. `MEMORY_DOCUMENTS=20 MEMORY_GROUPS=1250` for 20 documents with 5,000
+//! statements each. Run it in a release build for numbers that match what users see.
 
 mod common;
 
-use common::{MIB, current, mib, peak, reset_peak};
+use common::{MIB, count_native_allocations, current, mib, peak, reset_peak};
 use pgls_analyse::RuleCategories;
 use pgls_configuration::{Merge, PartialConfiguration, database::PartialDatabaseConfiguration};
 use pgls_fs::PgLSPath;
@@ -124,6 +124,7 @@ fn use_document(
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn open_documents_stay_within_the_budget(test_db: PgPool) {
+    count_native_allocations();
     let documents = env("MEMORY_DOCUMENTS", 20);
     let groups = env("MEMORY_GROUPS", 200);
     let (workspace, project_key) = workspace(&test_db);
