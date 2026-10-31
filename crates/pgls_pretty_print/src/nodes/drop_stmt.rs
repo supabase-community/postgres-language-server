@@ -3,7 +3,7 @@ use pgls_query::protobuf::{DropBehavior, DropStmt, ObjectType};
 use super::prelude::*;
 
 pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
-    e.group_start(GroupKind::DropStmt);
+    e.group_start();
 
     e.token(TokenKind::DROP_KW);
     e.space();
@@ -44,20 +44,24 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
             }
             ObjectType::ObjectAggregate => {
                 // DROP AGGREGATE needs (*) for "any argument types"
-                emit_comma_separated_list(e, &n.objects, |node, e| {
+                emit_comma_separated_list(e, &n.objects, |e, node| {
                     if let Some(pgls_query::NodeEnum::ObjectWithArgs(owa)) = node.node.as_ref() {
-                        super::emit_object_with_args_for_aggregate(e, owa);
+                        super::emit_object_with_args_as(
+                            e,
+                            owa,
+                            super::ObjectArguments::AggregateSignature,
+                        );
                     } else {
-                        emit_node(node, e);
+                        emit_node(e, node);
                     }
                 });
             }
             _ => {
-                emit_comma_separated_list(e, &n.objects, |node, e| {
+                emit_comma_separated_list(e, &n.objects, |e, node| {
                     if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref() {
                         emit_dot_separated_identifiers(e, &list.items);
                     } else {
-                        emit_node(node, e);
+                        emit_node(e, node);
                     }
                 });
             }
@@ -75,37 +79,37 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
 }
 
 fn emit_dot_separated_identifiers(e: &mut EventEmitter, items: &[pgls_query::protobuf::Node]) {
-    emit_dot_separated_list_with(e, items, |item, e| {
+    emit_dot_separated_list_with(e, items, |e, item| {
         if let Some(pgls_query::NodeEnum::String(s)) = item.node.as_ref() {
             emit_identifier_maybe_quoted(e, &s.sval);
         } else {
-            emit_node(item, e);
+            emit_node(e, item);
         }
     });
 }
 
-fn emit_drop_cast_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) {
+fn emit_drop_cast_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
     if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
         && list.items.len() == 2
     {
         e.token(TokenKind::L_PAREN);
-        emit_node(&list.items[0], e);
+        emit_node(e, &list.items[0]);
         e.space();
         e.token(TokenKind::AS_KW);
         e.space();
-        emit_node(&list.items[1], e);
+        emit_node(e, &list.items[1]);
         e.token(TokenKind::R_PAREN);
         return;
     }
 
     // Fallback for unexpected structure
-    emit_node(node, e);
+    emit_node(e, node);
 }
 
 /// Emit DROP OPERATOR CLASS/FAMILY object.
 /// Format: name USING access_method
 /// The list is [access_method, name_parts...]
-fn emit_drop_opclass_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) {
+fn emit_drop_opclass_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
     if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
         && list.items.len() >= 2
     {
@@ -123,13 +127,13 @@ fn emit_drop_opclass_object(node: &pgls_query::protobuf::Node, e: &mut EventEmit
     }
 
     // Fallback for unexpected structure
-    emit_node(node, e);
+    emit_node(e, node);
 }
 
 /// Emit DROP RULE/TRIGGER/POLICY object.
 /// Format: name ON table_name
 /// The list is [table_name_parts..., object_name] - last item is the object name
-fn emit_drop_on_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) {
+fn emit_drop_on_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
     if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
         && list.items.len() >= 2
     {
@@ -142,7 +146,7 @@ fn emit_drop_on_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) 
         if let Some(pgls_query::NodeEnum::String(s)) = object_name.node.as_ref() {
             emit_identifier_maybe_quoted(e, &s.sval);
         } else {
-            emit_node(object_name, e);
+            emit_node(e, object_name);
         }
 
         e.space();
@@ -155,7 +159,7 @@ fn emit_drop_on_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) 
     }
 
     // Fallback for unexpected structure
-    emit_node(node, e);
+    emit_node(e, node);
 }
 
 /// Emit the object type keywords for DROP statements

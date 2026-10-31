@@ -3,7 +3,7 @@ use pgls_query::protobuf::ExplainStmt;
 use super::prelude::*;
 
 pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
-    e.group_start(GroupKind::ExplainStmt);
+    e.group_start();
 
     e.token(TokenKind::EXPLAIN_KW);
 
@@ -11,13 +11,13 @@ pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
     // EXPLAIN options use "name value" syntax without equals sign
     if !n.options.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.options, |opt, e| emit_explain_option(e, opt));
+        emit_parenthesized_list(e, &n.options, emit_explain_option);
     }
 
     // The query to explain
     if let Some(ref query) = n.query {
         e.line(LineType::SoftOrSpace);
-        emit_node(query, e);
+        emit_node(e, query);
     }
 
     e.group_end();
@@ -47,12 +47,12 @@ fn emit_explain_option(e: &mut EventEmitter, node: &pgls_query::Node) {
                         emit_string_literal(e, s);
                     }
                     _ => {
-                        emit_node(arg, e);
+                        emit_node(e, arg);
                     }
                 }
             }
         }
     } else {
-        emit_node(node, e);
+        emit_node(e, node);
     }
 }

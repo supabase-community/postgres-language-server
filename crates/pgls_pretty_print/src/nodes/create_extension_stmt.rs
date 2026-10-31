@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateExtensionStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensionStmt) {
-    e.group_start(GroupKind::CreateExtensionStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -48,7 +48,7 @@ fn emit_extension_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefEl
                 e.space();
                 // Schema name is a String node - emit_node dispatches to
                 // emit_string which uses emit_identifier_maybe_quoted
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "new_version" => {
@@ -59,7 +59,7 @@ fn emit_extension_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefEl
                 if let Some(NodeEnum::String(s)) = &arg.node {
                     emit_string_literal(e, s);
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -71,7 +71,7 @@ fn emit_extension_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefEl
             emit_keyword(e, &def.defname);
             if let Some(ref arg) = def.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
     }

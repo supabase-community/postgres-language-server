@@ -3,7 +3,7 @@ use pgls_query::protobuf::{DefElem, TransactionStmt, TransactionStmtKind, a_cons
 use super::prelude::*;
 
 pub(super) fn emit_transaction_stmt(e: &mut EventEmitter, n: &TransactionStmt) {
-    e.group_start(GroupKind::TransactionStmt);
+    e.group_start();
 
     let kind = n.kind();
 

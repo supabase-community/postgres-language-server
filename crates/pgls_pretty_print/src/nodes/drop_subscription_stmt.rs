@@ -3,7 +3,7 @@ use pgls_query::protobuf::DropSubscriptionStmt;
 use super::prelude::*;
 
 pub(super) fn emit_drop_subscription_stmt(e: &mut EventEmitter, n: &DropSubscriptionStmt) {
-    e.group_start(GroupKind::DropSubscriptionStmt);
+    e.group_start();
 
     e.token(TokenKind::DROP_KW);
     e.space();

@@ -3,7 +3,7 @@ use pgls_query::protobuf::RangeTableFunc;
 use super::prelude::*;
 
 pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
-    e.group_start(GroupKind::RangeTableFunc);
+    e.group_start();
 
     if n.lateral {
         e.token(TokenKind::LATERAL_KW);
@@ -19,7 +19,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
     // Namespaces are stored as ResTarget nodes with name=prefix, val=URI
     if !n.namespaces.is_empty() {
         e.token(TokenKind::XMLNAMESPACES_KW);
-        emit_parenthesized_list(e, &n.namespaces, |node, emitter| {
+        emit_parenthesized_list(e, &n.namespaces, |emitter, node| {
             // Each namespace is a ResTarget with val=URI, name=prefix
             // If name is empty, it's a DEFAULT namespace
             if let Some(NodeEnum::ResTarget(rt)) = node.node.as_ref() {
@@ -28,12 +28,12 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
                     emitter.token(TokenKind::DEFAULT_KW);
                     emitter.space();
                     if let Some(ref val) = rt.val {
-                        emit_node(val, emitter);
+                        emit_node(emitter, val);
                     }
                 } else {
                     // Named namespace: 'uri' AS prefix
                     if let Some(ref val) = rt.val {
-                        emit_node(val, emitter);
+                        emit_node(emitter, val);
                     }
                     emitter.space();
                     emitter.token(TokenKind::AS_KW);
@@ -41,7 +41,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
                     emit_identifier_maybe_quoted(emitter, &rt.name);
                 }
             } else {
-                emit_node(node, emitter);
+                emit_node(emitter, node);
             }
         });
         e.token(TokenKind::COMMA);
@@ -61,7 +61,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
         if needs_parens {
             e.token(TokenKind::L_PAREN);
         }
-        emit_node(rowexpr, e);
+        emit_node(e, rowexpr);
         if needs_parens {
             e.token(TokenKind::R_PAREN);
         }
@@ -72,7 +72,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::PASSING_KW);
         e.space();
-        emit_node(docexpr, e);
+        emit_node(e, docexpr);
     }
 
     // COLUMNS clause
@@ -81,11 +81,11 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
         e.token(TokenKind::COLUMNS_KW);
         e.indent_start();
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.columns, |node, emitter| {
+        emit_comma_separated_list(e, &n.columns, |emitter, node| {
             if let Some(NodeEnum::RangeTableFuncCol(col)) = node.node.as_ref() {
                 super::emit_range_table_func_col(emitter, col);
             } else {
-                emit_node(node, emitter);
+                emit_node(emitter, node);
             }
         });
         e.indent_end();

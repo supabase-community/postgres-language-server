@@ -3,7 +3,7 @@ use pgls_query::protobuf::{RoleSpec, RoleSpecType};
 use super::prelude::*;
 
 pub(super) fn emit_role_spec(e: &mut EventEmitter, n: &RoleSpec) {
-    e.group_start(GroupKind::RoleSpec);
+    e.group_start();
 
     match n.roletype() {
         RoleSpecType::RolespecCstring => {

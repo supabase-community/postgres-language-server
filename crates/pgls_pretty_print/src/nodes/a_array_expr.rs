@@ -3,7 +3,7 @@ use pgls_query::protobuf::AArrayExpr;
 use super::prelude::*;
 
 pub(super) fn emit_a_array_expr(e: &mut EventEmitter, n: &AArrayExpr) {
-    e.group_start(GroupKind::AArrayExpr);
+    e.group_start();
 
     e.token(TokenKind::ARRAY_KW);
     e.token(TokenKind::L_BRACK);
@@ -13,7 +13,7 @@ pub(super) fn emit_a_array_expr(e: &mut EventEmitter, n: &AArrayExpr) {
     if !n.elements.is_empty() {
         e.indent_start();
         e.line(LineType::Soft);
-        e.group_start(GroupKind::List);
+        e.group_start();
         emit_fill_comma_separated_list(e, &n.elements, emit_node);
         e.group_end();
         e.indent_end();

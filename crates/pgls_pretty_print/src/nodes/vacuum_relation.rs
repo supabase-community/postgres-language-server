@@ -3,7 +3,7 @@ use pgls_query::protobuf::VacuumRelation;
 use super::prelude::*;
 
 pub(super) fn emit_vacuum_relation(e: &mut EventEmitter, n: &VacuumRelation) {
-    e.group_start(GroupKind::VacuumRelation);
+    e.group_start();
 
     if let Some(ref relation) = n.relation {
         super::emit_range_var(e, relation);

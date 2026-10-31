@@ -90,7 +90,7 @@ impl<W: Write> Renderer<W> {
                     self.write_text(text)?;
                     i += 1;
                 }
-                LayoutEvent::GroupStart { .. } => {
+                LayoutEvent::GroupStart => {
                     let group_end = self.find_group_end(events, i);
                     let trailing_width = self.trailing_width(&events[group_end + 1..], 0);
                     self.render_group(&events[i..=group_end], trailing_width)?;
@@ -157,7 +157,7 @@ impl<W: Write> Renderer<W> {
                     }
                 }
                 LayoutEvent::Space => width += 1,
-                LayoutEvent::GroupStart { .. }
+                LayoutEvent::GroupStart
                 | LayoutEvent::GroupEnd
                 | LayoutEvent::IndentStart
                 | LayoutEvent::IndentEnd
@@ -244,7 +244,7 @@ impl<W: Write> Renderer<W> {
                     self.write_text(text)?;
                     i += 1;
                 }
-                LayoutEvent::GroupStart { .. } => {
+                LayoutEvent::GroupStart => {
                     let group_end = self.find_group_end(events, i);
                     let group_trailing_width =
                         self.trailing_width(&events[group_end + 1..], trailing_width);
@@ -318,7 +318,7 @@ impl<W: Write> Renderer<W> {
                     buffer.push_str(text);
                 }
                 LayoutEvent::Line(LineType::Soft | LineType::FillNoSpace)
-                | LayoutEvent::GroupStart { .. }
+                | LayoutEvent::GroupStart
                 | LayoutEvent::GroupEnd
                 | LayoutEvent::IndentStart
                 | LayoutEvent::IndentEnd
@@ -400,7 +400,7 @@ impl<W: Write> Renderer<W> {
                     }
                     length += text.len();
                 }
-                LayoutEvent::GroupStart { .. } => depth += 1,
+                LayoutEvent::GroupStart => depth += 1,
                 LayoutEvent::GroupEnd if depth == 0 => return Some((length, false)),
                 LayoutEvent::GroupEnd => depth -= 1,
                 LayoutEvent::IndentStart
@@ -417,7 +417,7 @@ impl<W: Write> Renderer<W> {
         let mut depth = 0;
         for (i, event) in events.iter().enumerate().skip(start) {
             match event {
-                LayoutEvent::GroupStart { .. } => depth += 1,
+                LayoutEvent::GroupStart => depth += 1,
                 LayoutEvent::GroupEnd => {
                     depth -= 1;
                     if depth == 0 {
@@ -500,7 +500,7 @@ impl<W: Write> Renderer<W> {
 mod tests {
     use super::*;
     use crate::codegen::token_kind::TokenKind;
-    use crate::emitter::{EventEmitter, GroupKind};
+    use crate::emitter::EventEmitter;
 
     fn render_events(events: Vec<LayoutEvent>, config: RenderConfig) -> String {
         let mut output = String::new();
@@ -638,7 +638,7 @@ mod tests {
     #[test]
     fn a_line_comment_forces_the_group_to_break() {
         let mut emitter = EventEmitter::new(Default::default());
-        emitter.group_start(crate::emitter::GroupKind::SelectStmt);
+        emitter.group_start();
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
         emitter.comment("-- why".to_string(), true);
@@ -653,7 +653,7 @@ mod tests {
     #[test]
     fn a_broken_statement_gets_its_semicolon_on_its_own_line() {
         let mut emitter = EventEmitter::new(crate::FormatConfig::default());
-        emitter.group_start(GroupKind::SelectStmt);
+        emitter.group_start();
         emitter.token(TokenKind::SELECT_KW);
         emitter.line(crate::emitter::LineType::Hard);
         emitter.token(TokenKind::INT_NUMBER(1));

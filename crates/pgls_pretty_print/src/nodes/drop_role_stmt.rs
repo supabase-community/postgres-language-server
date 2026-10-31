@@ -3,7 +3,7 @@ use pgls_query::protobuf::DropRoleStmt;
 use super::prelude::*;
 
 pub(super) fn emit_drop_role_stmt(e: &mut EventEmitter, n: &DropRoleStmt) {
-    e.group_start(GroupKind::DropRoleStmt);
+    e.group_start();
 
     e.token(TokenKind::DROP_KW);
     e.space();

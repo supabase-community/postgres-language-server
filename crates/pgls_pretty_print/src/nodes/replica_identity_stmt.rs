@@ -3,7 +3,7 @@ use pgls_query::protobuf::ReplicaIdentityStmt;
 use super::prelude::*;
 
 pub(super) fn emit_replica_identity_stmt(e: &mut EventEmitter, n: &ReplicaIdentityStmt) {
-    e.group_start(GroupKind::ReplicaIdentityStmt);
+    e.group_start();
 
     e.token(TokenKind::REPLICA_KW);
     e.space();

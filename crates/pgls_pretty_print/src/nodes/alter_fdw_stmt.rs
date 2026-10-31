@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterFdwStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
-    e.group_start(GroupKind::AlterFdwStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -30,7 +30,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
                     if let Some(ref arg) = def_elem.arg {
                         e.token(TokenKind::HANDLER_KW);
                         e.space();
-                        emit_node(arg, e);
+                        emit_node(e, arg);
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
@@ -41,7 +41,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
                     if let Some(ref arg) = def_elem.arg {
                         e.token(TokenKind::VALIDATOR_KW);
                         e.space();
-                        emit_node(arg, e);
+                        emit_node(e, arg);
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
@@ -50,7 +50,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
                 }
                 _ => {
                     // Fallback for unknown options
-                    emit_node(opt, e);
+                    emit_node(e, opt);
                 }
             }
         }
@@ -63,7 +63,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
         e.indent_start();
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |e, n| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });

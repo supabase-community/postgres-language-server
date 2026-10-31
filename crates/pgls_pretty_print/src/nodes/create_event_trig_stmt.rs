@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateEventTrigStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventTrigStmt) {
-    e.group_start(GroupKind::CreateEventTrigStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -48,9 +48,9 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
                 if let Some(arg) = &def_elem.arg
                     && let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref()
                 {
-                    e.group_start(GroupKind::List);
+                    e.group_start();
                     open_call_arguments(e);
-                    emit_fill_comma_separated_list(e, &list.items, |item, e| {
+                    emit_fill_comma_separated_list(e, &list.items, |e, item| {
                         if let Some(pgls_query::NodeEnum::String(s)) = item.node.as_ref() {
                             emit_string_literal(e, s);
                         }

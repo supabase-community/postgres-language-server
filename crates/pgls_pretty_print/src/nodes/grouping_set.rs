@@ -3,7 +3,7 @@ use pgls_query::protobuf::{GroupingSet, GroupingSetKind};
 use super::prelude::*;
 
 pub(super) fn emit_grouping_set(e: &mut EventEmitter, n: &GroupingSet) {
-    e.group_start(GroupKind::GroupingSet);
+    e.group_start();
 
     match n.kind {
         kind if kind == GroupingSetKind::GroupingSetRollup as i32 => {

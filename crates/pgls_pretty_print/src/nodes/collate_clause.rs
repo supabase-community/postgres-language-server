@@ -3,7 +3,7 @@ use pgls_query::protobuf::CollateClause;
 use super::prelude::*;
 
 pub(super) fn emit_collate_clause(e: &mut EventEmitter, n: &CollateClause) {
-    e.group_start(GroupKind::CollateClause);
+    e.group_start();
 
     // Emit the argument being collated
     // COLLATE has high precedence, so we need parentheses around complex expressions
@@ -22,7 +22,7 @@ pub(super) fn emit_collate_clause(e: &mut EventEmitter, n: &CollateClause) {
         if needs_parens {
             e.token(TokenKind::L_PAREN);
         }
-        emit_node(arg, e);
+        emit_node(e, arg);
         if needs_parens {
             e.token(TokenKind::R_PAREN);
         }
@@ -34,7 +34,7 @@ pub(super) fn emit_collate_clause(e: &mut EventEmitter, n: &CollateClause) {
 
     // Emit the collation name (qualified name)
     // Must quote to preserve case (PostgreSQL lowercases unquoted identifiers)
-    emit_dot_separated_list_with(e, &n.collname, |node, e| {
+    emit_dot_separated_list_with(e, &n.collname, |e, node| {
         if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
             emit_string_identifier(e, s);
         }

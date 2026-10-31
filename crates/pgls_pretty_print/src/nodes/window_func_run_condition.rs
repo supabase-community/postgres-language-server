@@ -3,7 +3,7 @@ use pgls_query::protobuf::WindowFuncRunCondition;
 use super::prelude::*;
 
 pub(super) fn emit_window_func_run_condition(e: &mut EventEmitter, n: &WindowFuncRunCondition) {
-    e.group_start(GroupKind::WindowFuncRunCondition);
+    e.group_start();
 
     let mut label = if n.opno != 0 {
         format!("winrun#{}", n.opno)
@@ -22,7 +22,7 @@ pub(super) fn emit_window_func_run_condition(e: &mut EventEmitter, n: &WindowFun
 
     if let Some(arg) = n.arg.as_ref() {
         e.space();
-        emit_node(arg, e);
+        emit_node(e, arg);
     }
 
     e.group_end();

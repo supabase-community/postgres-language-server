@@ -3,7 +3,7 @@ use pgls_query::protobuf::CurrentOfExpr;
 use super::prelude::*;
 
 pub(super) fn emit_current_of_expr(e: &mut EventEmitter, n: &CurrentOfExpr) {
-    e.group_start(GroupKind::CurrentOfExpr);
+    e.group_start();
 
     e.token(TokenKind::CURRENT_KW);
     e.space();

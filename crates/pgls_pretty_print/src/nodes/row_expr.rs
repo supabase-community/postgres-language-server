@@ -3,7 +3,7 @@ use pgls_query::protobuf::{CoercionForm, RowExpr};
 use super::prelude::*;
 
 pub(super) fn emit_row_expr(e: &mut EventEmitter, n: &RowExpr) {
-    e.group_start(GroupKind::RowExpr);
+    e.group_start();
 
     let format = n.row_format();
     let emit_row_keyword = matches!(

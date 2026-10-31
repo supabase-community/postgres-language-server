@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-pub use crate::codegen::group_kind::GroupKind;
 pub use crate::codegen::token_kind::TokenKind;
 use crate::{Comment, FormatConfig};
 
@@ -29,9 +28,7 @@ pub enum LayoutEvent {
         text: String,
         line_comment: bool,
     },
-    GroupStart {
-        kind: GroupKind,
-    },
+    GroupStart,
     GroupEnd,
     IndentStart,
     IndentEnd,
@@ -300,8 +297,8 @@ impl EventEmitter {
         }
     }
 
-    pub fn group_start(&mut self, kind: GroupKind) {
-        self.events.push(LayoutEvent::GroupStart { kind });
+    pub fn group_start(&mut self) {
+        self.events.push(LayoutEvent::GroupStart);
     }
 
     pub fn group_end(&mut self) {

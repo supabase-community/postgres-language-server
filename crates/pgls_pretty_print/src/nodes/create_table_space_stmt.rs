@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateTableSpaceStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_table_space_stmt(e: &mut EventEmitter, n: &CreateTableSpaceStmt) {
-    e.group_start(GroupKind::CreateTableSpaceStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();

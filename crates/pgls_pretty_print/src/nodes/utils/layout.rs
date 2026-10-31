@@ -3,7 +3,7 @@
 
 use pgls_query::{Node, NodeEnum};
 
-use crate::emitter::{EventEmitter, GroupKind, LineType};
+use crate::emitter::{EventEmitter, LineType};
 use crate::nodes::{emit_node, emit_node_enum};
 use crate::{ClauseBodyStyle, Layout, TokenKind};
 
@@ -36,7 +36,7 @@ pub(crate) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
         ClauseBodyStyle::Break => {
             e.line(LineType::SoftOrSpace);
             e.indent_start();
-            emit_node(clause, e);
+            emit_node(e, clause);
             e.indent_end();
         }
     }
@@ -51,10 +51,10 @@ pub(crate) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
 /// under the keyword.
 pub(crate) fn emit_condition_on_keyword_line(e: &mut EventEmitter, condition: &Node) {
     if breaks_only_inside_a_subquery(condition) {
-        emit_node(condition, e);
+        emit_node(e, condition);
     } else {
         e.indent_start();
-        emit_node(condition, e);
+        emit_node(e, condition);
         e.indent_end();
     }
 }
@@ -63,26 +63,21 @@ pub(crate) fn emit_condition_on_keyword_line(e: &mut EventEmitter, condition: &N
 ///
 /// It stays on the keyword line when it fits. Otherwise the condition breaks onto its own lines,
 /// indented like a WHERE condition, and the closing parenthesis returns to the keyword's indent.
-pub(crate) fn emit_parenthesized_condition(
-    e: &mut EventEmitter,
-    kind: GroupKind,
-    condition: &Node,
-) {
-    emit_parenthesized_condition_with(e, kind, condition, emit_node_enum);
+pub(crate) fn emit_parenthesized_condition(e: &mut EventEmitter, condition: &Node) {
+    emit_parenthesized_condition_with(e, condition, emit_node_enum);
 }
 
 /// Like `emit_parenthesized_condition`, with `emit` emitting the condition itself.
 pub(crate) fn emit_parenthesized_condition_with(
     e: &mut EventEmitter,
-    kind: GroupKind,
     condition: &Node,
-    emit: impl FnOnce(&NodeEnum, &mut EventEmitter),
+    emit: impl FnOnce(&mut EventEmitter, &NodeEnum),
 ) {
-    e.group_start(kind);
+    e.group_start();
     e.token(TokenKind::L_PAREN);
     e.indent_start();
     e.line(LineType::Soft);
-    emit_node_with(condition, e, emit);
+    emit_node_with(e, condition, emit);
     e.indent_end();
     e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);

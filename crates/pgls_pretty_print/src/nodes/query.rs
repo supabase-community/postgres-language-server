@@ -3,10 +3,10 @@ use pgls_query::protobuf::{CmdType, Query, QuerySource};
 use super::prelude::*;
 
 pub(super) fn emit_query(e: &mut EventEmitter, n: &Query) {
-    e.group_start(GroupKind::Query);
+    e.group_start();
 
     if let Some(ref utility) = n.utility_stmt {
-        emit_node(utility, e);
+        emit_node(e, utility);
         e.group_end();
         return;
     }

@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterEventTrigStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_event_trig_stmt(e: &mut EventEmitter, n: &AlterEventTrigStmt) {
-    e.group_start(GroupKind::AlterEventTrigStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

@@ -7,7 +7,7 @@ pub(super) fn emit_alter_default_privileges_stmt(
     e: &mut EventEmitter,
     n: &AlterDefaultPrivilegesStmt,
 ) {
-    e.group_start(GroupKind::AlterDefaultPrivilegesStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -32,7 +32,7 @@ pub(super) fn emit_alter_default_privileges_stmt(
                         if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
                             emit_grant_list(e, &list.items, emit_node);
                         } else {
-                            emit_node(arg, e);
+                            emit_node(e, arg);
                         }
                     }
                 }
@@ -46,14 +46,14 @@ pub(super) fn emit_alter_default_privileges_stmt(
                         if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
                             emit_grant_list(e, &list.items, emit_node);
                         } else {
-                            emit_node(arg, e);
+                            emit_node(e, arg);
                         }
                     }
                 }
                 _ => {
                     // Unknown option - emit as-is
                     e.space();
-                    emit_node(opt, e);
+                    emit_node(e, opt);
                 }
             }
         }
@@ -62,7 +62,7 @@ pub(super) fn emit_alter_default_privileges_stmt(
     // The actual GRANT/REVOKE statement
     if let Some(ref action) = n.action {
         e.line(LineType::SoftOrSpace);
-        emit_node_enum(&NodeEnum::GrantStmt(action.clone()), e);
+        emit_node_enum(e, &NodeEnum::GrantStmt(action.clone()));
     }
 
     e.indent_end();

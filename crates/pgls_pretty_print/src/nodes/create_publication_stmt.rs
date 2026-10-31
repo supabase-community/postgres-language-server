@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreatePublicationStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePublicationStmt) {
-    e.group_start(GroupKind::CreatePublicationStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -23,7 +23,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
         e.token(TokenKind::FOR_KW);
         e.space();
         // Publication objects (PublicationObjSpec) contain tables and other objects
-        emit_comma_separated_list(e, &n.pubobjects, |node, e| {
+        emit_comma_separated_list(e, &n.pubobjects, |e, node| {
             if let Some(NodeEnum::PublicationObjSpec(obj)) = &node.node {
                 // PublicationObjSpec has pubobjtype:
                 // 0=Undefined, 1=TABLE, 2=TABLES_IN_SCHEMA, 3=TABLES_IN_CUR_SCHEMA
@@ -47,7 +47,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
                                 e.token(TokenKind::WHERE_KW);
                                 e.space();
                                 e.token(TokenKind::L_PAREN);
-                                emit_node(where_clause, e);
+                                emit_node(e, where_clause);
                                 e.token(TokenKind::R_PAREN);
                             }
                         }

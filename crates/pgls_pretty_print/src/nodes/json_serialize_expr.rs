@@ -5,7 +5,7 @@ use super::json_value_expr::emit_json_output;
 use super::prelude::*;
 
 pub(super) fn emit_json_serialize_expr(e: &mut EventEmitter, n: &JsonSerializeExpr) {
-    e.group_start(GroupKind::JsonSerializeExpr);
+    e.group_start();
 
     e.token(TokenKind::JSON_SERIALIZE_KW);
     e.token(TokenKind::L_PAREN);

@@ -3,7 +3,7 @@ use pgls_query::protobuf::LoadStmt;
 use super::prelude::*;
 
 pub(super) fn emit_load_stmt(e: &mut EventEmitter, n: &LoadStmt) {
-    e.group_start(GroupKind::LoadStmt);
+    e.group_start();
 
     e.token(TokenKind::LOAD_KW);
 

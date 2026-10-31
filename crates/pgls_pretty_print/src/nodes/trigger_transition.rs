@@ -3,7 +3,7 @@ use pgls_query::protobuf::TriggerTransition;
 use super::prelude::*;
 
 pub(super) fn emit_trigger_transition(e: &mut EventEmitter, n: &TriggerTransition) {
-    e.group_start(GroupKind::TriggerTransition);
+    e.group_start();
 
     let mut label = if n.name.is_empty() {
         "transition".to_string()

@@ -3,7 +3,7 @@ use pgls_query::protobuf::ColumnDef;
 use super::prelude::*;
 
 pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
-    e.group_start(GroupKind::ColumnDef);
+    e.group_start();
 
     // Column name (quote if necessary for special characters or keywords)
     emit_identifier_maybe_quoted(e, &n.colname);
@@ -47,7 +47,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::DEFAULT_KW);
         e.space();
-        emit_node(raw_default, e);
+        emit_node(e, raw_default);
     }
 
     // Add collation if specified
@@ -67,7 +67,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
             e,
             &n.fdwoptions,
             ListSeparatorSpacing::Space,
-            |opt, e| {
+            |e, opt| {
                 let def_elem = assert_node_variant!(DefElem, opt);
                 super::emit_options_def_elem(e, def_elem);
             },
@@ -79,7 +79,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     // TODO: Handle IDENTITY constraints specially
     for constraint in &n.constraints {
         e.line(LineType::SoftOrSpace);
-        emit_node(constraint, e);
+        emit_node(e, constraint);
     }
 
     e.indent_end();

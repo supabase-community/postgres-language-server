@@ -3,7 +3,7 @@ use pgls_query::protobuf::ClusterStmt;
 use super::prelude::*;
 
 pub(super) fn emit_cluster_stmt(e: &mut EventEmitter, n: &ClusterStmt) {
-    e.group_start(GroupKind::ClusterStmt);
+    e.group_start();
 
     e.token(TokenKind::CLUSTER_KW);
 

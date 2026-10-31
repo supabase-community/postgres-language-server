@@ -3,7 +3,7 @@ use pgls_query::protobuf::{CreateRoleStmt, RoleStmtType};
 use super::prelude::*;
 
 pub(super) fn emit_create_role_stmt(e: &mut EventEmitter, n: &CreateRoleStmt) {
-    e.group_start(GroupKind::CreateRoleStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -129,7 +129,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
                 e.space();
                 e.token(TokenKind::LIMIT_KW);
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
                 return;
             }
         }
@@ -143,7 +143,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
                     emit_string_literal(e, s);
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
                 return;
             }
@@ -154,7 +154,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
                 e.space();
                 e.token(TokenKind::ROLE_KW);
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
                 return;
             }
         }
@@ -162,7 +162,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 e.token(TokenKind::ROLE_KW);
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
                 return;
             }
         }
@@ -170,7 +170,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 e.token(TokenKind::ADMIN_KW);
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
                 return;
             }
         }
@@ -182,7 +182,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
                     emit_string_literal(e, s);
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             } else {
                 e.token(TokenKind::NULL_KW);
@@ -196,6 +196,6 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
     emit_keyword(e, &d.defname);
     if let Some(ref arg) = d.arg {
         e.space();
-        emit_node(arg, e);
+        emit_node(e, arg);
     }
 }

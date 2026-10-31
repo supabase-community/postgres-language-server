@@ -3,7 +3,7 @@ use pgls_query::protobuf::CompositeTypeStmt;
 use super::prelude::*;
 
 pub(super) fn emit_composite_type_stmt(e: &mut EventEmitter, n: &CompositeTypeStmt) {
-    e.group_start(GroupKind::CompositeTypeStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();

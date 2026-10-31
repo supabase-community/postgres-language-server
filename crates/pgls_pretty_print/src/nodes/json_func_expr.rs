@@ -36,7 +36,7 @@ fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) {
             e.token(TokenKind::DEFAULT_KW);
             if let Some(ref expr) = behavior.expr {
                 e.space();
-                emit_node(expr, e);
+                emit_node(e, expr);
             }
         }
         _ => {}
@@ -44,7 +44,7 @@ fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) {
 }
 
 pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
-    e.group_start(GroupKind::JsonFuncExpr);
+    e.group_start();
 
     // Map JSON function operation types
     // 0=Undefined, 1=JsonExistsOp, 2=JsonQueryOp, 3=JsonValueOp, 4=JsonTableOp
@@ -73,7 +73,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
 
     if let Some(ref context) = n.context_item {
         if let Some(ref raw_expr) = context.raw_expr {
-            emit_node(raw_expr, e);
+            emit_node(e, raw_expr);
         }
         if let Some(ref format) = context.format {
             super::json_value_expr::emit_json_format(e, format);
@@ -84,7 +84,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref pathspec) = n.pathspec {
-        emit_node(pathspec, e);
+        emit_node(e, pathspec);
     }
 
     // PASSING clause
@@ -93,7 +93,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
         e.token(TokenKind::PASSING_KW);
         e.space();
         // The arguments break on their own only when they don't fit on the PASSING line.
-        e.group_start(GroupKind::List);
+        e.group_start();
         emit_comma_separated_list(e, &n.passing, emit_node);
         e.group_end();
     }

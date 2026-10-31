@@ -3,7 +3,7 @@ use pgls_query::protobuf::{DropBehavior, GrantStmt, GrantTargetType, ObjectType}
 use super::prelude::*;
 
 pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
-    e.group_start(GroupKind::GrantStmt);
+    e.group_start();
 
     // GRANT or REVOKE
     if n.is_grant {
@@ -28,7 +28,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     if n.privileges.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else {
-        emit_grant_list(e, &n.privileges, |node, e| {
+        emit_grant_list(e, &n.privileges, |e, node| {
             if let Some(pgls_query::NodeEnum::AccessPriv(priv_node)) = &node.node {
                 emit_access_priv(e, priv_node);
             }
@@ -236,19 +236,19 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
 /// such as `insert (a, b)` that breaks closes its parenthesis under the line that opened it.
 pub(super) fn emit_grant_list<F>(e: &mut EventEmitter, nodes: &[pgls_query::Node], render: F)
 where
-    F: Fn(&pgls_query::Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &pgls_query::Node),
 {
     let Some((first, rest)) = nodes.split_first() else {
         return;
     };
 
-    e.group_start(GroupKind::List);
-    render(first, e);
+    e.group_start();
+    render(e, first);
     if !rest.is_empty() {
         e.indent_start();
         for node in rest {
             emit_list_comma(e, Some(node), ListSeparatorSpacing::Fill);
-            render(node, e);
+            render(e, node);
         }
         e.indent_end();
     }

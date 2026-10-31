@@ -5,7 +5,7 @@ use super::grant_stmt::emit_grant_list;
 use super::prelude::*;
 
 pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
-    e.group_start(GroupKind::GrantRoleStmt);
+    e.group_start();
 
     // GRANT or REVOKE
     if n.is_grant {
@@ -61,7 +61,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_grant_list(e, &n.opt, |opt, e| {
+        emit_grant_list(e, &n.opt, |e, opt| {
             if let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() {
                 emit_grant_role_option(e, def);
             }

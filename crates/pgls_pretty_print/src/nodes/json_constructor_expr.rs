@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use super::prelude::*;
 
 pub(super) fn emit_json_constructor_expr(e: &mut EventEmitter, n: &JsonConstructorExpr) {
-    e.group_start(GroupKind::JsonConstructorExpr);
+    e.group_start();
 
     let constructor =
         JsonConstructorType::try_from(n.r#type).unwrap_or(JsonConstructorType::Undefined);
@@ -24,7 +24,7 @@ pub(super) fn emit_json_constructor_expr(e: &mut EventEmitter, n: &JsonConstruct
         if has_content {
             e.space();
         }
-        emit_node(func, e);
+        emit_node(e, func);
         has_content = true;
     }
 
@@ -32,7 +32,7 @@ pub(super) fn emit_json_constructor_expr(e: &mut EventEmitter, n: &JsonConstruct
         if has_content {
             e.space();
         }
-        emit_node(coercion, e);
+        emit_node(e, coercion);
         has_content = true;
     }
 

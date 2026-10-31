@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterPublicationStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublicationStmt) {
-    e.group_start(GroupKind::AlterPublicationStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

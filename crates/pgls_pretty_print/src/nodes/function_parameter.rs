@@ -50,6 +50,6 @@ pub(super) fn emit_function_parameter(e: &mut EventEmitter, fp: &FunctionParamet
         e.space();
         e.token(TokenKind::DEFAULT_KW);
         e.space();
-        emit_node(defexpr, e);
+        emit_node(e, defexpr);
     }
 }

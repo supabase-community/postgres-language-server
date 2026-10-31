@@ -3,7 +3,7 @@ use pgls_query::protobuf::PartitionBoundSpec;
 use super::prelude::*;
 
 pub(super) fn emit_partition_bound_spec(e: &mut EventEmitter, n: &PartitionBoundSpec) {
-    e.group_start(GroupKind::PartitionBoundSpec);
+    e.group_start();
 
     // Check for DEFAULT partition
     if n.is_default {

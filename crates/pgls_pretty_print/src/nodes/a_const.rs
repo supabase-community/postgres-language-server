@@ -4,7 +4,7 @@ use pgls_query::protobuf::a_const::Val;
 use super::prelude::*;
 
 pub(super) fn emit_a_const(e: &mut EventEmitter, n: &AConst) {
-    e.group_start(GroupKind::AConst);
+    e.group_start();
 
     if n.isnull {
         e.token(TokenKind::NULL_KW);

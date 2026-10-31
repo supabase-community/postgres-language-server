@@ -4,7 +4,7 @@ use super::prelude::*;
 use super::res_target::emit_set_clause_list;
 
 pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenClause) {
-    e.group_start(GroupKind::MergeWhenClause);
+    e.group_start();
 
     e.token(TokenKind::WHEN_KW);
     e.space();
@@ -60,11 +60,11 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
             // Column list - wrap in group for compact formatting
             if !clause.target_list.is_empty() {
                 e.space();
-                e.group_start(GroupKind::List);
+                e.group_start();
                 e.token(TokenKind::L_PAREN);
                 e.line(LineType::Soft);
                 e.indent_start();
-                emit_comma_separated_list(e, &clause.target_list, |node, emitter| {
+                emit_comma_separated_list(e, &clause.target_list, |emitter, node| {
                     let target = assert_node_variant!(ResTarget, node);
                     if !target.name.is_empty() {
                         emit_identifier_maybe_quoted(emitter, &target.name);
@@ -101,7 +101,7 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::VALUES_KW);
                 e.space();
-                e.group_start(GroupKind::List);
+                e.group_start();
                 e.token(TokenKind::L_PAREN);
                 e.line(LineType::Soft);
                 e.indent_start();

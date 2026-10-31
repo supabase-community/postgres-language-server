@@ -19,16 +19,16 @@ fn emit_typed_table_column_override(e: &mut EventEmitter, item: &pgls_query::pro
         // Emit constraints (e.g., GENERATED ALWAYS AS ... STORED)
         for constraint in &col.constraints {
             e.line(LineType::SoftOrSpace);
-            emit_node(constraint, e);
+            emit_node(e, constraint);
         }
     } else {
         // Fall back to regular node emission
-        emit_node(item, e);
+        emit_node(e, item);
     }
 }
 
 pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
-    e.group_start(GroupKind::CreateStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -96,7 +96,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
                     e.token(TokenKind::COMMA);
                     e.line(LineType::SoftOrSpace);
                 }
-                emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
             for item in &n.constraints {
@@ -104,7 +104,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
                     e.token(TokenKind::COMMA);
                     e.line(LineType::SoftOrSpace);
                 }
-                emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
 
@@ -156,7 +156,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
                     e.token(TokenKind::COMMA);
                     e.line(LineType::SoftOrSpace);
                 }
-                emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
 
@@ -170,7 +170,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         let multiple_items = n.table_elts.len() + n.constraints.len() > 1;
 
         e.space();
-        e.group_start(GroupKind::List);
+        e.group_start();
         e.token(TokenKind::L_PAREN);
         // Force break for tables with multiple columns for readability. A table without columns
         // keeps `()` together.
@@ -193,7 +193,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
                         e.line(LineType::SoftOrSpace);
                     }
                 }
-                emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
             for item in &n.constraints {
@@ -205,7 +205,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
                         e.line(LineType::SoftOrSpace);
                     }
                 }
-                emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
 
@@ -248,7 +248,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.group_start(GroupKind::List);
+        e.group_start();
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();

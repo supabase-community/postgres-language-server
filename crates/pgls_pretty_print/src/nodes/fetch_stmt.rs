@@ -3,7 +3,7 @@ use pgls_query::protobuf::FetchStmt;
 use super::prelude::*;
 
 pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
-    e.group_start(GroupKind::FetchStmt);
+    e.group_start();
 
     // FETCH or MOVE
     if n.ismove {

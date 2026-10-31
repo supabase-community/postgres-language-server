@@ -3,7 +3,7 @@ use pgls_query::protobuf::{ViewCheckOption, ViewStmt};
 use super::prelude::*;
 
 pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
-    e.group_start(GroupKind::ViewStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
 
@@ -42,7 +42,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
-        emit_comma_separated_list(e, &n.aliases, |alias_node, emitter| {
+        emit_comma_separated_list(e, &n.aliases, |emitter, alias_node| {
             let alias = assert_node_variant!(String, alias_node);
             emit_identifier_maybe_quoted(emitter, &alias.sval);
         });
@@ -66,7 +66,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
         e.token(TokenKind::AS_KW);
         e.space();
 
-        emit_node(query, e);
+        emit_node(e, query);
     }
 
     // WITH CHECK OPTION

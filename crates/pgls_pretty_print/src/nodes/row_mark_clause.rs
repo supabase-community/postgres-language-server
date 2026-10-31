@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use super::prelude::*;
 
 pub(super) fn emit_row_mark_clause(e: &mut EventEmitter, n: &RowMarkClause) {
-    e.group_start(GroupKind::RowMarkClause);
+    e.group_start();
 
     e.token(TokenKind::FOR_KW);
     e.space();

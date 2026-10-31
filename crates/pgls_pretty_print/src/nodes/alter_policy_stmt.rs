@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterPolicyStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) {
-    e.group_start(GroupKind::AlterPolicyStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -34,7 +34,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        emit_parenthesized_condition(e, GroupKind::AlterPolicyStmt, qual);
+        emit_parenthesized_condition(e, qual);
     }
 
     // Optional: WITH CHECK clause
@@ -44,7 +44,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
         e.space();
         e.token(TokenKind::CHECK_KW);
         e.space();
-        emit_parenthesized_condition(e, GroupKind::AlterPolicyStmt, with_check);
+        emit_parenthesized_condition(e, with_check);
     }
 
     e.group_end();

@@ -3,7 +3,7 @@ use pgls_query::protobuf::DropUserMappingStmt;
 use super::prelude::*;
 
 pub(super) fn emit_drop_user_mapping_stmt(e: &mut EventEmitter, n: &DropUserMappingStmt) {
-    e.group_start(GroupKind::DropUserMappingStmt);
+    e.group_start();
 
     e.token(TokenKind::DROP_KW);
     e.space();

@@ -3,7 +3,7 @@ use pgls_query::protobuf::ReassignOwnedStmt;
 use super::prelude::*;
 
 pub(super) fn emit_reassign_owned_stmt(e: &mut EventEmitter, n: &ReassignOwnedStmt) {
-    e.group_start(GroupKind::ReassignOwnedStmt);
+    e.group_start();
 
     e.token(TokenKind::REASSIGN_KW);
     e.space();

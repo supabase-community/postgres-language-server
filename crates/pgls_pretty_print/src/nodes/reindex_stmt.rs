@@ -3,24 +3,24 @@ use pgls_query::protobuf::ReindexStmt;
 use super::prelude::*;
 
 pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
-    e.group_start(GroupKind::ReindexStmt);
+    e.group_start();
 
     e.token(TokenKind::REINDEX_KW);
 
     // Handle options (CONCURRENTLY, VERBOSE, TABLESPACE, etc.)
     if !n.params.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.params, |node, emitter| {
+        emit_parenthesized_list(e, &n.params, |emitter, node| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 // Emit option name
                 emit_keyword(emitter, &def.defname);
                 // Emit option value if present
                 if let Some(ref arg) = def.arg {
                     emitter.space();
-                    emit_node(arg, emitter);
+                    emit_node(emitter, arg);
                 }
             } else {
-                emit_node(node, emitter);
+                emit_node(emitter, node);
             }
         });
     }
