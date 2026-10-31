@@ -442,6 +442,43 @@ fn names_of_sql_json_and_xml_expressions() {
 }
 
 #[test]
+fn a_scalar_subquery_of_a_star_is_named_after_its_first_column() {
+    // Postgres names `(select * from t)` after the column the `*` expands to.
+    let setup = "create table one (a int);";
+    assert_eq!(
+        findings_after(setup, "select a, nope from (select (select * from one)) s"),
+        [unknown_column(None, "nope")]
+    );
+    assert_eq!(
+        findings_after(
+            setup,
+            "select a, nope from (select (select one.* from one where a = s.id) from users s) q"
+        ),
+        [unknown_column(None, "nope")]
+    );
+    assert_eq!(
+        findings_after(
+            setup,
+            "select a, nope from (select (select (select * from one))) s"
+        ),
+        [unknown_column(None, "nope")]
+    );
+    // ORDER BY sees the name too.
+    assert_eq!(
+        findings_after(setup, "select (select * from one) order by a"),
+        []
+    );
+    // CTEs in scope are expanded, not relations of the same name.
+    assert_eq!(
+        findings_after(
+            setup,
+            "with one as (select 1 as b) select b, nope from (select (select * from one)) s"
+        ),
+        [unknown_column(None, "nope")]
+    );
+}
+
+#[test]
 fn functional_field_notation() {
     // `a(p)` is field `a` of the composite column `p` (`ParseFuncOrColumn`).
     let setup = "create type pr as (a int, b text); create table tt (id int, p pr);";

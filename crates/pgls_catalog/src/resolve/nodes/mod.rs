@@ -77,7 +77,11 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         }
         NodeEnum::SubLink(n) => {
             resolve_opt(r, &n.testexpr);
-            resolve_opt(r, &n.subselect);
+            let columns = n
+                .subselect
+                .as_deref()
+                .and_then(|subselect| resolve_node(r, subselect));
+            r.set_subquery_columns(n, columns);
         }
         NodeEnum::ResTarget(n) => resolve_opt(r, &n.val),
         NodeEnum::AExpr(n) => {
