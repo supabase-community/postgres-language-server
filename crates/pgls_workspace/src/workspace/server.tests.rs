@@ -41,7 +41,7 @@ use crate::{
     workspace::{
         IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
         UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
-        server::WorkspaceServer,
+        server::{PLACEHOLDER_EXECUTION_DISABLED, WorkspaceServer},
     },
 };
 
@@ -2171,6 +2171,60 @@ async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool)
     .await
     .unwrap();
     assert!(!table_exists, "A disabled statement must not be executed");
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_refuses_goose_envsub_expansions(test_db: PgPool) {
+    test_db
+        .execute("create table audit_log (message text);")
+        .await
+        .unwrap();
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: PartialConfiguration {
+                migrations: Some(PartialMigrationsConfiguration {
+                    tool: Some(MigrationTool::Goose),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+        })
+        .expect("Unable to update the settings");
+
+    // goose inserts the value of `MESSAGE`, which we don't know.
+    let sql = "-- +goose Up\n-- +goose ENVSUB ON\ninsert into audit_log (message) values ('${MESSAGE}');\n";
+    let (disabled_reason, result) = execute_sql_at(
+        &workspace,
+        project_key,
+        sql,
+        TextSize::try_from(sql.find("insert").unwrap()).unwrap(),
+    );
+
+    assert_eq!(
+        disabled_reason.as_deref(),
+        Some(PLACEHOLDER_EXECUTION_DISABLED)
+    );
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: PLACEHOLDER_EXECUTION_DISABLED.into(),
+            ..Default::default()
+        }
+    );
+    let rows: i64 = sqlx::query_scalar("select count(*) from audit_log")
+        .fetch_one(&test_db)
+        .await
+        .unwrap();
+    assert_eq!(
+        rows, 0,
+        "A statement with an expansion must not be executed"
+    );
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -4526,4 +4580,59 @@ fn test_no_fix_inside_a_goose_envsub_expansion() {
         .expect("Unable to fix file")
         .code;
     assert_eq!(fixed, content);
+}
+
+/// The diagnostics of a goose migration with `ENVSUB` on for `sql`.
+fn goose_envsub_diagnostics(sql: &str) -> Vec<String> {
+    migration_diagnostics(
+        MigrationTool::Goose,
+        None,
+        &format!("-- +goose Up\n-- +goose ENVSUB ON\n{sql}\n"),
+    )
+}
+
+#[test]
+fn test_goose_envsub_default_with_a_brace() {
+    // interpolate reads the `{` as text, so goose runs `create schema public;` with
+    // `SCHEMA=public`.
+    let categories = goose_envsub_diagnostics("create schema ${SCHEMA:-app{test};");
+    assert!(!categories.iter().any(|c| c == "syntax"), "{categories:?}");
+}
+
+#[test]
+fn test_goose_envsub_expansion_in_an_identifier() {
+    // goose runs `create table app_events (id bigint);` with `PREFIX=app`.
+    let categories = goose_envsub_diagnostics("create table ${PREFIX}_events (id bigint);");
+    assert!(!categories.iter().any(|c| c == "syntax"), "{categories:?}");
+}
+
+#[test]
+fn test_goose_envsub_quoted_expansion() {
+    // goose runs `select * from "public".events;` with `SCHEMA=public`, so the schema isn't
+    // `$SCHEMA` or `${SCHEMA}`.
+    let categories = goose_envsub_diagnostics("select * from \"${SCHEMA}\".events;");
+    assert_eq!(categories, Vec::<String>::new());
+}
+
+#[test]
+fn test_goose_envsub_more_than_nine_expansions() {
+    let categories = goose_envsub_diagnostics(
+        "select ${A}, ${B}, ${C}, ${D}, ${E}, ${F}, ${G}, ${H}, ${I}, ${J};",
+    );
+    assert_eq!(categories, Vec::<String>::new());
+}
+
+#[test]
+fn named_parameter_in_a_join_condition_is_a_value() {
+    // A value: the relations are still checked.
+    let categories = migration_diagnostics(
+        MigrationTool::None,
+        None,
+        "select * from orders join customers on :enabled;",
+    );
+    assert_eq!(
+        categories,
+        ["lint/unknownRelation", "lint/unknownRelation"],
+        "{categories:?}"
+    );
 }

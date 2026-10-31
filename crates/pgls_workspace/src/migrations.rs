@@ -56,7 +56,9 @@ pub(crate) trait MigrationTool: Sync {
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Preprocessed {
     pub(crate) text: String,
-    /// The ranges that hold placeholders, in file order.
+    /// The ranges that the tool replaces when it runs the file, in file order. The text holds a
+    /// placeholder there, or the file as written where a placeholder wouldn't parse, like in a
+    /// string literal.
     pub(crate) placeholders: Vec<TextRange>,
 }
 

@@ -118,6 +118,10 @@ pub struct WorkspaceServer {
     connection: ConnectionManager,
 }
 
+/// Why a statement with placeholders, like goose `ENVSUB` expansions, can't be executed: neither
+/// the text as written nor the analysed text with placeholders is what the migration tool runs.
+const PLACEHOLDER_EXECUTION_DISABLED: &str = "The migration tool replaces parts of this statement before it runs it, like goose's `ENVSUB` expansions, so it can't be executed here.";
+
 /// A database snapshot with the changes of the statements before a statement.
 struct SnapshotBefore {
     /// The database snapshot it is built from.
@@ -1159,7 +1163,7 @@ impl Workspace for WorkspaceServer {
 
         let mut actions: Vec<CodeAction> = parser
             .iter_at(DefaultMapper, params.cursor_position)
-            .map(|(stmt, _, txt)| {
+            .map(|(stmt, range, txt)| {
                 let title = format!(
                     "Execute Statement: {}...",
                     txt.chars().take(50).collect::<String>()
@@ -1170,7 +1174,11 @@ impl Workspace for WorkspaceServer {
                     kind: CodeActionKind::Command(CommandAction {
                         category: CommandActionCategory::ExecuteStatement(stmt),
                     }),
-                    disabled_reason: disabled_reason.clone(),
+                    disabled_reason: if parser.touches_placeholder(range) {
+                        Some(PLACEHOLDER_EXECUTION_DISABLED.into())
+                    } else {
+                        disabled_reason.clone()
+                    },
                 }
             })
             .collect();
@@ -1330,6 +1338,15 @@ impl Workspace for WorkspaceServer {
                 ..Default::default()
             });
         };
+
+        // The content is the analysed text, which is the statement as written outside of the
+        // parts that the migration tool replaces. With such parts, neither is what it runs.
+        if parser.touches_placeholder(range) {
+            return Ok(ExecuteStatementResult {
+                message: PLACEHOLDER_EXECUTION_DISABLED.into(),
+                ..Default::default()
+            });
+        }
 
         let settings = self.workspaces();
         let no_connection = ExecuteStatementResult {
