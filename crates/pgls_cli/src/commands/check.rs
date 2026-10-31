@@ -68,14 +68,26 @@ pub fn check(
         only: args.only.clone(),
         skip: args.skip.clone(),
     };
-    let execution = ExecutionConfig::new(mode, max_diagnostics);
+    let execution = ExecutionConfig::new(mode, max_diagnostics)
+        .with_error_on_warnings(cli_options.error_on_warnings);
 
+    let database_error = check_database_connection(&session)?;
     if let Some(stdin_path) = args.stdin_file_path.as_deref() {
-        print_diagnostics(session.console(), configuration_errors);
+        let database_unavailable = database_error.is_some();
+        print_diagnostics(
+            session.console(),
+            configuration_errors
+                .into_iter()
+                .chain(database_error)
+                .collect(),
+        );
         let payload = read_stdin_payload(stdin_path, session.console(), "check")?;
-        run_stdin(&mut session, &execution, payload)
+        run_stdin(&mut session, &execution, payload)?;
+        if database_unavailable {
+            return Err(CliDiagnostic::check_error(category!("check")));
+        }
+        Ok(())
     } else {
-        let database_error = check_database_connection(&session)?;
         let mut report: Report = run_files(&mut session, &execution, paths)?;
         if let Some(error) = database_error {
             report.prepend_diagnostic(error);

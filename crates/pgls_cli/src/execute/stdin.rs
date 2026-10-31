@@ -24,7 +24,8 @@ pub(crate) fn process(
 }
 
 /// Checks the content read from stdin and prints it to stdout, with the fixes applied with
-/// `--fix`. Diagnostics are printed to stderr, and errors among them fail the command.
+/// `--fix`. Diagnostics are printed to stderr. Errors among them fail the command, and so do
+/// warnings with `--error-on-warnings`.
 fn check(
     session: &mut CliSession,
     config: &ExecutionConfig,
@@ -80,16 +81,20 @@ fn check(
 
     let file_name = payload.path.display().to_string();
     let mut has_errors = false;
+    let mut has_warnings = false;
     for diagnostic in diagnostics {
         let diagnostic = Error::from(diagnostic)
             .with_file_path(&file_name)
             .with_file_source_code(&content);
         has_errors |= diagnostic.severity() >= Severity::Error;
+        has_warnings |= diagnostic.severity() == Severity::Warning;
         console.error(markup! {{PrintDiagnostic::simple(&diagnostic)}});
     }
 
     if has_errors {
         Err(CliDiagnostic::check_error(category!("check")))
+    } else if has_warnings && config.error_on_warnings {
+        Err(CliDiagnostic::check_warnings(category!("check")))
     } else {
         Ok(())
     }

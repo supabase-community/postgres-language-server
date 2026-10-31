@@ -272,6 +272,52 @@ fn check_fails_when_database_is_unreachable() {
 
 #[cfg(target_os = "linux")]
 #[test]
+fn check_stdin_fails_when_database_is_unreachable() {
+    // Nothing listens on port 1.
+    let output = run_check_without_db_env_with(
+        &[
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--conn_timeout_secs",
+            "1",
+            "--stdin-file-path",
+            "virtual.sql",
+        ],
+        &[],
+        Some("SELECT nonexistent_column FROM users;\n"),
+    );
+
+    assert!(output.starts_with("status: failure"), "{output}");
+    assert!(output.contains("database/connection"), "{output}");
+}
+
+#[test]
+fn check_stdin_fails_on_warnings_with_error_on_warnings() {
+    let args = [
+        "--config-path",
+        CONFIG_PATH,
+        "--log-level",
+        "none",
+        "--disable-db",
+        "--only=preferJsonb",
+        "--stdin-file-path",
+        "virtual.sql",
+    ];
+    let stdin = Some("CREATE TABLE t (data json);\n");
+
+    let output = run_check_with(&args, stdin, None);
+    assert!(output.starts_with("status: success"), "{output}");
+    assert!(output.contains("preferJsonb"), "{output}");
+
+    let output = run_check_with(&[&args[..], &["--error-on-warnings"]].concat(), stdin, None);
+    assert!(output.starts_with("status: failure"), "{output}");
+    assert!(output.contains("preferJsonb"), "{output}");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
 fn check_fails_on_invalid_connection_string() {
     let output = run_check_without_db_env(
         &[
@@ -671,7 +717,18 @@ fn check_announces_the_user_configuration() {
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]
 fn run_check_without_db_env(args: &[&str], envs: &[(&str, &str)]) -> String {
+    run_check_without_db_env_with(args, envs, None)
+}
+
+fn run_check_without_db_env_with(
+    args: &[&str],
+    envs: &[(&str, &str)],
+    stdin: Option<&str>,
+) -> String {
     let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    if let Some(input) = stdin {
+        cmd.write_stdin(input);
+    }
     for var in [
         "DATABASE_URL",
         "PGHOST",
