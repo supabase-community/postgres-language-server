@@ -1,0 +1,8 @@
+-- expect_no_diagnostics
+-- With IF NOT EXISTS, Postgres skips the statement without looking at its columns if the
+-- relation exists.
+create table existing (a int);
+create table if not exists existing as select 1 as a, 2 as a;
+create materialized view if not exists existing as select 1 as a, 2 as a;
+-- Without a database, we don't know whether a relation that the file didn't create exists.
+create table if not exists maybe_existing as select 1 as a, 2 as a;

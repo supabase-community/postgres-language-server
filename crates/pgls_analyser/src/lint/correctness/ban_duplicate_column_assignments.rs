@@ -4,7 +4,9 @@ use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_catalog::resolve::figure_column_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AlterTableType, Node, ResTarget, SelectStmt, SetOperation, Token};
+use pgls_query::protobuf::{
+    AlterTableType, CreateTableAsStmt, Node, ResTarget, SelectStmt, SetOperation, Token,
+};
 use pgls_query::{NodeEnum, NodeRef};
 use pgls_text_size::TextRange;
 
@@ -99,6 +101,9 @@ impl LinterRule for BanDuplicateColumnAssignments {
                     Definition::Relation,
                     &mut diagnostics,
                 ),
+                // Postgres skips the statement without looking at its columns if the relation
+                // exists.
+                NodeRef::CreateTableAsStmt(stmt) if may_skip(stmt, ctx) => {}
                 NodeRef::CreateTableAsStmt(stmt) => {
                     let names = stmt.into.as_ref().map_or(&[][..], |into| &into.col_names);
                     report_definitions(
@@ -118,6 +123,24 @@ impl LinterRule for BanDuplicateColumnAssignments {
 
         diagnostics
     }
+}
+
+/// Whether a `CREATE TABLE AS` or `CREATE MATERIALIZED VIEW` with `IF NOT EXISTS` may be
+/// skipped, because the catalog doesn't know that the relation is missing.
+fn may_skip(
+    stmt: &CreateTableAsStmt,
+    ctx: &LinterRuleContext<BanDuplicateColumnAssignments>,
+) -> bool {
+    stmt.if_not_exists
+        && !stmt
+            .into
+            .as_ref()
+            .and_then(|into| into.rel.as_ref())
+            .is_some_and(|relation| {
+                ctx.catalog()
+                    .relation_at_creation(relation, ctx.session().search_path())
+                    .is_missing()
+            })
 }
 
 /// A column name, and where it is written if we know that.

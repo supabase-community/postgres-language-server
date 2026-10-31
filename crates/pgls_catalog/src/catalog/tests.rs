@@ -143,6 +143,38 @@ fn without_database_everything_is_unknown() {
 }
 
 #[test]
+fn relation_at_creation_is_where_create_table_puts_it() {
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create table app.created (a int); create temp table scratch (a int);",
+        &search_path,
+    );
+    let state = |sql: &str| {
+        let stmt = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let pgls_query::NodeEnum::CreateTableAsStmt(stmt) = stmt else {
+            panic!("not a CREATE TABLE AS: {sql}");
+        };
+        let relation = stmt.into.unwrap().rel.unwrap();
+        match catalog.relation_at_creation(&relation, &search_path) {
+            Lookup::Found(_) => "found",
+            Lookup::Missing => "missing",
+            Lookup::Unknown => "unknown",
+        }
+    };
+    assert_eq!(state("create table users as select 1"), "found");
+    assert_eq!(state("create table app.created as select 1"), "found");
+    assert_eq!(state("create table created as select 1"), "missing");
+    assert_eq!(state("create table nope as select 1"), "missing");
+    // A temporary table is created in `pg_temp`, also when one of the search path has its name.
+    assert_eq!(state("create temp table scratch as select 1"), "found");
+    assert_eq!(state("create temp table users as select 1"), "missing");
+    assert_eq!(
+        state("create table pg_catalog.pg_class as select 1"),
+        "unknown"
+    );
+}
+
+#[test]
 fn temporary_tables_live_in_pg_temp() {
     let search_path = path(&["public"]);
     let catalog = catalog_after("create temp table scratch (id int);", &search_path);
