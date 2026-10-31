@@ -10,8 +10,6 @@ pub(super) fn emit_a_const(e: &mut EventEmitter, n: &AConst) {
         e.token(TokenKind::NULL_KW);
     } else if let Some(ref val) = n.val {
         emit_val(e, val);
-    } else {
-        unreachable!("AConst must have either isnull=true or a val");
     }
 
     e.group_end();

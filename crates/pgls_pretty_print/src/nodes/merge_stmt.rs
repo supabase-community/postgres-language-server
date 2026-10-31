@@ -39,7 +39,10 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
 
     // WHEN clauses
     for when_clause_node in &n.merge_when_clauses {
-        let when_clause = assert_node_variant!(MergeWhenClause, when_clause_node);
+        let Some(NodeEnum::MergeWhenClause(when_clause)) = when_clause_node.node.as_ref() else {
+            emit_node(e, when_clause_node);
+            continue;
+        };
         e.line(LineType::SoftOrSpace);
         emit_merge_when_clause(e, when_clause);
     }

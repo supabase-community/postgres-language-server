@@ -117,16 +117,16 @@ fn emit_frame_bound(
                 e.space();
                 e.token(TokenKind::ROW_KW);
             } else if options & FRAMEOPTION_START_OFFSET_PRECEDING != 0 {
-                let offset_node =
-                    offset.expect("FRAMEOPTION_START_OFFSET_PRECEDING requires start_offset");
-                emit_node(e, offset_node);
-                e.space();
+                if let Some(offset) = offset {
+                    emit_node(e, offset);
+                    e.space();
+                }
                 emit_keyword(e, "PRECEDING");
             } else if options & FRAMEOPTION_START_OFFSET_FOLLOWING != 0 {
-                let offset_node =
-                    offset.expect("FRAMEOPTION_START_OFFSET_FOLLOWING requires start_offset");
-                emit_node(e, offset_node);
-                e.space();
+                if let Some(offset) = offset {
+                    emit_node(e, offset);
+                    e.space();
+                }
                 emit_keyword(e, "FOLLOWING");
             } else {
                 debug_assert!(false, "unhandled window frame start options: {options:#x}");
@@ -150,16 +150,16 @@ fn emit_frame_bound(
                 e.space();
                 e.token(TokenKind::ROW_KW);
             } else if options & FRAMEOPTION_END_OFFSET_PRECEDING != 0 {
-                let offset_node =
-                    offset.expect("FRAMEOPTION_END_OFFSET_PRECEDING requires end_offset");
-                emit_node(e, offset_node);
-                e.space();
+                if let Some(offset) = offset {
+                    emit_node(e, offset);
+                    e.space();
+                }
                 emit_keyword(e, "PRECEDING");
             } else if options & FRAMEOPTION_END_OFFSET_FOLLOWING != 0 {
-                let offset_node =
-                    offset.expect("FRAMEOPTION_END_OFFSET_FOLLOWING requires end_offset");
-                emit_node(e, offset_node);
-                e.space();
+                if let Some(offset) = offset {
+                    emit_node(e, offset);
+                    e.space();
+                }
                 emit_keyword(e, "FOLLOWING");
             } else {
                 debug_assert!(false, "unhandled window frame end options: {options:#x}");

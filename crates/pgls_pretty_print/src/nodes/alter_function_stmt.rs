@@ -22,7 +22,10 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
     if !n.actions.is_empty() {
         e.indent_start();
         for action in sort_function_options(&n.actions) {
-            let def_elem = assert_node_variant!(DefElem, &action);
+            let Some(NodeEnum::DefElem(def_elem)) = action.node.as_ref() else {
+                emit_node(e, &action);
+                continue;
+            };
             e.line(LineType::SoftOrSpace);
             format_function_option(e, def_elem);
         }

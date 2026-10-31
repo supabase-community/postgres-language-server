@@ -40,9 +40,7 @@ pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause
                 emit_clause_condition(e, where_clause);
             }
         }
-        OnConflictAction::OnconflictNone | OnConflictAction::Undefined => {
-            unreachable!("unexpected OnConflictAction: {:?}", n.action());
-        }
+        OnConflictAction::OnconflictNone | OnConflictAction::Undefined => {}
     }
 
     e.group_end();

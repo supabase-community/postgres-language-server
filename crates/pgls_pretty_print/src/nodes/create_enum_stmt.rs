@@ -24,7 +24,10 @@ pub(super) fn emit_create_enum_stmt(e: &mut EventEmitter, n: &CreateEnumStmt) {
     if !n.vals.is_empty() {
         e.space();
         emit_parenthesized_list(e, &n.vals, |e, n| {
-            let s = assert_node_variant!(String, n);
+            let Some(NodeEnum::String(s)) = n.node.as_ref() else {
+                emit_node(e, n);
+                return;
+            };
             emit_string_literal(e, s);
         });
     }

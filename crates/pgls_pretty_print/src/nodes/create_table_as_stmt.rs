@@ -49,7 +49,10 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
             if !into.col_names.is_empty() {
                 e.space();
                 emit_parenthesized_list(e, &into.col_names, |e, node| {
-                    let string = assert_node_variant!(String, node);
+                    let Some(NodeEnum::String(string)) = node.node.as_ref() else {
+                        emit_node(e, node);
+                        return;
+                    };
                     emit_string(e, string);
                 });
             }
