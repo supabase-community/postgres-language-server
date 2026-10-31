@@ -1,0 +1,27 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/disallowUniqueConstraint
+-- expect_lint/disallowUniqueConstraint
+ALTER TABLE users ADD CONSTRAINT users_email_key UNIQUE (email);
+ALTER TABLE users ADD COLUMN handle text UNIQUE;
+
+```
+
+# Diagnostics
+lint/disallowUniqueConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock.
+  
+  i Create a unique index CONCURRENTLY and then add the constraint using that index.
+  
+
+
+lint/disallowUniqueConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock.
+  
+  i Create a unique index CONCURRENTLY and then add the constraint using that index.

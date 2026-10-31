@@ -27,6 +27,8 @@ pub(super) struct Locks {
     pub(super) access_exclusive_tables: Vec<(String, String)>,
 }
 
+// The parser folds unquoted names to lower case, so names are compared exactly: `"Users"` and
+// `users` are different tables.
 impl Locks {
     pub(super) fn has_not_valid_constraint(
         &self,
@@ -35,11 +37,10 @@ impl Locks {
         name: &str,
         search_path: &[String],
     ) -> bool {
-        self.not_valid_constraints.iter().any(|(s, t, n)| {
-            normalized_schema(schema, search_path).eq_ignore_ascii_case(s)
-                && table.eq_ignore_ascii_case(t)
-                && name.eq_ignore_ascii_case(n)
-        })
+        let schema = normalized_schema(schema, search_path);
+        self.not_valid_constraints
+            .iter()
+            .any(|(s, t, n)| s == schema && t == table && n == name)
     }
 
     pub(super) fn has_created_object(
@@ -48,10 +49,10 @@ impl Locks {
         name: &str,
         search_path: &[String],
     ) -> bool {
-        self.created_objects.iter().any(|(s, n)| {
-            normalized_schema(schema, search_path).eq_ignore_ascii_case(s)
-                && name.eq_ignore_ascii_case(n)
-        })
+        let schema = normalized_schema(schema, search_path);
+        self.created_objects
+            .iter()
+            .any(|(s, n)| s == schema && n == name)
     }
 
     pub(super) fn is_dangerous_lock_stmt(&self, stmt: &NodeEnum, search_path: &[String]) -> bool {
@@ -220,7 +221,7 @@ impl Locks {
 
 /// The schema of an object name. Unqualified names are created in the first schema of the
 /// search path.
-fn normalized_schema<'a>(schema: &'a str, search_path: &'a [String]) -> &'a str {
+pub(super) fn normalized_schema<'a>(schema: &'a str, search_path: &'a [String]) -> &'a str {
     if schema.is_empty() {
         search_path
             .iter()

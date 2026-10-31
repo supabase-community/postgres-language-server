@@ -1,0 +1,63 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- smallint and integer are pg_catalog.int2 and pg_catalog.int4. myschema.int4, int4.counter
+-- and the quoted "integer" are types of the user.
+-- expect_lint/preferBigInt
+-- expect_lint/preferBigInt
+-- expect_lint/preferBigInt
+-- expect_lint/preferBigInt
+create table counters (
+    a smallint,
+    b int4,
+    c pg_catalog.int4,
+    d serial,
+    e myschema.int4,
+    f int4.counter,
+    g "integer",
+    h bigint
+);
+
+```
+
+# Diagnostics
+lint/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Using smaller integer types can lead to overflow issues.
+  
+  i The 'int2' type has a limited range that may be exceeded as your data grows.
+  
+  i Consider using BIGINT for integer columns to avoid future migration issues.
+  
+
+
+lint/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Using smaller integer types can lead to overflow issues.
+  
+  i The 'int4' type has a limited range that may be exceeded as your data grows.
+  
+  i Consider using BIGINT for integer columns to avoid future migration issues.
+  
+
+
+lint/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Using smaller integer types can lead to overflow issues.
+  
+  i The 'int4' type has a limited range that may be exceeded as your data grows.
+  
+  i Consider using BIGINT for integer columns to avoid future migration issues.
+  
+
+
+lint/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Using smaller integer types can lead to overflow issues.
+  
+  i The 'serial' type has a limited range that may be exceeded as your data grows.
+  
+  i Consider using BIGINT for integer columns to avoid future migration issues.

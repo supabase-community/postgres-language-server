@@ -1,3 +1,4 @@
+use crate::linter_context::builtin_type_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -109,33 +110,23 @@ fn check_column_def(
     col_def: &pgls_query::protobuf::ColumnDef,
     options: &PreferBigIntOptions,
 ) {
-    if let Some(type_name) = &col_def.type_name {
-        for name_node in &type_name.names {
-            if let Some(pgls_query::NodeEnum::String(name)) = &name_node.node {
-                let type_name_lower = name.sval.to_lowercase();
-                let is_smallint = matches!(
-                    type_name_lower.as_str(),
-                    "smallint" | "int2" | "serial2" | "smallserial"
-                );
-                let is_int = matches!(
-                    type_name_lower.as_str(),
-                    "integer" | "int4" | "serial" | "serial4"
-                );
+    let Some(type_name) = col_def.type_name.as_ref().and_then(builtin_type_name) else {
+        return;
+    };
+    let is_smallint = matches!(type_name, "int2" | "serial2" | "smallserial");
+    let is_int = matches!(type_name, "int4" | "serial" | "serial4");
 
-                if (is_smallint && options.check_smallint) || (is_int && options.check_int) {
-                    diagnostics.push(
-                        LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Using smaller integer types can lead to overflow issues."
-                            },
-                        )
-                        .detail(None, format!("The '{}' type has a limited range that may be exceeded as your data grows.", name.sval))
-                        .note("Consider using BIGINT for integer columns to avoid future migration issues."),
-                    );
-                }
-            }
-        }
+    if (is_smallint && options.check_smallint) || (is_int && options.check_int) {
+        diagnostics.push(
+            LinterDiagnostic::new(
+                rule_category!(),
+                None,
+                markup! {
+                    "Using smaller integer types can lead to overflow issues."
+                },
+            )
+            .detail(None, format!("The '{type_name}' type has a limited range that may be exceeded as your data grows."))
+            .note("Consider using BIGINT for integer columns to avoid future migration issues."),
+        );
     }
 }

@@ -1,0 +1,5 @@
+-- The unqualified table is created in the first schema of the search path.
+-- expect_no_diagnostics
+SET search_path = app;
+CREATE TABLE users (id bigint, email text);
+CREATE INDEX users_email_idx ON app.users (email);

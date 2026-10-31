@@ -1,0 +1,34 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The fix keeps a line comment in the type on a line of its own, so it doesn't comment out the
+-- constraints after the type.
+-- expect_lint/preferTextField
+create table t (name varchar -- length
+(10) not null
+);
+
+```
+
+# Diagnostics
+lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
+  
+  i Use a text field with a check constraint.
+  
+
+
+## Fix (unsafe): Use TEXT
+```
+-- The fix keeps a line comment in the type on a line of its own, so it doesn't comment out the
+-- constraints after the type.
+-- expect_lint/preferTextField
+create table t (name text -- length
+ not null
+);
+
+```

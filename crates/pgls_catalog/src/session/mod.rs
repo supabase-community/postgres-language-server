@@ -32,6 +32,8 @@ pub struct Session {
     settings: Settings,
     /// Lock, timeout, and constraint state of the current transaction.
     locks: Locks,
+    /// Tables (schema, name) that an `ALTER TABLE` changed, also in earlier transactions.
+    altered_tables: Vec<(String, String)>,
     /// Transaction nesting depth (0 = not in explicit transaction)
     transaction_depth: usize,
     transaction_mode: TransactionMode,
@@ -140,6 +142,18 @@ impl Session {
         self.locks
             .has_created_object(schema, name, self.search_path())
     }
+    /// Returns true if an earlier `ALTER TABLE` changed the table with the given schema and name.
+    pub fn has_altered_table(&self, schema: &str, name: &str) -> bool {
+        let schema = self.object_schema(schema);
+        self.altered_tables
+            .iter()
+            .any(|(s, n)| s == schema && n == name)
+    }
+    /// The schema of an object name: the given schema, or for an unqualified name the first
+    /// schema of the search path, where Postgres creates it.
+    pub fn object_schema<'a>(&'a self, schema: &'a str) -> &'a str {
+        locks::normalized_schema(schema, self.search_path())
+    }
     /// Returns true if the transaction is currently holding an ACCESS EXCLUSIVE lock
     pub fn is_holding_access_exclusive(&self) -> bool {
         self.locks.holding_access_exclusive
@@ -170,6 +184,15 @@ impl Session {
             NodeEnum::VariableSetStmt(stmt) => {
                 self.locks.apply_variable_set(stmt);
                 self.settings.apply_variable_set(stmt);
+            }
+            NodeEnum::AlterTableStmt(alter) => {
+                if let Some(relation) = &alter.relation {
+                    self.altered_tables.push((
+                        self.object_schema(&relation.schemaname).to_owned(),
+                        relation.relname.clone(),
+                    ));
+                }
+                self.locks.apply(stmt, self.settings.search_path());
             }
             _ => self.locks.apply(stmt, self.settings.search_path()),
         }

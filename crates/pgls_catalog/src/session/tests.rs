@@ -49,6 +49,38 @@ fn created_objects_and_schema_use_search_path() {
     assert!(s.has_created_object("app", "made_idx"));
 }
 #[test]
+fn names_are_compared_exactly() {
+    // The parser folds unquoted names to lower case, so `"Users"` and `users` are different
+    // tables.
+    let mut s = Session::new(vec!["public".into()]);
+    apply(&mut s, r#"CREATE TABLE "Users" (id int)"#);
+    apply(&mut s, r#"CREATE TABLE "App".events (id int)"#);
+    apply(
+        &mut s,
+        r#"ALTER TABLE "Things" ADD CONSTRAINT "Things_fk" FOREIGN KEY (id) REFERENCES other(id) NOT VALID"#,
+    );
+    assert!(s.has_created_object("", "Users"));
+    assert!(!s.has_created_object("", "users"));
+    assert!(s.has_created_object("App", "events"));
+    assert!(!s.has_created_object("app", "events"));
+    assert!(s.has_not_valid_constraint("", "Things", "Things_fk"));
+    assert!(!s.has_not_valid_constraint("", "things", "Things_fk"));
+    assert!(!s.has_not_valid_constraint("", "Things", "things_fk"));
+}
+#[test]
+fn altered_tables_use_the_search_path_of_their_statement() {
+    let mut s = Session::new(vec!["public".into()]);
+    apply(&mut s, "ALTER TABLE things ADD COLUMN a int");
+    apply(&mut s, "SET search_path = app");
+    assert_eq!(s.object_schema(""), "app");
+    assert!(!s.has_altered_table("", "things"));
+    assert!(s.has_altered_table("public", "things"));
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "ALTER TABLE things ADD COLUMN b int");
+    apply(&mut s, "COMMIT");
+    assert!(s.has_altered_table("app", "things"));
+}
+#[test]
 fn not_valid_and_access_exclusive_are_tracked() {
     let mut s = Session::new(vec!["app".into()]);
     apply(
