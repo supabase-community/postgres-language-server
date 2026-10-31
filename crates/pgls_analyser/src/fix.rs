@@ -174,20 +174,40 @@ impl<'a> StatementTokens<'a> {
     }
 
     /// Replaces the text in `range` with `text`, but keeps the comments in it, e.g. to replace
-    /// `varchar /* name */ (255)` with `text /* name */`.
+    /// `varchar /* name */ (255)` with `text /* name */`. A `--` comment ends at the end of its
+    /// line, so it keeps a line break after it, the one that ends it in the source (e.g. `\r\n`).
+    /// Otherwise it would comment out the rest of the line, e.g. a `NOT NULL` after the replaced
+    /// type.
     pub fn replace_keeping_comments(&self, fix: RuleFix, range: TextRange, text: &str) -> RuleFix {
         let mut replacement = text.to_string();
         for comment in self.comments {
-            let comment = TextRange::new(
+            let comment_range = TextRange::new(
                 TextSize::from(comment.start as u32),
                 TextSize::from(comment.end as u32),
             );
-            if range.contains_range(comment) {
+            if range.contains_range(comment_range) {
                 replacement.push(' ');
-                replacement.push_str(&self.sql[comment]);
+                replacement.push_str(self.sql[comment_range].trim_end());
+                if comment.token() == Token::SqlComment {
+                    replacement.push_str(line_break_after(
+                        &self.sql[usize::from(comment_range.end())..],
+                    ));
+                }
             }
         }
         fix.replace(range, replacement)
+    }
+}
+
+/// The line break that ends a `--` comment followed by `text`: `\r\n`, `\r` or `\n`. `\n` at the
+/// end of the input.
+fn line_break_after(text: &str) -> &'static str {
+    if text.starts_with("\r\n") {
+        "\r\n"
+    } else if text.starts_with('\r') {
+        "\r"
+    } else {
+        "\n"
     }
 }
 
@@ -218,4 +238,45 @@ pub(crate) fn add_concurrently<R: LinterRule + 'static>(
     } else {
         fix.unsafe_fix()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use pgls_query::protobuf::Token;
+    use pgls_text_size::{TextRange, TextSize};
+
+    use super::StatementTokens;
+    use crate::RuleFix;
+
+    /// Replaces `varchar ... (10)` in `sql` with `text`, keeping the comments in it.
+    fn replace_type(sql: &str) -> String {
+        let scan = pgls_query::scan(sql).unwrap();
+        let (tokens, comments): (Vec<_>, Vec<_>) = scan
+            .tokens
+            .into_iter()
+            .partition(|token| !matches!(token.token(), Token::SqlComment | Token::CComment));
+        let tokens = StatementTokens::new(sql, &tokens, &comments);
+        let start = sql.find("varchar").unwrap();
+        let end = sql.find("(10)").unwrap() + "(10)".len();
+        let range = TextRange::new(TextSize::from(start as u32), TextSize::from(end as u32));
+        tokens
+            .replace_keeping_comments(RuleFix::new(""), range, "text")
+            .apply(sql)
+    }
+
+    #[test]
+    fn a_kept_line_comment_keeps_the_line_break_of_the_source() {
+        assert_eq!(
+            replace_type("create table t (name varchar -- length\n(10) not null);"),
+            "create table t (name text -- length\n not null);"
+        );
+        assert_eq!(
+            replace_type("create table t (\r\n  name varchar -- length  \r\n(10) not null\r\n);"),
+            "create table t (\r\n  name text -- length\r\n not null\r\n);"
+        );
+        assert_eq!(
+            replace_type("create table t (name varchar -- length\r(10) not null);"),
+            "create table t (name text -- length\r not null);"
+        );
+    }
 }
