@@ -339,6 +339,33 @@ pub fn query_output_columns(
     nodes::resolve_node(&mut Resolver::new(catalog, search_path, None, None), query)
 }
 
+/// The columns that each `*` and `t.*` in the select lists of a query expands to, by the
+/// location of the `*`, or of the qualifier of `t.*`. Only for the stars whose columns are all
+/// known, see [`Reference::Star`].
+pub fn query_star_columns(
+    query: &protobuf::Node,
+    catalog: &dyn CatalogView,
+    search_path: &[String],
+) -> Vec<(i32, Vec<String>)> {
+    let mut resolver = Resolver::new(catalog, search_path, None, None);
+    resolver.references = Some(Vec::new());
+    nodes::resolve_node(&mut resolver, query);
+    resolver
+        .references
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|reference| match reference {
+            Reference::Star {
+                location, columns, ..
+            } => Some((
+                location,
+                columns.into_iter().map(|column| column.name).collect(),
+            )),
+            _ => None,
+        })
+        .collect()
+}
+
 /// The inferred output names and types of a query, or `None` when its shape is unknown.
 pub fn query_output_types(
     query: &protobuf::Node,

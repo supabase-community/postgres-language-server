@@ -501,11 +501,29 @@ pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
             ..Default::default()
         },
     });
-    let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
-    let range = TextRange::up_to(TextSize::of(sql));
+    // Each statement, so that later ones see the objects that earlier ones create.
+    let stmts = pgls_query::parse(sql)
+        .unwrap()
+        .protobuf
+        .stmts
+        .into_iter()
+        .map(|raw| {
+            let start = usize::try_from(raw.stmt_location).unwrap();
+            let end = match raw.stmt_len {
+                0 => sql.len(),
+                len => start + usize::try_from(len).unwrap(),
+            };
+            let text = sql[start..end].trim_start();
+            let start = TextSize::from(u32::try_from(end - text.len()).unwrap());
+            let range = TextRange::at(start, TextSize::of(text));
+            let root = pgls_query::parse(text).unwrap().into_root().unwrap();
+            AnalysableStatement::new(root, range).with_sql(text)
+        })
+        .collect();
     analyser
         .run(AnalyserParams {
-            stmts: vec![AnalysableStatement::new(root, range).with_sql(sql)],
+            stmts,
+            search_path: vec!["public".into()],
             ..Default::default()
         })
         .iter()
