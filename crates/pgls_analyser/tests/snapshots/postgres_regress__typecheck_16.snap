@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_16_15: 41492 statements and 360 in SQL function bodies, 1699 findings on statements Postgres rejected
+REL_16_15: 41492 statements and 386 in SQL function bodies, 1702 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 banDuplicateColumnAssignments 42601: 1
@@ -14,7 +14,7 @@ insertColumnMismatch 42601: 6
 invalidCast 42846: 2
 missingFromClauseEntry 42P01: 13
 operatorTypeMismatch 42725: 1
-operatorTypeMismatch 42883: 9
+operatorTypeMismatch 42883: 10
 unknownColumn 42703: 38
 unknownColumn 42P01: 3
 unknownFunction 42704: 4
@@ -23,7 +23,7 @@ unknownFunction 42P01: 19
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
 unknownRelation 42501: 1
-unknownRelation 42P01: 1389
+unknownRelation 42P01: 1391
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -241,6 +241,7 @@ create_am.sql:59:1 42P01 unknownRelation
 create_am.sql:61:1 42P01 unknownRelation
 create_am.sql:63:1 42P01 unknownRelation
 create_cast.sql:28:1 42883 functionArgumentMismatch
+create_function_sql.sql:203:1 (body) 42883 operatorTypeMismatch
 create_function_sql.sql:409:1 42P13 functionReturnTypeMismatch
 create_index_spgist.sql:5:1 42P01 unknownRelation
 create_index_spgist.sql:19:1 42P01 unknownRelation
@@ -1673,7 +1674,9 @@ window.sql:385:1 42P01 unknownRelation
 window.sql:389:1 42P01 unknownRelation
 window.sql:393:1 42P01 unknownRelation
 window.sql:397:1 42P01 unknownRelation
+window.sql:510:1 (body) 42P01 unknownRelation
 window.sql:518:1 (body) 42P01 unknownRelation
+window.sql:530:1 (body) 42P01 unknownRelation
 window.sql:538:1 (body) 42P01 unknownRelation
 window.sql:556:1 42P01 unknownRelation
 window.sql:560:1 42P01 unknownRelation
