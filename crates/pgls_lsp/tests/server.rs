@@ -3932,9 +3932,12 @@ async fn test_editor_features_refresh_when_the_database_becomes_reachable(
     assert_eq!(inlay_hint_count(&mut server).await?, 2);
     assert_eq!(semantic_token_count(&mut server).await?, 3);
 
-    // The refresh is sent once.
-    server.replace_document(version, text).await?;
-    wait_for_diagnostics_without_refresh(&mut receiver, version).await?;
+    // The refresh is sent once. A run sends it after publishing its diagnostics, so the second run
+    // makes sure that a refresh at the end of the first one is caught.
+    for version in version..version + 2 {
+        server.replace_document(version, text).await?;
+        wait_for_diagnostics_without_refresh(&mut receiver, version).await?;
+    }
 
     server.shutdown().await?;
     reader.abort();
