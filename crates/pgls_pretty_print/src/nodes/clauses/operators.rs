@@ -1,6 +1,5 @@
-//! Operator names: `+` and `OPERATOR(schema.+)` in expressions, `schema.+` in DDL.
-//!
-//! The operator of `x = ANY (...)` is written by `sub_link.rs`, which keeps only the symbol.
+//! Operator names: `+` and `OPERATOR(schema.+)` in expressions, `x = ANY (...)` included, and
+//! `schema.+` in DDL.
 
 use crate::nodes::prelude::*;
 
