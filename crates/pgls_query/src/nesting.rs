@@ -44,12 +44,14 @@ pub const MAX_NESTING: usize = if cfg!(target_os = "emscripten") {
 pub(crate) struct TooDeep;
 
 /// Checks that the messages of the serialized [`crate::protobuf::ParseResult`] in `buf` nest at
-/// most `max` levels deep.
+/// most `max` levels deep, and returns how deep they nest.
 ///
 /// Malformed input is left to the decoder, which reports it.
-pub(crate) fn check_nesting(buf: &[u8], max: usize) -> Result<(), TooDeep> {
+pub(crate) fn check_nesting(buf: &[u8], max: usize) -> Result<usize, TooDeep> {
     // The enclosing messages of the current one, with the offset where each ends.
     let mut stack: Vec<(MessageId, usize)> = Vec::new();
+    // The root counts as the first level.
+    let mut deepest = 1;
     let mut message = PARSE_RESULT;
     let mut end = buf.len();
     let mut pos = 0;
@@ -62,21 +64,21 @@ pub(crate) fn check_nesting(buf: &[u8], max: usize) -> Result<(), TooDeep> {
                     end = parent_end;
                     continue;
                 }
-                None => return Ok(()),
+                None => return Ok(deepest),
             }
         }
 
         let Some(tag) = read_varint(buf, &mut pos) else {
-            return Ok(());
+            return Ok(deepest);
         };
         let Ok(field) = u32::try_from(tag >> 3) else {
-            return Ok(());
+            return Ok(deepest);
         };
         match tag & 0b111 {
             // varint
             0 => {
                 if read_varint(buf, &mut pos).is_none() {
-                    return Ok(());
+                    return Ok(deepest);
                 }
             }
             // 64-bit
@@ -86,18 +88,19 @@ pub(crate) fn check_nesting(buf: &[u8], max: usize) -> Result<(), TooDeep> {
                 let Some(len) =
                     read_varint(buf, &mut pos).and_then(|len| usize::try_from(len).ok())
                 else {
-                    return Ok(());
+                    return Ok(deepest);
                 };
                 let Some(field_end) = pos.checked_add(len).filter(|&field_end| field_end <= end)
                 else {
-                    return Ok(());
+                    return Ok(deepest);
                 };
                 match nested_message(message, field) {
                     Some(child) => {
-                        // The root counts as the first level.
-                        if stack.len() + 2 > max {
+                        let depth = stack.len() + 2;
+                        if depth > max {
                             return Err(TooDeep);
                         }
+                        deepest = deepest.max(depth);
                         stack.push((message, end));
                         message = child;
                         end = field_end;
@@ -108,7 +111,7 @@ pub(crate) fn check_nesting(buf: &[u8], max: usize) -> Result<(), TooDeep> {
             // 32-bit
             5 => pos += 4,
             // groups aren't used by pg_query.proto
-            _ => return Ok(()),
+            _ => return Ok(deepest),
         }
     }
 }

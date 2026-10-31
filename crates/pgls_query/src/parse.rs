@@ -22,7 +22,16 @@ use prost::Message;
 /// ```
 pub fn parse(statement: &str) -> Result<ParseResult> {
     let input = CString::new(statement)?;
-    with_parse_stack(statement.len(), move || parse_c_string(&input))
+    let serialize_stack = statement.len().saturating_mul(STACK_PER_BYTE);
+    // Emscripten has no threads.
+    if serialize_stack <= INLINE_STACK || cfg!(target_os = "emscripten") {
+        return parse_c_string(&input, INLINE_STACK);
+    }
+    // The thread has room for decoding the deepest tree too.
+    let stack_size = serialize_stack
+        .saturating_add(MAX_DECODE_STACK)
+        .min(MAX_STACK);
+    on_thread(stack_size, || parse_c_string(&input, MAX_DECODE_STACK))
 }
 
 /// The stack that libpg_query needs per byte of a statement, with a margin.
@@ -33,38 +42,33 @@ pub fn parse(statement: &str) -> Result<ParseResult> {
 /// `select -+-+-+x`; `select 1 + 1 + ...` takes about 50.
 const STACK_PER_BYTE: usize = 1024;
 
-/// A statement that needs at most this much stack is parsed on the calling thread. Every thread
-/// of the language server has far more, see `WORKER_STACK_SIZE_BYTES`.
-const INLINE_STACK: usize = 1024 * 1024;
+/// The stack that prost needs per level of nesting to decode a tree, with a margin. The most
+/// measured is about 900 bytes, in a release build and in the dev profile, which builds this
+/// crate with `opt-level = 1`.
+const DECODE_STACK_PER_LEVEL: usize = 2 * 1024;
 
-/// The stack for checking the nesting and decoding, on top of [`STACK_PER_BYTE`]. Both are
-/// bounded by [`MAX_NESTING`].
-const DECODE_STACK: usize = 4 * 1024 * 1024;
+/// The stack for decoding the deepest tree that [`MAX_NESTING`] allows.
+const MAX_DECODE_STACK: usize = MAX_NESTING * DECODE_STACK_PER_LEVEL;
+
+/// A statement that needs at most this much stack, to serialize or to decode, is parsed or
+/// decoded on the calling thread. Every thread of the language server has far more, see
+/// `WORKER_STACK_SIZE_BYTES`.
+const INLINE_STACK: usize = 1024 * 1024;
 
 /// The largest stack a statement is parsed with: about 5 MB of `select 1 + 1 + ...`.
 const MAX_STACK: usize = 1024 * 1024 * 1024;
 
-/// Runs `parse` on a thread whose stack is large enough for a statement of `len` bytes.
+/// Runs `f` on a thread with a stack of `stack_size` bytes.
 ///
-/// A stack overflow aborts the process, so a long statement, which libpg_query may need more
-/// stack for than the calling thread has, is parsed on a thread of its own. The stack is
-/// virtual memory, which is only committed as it is used.
-fn with_parse_stack(
-    len: usize,
-    parse: impl FnOnce() -> Result<ParseResult> + Send,
-) -> Result<ParseResult> {
-    let needed = len.saturating_mul(STACK_PER_BYTE);
-    // Emscripten has no threads.
-    if needed <= INLINE_STACK || cfg!(target_os = "emscripten") {
-        return parse();
-    }
-
-    let stack_size = needed.saturating_add(DECODE_STACK).min(MAX_STACK);
+/// A stack overflow aborts the process, so a long or deep statement, which may need more stack
+/// than the calling thread has, is parsed or decoded on a thread of its own. The stack is virtual
+/// memory, which is only committed as it is used.
+fn on_thread<T: Send>(stack_size: usize, f: impl FnOnce() -> Result<T> + Send) -> Result<T> {
     std::thread::scope(|scope| {
         let handle = std::thread::Builder::new()
             .name("pgls_query::parse".to_string())
             .stack_size(stack_size)
-            .spawn_scoped(scope, parse)
+            .spawn_scoped(scope, f)
             .map_err(|err| Error::TooLong(err.to_string()))?;
         handle
             .join()
@@ -72,7 +76,9 @@ fn with_parse_stack(
     })
 }
 
-fn parse_c_string(input: &CString) -> Result<ParseResult> {
+/// Parses `input`, decoding the tree on the calling thread if that needs at most `decode_stack`
+/// bytes of stack.
+fn parse_c_string(input: &CString, decode_stack: usize) -> Result<ParseResult> {
     let result = unsafe { pg_query_parse_protobuf(input.as_ptr()) };
     let parse_result = if !result.error.is_null() {
         let message = unsafe { CStr::from_ptr((*result.error).message) }
@@ -90,7 +96,15 @@ fn parse_c_string(input: &CString) -> Result<ParseResult> {
         // e.g. `select 1 + 1 + ...` with 50 terms.
         check_nesting(data, MAX_NESTING)
             .map_err(|TooDeep| Error::TooDeep)
-            .and_then(|()| protobuf::ParseResult::decode(data).map_err(Error::Decode))
+            .and_then(|depth| {
+                let decode = || protobuf::ParseResult::decode(data).map_err(Error::Decode);
+                let needed = depth.saturating_mul(DECODE_STACK_PER_LEVEL);
+                if needed <= decode_stack || cfg!(target_os = "emscripten") {
+                    decode()
+                } else {
+                    on_thread(needed.saturating_add(INLINE_STACK), decode)
+                }
+            })
             .map(|result| ParseResult::new(result, stderr))
     };
     unsafe { pg_query_free_protobuf_parse_result(result) };
@@ -213,8 +227,22 @@ mod tests {
             .unwrap()
             .join()
             .unwrap();
-        // They are too deep to decode, but parsing returns.
-        assert_eq!(results, [Err(Error::TooDeep), Err(Error::TooDeep)]);
+        // The first is too deep to decode, but parsing returns.
+        assert_eq!(results, [Err(Error::TooDeep), Ok(())]);
+    }
+
+    /// A short statement can nest deeply: decoding these needs about 1 MiB of stack.
+    #[test]
+    fn deep_trees_get_the_stack_they_need_to_decode() {
+        let sql = format!("select 1{};", "+1".repeat(495));
+        assert!(sql.len() * super::STACK_PER_BYTE <= super::INLINE_STACK);
+        let result = std::thread::Builder::new()
+            .stack_size(512 * 1024)
+            .spawn(move || parse(&sql).map(|_| ()))
+            .unwrap()
+            .join()
+            .unwrap();
+        assert_eq!(result, Ok(()));
     }
 
     #[test]
