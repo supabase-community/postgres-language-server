@@ -247,3 +247,21 @@ fn a_fill_list_with_leading_commas_keeps_an_own_line_comment_before_the_comma() 
         "grant select\n  on table t1, t2\n    -- c\n    , t3\n  to u;"
     );
 }
+
+#[test]
+fn a_comment_before_a_comma_stays_before_the_comma() {
+    for config in [FormatConfig::default(), leading_comma_config()] {
+        assert_eq!(
+            format_idempotently("select f(a) /* c */, b + 1 /* d */, c from t", &config),
+            "select f(a) /* c */, b + 1 /* d */, c from t;"
+        );
+        assert_eq!(
+            format_idempotently("select * from t where x in (1 /* one */, 2)", &config),
+            "select * from t where x in (1 /* one */, 2);"
+        );
+    }
+    assert_eq!(
+        format_idempotently("select a /* c */, b from t", &expanded_config()),
+        "SELECT\n\ta /* c */,\n\tb\nFROM\n\tt\n;"
+    );
+}

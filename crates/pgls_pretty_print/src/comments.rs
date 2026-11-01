@@ -20,7 +20,9 @@ pub struct Comment {
     /// rather than moving onto the next item's line.
     pub after_separator: bool,
     /// The keyword written right after the comment, in lower case, when no node starts there,
-    /// such as `else` in `then 'x' /* why */ else 'y'`.
+    /// such as `else` in `then 'x' /* why */ else 'y'`. A comma counts too, `,`, for a comment
+    /// within the line of the item before it, as in `(1, 'a') /* why */, (2, 'b')`. On a line of
+    /// its own, it documents the next item.
     ///
     /// The comment is attached to the node after that keyword, but the parent emits the keyword
     /// first. A parent that knows the keyword takes such comments before writing it, so that they
@@ -102,7 +104,14 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
             .rev()
             .find(|location| **location as usize <= source_comment.start)
             .copied();
-        source_comment.comment.before_keyword = keyword_after.get(&source_comment.start).cloned();
+        source_comment.comment.before_keyword = keyword_after
+            .get(&source_comment.start)
+            .filter(|keyword| {
+                *keyword != ","
+                    || !(source_comment.comment.own_line
+                        || source_comment.comment.text.contains('\n'))
+            })
+            .cloned();
         // Nothing inside the CASE follows its END, so a comment before END belongs to the last
         // branch rather than to whatever follows the expression.
         let leads = leads && source_comment.comment.before_keyword.as_deref() != Some("end");
@@ -204,7 +213,7 @@ struct SourceComment {
 }
 
 /// For every comment followed by a keyword that no node starts at, the keyword in lower case, by
-/// the comment's start.
+/// the comment's start. A comma counts as such a keyword.
 fn keywords_after_comments(sql: &str, locations: &[i32]) -> HashMap<usize, String> {
     use pgls_query::protobuf::KeywordKind;
 
@@ -224,7 +233,8 @@ fn keywords_after_comments(sql: &str, locations: &[i32]) -> HashMap<usize, Strin
         ) {
             continue;
         }
-        if next.keyword_kind == KeywordKind::NoKeyword as i32
+        let is_comma = matches!(Token::try_from(next.token), Ok(Token::Ascii44));
+        if (next.keyword_kind == KeywordKind::NoKeyword as i32 && !is_comma)
             || locations.binary_search(&next.start).is_ok()
         {
             continue;
@@ -442,6 +452,24 @@ mod tests {
             .next()
             .expect("one entry");
         assert_eq!(comments[0].before_keyword.as_deref(), Some("else"));
+    }
+
+    #[test]
+    fn a_comment_before_a_comma_records_the_comma_when_it_is_within_the_line_of_the_item() {
+        for (sql, expected) in [
+            ("SELECT a /* why */, b", Some(",")),
+            ("SELECT a\n/* why */, b", None),
+            ("SELECT a /* why\n */, b", None),
+        ] {
+            let attached = attach_comments(sql, &parse(sql));
+
+            let comments = attached
+                .leading_by_location
+                .values()
+                .next()
+                .expect("one entry");
+            assert_eq!(comments[0].before_keyword.as_deref(), expected, "{sql}");
+        }
     }
 
     #[test]

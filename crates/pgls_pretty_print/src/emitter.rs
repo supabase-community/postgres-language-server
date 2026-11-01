@@ -125,6 +125,18 @@ impl EventEmitter {
         if matches!(token, TokenKind::SEMICOLON) {
             self.flush_comments_after_separator();
         }
+        // A comment before the comma, `a /* c */, b`, is followed by a space meant for the next
+        // token, which the comma doesn't take. With leading commas, the break before the comma
+        // comes in between.
+        if is_comma
+            && let Some(index) = self
+                .events
+                .iter()
+                .rposition(|event| !matches!(event, LayoutEvent::Line(_)))
+            && matches!(self.events[index], LayoutEvent::Space)
+        {
+            self.events.remove(index);
+        }
         self.events.push(LayoutEvent::Token(token));
         if is_comma {
             self.flush_comments_after_separator();
