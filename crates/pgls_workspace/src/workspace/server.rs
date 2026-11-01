@@ -17,8 +17,6 @@ use document::TypecheckDiagnosticsMapper;
 use document::{DefaultMapper, Document, ExecuteStatementMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
-#[cfg(feature = "db")]
-use pg_query::convert_to_positional_params_with_metadata;
 use pgls_analyse::{
     ActionCategory, AnalysisFilter, Applicability, RuleCategories, RuleCategoriesBuilder,
     RuleFilter, SUPPRESSION_ACTION_CATEGORY,
@@ -31,6 +29,8 @@ use pgls_analyser::{
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session};
+#[cfg(feature = "db")]
+use pgls_lexer::convert_to_positional_params_with_metadata;
 use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
@@ -86,10 +86,10 @@ mod connection_key;
 #[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
+mod document_cache;
 mod expand_star;
 mod formatting;
 mod migration;
-mod pg_query;
 #[cfg(feature = "db")]
 mod pgpass;
 mod snapshot_manager;
@@ -97,7 +97,6 @@ mod sql_function;
 #[cfg(feature = "db")]
 mod statement_execution;
 mod statement_identifier;
-mod tree_sitter;
 
 pub struct WorkspaceServer {
     /// global settings object for this workspace
