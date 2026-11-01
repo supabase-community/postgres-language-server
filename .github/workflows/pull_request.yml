@@ -302,7 +302,7 @@ jobs:
           # use the same images we use for compiling
           - os: windows-2022
           - os: ubuntu-22.04
-          - os: macos-14
+          - os: macos-15
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4

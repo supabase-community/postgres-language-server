@@ -57,12 +57,19 @@ pub fn check(
     };
     let execution = ExecutionConfig::new(mode, max_diagnostics);
 
+    let database_errors = check_database_connection(&session)?;
     if let Some(stdin_path) = args.targets.stdin_file_path.as_deref() {
-        print_diagnostics(session.console(), configuration_errors);
+        // Stdout gets the checked code, so the diagnostics go to stderr. The errors of nested
+        // configuration files are only printed, the database errors also fail the command.
+        print_diagnostics(session.console(), &configuration_errors);
+        print_diagnostics(session.console(), &database_errors);
         let payload = read_stdin_payload(stdin_path, session.console(), "check")?;
-        run_stdin(&mut session, &execution, payload)
+        let mut report = run_stdin(&mut session, &execution, payload)?;
+        for error in database_errors.into_iter().rev() {
+            report.prepend_diagnostic(error);
+        }
+        enforce_exit_codes(cli_options, &report, category!("check"))
     } else {
-        let database_errors = check_database_connection(&session)?;
         let mut report: Report = run_files(&mut session, &execution, paths)?;
         for error in database_errors.into_iter().rev() {
             report.prepend_diagnostic(error);
