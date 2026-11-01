@@ -18,7 +18,6 @@ parking_lot              = "0.12.3"
 pgls_analyse             = { workspace = true }
 pgls_completions         = { workspace = true }
 pgls_configuration       = { workspace = true }
-pgls_console             = { workspace = true }
 pgls_diagnostics         = { workspace = true }
 pgls_fs                  = { workspace = true }
 pgls_text_edit           = { workspace = true }
