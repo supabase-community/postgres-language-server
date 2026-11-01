@@ -229,6 +229,23 @@ fn record_enum_operands(
     }
 }
 
+/// Records the string literals among `values` that are coerced to `common`, the common type of
+/// the values of `CASE` or `COALESCE`, if it is an enum ([`coerce_to_common_type`]).
+///
+/// [`coerce_to_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1592
+fn record_enum_values<'a>(
+    r: &mut Resolver<'_>,
+    values: impl IntoIterator<Item = Option<&'a NodeEnum>>,
+    common: Option<&Type>,
+) {
+    let Some(Type::Named(common)) = common else {
+        return;
+    };
+    for value in values {
+        r.record_enum_literal(value, common);
+    }
+}
+
 /// Whether an operand declared as `declared` takes the type `other` of the other operand.
 fn takes_type_of_other(r: &Resolver<'_>, declared: Option<&TypeId>, other: &TypeId) -> bool {
     let Some(declared) = declared else {
