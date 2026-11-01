@@ -226,6 +226,20 @@ impl LinterDiagnostic {
         self
     }
 
+    /// Moves the spans of the diagnostic, which are relative to the statement while the rule
+    /// runs, into the file. A diagnostic without a span points at the whole statement.
+    pub(crate) fn move_into_file(&mut self, statement: TextRange) {
+        self.span = Some(match self.span {
+            Some(span) => span + statement.start(),
+            None => statement,
+        });
+        for detail in &mut self.rule_advice.details {
+            if let Some(range) = &mut detail.range {
+                *range += statement.start();
+            }
+        }
+    }
+
     /// Sets the span of this diagnostic.
     pub fn span(mut self, span: TextRange) -> Self {
         self.span = Some(span);
@@ -243,7 +257,7 @@ impl LinterDiagnostic {
 
     /// Attaches a label to this [`LinterDiagnostic`].
     ///
-    /// The given span has to be in the file that was provided while creating this [`LinterDiagnostic`].
+    /// Like the span of the diagnostic, the given span is relative to the statement.
     pub fn label(mut self, span: Option<TextRange>, msg: impl Display) -> Self {
         self.rule_advice.details.push(Detail {
             log_category: LogCategory::Info,
