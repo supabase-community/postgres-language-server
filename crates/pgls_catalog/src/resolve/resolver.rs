@@ -3,7 +3,7 @@
 use std::mem::Discriminant;
 
 use pgls_text_size::{TextRange, TextSize};
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use pgls_query::{
     NodeEnum,
@@ -37,6 +37,10 @@ pub(super) struct Resolver<'a> {
     pub references: Option<Vec<Reference>>,
     /// The location and kind of each reference in `references`.
     recorded: FxHashSet<(i32, Discriminant<Reference>)>,
+    /// The output columns of the subqueries of sublinks resolved so far, by the address of the
+    /// subquery's node, so that typing a sublink doesn't resolve its subquery again. Resolving
+    /// it again at every level of nested subqueries took time exponential in their depth.
+    subquery_outputs: FxHashMap<usize, crate::typing::QueryColumns>,
 }
 
 impl<'a> Resolver<'a> {
@@ -58,7 +62,24 @@ impl<'a> Resolver<'a> {
             output: None,
             references: None,
             recorded: FxHashSet::default(),
+            subquery_outputs: FxHashMap::default(),
         }
+    }
+
+    /// Remembers the output columns of `query`, the subquery of a sublink.
+    pub fn remember_subquery_output(
+        &mut self,
+        query: &protobuf::Node,
+        columns: crate::typing::QueryColumns,
+    ) {
+        self.subquery_outputs
+            .insert(std::ptr::from_ref(query) as usize, columns);
+    }
+
+    /// The output columns of `query`, the subquery of a sublink, if it was resolved before.
+    pub fn subquery_output(&self, query: &protobuf::Node) -> Option<&crate::typing::QueryColumns> {
+        self.subquery_outputs
+            .get(&(std::ptr::from_ref(query) as usize))
     }
 
     /// Makes the FROM items of `level` visible, until [`Resolver::exit_level`].
@@ -283,6 +304,41 @@ impl<'a> Resolver<'a> {
     /// The span of the string constant starting at `location`.
     pub fn literal_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::literal_end)
+    }
+
+    /// The alias `alias` after the (possibly qualified) name starting at `location`: its location
+    /// and span, if it is written there.
+    pub fn alias_location(&self, location: i32, alias: &str) -> Option<(i32, TextRange)> {
+        let sql = self.sql?;
+        let (start, end) = span::alias_span(sql, usize::try_from(location).ok()?)?;
+        if crate::identifier_name(&sql[start..end]) != alias {
+            return None;
+        }
+        Some((
+            i32::try_from(start).ok()?,
+            TextRange::new(
+                TextSize::try_from(start).ok()?,
+                TextSize::try_from(end).ok()?,
+            ),
+        ))
+    }
+
+    /// Records the alias of the FROM item named at `location`, when references are being
+    /// collected.
+    pub fn record_alias(&mut self, location: i32, alias: Option<&pgls_query::protobuf::Alias>) {
+        if !self.collects_references() {
+            return;
+        }
+        let Some(alias) = alias else {
+            return;
+        };
+        if let Some((location, span)) = self.alias_location(location, &alias.aliasname) {
+            self.record(Reference::Alias {
+                location,
+                span: Some(span),
+                name: alias.aliasname.clone(),
+            });
+        }
     }
 
     /// The span of the first token of an expression starting at `location`.
