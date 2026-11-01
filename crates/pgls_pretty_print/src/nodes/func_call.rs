@@ -168,9 +168,11 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
             e.token(TokenKind::IDENT("*".to_string()));
         } else if !n.args.is_empty() {
             // Handle VARIADIC - if func_variadic is true, prepend VARIADIC to the last argument
-            if n.func_variadic && !n.args.is_empty() {
+            if n.func_variadic
+                && let Some((variadic, leading)) = n.args.split_last()
+            {
                 // Emit non-variadic args first
-                for (idx, arg) in n.args.iter().take(n.args.len() - 1).enumerate() {
+                for (idx, arg) in leading.iter().enumerate() {
                     if idx > 0 {
                         e.token(TokenKind::COMMA);
                         e.line(LineType::SoftOrSpace);
@@ -178,7 +180,7 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
                     emit_node(e, arg);
                 }
 
-                if n.args.len() > 1 {
+                if !leading.is_empty() {
                     e.token(TokenKind::COMMA);
                     e.line(LineType::SoftOrSpace);
                 }
@@ -186,7 +188,7 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
                 // Emit VARIADIC with the last argument
                 e.token(TokenKind::VARIADIC_KW);
                 e.space();
-                emit_node(e, n.args.last().unwrap());
+                emit_node(e, variadic);
             } else if let Some(group_size) = configured_argument_group_size(e, n) {
                 emit_grouped_arguments(e, &n.args, group_size);
             } else {

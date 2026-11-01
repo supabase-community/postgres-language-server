@@ -484,7 +484,10 @@ fn emit_deferrable(e: &mut EventEmitter, n: &Constraint, continued: &mut bool) {
 
 /// Emits one element of an exclusion constraint: `column WITH operator`.
 fn emit_exclusion(e: &mut EventEmitter, exclusion: &pgls_query::Node) {
-    let exclusion_list = assert_node_variant!(List, exclusion);
+    let Some(NodeEnum::List(exclusion_list)) = exclusion.node.as_ref() else {
+        emit_node(e, exclusion);
+        return;
+    };
     debug_assert!(exclusion_list.items.len() >= 2);
 
     if let Some(index_elem) = exclusion_list.items.first() {

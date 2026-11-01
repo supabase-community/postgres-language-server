@@ -17,7 +17,10 @@ pub(crate) fn emit_options_clause(e: &mut EventEmitter, options: &[Node]) {
     e.token(TokenKind::OPTIONS_KW);
     e.space();
     emit_parenthesized_list(e, options, |e, n| {
-        let def_elem = assert_node_variant!(DefElem, n);
+        let Some(NodeEnum::DefElem(def_elem)) = n.node.as_ref() else {
+            emit_node(e, n);
+            return;
+        };
         emit_options_def_elem(e, def_elem);
     });
 }
