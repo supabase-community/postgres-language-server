@@ -594,6 +594,61 @@ async fn enum_literal_references(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn enum_literals_coerced_to_a_common_or_resolved_type(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let enum_literals = |sql: &str| -> Vec<String> {
+        references(&catalog, &search_path, sql)
+            .into_iter()
+            .filter(|reference| reference.contains("enum literal"))
+            .collect()
+    };
+    // CASE and COALESCE coerce their values to the common type.
+    assert_eq!(
+        enum_literals(
+            "select case when id > 1 then 'happy' else current end, \
+             case current when 'sad' then 1 end, coalesce(current, 'happy', 'sad') from people"
+        ),
+        [
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+        ]
+    );
+    // An unknown array literal becomes an array of the enum.
+    assert_eq!(
+        enum_literals("select id from people where current = any('{happy,sad}')"),
+        ["'{happy,sad}' => enum literal public.mood"]
+    );
+    // Polymorphic parameters take the enum type of the other arguments.
+    assert_eq!(
+        enum_literals("select array_position(array[current], 'sad') from people"),
+        ["'sad' => enum literal public.mood"]
+    );
+    // The source of an INSERT keeps its unknown literals until they are assigned.
+    assert_eq!(
+        enum_literals("insert into people (id, current) select 1, 'happy'"),
+        ["'happy' => enum literal public.mood"]
+    );
+    // Without a common enum type, or where Postgres makes them text, they are no enum literals.
+    assert_eq!(
+        enum_literals(
+            "select case when id > 1 then 'happy' else 'sad' end, coalesce('happy', 'sad') \
+             from people"
+        ),
+        [""; 0]
+    );
+    for sql in [
+        "insert into people (current) select distinct 'happy'",
+        "insert into people (current) select 'happy' order by 1",
+        "insert into people (current) select 'happy' union select 'sad'",
+        "insert into people select *, 'happy' from people",
+    ] {
+        assert_eq!(enum_literals(sql), [""; 0], "{sql}");
+    }
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn parameter_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let param = |name: &str| FunctionParam {
