@@ -41,7 +41,7 @@ use crate::{
     workspace::{
         IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
         UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
-        server::WorkspaceServer,
+        server::{PLACEHOLDER_EXECUTION_DISABLED, WorkspaceServer},
     },
 };
 
@@ -2171,6 +2171,60 @@ async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool)
     .await
     .unwrap();
     assert!(!table_exists, "A disabled statement must not be executed");
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn execute_statement_refuses_goose_envsub_expansions(test_db: PgPool) {
+    test_db
+        .execute("create table audit_log (message text);")
+        .await
+        .unwrap();
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: PartialConfiguration {
+                migrations: Some(PartialMigrationsConfiguration {
+                    section_markers: Some(SectionMarkers::Goose),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+        })
+        .expect("Unable to update the settings");
+
+    // goose inserts the value of `MESSAGE`, which we don't know.
+    let sql = "-- +goose Up\n-- +goose ENVSUB ON\ninsert into audit_log (message) values ('${MESSAGE}');\n";
+    let (disabled_reason, result) = execute_sql_at(
+        &workspace,
+        project_key,
+        sql,
+        TextSize::try_from(sql.find("insert").unwrap()).unwrap(),
+    );
+
+    assert_eq!(
+        disabled_reason.as_deref(),
+        Some(PLACEHOLDER_EXECUTION_DISABLED)
+    );
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: PLACEHOLDER_EXECUTION_DISABLED.into(),
+            ..Default::default()
+        }
+    );
+    let rows: i64 = sqlx::query_scalar("select count(*) from audit_log")
+        .fetch_one(&test_db)
+        .await
+        .unwrap();
+    assert_eq!(
+        rows, 0,
+        "A statement with an expansion must not be executed"
+    );
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -4347,4 +4401,238 @@ ALTER TABLE users DROP COLUMN email;
     assert!(project.is_ignored("/repo/db/migrations/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/db/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
+}
+
+const GOOSE_ENVSUB: &str = "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SCHEMA}.events (id bigint, at timestamp);\ndrop table ${SCHEMA:-public}.old_events;\n-- +goose ENVSUB OFF\nselect ${NOT_SUBSTITUTED};\n";
+
+#[test]
+fn test_goose_envsub_expansions_are_analysed_as_parameters() {
+    let categories = migration_diagnostics(SectionMarkers::Goose, None, GOOSE_ENVSUB);
+    // Only the expansion after `ENVSUB OFF` is a syntax error, and the rules still run.
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "syntax")
+            .count(),
+        1,
+        "{categories:?}"
+    );
+    assert!(
+        categories
+            .iter()
+            .any(|category| category == "lint/banDropTable"),
+        "{categories:?}"
+    );
+}
+
+#[test]
+fn test_goose_envsub_needs_the_goose_section_markers() {
+    // Other tools don't replace the expansions, so they stay syntax errors.
+    for section_markers in [SectionMarkers::None, SectionMarkers::Dbmate] {
+        let categories = migration_diagnostics(section_markers, None, GOOSE_ENVSUB);
+        assert_eq!(
+            categories
+                .iter()
+                .filter(|category| *category == "syntax")
+                .count(),
+            3,
+            "{section_markers:?}: {categories:?}"
+        );
+    }
+}
+
+#[test]
+fn test_goose_envsub_follows_settings_changes() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: GOOSE_ENVSUB.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let syntax_errors = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "syntax"))
+            .count()
+    };
+
+    assert_eq!(syntax_errors(), 3);
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: PartialConfiguration {
+                migrations: Some(PartialMigrationsConfiguration {
+                    section_markers: Some(SectionMarkers::Goose),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+        })
+        .expect("Unable to update the settings");
+    // Only the expansion after `ENVSUB OFF` is left.
+    assert_eq!(syntax_errors(), 1);
+}
+
+#[test]
+fn test_goose_envsub_expansions_stay_as_written() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(
+            r#"{"linter": {"rules": {"all": true}}, "format": {"enabled": true}, "migrations": {"sectionMarkers": "goose"}}"#,
+        )
+        .unwrap(),
+    );
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let content = "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SCHEMA}.events (id bigint, at timestamp);\ncreate table logs (at timestamp);\n";
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let fixed = workspace
+        .fix_file(FixFileParams {
+            project_key,
+            path: path.clone(),
+            fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    // The expansion stays as written. A fix is only offered if the fixed statement parses, and
+    // a statement with an expansion doesn't as written, so only the other statement is fixed.
+    assert_eq!(
+        fixed.to_lowercase(),
+        "-- +goose up\n-- +goose envsub on\ncreate table ${schema}.events (id bigint, at timestamp);\ncreate table if not exists logs (at timestamptz);\n"
+    );
+
+    // The formatter leaves the statement alone.
+    let formatted = workspace
+        .pull_file_formatting(PullFileFormattingParams {
+            project_key,
+            path: path.clone(),
+            range: None,
+        })
+        .expect("Unable to format file");
+    assert!(
+        formatted
+            .formatted
+            .contains("create table ${SCHEMA}.events (id bigint, at timestamp);"),
+        "{}",
+        formatted.formatted
+    );
+}
+
+#[test]
+fn test_no_fix_inside_a_goose_envsub_expansion() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(
+            r#"{"linter": {"rules": {"all": true}}, "migrations": {"sectionMarkers": "goose"}}"#,
+        )
+        .unwrap(),
+    );
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    // `NOT VALID` would go after the last token of the constraint, inside `${PARENT}`.
+    let content = "-- +goose Up\n-- +goose ENVSUB ON\nalter table orders add constraint orders_parent_fk foreign key (parent_id) references ${PARENT};\n";
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let fixed = workspace
+        .fix_file(FixFileParams {
+            project_key,
+            path,
+            fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
+            only: vec!["safety/constraintMissingNotValid".parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    assert_eq!(fixed, content);
+}
+
+/// The diagnostics of a goose migration with `ENVSUB` on for `sql`.
+fn goose_envsub_diagnostics(sql: &str) -> Vec<String> {
+    migration_diagnostics(
+        SectionMarkers::Goose,
+        None,
+        &format!("-- +goose Up\n-- +goose ENVSUB ON\n{sql}\n"),
+    )
+}
+
+#[test]
+fn test_goose_envsub_default_with_a_brace() {
+    // interpolate reads the `{` as text, so goose runs `create schema public;` with
+    // `SCHEMA=public`.
+    let categories = goose_envsub_diagnostics("create schema ${SCHEMA:-app{test};");
+    assert!(!categories.iter().any(|c| c == "syntax"), "{categories:?}");
+}
+
+#[test]
+fn test_goose_envsub_expansion_in_an_identifier() {
+    // goose runs `create table app_events (id bigint);` with `PREFIX=app`.
+    let categories = goose_envsub_diagnostics("create table ${PREFIX}_events (id bigint);");
+    assert!(!categories.iter().any(|c| c == "syntax"), "{categories:?}");
+}
+
+#[test]
+fn test_goose_envsub_quoted_expansion() {
+    // goose runs `select * from "public".events;` with `SCHEMA=public`, so the schema isn't
+    // `$SCHEMA` or `${SCHEMA}`.
+    let categories = goose_envsub_diagnostics("select * from \"${SCHEMA}\".events;");
+    assert_eq!(categories, Vec::<String>::new());
+}
+
+#[test]
+fn test_goose_envsub_more_than_nine_expansions() {
+    let categories = goose_envsub_diagnostics(
+        "select ${A}, ${B}, ${C}, ${D}, ${E}, ${F}, ${G}, ${H}, ${I}, ${J};",
+    );
+    assert_eq!(categories, Vec::<String>::new());
+}
+
+#[test]
+fn named_parameter_in_a_join_condition_is_a_value() {
+    // A value: the relations are still checked.
+    let categories = migration_diagnostics(
+        SectionMarkers::None,
+        None,
+        "select * from orders join customers on :enabled;",
+    );
+    assert_eq!(
+        categories,
+        ["lint/unknownRelation", "lint/unknownRelation"],
+        "{categories:?}"
+    );
 }
