@@ -1,7 +1,7 @@
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-use crate::nodes::node_list::emit_comma_separated_list;
 use pgls_query::protobuf::{JoinType, RangeTblEntry, RteKind};
 use std::convert::TryFrom;
+
+use super::prelude::*;
 
 pub(super) fn emit_range_tbl_entry(e: &mut EventEmitter, n: &RangeTblEntry) {
     e.group_start(GroupKind::RangeTblEntry);
@@ -19,18 +19,18 @@ pub(super) fn emit_range_tbl_entry(e: &mut EventEmitter, n: &RangeTblEntry) {
         label.push_str("+lateral");
     }
 
-    super::emit_identifier(e, &label);
+    emit_identifier(e, &label);
 
     if let Some(alias) = preferred_alias(n)
         && !alias.is_empty()
     {
         e.space();
-        super::emit_identifier_maybe_quoted(e, alias);
+        emit_identifier_maybe_quoted(e, alias);
     }
 
     if let Some(tablesample) = n.tablesample.as_deref() {
         e.line(LineType::SoftOrSpace);
-        super::table_sample_clause::emit_table_sample_clause(e, tablesample);
+        super::emit_table_sample_clause(e, tablesample);
     }
 
     if let Some(subquery) = n.subquery.as_ref() {
@@ -40,31 +40,31 @@ pub(super) fn emit_range_tbl_entry(e: &mut EventEmitter, n: &RangeTblEntry) {
 
     if let Some(tablefunc) = n.tablefunc.as_ref() {
         e.line(LineType::SoftOrSpace);
-        super::table_func::emit_table_func(e, tablefunc);
+        super::emit_table_func(e, tablefunc);
     }
 
     if !n.functions.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.functions, super::emit_node);
+        emit_comma_separated_list(e, &n.functions, emit_node);
         if n.funcordinality {
             e.space();
-            super::emit_identifier_maybe_quoted(e, "ordinality");
+            emit_identifier_maybe_quoted(e, "ordinality");
         }
     }
 
     if !n.values_lists.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.values_lists, super::emit_node);
+        emit_comma_separated_list(e, &n.values_lists, emit_node);
     }
 
     if !n.security_quals.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.security_quals, super::emit_node);
+        emit_comma_separated_list(e, &n.security_quals, emit_node);
     }
 
     if !n.joinaliasvars.is_empty() && matches!(kind, RteKind::RteJoin) {
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.joinaliasvars, super::emit_node);
+        emit_comma_separated_list(e, &n.joinaliasvars, emit_node);
     }
 
     e.group_end();

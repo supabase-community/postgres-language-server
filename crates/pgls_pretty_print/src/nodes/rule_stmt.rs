@@ -1,11 +1,6 @@
 use pgls_query::protobuf::RuleStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::emit_node;
+use super::prelude::*;
 
 pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
     e.group_start(GroupKind::RuleStmt);
@@ -22,7 +17,7 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
     e.space();
     e.token(TokenKind::RULE_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.rulename);
+    emit_identifier_maybe_quoted(e, &n.rulename);
 
     e.line(LineType::Hard);
     e.token(TokenKind::AS_KW);
@@ -51,7 +46,7 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
     if let Some(ref where_clause) = n.where_clause {
         e.space();
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, where_clause);
+        emit_clause_condition(e, where_clause);
     }
 
     e.line(LineType::Hard);
@@ -72,7 +67,7 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
         emit_node(&n.actions[0], e);
     } else {
         e.token(TokenKind::L_PAREN);
-        super::node_list::emit_semicolon_separated_list(e, &n.actions, emit_node);
+        emit_semicolon_separated_list(e, &n.actions, emit_node);
         e.token(TokenKind::R_PAREN);
     }
 

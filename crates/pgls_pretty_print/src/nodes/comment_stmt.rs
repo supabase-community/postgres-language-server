@@ -1,12 +1,7 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::{NodeEnum, protobuf::CommentStmt};
+use pgls_query::protobuf::CommentStmt;
 
 use super::emit_object_with_args_for_aggregate;
-use super::node_list::emit_dot_separated_list;
-use super::string::{emit_keyword, emit_single_quoted_str};
+use super::prelude::*;
 
 pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
     e.group_start(GroupKind::CommentStmt);
@@ -82,14 +77,14 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             if let Some(pgls_query::NodeEnum::List(list)) = object.node.as_ref() {
                 emit_dot_separated_list(e, &list.items);
             } else {
-                super::emit_node(object, e);
+                emit_node(object, e);
             }
         } else if n.objtype == 2 {
             // ObjectAggregate (2) - needs special handling for (*) syntax
             if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
                 emit_object_with_args_for_aggregate(e, owa);
             } else {
-                super::emit_node(object, e);
+                emit_node(object, e);
             }
         } else if n.objtype == 14 {
             // ObjectDomconstraint (14)
@@ -98,19 +93,19 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
                 if list.items.len() == 2 {
                     // Emit constraint name first (second element)
-                    super::emit_node(&list.items[1], e);
+                    emit_node(&list.items[1], e);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     emit_keyword(e, "DOMAIN");
                     e.space();
                     // Then domain name (first element)
-                    super::emit_node(&list.items[0], e);
+                    emit_node(&list.items[0], e);
                 } else {
-                    super::emit_node(object, e);
+                    emit_node(object, e);
                 }
             } else {
-                super::emit_node(object, e);
+                emit_node(object, e);
             }
         } else if n.objtype == 41 {
             // ObjectTabconstraint (41)
@@ -119,17 +114,17 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
                 if list.items.len() == 2 {
                     // Emit constraint name first (second element)
-                    super::emit_node(&list.items[1], e);
+                    emit_node(&list.items[1], e);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     // Then table name (first element)
-                    super::emit_node(&list.items[0], e);
+                    emit_node(&list.items[0], e);
                 } else {
-                    super::emit_node(object, e);
+                    emit_node(object, e);
                 }
             } else {
-                super::emit_node(object, e);
+                emit_node(object, e);
             }
         } else if n.objtype == 36 {
             // ObjectRule (36)
@@ -138,17 +133,17 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
                 if list.items.len() == 2 {
                     // Emit rule name first (second element)
-                    super::emit_node(&list.items[1], e);
+                    emit_node(&list.items[1], e);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     // Then table name (first element)
-                    super::emit_node(&list.items[0], e);
+                    emit_node(&list.items[0], e);
                 } else {
-                    super::emit_node(object, e);
+                    emit_node(object, e);
                 }
             } else {
-                super::emit_node(object, e);
+                emit_node(object, e);
             }
         } else if n.objtype == 45 {
             // ObjectTrigger (45)
@@ -157,17 +152,17 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
                 if list.items.len() == 2 {
                     // Emit trigger name first (second element)
-                    super::emit_node(&list.items[1], e);
+                    emit_node(&list.items[1], e);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     // Then table name (first element)
-                    super::emit_node(&list.items[0], e);
+                    emit_node(&list.items[0], e);
                 } else {
-                    super::emit_node(object, e);
+                    emit_node(object, e);
                 }
             } else {
-                super::emit_node(object, e);
+                emit_node(object, e);
             }
         } else if n.objtype == 29 {
             // ObjectPolicy (29)
@@ -176,24 +171,24 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
                 if list.items.len() == 2 {
                     // Emit policy name first (second element)
-                    super::emit_node(&list.items[1], e);
+                    emit_node(&list.items[1], e);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     // Then table name (first element)
-                    super::emit_node(&list.items[0], e);
+                    emit_node(&list.items[0], e);
                 } else {
-                    super::emit_node(object, e);
+                    emit_node(object, e);
                 }
             } else {
-                super::emit_node(object, e);
+                emit_node(object, e);
             }
         } else if n.objtype == 51 {
             // ObjectUserMapping (51) - requires FOR before the role name
             // COMMENT ON USER MAPPING FOR role_name SERVER server_name IS 'comment'
             e.token(TokenKind::FOR_KW);
             e.space();
-            super::emit_node(object, e);
+            emit_node(object, e);
         } else {
             // For most object types (TABLE, INDEX, SEQUENCE, VIEW, etc.), the object
             // is a List of String nodes representing a schema-qualified name that must
@@ -201,7 +196,7 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             if let Some(pgls_query::NodeEnum::List(list)) = object.node.as_ref() {
                 emit_dot_separated_list(e, &list.items);
             } else {
-                super::emit_node(object, e);
+                emit_node(object, e);
             }
         }
     }

@@ -1,10 +1,7 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::MergeStmt;
 
-use super::{emit_node, merge_action::emit_merge_when_clause};
+use super::emit_merge_when_clause;
+use super::prelude::*;
 
 pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
     e.group_start(GroupKind::MergeStmt);
@@ -53,7 +50,7 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
         e.token(TokenKind::RETURNING_KW);
         e.space();
         e.indent_start();
-        super::node_list::emit_comma_separated_list(e, &n.returning_list, super::emit_node);
+        emit_comma_separated_list(e, &n.returning_list, emit_node);
         e.indent_end();
     }
 

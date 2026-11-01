@@ -1,10 +1,6 @@
-use crate::nodes::node_list::emit_comma_separated_list;
-use crate::nodes::string::{emit_identifier_maybe_quoted, emit_keyword};
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, LineType},
-};
-use pgls_query::protobuf::{Node, WindowDef};
+use pgls_query::protobuf::WindowDef;
+
+use super::prelude::*;
 
 const FRAMEOPTION_NONDEFAULT: i32 = 0x00001;
 const FRAMEOPTION_RANGE: i32 = 0x00002;
@@ -38,7 +34,7 @@ enum FrameBoundSide {
 pub fn emit_window_def(e: &mut EventEmitter, n: &WindowDef) {
     // The callers of a window definition reach it directly rather than through emit_node, so this
     // is the only place that can emit the comments written before the OVER clause.
-    super::emit_with_comments_at(e, n.location, |e| emit_window_def_tokens(e, n));
+    emit_with_comments_at(e, n.location, |e| emit_window_def_tokens(e, n));
 }
 
 fn emit_window_def_tokens(e: &mut EventEmitter, n: &WindowDef) {
@@ -98,7 +94,7 @@ fn emit_window_spec(e: &mut EventEmitter, n: &WindowDef) {
         e.token(TokenKind::BY_KW);
         e.space();
         emit_comma_separated_list(e, &n.partition_clause, |node, emitter| {
-            super::emit_node(node, emitter)
+            emit_node(node, emitter)
         });
         first = false;
     }
@@ -111,9 +107,7 @@ fn emit_window_spec(e: &mut EventEmitter, n: &WindowDef) {
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        emit_comma_separated_list(e, &n.order_clause, |node, emitter| {
-            super::emit_node(node, emitter)
-        });
+        emit_comma_separated_list(e, &n.order_clause, emit_node);
         first = false;
     }
 
@@ -195,13 +189,13 @@ fn emit_frame_bound(
             } else if options & FRAMEOPTION_START_OFFSET_PRECEDING != 0 {
                 let offset_node =
                     offset.expect("FRAMEOPTION_START_OFFSET_PRECEDING requires start_offset");
-                super::emit_node(offset_node, e);
+                emit_node(offset_node, e);
                 e.space();
                 emit_keyword(e, "PRECEDING");
             } else if options & FRAMEOPTION_START_OFFSET_FOLLOWING != 0 {
                 let offset_node =
                     offset.expect("FRAMEOPTION_START_OFFSET_FOLLOWING requires start_offset");
-                super::emit_node(offset_node, e);
+                emit_node(offset_node, e);
                 e.space();
                 emit_keyword(e, "FOLLOWING");
             } else {
@@ -228,13 +222,13 @@ fn emit_frame_bound(
             } else if options & FRAMEOPTION_END_OFFSET_PRECEDING != 0 {
                 let offset_node =
                     offset.expect("FRAMEOPTION_END_OFFSET_PRECEDING requires end_offset");
-                super::emit_node(offset_node, e);
+                emit_node(offset_node, e);
                 e.space();
                 emit_keyword(e, "PRECEDING");
             } else if options & FRAMEOPTION_END_OFFSET_FOLLOWING != 0 {
                 let offset_node =
                     offset.expect("FRAMEOPTION_END_OFFSET_FOLLOWING requires end_offset");
-                super::emit_node(offset_node, e);
+                emit_node(offset_node, e);
                 e.space();
                 emit_keyword(e, "FOLLOWING");
             } else {

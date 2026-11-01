@@ -1,9 +1,6 @@
-use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::CreateForeignTableStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateForeignTableStmt) {
     e.group_start(GroupKind::CreateForeignTableStmt);
@@ -30,7 +27,7 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
             e.token(TokenKind::OF_KW);
             e.space();
             // Emit first inherited relation as parent table
-            super::emit_node(&base.inh_relations[0], e);
+            emit_node(&base.inh_relations[0], e);
 
             // Partition bound spec (DEFAULT or FOR VALUES ...)
             // For partition foreign tables, a bound spec is required
@@ -49,7 +46,7 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
             if !base.table_elts.is_empty() {
                 e.indent_start();
                 e.line(crate::emitter::LineType::Soft);
-                emit_comma_separated_list(e, &base.table_elts, super::emit_node);
+                emit_comma_separated_list(e, &base.table_elts, emit_node);
                 e.indent_end();
                 e.line(crate::emitter::LineType::Soft);
             }
@@ -61,7 +58,7 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
     e.space();
     e.token(TokenKind::SERVER_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.servername);
+    emit_identifier_maybe_quoted(e, &n.servername);
 
     // OPTIONS clause
     if !n.options.is_empty() {

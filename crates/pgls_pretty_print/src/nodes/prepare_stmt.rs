@@ -1,10 +1,6 @@
 use pgls_query::protobuf::PrepareStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_parenthesized_list,
-};
+use super::prelude::*;
 
 pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
     e.group_start(GroupKind::PrepareStmt);
@@ -14,13 +10,13 @@ pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
     // Statement name
     if !n.name.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.name);
+        emit_identifier_maybe_quoted(e, &n.name);
     }
 
     // Argument types
     if !n.argtypes.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_parenthesized_list(e, &n.argtypes, super::emit_node);
+        emit_parenthesized_list(e, &n.argtypes, emit_node);
     }
 
     // AS query
@@ -28,7 +24,7 @@ pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::AS_KW);
         e.space();
-        super::emit_node(query, e);
+        emit_node(query, e);
     }
 
     e.group_end();

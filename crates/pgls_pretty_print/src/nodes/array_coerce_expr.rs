@@ -1,9 +1,9 @@
 use pgls_query::protobuf::ArrayCoerceExpr;
 
-use crate::emitter::EventEmitter;
+use super::prelude::*;
 
 pub(super) fn emit_array_coerce_expr(e: &mut EventEmitter, n: &ArrayCoerceExpr) {
     if let Some(ref arg) = n.arg {
-        super::emit_node(arg, e);
+        emit_node(arg, e);
     }
 }

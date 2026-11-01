@@ -1,11 +1,6 @@
 use pgls_query::protobuf::NotifyStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::string::emit_single_quoted_str;
+use super::prelude::*;
 
 pub(super) fn emit_notify_stmt(e: &mut EventEmitter, n: &NotifyStmt) {
     e.group_start(GroupKind::NotifyStmt);
@@ -14,7 +9,7 @@ pub(super) fn emit_notify_stmt(e: &mut EventEmitter, n: &NotifyStmt) {
 
     if !n.conditionname.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.conditionname);
+        emit_identifier_maybe_quoted(e, &n.conditionname);
     }
 
     // Optional payload

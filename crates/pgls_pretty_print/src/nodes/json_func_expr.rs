@@ -1,8 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::{JsonBehavior, JsonBehaviorType, JsonFuncExpr};
+
+use super::prelude::*;
 
 fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) {
     match behavior.btype() {
@@ -38,7 +36,7 @@ fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) {
             e.token(TokenKind::DEFAULT_KW);
             if let Some(ref expr) = behavior.expr {
                 e.space();
-                super::emit_node(expr, e);
+                emit_node(expr, e);
             }
         }
         _ => {}
@@ -75,7 +73,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
 
     if let Some(ref context) = n.context_item {
         if let Some(ref raw_expr) = context.raw_expr {
-            super::emit_node(raw_expr, e);
+            emit_node(raw_expr, e);
         }
         if let Some(ref format) = context.format {
             super::json_value_expr::emit_json_format(e, format);
@@ -86,7 +84,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref pathspec) = n.pathspec {
-        super::emit_node(pathspec, e);
+        emit_node(pathspec, e);
     }
 
     // PASSING clause
@@ -96,7 +94,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
         e.space();
         // The arguments break on their own only when they don't fit on the PASSING line.
         e.group_start(GroupKind::List);
-        super::node_list::emit_comma_separated_list(e, &n.passing, super::emit_node);
+        emit_comma_separated_list(e, &n.passing, emit_node);
         e.group_end();
     }
 

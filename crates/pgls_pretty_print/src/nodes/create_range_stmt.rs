@@ -1,9 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_comma_separated_list, emit_dot_separated_list},
-};
 use pgls_query::protobuf::CreateRangeStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_range_stmt(e: &mut EventEmitter, n: &CreateRangeStmt) {
     e.group_start(GroupKind::CreateRangeStmt);
@@ -25,7 +22,7 @@ pub(super) fn emit_create_range_stmt(e: &mut EventEmitter, n: &CreateRangeStmt) 
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
-        emit_comma_separated_list(e, &n.params, super::emit_node);
+        emit_comma_separated_list(e, &n.params, emit_node);
         e.indent_end();
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);

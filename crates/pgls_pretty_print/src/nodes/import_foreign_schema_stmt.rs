@@ -1,9 +1,6 @@
 use pgls_query::protobuf::ImportForeignSchemaStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportForeignSchemaStmt) {
     e.group_start(GroupKind::ImportForeignSchemaStmt);
@@ -16,7 +13,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
 
     if !n.remote_schema.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.remote_schema);
+        emit_identifier_maybe_quoted(e, &n.remote_schema);
     }
 
     // LIMIT TO / EXCEPT
@@ -33,7 +30,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
             e.token(TokenKind::EXCEPT_KW);
         }
         e.space();
-        super::node_list::emit_parenthesized_list(e, &n.table_list, super::emit_node);
+        emit_parenthesized_list(e, &n.table_list, emit_node);
     }
 
     // FROM SERVER
@@ -43,7 +40,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
         e.space();
         e.token(TokenKind::SERVER_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.server_name);
+        emit_identifier_maybe_quoted(e, &n.server_name);
     }
 
     // INTO schema
@@ -51,7 +48,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::INTO_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.local_schema);
+        emit_identifier_maybe_quoted(e, &n.local_schema);
     }
 
     // OPTIONS
@@ -59,7 +56,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        super::node_list::emit_parenthesized_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |n, e| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });

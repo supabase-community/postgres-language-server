@@ -1,9 +1,6 @@
 use pgls_query::protobuf::ReturnStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_return_stmt(e: &mut EventEmitter, n: &ReturnStmt) {
     e.group_start(GroupKind::ReturnStmt);
@@ -12,7 +9,7 @@ pub(super) fn emit_return_stmt(e: &mut EventEmitter, n: &ReturnStmt) {
 
     if let Some(ref value) = n.returnval {
         e.space();
-        super::emit_node(value, e);
+        emit_node(value, e);
     }
 
     e.group_end();
