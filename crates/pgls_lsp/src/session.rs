@@ -594,7 +594,7 @@ impl Session {
                     project_key: self.project_key(&pgls_path),
                 },
             );
-            if connection.is_ok_and(|connection| connection.error.is_none())
+            if connection.is_ok_and(|connection| connection.errors.is_empty())
                 && self
                     .editor_features_without_database
                     .swap(false, Ordering::Relaxed)

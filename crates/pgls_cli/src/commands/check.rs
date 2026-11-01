@@ -73,14 +73,14 @@ pub fn check(
     let execution = ExecutionConfig::new(mode, max_diagnostics)
         .with_error_on_warnings(cli_options.error_on_warnings);
 
-    let database_error = check_database_connection(&session)?;
+    let database_errors = check_database_connection(&session)?;
     if let Some(stdin_path) = args.stdin_file_path.as_deref() {
-        let database_unavailable = database_error.is_some();
+        let database_unavailable = !database_errors.is_empty();
         print_diagnostics(
             session.console(),
             configuration_errors
                 .into_iter()
-                .chain(database_error)
+                .chain(database_errors)
                 .collect(),
         );
         let payload = read_stdin_payload(stdin_path, session.console(), "check")?;
@@ -91,7 +91,7 @@ pub fn check(
         Ok(())
     } else {
         let mut report: Report = run_files(&mut session, &execution, paths)?;
-        if let Some(error) = database_error {
+        for error in database_errors.into_iter().rev() {
             report.prepend_diagnostic(error);
         }
         for error in configuration_errors.into_iter().rev() {
@@ -106,15 +106,17 @@ pub fn check(
 
 /// A configured database that cannot be reached is an error: the checks that need it would
 /// otherwise be skipped silently.
-fn check_database_connection(session: &CliSession) -> Result<Option<Error>, CliDiagnostic> {
+fn check_database_connection(session: &CliSession) -> Result<Vec<Error>, CliDiagnostic> {
     let result = session
         .workspace()
         .check_database_connection(CheckDatabaseConnectionParams {
             project_key: session.project_key(),
         })?;
     Ok(result
-        .error
-        .map(|message| Error::from(DatabaseUnavailable::new(message))))
+        .errors
+        .into_iter()
+        .map(|message| Error::from(DatabaseUnavailable::new(message)))
+        .collect())
 }
 
 fn resolve_paths(

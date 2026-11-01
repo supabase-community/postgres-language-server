@@ -1,5 +1,8 @@
 use std::sync::{Arc, RwLock};
 
+#[cfg(feature = "db")]
+use std::sync::Mutex;
+
 use pgls_catalog::Snapshot;
 
 use crate::WorkspaceError;
@@ -11,6 +14,10 @@ use std::collections::HashMap;
 
 #[cfg(feature = "db")]
 use super::{async_helper::run_async, connection_key::ConnectionKey};
+
+/// The snapshot of a connection, once it loaded.
+#[cfg(feature = "db")]
+type SnapshotSlot = Arc<Mutex<Option<Arc<Snapshot>>>>;
 
 /// Manages database snapshot storage and retrieval.
 ///
@@ -26,9 +33,10 @@ use super::{async_helper::run_async, connection_key::ConnectionKey};
 /// - `load()` - Load schema from database connection
 /// - `clear_all_connections()` - Clear the schemas of all connections
 pub struct SnapshotManager {
-    /// Connection-based snapshots (db mode only)
+    /// Connection-based snapshots (db mode only). Each connection has its own lock, held while
+    /// its snapshot loads, so that a slow or unreachable database doesn't block the others.
     #[cfg(feature = "db")]
-    db_schemas: RwLock<HashMap<ConnectionKey, Arc<Snapshot>>>,
+    db_schemas: RwLock<HashMap<ConnectionKey, SnapshotSlot>>,
 
     /// JSON-loaded schema (available in both modes)
     schema: RwLock<Option<Arc<Snapshot>>>,
@@ -77,29 +85,26 @@ impl SnapshotManager {
     pub fn load(&self, pool: &PgPool) -> Result<Arc<Snapshot>, WorkspaceError> {
         let key: ConnectionKey = pool.into();
 
-        // Try read lock first for cache hit
-        if let Ok(schemas) = self.db_schemas.read()
-            && let Some(cache) = schemas.get(&key)
-        {
+        // The map is only locked to find the connection's slot, never during network I/O.
+        let existing = self.db_schemas.read().unwrap().get(&key).cloned();
+        let slot = match existing {
+            Some(slot) => slot,
+            None => Arc::clone(self.db_schemas.write().unwrap().entry(key).or_default()),
+        };
+
+        // Callers for the same connection wait for one load instead of starting their own.
+        let mut snapshot = slot.lock().unwrap();
+        if let Some(cache) = snapshot.as_ref() {
             return Ok(Arc::clone(cache));
         }
 
-        // Cache miss - need write lock to insert
-        let mut schemas = self.db_schemas.write().unwrap();
-
-        // Double-check after acquiring write lock
-        if let Some(cache) = schemas.get(&key) {
-            return Ok(Arc::clone(cache));
-        }
-
-        // Load the snapshot from the database
+        // Load the snapshot from the database. A failure leaves the slot empty for a retry.
         let pool_clone = pool.clone();
-        let snapshot = Arc::new(run_async(
+        let loaded = Arc::new(run_async(
             async move { Snapshot::load(&pool_clone).await },
         )??);
-
-        schemas.insert(key, snapshot.clone());
-        Ok(snapshot)
+        *snapshot = Some(Arc::clone(&loaded));
+        Ok(loaded)
     }
 
     /// Clear all connection-based snapshots.
