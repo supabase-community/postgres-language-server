@@ -13,7 +13,7 @@ use pgls_diagnostics::{DiagnosticExt, Error, Severity, adapters::IoError};
 use rayon::{Scope, scope};
 use std::fs::{DirEntry, FileType};
 use std::panic::AssertUnwindSafe;
-use std::process::Command;
+use std::process::{Command, Output};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
@@ -132,10 +132,7 @@ impl FileSystem for OsFileSystem {
             .arg(format!("{base}...HEAD"))
             .output()?;
 
-        Ok(String::from_utf8_lossy(&output.stdout)
-            .lines()
-            .map(|l| l.to_string())
-            .collect())
+        git_output_lines(output)
     }
 
     fn get_staged_files(&self) -> io::Result<Vec<String>> {
@@ -152,10 +149,7 @@ impl FileSystem for OsFileSystem {
             .arg("--diff-filter=ACMR")
             .output()?;
 
-        Ok(String::from_utf8_lossy(&output.stdout)
-            .lines()
-            .map(|l| l.to_string())
-            .collect())
+        git_output_lines(output)
     }
 
     fn resolve_configuration(
@@ -539,4 +533,22 @@ impl From<FileType> for ErrorKind {
     fn from(_: FileType) -> Self {
         Self::UnknownFileType
     }
+}
+
+/// The lines git printed, or the first line of its error if it failed, e.g. outside a repository
+/// or for an unknown base. An empty list would otherwise read as "no files".
+fn git_output_lines(output: Output) -> io::Result<Vec<String>> {
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let error = stderr.lines().find(|line| !line.trim().is_empty());
+        return Err(io::Error::other(format!(
+            "git diff failed: {}",
+            error.unwrap_or_default().trim()
+        )));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(|l| l.to_string())
+        .collect())
 }
