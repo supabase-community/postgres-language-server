@@ -24,9 +24,25 @@ impl TreeSitterStore {
         }
     }
 
+    /// The number of statements with a cached tree.
+    pub fn len(&self) -> usize {
+        self.db.lock().unwrap().len()
+    }
+
+    /// Drops every cached tree, and the memory of the map.
+    pub fn clear(&self) {
+        drop(std::mem::take(&mut *self.db.lock().unwrap()));
+    }
+
     /// Drops the trees of the statements for which `keep` returns `false`.
     pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
-        self.db.lock().unwrap().retain(|id, _| keep(id));
+        super::parse::retain(&mut self.db.lock().unwrap(), keep);
+    }
+
+    /// The number of trees that the map has room for.
+    #[cfg(test)]
+    pub fn capacity(&self) -> usize {
+        self.db.lock().unwrap().capacity()
     }
 
     pub fn get_or_cache_tree(&self, statement: &StatementId) -> Arc<tree_sitter::Tree> {
@@ -54,5 +70,32 @@ impl TreeSitterStore {
         }
 
         tree
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dropping_trees_releases_the_map() {
+        let store = TreeSitterStore::new();
+        let statements: Vec<StatementId> = (0..200)
+            .map(|i| StatementId::new(&format!("select {i};")))
+            .collect();
+        let fill = || {
+            for id in &statements {
+                store.get_or_cache_tree(id);
+            }
+        };
+
+        fill();
+        store.retain(|id| *id == statements[0]);
+        assert_eq!(store.len(), 1);
+        assert!(store.capacity() < 64, "{}", store.capacity());
+
+        fill();
+        store.clear();
+        assert_eq!(store.capacity(), 0);
     }
 }

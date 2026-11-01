@@ -8,7 +8,7 @@ use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 use super::{
-    document_cache::{ContentChange, DocumentCache, StaleEntries},
+    document_cache::{ContentChange, DocumentCache, DocumentCacheStats, StaleEntries},
     statement_identifier::StatementId,
 };
 
@@ -93,6 +93,16 @@ impl Document {
     /// What is cached for the document.
     pub(crate) fn cache(&self) -> &DocumentCache {
         &self.cache
+    }
+
+    /// What the caches of the document hold, for tests of their memory. It doesn't fill them.
+    pub(crate) fn cache_stats(&self) -> DocumentCacheStats {
+        let statements: FxHashSet<StatementId> = self
+            .ranges
+            .iter()
+            .map(|range| StatementId::new(&self.content[*range]))
+            .collect();
+        self.cache.stats(&statements)
     }
 
     pub fn suppressions(&self) -> &Suppressions {
