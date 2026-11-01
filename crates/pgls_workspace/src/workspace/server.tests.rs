@@ -25,8 +25,8 @@ use sqlx::{Executor, PgPool, Row};
 use crate::{
     DynRef, Workspace, WorkspaceError,
     configuration::{
-        IncompleteSearch, NestedConfigurationSearch, apply_nested_configurations,
-        is_searched_for_configuration, load_configuration,
+        ConfigurationLayers, IncompleteSearch, NestedConfigurationSearch,
+        apply_nested_configurations, is_searched_for_configuration, load_configuration,
     },
     features::code_actions::{
         CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
@@ -3674,8 +3674,7 @@ impl TestProject {
             fs,
             self.project_key,
             search,
-            None,
-            |c| c,
+            &ConfigurationLayers::default(),
         )
         .unwrap();
         let directories = nested
@@ -3705,8 +3704,7 @@ impl TestProject {
             fs,
             self.project_key,
             NestedConfigurationSearch::new(root),
-            None,
-            |configuration| configuration,
+            &ConfigurationLayers::default(),
         )
         .unwrap()
         .configurations
@@ -4047,8 +4045,7 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
         &fs,
         project.project_key,
         NestedConfigurationSearch::new("/repo"),
-        None,
-        |configuration| configuration,
+        &ConfigurationLayers::default(),
     )
     .unwrap()
     .configurations;

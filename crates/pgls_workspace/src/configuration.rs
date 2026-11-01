@@ -1,3 +1,12 @@
+mod layers;
+mod project;
+
+pub use layers::{ConfigurationLayers, OverrideMode, SectionMask};
+pub use project::{
+    AppliedConfiguration, ConfigurationNotice, ConfigureProjectParams, ConfiguredProject,
+    VcsIntegration, configure_project,
+};
+
 use std::{
     ffi::OsStr,
     io::ErrorKind,
@@ -208,11 +217,10 @@ impl std::fmt::Display for IncompleteSearch {
 /// configuration directories are skipped even when they are below the root, and so is everything
 /// below the home directory or a filesystem root, which hold unrelated projects.
 ///
-/// The database settings of the `environment` (see [PartialDatabaseConfiguration::from_env])
-/// only fill in the connection options that a nested configuration file doesn't set itself, so
-/// that each file keeps its own database. `configure` then lays the layers of the caller, such as
-/// the arguments of the CLI, over each configuration file. Folders that the settings above them
-/// ignore are skipped.
+/// `layers` are laid over each configuration file like over the root configuration file, except
+/// that the environment only fills in the connection options that a nested configuration file
+/// doesn't set itself, so that each file keeps its own database (see
+/// [ConfigurationLayers::apply_nested]). Folders that the settings above them ignore are skipped.
 ///
 /// This walks the file system, so call it off the async runtime. Fails if the project is not
 /// registered.
@@ -221,8 +229,7 @@ pub fn apply_nested_configurations(
     fs: &DynRef<'_, dyn FileSystem>,
     project_key: ProjectKey,
     search: NestedConfigurationSearch,
-    environment: Option<&PartialDatabaseConfiguration>,
-    configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
+    layers: &ConfigurationLayers,
 ) -> Result<NestedConfigurations, WorkspaceError> {
     let NestedConfigurationSearch {
         root,
@@ -246,7 +253,7 @@ pub fn apply_nested_configurations(
     let nested = directories
         .into_iter()
         .map(
-            |directory| match load_nested_configuration(fs, &directory, environment, &configure) {
+            |directory| match load_nested_configuration(fs, &directory, layers) {
                 Ok((nested, extended)) => {
                     extended_files.insert(directory, extended);
                     nested
@@ -427,23 +434,13 @@ fn is_not_a_project_folder(fs: &DynRef<'_, dyn FileSystem>, folder: &Path) -> bo
 fn load_nested_configuration(
     fs: &DynRef<'_, dyn FileSystem>,
     directory: &Path,
-    environment: Option<&PartialDatabaseConfiguration>,
-    configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
+    layers: &ConfigurationLayers,
 ) -> Result<(NestedSettingsParams, Vec<PathBuf>), WorkspaceError> {
     let loaded = load_configuration(
         fs,
         ConfigurationPathHint::FromWorkspace(directory.to_path_buf()),
     )?;
-    let mut configuration = loaded.configuration;
-    if let Some(environment) = environment
-        .and_then(|environment| environment.for_nested_configuration(loaded.file_database.as_ref()))
-    {
-        configuration.merge_with(PartialConfiguration {
-            db: Some(environment),
-            ..Default::default()
-        });
-    }
-    let configuration = configure(configuration);
+    let configuration = layers.apply_nested(loaded.configuration, loaded.file_database.as_ref());
     let (vcs_base_path, gitignore_matches) =
         configuration.retrieve_gitignore_matches(fs, Some(directory))?;
     let nested = NestedSettingsParams {
