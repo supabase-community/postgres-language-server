@@ -136,6 +136,8 @@ fn function_references_in(
                 Reference::EnumLiteral { type_info, .. } => {
                     format!("enum literal {}.{}", type_info.schema, type_info.name)
                 }
+                Reference::Cte { name, .. } => format!("cte {name}"),
+                Reference::Alias { name, .. } => format!("alias {name}"),
                 Reference::Star { columns, .. } => {
                     let columns = columns
                         .iter()
@@ -306,6 +308,7 @@ async fn column_references(test_db: PgPool) {
         [
             "public.users => relation public.users",
             "posts => relation public.posts",
+            "p => alias p",
             "p.user_id => column public.posts.user_id: bigint (int8)",
             "users.id => column public.users.id: bigint (int8)",
             "title => column public.posts.title: text (text)",
@@ -321,6 +324,7 @@ async fn column_references(test_db: PgPool) {
         ),
         [
             "users => relation public.users",
+            "u => alias u",
             "uid => column public.users.id: bigint (int8)",
             "u.name => column public.users.name: text (text)",
         ]
@@ -365,9 +369,12 @@ async fn cte_and_subquery_columns(test_db: PgPool) {
             "with c as (select id, name as n from users) select n, x.id from c x"
         ),
         [
+            "c => cte c",
             "users => relation public.users",
             "id => column public.users.id: bigint (int8)",
             "name => column public.users.name: text (text)",
+            "c => cte c",
+            "x => alias x",
             "n => column cte c.n: text (text)",
             "x.id => column cte c.id: bigint (int8)",
         ]
@@ -405,9 +412,40 @@ async fn relation_references(test_db: PgPool) {
         references(&catalog, &search_path, "delete from users u where u.id = 1"),
         [
             "users => relation public.users",
+            "u => alias u",
             "u.id => column public.users.id: bigint (int8)",
         ]
     );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn cte_and_alias_references(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let names = |sql| -> Vec<String> {
+        references(&catalog, &search_path, sql)
+            .into_iter()
+            .filter(|reference| reference.contains("=> cte ") || reference.contains("=> alias "))
+            .collect()
+    };
+    assert_eq!(
+        names("with c as (select 1 as x) select x from c as cc, users \"U\""),
+        [
+            "c => cte c",
+            "c => cte c",
+            "cc => alias cc",
+            "\"U\" => alias U",
+        ]
+    );
+    assert_eq!(
+        names("insert into users as u values (1, 'x'); "),
+        ["u => alias u"]
+    );
+    assert_eq!(
+        names("delete from users /* gone */ u where u.id = 1"),
+        ["u => alias u"]
+    );
+    // Without collecting references, nothing is recorded.
+    assert_eq!(names("select 1 from users"), [""; 0]);
 }
 
 /// The `*` references of `sql`.
