@@ -120,6 +120,27 @@ fn check_stdin_snapshot() {
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
+fn check_stdin_rejects_paths_snapshot() {
+    assert_snapshot!(run_check_with(
+        &[
+            "--config-path",
+            CONFIG_PATH,
+            "--stdin-file-path",
+            "virtual.sql",
+            "--log-level",
+            "none",
+            "tests/fixtures/test.sql"
+        ],
+        Some("select 1;\n"),
+        None
+    ));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
 fn check_indented_cte_after_blank_line_does_not_panic() {
     let output = run_check_with(
         &[

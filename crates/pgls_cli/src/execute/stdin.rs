@@ -1,31 +1,34 @@
 use crate::execute::StdinPayload;
 use crate::execute::config::{ExecutionConfig, ExecutionMode};
+use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession};
 use pgls_analyse::RuleCategoriesBuilder;
 use pgls_configuration::RuleSelector;
-use pgls_console::{ConsoleExt, markup};
-use pgls_diagnostics::{DiagnosticExt, Error, PrintDiagnostic, Severity, category};
+use pgls_console::{Console, ConsoleExt, markup};
+use pgls_diagnostics::{DiagnosticExt, Error, PrintDiagnostic};
 use pgls_fs::PgLSPath;
 use pgls_workspace::features::code_actions::{FixFileMode, FixFileParams};
 use pgls_workspace::features::format::PullFileFormattingParams;
 use pgls_workspace::workspace::{FileGuard, OpenFileParams};
+use std::time::Instant;
 
 pub(crate) fn process(
     session: &mut CliSession,
     config: &ExecutionConfig,
     payload: StdinPayload,
-) -> Result<(), CliDiagnostic> {
-    match &config.mode {
+) -> Result<Report, CliDiagnostic> {
+    let start = Instant::now();
+    let diagnostics = match &config.mode {
         ExecutionMode::Check {
             fix, only, skip, ..
         } => check(session, config, payload, *fix, only.clone(), skip.clone()),
         ExecutionMode::Format { .. } => format(session, payload),
-    }
+    }?;
+    Ok(Report::new(diagnostics, start.elapsed(), 0, None))
 }
 
 /// Checks the content read from stdin and prints it to stdout, with the fixes applied with
-/// `--fix`. Diagnostics are printed to stderr. Errors among them fail the command, and so do
-/// warnings with `--error-on-warnings`.
+/// `--fix`. Returns the diagnostics, which it prints to stderr.
 fn check(
     session: &mut CliSession,
     config: &ExecutionConfig,
@@ -33,7 +36,7 @@ fn check(
     fix: Option<FixFileMode>,
     only: Vec<RuleSelector>,
     skip: Vec<RuleSelector>,
-) -> Result<(), CliDiagnostic> {
+) -> Result<Vec<Error>, CliDiagnostic> {
     // The settings of the project apply to absolute paths, like those of the traversal.
     let path = session
         .fs()
@@ -79,32 +82,19 @@ fn check(
     let console = session.console();
     console.append(markup! {{content}});
 
-    let file_name = payload.path.display().to_string();
-    let mut has_errors = false;
-    let mut has_warnings = false;
-    for diagnostic in diagnostics {
-        let diagnostic = Error::from(diagnostic)
-            .with_file_path(&file_name)
-            .with_file_source_code(&content);
-        has_errors |= diagnostic.severity() >= Severity::Error;
-        has_warnings |= diagnostic.severity() == Severity::Warning;
-        console.error(markup! {{PrintDiagnostic::simple(&diagnostic)}});
-    }
-
-    if has_errors {
-        Err(CliDiagnostic::check_error(category!("check")))
-    } else if has_warnings && config.error_on_warnings {
-        Err(CliDiagnostic::check_warnings(category!("check")))
-    } else {
-        Ok(())
-    }
+    Ok(print_diagnostics(
+        console,
+        diagnostics,
+        &payload.path.display().to_string(),
+        &content,
+    ))
 }
 
 /// Formats the content read from stdin and prints only the formatted code to stdout.
 ///
-/// Diagnostics are printed to stderr. Statements that could not be formatted are kept as
-/// they are, so stdout always contains the best-effort output.
-fn format(session: &mut CliSession, payload: StdinPayload) -> Result<(), CliDiagnostic> {
+/// Returns the diagnostics, which it prints to stderr. Statements that could not be formatted are
+/// kept as they are, so stdout always contains the best-effort output.
+fn format(session: &mut CliSession, payload: StdinPayload) -> Result<Vec<Error>, CliDiagnostic> {
     let pgls_path = PgLSPath::new(&payload.path);
     let project_key = session.project_key();
     let workspace = session.workspace();
@@ -136,17 +126,30 @@ fn format(session: &mut CliSession, payload: StdinPayload) -> Result<(), CliDiag
     let console = session.console();
     console.append(markup! {{output}});
 
-    if result.diagnostics.is_empty() {
-        return Ok(());
-    }
+    Ok(print_diagnostics(
+        console,
+        result.diagnostics,
+        &payload.path.display().to_string(),
+        &payload.content,
+    ))
+}
 
-    let file_name = payload.path.display().to_string();
-    for diagnostic in result.diagnostics {
-        let diagnostic = Error::from(diagnostic)
-            .with_file_path(&file_name)
-            .with_file_source_code(&payload.content);
-        console.error(markup! {{PrintDiagnostic::simple(&diagnostic)}});
-    }
-
-    Err(CliDiagnostic::check_error(category!("format")))
+/// Prints the diagnostics of the code read from stdin to stderr, as stdout gets the code.
+fn print_diagnostics(
+    console: &mut dyn Console,
+    diagnostics: impl IntoIterator<Item = impl Into<Error>>,
+    file_name: &str,
+    content: &str,
+) -> Vec<Error> {
+    diagnostics
+        .into_iter()
+        .map(|diagnostic| {
+            let diagnostic = diagnostic
+                .into()
+                .with_file_path(file_name)
+                .with_file_source_code(content);
+            console.error(markup! {{PrintDiagnostic::simple(&diagnostic)}});
+            diagnostic
+        })
+        .collect()
 }

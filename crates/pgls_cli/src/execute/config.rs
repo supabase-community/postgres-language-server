@@ -5,10 +5,6 @@ pub struct ExecutionConfig {
     pub mode: ExecutionMode,
     pub max_diagnostics: u32,
     pub allow_writes: bool,
-    /// Whether warnings fail the command (`--error-on-warnings`). Only `--stdin-file-path` reads
-    /// it, as it prints its diagnostics itself. The report of a traversal applies the option in
-    /// `enforce_exit_codes`.
-    pub error_on_warnings: bool,
 }
 
 impl ExecutionConfig {
@@ -18,13 +14,7 @@ impl ExecutionConfig {
             mode,
             max_diagnostics,
             allow_writes,
-            error_on_warnings: false,
         }
-    }
-
-    pub fn with_error_on_warnings(mut self, error_on_warnings: bool) -> Self {
-        self.error_on_warnings = error_on_warnings;
-        self
     }
 
     pub fn max_diagnostics(&self) -> u32 {
