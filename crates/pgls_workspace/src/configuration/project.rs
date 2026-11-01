@@ -95,8 +95,14 @@ pub fn configure_project(
         }
         ConfigurationPathHint::FromUser(_) | ConfigurationPathHint::None => fs.working_directory(),
     };
+    // A file opened by its real path belongs to a folder opened through a symlink too.
+    let real_path = folder
+        .as_deref()
+        .and_then(|folder| fs.canonicalize(folder).ok())
+        .filter(|real_path| Some(real_path) != folder.as_ref());
     let project_key = workspace.register_project_folder(RegisterProjectFolderParams {
         path: folder.clone(),
+        real_path,
     })?;
 
     let mut configuration_files = Vec::new();

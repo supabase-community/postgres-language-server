@@ -32,6 +32,10 @@ export interface RegisterProjectFolderParams {
    * The folder of the project. A project without a folder contains every path.
    */
   path?: string;
+  /**
+   * The folder with symlinks resolved, if that differs from `path`, e.g. for a folder opened through a symlink. The paths below it belong to the project too.
+   */
+  realPath?: string;
 }
 export interface GetFileContentParams {
   path: PgLSPath;

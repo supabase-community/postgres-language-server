@@ -25,8 +25,9 @@ use sqlx::{Executor, PgPool, Row};
 use crate::{
     DynRef, Workspace, WorkspaceError,
     configuration::{
-        ConfigurationLayers, IncompleteSearch, NestedConfigurationSearch,
-        apply_nested_configurations, is_searched_for_configuration, load_configuration,
+        ConfigurationLayers, ConfigureProjectParams, IncompleteSearch, NestedConfigurationSearch,
+        VcsIntegration, apply_nested_configurations, configure_project,
+        is_searched_for_configuration, load_configuration,
     },
     features::code_actions::{
         CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
@@ -51,8 +52,10 @@ fn get_test_workspace(
 ) -> Result<(WorkspaceServer, ProjectKey), WorkspaceError> {
     let workspace = WorkspaceServer::new();
 
-    let project_key =
-        workspace.register_project_folder(RegisterProjectFolderParams { path: None })?;
+    let project_key = workspace.register_project_folder(RegisterProjectFolderParams {
+        path: None,
+        real_path: None,
+    })?;
 
     workspace.update_settings(UpdateSettingsParams {
         project_key,
@@ -3642,6 +3645,7 @@ impl TestProject {
         let project_key = workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: Some(root.to_path_buf()),
+                real_path: None,
             })
             .unwrap();
         workspace
@@ -3834,6 +3838,12 @@ fn files_use_the_nearest_configuration_file() {
     );
     // A relative path is relative to the root of the project, like the paths of the CLI.
     assert_eq!(project.severities("db2/a.sql"), [Severity::Error]);
+    // `..` leaves the folder it follows.
+    assert_eq!(
+        project.severities("/repo/db1/../db2/sub/a.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(project.severities("db2/nested/../a.sql"), [Severity::Error]);
     assert!(project.is_ignored("/repo/legacy/a.sql"));
 }
 
@@ -3866,6 +3876,66 @@ fn updating_the_settings_replaces_or_merges_them() {
     assert_eq!(project.severities("/repo/b.sql"), [Severity::Error]);
     update(true);
     assert_eq!(project.severities("/repo/c.sql"), [Severity::Warning]);
+}
+
+/// A file opened by its real path belongs to a folder that was opened through a symlink, and gets
+/// its settings. `configure_project` resolves the symlink through the file system.
+#[test]
+fn files_below_the_real_path_of_a_symlinked_folder_use_its_settings() {
+    let mut fs = MemoryFileSystem::default();
+    fs.insert_symlink("/home/a/link", "/data/repo");
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let workspace = WorkspaceServer::new();
+    let project_key = configure_project(
+        &workspace,
+        &fs,
+        ConfigureProjectParams {
+            hint: ConfigurationPathHint::FromWorkspace(PathBuf::from("/home/a/link")),
+            layers: &ConfigurationLayers::default(),
+            vcs: VcsIntegration::Enabled,
+        },
+    )
+    .unwrap()
+    .project_key;
+    workspace
+        .update_nested_settings(UpdateNestedSettingsParams {
+            project_key,
+            nested: vec![crate::workspace::NestedSettingsParams {
+                directory: PathBuf::from("/home/a/link/db1"),
+                configuration: serde_json::from_str(
+                    r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+                )
+                .unwrap(),
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+            }],
+        })
+        .unwrap();
+    let find = |path: &str| {
+        workspace
+            .find_project(FindProjectParams {
+                path: PgLSPath::new(path),
+            })
+            .unwrap()
+    };
+    assert_eq!(find("/data/repo/db1/b.sql"), Some(project_key));
+    assert_eq!(find("/data/other/../repo/c.sql"), Some(project_key));
+    assert_eq!(find("/data/other/c.sql"), None);
+
+    let project = TestProject {
+        workspace: Rc::new(workspace),
+        project_key,
+    };
+    assert_eq!(
+        project.severities("/home/a/link/db1/a.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(
+        project.severities("/data/repo/db1/b.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(project.severities("/data/repo/c.sql"), [Severity::Warning]);
 }
 
 /// The search doesn't descend into the folders that the root configuration ignores, except below
@@ -4117,6 +4187,7 @@ fn files_belong_to_the_project_of_the_deepest_folder() {
         workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: path.map(PathBuf::from),
+                real_path: None,
             })
             .unwrap()
     };
@@ -4164,6 +4235,7 @@ fn projects_have_their_own_nested_settings() {
             .workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: Some(PathBuf::from("/outer/inner")),
+                real_path: None,
             })
             .unwrap(),
     );
@@ -4212,6 +4284,7 @@ fn registering_a_project_folder_again_reuses_its_project() {
         workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: Some(PathBuf::from(path)),
+                real_path: None,
             })
             .unwrap()
     };

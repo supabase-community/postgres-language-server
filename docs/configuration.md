@@ -240,7 +240,9 @@ Each workspace folder uses its own settings. When the configuration file of a wo
 
 Things to keep in mind:
 
-- Configuration files in hidden folders, `node_modules`, `target`, folders ignored by `.gitignore`, folders that the configuration above them ignores through `files.ignore` or `files.include`, and the user configuration directory are not loaded as nested configurations. Ignoring the large folders that hold no SQL files also makes the search faster.
+- Configuration files in hidden folders, `node_modules`, `target`, folders ignored by `.ignore` files, folders that the configuration above them ignores through `files.ignore` or `files.include`, and the user configuration directory are not loaded as nested configurations. Folders ignored by `.gitignore` are skipped too when the root configuration uses it (`vcs.enabled` and `vcs.useIgnoreFile`). Ignoring the large folders that hold no SQL files also makes the search faster.
+- A nested configuration file inside the migrations folder of the configuration above it replaces its settings there too, including `migrations`: without its own `migrations.migrationsDir`, the files there are not migrations. Set `migrations` in that file, or extend the configuration above it.
+- Paths are compared as they are spelled, without `.` and `..`. A file opened by its real path belongs to a workspace folder opened through a symlink, but not the other way round, and on case-insensitive file systems a path has to use the same case as the workspace folder.
 - When the workspace folder (or the working directory of the CLI) is your home directory or a filesystem root, nested configuration files are not looked up, because those folders hold unrelated projects.
 - The search stops after 100,000 files and folders, or 12 levels of folders below the workspace folder, and logs a warning. Configuration files beyond that are not used.
 - The database connection of a project is only opened when a file of that project needs it. Projects that point at the same database share its connection and schema cache.
