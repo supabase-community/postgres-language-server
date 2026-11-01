@@ -3,7 +3,7 @@ use pgls_query::protobuf::{JsonObjectAgg, JsonObjectConstructor};
 use super::prelude::*;
 
 pub(super) fn emit_json_object_constructor(e: &mut EventEmitter, n: &JsonObjectConstructor) {
-    e.group_start(GroupKind::JsonObjectConstructor);
+    e.group_start();
 
     e.token(TokenKind::JSON_OBJECT_KW);
     e.token(TokenKind::L_PAREN);
@@ -49,7 +49,7 @@ pub(super) fn emit_json_object_constructor(e: &mut EventEmitter, n: &JsonObjectC
 }
 
 pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
-    e.group_start(GroupKind::JsonObjectAgg);
+    e.group_start();
 
     // Laid out like a function call: the arguments and clauses on one line when they fit,
     // otherwise on their own lines one level in, with `)` back on the call's line. The call has
@@ -59,7 +59,7 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
         .as_ref()
         .is_some_and(|constructor| constructor.agg_filter.is_some() || constructor.over.is_some());
     if has_suffix {
-        e.group_start(GroupKind::List);
+        e.group_start();
     }
     e.token(TokenKind::JSON_OBJECTAGG_KW);
     e.token(TokenKind::L_PAREN);

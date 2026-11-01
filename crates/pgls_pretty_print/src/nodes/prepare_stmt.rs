@@ -3,7 +3,7 @@ use pgls_query::protobuf::PrepareStmt;
 use super::prelude::*;
 
 pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
-    e.group_start(GroupKind::PrepareStmt);
+    e.group_start();
 
     e.token(TokenKind::PREPARE_KW);
 
@@ -24,7 +24,7 @@ pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::AS_KW);
         e.space();
-        emit_node(query, e);
+        emit_node(e, query);
     }
 
     e.group_end();

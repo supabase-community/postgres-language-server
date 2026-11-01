@@ -3,7 +3,7 @@ use pgls_query::protobuf::SortGroupClause;
 use super::prelude::*;
 
 pub(super) fn emit_sort_group_clause(e: &mut EventEmitter, n: &SortGroupClause) {
-    e.group_start(GroupKind::SortGroupClause);
+    e.group_start();
 
     emit_identifier(e, &format!("sortgroup#{}", n.tle_sort_group_ref));
 

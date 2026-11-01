@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterSeqStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
-    e.group_start(GroupKind::AlterSeqStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -29,7 +29,7 @@ pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {
                 super::emit_sequence_option(e, def_elem);
             } else {
-                emit_node(opt, e);
+                emit_node(e, opt);
             }
         }
     }

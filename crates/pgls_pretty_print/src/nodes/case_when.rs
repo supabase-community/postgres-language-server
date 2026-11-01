@@ -3,7 +3,7 @@ use pgls_query::protobuf::CaseWhen;
 use super::prelude::*;
 
 pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
-    e.group_start(GroupKind::CaseWhen);
+    e.group_start();
 
     e.token(TokenKind::WHEN_KW);
 
@@ -12,7 +12,7 @@ pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
     if let Some(ref expr) = n.expr {
         e.space();
         e.indent_start();
-        emit_node(expr, e);
+        emit_node(e, expr);
         e.indent_end();
     }
 

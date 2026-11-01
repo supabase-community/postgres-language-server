@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterUserMappingStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_user_mapping_stmt(e: &mut EventEmitter, n: &AlterUserMappingStmt) {
-    e.group_start(GroupKind::AlterUserMappingStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -31,7 +31,7 @@ pub(super) fn emit_alter_user_mapping_stmt(e: &mut EventEmitter, n: &AlterUserMa
         e.indent_start();
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |e, n| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });

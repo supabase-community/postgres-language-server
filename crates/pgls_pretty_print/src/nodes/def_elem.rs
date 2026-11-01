@@ -3,7 +3,7 @@ use pgls_query::protobuf::{DefElem, DefElemAction};
 use super::prelude::*;
 
 pub(super) fn emit_def_elem(e: &mut EventEmitter, n: &DefElem) {
-    e.group_start(GroupKind::DefElem);
+    e.group_start();
 
     // Emit namespace if present (namespace.name syntax)
     if !n.defnamespace.is_empty() {
@@ -29,7 +29,7 @@ pub(super) fn emit_def_elem(e: &mut EventEmitter, n: &DefElem) {
                     emit_string_literal(e, s);
                 }
                 _ => {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -42,7 +42,7 @@ pub(super) fn emit_def_elem(e: &mut EventEmitter, n: &DefElem) {
 /// Syntax: [SET|ADD|DROP] name value (no equals sign)
 /// For ALTER statements, defaction indicates SET/ADD/DROP prefix
 pub(super) fn emit_options_def_elem(e: &mut EventEmitter, n: &DefElem) {
-    e.group_start(GroupKind::DefElem);
+    e.group_start();
 
     // Emit SET/ADD/DROP prefix for ALTER statements
     // defaction: 1=DefelemUnspec, 2=DefelemSet, 3=DefelemAdd, 4=DefelemDrop
@@ -93,7 +93,7 @@ pub(super) fn emit_options_def_elem(e: &mut EventEmitter, n: &DefElem) {
                     }
                 }
                 _ => {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -105,7 +105,7 @@ pub(super) fn emit_options_def_elem(e: &mut EventEmitter, n: &DefElem) {
 /// Emit role options for GRANT...WITH syntax
 /// Uses `NAME TRUE` / `NAME FALSE` syntax for INHERIT, SET, ADMIN, except `ADMIN OPTION`.
 pub(super) fn emit_grant_role_option(e: &mut EventEmitter, n: &DefElem) {
-    e.group_start(GroupKind::DefElem);
+    e.group_start();
 
     let defname = n.defname.as_str();
 
@@ -144,7 +144,7 @@ pub(super) fn emit_grant_role_option(e: &mut EventEmitter, n: &DefElem) {
 /// Used by CREATE ROLE, ALTER ROLE, CREATE USER, etc.
 /// Role options like SUPERUSER, NOSUPERUSER, etc. use special syntax
 pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
-    e.group_start(GroupKind::DefElem);
+    e.group_start();
 
     let defname = n.defname.as_str();
 
@@ -215,7 +215,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::LIMIT_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "password" => {
@@ -231,7 +231,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
                     if let Some(NodeEnum::String(s)) = &arg.node {
                         emit_string_literal(e, s);
                     } else {
-                        emit_node(arg, e);
+                        emit_node(e, arg);
                     }
                 }
             }
@@ -244,7 +244,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
                 if let Some(NodeEnum::String(s)) = &arg.node {
                     emit_string_literal(e, s);
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -258,7 +258,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
                 if let Some(NodeEnum::String(s)) = &arg.node {
                     emit_string_literal(e, s);
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -266,14 +266,14 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::ROLE_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "adminmembers" => {
             e.token(TokenKind::ADMIN_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "addroleto" => {
@@ -282,14 +282,14 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::ROLE_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "sysid" => {
             e.token(TokenKind::SYSID_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         _ => {
@@ -299,7 +299,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             }
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
     }
@@ -310,7 +310,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
 /// Emit sequence options with proper SQL syntax
 /// Used by CREATE SEQUENCE and ALTER SEQUENCE
 pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
-    e.group_start(GroupKind::DefElem);
+    e.group_start();
 
     let defname = n.defname.as_str();
 
@@ -321,14 +321,14 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::BY_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "minvalue" => {
             if let Some(ref arg) = n.arg {
                 e.token(TokenKind::MINVALUE_KW);
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             } else {
                 e.token(TokenKind::NO_KW);
                 e.space();
@@ -339,7 +339,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             if let Some(ref arg) = n.arg {
                 e.token(TokenKind::MAXVALUE_KW);
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             } else {
                 e.token(TokenKind::NO_KW);
                 e.space();
@@ -352,7 +352,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::WITH_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "restart" => {
@@ -361,14 +361,14 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
                 e.space();
                 e.token(TokenKind::WITH_KW);
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "cache" => {
             e.token(TokenKind::CACHE_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "cycle" => {
@@ -396,7 +396,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
                 if let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref() {
                     emit_dot_separated_list(e, &list.items);
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -404,7 +404,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::AS_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         _ => {
@@ -414,7 +414,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             }
             if let Some(ref arg) = n.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
     }

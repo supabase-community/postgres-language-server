@@ -3,7 +3,7 @@ use pgls_query::protobuf::UpdateStmt;
 use super::prelude::*;
 
 pub(super) fn emit_update_stmt(e: &mut EventEmitter, n: &UpdateStmt) {
-    e.group_start(GroupKind::UpdateStmt);
+    e.group_start();
 
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);

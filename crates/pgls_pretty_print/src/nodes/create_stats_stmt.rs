@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateStatsStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) {
-    e.group_start(GroupKind::CreateStatsStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -26,7 +26,7 @@ pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) 
     // Statistics types (e.g., ndistinct, dependencies)
     if !n.stat_types.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_parenthesized_list(e, &n.stat_types, |node, e| {
+        emit_parenthesized_list(e, &n.stat_types, |e, node| {
             if let Some(NodeEnum::String(s)) = &node.node {
                 e.token(TokenKind::IDENT(s.sval.clone()));
             }
@@ -39,7 +39,7 @@ pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) 
 
     // Column expressions or names
     if !n.exprs.is_empty() {
-        emit_comma_separated_list(e, &n.exprs, |node, e| {
+        emit_comma_separated_list(e, &n.exprs, |e, node| {
             if let Some(NodeEnum::StatsElem(stats_elem)) = &node.node {
                 super::emit_stats_elem(e, stats_elem);
             }

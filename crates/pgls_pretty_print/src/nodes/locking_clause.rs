@@ -3,7 +3,7 @@ use pgls_query::protobuf::{LockClauseStrength, LockWaitPolicy, LockingClause};
 use super::prelude::*;
 
 pub(super) fn emit_locking_clause(e: &mut EventEmitter, n: &LockingClause) {
-    e.group_start(GroupKind::LockingClause);
+    e.group_start();
 
     e.token(TokenKind::FOR_KW);
     e.space();

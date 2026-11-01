@@ -19,7 +19,7 @@ pub(super) fn emit_type_name(e: &mut EventEmitter, n: &TypeName) {
 }
 
 fn emit_type_name_tokens(e: &mut EventEmitter, n: &TypeName) {
-    e.group_start(GroupKind::TypeName);
+    e.group_start();
 
     if n.setof {
         e.token(TokenKind::SETOF_KW);

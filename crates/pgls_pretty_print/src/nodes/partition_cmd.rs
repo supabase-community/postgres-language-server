@@ -3,7 +3,7 @@ use pgls_query::protobuf::PartitionCmd;
 use super::prelude::*;
 
 pub(super) fn emit_partition_cmd(e: &mut EventEmitter, n: &PartitionCmd) {
-    e.group_start(GroupKind::PartitionCmd);
+    e.group_start();
 
     if let Some(ref name) = n.name {
         super::emit_range_var(e, name);

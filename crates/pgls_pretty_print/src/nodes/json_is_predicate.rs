@@ -3,10 +3,10 @@ use pgls_query::protobuf::{JsonIsPredicate, JsonValueType};
 use super::prelude::*;
 
 pub(super) fn emit_json_is_predicate(e: &mut EventEmitter, n: &JsonIsPredicate) {
-    e.group_start(GroupKind::JsonIsPredicate);
+    e.group_start();
 
     if let Some(ref expr) = n.expr {
-        emit_node(expr, e);
+        emit_node(e, expr);
     }
 
     e.space();

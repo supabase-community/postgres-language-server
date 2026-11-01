@@ -3,7 +3,7 @@ use pgls_query::protobuf::JsonTablePathScan;
 use super::prelude::*;
 
 pub(super) fn emit_json_table_path_scan(e: &mut EventEmitter, n: &JsonTablePathScan) {
-    e.group_start(GroupKind::JsonTablePathScan);
+    e.group_start();
 
     let mut label = String::from("jsonpathscan");
     if n.error_on_error {
@@ -21,12 +21,12 @@ pub(super) fn emit_json_table_path_scan(e: &mut EventEmitter, n: &JsonTablePathS
 
     if let Some(plan) = n.plan.as_ref() {
         e.line(LineType::SoftOrSpace);
-        emit_node(plan, e);
+        emit_node(e, plan);
     }
 
     if let Some(child) = n.child.as_ref() {
         e.line(LineType::SoftOrSpace);
-        emit_node(child, e);
+        emit_node(e, child);
     }
 
     e.group_end();

@@ -3,7 +3,7 @@ use pgls_query::protobuf::PublicationTable;
 use super::prelude::*;
 
 pub(super) fn emit_publication_table(e: &mut EventEmitter, n: &PublicationTable) {
-    e.group_start(GroupKind::PublicationTable);
+    e.group_start();
 
     if let Some(ref relation) = n.relation {
         super::emit_range_var(e, relation);
@@ -18,7 +18,7 @@ pub(super) fn emit_publication_table(e: &mut EventEmitter, n: &PublicationTable)
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
         e.space();
-        emit_parenthesized_condition(e, GroupKind::PublicationTable, where_clause);
+        emit_parenthesized_condition(e, where_clause);
     }
 
     e.group_end();

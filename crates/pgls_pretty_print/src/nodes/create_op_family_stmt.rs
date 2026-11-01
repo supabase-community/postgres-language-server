@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateOpFamilyStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_op_family_stmt(e: &mut EventEmitter, n: &CreateOpFamilyStmt) {
-    e.group_start(GroupKind::CreateOpFamilyStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();

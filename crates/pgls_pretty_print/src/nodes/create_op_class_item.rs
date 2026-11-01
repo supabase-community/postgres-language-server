@@ -1,11 +1,11 @@
 use pgls_query::protobuf::CreateOpClassItem;
 
 use super::emit_object_with_args;
-use super::object_with_args::emit_object_name_only;
 use super::prelude::*;
+use super::{ObjectArguments, emit_object_with_args_as};
 
 pub(super) fn emit_create_op_class_item(e: &mut EventEmitter, n: &CreateOpClassItem) {
-    e.group_start(GroupKind::CreateOpClassItem);
+    e.group_start();
 
     // itemtype: 1=OPERATOR, 2=FUNCTION, 3=STORAGE
     match n.itemtype {
@@ -20,12 +20,12 @@ pub(super) fn emit_create_op_class_item(e: &mut EventEmitter, n: &CreateOpClassI
 
             if let Some(ref name) = n.name {
                 // ADD case: emit operator name
-                emit_object_name_only(e, name);
+                emit_object_with_args_as(e, name, ObjectArguments::Omitted);
 
                 // Emit argument types in parentheses from objargs
                 if !name.objargs.is_empty() {
                     e.space();
-                    e.group_start(GroupKind::CreateOpClassItem);
+                    e.group_start();
                     emit_parenthesized_list(e, &name.objargs, emit_node);
                     e.group_end();
                 }

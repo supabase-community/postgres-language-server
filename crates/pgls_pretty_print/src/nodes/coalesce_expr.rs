@@ -3,7 +3,7 @@ use pgls_query::protobuf::CoalesceExpr;
 use super::prelude::*;
 
 pub(super) fn emit_coalesce_expr(e: &mut EventEmitter, n: &CoalesceExpr) {
-    e.group_start(GroupKind::CoalesceExpr);
+    e.group_start();
 
     e.token(TokenKind::COALESCE_KW);
     e.token(TokenKind::L_PAREN);

@@ -3,10 +3,10 @@ use pgls_query::protobuf::{RangeTblFunction, String as PgString};
 use super::prelude::*;
 
 pub(super) fn emit_range_tbl_function(e: &mut EventEmitter, n: &RangeTblFunction) {
-    e.group_start(GroupKind::RangeTblFunction);
+    e.group_start();
 
     if let Some(func) = n.funcexpr.as_ref() {
-        emit_node(func, e);
+        emit_node(e, func);
     } else {
         emit_identifier(e, "function#expr");
     }

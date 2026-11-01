@@ -6,7 +6,7 @@ use super::prelude::*;
 use super::window_def::emit_window_definition;
 
 pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
-    e.group_start(GroupKind::SelectStmt);
+    e.group_start();
 
     // Emit WITH clause (Common Table Expressions) if present
     if let Some(ref with_clause) = n.with_clause {
@@ -20,8 +20,9 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             // Emit left operand - wrap in parentheses if it's a set operation that needs precedence protection
             // or if it has ORDER BY/LIMIT/OFFSET that would be ambiguous
             if let Some(ref larg) = n.larg {
-                let needs_parens_left = needs_set_operation_parens(n.op(), larg.op(), true)
-                    || select_needs_parens(larg);
+                let needs_parens_left =
+                    needs_set_operation_parens(n.op(), larg.op(), OperandSide::Left)
+                        || select_needs_parens(larg);
                 if needs_parens_left {
                     e.token(TokenKind::L_PAREN);
                 }
@@ -50,8 +51,9 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             // or if it has ORDER BY/LIMIT/OFFSET that would be ambiguous
             e.line(LineType::SoftOrSpace);
             if let Some(ref rarg) = n.rarg {
-                let needs_parens_right = needs_set_operation_parens(n.op(), rarg.op(), false)
-                    || select_needs_parens(rarg);
+                let needs_parens_right =
+                    needs_set_operation_parens(n.op(), rarg.op(), OperandSide::Right)
+                        || select_needs_parens(rarg);
                 if needs_parens_right {
                     e.token(TokenKind::L_PAREN);
                 }
@@ -80,7 +82,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                         e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::OFFSET_KW);
                         e.space();
-                        emit_node(offset, e);
+                        emit_node(e, offset);
                         e.space();
                         e.token(TokenKind::ROWS_KW);
                     }
@@ -91,7 +93,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                         e.space();
                         e.token(TokenKind::FIRST_KW);
                         e.space();
-                        emit_node(limit, e);
+                        emit_node(e, limit);
                         e.space();
                         e.token(TokenKind::ROWS_KW);
                         e.space();
@@ -105,14 +107,14 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                         e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::OFFSET_KW);
                         e.space();
-                        emit_node(offset, e);
+                        emit_node(e, offset);
                     }
 
                     if let Some(ref limit) = n.limit_count {
                         e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::LIMIT_KW);
                         e.space();
-                        emit_node(limit, e);
+                        emit_node(e, limit);
                     }
                 }
             }
@@ -120,7 +122,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             // Emit locking clause if present
             for locking in &n.locking_clause {
                 e.line(LineType::SoftOrSpace);
-                emit_node(locking, e);
+                emit_node(e, locking);
             }
 
             e.group_end();
@@ -148,7 +150,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
         };
 
         let last_row = n.values_lists.last();
-        emit_comma_separated_list_with_spacing(e, &n.values_lists, spacing, |row, e| {
+        emit_comma_separated_list_with_spacing(e, &n.values_lists, spacing, |e, row| {
             // A line comment written after a row is attached to the row's last value. Emitted
             // there, it would end up inside the parentheses and force the row to break, so it
             // follows the closing parenthesis instead, and the comma when there is one.
@@ -156,11 +158,11 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             let comments_after_row = take_comments_after_row(e, row, followed_by_comma);
 
             // Wrap each row tuple in a group so it can break independently
-            e.group_start(GroupKind::List);
+            e.group_start();
             e.token(TokenKind::L_PAREN);
             e.line(LineType::Soft);
             e.indent_start();
-            emit_node(row, e);
+            emit_node(e, row);
             e.indent_end();
             e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
@@ -276,7 +278,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                 if let Some(pgls_query::NodeEnum::WindowDef(window_def)) = window.node.as_ref() {
                     emit_window_definition(e, window_def);
                 } else {
-                    emit_node(window, e);
+                    emit_node(e, window);
                 }
             }
             e.indent_end();
@@ -301,7 +303,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                 emit_layout_break(e);
                 e.token(TokenKind::OFFSET_KW);
                 e.space();
-                emit_node(limit_offset, e);
+                emit_node(e, limit_offset);
                 e.space();
                 e.token(TokenKind::ROWS_KW);
             }
@@ -312,7 +314,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                 e.space();
                 e.token(TokenKind::FIRST_KW);
                 e.space();
-                emit_node(limit_count, e);
+                emit_node(e, limit_count);
                 e.space();
                 e.token(TokenKind::ROWS_KW);
                 e.space();
@@ -326,14 +328,14 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                 emit_layout_break(e);
                 e.token(TokenKind::LIMIT_KW);
                 e.space();
-                emit_node(limit_count, e);
+                emit_node(e, limit_count);
             }
 
             if let Some(ref limit_offset) = n.limit_offset {
                 emit_layout_break(e);
                 e.token(TokenKind::OFFSET_KW);
                 e.space();
-                emit_node(limit_offset, e);
+                emit_node(e, limit_offset);
             }
         }
     }
@@ -392,7 +394,7 @@ fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {
 
     // The clause has its own group so that it can stay on one line while the target list breaks,
     // which is the usual shape of a DISTINCT ON query.
-    e.group_start(GroupKind::SelectStmt);
+    e.group_start();
 
     e.space();
     e.token(TokenKind::ON_KW);
@@ -406,7 +408,7 @@ fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {
             e.token(TokenKind::COMMA);
             e.line(LineType::SoftOrSpace);
         }
-        emit_node(node, e);
+        emit_node(e, node);
     }
 
     e.indent_end();
@@ -441,7 +443,7 @@ fn select_needs_parens(stmt: &SelectStmt) -> bool {
 fn needs_set_operation_parens(
     parent_op: SetOperation,
     child_op: SetOperation,
-    is_left_operand: bool,
+    side: OperandSide,
 ) -> bool {
     // No parentheses needed if child is not a set operation
     match child_op {
@@ -461,7 +463,7 @@ fn needs_set_operation_parens(
 
     // Same operator on right side needs parentheses to preserve structure
     // E.g., A UNION (B UNION C) needs parens, otherwise it's (A UNION B) UNION C
-    if !is_left_operand && child_op == parent_op {
+    if matches!(side, OperandSide::Right) && child_op == parent_op {
         return true;
     }
 
@@ -470,7 +472,9 @@ fn needs_set_operation_parens(
     match (parent_op, child_op) {
         // UNION and EXCEPT have same precedence, so right-side needs parens
         (SetOperation::SetopUnion, SetOperation::SetopExcept)
-        | (SetOperation::SetopExcept, SetOperation::SetopUnion) => !is_left_operand,
+        | (SetOperation::SetopExcept, SetOperation::SetopUnion) => {
+            matches!(side, OperandSide::Right)
+        }
         // INTERSECT has higher precedence - if child is INTERSECT, no parens needed
         // If parent is INTERSECT and child is UNION/EXCEPT, we need parens
         (SetOperation::SetopIntersect, SetOperation::SetopUnion)

@@ -3,7 +3,7 @@ use pgls_query::protobuf::{Param, ParamKind};
 use super::prelude::*;
 
 pub(super) fn emit_param(e: &mut EventEmitter, n: &Param) {
-    e.group_start(GroupKind::Param);
+    e.group_start();
 
     let kind = match n.paramkind() {
         ParamKind::ParamExtern => "extern",

@@ -5,7 +5,7 @@ use crate::Layout;
 use super::prelude::*;
 
 pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
-    e.group_start(GroupKind::Constraint);
+    e.group_start();
     // A broken constraint continues one level deeper than where it starts. The indent starts at
     // the first continuation line, so a column list on the first line breaks relative to it.
     let mut continued = false;
@@ -43,7 +43,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 if needs_parens {
                     e.token(TokenKind::L_PAREN);
                 }
-                emit_node(raw_expr, e);
+                emit_node(e, raw_expr);
                 if needs_parens {
                     e.token(TokenKind::R_PAREN);
                 }
@@ -109,7 +109,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             if let Some(ref raw_expr) = n.raw_expr {
                 e.space();
                 e.token(TokenKind::L_PAREN);
-                emit_node(raw_expr, e);
+                emit_node(e, raw_expr);
                 e.token(TokenKind::R_PAREN);
             }
 
@@ -169,11 +169,11 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 continue_line(e, &mut continued);
                 e.token(TokenKind::INCLUDE_KW);
                 e.space();
-                emit_parenthesized_list(e, &n.including, |node, emitter| {
+                emit_parenthesized_list(e, &n.including, |emitter, node| {
                     if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
                         emit_identifier_maybe_quoted(emitter, &s.sval);
                     } else {
-                        emit_node(node, emitter);
+                        emit_node(emitter, node);
                     }
                 });
             }
@@ -234,11 +234,11 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 continue_line(e, &mut continued);
                 e.token(TokenKind::INCLUDE_KW);
                 e.space();
-                emit_parenthesized_list(e, &n.including, |node, emitter| {
+                emit_parenthesized_list(e, &n.including, |emitter, node| {
                     if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
                         emit_identifier_maybe_quoted(emitter, &s.sval);
                     } else {
-                        emit_node(node, emitter);
+                        emit_node(emitter, node);
                     }
                 });
             }
@@ -294,11 +294,11 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 continue_line(e, &mut continued);
                 e.token(TokenKind::INCLUDE_KW);
                 e.space();
-                emit_parenthesized_list(e, &n.including, |node, emitter| {
+                emit_parenthesized_list(e, &n.including, |emitter, node| {
                     if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
                         emit_identifier_maybe_quoted(emitter, &s.sval);
                     } else {
-                        emit_node(node, emitter);
+                        emit_node(emitter, node);
                     }
                 });
             }
@@ -307,7 +307,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.space();
                 e.token(TokenKind::WHERE_KW);
                 e.space();
-                emit_parenthesized_condition(e, GroupKind::Constraint, where_clause);
+                emit_parenthesized_condition(e, where_clause);
             }
 
             emit_deferrable(e, n, &mut continued);
@@ -449,17 +449,12 @@ fn emit_check_condition(e: &mut EventEmitter, condition: &Node) {
     let expanded = matches!(e.config().layout, Layout::Expanded);
 
     e.with_layout(Layout::Fit, |e| {
-        emit_parenthesized_condition_with(
-            e,
-            GroupKind::Constraint,
-            condition,
-            |node, e| match node {
-                NodeEnum::BoolExpr(n) if expanded => {
-                    super::bool_expr::emit_bool_expr_in_enclosing_group(e, n);
-                }
-                _ => emit_node_enum(node, e),
-            },
-        );
+        emit_parenthesized_condition_with(e, condition, |e, node| match node {
+            NodeEnum::BoolExpr(n) if expanded => {
+                super::bool_expr::emit_bool_expr_in_enclosing_group(e, n);
+            }
+            _ => emit_node_enum(e, node),
+        });
     });
 }
 
@@ -488,12 +483,12 @@ fn emit_deferrable(e: &mut EventEmitter, n: &Constraint, continued: &mut bool) {
 }
 
 /// Emits one element of an exclusion constraint: `column WITH operator`.
-fn emit_exclusion(exclusion: &pgls_query::Node, e: &mut EventEmitter) {
+fn emit_exclusion(e: &mut EventEmitter, exclusion: &pgls_query::Node) {
     let exclusion_list = assert_node_variant!(List, exclusion);
     debug_assert!(exclusion_list.items.len() >= 2);
 
     if let Some(index_elem) = exclusion_list.items.first() {
-        emit_node(index_elem, e);
+        emit_node(e, index_elem);
     }
 
     if let Some(operators) = exclusion_list.items.get(1) {
@@ -519,7 +514,7 @@ fn emit_exclusion(exclusion: &pgls_query::Node, e: &mut EventEmitter) {
 fn emit_exclusion_operator(e: &mut EventEmitter, node: &pgls_query::Node) {
     match node.node.as_ref() {
         Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-        _ => emit_node(node, e),
+        _ => emit_node(e, node),
     }
 }
 

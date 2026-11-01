@@ -3,10 +3,10 @@ use pgls_query::protobuf::CollateExpr;
 use super::prelude::*;
 
 pub(super) fn emit_collate_expr(e: &mut EventEmitter, n: &CollateExpr) {
-    e.group_start(GroupKind::CollateExpr);
+    e.group_start();
 
     if let Some(ref arg) = n.arg {
-        emit_node(arg, e);
+        emit_node(e, arg);
         e.line(LineType::SoftOrSpace);
     }
 

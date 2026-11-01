@@ -5,17 +5,17 @@ use pgls_query::protobuf::String as PgString;
 use crate::{
     TokenKind,
     codegen::token_kind::{KeywordCategory, keyword_category},
-    emitter::{EventEmitter, GroupKind},
+    emitter::EventEmitter,
 };
 
 pub(crate) fn emit_string_literal(e: &mut EventEmitter, n: &PgString) {
-    e.group_start(GroupKind::String);
+    e.group_start();
     emit_single_quoted_str(e, &n.sval);
     e.group_end();
 }
 
 pub(crate) fn emit_string_identifier(e: &mut EventEmitter, n: &PgString) {
-    e.group_start(GroupKind::String);
+    e.group_start();
     emit_identifier(e, &n.sval);
     e.group_end();
 }

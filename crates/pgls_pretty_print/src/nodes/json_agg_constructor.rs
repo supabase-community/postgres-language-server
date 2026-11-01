@@ -4,7 +4,7 @@ use super::json_value_expr::emit_json_output;
 use super::prelude::*;
 
 pub(super) fn emit_json_agg_constructor(e: &mut EventEmitter, n: &JsonAggConstructor) {
-    e.group_start(GroupKind::JsonAggConstructor);
+    e.group_start();
 
     let mut has_content = false;
 

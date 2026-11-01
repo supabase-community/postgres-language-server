@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterSystemStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_system_stmt(e: &mut EventEmitter, n: &AlterSystemStmt) {
-    e.group_start(GroupKind::AlterSystemStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

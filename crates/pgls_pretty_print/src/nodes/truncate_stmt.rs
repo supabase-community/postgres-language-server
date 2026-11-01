@@ -3,7 +3,7 @@ use pgls_query::protobuf::{DropBehavior, TruncateStmt};
 use super::prelude::*;
 
 pub(super) fn emit_truncate_stmt(e: &mut EventEmitter, n: &TruncateStmt) {
-    e.group_start(GroupKind::TruncateStmt);
+    e.group_start();
 
     e.token(TokenKind::TRUNCATE_KW);
 

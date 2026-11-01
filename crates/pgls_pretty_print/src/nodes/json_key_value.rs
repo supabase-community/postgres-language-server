@@ -4,10 +4,10 @@ use super::emit_json_value_expr;
 use super::prelude::*;
 
 pub(super) fn emit_json_key_value(e: &mut EventEmitter, n: &JsonKeyValue) {
-    e.group_start(GroupKind::JsonKeyValue);
+    e.group_start();
 
     if let Some(ref key) = n.key {
-        emit_node(key, e);
+        emit_node(e, key);
     }
 
     e.space();

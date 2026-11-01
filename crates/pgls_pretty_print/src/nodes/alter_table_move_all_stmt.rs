@@ -3,7 +3,7 @@ use pgls_query::protobuf::{AlterTableMoveAllStmt, ObjectType};
 use super::prelude::*;
 
 pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTableMoveAllStmt) {
-    e.group_start(GroupKind::AlterTableMoveAllStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -36,7 +36,7 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        emit_comma_separated_list(e, &n.roles, |node, e| {
+        emit_comma_separated_list(e, &n.roles, |e, node| {
             let role_spec = assert_node_variant!(RoleSpec, node);
             super::emit_role_spec(e, role_spec);
         });

@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterOpFamilyStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyStmt) {
-    e.group_start(GroupKind::AlterOpFamilyStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -29,7 +29,7 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
     e.line(crate::emitter::LineType::SoftOrSpace);
 
     // Start a group for the entire ADD/DROP clause to keep operator items together
-    e.group_start(GroupKind::AlterOpFamilyStmt);
+    e.group_start();
 
     if n.is_drop {
         e.token(TokenKind::DROP_KW);
@@ -46,7 +46,7 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
                 e.token(TokenKind::COMMA);
                 e.line(crate::emitter::LineType::SoftOrSpace);
             }
-            emit_node(item, e);
+            emit_node(e, item);
         }
     }
 

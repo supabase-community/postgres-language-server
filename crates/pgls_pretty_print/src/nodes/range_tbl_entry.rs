@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use super::prelude::*;
 
 pub(super) fn emit_range_tbl_entry(e: &mut EventEmitter, n: &RangeTblEntry) {
-    e.group_start(GroupKind::RangeTblEntry);
+    e.group_start();
 
     let kind = RteKind::try_from(n.rtekind).unwrap_or_else(|_| {
         debug_assert!(false, "Unexpected RangeTblEntry rtekind: {}", n.rtekind);

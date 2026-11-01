@@ -2,34 +2,35 @@ use pgls_query::protobuf::ObjectWithArgs;
 
 use super::prelude::*;
 
+/// How the arguments of an object follow its name.
+#[derive(Clone, Copy)]
+pub(super) enum ObjectArguments {
+    /// `(type, ...)`, and `()` for a function without arguments.
+    Signature,
+    /// Like `Signature`, except that an aggregate without arguments is written `(*)`, which means
+    /// any arguments.
+    AggregateSignature,
+    /// No arguments, such as the operator of an operator class item.
+    Omitted,
+}
+
 pub(super) fn emit_object_with_args(e: &mut EventEmitter, n: &ObjectWithArgs) {
-    emit_object_with_args_impl(e, n, true, false);
+    emit_object_with_args_as(e, n, ObjectArguments::Signature);
 }
 
-/// Emit ObjectWithArgs without parentheses (for operators in operator classes)
-pub(super) fn emit_object_name_only(e: &mut EventEmitter, n: &ObjectWithArgs) {
-    emit_object_with_args_impl(e, n, false, false);
-}
-
-/// Emit ObjectWithArgs for aggregates, where (*) means "any arguments"
-pub(super) fn emit_object_with_args_for_aggregate(e: &mut EventEmitter, n: &ObjectWithArgs) {
-    emit_object_with_args_impl(e, n, true, true);
-}
-
-fn emit_object_with_args_impl(
+pub(super) fn emit_object_with_args_as(
     e: &mut EventEmitter,
     n: &ObjectWithArgs,
-    with_parens: bool,
-    is_aggregate: bool,
+    arguments: ObjectArguments,
 ) {
-    e.group_start(GroupKind::ObjectWithArgs);
+    e.group_start();
 
     // Object name (qualified name)
     if !n.objname.is_empty() {
         emit_object_name(e, &n.objname);
     }
 
-    if with_parens {
+    if !matches!(arguments, ObjectArguments::Omitted) {
         let space_before_paren = needs_space_before_paren(n);
         // A function signature keeps its parameters as written, with their names and modes.
         // `objargs` only holds their types, and is all an operator has.
@@ -61,7 +62,7 @@ fn emit_object_with_args_impl(
                 e.space();
             }
             e.token(TokenKind::L_PAREN);
-            if is_aggregate {
+            if matches!(arguments, ObjectArguments::AggregateSignature) {
                 e.token(TokenKind::IDENT("*".to_string()));
             }
             e.token(TokenKind::R_PAREN);
@@ -72,9 +73,9 @@ fn emit_object_with_args_impl(
 }
 
 /// Emit an operator argument, with NONE for missing types
-fn emit_objarg_or_none(node: &pgls_query::Node, e: &mut EventEmitter) {
+fn emit_objarg_or_none(e: &mut EventEmitter, node: &pgls_query::Node) {
     if node.node.is_some() {
-        emit_node(node, e);
+        emit_node(e, node);
     } else {
         // A Node with node: None represents NONE (no argument type)
         // Used for unary operators
@@ -103,7 +104,7 @@ fn emit_object_name(e: &mut EventEmitter, items: &[Node]) {
             Some(NodeEnum::String(s)) if is_operator_symbol(&s.sval) => {
                 e.token(TokenKind::IDENT(s.sval.clone()));
             }
-            _ => emit_node(node, e),
+            _ => emit_node(e, node),
         }
     }
 }

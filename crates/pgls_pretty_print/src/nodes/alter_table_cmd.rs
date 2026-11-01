@@ -1,22 +1,19 @@
-use pgls_query::protobuf::{AlterTableCmd, AlterTableType, DropBehavior};
+use pgls_query::protobuf::{AlterTableCmd, AlterTableType, DropBehavior, ObjectType};
 
 use super::prelude::*;
 
-/// Emit an ALTER TABLE command. The `for_type` parameter indicates if this is
-/// ALTER TYPE (which uses ATTRIBUTE instead of COLUMN).
-pub(super) fn emit_alter_table_cmd_for_type(
+pub(super) fn emit_alter_table_cmd(e: &mut EventEmitter, cmd: &AlterTableCmd) {
+    emit_alter_table_cmd_of(e, cmd, ObjectType::ObjectTable);
+}
+
+/// Emits a command of `ALTER <object_type>`. ALTER TYPE writes ATTRIBUTE where the other
+/// statements write COLUMN.
+pub(super) fn emit_alter_table_cmd_of(
     e: &mut EventEmitter,
     cmd: &AlterTableCmd,
-    for_type: bool,
+    object_type: ObjectType,
 ) {
-    emit_alter_table_cmd_impl(e, cmd, for_type);
-}
-
-pub(super) fn emit_alter_table_cmd(e: &mut EventEmitter, cmd: &AlterTableCmd) {
-    emit_alter_table_cmd_impl(e, cmd, false);
-}
-
-fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type: bool) {
+    let for_type = object_type == ObjectType::ObjectType;
     match cmd.subtype() {
         AlterTableType::AtAddColumn => {
             e.token(TokenKind::ADD_KW);
@@ -40,7 +37,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             if let Some(ref def) = cmd.def {
                 e.space();
                 e.indent_start();
-                emit_node(def, e);
+                emit_node(e, def);
                 e.indent_end();
             }
             // Only ALTER TYPE ... ADD ATTRIBUTE accepts a drop behavior; it decides whether typed
@@ -125,7 +122,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
                     e.space();
                     e.token(TokenKind::USING_KW);
                     e.space();
-                    emit_node(raw_default, e);
+                    emit_node(e, raw_default);
                 }
             }
             // Emit CASCADE/RESTRICT - behavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
@@ -148,7 +145,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
                 e.space();
                 e.token(TokenKind::DEFAULT_KW);
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             } else {
                 e.token(TokenKind::DROP_KW);
                 e.space();
@@ -203,7 +200,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref def) = cmd.def {
-                emit_node(def, e);
+                emit_node(e, def);
             }
             e.token(TokenKind::R_PAREN);
         }
@@ -231,7 +228,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::ADD_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         AlterTableType::AtDropConstraint => {
@@ -312,7 +309,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtReplicaIdentity => {
             // REPLICA IDENTITY is handled via ReplicaIdentityStmt in the def field
             if let Some(ref def) = cmd.def {
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         AlterTableType::AtSetRelOptions => {
@@ -320,7 +317,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref def) = cmd.def {
-                emit_node(def, e); // List of DefElem nodes
+                emit_node(e, def); // List of DefElem nodes
             }
             e.token(TokenKind::R_PAREN);
         }
@@ -329,7 +326,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref def) = cmd.def {
-                emit_node(def, e); // List of option names
+                emit_node(e, def); // List of option names
             }
             e.token(TokenKind::R_PAREN);
         }
@@ -347,7 +344,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref def) = cmd.def {
-                emit_node(def, e); // List of DefElem nodes
+                emit_node(e, def); // List of DefElem nodes
             }
             e.token(TokenKind::R_PAREN);
         }
@@ -365,7 +362,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref def) = cmd.def {
-                emit_node(def, e); // List of option names
+                emit_node(e, def); // List of option names
             }
             e.token(TokenKind::R_PAREN);
         }
@@ -388,7 +385,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::STATISTICS_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         AlterTableType::AtSetStorage => {
@@ -406,7 +403,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::STORAGE_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         AlterTableType::AtSetCompression => {
@@ -424,7 +421,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::COMPRESSION_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         AlterTableType::AtClusterOn => {
@@ -499,7 +496,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::INHERIT_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         AlterTableType::AtDropInherit => {
@@ -508,14 +505,14 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::INHERIT_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         AlterTableType::AtAddOf => {
             e.token(TokenKind::OF_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         AlterTableType::AtDropOf => {
@@ -529,7 +526,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::PARTITION_KW);
             if let Some(ref def) = cmd.def {
                 e.line(LineType::SoftOrSpace);
-                emit_node(def, e); // PartitionCmd node
+                emit_node(e, def); // PartitionCmd node
             }
         }
         AlterTableType::AtDetachPartition => {
@@ -538,7 +535,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::PARTITION_KW);
             if let Some(ref def) = cmd.def {
                 e.line(LineType::SoftOrSpace);
-                emit_node(def, e); // PartitionCmd node
+                emit_node(e, def); // PartitionCmd node
             }
         }
         AlterTableType::AtEnableTrigAll => {
@@ -647,7 +644,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             // The def is a Constraint containing the full identity definition
             // Just emit the constraint which handles GENERATED ALWAYS/BY DEFAULT AS IDENTITY
             if let Some(ref def) = cmd.def {
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         AlterTableType::AtSetIdentity => {
@@ -664,7 +661,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             if let Some(ref def) = cmd.def
                 && let Some(NodeEnum::List(list)) = &def.node
             {
-                e.group_start(GroupKind::List);
+                e.group_start();
                 e.indent_start();
                 for opt in &list.items {
                     if let Some(NodeEnum::DefElem(de)) = &opt.node {

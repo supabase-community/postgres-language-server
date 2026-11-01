@@ -3,7 +3,7 @@ use pgls_query::protobuf::{AlterTableStmt, ObjectType};
 use super::prelude::*;
 
 pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
-    e.group_start(GroupKind::AlterTableStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -59,8 +59,7 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
 
             // Extract AlterTableCmd from Node
             let cmd = assert_node_variant!(AlterTableCmd, cmd_node);
-            let for_type = matches!(n.objtype(), ObjectType::ObjectType);
-            super::emit_alter_table_cmd_for_type(e, cmd, for_type);
+            super::emit_alter_table_cmd_of(e, cmd, n.objtype());
         }
 
         e.indent_end();

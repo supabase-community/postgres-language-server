@@ -3,7 +3,7 @@ use pgls_query::protobuf::{JoinExpr, JoinType};
 use super::prelude::*;
 
 pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
-    e.group_start(GroupKind::JoinExpr);
+    e.group_start();
 
     // If the join has an alias, we need to wrap it in parentheses
     let has_alias = n.alias.is_some();
@@ -13,7 +13,7 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
 
     // Left side
     if let Some(ref larg) = n.larg {
-        emit_node(larg, e);
+        emit_node(e, larg);
     }
 
     if n.larg.is_some() {
@@ -23,7 +23,7 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
             // fit.
             e.group_end();
             emit_layout_break(e);
-            e.group_start(GroupKind::JoinExpr);
+            e.group_start();
         } else {
             e.line(LineType::SoftOrSpace);
         }
@@ -89,7 +89,7 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
     if let Some(ref rarg) = n.rarg {
         e.line(LineType::SoftOrSpace);
         e.indent_start();
-        emit_node(rarg, e);
+        emit_node(e, rarg);
         e.indent_end();
     }
 
@@ -98,12 +98,12 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        emit_parenthesized_list(e, &n.using_clause, |node, e| {
+        emit_parenthesized_list(e, &n.using_clause, |e, node| {
             // For USING clause, String nodes should be identifiers
             if let Some(pgls_query::NodeEnum::String(s)) = node.node.as_ref() {
                 emit_identifier_maybe_quoted(e, &s.sval);
             } else {
-                emit_node(node, e);
+                emit_node(e, node);
             }
         });
 
@@ -141,11 +141,11 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
         // Emit column aliases if present
         if !alias.colnames.is_empty() {
             e.space();
-            emit_parenthesized_list(e, &alias.colnames, |node, emitter| {
+            emit_parenthesized_list(e, &alias.colnames, |emitter, node| {
                 if let Some(pgls_query::NodeEnum::String(s)) = node.node.as_ref() {
                     emit_identifier_maybe_quoted(emitter, &s.sval);
                 } else {
-                    emit_node(node, emitter);
+                    emit_node(emitter, node);
                 }
             });
         }

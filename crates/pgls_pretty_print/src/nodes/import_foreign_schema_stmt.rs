@@ -3,7 +3,7 @@ use pgls_query::protobuf::ImportForeignSchemaStmt;
 use super::prelude::*;
 
 pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportForeignSchemaStmt) {
-    e.group_start(GroupKind::ImportForeignSchemaStmt);
+    e.group_start();
 
     e.token(TokenKind::IMPORT_KW);
     e.space();
@@ -56,7 +56,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |e, n| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });

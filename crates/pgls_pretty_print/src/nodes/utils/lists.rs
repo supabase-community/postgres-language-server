@@ -2,7 +2,7 @@
 
 use pgls_query::Node;
 
-use crate::emitter::{EventEmitter, GroupKind, LineType};
+use crate::emitter::{EventEmitter, LineType};
 use crate::nodes::emit_node;
 use crate::{CommaStyle, Layout, TokenKind};
 
@@ -68,20 +68,20 @@ pub(crate) fn emit_comma_separated_list_with_spacing<F>(
     spacing: ListSeparatorSpacing,
     render: F,
 ) where
-    F: Fn(&Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &Node),
 {
     for (i, n) in nodes.iter().enumerate() {
         if i > 0 {
             emit_list_comma(e, Some(n), spacing);
         }
-        render(n, e);
+        render(e, n);
     }
 }
 
 /// Emit a comma-separated list (default: can wrap to newline)
 pub(crate) fn emit_comma_separated_list<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
 where
-    F: Fn(&Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &Node),
 {
     emit_comma_separated_list_with_spacing(e, nodes, ListSeparatorSpacing::SoftOrSpace, render);
 }
@@ -90,9 +90,9 @@ where
 /// deeper, and the closing parenthesis back on its own line.
 pub(crate) fn emit_parenthesized_list<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
 where
-    F: Fn(&Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &Node),
 {
-    e.group_start(GroupKind::List);
+    e.group_start();
     e.token(TokenKind::L_PAREN);
     e.indent_start();
     e.line(LineType::Soft);
@@ -106,7 +106,7 @@ where
 /// Emit a comma-separated list that packs as many items as possible on each line.
 pub(crate) fn emit_fill_comma_separated_list<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
 where
-    F: Fn(&Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &Node),
 {
     emit_comma_separated_list_with_spacing(e, nodes, ListSeparatorSpacing::Fill, render);
 }
@@ -117,7 +117,7 @@ pub(crate) fn emit_comma_separated_list_with_layout_break<F>(
     nodes: &[Node],
     render: F,
 ) where
-    F: Fn(&Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &Node),
 {
     let spacing = match e.config().layout {
         Layout::Expanded => ListSeparatorSpacing::Hard,
@@ -132,38 +132,38 @@ pub(crate) fn emit_dot_separated_list(e: &mut EventEmitter, nodes: &[Node]) {
 
 pub(crate) fn emit_dot_separated_list_with<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
 where
-    F: Fn(&Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &Node),
 {
     for (i, n) in nodes.iter().enumerate() {
         if i > 0 {
             e.token(TokenKind::DOT);
         }
-        render(n, e);
+        render(e, n);
     }
 }
 
 pub(crate) fn emit_space_separated_list<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
 where
-    F: Fn(&Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &Node),
 {
     for (i, n) in nodes.iter().enumerate() {
         if i > 0 {
             e.line(LineType::SoftOrSpace);
         }
-        render(n, e);
+        render(e, n);
     }
 }
 
 pub(crate) fn emit_semicolon_separated_list<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
 where
-    F: Fn(&Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &Node),
 {
     for (i, n) in nodes.iter().enumerate() {
         if i > 0 {
             e.token(TokenKind::SEMICOLON);
             e.line(LineType::SoftOrSpace);
         }
-        render(n, e);
+        render(e, n);
     }
 }
 
@@ -177,15 +177,15 @@ pub(crate) fn emit_args_as_sequence(e: &mut EventEmitter, args: &[Node], opno: u
     if args.len() == 1 {
         e.token(TokenKind::IDENT(format!("op#{opno}")));
         e.space();
-        emit_node(&args[0], e);
+        emit_node(e, &args[0]);
         return;
     }
 
-    emit_node(&args[0], e);
+    emit_node(e, &args[0]);
     for arg in &args[1..] {
         e.space();
         e.token(TokenKind::IDENT(format!("op#{opno}")));
         e.space();
-        emit_node(arg, e);
+        emit_node(e, arg);
     }
 }

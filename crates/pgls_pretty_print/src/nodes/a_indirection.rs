@@ -3,7 +3,7 @@ use pgls_query::protobuf::AIndirection;
 use super::prelude::*;
 
 pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
-    e.group_start(GroupKind::AIndirection);
+    e.group_start();
 
     let needs_parens = n
         .arg
@@ -15,7 +15,7 @@ pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
     }
 
     if let Some(ref arg) = n.arg {
-        emit_node(arg, e);
+        emit_node(e, arg);
     }
 
     if needs_parens {
@@ -31,7 +31,7 @@ pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
             }
             _ => {}
         }
-        emit_node(indirection, e);
+        emit_node(e, indirection);
     }
 
     e.group_end();

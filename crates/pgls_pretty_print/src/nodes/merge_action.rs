@@ -3,7 +3,7 @@ use pgls_query::protobuf::{CmdType, MergeAction, MergeMatchKind};
 use super::prelude::*;
 
 pub(super) fn emit_merge_action(e: &mut EventEmitter, action: &MergeAction) {
-    e.group_start(GroupKind::MergeAction);
+    e.group_start();
 
     let match_kind = match action.match_kind() {
         MergeMatchKind::MergeWhenMatched => "matched",

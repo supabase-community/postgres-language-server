@@ -3,14 +3,14 @@ use pgls_query::protobuf::PlAssignStmt;
 use super::prelude::*;
 
 pub(super) fn emit_plassign_stmt(e: &mut EventEmitter, n: &PlAssignStmt) {
-    e.group_start(GroupKind::PlassignStmt);
+    e.group_start();
 
     if !n.name.is_empty() {
         emit_identifier_maybe_quoted(e, &n.name);
     }
 
     for indirection in &n.indirection {
-        emit_node(indirection, e);
+        emit_node(e, indirection);
     }
 
     if let Some(ref select_stmt) = n.val {

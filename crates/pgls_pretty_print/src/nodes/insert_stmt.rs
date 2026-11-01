@@ -4,7 +4,7 @@ use super::prelude::*;
 use super::res_target::emit_column_name;
 
 pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
-    e.group_start(GroupKind::InsertStmt);
+    e.group_start();
 
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);
@@ -26,16 +26,16 @@ pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
         e.space();
         // The column list has its own group so it can fit on one line in fit layout. In expanded
         // layout the separator breaks below are hard, which makes the group open up on purpose.
-        e.group_start(GroupKind::InsertStmt);
+        e.group_start();
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
 
-        emit_comma_separated_list_with_layout_break(e, &n.cols, |node, e| {
+        emit_comma_separated_list_with_layout_break(e, &n.cols, |e, node| {
             if let Some(pgls_query::NodeEnum::ResTarget(res_target)) = node.node.as_ref() {
                 emit_column_name(e, res_target);
             } else {
-                emit_node(node, e);
+                emit_node(e, node);
             }
         });
 
@@ -68,7 +68,7 @@ pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
     // Emit VALUES or SELECT or DEFAULT VALUES
     if let Some(ref select_stmt) = n.select_stmt {
         emit_layout_break(e);
-        emit_node(select_stmt, e);
+        emit_node(e, select_stmt);
     } else {
         // No select_stmt means DEFAULT VALUES
         e.line(LineType::SoftOrSpace);

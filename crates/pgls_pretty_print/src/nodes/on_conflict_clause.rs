@@ -5,7 +5,7 @@ use super::res_target::emit_set_clause_list;
 
 pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause) {
     e.line(LineType::SoftOrSpace);
-    e.group_start(GroupKind::OnConflictClause);
+    e.group_start();
 
     e.token(TokenKind::ON_KW);
     e.space();

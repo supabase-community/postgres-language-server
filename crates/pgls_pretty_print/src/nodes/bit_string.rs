@@ -3,7 +3,7 @@ use pgls_query::protobuf::BitString;
 use super::prelude::*;
 
 pub(super) fn emit_bit_string(e: &mut EventEmitter, n: &BitString) {
-    e.group_start(GroupKind::BitString);
+    e.group_start();
     // The bsval contains the bit string value including any prefix
     // For binary strings: "b..." or "B..."
     // For hex strings: "x..." or "X..."

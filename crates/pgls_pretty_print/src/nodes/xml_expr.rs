@@ -3,7 +3,7 @@ use pgls_query::protobuf::{XmlExpr, XmlOptionType};
 use super::prelude::*;
 
 pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
-    e.group_start(GroupKind::XmlExpr);
+    e.group_start();
 
     // XmlExprOp enum:
     // 0 = Undefined
@@ -67,7 +67,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             }
             e.space();
             if !n.args.is_empty() {
-                emit_node(&n.args[0], e);
+                emit_node(e, &n.args[0]);
             }
             close_call_arguments(e);
         }
@@ -83,7 +83,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             if !n.args.is_empty() {
                 e.token(TokenKind::COMMA);
                 e.line(LineType::SoftOrSpace);
-                emit_node(&n.args[0], e);
+                emit_node(e, &n.args[0]);
             }
 
             close_call_arguments(e);
@@ -93,7 +93,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             e.token(TokenKind::XMLROOT_KW);
             open_call_arguments(e);
             if !n.args.is_empty() {
-                emit_node(&n.args[0], e);
+                emit_node(e, &n.args[0]);
             }
             e.token(TokenKind::COMMA);
             e.line(LineType::SoftOrSpace);
@@ -107,10 +107,10 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
                         e.space();
                         e.token(TokenKind::VALUE_KW);
                     } else {
-                        emit_node(&n.args[1], e);
+                        emit_node(e, &n.args[1]);
                     }
                 } else {
-                    emit_node(&n.args[1], e);
+                    emit_node(e, &n.args[1]);
                 }
             }
             // Handle standalone option if there's a 3rd arg
@@ -175,7 +175,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
         8 => {
             // IS DOCUMENT - expr IS DOCUMENT
             if !n.args.is_empty() {
-                emit_node(&n.args[0], e);
+                emit_node(e, &n.args[0]);
             }
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::IS_KW);
@@ -187,7 +187,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             e.token(TokenKind::IDENT("xmlcomment".to_string()));
             open_call_arguments(e);
             if !n.args.is_empty() {
-                emit_node(&n.args[0], e);
+                emit_node(e, &n.args[0]);
             }
             close_call_arguments(e);
         }

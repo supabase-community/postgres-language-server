@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreatePLangStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_plang_stmt(e: &mut EventEmitter, n: &CreatePLangStmt) {
-    e.group_start(GroupKind::CreatePlangStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();

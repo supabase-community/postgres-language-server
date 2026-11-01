@@ -3,7 +3,7 @@ use pgls_query::protobuf::DoStmt;
 use super::prelude::*;
 
 pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
-    e.group_start(GroupKind::DoStmt);
+    e.group_start();
 
     e.token(TokenKind::DO_KW);
 

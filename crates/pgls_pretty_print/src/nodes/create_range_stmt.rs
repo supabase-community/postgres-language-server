@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateRangeStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_range_stmt(e: &mut EventEmitter, n: &CreateRangeStmt) {
-    e.group_start(GroupKind::CreateRangeStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();

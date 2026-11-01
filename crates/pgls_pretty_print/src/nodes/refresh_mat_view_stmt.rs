@@ -3,7 +3,7 @@ use pgls_query::protobuf::RefreshMatViewStmt;
 use super::prelude::*;
 
 pub(super) fn emit_refresh_mat_view_stmt(e: &mut EventEmitter, n: &RefreshMatViewStmt) {
-    e.group_start(GroupKind::RefreshMatViewStmt);
+    e.group_start();
 
     e.token(TokenKind::REFRESH_KW);
     e.space();

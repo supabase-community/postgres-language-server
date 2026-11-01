@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterDomainStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) {
-    e.group_start(GroupKind::AlterDomainStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -32,7 +32,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
                 e.space();
                 e.token(TokenKind::DEFAULT_KW);
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             } else {
                 e.token(TokenKind::DROP_KW);
                 e.space();
@@ -57,7 +57,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             e.token(TokenKind::ADD_KW);
             if let Some(ref def) = n.def {
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             }
         }
         "X" => {

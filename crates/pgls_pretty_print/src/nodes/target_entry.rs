@@ -3,10 +3,10 @@ use pgls_query::protobuf::TargetEntry;
 use super::prelude::*;
 
 pub(super) fn emit_target_entry(e: &mut EventEmitter, n: &TargetEntry) {
-    e.group_start(GroupKind::TargetEntry);
+    e.group_start();
 
     if let Some(ref expr) = n.expr {
-        emit_node(expr, e);
+        emit_node(e, expr);
     }
 
     if !n.resname.is_empty() {

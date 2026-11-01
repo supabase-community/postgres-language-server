@@ -3,7 +3,7 @@ use pgls_query::protobuf::{OnConflictAction, OnConflictExpr};
 use super::prelude::*;
 
 pub(super) fn emit_on_conflict_expr(e: &mut EventEmitter, n: &OnConflictExpr) {
-    e.group_start(GroupKind::OnConflictExpr);
+    e.group_start();
 
     e.token(TokenKind::ON_KW);
     e.space();

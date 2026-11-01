@@ -6,7 +6,7 @@ pub(super) fn emit_alter_database_refresh_coll_stmt(
     e: &mut EventEmitter,
     n: &AlterDatabaseRefreshCollStmt,
 ) {
-    e.group_start(GroupKind::AlterDatabaseRefreshCollStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

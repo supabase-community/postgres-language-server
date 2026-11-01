@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterSubscriptionStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_subscription_stmt(e: &mut EventEmitter, n: &AlterSubscriptionStmt) {
-    e.group_start(GroupKind::AlterSubscriptionStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateTransformStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransformStmt) {
-    e.group_start(GroupKind::CreateTransformStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();

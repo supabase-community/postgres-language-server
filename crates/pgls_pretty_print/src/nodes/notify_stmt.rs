@@ -3,7 +3,7 @@ use pgls_query::protobuf::NotifyStmt;
 use super::prelude::*;
 
 pub(super) fn emit_notify_stmt(e: &mut EventEmitter, n: &NotifyStmt) {
-    e.group_start(GroupKind::NotifyStmt);
+    e.group_start();
 
     e.token(TokenKind::NOTIFY_KW);
 
