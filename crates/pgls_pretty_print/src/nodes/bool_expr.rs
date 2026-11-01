@@ -76,7 +76,7 @@ fn emit_variadic_operands(
                 if let Some(location) = arg
                     .node
                     .as_ref()
-                    .and_then(crate::comments::first_node_location)
+                    .and_then(|node| crate::comments::first_node_location(node.to_ref()))
                 {
                     e.take_own_line_leading_comments_at(location);
                 }

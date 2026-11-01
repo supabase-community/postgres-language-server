@@ -38,6 +38,7 @@ fn emit_range_var_tokens(e: &mut EventEmitter, n: &RangeVar, only: Only) {
 
     // Emit alias if present
     if let Some(ref alias) = n.alias {
+        emit_comments_before_keyword_after(e, "as", n.location);
         e.line(LineType::SoftOrSpace);
         super::emit_alias(e, alias);
     }

@@ -265,3 +265,86 @@ fn a_comment_before_a_comma_stays_before_the_comma() {
         "SELECT\n\ta /* c */,\n\tb\nFROM\n\tt\n;"
     );
 }
+
+#[test]
+fn a_comment_before_a_clause_keyword_stays_before_the_keyword() {
+    for (sql, expected) in [
+        ("select a /* c */ from t", "select a /* c */ from t;"),
+        (
+            "select a from t /* c */ where x = 1",
+            "select a from t /* c */ where x = 1;",
+        ),
+        (
+            "select a from t\n-- c\nwhere x = 1",
+            "select\n  a\nfrom\n  t\n-- c\nwhere\n  x = 1;",
+        ),
+        (
+            "select a from t where x = 1 /* c */ group by a /* d */ having count(*) > 1 /* e */ \
+             order by a /* f */ limit 1 /* g */ offset 2",
+            "select\n  a\nfrom\n  t\nwhere\n  x = 1 /* c */\ngroup by a /* d */\nhaving\n  \
+             count(*) > 1 /* e */\norder by a /* f */\nlimit 1 /* g */\noffset 2;",
+        ),
+        (
+            "select a from t order by a /* c */ fetch first 3 rows only",
+            "select a from t order by a /* c */ limit 3;",
+        ),
+        (
+            "select 1 /* c */ union select 2",
+            "select 1 /* c */ union select 2;",
+        ),
+        (
+            "update t /* c */ set a = 1 /* d */ from u /* e */ where t.id = u.id /* f */ returning a",
+            "update t /* c */ set a = 1 /* d */ from u /* e */ where t.id = u.id /* f */ returning a;",
+        ),
+        (
+            "delete from t /* c */ using u /* d */ where t.id = u.id",
+            "delete from t /* c */ using u /* d */ where t.id = u.id;",
+        ),
+        (
+            "merge into t /* c */ using u on t.id = u.id when matched then do nothing",
+            "merge into t /* c */ using u on t.id = u.id when matched then do nothing;",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}
+
+#[test]
+fn a_comment_before_a_join_keyword_stays_before_the_keyword() {
+    for (sql, expected) in [
+        (
+            "select a from t /* c */ join u on t.id = u.id",
+            "select a from t /* c */ inner join u on t.id = u.id;",
+        ),
+        (
+            "select a from t /* c */ left join u on t.id = u.id",
+            "select a from t /* c */ left outer join u on t.id = u.id;",
+        ),
+        (
+            "select a from t join u /* c */ on t.id = u.id",
+            "select a from t inner join u /* c */ on t.id = u.id;",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}
+
+#[test]
+fn a_comment_before_as_stays_before_the_alias() {
+    for (sql, expected) in [
+        (
+            "select a /* c */ as x, b from t",
+            "select a /* c */ as x, b from t;",
+        ),
+        (
+            "select f(a) /* c */ as x, b from t",
+            "select f(a) /* c */ as x, b from t;",
+        ),
+        (
+            "select a from t /* c */ as x where true",
+            "select a from t /* c */ as x where true;",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}

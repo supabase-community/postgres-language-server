@@ -9,6 +9,14 @@ pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
         emit_node(e, val);
 
         if !n.name.is_empty() {
+            if let Some(location) = val
+                .node
+                .as_ref()
+                .and_then(|node| crate::comments::last_node_location(node.to_ref()))
+            {
+                emit_comments_before_keyword_after(e, "as", location);
+            }
+
             let case_alias_in_expanded_layout =
                 matches!(val.node.as_ref(), Some(NodeEnum::CaseExpr(_)))
                     && matches!(e.config().layout, crate::Layout::Expanded);

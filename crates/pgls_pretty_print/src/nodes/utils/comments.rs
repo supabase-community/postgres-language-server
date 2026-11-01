@@ -60,9 +60,25 @@ pub(crate) fn emit_comments_before_keyword(e: &mut EventEmitter, keyword: &str, 
     if let Some(location) = node
         .node
         .as_ref()
-        .and_then(crate::comments::first_node_location)
+        .and_then(|node| crate::comments::first_node_location(node.to_ref()))
     {
         e.take_comments_before_keyword_at(location, keyword);
+    }
+}
+
+/// Emits the comments written before `keyword` right after the node at `location`, the last node
+/// the parent writes before the keyword, as in `a /* c */ as x`. Call it right before the break
+/// that precedes the keyword.
+///
+/// For a keyword with no child of its own after it, such as `AS` before an alias, the comments are
+/// attached to whichever node follows in the source.
+pub(crate) fn emit_comments_before_keyword_after(
+    e: &mut EventEmitter,
+    keyword: &str,
+    location: i32,
+) {
+    if let Some(next) = e.next_node_location(location) {
+        e.take_comments_before_keyword_at(next, keyword);
     }
 }
 

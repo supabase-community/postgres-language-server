@@ -41,6 +41,8 @@ pub struct AttachedComments {
     /// statement terminator. The caller must not reformat a statement that has any: emitting it
     /// would drop them.
     pub unattached: Vec<Comment>,
+    /// The locations comments are attached to, in source order.
+    pub node_locations: Vec<i32>,
 }
 
 /// Which side of a node a comment ends up on, once the node is known.
@@ -143,6 +145,7 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
         }
     }
 
+    attached.node_locations = locations;
     attached
 }
 
@@ -293,7 +296,7 @@ fn collect_node_locations(ast: &NodeEnum) -> Vec<i32> {
         .collect()
 }
 
-pub(crate) fn first_node_location(ast: &NodeEnum) -> Option<i32> {
+pub(crate) fn first_node_location(ast: NodeRef<'_>) -> Option<i32> {
     ast.iter()
         .filter_map(|node| node_location(&node))
         .filter(|location| *location >= 0)
@@ -302,7 +305,7 @@ pub(crate) fn first_node_location(ast: &NodeEnum) -> Option<i32> {
 
 /// The location of the node of `ast` that starts last in the source. A trailing comment written
 /// after `ast` is attached there.
-pub(crate) fn last_node_location(ast: &NodeEnum) -> Option<i32> {
+pub(crate) fn last_node_location(ast: NodeRef<'_>) -> Option<i32> {
     ast.iter()
         .filter_map(|node| node_location(&node))
         .filter(|location| *location >= 0)
