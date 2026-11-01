@@ -498,9 +498,9 @@ pub(crate) fn enforce_exit_codes(
 }
 
 /// Prints diagnostics to stderr, for the commands that write their result to stdout.
-pub(crate) fn print_diagnostics(console: &mut dyn Console, diagnostics: Vec<Error>) {
+pub(crate) fn print_diagnostics(console: &mut dyn Console, diagnostics: &[Error]) {
     for diagnostic in diagnostics {
-        console.error(markup! {{PrintDiagnostic::simple(&diagnostic)}});
+        console.error(markup! {{PrintDiagnostic::simple(diagnostic)}});
     }
 }
 

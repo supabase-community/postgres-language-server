@@ -45,9 +45,10 @@ pub fn format(
     )?;
 
     if let Some(stdin_path) = args.targets.stdin_file_path.as_deref() {
-        print_diagnostics(session.console(), configuration_errors);
+        print_diagnostics(session.console(), &configuration_errors);
         let payload = read_stdin_payload(stdin_path, session.console(), "format")?;
-        return run_stdin(&mut session, &execution, payload);
+        let report = run_stdin(&mut session, &execution, payload)?;
+        return enforce_exit_codes(cli_options, &report, category!("format"));
     }
 
     let mut report: Report = run_files(&mut session, &execution, paths)?;
