@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
@@ -13,16 +16,27 @@ use super::{
     statement_identifier::StatementId,
 };
 
+/// An open document. Clones share the cache, which is keyed so that each clone only sees what
+/// was cached for its own content.
+#[derive(Clone)]
 pub struct Document {
     content: String,
+    /// Changes on every change of the content, see [`Document::generation`].
+    generation: u64,
     version: i32,
     /// The statements of `content`, kept to split the next version of it incrementally.
     split: SplitResult,
     diagnostics: Vec<SDiagnostic>,
-    cache: DocumentCache,
+    cache: Arc<DocumentCache>,
     suppressions: Suppressions,
     /// Where the last change of the content starts.
     edited_at: Option<TextSize>,
+}
+
+/// A generation that no document had before, see [`Document::generation`].
+fn next_generation() -> u64 {
+    static GENERATIONS: AtomicU64 = AtomicU64::new(0);
+    GENERATIONS.fetch_add(1, Ordering::Relaxed)
 }
 
 impl Document {
@@ -32,12 +46,14 @@ impl Document {
         let suppressions =
             Suppressions::from(content.as_str()).with_statements(split.ranges.clone());
 
+        let generation = next_generation();
         Document {
             split,
             diagnostics,
             content,
+            generation,
             version,
-            cache: DocumentCache::new(),
+            cache: Arc::new(DocumentCache::new(generation)),
             suppressions,
             edited_at: None,
         }
@@ -52,6 +68,7 @@ impl Document {
         let ranges = &split.ranges;
         self.content = content;
         self.version = version;
+        self.generation = next_generation();
 
         // The statements before the change keep what the walks cached for them. The splitter
         // looks ahead, so a statement before the change can still end elsewhere.
@@ -87,10 +104,20 @@ impl Document {
         let is_present =
             |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
         self.cache.retain_statements(is_present);
-        self.cache.content_changed(ContentChange {
-            unchanged,
-            first_changed_statement,
-        })
+        self.cache.content_changed(
+            ContentChange {
+                unchanged,
+                first_changed_statement,
+            },
+            self.generation,
+        )
+    }
+
+    /// Which version of the content this is. Unlike the client's version, it is unique across
+    /// all documents: it changes on every change, and a document that is closed and opened
+    /// again gets a new one.
+    pub fn generation(&self) -> u64 {
+        self.generation
     }
 
     /// Where the last change of the content starts.
@@ -1048,5 +1075,56 @@ $$ LANGUAGE plpgsql;";
                 format!("{:?}", split_diagnostics(&whole))
             );
         }
+    }
+
+    /// A clone of a document shares its cache, but a request on the previous version neither
+    /// reads nor writes what is cached for the new one.
+    #[test]
+    fn clones_only_see_the_cache_of_their_content() {
+        use crate::workspace::{
+            ProjectKey,
+            server::document_cache::{CacheKey, MigrationContext, ResolvedStatement},
+        };
+
+        let previous = Document::new("select 1;".into(), 1);
+        let mut current = previous.clone();
+        current
+            .update_content("select 2;".into(), 2)
+            .drop_in_background();
+        let key = CacheKey::new(0, ProjectKey::default(), None);
+        let context = MigrationContext::default();
+        let resolved = || -> Arc<[ResolvedStatement]> { Arc::from(Vec::new()) };
+
+        previous
+            .cache()
+            .with_walk(&key, previous.generation(), &context, |walk| {
+                walk.record_resolved(0.into(), resolved())
+            });
+        assert!(
+            current
+                .cache()
+                .with_walk(&key, current.generation(), &context, |walk| walk
+                    .resolved(0.into()))
+                .is_none()
+        );
+        current
+            .cache()
+            .with_walk(&key, current.generation(), &context, |walk| {
+                walk.record_resolved(0.into(), resolved())
+            });
+        assert!(
+            previous
+                .cache()
+                .with_walk(&key, previous.generation(), &context, |walk| walk
+                    .resolved(0.into()))
+                .is_none()
+        );
+        assert!(
+            current
+                .cache()
+                .with_walk(&key, current.generation(), &context, |walk| walk
+                    .resolved(0.into()))
+                .is_some()
+        );
     }
 }

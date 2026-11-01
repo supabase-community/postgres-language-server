@@ -7,11 +7,14 @@
 
 use std::sync::Arc;
 
-use pgls_analyser::{AnalysableStatement, AnalysedFileContext, MigrationSection, WalkParams};
+use pgls_analyser::{
+    AnalysableStatement, AnalysedFileContext, MigrationSection, STOP_CHECK_INTERVAL, WalkParams,
+};
 use pgls_catalog::{
     Catalog, CatalogBase, Origin, Snapshot,
     resolve::{ColumnSource, Reference, ResolveParams, resolve},
 };
+use pgls_fs::PgLSPath;
 use pgls_text_size::{TextRange, TextSize};
 
 use super::{
@@ -24,6 +27,8 @@ use crate::settings::Settings;
 
 /// What an editor request on a document walks with.
 pub(super) struct EditorRequest<'a> {
+    /// The path of the document, to check whether it changed while the request runs.
+    pub(super) path: &'a PgLSPath,
     /// The settings of the document.
     pub(super) settings: Option<&'a Settings>,
     /// The database snapshot the catalog starts from.
@@ -38,7 +43,8 @@ impl EditorRequest<'_> {
     /// Runs `f` on what the walks over `doc` left for this request, see
     /// [`super::document_cache::DocumentCache::with_walk`].
     fn with_walk<R>(&self, doc: &Document, f: impl FnOnce(&mut WalkCache) -> R) -> R {
-        doc.cache().with_walk(&self.key, &self.context, f)
+        doc.cache()
+            .with_walk(&self.key, doc.generation(), &self.context, f)
     }
 }
 
@@ -50,6 +56,7 @@ impl WorkspaceServer {
     pub(super) fn editor_request<'a>(
         &self,
         project_key: crate::workspace::ProjectKey,
+        path: &'a PgLSPath,
         settings: Option<&'a Settings>,
         snapshot: Arc<Snapshot>,
         doc: &Document,
@@ -58,6 +65,7 @@ impl WorkspaceServer {
             .map(|settings| document_sections(settings, doc))
             .unwrap_or_default();
         EditorRequest {
+            path,
             settings,
             key: self.cache_key(project_key, Some(&snapshot)),
             snapshot,
@@ -82,7 +90,8 @@ impl WorkspaceServer {
     /// records checkpoints there and at the statement where the last edit starts, so that the
     /// next keystroke there resumes close to it. `visit` gets each statement with the file
     /// context as it is before it. Returns the catalog as a statement at `end` sees it, and the
-    /// statements that were walked.
+    /// statements that were walked. `None` if the walk stopped because the document changed or
+    /// the request was cancelled; it then records nothing.
     ///
     /// Cost: O(statements between the checkpoint and `end`), plus a copy of the catalog's maps
     /// for each checkpoint recorded.
@@ -93,7 +102,8 @@ impl WorkspaceServer {
         start: TextSize,
         end: TextSize,
         visit: impl FnMut(&AnalysableStatement, &AnalysedFileContext),
-    ) -> (Catalog, Vec<AnalysableStatement>) {
+    ) -> Option<(Catalog, Vec<AnalysableStatement>)> {
+        let should_stop = self.should_stop(request.path, doc);
         let search_path = request
             .settings
             .map(|settings| settings.typecheck.search_path.clone())
@@ -118,7 +128,13 @@ impl WorkspaceServer {
         let mut stmts = Vec::new();
         let mut unparsable = Vec::new();
         let walk_start = from.as_ref().map_or(TextSize::from(0), |from| from.at());
-        for (stmt, _, skipped) in doc.iter_from(AnalyserDiagnosticsMapper, walk_start) {
+        for (i, (stmt, _, skipped)) in doc
+            .iter_from(AnalyserDiagnosticsMapper, walk_start)
+            .enumerate()
+        {
+            if (i + 1).is_multiple_of(STOP_CHECK_INTERVAL) && should_stop() {
+                return None;
+            }
             let Some(stmt_start) = stmt
                 .as_ref()
                 .map(|stmt| stmt.range.start())
@@ -152,15 +168,19 @@ impl WorkspaceServer {
                 best_effort: true,
                 from,
                 checkpoints: &checkpoints,
+                should_stop: &should_stop,
             },
             visit,
         );
+        if walk.stopped {
+            return None;
+        }
         request.with_walk(doc, |cache| {
             for state in walk.checkpoints {
                 cache.record_checkpoint(state);
             }
         });
-        (walk.catalog, stmts)
+        Some((walk.catalog, stmts))
     }
 
     /// The statements of the top-level statements that intersect `range` and start before its
@@ -199,7 +219,7 @@ impl WorkspaceServer {
                 .checked_sub(1)
         };
         let mut references = Vec::new();
-        let (_, stmts) = self.walk(request, doc, missing_start, end, |stmt, file_context| {
+        let walked = self.walk(request, doc, missing_start, end, |stmt, file_context| {
             let Some(sql) = stmt.sql.as_deref() else {
                 return;
             };
@@ -222,6 +242,10 @@ impl WorkspaceServer {
             ));
         });
 
+        // An outdated or cancelled request has no result.
+        let Some((_, stmts)) = walked else {
+            return Vec::new();
+        };
         // The statements were visited in order, so the references are in the same order.
         let mut resolved: Vec<Vec<ResolvedStatement>> = tops.iter().map(|_| Vec::new()).collect();
         let mut references = references.into_iter().peekable();
@@ -270,7 +294,10 @@ impl WorkspaceServer {
         if let Some(snapshot) = request.with_walk(doc, |walk| walk.snapshot(top, in_body)) {
             return snapshot;
         }
-        let (catalog, _) = self.walk(request, doc, top, stmt.range.start(), |_, _| {});
+        // An outdated or cancelled request gets the database snapshot. Its result is discarded.
+        let Some((catalog, _)) = self.walk(request, doc, top, stmt.range.start(), |_, _| {}) else {
+            return Arc::clone(&request.snapshot);
+        };
         let snapshot = catalog
             .snapshot()
             .unwrap_or_else(|| Arc::clone(&request.snapshot));

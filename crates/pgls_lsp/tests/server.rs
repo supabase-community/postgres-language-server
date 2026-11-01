@@ -77,7 +77,9 @@ struct Server {
 impl Server {
     fn new(service: LspService<LSPServer>) -> Self {
         Self {
-            service: Timeout::new(service, Duration::from_secs(1)),
+            // The handlers run their work on the blocking thread pool, so the timeout measures
+            // wall time, including diagnostics against the database while the other tests run.
+            service: Timeout::new(service, Duration::from_secs(30)),
         }
     }
 
