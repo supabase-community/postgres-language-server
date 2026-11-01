@@ -24,14 +24,11 @@ pub struct ConfigureProjectParams<'a> {
     pub vcs: VcsIntegration,
 }
 
-/// Whether the VCS ignore file of a project applies, and where it is looked up from, if the
-/// configuration enables the VCS integration.
+/// Whether the VCS ignore file of a project applies if the configuration enables the VCS
+/// integration. It is looked up from the folder of the configuration file.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum VcsIntegration {
-    /// From the folder of the configuration file.
     Enabled,
-    /// From the working directory of the process.
-    FromWorkingDirectory,
     /// Never, whatever the configuration says.
     Disabled,
 }
@@ -80,7 +77,8 @@ pub enum ConfigurationNotice {
 }
 
 /// Registers a project and applies its configuration file, with `layers` laid over it, to its
-/// root settings. The configuration files below its folder are applied separately by
+/// root settings, which it replaces. Relative paths in it are relative to its folder. The
+/// configuration files below the project folder are applied separately by
 /// [super::apply_nested_configurations].
 ///
 /// Fails only if the project can't be registered. A configuration that can't be loaded or
@@ -119,15 +117,22 @@ pub fn configure_project(
                 .cloned(),
         );
         notices.extend(file_notices(&loaded));
-        apply_root_configuration(
-            workspace,
-            fs,
-            project_key,
-            loaded,
-            layers,
-            vcs,
-            &mut notices,
-        )
+        // Relative paths are relative to the folder of the configuration file, or the project's
+        // for the user configuration and the defaults. A configuration file chosen by the user
+        // can have a relative path, which is relative to the working directory.
+        let directory = match (loaded.directory_path.clone(), fs.working_directory()) {
+            (Some(directory), Some(working_directory)) if directory.is_relative() => {
+                Some(working_directory.join(directory))
+            }
+            (directory, _) => directory.or_else(|| folder.clone()),
+        };
+        let configuration = layers.apply(loaded.configuration);
+        // An invalid connection string only disables the database features, so the user would
+        // not notice it otherwise.
+        if let Some(error) = configuration.db.as_ref().and_then(connection_string_error) {
+            notices.push(ConfigurationNotice::InvalidConnectionString(error));
+        }
+        apply_root_configuration(workspace, fs, project_key, configuration, directory, vcs)
     });
     Ok(ConfiguredProject {
         project_key,
@@ -162,45 +167,35 @@ fn file_notices(loaded: &LoadedConfiguration) -> Vec<ConfigurationNotice> {
     notices
 }
 
-/// Lays `layers` over a loaded configuration file and applies it to the root settings of a
-/// project.
+/// Applies a configuration to the root settings of a project, which replaces them. Its relative
+/// paths are relative to `directory`, and so is the VCS ignore file.
 fn apply_root_configuration(
     workspace: &dyn Workspace,
     fs: &DynRef<'_, dyn FileSystem>,
     project_key: ProjectKey,
-    loaded: LoadedConfiguration,
-    layers: &ConfigurationLayers,
+    configuration: PartialConfiguration,
+    directory: Option<PathBuf>,
     vcs: VcsIntegration,
-    notices: &mut Vec<ConfigurationNotice>,
 ) -> Result<AppliedConfiguration, WorkspaceError> {
-    let configuration = layers.apply(loaded.configuration);
     let (vcs_base_path, gitignore_matches) = match vcs {
         VcsIntegration::Enabled => {
-            configuration.retrieve_gitignore_matches(fs, loaded.directory_path.as_deref())?
-        }
-        VcsIntegration::FromWorkingDirectory => {
-            configuration.retrieve_gitignore_matches(fs, fs.working_directory().as_deref())?
+            configuration.retrieve_gitignore_matches(fs, directory.as_deref())?
         }
         VcsIntegration::Disabled => (None, Vec::new()),
     };
 
-    // An invalid connection string only disables the database features, so the user would not
-    // notice it otherwise.
-    if let Some(error) = configuration.db.as_ref().and_then(connection_string_error) {
-        notices.push(ConfigurationNotice::InvalidConnectionString(error));
-    }
-
-    let workspace_directory = fs.working_directory();
     workspace.update_settings(UpdateSettingsParams {
         project_key,
-        workspace_directory: workspace_directory.clone(),
+        workspace_directory: directory.clone(),
         configuration: configuration.clone(),
         vcs_base_path: vcs_base_path.clone(),
         gitignore_matches: gitignore_matches.clone(),
+        // A section removed from the file goes back to its defaults.
+        replace: true,
     })?;
     let files = FilesSettings::from_configuration(
         &configuration,
-        workspace_directory,
+        directory,
         vcs_base_path,
         &gitignore_matches,
     )?;

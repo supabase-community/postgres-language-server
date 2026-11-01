@@ -1,5 +1,4 @@
 use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
-use crate::configuration::ClientOverrides;
 use crate::diagnostics::LspError;
 use crate::documents::Document;
 use crate::utils;
@@ -108,7 +107,7 @@ pub(crate) struct Session {
     environment: Option<PartialDatabaseConfiguration>,
 
     /// Layer set through workspace/didChangeConfiguration and the custom override request.
-    client_overrides: RwLock<ClientOverrides>,
+    client_overrides: RwLock<Option<PartialConfiguration>>,
 
     /// The workspace folders, which the client can change after the initialization. `None` if the
     /// client has none and uses the root URI.
@@ -264,7 +263,7 @@ impl Session {
             notified_deprecated_config: AtomicBool::new(false),
             notified_deprecated_settings: AtomicBool::new(false),
             environment,
-            client_overrides: RwLock::new(ClientOverrides::default()),
+            client_overrides: RwLock::default(),
             workspace_folders: RwLock::default(),
             projects: RwLock::default(),
             folderless_project: OnceLock::new(),
@@ -950,12 +949,10 @@ impl Session {
     /// The layers of the session that are laid over each configuration file: the environment and
     /// the client overrides.
     fn layers(&self) -> ConfigurationLayers {
-        let overrides = self.client_overrides.read();
         ConfigurationLayers {
             environment: self.environment.clone(),
-            overrides: overrides.configuration().cloned(),
+            overrides: self.client_overrides.read().clone(),
             override_mode: OverrideMode::Replace,
-            default_sections: overrides.sections(),
         }
     }
 
@@ -1100,7 +1097,7 @@ impl Session {
         let _transition = self.configuration_transition.lock().await;
         #[cfg(test)]
         let _running = self.enter_transition();
-        self.client_overrides.write().set(overrides);
+        *self.client_overrides.write() = overrides;
         // Everything from here on is synchronous work behind `.await`s that complete immediately, so
         // a transition only ever suspends when something makes the server wait. Yielding here in
         // tests turns that into a reliable suspension point, which is what lets the test suite
@@ -1115,7 +1112,7 @@ impl Session {
     /// Whether a client override layer is currently set.
     #[cfg(test)]
     pub(crate) fn has_client_overrides(&self) -> bool {
-        self.client_overrides.read().configuration().is_some()
+        self.client_overrides.read().is_some()
     }
 
     /// Reloads the configuration from disk, re-applying the sticky layers.
