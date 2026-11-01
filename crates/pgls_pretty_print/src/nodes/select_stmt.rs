@@ -219,6 +219,11 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
 
         // Emit INTO clause if present (SELECT ... INTO table_name)
         if let Some(ref into_clause) = n.into_clause {
+            if let Some(location) =
+                crate::comments::first_node_location(pgls_query::NodeRef::IntoClause(into_clause))
+            {
+                e.take_comments_before_keyword_at(location, "into");
+            }
             emit_layout_break(e);
             super::emit_into_clause(e, into_clause);
         }

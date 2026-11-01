@@ -82,6 +82,18 @@ pub(crate) fn emit_comments_before_keyword_after(
     }
 }
 
+/// Emits the comments written before a clause that the parent writes with a typed emitter and
+/// that starts with a keyword at its own location, such as `ON CONFLICT` or `PARTITION BY`. Call
+/// it right before the break that precedes the clause.
+///
+/// The comments lead the clause's node, but a typed emitter doesn't take them, and emitted after
+/// the break they would no longer end the line they were written on.
+pub(crate) fn emit_comments_before_clause(e: &mut EventEmitter, location: i32) {
+    if location >= 0 {
+        e.take_leading_comments_as_trailing_at(location);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
