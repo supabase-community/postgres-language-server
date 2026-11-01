@@ -136,6 +136,8 @@ fn function_references_in(
                 Reference::EnumLiteral { type_info, .. } => {
                     format!("enum literal {}.{}", type_info.schema, type_info.name)
                 }
+                Reference::Cte { name, .. } => format!("cte {name}"),
+                Reference::Alias { name, .. } => format!("alias {name}"),
                 Reference::Star { columns, .. } => {
                     let columns = columns
                         .iter()
@@ -306,6 +308,7 @@ async fn column_references(test_db: PgPool) {
         [
             "public.users => relation public.users",
             "posts => relation public.posts",
+            "p => alias p",
             "p.user_id => column public.posts.user_id: bigint (int8)",
             "users.id => column public.users.id: bigint (int8)",
             "title => column public.posts.title: text (text)",
@@ -321,6 +324,7 @@ async fn column_references(test_db: PgPool) {
         ),
         [
             "users => relation public.users",
+            "u => alias u",
             "uid => column public.users.id: bigint (int8)",
             "u.name => column public.users.name: text (text)",
         ]
@@ -365,9 +369,12 @@ async fn cte_and_subquery_columns(test_db: PgPool) {
             "with c as (select id, name as n from users) select n, x.id from c x"
         ),
         [
+            "c => cte c",
             "users => relation public.users",
             "id => column public.users.id: bigint (int8)",
             "name => column public.users.name: text (text)",
+            "c => cte c",
+            "x => alias x",
             "n => column cte c.n: text (text)",
             "x.id => column cte c.id: bigint (int8)",
         ]
@@ -405,9 +412,40 @@ async fn relation_references(test_db: PgPool) {
         references(&catalog, &search_path, "delete from users u where u.id = 1"),
         [
             "users => relation public.users",
+            "u => alias u",
             "u.id => column public.users.id: bigint (int8)",
         ]
     );
+}
+
+#[pgls_test_utils::db_test]
+async fn cte_and_alias_references(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let names = |sql| -> Vec<String> {
+        references(&catalog, &search_path, sql)
+            .into_iter()
+            .filter(|reference| reference.contains("=> cte ") || reference.contains("=> alias "))
+            .collect()
+    };
+    assert_eq!(
+        names("with c as (select 1 as x) select x from c as cc, users \"U\""),
+        [
+            "c => cte c",
+            "c => cte c",
+            "cc => alias cc",
+            "\"U\" => alias U",
+        ]
+    );
+    assert_eq!(
+        names("insert into users as u values (1, 'x'); "),
+        ["u => alias u"]
+    );
+    assert_eq!(
+        names("delete from users /* gone */ u where u.id = 1"),
+        ["u => alias u"]
+    );
+    // Without collecting references, nothing is recorded.
+    assert_eq!(names("select 1 from users"), [""; 0]);
 }
 
 /// The `*` references of `sql`.
@@ -591,6 +629,61 @@ async fn enum_literal_references(test_db: PgPool) {
             "text => type pg_catalog.text",
         ]
     );
+}
+
+#[pgls_test_utils::db_test]
+async fn enum_literals_coerced_to_a_common_or_resolved_type(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let enum_literals = |sql: &str| -> Vec<String> {
+        references(&catalog, &search_path, sql)
+            .into_iter()
+            .filter(|reference| reference.contains("enum literal"))
+            .collect()
+    };
+    // CASE and COALESCE coerce their values to the common type.
+    assert_eq!(
+        enum_literals(
+            "select case when id > 1 then 'happy' else current end, \
+             case current when 'sad' then 1 end, coalesce(current, 'happy', 'sad') from people"
+        ),
+        [
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+        ]
+    );
+    // An unknown array literal becomes an array of the enum.
+    assert_eq!(
+        enum_literals("select id from people where current = any('{happy,sad}')"),
+        ["'{happy,sad}' => enum literal public.mood"]
+    );
+    // Polymorphic parameters take the enum type of the other arguments.
+    assert_eq!(
+        enum_literals("select array_position(array[current], 'sad') from people"),
+        ["'sad' => enum literal public.mood"]
+    );
+    // The source of an INSERT keeps its unknown literals until they are assigned.
+    assert_eq!(
+        enum_literals("insert into people (id, current) select 1, 'happy'"),
+        ["'happy' => enum literal public.mood"]
+    );
+    // Without a common enum type, or where Postgres makes them text, they are no enum literals.
+    assert_eq!(
+        enum_literals(
+            "select case when id > 1 then 'happy' else 'sad' end, coalesce('happy', 'sad') \
+             from people"
+        ),
+        [""; 0]
+    );
+    for sql in [
+        "insert into people (current) select distinct 'happy'",
+        "insert into people (current) select 'happy' order by 1",
+        "insert into people (current) select 'happy' union select 'sad'",
+        "insert into people select *, 'happy' from people",
+    ] {
+        assert_eq!(enum_literals(sql), [""; 0], "{sql}");
+    }
 }
 
 #[pgls_test_utils::db_test]
