@@ -147,6 +147,13 @@ pub struct NestedSettingsError {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
+pub struct FindProjectParams {
+    pub path: PgLSPath,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
 pub struct UnregisterProjectFolderParams {
     pub path: PgLSPath,
 }
@@ -216,6 +223,11 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         &self,
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError>;
+
+    /// The project that the file at `path` belongs to: the one of the deepest folder that contains
+    /// it. A project without a folder contains every path. `None` if no project contains it.
+    fn find_project(&self, params: FindProjectParams)
+    -> Result<Option<ProjectKey>, WorkspaceError>;
 
     /// Unregister a project folder. Its settings, including the nested ones, are deleted.
     fn unregister_project_folder(
