@@ -66,6 +66,7 @@ use crate::{
         on_hover::{OnHoverParams, OnHoverResult},
         semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
+    migrations::{self, MigrationTool},
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
     workspace::{AnalyserDiagnosticsMapper, WithCSTandASTMapper},
 };
@@ -88,7 +89,6 @@ mod connection_key;
 mod connection_manager;
 pub(crate) mod document;
 mod expand_star;
-mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
 mod pgpass;
@@ -221,6 +221,45 @@ impl WorkspaceServer {
         settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
     }
 
+    /// The migration tool of the settings that apply to the file.
+    fn migration_tool(
+        &self,
+        project_key: ProjectKey,
+        path: &Path,
+    ) -> Option<&'static dyn MigrationTool> {
+        self.workspaces()
+            .settings_for(project_key, path)
+            .and_then(|settings| settings.migrations.as_ref())
+            .and_then(|migrations| migrations::migration_tool(migrations.section_markers))
+    }
+
+    /// Applies the changed settings of a project to its open documents.
+    fn apply_settings_to_documents(&self, project_key: ProjectKey) {
+        // Neither the documents nor the settings are locked while taking the other lock, since
+        // other methods take them in either order.
+        let paths: Vec<PgLSPath> = self
+            .documents
+            .read()
+            .unwrap()
+            .iter()
+            .filter(|(_, doc)| doc.project_key() == project_key)
+            .map(|(path, _)| path.clone())
+            .collect();
+        let tools: Vec<_> = paths
+            .into_iter()
+            .map(|path| {
+                let tool = self.migration_tool(project_key, &path);
+                (path, tool)
+            })
+            .collect();
+        let mut documents = self.documents.write().unwrap();
+        for (path, tool) in tools {
+            if let Some(doc) = documents.get_mut(&path) {
+                doc.set_migration_tool(tool);
+            }
+        }
+    }
+
     /// Whether the file is a migration. Migration-only rules don't run on other files.
     fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
         match settings
@@ -228,7 +267,7 @@ impl WorkspaceServer {
             .as_ref()
             .and_then(|migrations| migrations.path.as_ref())
         {
-            Some(migrations_dir) if migration::is_in_migrations_dir(path, migrations_dir) => {
+            Some(migrations_dir) if migrations::is_in_migrations_dir(path, migrations_dir) => {
                 FileKind::Migration
             }
             Some(_) => FileKind::Other,
@@ -299,7 +338,7 @@ impl WorkspaceServer {
          * Each section is analysed as a migration of its own, and the down sections are only
          * checked with `lintDown`. Syntax errors are reported everywhere.
          */
-        let sections = document_sections(settings, doc);
+        let sections = doc.migration_sections();
         let skipped_sections: Vec<TextRange> = sections
             .iter()
             .filter(|section| {
@@ -332,7 +371,7 @@ impl WorkspaceServer {
             catalog_base,
             search_path,
             file_kind: self.file_kind(settings, path.as_path()),
-            sections,
+            sections: sections.to_vec(),
             typecheck,
         });
 
@@ -472,14 +511,10 @@ impl WorkspaceServer {
         end: TextSize,
         mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
     ) -> Catalog {
-        let (search_path, sections) = settings
-            .map(|settings| {
-                (
-                    settings.typecheck.search_path.clone(),
-                    document_sections(settings, doc),
-                )
-            })
+        let search_path = settings
+            .map(|settings| settings.typecheck.search_path.clone())
             .unwrap_or_default();
+        let sections = doc.migration_sections();
         let search_path = snapshot.expand_search_path(&search_path);
         let new_session = |section: Option<&MigrationSection>| {
             Session::new(search_path.clone()).with_transaction_mode(
@@ -897,7 +932,7 @@ fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
         .and_then(|migration_settings| {
             let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let migration = migration::get_migration(path, migrations_dir)?;
+            let migration = migrations::get_migration(path, migrations_dir)?;
 
             Some(&migration.sequence_number <= ignore_before)
         })
@@ -944,6 +979,8 @@ impl Workspace for WorkspaceServer {
                 params.vcs_base_path,
                 params.gitignore_matches.as_slice(),
             )?;
+        drop(workspace);
+        self.apply_settings_to_documents(params.project_key);
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
 
@@ -1014,6 +1051,7 @@ impl Workspace for WorkspaceServer {
         self.workspaces_mut()
             .as_mut()
             .set_nested_settings(params.project_key, nested);
+        self.apply_settings_to_documents(params.project_key);
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
         Ok(result)
@@ -1023,10 +1061,16 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
+        let migration_tool = self.migration_tool(params.project_key, &params.path);
         let mut documents = self.documents.write().unwrap();
-        documents
-            .entry(params.path.clone())
-            .or_insert_with(|| Document::new(params.content, params.version));
+        documents.entry(params.path.clone()).or_insert_with(|| {
+            Document::open(
+                params.project_key,
+                migration_tool,
+                params.content,
+                params.version,
+            )
+        });
 
         Ok(())
     }
@@ -1049,6 +1093,9 @@ impl Workspace for WorkspaceServer {
     ), err)]
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
+        // For a new document. An open document keeps its tool until the settings change, see
+        // `apply_settings_to_documents`. Read before locking the documents, like there.
+        let migration_tool = self.migration_tool(params.project_key, &params.path);
         let mut documents = self.documents.write().unwrap();
 
         match documents.entry(params.path.clone()) {
@@ -1058,7 +1105,12 @@ impl Workspace for WorkspaceServer {
                     .update_content(params.content, params.version);
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
-                entry.insert(Document::new(params.content, params.version));
+                entry.insert(Document::open(
+                    params.project_key,
+                    migration_tool,
+                    params.content,
+                    params.version,
+                ));
             }
         }
 
@@ -1183,7 +1235,7 @@ impl Workspace for WorkspaceServer {
         let mut skipped_suggested_fixes = 0;
         let mut converged = false;
         for _ in 0..MAX_PASSES {
-            let doc = Document::new(code.clone(), 0);
+            let doc = Document::open(doc.project_key(), doc.migration_tool(), code.clone(), 0);
             let diagnostics =
                 self.lint_diagnostics(settings, &params.path, &doc, &params.only, &params.skip);
 
@@ -1366,16 +1418,18 @@ impl Workspace for WorkspaceServer {
         let mut diagnostics: Vec<SDiagnostic> = doc.document_diagnostics().to_vec();
         let path = params.path.as_path().display().to_string();
 
-        if let Some(migrations) = &settings.migrations {
+        if let Some(migration_tool) = doc.migration_tool() {
             diagnostics.extend(
-                migration::section_marker_diagnostics(
-                    doc.get_document_content(),
-                    migrations.section_markers,
-                    &document_sections(settings, doc),
-                    doc.statement_ranges(),
-                )
-                .into_iter()
-                .map(|diagnostic| SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))),
+                migration_tool
+                    .marker_diagnostics(
+                        doc.get_document_content(),
+                        doc.migration_sections(),
+                        doc.statement_ranges(),
+                    )
+                    .into_iter()
+                    .map(|diagnostic| {
+                        SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))
+                    }),
             );
         }
 
@@ -2146,16 +2200,6 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             Reference::Parameter { .. } => false,
             // The columns of a `*` can come from objects that the file changed.
             Reference::Star { .. } => false,
-        })
-}
-
-/// The migration sections of `doc`, like the up and down migrations of dbmate and goose.
-fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSection> {
-    settings
-        .migrations
-        .as_ref()
-        .map_or_else(Vec::new, |migrations| {
-            migration::migration_sections(doc.get_document_content(), migrations.section_markers)
         })
 }
 
