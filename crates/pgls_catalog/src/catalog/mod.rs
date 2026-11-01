@@ -31,15 +31,23 @@ pub use base::CatalogBase;
 /// `(schema, name)` of a catalog object.
 type Key = (String, String);
 
-/// The state of an object that the file changed.
+/// The state of an object that the file changed. Objects are shared between clones of the
+/// catalog, like the checkpoints of the editor walk and savepoints, and copied when one of them
+/// changes.
 #[derive(Debug, Clone)]
 enum Entry<T> {
     /// Created or altered by the file.
-    Defined(T),
+    Defined(Arc<T>),
     /// Dropped (or renamed away) by the file.
     Dropped,
     /// Changed by the file in a way the catalog can't follow.
     Unknown,
+}
+
+impl<T> Entry<T> {
+    fn defined(value: T) -> Self {
+        Self::Defined(Arc::new(value))
+    }
 }
 
 /// The catalog as seen by a statement: the database snapshot plus the changes made by the
@@ -158,7 +166,7 @@ impl Catalog {
 
     fn entry_lookup<T: Clone>(&self, entry: &Entry<T>) -> Lookup<T> {
         match entry {
-            Entry::Defined(value) => Lookup::Found(value.clone()),
+            Entry::Defined(value) => Lookup::Found(T::clone(value)),
             Entry::Dropped => self.not_found(),
             Entry::Unknown => Lookup::Unknown,
         }
@@ -392,7 +400,7 @@ impl CatalogView for Catalog {
                 .values()
                 .find_map(|entry| match entry {
                     Entry::Defined(info) if info.id == Some(TypeId::File(*id)) => {
-                        Some(info.clone())
+                        Some(TypeInfo::clone(info))
                     }
                     _ => None,
                 })

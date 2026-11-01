@@ -15,10 +15,53 @@ use crate::workspace::ProjectKey;
 
 mod parse;
 mod tree;
+mod walk;
 
 pub(crate) use parse::ParseResult;
 use parse::PgQueryStore;
 use tree::TreeSitterStore;
+pub(crate) use walk::{ContentChange, MigrationContext, ResolvedStatement, WalkCache};
+
+/// What an edit invalidated in a document's cache. On a long file, the analysis, the copies of
+/// the catalog in the walk checkpoints and the snapshot hold every object the file defines, and
+/// dropping them takes tens of milliseconds, so [`StaleEntries::drop_in_background`] drops them
+/// off the path of the edit.
+#[must_use]
+pub(crate) struct StaleEntries {
+    analysis: Option<Arc<DocumentAnalysis>>,
+    walk: WalkCache,
+}
+
+/// The stack of the thread that drops [`StaleEntries`]. Dropping a statement's tree is recursive
+/// like parsing it, so this is the stack that the CLI gives its workers for parsing.
+#[cfg(not(target_family = "wasm"))]
+const DROP_THREAD_STACK_BYTES: usize = 8 * 1024 * 1024;
+
+impl StaleEntries {
+    /// Drops the entries on a thread of its own, so that the edit doesn't wait for it. If the
+    /// thread can't be started, and in WebAssembly, which has no threads, they are dropped right
+    /// away.
+    pub(crate) fn drop_in_background(self) {
+        if self.analysis.is_none() && self.walk.is_empty() {
+            return;
+        }
+        #[cfg(target_family = "wasm")]
+        drop(self);
+        #[cfg(not(target_family = "wasm"))]
+        self.drop_on_thread();
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    fn drop_on_thread(self) {
+        let spawned = std::thread::Builder::new()
+            .name("pgls-cache-drop".into())
+            .stack_size(DROP_THREAD_STACK_BYTES)
+            .spawn(move || drop(self));
+        if let Err(error) = spawned {
+            tracing::debug!("Dropped the stale cache entries of an edit in place: {error}");
+        }
+    }
+}
 
 /// What the caches of a document depend on besides its text.
 #[derive(Clone)]
@@ -71,6 +114,7 @@ pub(crate) struct DocumentCache {
 struct KeyedCaches {
     key: Option<CacheKey>,
     analysis: Option<Arc<DocumentAnalysis>>,
+    walk: WalkCache,
 }
 
 impl DocumentCache {
@@ -104,6 +148,12 @@ impl DocumentCache {
         self.keyed.lock().unwrap().analysis.clone()
     }
 
+    /// The number of resolved statements and walk checkpoints, whatever their key.
+    #[cfg(test)]
+    pub(crate) fn walk_size(&self) -> (usize, usize) {
+        self.keyed.lock().unwrap().walk.len()
+    }
+
     /// The caches for `key`, emptied first if they were for another key.
     fn keyed(&self, key: &CacheKey) -> std::sync::MutexGuard<'_, KeyedCaches> {
         let mut keyed = self.keyed.lock().unwrap();
@@ -116,10 +166,35 @@ impl DocumentCache {
         keyed
     }
 
-    /// Drops what the new content of the document invalidates, see [`Self::retain_statements`]
-    /// for the statements.
-    pub(crate) fn content_changed(&mut self) {
-        self.keyed.get_mut().unwrap().analysis = None;
+    /// Runs `f` on what the walks over the document left for `key`, without what was computed
+    /// in another migration `context`, see [`WalkCache::set_context`]. It is not held while
+    /// walking, so that requests on the same document don't wait for each other.
+    pub(crate) fn with_walk<R>(
+        &self,
+        key: &CacheKey,
+        context: &MigrationContext,
+        f: impl FnOnce(&mut WalkCache) -> R,
+    ) -> R {
+        let mut keyed = self.keyed(key);
+        let stale = keyed.walk.set_context(context);
+        let result = f(&mut keyed.walk);
+        drop(keyed);
+        StaleEntries {
+            analysis: None,
+            walk: stale,
+        }
+        .drop_in_background();
+        result
+    }
+
+    /// Takes out what `change` invalidates, see [`WalkCache::content_changed`], and the
+    /// analysis. [`Self::retain_statements`] drops what was cached for the statements.
+    pub(crate) fn content_changed(&mut self, change: ContentChange) -> StaleEntries {
+        let keyed = self.keyed.get_mut().unwrap();
+        StaleEntries {
+            analysis: keyed.analysis.take(),
+            walk: keyed.walk.content_changed(change),
+        }
     }
 
     /// The tree of the statement `id`, or why it doesn't parse.

@@ -2,7 +2,7 @@
 //! file and run each of them on its own.
 
 use pgls_catalog::TransactionMode;
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
@@ -32,5 +32,22 @@ impl MigrationSection {
         } else {
             TransactionMode::Autocommit
         }
+    }
+
+    /// The queries that run in an implicit transaction block: outside a transaction, those with
+    /// more than one statement. `statement_ranges` are the ranges of the top-level statements of
+    /// the file, parsed or not, in order.
+    ///
+    /// Cost: O(log statements) per query.
+    pub fn implicit_blocks<'a>(
+        &'a self,
+        statement_ranges: &'a [TextRange],
+    ) -> impl Iterator<Item = TextRange> + 'a {
+        let starting_before = |offset: TextSize| {
+            statement_ranges.partition_point(|statement| statement.start() < offset)
+        };
+        self.queries.iter().copied().filter(move |query| {
+            !self.transaction && starting_before(query.end()) - starting_before(query.start()) > 1
+        })
     }
 }

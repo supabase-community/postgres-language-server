@@ -44,7 +44,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
             }
             type_info.origin = Origin::File;
             let key = key(&type_info.schema, &type_info.name);
-            c.types.insert(key, Entry::Defined(type_info));
+            c.types.insert(key, Entry::defined(type_info));
         }
         return;
     }

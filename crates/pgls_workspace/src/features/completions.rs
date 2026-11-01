@@ -4,7 +4,7 @@ use pgls_completions::CompletionItem;
 use pgls_fs::PgLSPath;
 use pgls_text_size::TextSize;
 
-use crate::workspace::{Document, DocumentStatement, GetCompletionsFilter, WithCSTMapper};
+use crate::workspace::{DefaultMapper, Document, DocumentStatement, WithCSTMapper};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -48,18 +48,14 @@ pub(crate) fn get_statement_for_completions(
     doc: &Document,
     position: TextSize,
 ) -> Option<(DocumentStatement, Arc<tree_sitter::Tree>)> {
-    let count = doc.count();
+    // Only whether the document has no statement, one, or more matters.
+    let count = doc.iter(DefaultMapper).take(2).count();
     // no arms no cookies
     if count == 0 {
         return None;
     }
 
-    let mut eligible_statements = doc.iter_with_filter(
-        WithCSTMapper,
-        GetCompletionsFilter {
-            cursor_position: position,
-        },
-    );
+    let mut eligible_statements = doc.iter_for_completions(WithCSTMapper, position);
 
     if count == 1 {
         eligible_statements.next()
@@ -93,7 +89,7 @@ pub(crate) fn get_statement_for_completions(
 mod tests {
     use pgls_text_size::TextSize;
 
-    use crate::workspace::Document;
+    use crate::workspace::{DefaultMapper, Document};
 
     use super::get_statement_for_completions;
 
@@ -151,7 +147,7 @@ mod tests {
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
         // make sure these are parsed as two
-        assert_eq!(doc.count(), 2);
+        assert_eq!(doc.iter(DefaultMapper).count(), 2);
 
         assert!(get_statement_for_completions(&doc, position).is_none());
     }
@@ -226,5 +222,41 @@ mod tests {
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
         assert!(get_statement_for_completions(&doc, position).is_none());
+    }
+
+    /// Looking only at the statements around the cursor finds the same statement as filtering
+    /// all statements of the document, at every position.
+    #[test]
+    fn finds_the_statement_like_a_filter_over_all_statements() {
+        use crate::workspace::{GetCompletionsFilter, WithCSTMapper};
+
+        let sql = "select 1;\nselect * from\nselect 2 select 3;\n\ncreate function f() returns int language sql as $$ select 4; select  $$;\ninsert into t values (1)\n\nupdate t set a = 1;select\n";
+        let doc = Document::new(sql.into(), 1);
+        for position in 0..=sql.len() {
+            let position = TextSize::new(position as u32);
+            let mut statements = doc.iter_with_filter(
+                WithCSTMapper,
+                GetCompletionsFilter {
+                    cursor_position: position,
+                },
+            );
+            // The lookup before it filtered all statements.
+            let mut expected: Option<(crate::workspace::DocumentStatement, _)> = None;
+            for current in statements.by_ref() {
+                if expected.as_ref().is_some_and(|(previous, _)| {
+                    current.0.range.contains(position) && !current.0.id.is_child_of(&previous.id)
+                }) {
+                    expected = None;
+                    break;
+                }
+                expected = Some(current);
+            }
+            assert_eq!(
+                get_statement_for_completions(&doc, position)
+                    .map(|(stmt, _)| (stmt.id, stmt.range)),
+                expected.map(|(stmt, _)| (stmt.id, stmt.range)),
+                "at {position:?}"
+            );
+        }
     }
 }

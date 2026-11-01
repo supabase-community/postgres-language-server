@@ -47,8 +47,14 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
         collect_references: true,
     })
     .references;
+    inlay_hints_of_references(&references, params.sql)
+}
+
+/// The inlay hints of the statement `sql` from its `references`, which
+/// [`pgls_catalog::resolve::resolve`] collected. Ordered by offset.
+pub fn inlay_hints_of_references(references: &[Reference], sql: &str) -> Vec<InlayHint> {
     let calls: Vec<_> = references
-        .into_iter()
+        .iter()
         .filter_map(|reference| match reference {
             Reference::Function {
                 location,
@@ -76,7 +82,7 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
     if calls.is_empty() {
         return Vec::new();
     }
-    let Ok(scan) = pgls_query::scan(params.sql) else {
+    let Ok(scan) = pgls_query::scan(sql) else {
         return Vec::new();
     };
     let tokens: Vec<ScanToken> = scan
@@ -90,7 +96,7 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
         let Some(signature) = function.signature.as_ref() else {
             continue;
         };
-        let Some(arguments) = argument_tokens(&tokens, location) else {
+        let Some(arguments) = argument_tokens(&tokens, *location) else {
             continue;
         };
         // An aggregate's `ORDER BY` follows its arguments, and may contain more commas.
@@ -112,7 +118,7 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
             else {
                 continue;
             };
-            if is_reference_to(params.sql, tokens, name) {
+            if is_reference_to(sql, tokens, name) {
                 continue;
             }
             let Ok(offset) = u32::try_from(tokens[0].start) else {
