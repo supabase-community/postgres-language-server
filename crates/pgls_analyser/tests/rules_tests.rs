@@ -197,7 +197,7 @@ fn assert_fixes_converge(analyser: &Analyser, query: &str, is_typecheck: bool) {
     panic!("the fixes still change the input after 10 passes:\n{code}");
 }
 
-/// The statements in the body of a `LANGUAGE sql` function, as the workspace extracts them.
+/// The statements in the body of a SQL function, as the workspace extracts them.
 fn sql_function_body(
     root: &pgls_query::NodeEnum,
     sql: &str,
@@ -206,18 +206,13 @@ fn sql_function_body(
     let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = root else {
         return Vec::new();
     };
-    let Some(body) = pgls_query_ext::utils::sql_function_body(root, sql) else {
-        return Vec::new();
-    };
     let function = pgls_catalog::resolve::FunctionContext::from_create_function(create_fn);
-    body.statements()
-        .into_iter()
+    pgls_query_ext::function_body::sql_function_body(root, sql)
+        .iter()
         .filter_map(|statement| {
-            let text = &body.body[statement];
-            let root = pgls_query::parse(text).ok()?.into_root()?;
+            let root = pgls_query::parse(&statement.sql).ok()?.into_root()?;
             Some(
-                AnalysableStatement::new(root, statement + body.range.start() + range.start())
-                    .with_sql(text)
+                AnalysableStatement::embedded(root, range.start(), statement)
                     .with_function(function.clone()),
             )
         })

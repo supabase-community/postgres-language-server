@@ -6,6 +6,7 @@ use std::{
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode, resolve::FunctionContext};
 use pgls_diagnostics::DiagnosticTags;
+use pgls_query_ext::function_body::{EmbeddedStatement, OffsetMap};
 use pgls_text_size::{TextRange, TextSize};
 pub use registry::visit_registry;
 
@@ -88,6 +89,9 @@ pub struct AnalysableStatement {
     /// Set when identifiers of the statement are client-side parameters, like psql's
     /// `:schema.table`. The parsed names are placeholders, so the statement isn't typechecked.
     pub has_identifier_parameters: bool,
+    /// Where the text of the statement is in the file, when it is embedded in another statement
+    /// and its text is not the source text, like a function body with escaped quotes.
+    pub offsets: OffsetMap,
 }
 
 impl AnalysableStatement {
@@ -98,7 +102,39 @@ impl AnalysableStatement {
             sql: None,
             function: None,
             has_identifier_parameters: false,
+            offsets: OffsetMap::default(),
         }
+    }
+
+    /// The statement `embedded`, like a statement of a SQL function body, in the statement that
+    /// starts at `parent_start` in the file. `root` is the parsed `embedded.sql`.
+    pub fn embedded(
+        root: pgls_query::NodeEnum,
+        parent_start: TextSize,
+        embedded: &EmbeddedStatement,
+    ) -> Self {
+        Self {
+            offsets: embedded.offsets.clone(),
+            ..Self::new(root, embedded.range + parent_start).with_sql(embedded.sql.as_str())
+        }
+    }
+
+    /// The range in the file of `range` in the statement text.
+    pub fn document_range(&self, range: TextRange) -> TextRange {
+        self.offsets.range_to_source(range) + self.range.start()
+    }
+
+    /// The offset in the file of `offset` in the statement text.
+    pub fn document_offset(&self, offset: TextSize) -> TextSize {
+        self.offsets.to_source(offset) + self.range.start()
+    }
+
+    /// The offset in the statement text of `offset` in the file, which is in the statement's
+    /// range.
+    pub fn statement_offset(&self, offset: TextSize) -> TextSize {
+        debug_assert!(self.range.contains_inclusive(offset));
+        self.offsets
+            .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())
     }
 
     pub fn with_sql(mut self, sql: impl Into<String>) -> Self {
@@ -322,14 +358,15 @@ impl<'a> Analyser<'a> {
                         .diagnostics
                         .extend(diagnostics.into_iter().map(|mut diagnostic| {
                             diagnostic.span = Some(match diagnostic.span {
-                                Some(span) => span + stmt.range.start(),
+                                Some(span) => stmt.document_range(span),
                                 None => stmt.range,
                             });
                             // Fixes are computed on the statement text, which only matches the
-                            // source if it has the length of the statement range. A fix must
-                            // keep the statement valid.
+                            // source if it is the source as written. A fix must keep the statement
+                            // valid.
                             let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
-                                TextSize::of(sql.as_str()) == stmt.range.len()
+                                stmt.offsets.is_verbatim()
+                                    && TextSize::of(sql.as_str()) == stmt.range.len()
                                     && diagnostic
                                         .fix
                                         .as_ref()

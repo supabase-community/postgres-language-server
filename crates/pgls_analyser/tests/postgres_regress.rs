@@ -239,24 +239,18 @@ fn parse(sql: &str) -> Result<Option<(NodeEnum, bool)>, ()> {
         .map(|root| (root, conversion.has_identifier_parameters)))
 }
 
-/// The statements in the body of a `LANGUAGE sql` function, as the workspace extracts and
-/// analyses them.
+/// The statements in the body of a SQL function, as the workspace extracts and analyses them.
 fn sql_function_body(root: &NodeEnum, sql: &str, range: TextRange) -> Vec<AnalysableStatement> {
     let NodeEnum::CreateFunctionStmt(create_fn) = root else {
         return Vec::new();
     };
-    let Some(body) = pgls_query_ext::utils::sql_function_body(root, sql) else {
-        return Vec::new();
-    };
     let function = FunctionContext::from_create_function(create_fn);
-    body.statements()
-        .into_iter()
+    pgls_query_ext::function_body::sql_function_body(root, sql)
+        .iter()
         .filter_map(|statement| {
-            let text = &body.body[statement];
-            let (root, has_identifier_parameters) = parse(text).ok()??;
+            let (root, has_identifier_parameters) = parse(&statement.sql).ok()??;
             Some(
-                AnalysableStatement::new(root, statement + body.range.start() + range.start())
-                    .with_sql(text)
+                AnalysableStatement::embedded(root, range.start(), statement)
                     .with_function(function.clone())
                     .with_identifier_parameters(has_identifier_parameters),
             )

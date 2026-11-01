@@ -572,7 +572,7 @@ impl WorkspaceServer {
                 if stmt.range != range {
                     return;
                 }
-                let position = position - range.start();
+                let position = stmt.statement_offset(position);
                 let (references, others): (Vec<_>, Vec<_>) = resolve(ResolveParams {
                     stmt: &stmt.root,
                     catalog,
@@ -616,7 +616,9 @@ impl WorkspaceServer {
 
     /// The references whose span contains `position`, in the innermost statement at `position`
     /// (the body of a SQL function rather than its `CREATE FUNCTION`). Their spans are relative
-    /// to the start of that statement, which is returned with them.
+    /// to the start of that statement, which is returned with them. Empty if the statement's
+    /// text isn't the source text, like a function body with escaped quotes, since the spans
+    /// would then not point into the document.
     fn references_at(
         &self,
         settings: Option<&Settings>,
@@ -624,7 +626,7 @@ impl WorkspaceServer {
         snapshot: &Arc<Snapshot>,
         position: TextSize,
     ) -> (TextSize, Vec<Reference>) {
-        let mut innermost: Option<(TextRange, Vec<Reference>)> = None;
+        let mut innermost: Option<(TextRange, bool, Vec<Reference>)> = None;
         self.walk_statements(
             settings,
             doc,
@@ -637,7 +639,7 @@ impl WorkspaceServer {
                 if !stmt.range.contains(position)
                     || innermost
                         .as_ref()
-                        .is_some_and(|(range, _)| !range.contains_range(stmt.range))
+                        .is_some_and(|(range, ..)| !range.contains_range(stmt.range))
                 {
                     return;
                 }
@@ -650,10 +652,10 @@ impl WorkspaceServer {
                     collect_references: true,
                 })
                 .references;
-                innermost = Some((stmt.range, references));
+                innermost = Some((stmt.range, stmt.offsets.is_verbatim(), references));
             },
         );
-        let Some((range, references)) = innermost else {
+        let Some((range, true, references)) = innermost else {
             return (TextSize::default(), Vec::new());
         };
         let position = position - range.start();
@@ -1674,11 +1676,12 @@ impl Workspace for WorkspaceServer {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
             }
-            Some((id, range, cst)) => {
-                let position = params.position - range.start();
+            Some((stmt, cst)) => {
+                let position = stmt.statement_offset(params.position);
+                let range = stmt.range;
                 let snapshot = self.snapshot_before(
                     parsed_doc,
-                    &id,
+                    &stmt.id,
                     range,
                     Arc::clone(&snapshot),
                     &search_path,
@@ -1697,10 +1700,10 @@ impl Workspace for WorkspaceServer {
                     position,
                     schema: snapshot.as_ref(),
                     tree: &cst,
-                    text: id.content().to_string(),
+                    text: stmt.id.content().to_string(),
                 });
 
-                Ok(CompletionsResult::with_offset(items, range.start()))
+                Ok(CompletionsResult::in_document(items, &stmt))
             }
         }
     }
@@ -1739,13 +1742,13 @@ impl Workspace for WorkspaceServer {
 
         // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
         match doc.iter_at(WithCSTMapper, params.position).last() {
-            Some((stmt_id, range, ts_tree)) => {
-                let position_in_stmt = params.position - range.start();
+            Some((stmt, ts_tree)) => {
+                let position_in_stmt = stmt.statement_offset(params.position);
                 let (references, snapshot) = self.hover_references(
                     settings,
                     doc,
-                    &stmt_id,
-                    range,
+                    &stmt.id,
+                    stmt.range,
                     params.position,
                     snapshot,
                 );
@@ -1754,7 +1757,7 @@ impl Workspace for WorkspaceServer {
                     ts_tree: &ts_tree,
                     snapshot: &snapshot,
                     position: position_in_stmt,
-                    stmt_sql: stmt_id.content(),
+                    stmt_sql: stmt.id.content(),
                     references: &references,
                 })
                 .unwrap_or_default();
@@ -1826,7 +1829,7 @@ impl Workspace for WorkspaceServer {
                     })
                     .into_iter()
                     .map(|hint| InlayHint {
-                        offset: hint.offset + stmt.range.start(),
+                        offset: stmt.document_offset(hint.offset),
                         label: hint.label,
                         kind: hint.kind.into(),
                     }),
@@ -1904,7 +1907,7 @@ impl Workspace for WorkspaceServer {
                     )
                     .into_iter()
                     .map(|token| SemanticToken {
-                        range: token.range + stmt.range.start(),
+                        range: stmt.document_range(token.range),
                         kind: token.kind.into(),
                         default_library: token.default_library,
                     }),
