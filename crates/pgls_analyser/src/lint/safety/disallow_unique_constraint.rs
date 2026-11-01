@@ -47,24 +47,11 @@ impl LinterRule for DisallowUniqueConstraint {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            // Check if this table was created in the same transaction
-            let table_name = stmt.relation.as_ref().map(|r| &r.relname);
-
-            // Look for tables created in previous statements of this file
-            let table_created_in_transaction = if let Some(table_name) = table_name {
-                ctx.file_context().previous_stmts().iter().any(|prev_stmt| {
-                    if let pgls_query::NodeEnum::CreateStmt(create) = prev_stmt {
-                        create
-                            .relation
-                            .as_ref()
-                            .is_some_and(|r| &r.relname == table_name)
-                    } else {
-                        false
-                    }
-                })
-            } else {
-                false
-            };
+            // Check if this table was created earlier in the transaction
+            let table_created_in_transaction = stmt.relation.as_ref().is_some_and(|relation| {
+                ctx.session()
+                    .has_created_object(&relation.schemaname, &relation.relname)
+            });
 
             if !table_created_in_transaction {
                 for cmd in &stmt.cmds {
