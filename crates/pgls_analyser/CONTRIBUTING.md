@@ -64,6 +64,7 @@ Let's say we want to create a new **lint** rule called `useMyRuleName`, follow t
 
 1. The `Options` type doesn't have to be used, so it can be considered optional. However, it has to be defined as `type Options = ()`.
 1. Implement the `run` function: The function is called for every statement, and should return zero or more diagnostics. Follow the [pillars](#explain-a-rule-to-the-user) when writing the message of a diagnostic
+1. `src/utils.rs` has the AST matching that several rules share, e.g. the subcommands of an `ALTER TABLE` (`alter_table_cmds`), the columns a statement adds or retypes (`column_defs`), and the name of a built-in type (`builtin_type_name`). The context gives the session (`ctx.session()`: search path, transaction, created objects) and the catalog before the statement (`ctx.catalog()`).
 
 Don't forget to format your code with `just f` and lint with `just l`.
 
@@ -127,7 +128,7 @@ This allows saving memory: [boxed slices and boxed str use two instead of three 
 With these types in place, you can set the associated type `Options` of the rule:
 
 ```rust
-impl Rule for MyRule {
+impl LinterRule for MyRule {
     type Options = MyRuleOptions;
 }
 ```
@@ -237,11 +238,11 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for BanDropColumn {
-    type Options = Options;
+impl LinterRule for ExampleRule {
+    type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
-        vec![RuleDiagnostic::new(
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        vec![LinterDiagnostic::new(
             rule_category!(),
             None,
             "message",

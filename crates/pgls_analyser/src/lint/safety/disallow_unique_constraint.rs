@@ -1,3 +1,4 @@
+use crate::utils::{alter_table_cmds, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -54,58 +55,53 @@ impl LinterRule for DisallowUniqueConstraint {
             });
 
             if !table_created_in_transaction {
-                for cmd in &stmt.cmds {
-                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                        match cmd.subtype() {
-                            pgls_query::protobuf::AlterTableType::AtAddConstraint => {
-                                if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
-                                    &cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                for cmd in alter_table_cmds(ctx.stmt()) {
+                    match cmd.subtype() {
+                        pgls_query::protobuf::AlterTableType::AtAddConstraint => {
+                            if let Some(pgls_query::NodeEnum::Constraint(constraint)) = cmd_def(cmd)
+                            {
+                                // Check if it's a unique constraint without an existing index
+                                if constraint.contype()
+                                    == pgls_query::protobuf::ConstrType::ConstrUnique
+                                    && constraint.indexname.is_empty()
                                 {
-                                    // Check if it's a unique constraint without an existing index
-                                    if constraint.contype()
-                                        == pgls_query::protobuf::ConstrType::ConstrUnique
-                                        && constraint.indexname.is_empty()
+                                    diagnostics.push(
+                                        LinterDiagnostic::new(
+                                            rule_category!(),
+                                            None,
+                                            markup! {
+                                                "Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock."
+                                            },
+                                        )
+                                        .note("Create a unique index CONCURRENTLY and then add the constraint using that index."),
+                                    );
+                                }
+                            }
+                        }
+                        pgls_query::protobuf::AlterTableType::AtAddColumn => {
+                            if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd) {
+                                // Check for inline unique constraints
+                                for constraint in &col_def.constraints {
+                                    if let Some(pgls_query::NodeEnum::Constraint(constr)) =
+                                        &constraint.node
+                                        && constr.contype()
+                                            == pgls_query::protobuf::ConstrType::ConstrUnique
                                     {
                                         diagnostics.push(
-                                            LinterDiagnostic::new(
-                                                rule_category!(),
-                                                None,
-                                                markup! {
-                                                    "Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock."
-                                                },
-                                            )
-                                            .note("Create a unique index CONCURRENTLY and then add the constraint using that index."),
-                                        );
+                                                LinterDiagnostic::new(
+                                                    rule_category!(),
+                                                    None,
+                                                    markup! {
+                                                        "Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock."
+                                                    },
+                                                )
+                                                .note("Create a unique index CONCURRENTLY and then add the constraint using that index."),
+                                            );
                                     }
                                 }
                             }
-                            pgls_query::protobuf::AlterTableType::AtAddColumn => {
-                                if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                                    &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                                {
-                                    // Check for inline unique constraints
-                                    for constraint in &col_def.constraints {
-                                        if let Some(pgls_query::NodeEnum::Constraint(constr)) =
-                                            &constraint.node
-                                            && constr.contype()
-                                                == pgls_query::protobuf::ConstrType::ConstrUnique
-                                        {
-                                            diagnostics.push(
-                                                    LinterDiagnostic::new(
-                                                        rule_category!(),
-                                                        None,
-                                                        markup! {
-                                                            "Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock."
-                                                        },
-                                                    )
-                                                    .note("Create a unique index CONCURRENTLY and then add the constraint using that index."),
-                                                );
-                                        }
-                                    }
-                                }
-                            }
-                            _ => {}
                         }
+                        _ => {}
                     }
                 }
             }
