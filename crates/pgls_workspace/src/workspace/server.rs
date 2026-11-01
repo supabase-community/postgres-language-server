@@ -339,6 +339,7 @@ impl WorkspaceServer {
             file_kind: self.file_kind(settings, path.as_path()),
             sections,
             typecheck,
+            source: Some(doc.get_document_content().to_owned()),
         });
 
         (
@@ -2220,8 +2221,9 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             }
             // Parameters belong to a function of the file.
             Reference::Parameter { .. } => false,
-            // The columns of a `*` can come from objects that the file changed.
-            Reference::Star { .. } => false,
+            // The columns of a `*` can come from objects that the file changed, and so can the
+            // relations behind CTEs and aliases.
+            Reference::Star { .. } | Reference::Cte { .. } | Reference::Alias { .. } => false,
         })
 }
 
