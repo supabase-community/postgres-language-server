@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{AlterObjectDependsStmt, ObjectType};
+use pgls_query::protobuf::AlterObjectDependsStmt;
 
 use super::prelude::*;
 
@@ -9,11 +9,9 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
     e.space();
 
     // Object type
-    match n.object_type() {
-        ObjectType::ObjectFunction => e.token(TokenKind::FUNCTION_KW),
-        ObjectType::ObjectProcedure => e.token(TokenKind::PROCEDURE_KW),
-        ObjectType::ObjectRoutine => e.token(TokenKind::ROUTINE_KW),
-        _ => e.token(TokenKind::IDENT("UNKNOWN".to_string())),
+    match object_type_keywords(n.object_type()) {
+        Some(keywords) => emit_keywords(e, keywords),
+        None => e.token(TokenKind::IDENT("UNKNOWN".to_string())),
     }
     e.space();
 

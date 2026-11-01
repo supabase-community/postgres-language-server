@@ -28,7 +28,7 @@ pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
 
     if let Some(ref result) = n.result {
         e.space();
-        super::case_expr::emit_case_result(e, result);
+        emit_case_result(e, result);
     }
     if expanded {
         e.indent_end();

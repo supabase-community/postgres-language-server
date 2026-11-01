@@ -66,20 +66,13 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             e.token(TokenKind::CONSTRAINT_KW);
             if n.missing_ok {
                 e.space();
-                e.token(TokenKind::IF_KW);
-                e.space();
-                e.token(TokenKind::EXISTS_KW);
+                emit_if_exists(e);
             }
             if !n.name.is_empty() {
                 e.space();
                 emit_identifier_maybe_quoted(e, &n.name);
             }
-            // behavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
-            // Only emit CASCADE explicitly; RESTRICT is the default
-            if n.behavior == 2 {
-                e.space();
-                e.token(TokenKind::CASCADE_KW);
-            }
+            emit_drop_behavior(e, n.behavior(), Separator::Space, Restrict::Omitted);
         }
         "V" => {
             e.token(TokenKind::VALIDATE_KW);

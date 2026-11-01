@@ -12,6 +12,8 @@
 
 use pgls_query::{NodeEnum, NodeMut};
 
+use crate::nodes::clauses::function_options::function_option_order;
+
 /// Normalize an AST for semantic comparison.
 ///
 /// Applies all normalization functions to handle differences between
@@ -607,43 +609,11 @@ fn process_select_stmt_box(stmt: &mut pgls_query::protobuf::SelectStmt) {
     }
 }
 
-/// Returns the canonical order for a function option.
-/// Postgres's canonical order (as seen in pg_dump output) is:
-/// 1. LANGUAGE
-/// 2. WINDOW
-/// 3. IMMUTABLE / STABLE / VOLATILE (volatility)
-/// 4. LEAKPROOF / NOT LEAKPROOF
-/// 5. STRICT / CALLED ON NULL INPUT (strict)
-/// 6. SECURITY DEFINER / SECURITY INVOKER (security)
-/// 7. PARALLEL (parallel)
-/// 8. COST (cost)
-/// 9. ROWS (rows)
-/// 10. SUPPORT (support)
-/// 11. SET options (set)
-/// 12. AS (function body)
-fn option_order(defname: &str) -> usize {
-    match defname.to_lowercase().as_str() {
-        "language" => 0,
-        "window" => 1,
-        "volatility" => 2,
-        "leakproof" => 3,
-        "strict" => 4,
-        "security" => 5,
-        "parallel" => 6,
-        "cost" => 7,
-        "rows" => 8,
-        "support" => 9,
-        "set" => 10,
-        "as" => 11,
-        _ => 100, // Unknown options go last
-    }
-}
-
 /// Sort function options according to Postgres's canonical order.
 fn sort_function_options(options: &mut [pgls_query::protobuf::Node]) {
     options.sort_by_key(|node| {
         if let Some(NodeEnum::DefElem(def_elem)) = &node.node {
-            option_order(&def_elem.defname)
+            function_option_order(&def_elem.defname)
         } else {
             100 // Non-DefElem nodes go last
         }

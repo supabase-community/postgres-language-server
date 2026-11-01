@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{AlterOperatorStmt, DefElem, List, ObjectWithArgs};
+use pgls_query::protobuf::{AlterOperatorStmt, DefElem, List};
 
 use super::prelude::*;
 
@@ -11,7 +11,7 @@ pub(super) fn emit_alter_operator_stmt(e: &mut EventEmitter, n: &AlterOperatorSt
     e.space();
 
     if let Some(ref oper) = n.opername {
-        emit_operator_fqn(e, oper);
+        emit_operator_name(e, &oper.objname);
 
         if !oper.objargs.is_empty() || !oper.args_unspecified {
             e.space();
@@ -31,25 +31,6 @@ pub(super) fn emit_alter_operator_stmt(e: &mut EventEmitter, n: &AlterOperatorSt
     }
 
     e.group_end();
-}
-
-fn emit_operator_fqn(e: &mut EventEmitter, oper: &ObjectWithArgs) {
-    for (idx, node) in oper.objname.iter().enumerate() {
-        if idx > 0 {
-            e.token(TokenKind::DOT);
-        }
-
-        match node.node.as_ref() {
-            Some(NodeEnum::String(s)) => {
-                if idx == oper.objname.len() - 1 {
-                    e.token(TokenKind::IDENT(s.sval.clone()));
-                } else {
-                    emit_identifier_maybe_quoted(e, &s.sval);
-                }
-            }
-            _ => emit_node(e, node),
-        }
-    }
 }
 
 fn emit_operator_option(e: &mut EventEmitter, def: &DefElem) {

@@ -29,12 +29,7 @@ pub(super) fn emit_alter_user_mapping_stmt(e: &mut EventEmitter, n: &AlterUserMa
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.indent_start();
-        e.token(TokenKind::OPTIONS_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, |e, n| {
-            let def_elem = assert_node_variant!(DefElem, n);
-            super::emit_options_def_elem(e, def_elem);
-        });
+        emit_options_clause(e, &n.options);
         e.indent_end();
     }
 

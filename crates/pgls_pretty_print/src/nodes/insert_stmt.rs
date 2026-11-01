@@ -1,7 +1,6 @@
 use pgls_query::protobuf::{InsertStmt, OverridingKind};
 
 use super::prelude::*;
-use super::res_target::emit_column_name;
 
 pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
     e.group_start();

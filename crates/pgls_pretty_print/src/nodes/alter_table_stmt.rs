@@ -9,31 +9,12 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
     e.space();
 
     // Emit object type (TABLE, INDEX, TYPE, etc.)
-    match n.objtype() {
-        ObjectType::ObjectTable => e.token(TokenKind::TABLE_KW),
-        ObjectType::ObjectIndex => e.token(TokenKind::INDEX_KW),
-        ObjectType::ObjectView => e.token(TokenKind::VIEW_KW),
-        ObjectType::ObjectMatview => {
-            e.token(TokenKind::MATERIALIZED_KW);
-            e.space();
-            e.token(TokenKind::VIEW_KW);
-        }
-        ObjectType::ObjectSequence => e.token(TokenKind::SEQUENCE_KW),
-        ObjectType::ObjectForeignTable => {
-            e.token(TokenKind::FOREIGN_KW);
-            e.space();
-            e.token(TokenKind::TABLE_KW);
-        }
-        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
-        _ => e.token(TokenKind::TABLE_KW), // Default to TABLE
-    }
+    emit_keywords(e, object_type_keywords(n.objtype()).unwrap_or("TABLE"));
 
     e.space();
 
     if n.missing_ok {
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_exists(e);
         e.space();
     }
 
@@ -41,7 +22,7 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
     // For ObjectType (ALTER TYPE), don't emit ONLY since it's not valid
     if let Some(ref relation) = n.relation {
         match n.objtype() {
-            ObjectType::ObjectType => super::emit_range_var_name(e, relation),
+            ObjectType::ObjectType => super::emit_range_var_as(e, relation, super::Only::Omitted),
             _ => super::emit_range_var(e, relation),
         }
     }

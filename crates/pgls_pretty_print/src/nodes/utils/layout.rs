@@ -97,6 +97,22 @@ pub(crate) fn emit_layout_break(e: &mut EventEmitter) {
     }
 }
 
+/// What separates a clause from the text before it.
+#[derive(Clone, Copy)]
+pub(crate) enum Separator {
+    /// Always a space.
+    Space,
+    /// A break when the enclosing group breaks, a space otherwise.
+    SoftOrSpace,
+}
+
+pub(crate) fn emit_separator(e: &mut EventEmitter, separator: Separator) {
+    match separator {
+        Separator::Space => e.space(),
+        Separator::SoftOrSpace => e.line(LineType::SoftOrSpace),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::emitter::{EventEmitter, LayoutEvent, LineType};

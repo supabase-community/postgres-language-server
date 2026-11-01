@@ -1,6 +1,5 @@
 use pgls_query::protobuf::AlterDefaultPrivilegesStmt;
 
-use super::grant_stmt::emit_grant_list;
 use super::prelude::*;
 
 pub(super) fn emit_alter_default_privileges_stmt(

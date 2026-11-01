@@ -4,7 +4,7 @@ use super::prelude::*;
 
 /// Where the branches of a CASE line up in expanded layout.
 #[derive(Clone, Copy)]
-enum BranchPlacement {
+pub(super) enum BranchPlacement {
     /// Under the column the CASE starts at.
     Aligned,
     /// One level in from the line the CASE starts on.
@@ -12,23 +12,10 @@ enum BranchPlacement {
 }
 
 pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
-    emit_case(e, n, BranchPlacement::Aligned);
+    emit_case_expr_as(e, n, BranchPlacement::Aligned);
 }
 
-/// Emits a branch result, `then <result>` or `else <result>`.
-///
-/// In expanded layout a CASE aligns its branches with the column it starts at. A CASE nested as a
-/// result would start after `then `, so every level would move the next one right by the keyword
-/// and two indents, and a few levels run past the line width. A nested CASE is therefore indented
-/// from the line of its THEN or ELSE instead: its branches one level in, `end` under `then`.
-pub(super) fn emit_case_result(e: &mut EventEmitter, result: &pgls_query::protobuf::Node) {
-    emit_node_with(e, result, |e, node| match node {
-        pgls_query::NodeEnum::CaseExpr(case) => emit_case(e, case, BranchPlacement::Indented),
-        node => emit_node_enum(e, node),
-    });
-}
-
-fn emit_case(e: &mut EventEmitter, n: &CaseExpr, branches: BranchPlacement) {
+pub(super) fn emit_case_expr_as(e: &mut EventEmitter, n: &CaseExpr, branches: BranchPlacement) {
     e.group_start();
 
     let expanded = matches!(e.config().layout, crate::Layout::Expanded);

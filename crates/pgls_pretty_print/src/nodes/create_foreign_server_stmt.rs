@@ -12,11 +12,7 @@ pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateFo
     // Emit IF NOT EXISTS if present
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     // Emit server name
@@ -59,12 +55,7 @@ pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateFo
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.indent_start();
-        emit_keyword(e, "OPTIONS");
-        e.space();
-        emit_parenthesized_list(e, &n.options, |e, n| {
-            let def_elem = assert_node_variant!(DefElem, n);
-            super::emit_options_def_elem(e, def_elem);
-        });
+        emit_options_clause(e, &n.options);
         e.indent_end();
     }
 

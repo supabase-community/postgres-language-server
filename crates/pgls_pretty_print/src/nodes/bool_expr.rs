@@ -5,25 +5,39 @@ use crate::LogicalOperatorPlacement;
 use super::prelude::*;
 
 pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
-    e.group_start();
-
-    match n.boolop() {
-        BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
-        BoolExprType::OrExpr => emit_variadic_bool_expr(e, n, TokenKind::OR_KW),
-        BoolExprType::NotExpr => emit_not_expr(e, n),
-        BoolExprType::Undefined => unreachable!("Undefined BoolExprType"),
-    }
-
-    e.expression_group_end();
+    emit_bool_expr_as(e, n, OperandGroup::Own);
 }
 
-/// Emits an AND or OR chain in the enclosing group instead of a group of its own, so that its
-/// operands go on their own lines whenever that group breaks.
-pub(super) fn emit_bool_expr_in_enclosing_group(e: &mut EventEmitter, n: &BoolExpr) {
-    match n.boolop() {
-        BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
-        BoolExprType::OrExpr => emit_variadic_bool_expr(e, n, TokenKind::OR_KW),
-        _ => emit_bool_expr(e, n),
+/// Which group the operands of an AND or OR chain break with.
+#[derive(Clone, Copy)]
+pub(super) enum OperandGroup {
+    /// A group of the chain's own.
+    Own,
+    /// The enclosing group, so that the operands go on their own lines whenever it breaks. A NOT
+    /// keeps a group of its own.
+    Enclosing,
+}
+
+pub(super) fn emit_bool_expr_as(e: &mut EventEmitter, n: &BoolExpr, group: OperandGroup) {
+    match (group, n.boolop()) {
+        (OperandGroup::Enclosing, BoolExprType::AndExpr) => {
+            emit_variadic_bool_expr(e, n, TokenKind::AND_KW)
+        }
+        (OperandGroup::Enclosing, BoolExprType::OrExpr) => {
+            emit_variadic_bool_expr(e, n, TokenKind::OR_KW)
+        }
+        _ => {
+            e.group_start();
+
+            match n.boolop() {
+                BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
+                BoolExprType::OrExpr => emit_variadic_bool_expr(e, n, TokenKind::OR_KW),
+                BoolExprType::NotExpr => emit_not_expr(e, n),
+                BoolExprType::Undefined => unreachable!("Undefined BoolExprType"),
+            }
+
+            e.expression_group_end();
+        }
     }
 }
 
