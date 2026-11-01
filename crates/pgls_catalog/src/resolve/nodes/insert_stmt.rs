@@ -107,7 +107,8 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
                     .enumerate()
                 {
                     let location = select_target_location(source, index).unwrap_or_default();
-                    check(r, None, value.ty.clone(), *target, location);
+                    let expr = select_value(source, index);
+                    check(r, expr, value.ty.clone(), *target, location);
                 }
             }
         }
@@ -154,6 +155,42 @@ fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32
         return None;
     };
     node_location(target.val.as_deref()?)
+}
+
+/// The value of the select list entry at `index` of a plain SELECT. Postgres doesn't resolve
+/// the unknown literals of the source of an INSERT, so they are coerced to the target columns
+/// like the values of `INSERT ... VALUES` ([`transformInsertStmt`]). Except where DISTINCT,
+/// GROUP BY or ORDER BY sort them, which makes them text ([`addTargetToSortList`]), so `None`
+/// for a SELECT with any of them, and for set operations, which resolve them too.
+///
+/// [`transformInsertStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L771
+/// [`addTargetToSortList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L3393
+fn select_value(source: &pgls_query::Node, index: usize) -> Option<&NodeEnum> {
+    let NodeEnum::SelectStmt(select) = source.node.as_ref()? else {
+        return None;
+    };
+    if select.op() != SetOperation::SetopNone
+        || !select.values_lists.is_empty()
+        || !select.distinct_clause.is_empty()
+        || !select.group_clause.is_empty()
+        || !select.sort_clause.is_empty()
+    {
+        return None;
+    }
+    let mut values = select
+        .target_list
+        .iter()
+        .map(|target| match target.node.as_ref()? {
+            NodeEnum::ResTarget(target) => target.val.as_deref()?.node.as_ref(),
+            _ => None,
+        });
+    // A `*` before the entry expands to any number of columns.
+    for _ in 0..index {
+        if values.next()?.is_none_or(expands_to_columns) {
+            return None;
+        }
+    }
+    values.next()?
 }
 
 pub(super) fn node_location(node: &pgls_query::Node) -> Option<i32> {
