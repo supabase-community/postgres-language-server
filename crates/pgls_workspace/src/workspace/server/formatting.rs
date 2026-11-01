@@ -1,7 +1,7 @@
 //! Formatting of a document. Each statement is printed on its own, and the text between the
 //! statements is kept, since the parser drops comments.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_pretty_print::FormatConfig;
@@ -141,7 +141,11 @@ pub(super) fn format_document(
             Ok(ast) => {
                 let mut ast = ast;
                 if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
-                    sql_function::set_formatted_sql_fn_body(&mut ast, formatted_sql_fn_body);
+                    // Copies the tree only for the functions whose body is replaced.
+                    sql_function::set_formatted_sql_fn_body(
+                        Arc::make_mut(&mut ast),
+                        formatted_sql_fn_body,
+                    );
                 }
 
                 match pgls_pretty_print::format_statement(&ast, &text, &config) {

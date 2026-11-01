@@ -207,7 +207,7 @@ impl<'a> StatementContext<'a> {
 ///
 /// In a file with migration sections, the file context is that of the current section.
 pub struct AnalysedFileContext<'a> {
-    pub stmts: &'a [pgls_query::NodeEnum],
+    pub stmts: &'a [&'a pgls_query::NodeEnum],
     pos: usize,
     stmt_count: usize,
     catalog: Catalog,
@@ -219,7 +219,7 @@ pub struct AnalysedFileContext<'a> {
 }
 
 impl<'a> AnalysedFileContext<'a> {
-    pub fn new(stmts: &'a [pgls_query::NodeEnum], catalog: Catalog, session: Session) -> Self {
+    pub fn new(stmts: &'a [&'a pgls_query::NodeEnum], catalog: Catalog, session: Session) -> Self {
         Self {
             stmts,
             pos: 0,
@@ -251,7 +251,7 @@ impl<'a> AnalysedFileContext<'a> {
         self
     }
 
-    pub fn previous_stmts(&self) -> &[pgls_query::NodeEnum] {
+    pub fn previous_stmts(&self) -> &[&'a pgls_query::NodeEnum] {
         &self.stmts[0..self.pos]
     }
 
@@ -302,12 +302,15 @@ impl<'a> AnalysedFileContext<'a> {
 
     /// Moves to the next statement.
     ///
-    /// Executed statements (`applies_effects`) update the catalog and the session. Statements
-    /// in the bodies of SQL functions are only analysed, not executed.
-    pub fn next(&mut self, applies_effects: bool) {
-        if applies_effects && self.pos < self.stmts.len() {
-            let stmt = &self.stmts[self.pos];
-            self.catalog.apply(stmt, self.session.search_path());
+    /// A statement that `runs` updates the session, and the catalog too if `updates_catalog`.
+    /// Statements in the bodies of SQL functions are only analysed, not executed. A statement on
+    /// placeholder names, like psql's `:name`, still takes its locks and changes the transaction,
+    /// but the catalog can't follow it.
+    pub fn next(&mut self, runs: bool, updates_catalog: bool) {
+        if runs && let Some(stmt) = self.stmts.get(self.pos) {
+            if updates_catalog {
+                self.catalog.apply(stmt, self.session.search_path());
+            }
             self.session.apply(stmt);
         }
         self.pos += 1;

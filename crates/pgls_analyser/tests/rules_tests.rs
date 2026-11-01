@@ -142,11 +142,17 @@ fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDi
     let mut unparsable = Vec::new();
     for r in &split.ranges {
         let text = &query[*r];
-        match pgls_query::parse(text) {
+        // psql variables (`:name`, `:'name'`) become positional parameters, as in the workspace.
+        let conversion = pgls_lexer::convert_to_positional_params_with_metadata(text);
+        match pgls_query::parse(&conversion.sql) {
             Ok(ast) => {
                 let root = ast.into_root().expect("Failed to convert AST to root node");
                 let body = sql_function_body(&root, text, *r);
-                stmts.push(AnalysableStatement::new(root, *r).with_sql(text));
+                stmts.push(
+                    AnalysableStatement::new(root, *r)
+                        .with_sql(text)
+                        .with_identifier_parameters(conversion.has_identifier_parameters),
+                );
                 stmts.extend(body);
             }
             Err(_) => unparsable.push(UnparsableStatement {
