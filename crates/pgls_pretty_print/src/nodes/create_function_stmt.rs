@@ -137,8 +137,11 @@ fn begin_atomic_statements(sql_body: &pgls_query::protobuf::Node) -> &[pgls_quer
 fn emit_function_parameter_list(e: &mut EventEmitter, params: &[&FunctionParameter]) {
     for (index, param) in params.iter().enumerate() {
         if index > 0 {
-            e.token(TokenKind::COMMA);
-            e.line(LineType::SoftOrSpace);
+            emit_list_comma_before(
+                e,
+                Some(pgls_query::NodeRef::FunctionParameter(param)),
+                ListSeparatorSpacing::SoftOrSpace,
+            );
         }
         super::emit_function_parameter(e, param);
     }

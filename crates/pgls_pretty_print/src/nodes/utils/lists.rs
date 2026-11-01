@@ -1,6 +1,6 @@
 //! Lists of nodes and the separators between their items.
 
-use pgls_query::Node;
+use pgls_query::{Node, NodeEnum, NodeRef};
 
 use crate::emitter::{EventEmitter, LineType};
 use crate::nodes::emit_node;
@@ -31,11 +31,22 @@ pub(crate) fn emit_list_comma(
     next: Option<&Node>,
     spacing: ListSeparatorSpacing,
 ) {
+    let next = next
+        .and_then(|node| node.node.as_ref())
+        .map(NodeEnum::to_ref);
+    emit_list_comma_before(e, next, spacing);
+}
+
+/// `emit_list_comma` for an item the parent holds as a typed node, a `FunctionParameter` for
+/// instance, or `None` for an item without a node, such as the `*` of `CREATE AGGREGATE a (*)`.
+pub(crate) fn emit_list_comma_before(
+    e: &mut EventEmitter,
+    next: Option<NodeRef<'_>>,
+    spacing: ListSeparatorSpacing,
+) {
     // The comments lead the first node of `next`, which is not the node's own location when that
     // points into it, such as the operator of `a + 1`.
-    let next_location = next
-        .and_then(|node| node.node.as_ref())
-        .and_then(|node| crate::comments::first_node_location(node.to_ref()));
+    let next_location = next.and_then(crate::comments::first_node_location);
     if let Some(location) = next_location {
         e.take_comments_before_keyword_at(location, ",");
     }

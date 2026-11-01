@@ -348,3 +348,51 @@ fn a_comment_before_as_stays_before_the_alias() {
         assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
     }
 }
+
+#[test]
+fn a_comment_before_a_comma_stays_before_the_comma_in_every_list() {
+    for config in [FormatConfig::default(), leading_comma_config()] {
+        for sql in [
+            "update t set a = 1 /* c */, b = 2;",
+            "select sum(x) over w1 from t window w1 as (order by a) /* c */, w2 as (order by b);",
+            "select f(a, b /* c */, variadic c) from t;",
+            "select distinct on (a /* c */, b) a from t;",
+            "alter foreign table t alter column a options (add x 'y' /* c */, add z 'w');",
+        ] {
+            let output = format_idempotently(sql, &config);
+            assert!(output.contains("/* c */,"), "{output}");
+        }
+    }
+    assert_eq!(
+        format_idempotently(
+            "create function f(a int /* c */, b int) returns int language sql as 'select 1'",
+            &FormatConfig::default()
+        ),
+        "create function f(a int /* c */, b int)\nreturns int\nlanguage sql\nas $$select 1$$;"
+    );
+    assert_eq!(
+        format_idempotently(
+            "alter table t add column a int /* c */, add column b int",
+            &FormatConfig::default()
+        ),
+        "alter table t\n  add column a int /* c */,\n  add column b int;"
+    );
+}
+
+#[test]
+fn lists_that_wrote_their_own_commas_follow_the_comma_style() {
+    assert_eq!(
+        format_idempotently(
+            "create table t (a int,\n-- c\nb int)",
+            &leading_comma_config()
+        ),
+        "create table t (\n  a int\n  -- c\n  , b int\n);"
+    );
+    assert_eq!(
+        format_idempotently(
+            "alter table t add column a int, add column b int",
+            &leading_comma_config()
+        ),
+        "alter table t\n  add column a int\n  , add column b int;"
+    );
+}
