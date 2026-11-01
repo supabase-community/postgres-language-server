@@ -13,11 +13,27 @@ use sqlx::PgPool;
 use std::collections::HashMap;
 
 #[cfg(feature = "db")]
-use super::{async_helper::run_async, connection_key::ConnectionKey};
+use super::{async_helper::run_async, connection_key::ConnectionKey, last_used::LastUsed};
+#[cfg(feature = "db")]
+use std::time::Duration;
+
+/// How long the snapshot of a connection may stay unused before it is dropped. A snapshot of a
+/// large database takes megabytes (see the snapshot memory test), and one that nobody looks at
+/// for that long can be loaded again, which takes well under a second for a local database.
+#[cfg(feature = "db")]
+const SNAPSHOT_IDLE_TIMEOUT: Duration = Duration::from_secs(30 * 60);
+
+/// How often [`SnapshotManager::load`] looks for idle snapshots at most.
+#[cfg(feature = "db")]
+const IDLE_SWEEP_INTERVAL: Duration = Duration::from_secs(60);
 
 /// The snapshot of a connection, once it loaded.
 #[cfg(feature = "db")]
-type SnapshotSlot = Arc<Mutex<Option<Arc<Snapshot>>>>;
+#[derive(Default)]
+struct SnapshotSlot {
+    snapshot: Mutex<Option<Arc<Snapshot>>>,
+    last_used: LastUsed,
+}
 
 /// Manages database snapshot storage and retrieval.
 ///
@@ -36,7 +52,11 @@ pub struct SnapshotManager {
     /// Connection-based snapshots (db mode only). Each connection has its own lock, held while
     /// its snapshot loads, so that a slow or unreachable database doesn't block the others.
     #[cfg(feature = "db")]
-    db_schemas: RwLock<HashMap<ConnectionKey, SnapshotSlot>>,
+    db_schemas: RwLock<HashMap<ConnectionKey, Arc<SnapshotSlot>>>,
+
+    /// When the snapshots were last checked for idle ones.
+    #[cfg(feature = "db")]
+    last_idle_sweep: LastUsed,
 
     /// JSON-loaded schema (available in both modes)
     schema: RwLock<Option<Arc<Snapshot>>>,
@@ -53,6 +73,8 @@ impl SnapshotManager {
         Self {
             #[cfg(feature = "db")]
             db_schemas: RwLock::new(HashMap::new()),
+            #[cfg(feature = "db")]
+            last_idle_sweep: LastUsed::now(),
             schema: RwLock::new(None),
         }
     }
@@ -92,8 +114,11 @@ impl SnapshotManager {
             None => Arc::clone(self.db_schemas.write().unwrap().entry(key).or_default()),
         };
 
+        slot.last_used.touch();
+        self.drop_idle_snapshots();
+
         // Callers for the same connection wait for one load instead of starting their own.
-        let mut snapshot = slot.lock().unwrap();
+        let mut snapshot = slot.snapshot.lock().unwrap();
         if let Some(cache) = snapshot.as_ref() {
             return Ok(Arc::clone(cache));
         }
@@ -105,6 +130,63 @@ impl SnapshotManager {
         )??);
         *snapshot = Some(Arc::clone(&loaded));
         Ok(loaded)
+    }
+
+    /// Drops the snapshots of the connections for which `is_used` is false, e.g. because no
+    /// configuration points at them any more.
+    #[cfg(feature = "db")]
+    pub(crate) fn retain(&self, is_used: impl Fn(&ConnectionKey) -> bool) {
+        self.db_schemas.write().unwrap().retain(|key, _| {
+            let used = is_used(key);
+            if !used {
+                tracing::debug!(
+                    "Dropping the snapshot of {}:{}/{}, which no configuration uses",
+                    key.host,
+                    key.port,
+                    key.database
+                );
+            }
+            used
+        });
+    }
+
+    /// The number of connections with a snapshot slot.
+    #[cfg(all(test, feature = "db"))]
+    pub(crate) fn connection_count(&self) -> usize {
+        self.db_schemas.read().unwrap().len()
+    }
+
+    /// Drops the snapshots that weren't used for [`SNAPSHOT_IDLE_TIMEOUT`], looking at most once
+    /// per [`IDLE_SWEEP_INTERVAL`]. They are loaded again on the next use.
+    #[cfg(feature = "db")]
+    fn drop_idle_snapshots(&self) {
+        if self.last_idle_sweep.idle_for() < IDLE_SWEEP_INTERVAL {
+            return;
+        }
+        self.last_idle_sweep.touch();
+        let is_idle = |slot: &SnapshotSlot| slot.last_used.idle_for() > SNAPSHOT_IDLE_TIMEOUT;
+        if !self
+            .db_schemas
+            .read()
+            .unwrap()
+            .values()
+            .any(|slot| is_idle(slot))
+        {
+            return;
+        }
+        self.db_schemas.write().unwrap().retain(|key, slot| {
+            let idle = is_idle(slot);
+            if idle {
+                tracing::debug!(
+                    "Dropping the snapshot of {}:{}/{}, unused for {:?}",
+                    key.host,
+                    key.port,
+                    key.database,
+                    slot.last_used.idle_for()
+                );
+            }
+            !idle
+        });
     }
 
     /// Clear all connection-based snapshots.
@@ -119,5 +201,69 @@ impl SnapshotManager {
         self.clear();
         #[cfg(feature = "db")]
         self.clear_all_connections();
+    }
+}
+
+#[cfg(all(test, feature = "db"))]
+mod tests {
+    use super::*;
+
+    fn key(database: &str) -> ConnectionKey {
+        ConnectionKey {
+            host: "127.0.0.1".to_string(),
+            port: 5432,
+            username: "postgres".to_string(),
+            database: database.to_string(),
+        }
+    }
+
+    fn insert(manager: &SnapshotManager, database: &str) {
+        let slot = SnapshotSlot::default();
+        *slot.snapshot.lock().unwrap() = Some(Arc::new(Snapshot::default()));
+        manager
+            .db_schemas
+            .write()
+            .unwrap()
+            .insert(key(database), Arc::new(slot));
+    }
+
+    fn databases(manager: &SnapshotManager) -> Vec<String> {
+        let mut databases: Vec<_> = manager
+            .db_schemas
+            .read()
+            .unwrap()
+            .keys()
+            .map(|key| key.database.clone())
+            .collect();
+        databases.sort();
+        databases
+    }
+
+    #[test]
+    fn unused_snapshots_are_dropped() {
+        let manager = SnapshotManager::new();
+        insert(&manager, "one");
+        insert(&manager, "two");
+
+        manager.retain(|key| key.database == "two");
+        assert_eq!(databases(&manager), ["two"]);
+    }
+
+    #[test]
+    fn idle_snapshots_are_dropped() {
+        let manager = SnapshotManager::new();
+        insert(&manager, "idle");
+        insert(&manager, "busy");
+        manager.db_schemas.read().unwrap()[&key("idle")]
+            .last_used
+            .backdate(SNAPSHOT_IDLE_TIMEOUT * 2);
+
+        // The sweep runs at most once per interval.
+        manager.drop_idle_snapshots();
+        assert_eq!(databases(&manager), ["busy", "idle"]);
+
+        manager.last_idle_sweep.backdate(IDLE_SWEEP_INTERVAL * 2);
+        manager.drop_idle_snapshots();
+        assert_eq!(databases(&manager), ["busy"]);
     }
 }

@@ -166,6 +166,14 @@ impl WorkspaceSettings {
         self.data.get(key).map(|project| project.settings_for(path))
     }
 
+    /// The root settings and the nested settings of every project.
+    pub fn every_settings(&self) -> impl Iterator<Item = &Settings> {
+        self.data.iter().flat_map(|(_, project)| {
+            std::iter::once(&project.settings)
+                .chain(project.nested.iter().map(|(_, settings)| settings))
+        })
+    }
+
     /// The root settings and the nested settings of a project, with the folders they apply to.
     pub fn get_all_settings(&self, key: ProjectKey) -> impl Iterator<Item = (&Path, &Settings)> {
         self.data.get(key).into_iter().flat_map(|project| {

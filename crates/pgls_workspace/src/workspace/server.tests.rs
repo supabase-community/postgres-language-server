@@ -4435,3 +4435,73 @@ ALTER TABLE users DROP COLUMN email;
     assert!(!project.is_ignored("/repo/db/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
 }
+
+/// When no configuration points at a database any more, its pool and snapshot are dropped, so that
+/// a reload or a removed folder doesn't keep every database ever configured in memory.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
+    let workspace = WorkspaceServer::new();
+    let project_key = workspace
+        .register_project_folder(RegisterProjectFolderParams {
+            path: Some(PathBuf::from("/repo")),
+            real_path: None,
+        })
+        .unwrap();
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: serde_json::from_str(r#"{ "db": { "disableConnection": true } }"#)
+                .unwrap(),
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: Some(PathBuf::from("/repo")),
+            replace: true,
+        })
+        .unwrap();
+    let options = test_db.connect_options();
+    let nested = |databases: &[&str]| UpdateNestedSettingsParams {
+        project_key,
+        nested: databases
+            .iter()
+            .map(|database| crate::workspace::NestedSettingsParams {
+                directory: PathBuf::from("/repo").join(database),
+                configuration: PartialConfiguration {
+                    db: Some(PartialDatabaseConfiguration {
+                        host: Some(options.get_host().to_string()),
+                        port: Some(options.get_port()),
+                        database: Some(options.get_database().unwrap().to_string()),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+            })
+            .collect(),
+    };
+
+    workspace.update_nested_settings(nested(&["db1"])).unwrap();
+    let result = workspace
+        .check_database_connection(
+            crate::features::diagnostics::CheckDatabaseConnectionParams { project_key },
+        )
+        .unwrap();
+    assert_eq!(result.errors, Vec::<String>::new());
+    assert_eq!(workspace.connection.pool_count(), 1);
+    assert_eq!(workspace.snapshot.connection_count(), 1);
+    let pools = workspace.connection.cached_pools();
+
+    // Another folder with the same database keeps it.
+    workspace.update_nested_settings(nested(&["db2"])).unwrap();
+    assert_eq!(workspace.connection.pool_count(), 1);
+    assert_eq!(workspace.snapshot.connection_count(), 1);
+
+    workspace.update_nested_settings(nested(&[])).unwrap();
+    assert_eq!(workspace.connection.pool_count(), 0);
+    assert_eq!(workspace.snapshot.connection_count(), 0);
+    // Both pools of the database are closed, also the one for executed statements.
+    for pools in pools {
+        assert!(pools.pool.is_closed());
+        assert!(pools.statement_pool.is_closed());
+    }
+}
