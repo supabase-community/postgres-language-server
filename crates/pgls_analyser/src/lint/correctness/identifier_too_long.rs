@@ -1,15 +1,13 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::identifier_name;
+use pgls_catalog::{
+    MAX_IDENTIFIER_BYTES, truncate_identifier, uescape_char, unicode_identifier_value,
+    untruncated_identifier_name,
+};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
-
-/// `NAMEDATALEN - 1`, the longest identifier Postgres keeps.
-///
-/// See <https://github.com/postgres/postgres/blob/REL_18_6/src/include/pg_config_manual.h#L29>.
-const MAX_IDENTIFIER_BYTES: usize = 63;
 
 declare_lint_rule! {
     /// Identifiers longer than 63 bytes are silently truncated.
@@ -74,7 +72,7 @@ impl LinterRule for IdentifierTooLong {
                 continue;
             };
             let (identifier, replaceable) = match token.token() {
-                Token::Ident => (identifier_name(token_text), true),
+                Token::Ident => (untruncated_identifier_name(token_text), true),
                 Token::Uident => {
                     let escape = match (tokens.get(i + 1), tokens.get(i + 2)) {
                         (Some(uescape), Some(escape)) if uescape.token() == Token::Uescape => {
@@ -110,7 +108,7 @@ impl LinterRule for IdentifierTooLong {
         names
             .into_iter()
             .map(|(identifier, occurrences)| {
-                let truncated = &identifier[..identifier.floor_char_boundary(MAX_IDENTIFIER_BYTES)];
+                let truncated = truncate_identifier(&identifier);
                 LinterDiagnostic::new(
                     rule_category!(),
                     Some(occurrences[0].range),
@@ -200,75 +198,6 @@ fn may_contain_long_identifier(sql: &str) -> bool {
     false
 }
 
-/// The escape character of a `UESCAPE 'c'` clause. Port of [`check_uescapechar`].
-///
-/// [`check_uescapechar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parser.c#L352
-fn uescape_char(literal: &str) -> Option<char> {
-    let value = literal
-        .strip_prefix('\'')?
-        .strip_suffix('\'')?
-        .replace("''", "'");
-    let mut chars = value.chars();
-    let escape = chars.next()?;
-    (chars.next().is_none()
-        && escape.is_ascii()
-        && !escape.is_ascii_hexdigit()
-        && !matches!(
-            escape,
-            '+' | '\'' | '"' | ' ' | '\t' | '\n' | '\r' | '\x0b' | '\x0c'
-        ))
-    .then_some(escape)
-}
-
-/// The name a `U&"..."` identifier stands for, or `None` if Postgres rejects its escapes. Port of
-/// [`str_udeescape`].
-///
-/// [`str_udeescape`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parser.c#L372
-fn unicode_identifier_value(text: &str, escape: char) -> Option<String> {
-    let quoted = text.get(2..)?.strip_prefix('"')?.strip_suffix('"')?;
-    let value = quoted.replace("\"\"", "\"");
-    let mut chars = value.chars().peekable();
-    let mut out = String::with_capacity(value.len());
-    let mut high_surrogate: Option<u32> = None;
-    while let Some(c) = chars.next() {
-        if c != escape {
-            if high_surrogate.is_some() {
-                return None;
-            }
-            out.push(c);
-            continue;
-        }
-        if chars.peek() == Some(&escape) {
-            if high_surrogate.is_some() {
-                return None;
-            }
-            chars.next();
-            out.push(escape);
-            continue;
-        }
-        let digits = if chars.peek() == Some(&'+') {
-            chars.next();
-            6
-        } else {
-            4
-        };
-        let hex: String = chars.by_ref().take(digits).collect();
-        if hex.len() != digits || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
-            return None;
-        }
-        let code = u32::from_str_radix(&hex, 16).ok()?;
-        match (high_surrogate.take(), code) {
-            (None, 0xD800..=0xDBFF) => high_surrogate = Some(code),
-            (Some(high), 0xDC00..=0xDFFF) => out.push(char::from_u32(
-                0x10000 + ((high - 0xD800) << 10) + (code - 0xDC00),
-            )?),
-            (Some(_), _) | (None, 0xDC00..=0xDFFF) => return None,
-            (None, _) => out.push(char::from_u32(code).filter(|c| *c != '\0')?),
-        }
-    }
-    high_surrogate.is_none().then_some(out)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -299,31 +228,5 @@ mod tests {
         ] {
             assert!(!may_contain_long_identifier(&sql), "{sql}");
         }
-    }
-
-    #[test]
-    fn unicode_identifiers() {
-        assert_eq!(
-            unicode_identifier_value(r#"U&"d\0061t\+000061""#, '\\').as_deref(),
-            Some("data")
-        );
-        assert_eq!(
-            unicode_identifier_value(r#"u&"a!!b!0063""#, '!').as_deref(),
-            Some("a!bc")
-        );
-        assert_eq!(
-            unicode_identifier_value(r#"U&"a""b""#, '\\').as_deref(),
-            Some("a\"b")
-        );
-        assert_eq!(
-            unicode_identifier_value(r#"U&"\D83D\DE00""#, '\\').as_deref(),
-            Some("😀")
-        );
-        assert_eq!(unicode_identifier_value(r#"U&"\D83D""#, '\\'), None);
-        assert_eq!(unicode_identifier_value(r#"U&"\00""#, '\\'), None);
-        assert_eq!(unicode_identifier_value(r#"U&"\0000""#, '\\'), None);
-        assert_eq!(uescape_char("'!'"), Some('!'));
-        assert_eq!(uescape_char("'a'"), None);
-        assert_eq!(uescape_char("'!!'"), None);
     }
 }

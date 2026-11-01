@@ -7,8 +7,8 @@
 //! match no object or several, and constructs the resolver doesn't model, get no token and keep
 //! the highlighting of the editor's grammar.
 
-use pgls_catalog::CatalogView;
 use pgls_catalog::resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
+use pgls_catalog::{CatalogView, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
@@ -151,8 +151,9 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                     }
                     // `table.column`, but not `alias.column`.
                     [table, _]
-                        if relation
-                            .is_some_and(|(_, name)| identifier(&params.sql[*table]) == *name) =>
+                        if relation.is_some_and(|(_, name)| {
+                            identifier_name(&params.sql[*table]) == *name
+                        }) =>
                     {
                         push(Some(table), SemanticTokenKind::Class, schema);
                     }
@@ -237,18 +238,6 @@ fn token_range(token: &ScanToken) -> Option<TextRange> {
         TextSize::try_from(usize::try_from(token.start).ok()?).ok()?,
         TextSize::try_from(usize::try_from(token.end).ok()?).ok()?,
     ))
-}
-
-/// The name an identifier refers to: unquoted identifiers are folded to lower case. Like Postgres,
-/// only ASCII letters are folded.
-fn identifier(text: &str) -> String {
-    match text
-        .strip_prefix('"')
-        .and_then(|text| text.strip_suffix('"'))
-    {
-        Some(quoted) => quoted.replace("\"\"", "\""),
-        None => text.to_ascii_lowercase(),
-    }
 }
 
 #[cfg(test)]
