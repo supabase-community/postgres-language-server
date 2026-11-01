@@ -53,6 +53,12 @@ impl Document {
         let is_present =
             |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
         self.cache.retain_statements(is_present);
+        self.cache.content_changed();
+    }
+
+    /// What is cached for the document.
+    pub(crate) fn cache(&self) -> &DocumentCache {
+        &self.cache
     }
 
     pub fn suppressions(&self) -> &Suppressions {

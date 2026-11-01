@@ -192,7 +192,7 @@ pub(crate) enum Categories {
     Transformation = 1 << RuleCategory::Transformation as u8,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 /// The categories supported by the analyser.
 ///
 /// The default implementation of this type returns an instance with all the categories.

@@ -2594,6 +2594,97 @@ fn test_no_concurrently_fix_in_a_transaction() {
     );
 }
 
+/// Code actions are requested on every cursor move. They reuse the analysis that the
+/// diagnostics made until the document or the settings change.
+#[test]
+fn code_actions_reuse_the_analysis() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "drop table users;".into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let cached = || {
+        let documents = workspace.documents.read().unwrap();
+        documents.get(&path).unwrap().cache().cached_analysis()
+    };
+    let lint_actions = || {
+        workspace
+            .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                project_key,
+                path: path.clone(),
+                cursor_position: 3.into(),
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull code actions")
+            .actions
+            .into_iter()
+            .filter(|action| matches!(action.kind, CodeActionKind::Edit(_)))
+            .map(|action| action.title)
+            .collect::<Vec<_>>()
+    };
+
+    workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics");
+    let analysis = cached().expect("the analysis of the diagnostics");
+    assert_eq!(
+        lint_actions(),
+        ["Suppress rule banDropTable for this statement"]
+    );
+    assert!(Arc::ptr_eq(&analysis, &cached().unwrap()));
+
+    // An edit drops the analysis.
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: path.clone(),
+            version: 2,
+            content: "drop table users;\ndrop table posts;".into(),
+        })
+        .expect("Unable to change test file");
+    assert!(cached().is_none());
+    assert_eq!(
+        lint_actions(),
+        ["Suppress rule banDropTable for this statement"]
+    );
+    let analysis = cached().expect("the analysis of the code actions");
+
+    // So does a change of the settings.
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(
+            r#"{"linter": {"rules": {"safety": {"banDropTable": "off"}}}}"#,
+        )
+        .unwrap(),
+    );
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: conf,
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+        })
+        .expect("Unable to update settings");
+    assert!(lint_actions().is_empty());
+    assert!(!Arc::ptr_eq(&analysis, &cached().unwrap()));
+}
+
 #[test]
 fn test_fix_file() {
     // goose sends the statements of a `NO TRANSACTION` migration one by one.
