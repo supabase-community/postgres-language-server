@@ -21,7 +21,7 @@ declare_lint_rule! {
     ///
     /// The rule only reports statements that surely run in a transaction block: between `BEGIN`
     /// and `COMMIT`, in a function body, or in a migration section that runs in a transaction
-    /// (see `migrations.sectionMarkers`). Without section markers, we don't know whether the
+    /// (see `migrations.tool`). Without a migration tool, we don't know whether the
     /// migration tool runs the file in a transaction, so the other statements aren't reported.
     ///
     /// ## Examples

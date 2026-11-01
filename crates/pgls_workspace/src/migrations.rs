@@ -3,7 +3,7 @@
 //!
 //! - `files`: which files are migrations, and their sequence numbers, for every tool.
 //! - `MigrationTool`: one adapter per tool with section markers, selected with
-//!   `migrations.sectionMarkers`. A document gets the adapter from the settings of its file, and
+//!   `migrations.tool`. A document gets the adapter from the settings of its file, and
 //!   keeps the sections of its current content and what the tool replaces in it before running
 //!   it, like goose's `ENVSUB`.
 //! - [`supabase`]: finds the projects of the Supabase CLI for `init`.
@@ -15,7 +15,7 @@ mod markers;
 pub mod supabase;
 
 use pgls_analyser::MigrationSection;
-use pgls_configuration::migrations::SectionMarkers;
+use pgls_configuration::migrations as configuration;
 use pgls_text_size::TextRange;
 
 pub(crate) use files::{get_migration, is_in_migrations_dir};
@@ -75,12 +75,14 @@ impl Preprocessed {
     }
 }
 
-/// The migration tool of `migrations.sectionMarkers`, or `None` if every file is one migration.
-pub(crate) fn migration_tool(markers: SectionMarkers) -> Option<&'static dyn MigrationTool> {
-    match markers {
-        SectionMarkers::None => None,
-        SectionMarkers::Dbmate => Some(&Dbmate),
-        SectionMarkers::Goose => Some(&Goose),
+/// The adapter of the tool of `migrations.tool`, or `None` if every file is one migration.
+pub(crate) fn migration_tool(
+    tool: configuration::MigrationTool,
+) -> Option<&'static dyn MigrationTool> {
+    match tool {
+        configuration::MigrationTool::None => None,
+        configuration::MigrationTool::Dbmate => Some(&Dbmate),
+        configuration::MigrationTool::Goose => Some(&Goose),
     }
 }
 
@@ -89,16 +91,22 @@ mod tests {
     use super::*;
     use pgls_analyser::Direction;
 
-    pub(super) fn sections(text: &str, markers: SectionMarkers) -> Vec<(&str, Direction, bool)> {
-        migration_tool(markers)
+    pub(super) fn sections(
+        text: &str,
+        tool: configuration::MigrationTool,
+    ) -> Vec<(&str, Direction, bool)> {
+        migration_tool(tool)
             .map_or_else(Vec::new, |tool| tool.sections(text))
             .into_iter()
             .map(|section| (&text[section.range], section.direction, section.transaction))
             .collect()
     }
 
-    pub(super) fn marker_problems(text: &str, markers: SectionMarkers) -> Vec<(&str, String)> {
-        let Some(tool) = migration_tool(markers) else {
+    pub(super) fn marker_problems(
+        text: &str,
+        tool: configuration::MigrationTool,
+    ) -> Vec<(&str, String)> {
+        let Some(tool) = migration_tool(tool) else {
             return Vec::new();
         };
         let sections = tool.sections(text);
@@ -112,8 +120,8 @@ mod tests {
     #[test]
     fn no_markers() {
         let text = "-- migrate:up\nselect 1;\n-- +goose Down\n";
-        assert!(sections(text, SectionMarkers::None).is_empty());
-        assert!(marker_problems(text, SectionMarkers::None).is_empty());
-        assert!(sections("select 1;", SectionMarkers::Dbmate).is_empty());
+        assert!(sections(text, configuration::MigrationTool::None).is_empty());
+        assert!(marker_problems(text, configuration::MigrationTool::None).is_empty());
+        assert!(sections("select 1;", configuration::MigrationTool::Dbmate).is_empty());
     }
 }
