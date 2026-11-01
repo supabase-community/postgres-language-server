@@ -73,8 +73,6 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
         e.indent_end();
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
 

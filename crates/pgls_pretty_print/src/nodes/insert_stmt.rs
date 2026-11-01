@@ -8,14 +8,6 @@ use super::node_list::{emit_comma_separated_list, emit_comma_separated_list_with
 use super::res_target::emit_column_name;
 
 pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
-    emit_insert_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_insert_stmt_no_semicolon(e: &mut EventEmitter, n: &InsertStmt) {
-    emit_insert_stmt_impl(e, n, false);
-}
-
-fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: bool) {
     e.group_start(GroupKind::InsertStmt);
 
     if let Some(ref with_clause) = n.with_clause {
@@ -80,12 +72,7 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
     // Emit VALUES or SELECT or DEFAULT VALUES
     if let Some(ref select_stmt) = n.select_stmt {
         super::emit_layout_break(e);
-        // Use no-semicolon variant since INSERT will emit its own semicolon
-        if let Some(pgls_query::NodeEnum::SelectStmt(stmt)) = select_stmt.node.as_ref() {
-            super::emit_select_stmt_no_semicolon(e, stmt);
-        } else {
-            super::emit_node(select_stmt, e);
-        }
+        super::emit_node(select_stmt, e);
     } else {
         // No select_stmt means DEFAULT VALUES
         e.line(LineType::SoftOrSpace);
@@ -104,10 +91,6 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
         e.token(TokenKind::RETURNING_KW);
         e.space();
         emit_comma_separated_list(e, &n.returning_list, super::emit_node);
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
     }
 
     e.group_end();

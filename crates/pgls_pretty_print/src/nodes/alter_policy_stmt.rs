@@ -49,7 +49,5 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
         super::emit_parenthesized_condition(e, GroupKind::AlterPolicyStmt, with_check);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
