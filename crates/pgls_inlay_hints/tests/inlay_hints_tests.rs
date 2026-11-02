@@ -97,7 +97,9 @@ async fn returning_old_and_new(test_db: PgPool) {
     // only resolve when the types of their arguments are known.
     let f = fixture_on(&test_db, Some(180000)).await;
     assert_eq!(
-        f.hinted("update points set x = 1 returning make_point(old.y, new.x), make_point(old.x, 1)"),
+        f.hinted(
+            "update points set x = 1 returning make_point(old.y, new.x), make_point(old.x, 1)"
+        ),
         "update points set x = 1 returning make_point(x: old.y, y: new.x), make_point(old.x, y: 1)"
     );
     assert_eq!(
