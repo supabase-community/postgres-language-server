@@ -22,13 +22,21 @@ struct Fixture {
 }
 
 async fn fixture(test_db: &PgPool) -> Fixture {
+    fixture_on(test_db, None).await
+}
+
+/// The fixture as if the server had the version `version_num`, like `180000`.
+async fn fixture_on(test_db: &PgPool, version_num: Option<i64>) -> Fixture {
     test_db
         .execute(SETUP)
         .await
         .expect("Failed to setup test database");
-    let snapshot = Snapshot::load(test_db)
+    let mut snapshot = Snapshot::load(test_db)
         .await
         .expect("Failed to load snapshot");
+    if version_num.is_some() {
+        snapshot.version.version_num = version_num;
+    }
     Fixture {
         search_path: snapshot.expand_search_path(&["public".to_string()]),
         catalog: Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot))))),
@@ -123,6 +131,22 @@ async fn ctes_and_aliases(test_db: PgPool) {
     assert_eq!(
         f.highlighted("select s.id from (select id from users) s"),
         "select [s:variable].[id:property] from (select [id:property] from [users:class]) s"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn returning_old_and_new(test_db: PgPool) {
+    // `old` and `new` exist since Postgres 18, and the test database can be older.
+    let f = fixture_on(&test_db, Some(180000)).await;
+    assert_eq!(
+        f.highlighted("update users set name = 'x' returning old.name, new.name"),
+        "update [users:class] set name = 'x' \
+         returning [old:variable].[name:property], [new:variable].[name:property]"
+    );
+    assert_eq!(
+        f.highlighted("delete from users returning with (old as o) o.id"),
+        "delete from [users:class] returning with (old as [o:variable]) \
+         [o:variable].[id:property]"
     );
 }
 

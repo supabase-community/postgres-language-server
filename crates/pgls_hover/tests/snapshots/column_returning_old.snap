@@ -1,0 +1,20 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+update hover_users set name = 'x' returning old.name
+                                                  ↑ hovered here
+```
+
+# Hover Results
+### `public.hover_users.name`  
+```plain  
+text - not null
+  
+```  
+---    
+```plain  
+  
+```

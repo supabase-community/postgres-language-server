@@ -491,6 +491,44 @@ async fn cte_and_alias_references(test_db: PgPool) {
     assert_eq!(names("select 1 from users"), [""; 0]);
 }
 
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn returning_old_and_new_references(test_db: PgPool) {
+    test_db.execute(SETUP).await.expect("valid setup");
+    let mut snapshot = Snapshot::load(&test_db).await.expect("snapshot");
+    // `old` and `new` exist since Postgres 18, and the test database can be older.
+    snapshot.version.version_num = Some(180000);
+    let search_path = snapshot.expand_search_path(&["public".to_owned()]);
+    let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "update users set name = 'x' returning old.name, new.name"
+        ),
+        [
+            "users => relation public.users",
+            "old.name => column public.users.name: text (text)",
+            "new.name => column public.users.name: text (text)",
+        ]
+    );
+    // A name given in `WITH` is an alias where it is defined.
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "delete from users returning with (OLD as \"O\", new /* c */ as n) \"O\".id, n.id"
+        ),
+        [
+            "users => relation public.users",
+            "\"O\" => alias O",
+            "n => alias n",
+            "\"O\".id => column public.users.id: bigint (int8)",
+            "n.id => column public.users.id: bigint (int8)",
+        ]
+    );
+}
+
 /// The `*` references of `sql`.
 fn stars_of(catalog: &Catalog, search_path: &[String], sql: &str) -> Vec<String> {
     references(catalog, search_path, sql)

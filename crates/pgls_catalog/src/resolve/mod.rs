@@ -247,9 +247,10 @@ pub enum Reference {
         span: Option<TextRange>,
         name: String,
     },
-    /// The alias of a table or CTE in FROM, or of the target of INSERT, UPDATE, or DELETE, where
-    /// it is defined, like `u` in `from users as u`. References to it, like `u` in `u.name`,
-    /// are part of their column reference.
+    /// The alias of a table or CTE in FROM, of the target of INSERT, UPDATE, or DELETE, or of
+    /// `old` or `new` in RETURNING, where it is defined, like `u` in `from users as u` and `o` in
+    /// `returning with (old as o)`. References to it, like `u` in `u.name`, are part of their
+    /// column reference.
     Alias {
         /// The location of the alias in the statement.
         location: i32,

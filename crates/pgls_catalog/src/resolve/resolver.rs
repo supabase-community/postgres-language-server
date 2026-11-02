@@ -326,17 +326,22 @@ impl<'a> Resolver<'a> {
     /// Records the alias of the FROM item named at `location`, when references are being
     /// collected.
     pub fn record_alias(&mut self, location: i32, alias: Option<&pgls_query::protobuf::Alias>) {
+        if let Some(alias) = alias {
+            self.record_alias_name(location, &alias.aliasname);
+        }
+    }
+
+    /// Records the alias `name` that follows the name at `location`, like `o` in `OLD AS o`,
+    /// when references are being collected.
+    pub fn record_alias_name(&mut self, location: i32, name: &str) {
         if !self.collects_references() {
             return;
         }
-        let Some(alias) = alias else {
-            return;
-        };
-        if let Some((location, span)) = self.alias_location(location, &alias.aliasname) {
+        if let Some((location, span)) = self.alias_location(location, name) {
             self.record(Reference::Alias {
                 location,
                 span: Some(span),
-                name: alias.aliasname.clone(),
+                name: name.to_owned(),
             });
         }
     }
