@@ -78,6 +78,10 @@ record-regress major *args:
 db:
 	docker compose up -d --build --wait
 
+# Removes target/, which takes about 6 GB per checkout or worktree once every test is built
+clean:
+	cargo clean
+
 # Run tests of all crates
 test:
 	cargo test --workspace --no-fail-fast
