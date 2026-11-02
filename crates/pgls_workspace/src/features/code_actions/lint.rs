@@ -8,6 +8,7 @@ use pgls_analyser::{LinterDiagnostic, RuleFix};
 use pgls_configuration::RuleSelector;
 use pgls_diagnostics::Diagnostic;
 use pgls_fs::PgLSPath;
+use pgls_lexer::TemplateSyntax;
 use pgls_text_size::{TextRange, TextSize};
 use tracing::warn;
 
@@ -111,6 +112,7 @@ pub(crate) fn fix_file(
     open: &Document,
     mut code: String,
     mode: FixFileMode,
+    template_syntax: TemplateSyntax,
     mut lint: impl FnMut(&Document) -> Vec<LinterDiagnostic>,
 ) -> FixFileResult {
     /// Fixes can enable other fixes, e.g. `CONCURRENTLY` enables `IF NOT EXISTS`, and fixes
@@ -121,13 +123,14 @@ pub(crate) fn fix_file(
     let mut skipped_suggested_fixes = 0;
     let mut converged = false;
     for _ in 0..MAX_PASSES {
-        let doc = Document::open(
+        let mut doc = Document::open(
             open.project_key(),
             open.settings_version(),
             open.migration_tool(),
             code.clone(),
             0,
         );
+        doc.set_template_syntax(template_syntax);
         let diagnostics = lint(&doc);
 
         skipped_suggested_fixes = 0;

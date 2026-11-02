@@ -31,6 +31,7 @@ use pgls_analyse::AnalysisFilter;
 use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
 use pgls_lexer::convert_to_positional_params_with_metadata;
+use pgls_lexer::TemplateSyntax;
 #[cfg(feature = "db")]
 use runtime::WorkspaceRuntime;
 
@@ -379,6 +380,31 @@ impl WorkspaceServer {
             .map(|migrations| migrations.tool)
             .unwrap_or_default();
         (settings_version, tool)
+    }
+
+    /// Gives the open document at `path` the placeholder syntax of the current settings of
+    /// `project_key`, if the settings changed since it got its syntax.
+    fn refresh_template_syntax(&self, project_key: ProjectKey, path: &PgLSPath) {
+        let settings_version = self.settings_version.load(Ordering::Acquire);
+        if self
+            .documents
+            .read()
+            .get(path)
+            .is_none_or(|doc| doc.has_template_syntax_of(settings_version))
+        {
+            return;
+        }
+        // Neither the documents nor the settings are locked while taking the other lock.
+        let template_syntax = self
+            .workspaces()
+            .settings_for(project_key, path.as_path())
+            .map_or(TemplateSyntax::default(), |settings| {
+                settings.template_syntax
+            });
+        let mut documents = self.documents.write();
+        if let Some(doc) = documents.get_mut(path) {
+            Arc::make_mut(doc).set_template_syntax(template_syntax);
+        }
     }
 
     /// Gives the open document at `path` the migration tool of the current settings of
@@ -817,15 +843,23 @@ impl Workspace for WorkspaceServer {
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
         let (settings_version, migration_tool) =
             self.migration_tool(params.project_key, &params.path);
+        let template_syntax = self
+            .workspaces()
+            .settings_for(params.project_key, params.path.as_path())
+            .map_or(TemplateSyntax::default(), |settings| {
+                settings.template_syntax
+            });
         let mut documents = self.documents.write();
         documents.entry(params.path.clone()).or_insert_with(|| {
-            Arc::new(Document::open(
+            let mut doc = Document::open(
                 params.project_key,
                 settings_version,
                 migration_tool,
                 params.content,
                 params.version,
-            ))
+            );
+            doc.set_template_syntax(template_syntax);
+            Arc::new(doc)
         });
 
         Ok(())
@@ -853,6 +887,12 @@ impl Workspace for WorkspaceServer {
         // Read before locking the documents, see `refresh_migration_tool`.
         let (settings_version, migration_tool) =
             self.migration_tool(params.project_key, &params.path);
+        let template_syntax = self
+            .workspaces()
+            .settings_for(params.project_key, params.path.as_path())
+            .map_or(TemplateSyntax::default(), |settings| {
+                settings.template_syntax
+            });
         let mut documents = self.documents.write();
 
         let (stale_tool, stale) = match documents.entry(params.path.clone()) {
@@ -864,19 +904,22 @@ impl Workspace for WorkspaceServer {
                     .then(|| {
                         doc.set_migration_tool(params.project_key, settings_version, migration_tool)
                     });
+                doc.set_template_syntax(template_syntax);
                 (
                     stale_tool,
                     doc.update_content(params.content, params.version),
                 )
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
-                entry.insert(Arc::new(Document::open(
+                let mut doc = Document::open(
                     params.project_key,
                     settings_version,
                     migration_tool,
                     params.content,
                     params.version,
-                )));
+                );
+                doc.set_template_syntax(template_syntax);
+                entry.insert(Arc::new(doc));
                 return Ok(());
             }
         };
@@ -909,6 +952,7 @@ impl Workspace for WorkspaceServer {
         params: CodeActionsParams,
     ) -> Result<CodeActionsResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
+        self.refresh_template_syntax(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -984,6 +1028,7 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
+        self.refresh_template_syntax(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let code = document.get_document_content().to_string();
 
@@ -1002,6 +1047,7 @@ impl Workspace for WorkspaceServer {
             &document,
             code,
             params.fix_file_mode,
+            settings.template_syntax,
             |doc| {
                 self.lint_diagnostics(
                     params.project_key,
@@ -1022,6 +1068,7 @@ impl Workspace for WorkspaceServer {
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
+        self.refresh_template_syntax(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -1192,6 +1239,7 @@ impl Workspace for WorkspaceServer {
         params: PullFileDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
+        self.refresh_template_syntax(params.project_key, &params.path);
         let settings = self.workspaces();
 
         let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
@@ -1414,6 +1462,7 @@ impl Workspace for WorkspaceServer {
         params: PullFileFormattingParams,
     ) -> Result<PullFormattingResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
+        self.refresh_template_syntax(params.project_key, &params.path);
         let settings = self.workspaces();
 
         let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
@@ -1435,6 +1484,7 @@ impl Workspace for WorkspaceServer {
         let result = formatting::format_document(
             doc,
             &settings.formatter,
+            settings.template_syntax,
             params.range,
             &params.path.as_path().display().to_string(),
             &should_stop,
@@ -1555,6 +1605,7 @@ impl Workspace for WorkspaceServer {
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
+        self.refresh_template_syntax(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -1610,6 +1661,7 @@ impl Workspace for WorkspaceServer {
     ), err)]
     fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
+        self.refresh_template_syntax(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -1669,6 +1721,7 @@ impl Workspace for WorkspaceServer {
         params: PullInlayHintsParams,
     ) -> Result<PullInlayHintsResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
+        self.refresh_template_syntax(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -1748,6 +1801,7 @@ impl Workspace for WorkspaceServer {
         params: PullSemanticTokensParams,
     ) -> Result<PullSemanticTokensResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
+        self.refresh_template_syntax(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 

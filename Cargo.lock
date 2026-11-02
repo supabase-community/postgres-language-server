@@ -2406,6 +2406,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "pgls_env",
+ "pgls_lexer",
  "pgls_line_index",
  "pgls_matcher",
  "pgls_migrations",
@@ -2415,6 +2416,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]
@@ -2551,6 +2553,8 @@ dependencies = [
  "pgls_lexer_codegen",
  "pgls_text_size",
  "pgls_tokenizer",
+ "regex",
+ "tracing",
 ]
 
 [[package]]

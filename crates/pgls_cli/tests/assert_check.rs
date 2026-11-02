@@ -9,6 +9,51 @@ use std::process::ExitStatus;
 const CONFIG_PATH: &str = "tests/fixtures/postgres-language-server.jsonc";
 
 #[test]
+fn template_check_keeps_lint_findings_with_combined_syntaxes() {
+    let output = run_check_with(
+        &[
+            "--config-path",
+            CONFIG_PATH,
+            "--disable-db",
+            "--template-syntax",
+            "go-printf,rust-fmt,dollar-values",
+            "--stdin-file-path",
+            "template.sql",
+            "--only",
+            "preferBigInt",
+        ],
+        Some("CREATE TABLE %s.{table} (id int);\nSELECT $1;"),
+        None,
+    );
+    assert!(output.starts_with("status: success"), "{output}");
+    assert!(output.contains("lint/preferBigInt"), "{output}");
+    assert!(!output.contains("syntax/"), "{output}");
+}
+
+#[test]
+fn template_check_fixes_static_types_and_preserves_placeholders() {
+    let output = run_check_with(
+        &[
+            "--config-path",
+            CONFIG_PATH,
+            "--disable-db",
+            "--template-syntax",
+            "go-printf,rust-fmt,dollar-values",
+            "--stdin-file-path",
+            "template.sql",
+            "--only",
+            "preferJsonb",
+            "--unsafe",
+        ],
+        Some("CREATE TABLE %s.{table} (payload json);\nSELECT $1;"),
+        None,
+    );
+    assert!(output.starts_with("status: success"), "{output}");
+    assert!(output.contains("%s.{table} (payload jsonb)"), "{output}");
+    assert!(output.contains("SELECT $1;"), "{output}");
+}
+
+#[test]
 #[cfg_attr(
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"

@@ -284,6 +284,9 @@ pub struct Settings {
 
     /// Semantic token settings for the workspace
     pub semantic_tokens: SemanticTokensSettings,
+
+    /// Host-language placeholders accepted by the parser.
+    pub template_syntax: pgls_lexer::TemplateSyntax,
 }
 
 impl Settings {
@@ -309,6 +312,13 @@ impl Settings {
         // db settings
         if let Some(db) = configuration.db {
             self.db = db.into()
+        }
+
+        if let Some(syntax) = configuration
+            .templating
+            .and_then(|templating| templating.syntax)
+        {
+            self.template_syntax = syntax.into();
         }
 
         // linter part

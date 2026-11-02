@@ -7,15 +7,18 @@ use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
     LinterDiagnostic, LinterOptions, STOP_CHECK_INTERVAL,
 };
+use pgls_analyser::RuleFix;
 use pgls_configuration::RuleSelector;
+use pgls_diagnostics::Diagnostic;
 use pgls_fs::PgLSPath;
+use pgls_lexer::{TemplateSyntax, convert_template_parameters, template_parameters};
 use pgls_migrations::Role;
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 
 use super::{
     WorkspaceServer, analyser::AnalyserVisitorBuilder, document::AnalyserDiagnosticsMapper,
-    document::Document,
+    document::DefaultMapper, document::Document,
 };
 use crate::{configuration::to_analyser_rules, settings::Settings, workspace::ProjectKey};
 
@@ -221,7 +224,18 @@ impl WorkspaceServer {
                 file_kind: self.file_kind(settings, path.as_path()),
                 sections: sections.to_vec(),
                 typecheck,
-                source: Some(doc.get_document_content().to_owned()),
+                source: Some(if settings.template_syntax == TemplateSyntax::default() {
+                    doc.get_document_content().to_owned()
+                } else {
+                    convert_template_parameters(
+                        doc.get_document_content(),
+                        settings.template_syntax,
+                    )
+                    .map_or_else(
+                        |_| doc.get_document_content().to_owned(),
+                        |conversion| conversion.sql,
+                    )
+                }),
             },
             should_stop,
         );
@@ -265,11 +279,129 @@ impl WorkspaceServer {
             return Vec::new();
         };
         let suppressions = doc.suppressions();
+        let template_protection = (settings.template_syntax != TemplateSyntax::default()
+            && analysis
+                .lint_diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.get_fix().is_some()))
+        .then(|| protected_template_ranges(doc.get_document_content(), settings.template_syntax));
         analysis
             .lint_diagnostics()
             .iter()
             .filter(|diagnostic| !suppressions.is_suppressed(*diagnostic))
-            .cloned()
+            .map(|diagnostic| {
+                let unsafe_fix = template_protection.as_ref().is_some_and(|protection| {
+                    diagnostic.get_fix().is_some_and(|fix| {
+                        protection.as_ref().is_none_or(|conversion| {
+                            !template_fix_is_safe(
+                                doc.get_document_content(),
+                                settings.template_syntax,
+                                conversion,
+                                fix,
+                            )
+                            // Statement-local proxies can differ from whole-file proxies.
+                            || diagnostic.location().span.is_none_or(|span| {
+                                doc.iter_at(DefaultMapper, span.start()).any(|(_, _, sql)| {
+                                    convert_template_parameters(&sql, settings.template_syntax)
+                                        .map_or(true, |statement| {
+                                            fix.edits.iter().any(|edit| {
+                                                contains_template_proxy(
+                                                    &edit.replacement,
+                                                    &statement,
+                                                )
+                                            })
+                                        })
+                                })
+                            })
+                        })
+                    })
+                });
+                if unsafe_fix {
+                    diagnostic.clone().maybe_fix(None)
+                } else {
+                    diagnostic.clone()
+                }
+            })
             .collect()
     }
+}
+
+fn protected_template_ranges(
+    content: &str,
+    syntax: TemplateSyntax,
+) -> Option<pgls_lexer::NamedParameterConversion> {
+    // Includes directives in strings and comments, which are opaque to parser conversion.
+    const PROTECTED_OCCURRENCES_MAX: usize = 1_048_576;
+    let mut conversion = convert_template_parameters(content, syntax).ok()?;
+    for parameter in template_parameters(content, syntax) {
+        if conversion.replacement_ranges.len() >= PROTECTED_OCCURRENCES_MAX {
+            tracing::warn!(
+                "Template fix protection exceeds {PROTECTED_OCCURRENCES_MAX} occurrences"
+            );
+            return None;
+        }
+        let start = parameter.as_ptr() as usize - content.as_ptr() as usize;
+        let end = start + parameter.len();
+        debug_assert!(content.is_char_boundary(start));
+        debug_assert!(content.is_char_boundary(end));
+        conversion
+            .replacement_ranges
+            .push(TextRange::new(start.try_into().ok()?, end.try_into().ok()?));
+    }
+    conversion
+        .replacement_ranges
+        .sort_by_key(|range| range.start());
+    let mut merged: Vec<TextRange> = Vec::new();
+    for range in conversion.replacement_ranges {
+        if let Some(previous) = merged.last_mut()
+            && previous.end() >= range.start()
+        {
+            *previous = previous.cover(range);
+        } else {
+            merged.push(range);
+        }
+    }
+    conversion.replacement_ranges = merged;
+    Some(conversion)
+}
+
+/// AST-derived edits must not touch a proxy or insert its generated identifier into real SQL.
+fn template_fix_is_safe(
+    content: &str,
+    syntax: TemplateSyntax,
+    conversion: &pgls_lexer::NamedParameterConversion,
+    fix: &RuleFix,
+) -> bool {
+    fix.edits.iter().all(|edit| {
+        let start = usize::from(edit.range.start());
+        let end = usize::from(edit.range.end());
+        if end > content.len() || !content.is_char_boundary(start) || !content.is_char_boundary(end)
+        {
+            return false;
+        }
+        let index = conversion
+            .replacement_ranges
+            .partition_point(|range| range.end() < edit.range.start());
+        if conversion
+            .replacement_ranges
+            .get(index)
+            .is_some_and(|range| range.start() <= edit.range.end())
+        {
+            return false;
+        }
+        if template_parameters(&edit.replacement, syntax).next().is_some() {
+            return false;
+        }
+        !contains_template_proxy(&edit.replacement, conversion)
+    })
+}
+
+fn contains_template_proxy(text: &str, conversion: &pgls_lexer::NamedParameterConversion) -> bool {
+    let lexed = pgls_lexer::lex(text);
+    lexed.tokens().enumerate().any(|(index, kind)| {
+        kind == pgls_lexer::SyntaxKind::IDENT
+            && conversion
+                .identifier_replacements
+                .contains_key(lexed.text(index).trim_matches('"'))
+    })
 }

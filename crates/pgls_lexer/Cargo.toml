@@ -16,6 +16,8 @@ pgls_diagnostics.workspace   = true
 pgls_lexer_codegen.workspace = true
 pgls_text_size.workspace     = true
 pgls_tokenizer.workspace     = true
+regex.workspace              = true
+tracing.workspace            = true
 
 [dev-dependencies]
 insta.workspace = true

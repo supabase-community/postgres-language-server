@@ -4,6 +4,7 @@ use std::sync::{
 };
 
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
+use pgls_lexer::{TemplateSyntax, convert_template_parameters};
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::OffsetMap};
 use pgls_statement_splitter::SplitResult;
 use pgls_suppressions::Suppressions;
@@ -39,6 +40,8 @@ pub struct Document {
     /// The version of the settings that `migration_tool` is from, see
     /// [`Document::has_migration_tool_of`].
     settings_version: u64,
+    /// The settings version the template syntax was read from.
+    template_syntax_version: u64,
     /// The migration tool that runs the file, from its settings. See [`Document::open`].
     migration_tool: MigrationTool,
     /// How `migration_tool` runs the content.
@@ -57,13 +60,37 @@ impl Document {
     /// A document without a project, and so without a migration tool: it is one migration.
     #[cfg(test)]
     pub fn new(content: String, version: i32) -> Document {
-        Self::open(
+        Self::with_template_syntax(content, version, TemplateSyntax::default())
+    }
+
+    pub fn with_template_syntax(content: String, version: i32, syntax: TemplateSyntax) -> Document {
+        let mut doc = Self::open(
             ProjectKey::default(),
             0,
             MigrationTool::Plain,
             content,
             version,
-        )
+        );
+        doc.set_template_syntax(syntax);
+        doc
+    }
+
+    /// A configuration change invalidates parse results even if the file text did not change.
+    pub fn set_template_syntax(&mut self, syntax: TemplateSyntax) {
+        self.template_syntax_version = self.settings_version;
+        if self.cache.template_syntax() != syntax {
+            self.cache = Arc::new(DocumentCache::with_template_syntax(self.generation, syntax));
+            drop(self.update_content(self.content.clone(), self.version));
+        }
+    }
+
+    /// Whether the template syntax is the one of the settings at `settings_version`.
+    pub(crate) fn has_template_syntax_of(&self, settings_version: u64) -> bool {
+        self.template_syntax_version == settings_version
+    }
+
+    pub fn template_syntax(&self) -> TemplateSyntax {
+        self.cache.template_syntax()
     }
 
     /// A document of the project `project_key`, whose settings at `settings_version` make
@@ -94,6 +121,7 @@ impl Document {
             suppressions,
             project_key,
             settings_version,
+            template_syntax_version: settings_version,
             migration_tool,
             migration_script,
             edited_at: None,
@@ -110,7 +138,11 @@ impl Document {
         let unchanged = common_prefix(old_text, new_text);
         let unchanged_suffix = common_suffix(old_text, new_text, unchanged);
         // Only the statements around the change are split again.
-        let split = pgls_statement_splitter::split_edited(old_text, &self.split, new_text);
+        let split = if self.cache.template_syntax() == TemplateSyntax::default() {
+            pgls_statement_splitter::split_edited(old_text, &self.split, new_text)
+        } else {
+            split_template_with_diagnostics(&content, self.cache.template_syntax()).0
+        };
         let changed = changed_statements(
             &self.split.ranges,
             &split.ranges,
@@ -556,7 +588,11 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
         let ast_result = doc.cache.parse(&stmt.id, doc.generation);
         let result = match &*ast_result {
             Ok(node) => Ok(node.clone()),
-            Err(diag) => Err(diag.clone().span(stmt.range)),
+            Err(diag) => Err(diag.clone().span(
+                diag.location()
+                    .span
+                    .map_or(stmt.range, |span| stmt.document_range(span)),
+            )),
         };
 
         let sql = stmt.id.content().to_string();
@@ -612,7 +648,16 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
                     (Some(node.clone()), None)
                 }
             }
-            Err(diag) => (None, Some(diag.clone().span(range))),
+            Err(diag) => (
+                None,
+                Some(
+                    diag.clone().span(
+                        diag.location()
+                            .span
+                            .map_or(range, |span| offsets.range_to_source(span) + range.start()),
+                    ),
+                ),
+            ),
         };
         let unparsable =
             (ast_option.is_none() && id.parent().is_none()).then(|| UnparsableStatement {
@@ -633,15 +678,24 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
         (
             ast_option.map(|root| {
+                let syntax = doc.cache.template_syntax();
+                let conversion = convert_template_parameters(id.content(), syntax).ok();
+                let has_identifier_parameters = conversion
+                    .as_ref()
+                    .is_some_and(|conversion| conversion.has_identifier_parameters);
+                // Rules scan and reparse this text to validate fixes. Proxies keep the source
+                // offsets; the workspace then checks the edits against the original placeholders.
+                let sql = if syntax == TemplateSyntax::default() {
+                    id.content().to_string()
+                } else {
+                    conversion.map_or_else(|| id.content().to_string(), |conversion| conversion.sql)
+                };
                 AnalysableStatement {
                     offsets,
-                    ..AnalysableStatement::new(root, range).with_sql(id.content())
+                    ..AnalysableStatement::new(root, range).with_sql(sql)
                 }
                 .with_function(function)
-                .with_identifier_parameters(
-                    pgls_lexer::convert_to_positional_params_with_metadata(id.content())
-                        .has_identifier_parameters,
-                )
+                .with_identifier_parameters(has_identifier_parameters)
                 .with_unknown_values(doc.touches_unknown_value(range))
             }),
             diagnostics,
@@ -841,6 +895,53 @@ fn statements_not_in<'a>(
 }
 
 /// The errors of the statement splitter as diagnostics.
+fn split_template_with_diagnostics(
+    content: &str,
+    syntax: TemplateSyntax,
+) -> (SplitResult, Vec<SDiagnostic>) {
+    if syntax == TemplateSyntax::default() {
+        let split = pgls_statement_splitter::split(content);
+        let diagnostics = split_diagnostics(&split);
+        return (split, diagnostics);
+    }
+    match convert_template_parameters(content, syntax) {
+        Ok(conversion) => {
+            let mut split = pgls_statement_splitter::split(&conversion.sql);
+            for range in &mut split.ranges {
+                let end = range.end();
+                let index = conversion
+                    .replacement_ranges
+                    .partition_point(|proxy| proxy.end() <= end);
+                if let Some(proxy) = conversion.replacement_ranges.get(index)
+                    && proxy.contains(end)
+                {
+                    *range = TextRange::new(range.start(), proxy.end());
+                }
+                debug_assert!(content.is_char_boundary(usize::from(range.start())));
+                debug_assert!(content.is_char_boundary(usize::from(range.end())));
+            }
+            let diagnostics = split_diagnostics(&split);
+            (split, diagnostics)
+        }
+        Err(error) => {
+            let range = error
+                .range
+                .start
+                .try_into()
+                .ok()
+                .zip(error.range.end.try_into().ok())
+                .map(|(start, end)| TextRange::new(start, end));
+            (
+                pgls_statement_splitter::split(""),
+                vec![SDiagnostic::new(SyntaxDiagnostic::new(
+                    error.to_string(),
+                    range,
+                ))],
+            )
+        }
+    }
+}
+
 fn split_diagnostics(split: &SplitResult) -> Vec<SDiagnostic> {
     split
         .errors

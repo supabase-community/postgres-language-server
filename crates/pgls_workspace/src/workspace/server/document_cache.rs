@@ -16,6 +16,7 @@ use std::sync::{
 
 use parking_lot::{Mutex, MutexGuard};
 use pgls_catalog::CatalogBase;
+use pgls_lexer::TemplateSyntax;
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::EmbeddedStatement};
 
 use rustc_hash::FxHashSet;
@@ -178,13 +179,23 @@ struct KeyedCaches {
 impl DocumentCache {
     /// The caches of a document whose content is of `generation`.
     pub(crate) fn new(generation: u64) -> Self {
+        Self::with_template_syntax(generation, TemplateSyntax::default())
+    }
+
+    /// The caches of a document whose content is of `generation`, parsed with `template_syntax`.
+    pub(crate) fn with_template_syntax(generation: u64, template_syntax: TemplateSyntax) -> Self {
         Self {
             generation: AtomicU64::new(generation),
-            parses: PgQueryStore::new(),
+            parses: PgQueryStore::with_template_syntax(template_syntax),
             trees: TreeSitterStore::new(),
             keyed: Mutex::default(),
             analysing: Mutex::default(),
         }
+    }
+
+    /// The placeholder syntaxes the cached parses were made with.
+    pub(crate) fn template_syntax(&self) -> TemplateSyntax {
+        self.parses.template_syntax
     }
 
     /// The analysis of the content of `generation` for `key`. `analyse` computes it if it isn't
