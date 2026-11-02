@@ -1471,6 +1471,17 @@
             }
           ]
         },
+        "invalidMerge": {
+          "description": "A MERGE, or merge_action(), that Postgres rejects.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "lockTimeoutWarning": {
           "description": "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.",
           "anyOf": [

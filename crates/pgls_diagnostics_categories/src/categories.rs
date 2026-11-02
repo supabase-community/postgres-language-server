@@ -66,6 +66,7 @@ define_categories! {
     "lint/insertColumnMismatch": "https://pg-language-server.com/latest/reference/rules/insert-column-mismatch/",
     "lint/invalidCast": "https://pg-language-server.com/latest/reference/rules/invalid-cast/",
     "lint/invalidDropTypeSignature": "https://pg-language-server.com/latest/reference/rules/invalid-drop-type-signature/",
+    "lint/invalidMerge": "https://pg-language-server.com/latest/reference/rules/invalid-merge/",
     "lint/lockTimeoutWarning": "https://pg-language-server.com/latest/reference/rules/lock-timeout-warning/",
     "lint/missingFromClauseEntry": "https://pg-language-server.com/latest/reference/rules/missing-from-clause-entry/",
     "lint/multipleAlterTable": "https://pg-language-server.com/latest/reference/rules/multiple-alter-table/",
