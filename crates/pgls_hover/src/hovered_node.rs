@@ -70,7 +70,14 @@ impl HoveredNode {
                     "binary_expression",
                     "object_reference",
                     "any_identifier",
-                ]) || ctx.history_ends_with(&["term", "object_reference", "any_identifier"]) =>
+                ]) || ctx.history_ends_with(&["term", "object_reference", "any_identifier"])
+                    // The value of `SET col = t.col`, and of `MERGE ... INSERT VALUES (t.col)`.
+                    || ctx.history_ends_with(&["assignment", "object_reference", "any_identifier"])
+                    || ctx.history_ends_with(&[
+                        "when_clause",
+                        "object_reference",
+                        "any_identifier",
+                    ]) =>
             {
                 Some(HoveredNode::Column((
                     ctx.head_qualifier_sanitized(),
