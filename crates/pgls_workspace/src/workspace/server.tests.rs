@@ -4578,3 +4578,27 @@ async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
         assert!(pools.statement_pool.is_closed());
     }
 }
+
+#[test]
+fn database_spans_must_fit_the_statement() {
+    use super::database_span;
+
+    let at = |offset: u32| TextSize::from(offset);
+    let statement = "select 'é' from t";
+    let range = TextRange::new(at(100), at(100) + TextSize::of(statement));
+    // `'é'` is at 7..11.
+    assert_eq!(
+        database_span(Some(TextRange::new(at(7), at(11))), statement, range),
+        TextRange::new(at(107), at(111))
+    );
+    assert_eq!(database_span(None, statement, range), range);
+    // Inside `é`, or after the end of the statement.
+    assert_eq!(
+        database_span(Some(TextRange::new(at(9), at(11))), statement, range),
+        range
+    );
+    assert_eq!(
+        database_span(Some(TextRange::new(at(15), at(40))), statement, range),
+        range
+    );
+}
