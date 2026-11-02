@@ -215,6 +215,7 @@ mod rename_stmt;
 mod replica_identity_stmt;
 mod res_target;
 mod return_stmt;
+mod returning_clause;
 mod role_spec;
 mod row_compare_expr;
 mod row_expr;
@@ -226,7 +227,6 @@ mod sec_label_stmt;
 mod select_stmt;
 mod set_operation_stmt;
 mod set_to_default;
-mod single_partition_spec;
 mod sort_by;
 mod sort_group_clause;
 mod sql_value_function;
@@ -297,7 +297,7 @@ use alter_stats_stmt::emit_alter_stats_stmt;
 use alter_subscription_stmt::emit_alter_subscription_stmt;
 use alter_system_stmt::emit_alter_system_stmt;
 use alter_table_move_all_stmt::emit_alter_table_move_all_stmt;
-use alter_table_stmt::{emit_alter_table_cmd, emit_alter_table_stmt};
+use alter_table_stmt::{emit_alter_table_cmd, emit_alter_table_stmt, emit_at_alter_constraint};
 use alter_tablespace_options_stmt::emit_alter_tablespace_options_stmt;
 use alter_ts_configuration_stmt::emit_alter_ts_configuration_stmt;
 use alter_ts_dictionary_stmt::emit_alter_ts_dictionary_stmt;
@@ -475,6 +475,7 @@ use rename_stmt::emit_rename_stmt;
 use replica_identity_stmt::emit_replica_identity_stmt;
 use res_target::emit_res_target;
 use return_stmt::emit_return_stmt;
+use returning_clause::{emit_returning_clause, emit_returning_option};
 use role_spec::emit_role_spec;
 use row_compare_expr::emit_row_compare_expr;
 use row_expr::emit_row_expr;
@@ -486,7 +487,6 @@ use sec_label_stmt::emit_sec_label_stmt;
 use select_stmt::{emit_select_stmt, emit_select_stmt_no_semicolon};
 use set_operation_stmt::emit_set_operation_stmt;
 use set_to_default::emit_set_to_default;
-use single_partition_spec::emit_single_partition_spec;
 use sort_by::emit_sort_by;
 use sort_group_clause::emit_sort_group_clause;
 use sql_value_function::emit_sql_value_function;
@@ -862,7 +862,6 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::PartitionBoundSpec(n) => emit_partition_bound_spec(e, n),
         NodeEnum::PartitionRangeDatum(n) => emit_partition_range_datum(e, n),
         NodeEnum::PartitionSpec(n) => emit_partition_spec(e, n),
-        NodeEnum::SinglePartitionSpec(n) => emit_single_partition_spec(e, n),
         NodeEnum::RowCompareExpr(n) => emit_row_compare_expr(e, n),
         NodeEnum::RowMarkClause(n) => emit_row_mark_clause(e, n),
         NodeEnum::RowExpr(n) => emit_row_expr(e, n),
@@ -963,6 +962,7 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::AlterSystemStmt(n) => emit_alter_system_stmt(e, n),
         NodeEnum::AlterTableStmt(n) => emit_alter_table_stmt(e, n),
         NodeEnum::AlterTableCmd(n) => emit_alter_table_cmd(e, n),
+        NodeEnum::AtalterConstraint(n) => emit_at_alter_constraint(e, n),
         NodeEnum::AlterTableMoveAllStmt(n) => emit_alter_table_move_all_stmt(e, n),
         NodeEnum::AlterTableSpaceOptionsStmt(n) => emit_alter_tablespace_options_stmt(e, n),
         NodeEnum::AlterTsconfigurationStmt(n) => emit_alter_ts_configuration_stmt(e, n),
@@ -984,6 +984,14 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::RenameStmt(n) => emit_rename_stmt(e, n),
         NodeEnum::ReplicaIdentityStmt(n) => emit_replica_identity_stmt(e, n),
         NodeEnum::ReturnStmt(n) => emit_return_stmt(e, n),
+        NodeEnum::ReturningClause(n) => emit_returning_clause(e, n),
+        NodeEnum::ReturningOption(n) => emit_returning_option(e, n),
+        // Planner node: the expression evaluated against the OLD or NEW row.
+        NodeEnum::ReturningExpr(n) => {
+            if let Some(expr) = &n.retexpr {
+                emit_node(expr, e);
+            }
+        }
         NodeEnum::DeallocateStmt(n) => emit_deallocate_stmt(e, n),
         NodeEnum::RefreshMatViewStmt(n) => emit_refresh_matview_stmt(e, n),
         NodeEnum::ReassignOwnedStmt(n) => emit_reassign_owned_stmt(e, n),

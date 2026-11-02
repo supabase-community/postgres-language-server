@@ -112,10 +112,10 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
         // The type of a `RETURN` expression is not checked.
         NodeEnum::ReturnStmt(_) => return,
         NodeEnum::SelectStmt(_) => true,
-        NodeEnum::InsertStmt(insert) => !insert.returning_list.is_empty(),
-        NodeEnum::UpdateStmt(update) => !update.returning_list.is_empty(),
-        NodeEnum::DeleteStmt(delete) => !delete.returning_list.is_empty(),
-        NodeEnum::MergeStmt(merge) => !merge.returning_list.is_empty(),
+        NodeEnum::InsertStmt(insert) => insert.returning_clause.is_some(),
+        NodeEnum::UpdateStmt(update) => update.returning_clause.is_some(),
+        NodeEnum::DeleteStmt(delete) => delete.returning_clause.is_some(),
+        NodeEnum::MergeStmt(merge) => merge.returning_clause.is_some(),
         _ => false,
     };
     if !returns_rows {
