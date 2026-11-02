@@ -104,6 +104,10 @@ struct ErrorRewriteRule {
     rewrite: fn(&regex::Captures, &IdentifierReplacement) -> String,
 }
 
+#[expect(
+    clippy::unwrap_used,
+    reason = "the patterns are constants, which the tests of the rewritten messages compile"
+)]
 static ERROR_REWRITE_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
     vec![
         ErrorRewriteRule {
@@ -186,7 +190,7 @@ pub(crate) fn create_type_error(
     let range = original_position.and_then(|pos| {
         ts.root_node()
             .named_descendant_for_byte_range(pos.into(), pos.into())
-            .map(|node| {
+            .and_then(|node| {
                 let node = if source_offset == TextSize::from(0) {
                     node
                 } else {
@@ -202,10 +206,10 @@ pub(crate) fn create_type_error(
                         .unwrap_or(node)
                 };
 
-                TextRange::new(
-                    TextSize::from(u32::try_from(node.start_byte()).unwrap()) + source_offset,
-                    TextSize::from(u32::try_from(node.end_byte()).unwrap()) + source_offset,
-                )
+                Some(TextRange::new(
+                    TextSize::from(u32::try_from(node.start_byte()).ok()?) + source_offset,
+                    TextSize::from(u32::try_from(node.end_byte()).ok()?) + source_offset,
+                ))
             })
     });
 
