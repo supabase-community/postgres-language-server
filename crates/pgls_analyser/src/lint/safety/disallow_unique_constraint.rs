@@ -10,6 +10,9 @@ declare_lint_rule! {
     /// writes to the table. Instead, create a unique index concurrently and then add the
     /// constraint using that index.
     ///
+    /// A temporal unique constraint (`WITHOUT OVERLAPS`, Postgres 18) needs a GiST index, which
+    /// can't be unique, so it has no such alternative.
+    ///
     /// ## Examples
     ///
     /// ### Invalid
@@ -79,6 +82,13 @@ impl LinterRule for DisallowUniqueConstraint {
                                         == pgls_query::protobuf::ConstrType::ConstrUnique
                                         && constraint.indexname.is_empty()
                                     {
+                                        // `USING INDEX` needs a unique B-tree index, but a
+                                        // temporal key needs a GiST index.
+                                        let note = if constraint.without_overlaps {
+                                            "There is no concurrent alternative for a temporal key (WITHOUT OVERLAPS). Use SET lock_timeout to limit the impact on concurrent operations."
+                                        } else {
+                                            "Create a unique index CONCURRENTLY and then add the constraint using that index."
+                                        };
                                         diagnostics.push(
                                             LinterDiagnostic::new(
                                                 rule_category!(),
@@ -87,7 +97,7 @@ impl LinterRule for DisallowUniqueConstraint {
                                                     "Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock."
                                                 },
                                             )
-                                            .note("Create a unique index CONCURRENTLY and then add the constraint using that index."),
+                                            .note(note),
                                         );
                                     }
                                 }
