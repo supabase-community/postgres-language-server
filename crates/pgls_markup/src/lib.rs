@@ -1,3 +1,6 @@
+// A panic in a proc macro is a compile error without a location; `abort!` points at the input.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use proc_macro_error::*;
 use proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree};
 use quote::{ToTokens, quote};
@@ -37,14 +40,11 @@ pub fn markup(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         match token {
             TokenTree::Punct(punct) => match punct.as_char() {
                 '<' => {
-                    let is_closing_element = match input.peek() {
-                        Some(TokenTree::Punct(punct)) if punct.as_char() == '/' => {
-                            // SAFETY: Guarded by above call to peek
-                            input.next().unwrap();
-                            true
-                        }
-                        _ => false,
-                    };
+                    let is_closing_element = input
+                        .next_if(
+                            |token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == '/'),
+                        )
+                        .is_some();
 
                     let name = match input.next() {
                         Some(TokenTree::Ident(ident)) => ident,
@@ -53,13 +53,9 @@ pub fn markup(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     };
 
                     let mut attributes = Vec::new();
-                    while let Some(TokenTree::Ident(_)) = input.peek() {
-                        // SAFETY: these panics are checked by the above call to peek
-                        let attr = match input.next().unwrap() {
-                            TokenTree::Ident(attr) => attr,
-                            _ => unreachable!(),
-                        };
-
+                    while let Some(TokenTree::Ident(attr)) =
+                        input.next_if(|token| matches!(token, TokenTree::Ident(_)))
+                    {
                         match input.next() {
                             Some(TokenTree::Punct(punct)) => {
                                 if punct.as_char() != '=' {
