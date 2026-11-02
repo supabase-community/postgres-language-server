@@ -5,6 +5,9 @@ use crate::logging::LoggingKind;
 use crate::reporter::Report;
 use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
+use pgls_configuration::templating::{
+    PartialTemplatingConfiguration, partial_templating_configuration,
+};
 use pgls_configuration::{PartialConfiguration, RuleSelector, partial_configuration};
 use pgls_console::{Console, ConsoleExt, markup};
 use pgls_diagnostics::{Category, Error, PrintDiagnostic};
@@ -226,6 +229,19 @@ pub enum PgLSCommand {
     /// Parses a SQL file (or standard input) and writes the parse tree as a protobuf `ParseResult` message.
     #[bpaf(command)]
     Parse {
+        #[bpaf(external(partial_templating_configuration), optional)]
+        templating: Option<PartialTemplatingConfiguration>,
+
+        /// File or directory containing the SQL template configuration.
+        #[bpaf(
+            env("PGLS_CONFIG_PATH"),
+            env("PGT_CONFIG_PATH"),
+            long("config-path"),
+            argument("PATH"),
+            optional
+        )]
+        config_path: Option<PathBuf>,
+
         /// Path to the SQL file to parse. When omitted, the SQL is read from standard input.
         #[bpaf(long("file"), argument("PATH"), optional)]
         file: Option<PathBuf>,

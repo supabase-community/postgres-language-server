@@ -2,18 +2,18 @@ use std::sync::Arc;
 
 use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
+use pgls_lexer::{TemplateSyntax, convert_template_parameters};
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, utils::sql_function_body};
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 use super::{
-    pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
-    statement_identifier::StatementId,
-    tree_sitter::TreeSitterStore,
+    pg_query::PgQueryStore, statement_identifier::StatementId, tree_sitter::TreeSitterStore,
 };
 
 pub struct Document {
+    pub project_key: Option<crate::workspace::ProjectKey>,
     content: String,
     version: i32,
     ranges: Vec<TextRange>,
@@ -24,13 +24,19 @@ pub struct Document {
 }
 
 impl Document {
+    #[cfg(test)]
     pub fn new(content: String, version: i32) -> Document {
+        Self::with_template_syntax(content, version, TemplateSyntax::default())
+    }
+
+    pub fn with_template_syntax(content: String, version: i32, syntax: TemplateSyntax) -> Document {
         let cst_db = TreeSitterStore::new();
-        let ast_db = PgQueryStore::new();
-        let (ranges, diagnostics) = split_with_diagnostics(&content, None);
+        let ast_db = PgQueryStore::with_template_syntax(syntax);
+        let (ranges, diagnostics) = split_template_with_diagnostics(&content, syntax);
         let suppressions = Suppressions::from(content.as_str()).with_statements(ranges.clone());
 
         Document {
+            project_key: None,
             ranges,
             diagnostics,
             content,
@@ -41,11 +47,24 @@ impl Document {
         }
     }
 
+    /// A configuration change invalidates parse results even if the file text did not change.
+    pub fn set_template_syntax(&mut self, syntax: TemplateSyntax) {
+        if self.ast_db.template_syntax != syntax {
+            self.ast_db = PgQueryStore::with_template_syntax(syntax);
+            self.update_content(self.content.clone(), self.version);
+        }
+    }
+
+    pub fn template_syntax(&self) -> TemplateSyntax {
+        self.ast_db.template_syntax
+    }
+
     pub fn update_content(&mut self, content: String, version: i32) {
         self.content = content;
         self.version = version;
 
-        let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
+        let (ranges, diagnostics) =
+            split_template_with_diagnostics(&self.content, self.ast_db.template_syntax);
 
         self.suppressions =
             Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
@@ -243,7 +262,11 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
         let ast_result = parser.ast_db.get_or_cache_ast(&id);
         let result = match &*ast_result {
             Ok(node) => Ok(node.clone()),
-            Err(diag) => Err(diag.clone().span(range)),
+            Err(diag) => Err(diag.clone().span(
+                diag.location()
+                    .span
+                    .map_or(range, |span| span + range.start()),
+            )),
         };
 
         (id.clone(), range, id.content().to_string(), result)
@@ -297,7 +320,16 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
                     (Some(node.clone()), None)
                 }
             }
-            Err(diag) => (None, Some(diag.clone().span(range))),
+            Err(diag) => (
+                None,
+                Some(
+                    diag.clone().span(
+                        diag.location()
+                            .span
+                            .map_or(range, |span| span + range.start()),
+                    ),
+                ),
+            ),
         };
         let unparsable =
             (ast_option.is_none() && id.parent().is_none()).then(|| UnparsableStatement {
@@ -316,17 +348,70 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
         (
             ast_option.map(|root| {
+                let syntax = parser.ast_db.template_syntax;
+                let conversion = convert_template_parameters(id.content(), syntax).ok();
+                let has_identifier_parameters = conversion
+                    .as_ref()
+                    .is_some_and(|conversion| conversion.has_identifier_parameters);
+                // Rules scan and reparse this text to validate fixes. Proxies keep the source
+                // offsets; the workspace then checks the edits against the original placeholders.
+                let sql = if syntax == TemplateSyntax::default() {
+                    id.content().to_string()
+                } else {
+                    conversion.map_or_else(|| id.content().to_string(), |conversion| conversion.sql)
+                };
                 AnalysableStatement::new(root, range)
-                    .with_sql(id.content())
+                    .with_sql(sql)
                     .with_function(function)
-                    .with_identifier_parameters(
-                        convert_to_positional_params_with_metadata(id.content())
-                            .has_identifier_parameters,
-                    )
+                    .with_identifier_parameters(has_identifier_parameters)
             }),
             diagnostics,
             unparsable,
         )
+    }
+}
+
+fn split_template_with_diagnostics(
+    content: &str,
+    syntax: TemplateSyntax,
+) -> (Vec<TextRange>, Vec<SDiagnostic>) {
+    if syntax == TemplateSyntax::default() {
+        return split_with_diagnostics(content, None);
+    }
+    match convert_template_parameters(content, syntax) {
+        Ok(conversion) => {
+            let (mut ranges, diagnostics) = split_with_diagnostics(&conversion.sql, None);
+            for range in &mut ranges {
+                let end = range.end();
+                let index = conversion
+                    .replacement_ranges
+                    .partition_point(|proxy| proxy.end() <= end);
+                if let Some(proxy) = conversion.replacement_ranges.get(index)
+                    && proxy.contains(end)
+                {
+                    *range = TextRange::new(range.start(), proxy.end());
+                }
+                debug_assert!(content.is_char_boundary(usize::from(range.start())));
+                debug_assert!(content.is_char_boundary(usize::from(range.end())));
+            }
+            (ranges, diagnostics)
+        }
+        Err(error) => {
+            let range = error
+                .range
+                .start
+                .try_into()
+                .ok()
+                .zip(error.range.end.try_into().ok())
+                .map(|(start, end)| TextRange::new(start, end));
+            (
+                Vec::new(),
+                vec![SDiagnostic::new(SyntaxDiagnostic::new(
+                    error.to_string(),
+                    range,
+                ))],
+            )
+        }
     }
 }
 pub struct WithCSTMapper;

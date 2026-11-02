@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 
 use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
+use pgls_lexer::{TemplateSyntax, convert_template_parameters, template_parameters};
 use pgls_pretty_print::FormatConfig;
 use pgls_text_size::TextRange;
 
@@ -46,12 +47,23 @@ fn format_config(settings: &FormatterSettings) -> FormatConfig {
 pub(super) fn format_document(
     doc: &Document,
     settings: &FormatterSettings,
+    template_syntax: TemplateSyntax,
     range: Option<TextRange>,
     path: &str,
 ) -> PullFormattingResult {
+    // A configuration reload releases the settings lock before refreshing the documents.
+    // Never print a proxy AST from the previous syntax in that short interval.
+    let reparsed = (doc.template_syntax() != template_syntax).then(|| {
+        Document::with_template_syntax(doc.get_document_content().to_string(), 0, template_syntax)
+    });
+    let doc = reparsed.as_ref().unwrap_or(doc);
     let config = format_config(settings);
 
-    let mut diagnostics = Vec::new();
+    let mut diagnostics: Vec<_> = doc
+        .document_diagnostics()
+        .iter()
+        .map(|diagnostic| SDiagnostic::new(diagnostic.clone().with_file_path(path)))
+        .collect();
     let mut statements = Vec::new();
     let mut formatted_output = String::new();
 
@@ -88,7 +100,9 @@ pub(super) fn format_document(
                 continue;
             };
 
-            let Some(formatted) = restore_named_parameters(text, &result.formatted, ast) else {
+            let Some(formatted) =
+                restore_named_parameters(text, &result.formatted, ast, template_syntax)
+            else {
                 continue;
             };
 
@@ -145,7 +159,12 @@ pub(super) fn format_document(
                 }
 
                 match pgls_pretty_print::format_statement(&ast, &text, &config) {
-                    Ok(result) => match restore_named_parameters(&text, &result.formatted, &ast) {
+                    Ok(result) => match restore_named_parameters(
+                        &text,
+                        &result.formatted,
+                        &ast,
+                        template_syntax,
+                    ) {
                         Some(formatted) => {
                             if text != formatted {
                                 statements.push(StatementFormatResult {
@@ -159,7 +178,7 @@ pub(super) fn format_document(
                         None => {
                             diagnostics.push(SDiagnostic::new(
                                 pgls_diagnostics::Error::from(WorkspaceError::format_error(
-                                    "Named parameters could not be restored after \
+                                    "Parameters could not be restored after \
                                              formatting, the statement was left untouched"
                                         .to_string(),
                                 ))
@@ -243,28 +262,32 @@ fn collapse_blank_lines(text: &str) -> String {
     result
 }
 
-/// Put psql named parameters back where the formatter printed their placeholders.
+/// Put psql and host-language parameters back where the formatter printed their placeholders.
 ///
 /// The parser only ever sees placeholders, so the printed statement carries `$1` or a bare
 /// identifier instead of `:'agen_code'` or `:raw_data`. Substitution happens on the token stream
 /// so that a `$1` inside a string literal is left alone, and the result is proven by converting it
 /// back and comparing the normalized ASTs: a statement that does not survive that round trip is
 /// reported as unrestorable and kept as it was written.
-fn restore_named_parameters(
+pub(super) fn restore_named_parameters(
     original: &str,
     formatted: &str,
     original_ast: &pgls_query::NodeEnum,
+    syntax: TemplateSyntax,
 ) -> Option<String> {
     use pgls_lexer::{SyntaxKind, lex};
 
-    let conversion = pgls_lexer::convert_to_positional_params_with_metadata(original);
-
-    if conversion.identifier_replacements.is_empty() && conversion.value_replacements.is_empty() {
-        return Some(formatted.to_string());
-    }
+    let conversion = convert_template_parameters(original, syntax).ok()?;
 
     if !conversion.restorable {
         return None;
+    }
+    if conversion.identifier_replacements.is_empty()
+        && conversion.value_replacements.is_empty()
+        && conversion.symbol_replacements.is_empty()
+        && template_parameters(original, syntax).next().is_none()
+    {
+        return Some(formatted.to_string());
     }
 
     let lexed = lex(formatted);
@@ -277,6 +300,19 @@ fn restore_named_parameters(
 
         let text = lexed.text(idx);
 
+        // A slice bound printed as `:a0` is lexed as a native named parameter. Only restore
+        // host-language proxies here, leaving genuine psql array-slice names alone.
+        if kind == SyntaxKind::NAMED_PARAM
+            && let Some(name) = text.strip_prefix(':')
+            && let Some(source) = conversion.identifier_replacements.get(name)
+            && !source.starts_with([':', '@', '$'])
+            && template_parameters(source, syntax).next().is_some()
+        {
+            restored.push(':');
+            restored.push_str(source);
+            continue;
+        }
+
         let replacement = match kind {
             SyntaxKind::IDENT => conversion.identifier_replacements.get(text),
             SyntaxKind::POSITIONAL_PARAM => text
@@ -284,7 +320,7 @@ fn restore_named_parameters(
                 .parse::<usize>()
                 .ok()
                 .and_then(|index| conversion.value_replacements.get(&index)),
-            _ => None,
+            _ => conversion.symbol_replacements.get(text),
         };
 
         match replacement {
@@ -293,7 +329,31 @@ fn restore_named_parameters(
         }
     }
 
-    let reparsed = pgls_query::parse(&pgls_lexer::convert_to_positional_params(&restored)).ok()?;
+    if !template_parameters(original, syntax).eq(template_parameters(&restored, syntax)) {
+        return None;
+    }
+    if template_parameters(original, syntax).next().is_some() {
+        let original_bound = pgls_lexer::bind_template_arguments(original, syntax).ok()?;
+        let restored_bound = pgls_lexer::bind_template_arguments(&restored, syntax).ok()?;
+        let parse_bound = |sql: &str| {
+            let mut ast = pgls_query::parse(&pgls_lexer::convert_to_positional_params(sql))
+                .ok()?
+                .into_root()?;
+            pgls_pretty_print::normalize_ast(&mut ast);
+            Some(ast)
+        };
+        if parse_bound(&original_bound)? != parse_bound(&restored_bound)? {
+            return None;
+        }
+    }
+    if conversion.identifier_replacements.is_empty()
+        && conversion.value_replacements.is_empty()
+        && conversion.symbol_replacements.is_empty()
+    {
+        return Some(restored);
+    }
+    let normalized = convert_template_parameters(&restored, syntax).ok()?;
+    let reparsed = pgls_query::parse(&normalized.sql).ok()?;
     let mut restored_ast = reparsed.into_root()?;
     let mut expected_ast = original_ast.clone();
     pgls_pretty_print::normalize_ast(&mut restored_ast);

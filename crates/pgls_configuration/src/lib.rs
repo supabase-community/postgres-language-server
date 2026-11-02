@@ -18,6 +18,7 @@ pub mod plpgsql_check;
 pub mod rules;
 pub mod semantic_tokens;
 pub mod splinter;
+pub mod templating;
 pub mod typecheck;
 pub mod utils;
 pub mod vcs;
@@ -70,6 +71,9 @@ use serde::{Deserialize, Serialize};
 use splinter::{
     PartialSplinterConfiguration, SplinterConfiguration, partial_splinter_configuration,
 };
+use templating::{
+    PartialTemplatingConfiguration, TemplatingConfiguration, partial_templating_configuration,
+};
 pub use typecheck::{
     PartialTypecheckConfiguration, TypecheckConfiguration, partial_typecheck_configuration,
 };
@@ -121,6 +125,10 @@ pub struct Configuration {
     /// The configuration for the SQL formatter
     #[partial(type, bpaf(external(partial_format_configuration), optional))]
     pub format: FormatConfiguration,
+
+    /// The syntax of host-language placeholders in SQL
+    #[partial(type, bpaf(external(partial_templating_configuration), optional))]
+    pub templating: TemplatingConfiguration,
 
     /// The configuration for pglinter
     #[partial(type, bpaf(external(partial_pglinter_configuration), optional))]
@@ -222,6 +230,7 @@ impl PartialConfiguration {
             }),
             inlay_hints: None,
             semantic_tokens: None,
+            templating: None,
         }
     }
 

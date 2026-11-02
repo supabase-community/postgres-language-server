@@ -165,6 +165,8 @@ Lints your database schema.
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
 - **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
+- **`    --template-syntax`**=_`SYNTAXES`_ &mdash; 
+  Enabled syntaxes. CLI values are comma-separated; an empty array disables preprocessing.
 - **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
 - **`    --connection-string`**=_`ARG`_ &mdash; 
@@ -292,6 +294,8 @@ Runs everything to the requested files.
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
 - **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
+- **`    --template-syntax`**=_`SYNTAXES`_ &mdash; 
+  Enabled syntaxes. CLI values are comma-separated; an empty array disables preprocessing.
 - **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
 - **`    --connection-string`**=_`ARG`_ &mdash; 
@@ -445,6 +449,8 @@ Formats the requested files.
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
 - **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
+- **`    --template-syntax`**=_`SYNTAXES`_ &mdash; 
+  Enabled syntaxes. CLI values are comma-separated; an empty array disables preprocessing.
 - **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
 - **`    --connection-string`**=_`ARG`_ &mdash; 
@@ -611,9 +617,19 @@ Acts as a server for the Language Server Protocol over stdin/stdout.
 
 Parses a SQL file (or standard input) and writes the parse tree as a protobuf `ParseResult` message.
 
-**Usage**: **`postgres-language-server`** **`parse`** \[**`--file`**=_`PATH`_\]
+**Usage**: **`postgres-language-server`** **`parse`** \[**`--template-syntax`**=_`SYNTAXES`_\] \[**`--config-path`**=_`PATH`_\] \[**`--file`**=_`PATH`_\]
+
+**SQL placeholders supplied by host languages or PostgreSQL bind parameters.**
+- **`    --template-syntax`**=_`SYNTAXES`_ &mdash; 
+  Enabled syntaxes. CLI values are comma-separated; an empty array disables preprocessing.
+
+
 
 **Available options:**
+- **`    --config-path`**=_`PATH`_ &mdash; 
+  File or directory containing the SQL template configuration.
+   
+  Uses environment variable **`PGLS_CONFIG_PATH`**
 - **`    --file`**=_`PATH`_ &mdash; 
   Path to the SQL file to parse. When omitted, the SQL is read from standard input.
 - **`    --stdin-file-path`**=_`PATH`_ &mdash; 

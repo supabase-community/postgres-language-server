@@ -4,6 +4,63 @@ This guide will help you to understand how to configure the Postgres Language Se
 
 The Postgres Language Server allows you to customize its behavior using CLI options or a configuration file named `postgres-language-server.jsonc`. We recommend that you create a configuration file for each project. This ensures that each team member has the same configuration in the CLI and in any editor that allows Biome integration. Many of the options available in a configuration file are also available in the CLI.
 
+## SQL templates
+
+Set `templating.syntax` to an array of enabled parsers. The default, `[]`, leaves ordinary
+PostgreSQL syntax unchanged. Several syntaxes can be enabled for the same file.
+
+```json
+{
+  "templating": {
+    "syntax": ["go-printf", "rust-fmt", "dollar-values"]
+  },
+  "format": {
+    "enabled": true
+  }
+}
+```
+
+| Syntax | Examples |
+| --- | --- |
+| `go-printf` | `%s`, `%[1]s`, `%d`, `%[3]*.[2]*[1]f`, `%%` |
+| `rust-fmt` | `{}`, `{0}`, `{schema}`, `{value:>width$.precision$}`, `{{`, `}}` |
+| `dollar-values` | `$1`, `$2`, `$123` |
+
+PostgreSQL `$N` parameters (where `N` is a positive integer) already parse without a mode.
+`dollar-values` explicitly declares them and protects their source spans from automatic lint
+fixes. It preserves `ParamRef` nodes and native type inference; it does not replace values with
+identifiers. `$n` as a literal name is a different, existing named-parameter syntax.
+`rust-format` is accepted as an alias for `rust-fmt`.
+
+The same setting can be applied temporarily:
+
+```sh
+postgres-language-server check --template-syntax=go-printf,dollar-values query.sql
+postgres-language-server format --template-syntax=rust-fmt,dollar-values --write query.sql
+postgres-language-server parse --template-syntax=go-printf,rust-fmt,dollar-values --file query.sql
+```
+
+`--template-syntax=none` clears the configured syntaxes for one command.
+
+For a project containing several languages, put a configuration in each SQL directory.
+`check`, `format` and the language server use the nearest nested configuration.
+`parse --file` searches for a configuration from the file's directory, or uses `--config-path`.
+
+Placeholders stand for opaque SQL identifiers or expressions, including names such as
+`tenant_{schema}` and `%s_dictionary`. Existing psql/ORM parameters and PostgreSQL `$1`
+parameters still work. The parser keeps source byte offsets; the formatter restores the
+original directives and checks their order and AST before writing. If restoration cannot
+be proven, it reports an error and leaves the statement untouched.
+
+The server does not execute Go or Rust, render template values, or check the SQL supplied
+at runtime. Type checking is skipped for statements containing Go/Rust template directives.
+Unquoted placeholders must fit the surrounding SQL grammar: a complete `WHERE`/`JOIN`
+clause is not a supported placeholder. A placeholder after a relation or expression is
+ambiguous and reports an error; write `AS %s` or `AS {alias}` for an explicit template alias.
+SQL strings, quoted identifiers, comments and dollar-quoted bodies remain opaque to the
+parser conversion. Their format directives still participate in the formatter's argument
+order check.
+
 ## Client configuration overrides
 
 Clients can issue the LSP request `pgls/set_configuration_overrides` with parameters `{ "overrides": { ... } }` to apply runtime configuration, or `{ "overrides": null }` to clear it. The `overrides` value replaces the previous client override layer; it does not merge with the previous request. The layer is sticky across configuration file reloads. `workspace/didChangeConfiguration` also writes this same sticky layer.
@@ -294,4 +351,3 @@ In the following example, we include all files, except those in any test/ folder
 
 #### Control files via VCS
 You can ignore files ignored by your [VCS](guides/vcs_integration.md).
-
