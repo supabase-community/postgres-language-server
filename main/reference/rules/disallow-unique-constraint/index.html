@@ -1247,6 +1247,8 @@
 <p>Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock, which blocks all reads and
 writes to the table. Instead, create a unique index concurrently and then add the
 constraint using that index.</p>
+<p>A temporal unique constraint (<code>WITHOUT OVERLAPS</code>, Postgres 18) needs a GiST index, which
+can't be unique, so it has no such alternative.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">CONSTRAINT</span><span class="w"> </span><span class="n">field_name_constraint</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="p">(</span><span class="n">field_name</span><span class="p">);</span>

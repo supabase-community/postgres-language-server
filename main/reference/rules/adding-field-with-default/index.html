@@ -1249,9 +1249,11 @@ which holds an ACCESS EXCLUSIVE lock on the table and blocks all reads and write
 <p>In Postgres 11+, this behavior was optimized for non-volatile defaults. However:</p>
 <ul>
 <li>Volatile default values (like random() or custom functions) still cause table rewrites</li>
-<li>Generated columns (GENERATED ALWAYS AS) always require table rewrites</li>
+<li>Stored generated columns (GENERATED ALWAYS AS ... STORED) always require table rewrites</li>
 <li>Non-volatile defaults are safe in Postgres 11+</li>
 </ul>
+<p>Virtual generated columns (Postgres 18) are computed when rows are read, so adding one
+doesn't rewrite the table.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="ss">"core_recipe"</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="ss">"foo"</span><span class="w"> </span><span class="nb">integer</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
