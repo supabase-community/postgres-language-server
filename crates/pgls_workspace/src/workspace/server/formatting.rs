@@ -314,7 +314,11 @@ pub(super) fn restore_named_parameters(
         }
 
         let replacement = match kind {
-            SyntaxKind::IDENT => conversion.identifier_replacements.get(text),
+            SyntaxKind::IDENT => conversion.identifier_replacements.get(text).or_else(|| {
+                text.strip_prefix('"')
+                    .and_then(|name| name.strip_suffix('"'))
+                    .and_then(|name| conversion.identifier_replacements.get(name))
+            }),
             SyntaxKind::POSITIONAL_PARAM => text
                 .trim_start_matches('$')
                 .parse::<usize>()
