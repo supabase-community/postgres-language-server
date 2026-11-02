@@ -386,6 +386,16 @@ module.exports = grammar({
 
     keyword_external: (_) => make_keyword("external"),
     keyword_stored: (_) => make_keyword("stored"),
+    keyword_virtual: (_) => make_keyword("virtual"),
+    keyword_usage: (_) => make_keyword("usage"),
+    keyword_enforced: (_) => make_keyword("enforced"),
+    keyword_period: (_) => make_keyword("period"),
+    keyword_overlaps: (_) => make_keyword("overlaps"),
+    keyword_large: (_) => make_keyword("large"),
+    keyword_objects: (_) => make_keyword("objects"),
+    keyword_sequences: (_) => make_keyword("sequences"),
+    keyword_types: (_) => make_keyword("types"),
+    keyword_schemas: (_) => make_keyword("schemas"),
     keyword_statistics: (_) => make_keyword("statistics"),
     keyword_comment: (_) => make_keyword("comment"),
     keyword_format: (_) => make_keyword("format"),
@@ -1693,6 +1703,7 @@ module.exports = grammar({
       seq(
         choice(
           $.alter_table,
+          $.alter_default_privileges,
           $.alter_view,
           $.alter_schema,
           $.alter_type,
@@ -1726,6 +1737,7 @@ module.exports = grammar({
         $.add_column,
         $.add_constraint,
         $.drop_constraint,
+        $.alter_constraint,
         $.alter_column,
         $.drop_column,
         $.rename_object,
@@ -1759,6 +1771,19 @@ module.exports = grammar({
         optional($._if_exists),
         $.any_identifier,
         optional($._drop_behavior),
+      ),
+
+    alter_constraint: ($) =>
+      seq(
+        $.keyword_alter,
+        partialSeq(
+          $.keyword_constraint,
+          $.any_identifier,
+          field(
+            "end",
+            alias($._alter_constraint_attributes, $.constraint_attributes),
+          ),
+        ),
       ),
 
     alter_column: ($) =>
@@ -2409,6 +2434,7 @@ module.exports = grammar({
         $.keyword_on,
         optional_parenthesis(field("predicate", $._expression)),
         repeat1($.when_clause),
+        optional($.returning),
       ),
 
     when_clause: ($) =>
@@ -2456,6 +2482,11 @@ module.exports = grammar({
       seq(
         $.keyword_vacuum,
         optional($._vacuum_option),
+        comma_list($._vacuum_relation, true),
+      ),
+
+    _vacuum_relation: ($) =>
+      seq(
         optional($.keyword_only),
         $.table_reference,
         optional(paren_list($.field, false)),
@@ -2465,7 +2496,7 @@ module.exports = grammar({
       partialSeq(
         field("end", $.keyword_analyze),
         optional($.analyze_options),
-        optional($.analyze_table_and_columns),
+        optional(comma_list($.analyze_table_and_columns, true)),
       ),
 
     analyze_options: ($) =>
@@ -2485,8 +2516,13 @@ module.exports = grammar({
       ),
 
     analyze_table_and_columns: ($) =>
+      choice(
+        partialSeq($.keyword_only, $._analyze_relation),
+        $._analyze_relation,
+      ),
+
+    _analyze_relation: ($) =>
       seq(
-        optional($.keyword_only),
         field("end", $.table_reference),
         optional("*"),
         optional($.analyze_columns),
@@ -2690,7 +2726,7 @@ module.exports = grammar({
           seq(
             $.keyword_references,
             $.table_reference,
-            paren_list($.column_identifier, true),
+            optional(paren_list($.column_identifier, true)),
             repeat(
               seq(
                 $.keyword_on,
@@ -2719,9 +2755,34 @@ module.exports = grammar({
             $._expression,
           ),
           $.keyword_stored,
+          $.keyword_virtual,
           $.keyword_unique,
+          $._enforced,
+          $._no_inherit,
+          seq($.keyword_constraint, $.any_identifier),
         ),
       ),
+
+    _enforced: ($) => seq(optional($.keyword_not), $.keyword_enforced),
+
+    _no_inherit: ($) => seq($.keyword_no, $.keyword_inherit),
+
+    constraint_attributes: ($) =>
+      prec.right(repeat1(field("end", $.constraint_attribute))),
+
+    constraint_attribute: ($) => constraint_attribute($, false),
+
+    _alter_constraint_attributes: ($) =>
+      prec.right(
+        repeat1(
+          field(
+            "end",
+            alias($._alter_constraint_attribute, $.constraint_attribute),
+          ),
+        ),
+      ),
+
+    _alter_constraint_attribute: ($) => constraint_attribute($, true),
 
     _check_constraint: ($) =>
       seq(
@@ -2746,11 +2807,17 @@ module.exports = grammar({
       ),
 
     constraint: ($) =>
-      choice(
-        $._constraint_literal,
-        $._key_constraint,
-        $._primary_key_constraint,
-        $._check_constraint,
+      prec.right(
+        seq(
+          choice(
+            $._constraint_literal,
+            $._key_constraint,
+            $._primary_key_constraint,
+            $._check_constraint,
+            $._not_null_constraint,
+          ),
+          optional($.constraint_attributes),
+        ),
       ),
 
     _constraint_literal: ($) =>
@@ -2760,8 +2827,12 @@ module.exports = grammar({
         choice(
           seq($._primary_key, $.ordered_columns),
           seq($._check_constraint),
+          $._key_constraint,
+          $._not_null_constraint,
         ),
       ),
+
+    _not_null_constraint: ($) => seq($._not_null, $.column_identifier),
 
     _primary_key_constraint: ($) => seq($._primary_key, $.ordered_columns),
 
@@ -2795,7 +2866,7 @@ module.exports = grammar({
           seq(
             $.keyword_references,
             $.table_reference,
-            paren_list($.column_identifier, true),
+            optional(paren_list($._referenced_column, true)),
             repeat(
               seq(
                 $.keyword_on,
@@ -2816,9 +2887,34 @@ module.exports = grammar({
         ),
       ),
 
-    ordered_columns: ($) => paren_list(alias($.ordered_column, $.column), true),
+    // `PERIOD` (foreign keys) and `WITHOUT OVERLAPS` (primary keys and unique constraints) mark
+    // the range column of a temporal key.
+    ordered_columns: ($) =>
+      wrapped_in_parenthesis(
+        seq(
+          comma_list(alias($.ordered_column, $.column), true),
+          optional(seq($.keyword_without, $.keyword_overlaps)),
+        ),
+      ),
 
-    ordered_column: ($) => seq(field("name", $._column), optional($.direction)),
+    ordered_column: ($) =>
+      seq(
+        choice(
+          seq(optional($.keyword_period), field("name", $._column)),
+          field("name", $._period_column),
+        ),
+        optional($.direction),
+      ),
+
+    // `PERIOD` is an unreserved keyword. Where it may come before a column, the lexer reads a
+    // column named `period` as the keyword, so it is a column when no other column follows.
+    _period_column: ($) => alias($.keyword_period, $.column_identifier),
+
+    _referenced_column: ($) =>
+      choice(
+        seq(optional($.keyword_period), $.column_identifier),
+        $._period_column,
+      ),
 
     all_fields: ($) =>
       prec(
@@ -3165,7 +3261,9 @@ module.exports = grammar({
     returning_with: ($) =>
       partialSeq(
         $.keyword_with,
-        wrapped_in_parenthesis(comma_list($.returning_with_item, true)),
+        "(",
+        comma_list($.returning_with_item, false),
+        field("end", ")"),
       ),
 
     returning_with_item: ($) =>
@@ -3173,6 +3271,83 @@ module.exports = grammar({
         choice($.keyword_old, $.keyword_new),
         $.keyword_as,
         field("end", $.any_identifier),
+      ),
+
+    alter_default_privileges: ($) =>
+      seq(
+        $.keyword_alter,
+        partialSeq(
+          $.keyword_default,
+          $.keyword_privileges,
+          optional($.default_privileges_for_role),
+          optional($.default_privileges_in_schema),
+          field(
+            "end",
+            choice($.default_privileges_grant, $.default_privileges_revoke),
+          ),
+        ),
+      ),
+
+    default_privileges_for_role: ($) =>
+      partialSeq(
+        $.keyword_for,
+        choice($.keyword_role, $.keyword_user),
+        comma_list(field("end", $.role_specification), true),
+      ),
+
+    default_privileges_in_schema: ($) =>
+      partialSeq(
+        $.keyword_in,
+        $.keyword_schema,
+        comma_list(field("end", $.schema_identifier), true),
+      ),
+
+    default_privileges_grant: ($) =>
+      partialSeq(
+        $.keyword_grant,
+        $.grantable,
+        $.default_privileges_target,
+        $.keyword_to,
+        comma_list(field("end", $.role_specification), true),
+        optional($.with_grant_option),
+      ),
+
+    with_grant_option: ($) =>
+      partialSeq(
+        $.keyword_with,
+        $.keyword_grant,
+        field("end", $.keyword_option),
+      ),
+
+    default_privileges_revoke: ($) =>
+      partialSeq(
+        $.keyword_revoke,
+        optional(seq($.keyword_grant, $.keyword_option, $.keyword_for)),
+        $.grantable,
+        $.default_privileges_target,
+        $.keyword_from,
+        comma_list(field("end", $.role_specification), true),
+        optional($._drop_behavior),
+      ),
+
+    // The object kinds of `ALTER DEFAULT PRIVILEGES` (`defacl_privilege_target`).
+    default_privileges_target: ($) =>
+      partialSeq(
+        $.keyword_on,
+        choice(
+          field(
+            "end",
+            choice(
+              $.keyword_tables,
+              $.keyword_sequences,
+              $.keyword_functions,
+              $.keyword_routines,
+              $.keyword_types,
+              $.keyword_schemas,
+            ),
+          ),
+          partialSeq($.keyword_large, field("end", $.keyword_objects)),
+        ),
       ),
 
     grant_statement: ($) =>
@@ -3228,21 +3403,27 @@ module.exports = grammar({
     grantable: ($) =>
       choice(
         comma_list(
-          choice(
-            $.keyword_select,
-            $.keyword_insert,
-            $.keyword_update,
-            $.keyword_delete,
-            $.keyword_truncate,
-            $.keyword_references,
-            $.keyword_trigger,
-            $.keyword_maintain,
-            $.keyword_execute,
-            $.keyword_references,
+          field(
+            "end",
+            choice(
+              $.keyword_select,
+              $.keyword_insert,
+              $.keyword_update,
+              $.keyword_delete,
+              $.keyword_truncate,
+              $.keyword_references,
+              $.keyword_trigger,
+              $.keyword_maintain,
+              $.keyword_execute,
+              $.keyword_references,
+              $.keyword_usage,
+              $.keyword_create,
+            ),
           ),
           true,
         ),
-        seq($.keyword_all, optional($.keyword_privileges)),
+        field("end", $.keyword_all),
+        seq($.keyword_all, field("end", $.keyword_privileges)),
       ),
 
     grantable_on_function: ($) =>
@@ -3282,11 +3463,16 @@ module.exports = grammar({
 
     role_specification: ($) =>
       choice(
-        seq(optional($.keyword_group), $.role_identifier),
-        $.keyword_public,
-        $.keyword_current_role,
-        $.keyword_current_user,
-        $.keyword_session_user,
+        seq(optional($.keyword_group), field("end", $.role_identifier)),
+        field(
+          "end",
+          choice(
+            $.keyword_public,
+            $.keyword_current_role,
+            $.keyword_current_user,
+            $.keyword_session_user,
+          ),
+        ),
       ),
 
     _expression: ($) =>
@@ -3700,6 +3886,35 @@ module.exports = grammar({
  */
 function optional_parenthesis(rule) {
   return prec.right(choice(rule, wrapped_in_parenthesis(rule)));
+}
+
+/**
+ * An attribute after a constraint (`ConstraintAttributeSpec`): `[NOT] DEFERRABLE`,
+ * `INITIALLY {DEFERRED | IMMEDIATE}`, `[NOT] ENFORCED`, `NOT VALID` or `NO INHERIT`.
+ * `ALTER CONSTRAINT` takes `[NO] INHERIT` and no `NOT VALID`.
+ *
+ * @param {RuleRecord} $
+ * @param {boolean} alterConstraint
+ */
+function constraint_attribute($, alterConstraint) {
+  const negated = [$.keyword_deferrable, $.keyword_enforced];
+  if (!alterConstraint) {
+    negated.push($.keyword_valid);
+  }
+  const attributes = [
+    field("end", $.keyword_deferrable),
+    field("end", $.keyword_enforced),
+    partialSeq($.keyword_not, field("end", choice(...negated))),
+    partialSeq(
+      $.keyword_initially,
+      field("end", choice($.keyword_deferred, $.keyword_immediate)),
+    ),
+    partialSeq($.keyword_no, field("end", $.keyword_inherit)),
+  ];
+  if (alterConstraint) {
+    attributes.push(field("end", $.keyword_inherit));
+  }
+  return choice(...attributes);
 }
 
 /**
