@@ -312,6 +312,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("smallserial"),
     SqlKeyword::new("snapshot"),
     SqlKeyword::new("some"),
+    SqlKeyword::new("source"),
     SqlKeyword::new("spgist"),
     SqlKeyword::new("stable"),
     SqlKeyword::new("start"),
@@ -329,6 +330,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("table"),
     SqlKeyword::new("tables"),
     SqlKeyword::new("tablespace"),
+    SqlKeyword::new("target"),
     SqlKeyword::new("temp"),
     SqlKeyword::new("temporary"),
     SqlKeyword::new("text"),
@@ -537,6 +539,10 @@ mod tests {
                 ),
                 CompletionAssertion::LabelAndKind(
                     "drop".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "merge".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(

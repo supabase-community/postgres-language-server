@@ -126,6 +126,8 @@ impl CompletionFilter<'_> {
                     | Some(WrappingClause::Update)
                     | Some(WrappingClause::Delete)
                     | Some(WrappingClause::Returning)
+                    | Some(WrappingClause::Merge)
+                    | Some(WrappingClause::MergeWhen)
                     | Some(WrappingClause::Insert)
                     | Some(WrappingClause::DropColumn)
                     | Some(WrappingClause::AlterColumn)
@@ -286,6 +288,8 @@ impl CompletionFilter<'_> {
                                 "keyword_table",
                             ]),
 
+                        WrappingClause::Merge => is_merge_relation(ctx),
+
                         WrappingClause::CreatePolicy
                         | WrappingClause::AlterPolicy
                         | WrappingClause::DropPolicy => {
@@ -302,7 +306,11 @@ impl CompletionFilter<'_> {
                             | WrappingClause::Update
                             | WrappingClause::Delete
                             | WrappingClause::Returning
+                            | WrappingClause::MergeWhen
                             | WrappingClause::DropColumn => true,
+
+                            // The join condition.
+                            WrappingClause::Merge => !is_merge_relation(ctx),
 
                             WrappingClause::RenameColumn => ctx
                                 .before_cursor_matches_kind(&["keyword_rename", "keyword_column"]),
@@ -347,8 +355,11 @@ impl CompletionFilter<'_> {
                         WrappingClause::From
                         | WrappingClause::Select
                         | WrappingClause::Returning
+                        | WrappingClause::MergeWhen
                         | WrappingClause::Where
                         | WrappingClause::Join { .. } => true,
+
+                        WrappingClause::Merge => !is_merge_relation(ctx),
 
                         WrappingClause::CheckOrUsingClause => {
                             !matches!(f.kind, ProcKind::Aggregate)
@@ -364,6 +375,8 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Schema(_) => match clause {
                         WrappingClause::Select
                         | WrappingClause::Returning
+                        | WrappingClause::MergeWhen
+                        | WrappingClause::Merge
                         | WrappingClause::Join { .. }
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
@@ -620,6 +633,11 @@ impl CompletionFilter<'_> {
 
         None
     }
+}
+
+/// Whether the cursor is on the target or the source of MERGE, rather than in its join condition.
+fn is_merge_relation(ctx: &TreesitterContext) -> bool {
+    ctx.before_cursor_matches_kind(&["keyword_into", "keyword_using"])
 }
 
 #[cfg(test)]

@@ -158,6 +158,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Table(_) => match clause_type {
                 WrappingClause::Update => 10,
                 WrappingClause::Delete => 10,
+                WrappingClause::Merge => 10,
                 WrappingClause::From => 5,
                 WrappingClause::Join { on_node }
                     if on_node
@@ -172,6 +173,7 @@ impl CompletionScore<'_> {
                 WrappingClause::Select if has_mentioned_tables => 0,
                 WrappingClause::From => 0,
                 WrappingClause::Returning => 0,
+                WrappingClause::Merge | WrappingClause::MergeWhen => 0,
                 WrappingClause::CheckOrUsingClause => 0,
                 _ => -50,
             },
@@ -181,6 +183,8 @@ impl CompletionScore<'_> {
                 WrappingClause::Where => 10,
                 // RETURNING has the target table.
                 WrappingClause::Returning => 10,
+                // MERGE has the target and the source.
+                WrappingClause::Merge | WrappingClause::MergeWhen => 10,
                 WrappingClause::CheckOrUsingClause => 0,
                 WrappingClause::Join { on_node }
                     if on_node
@@ -196,6 +200,7 @@ impl CompletionScore<'_> {
                 WrappingClause::Join { .. } if !has_qualifier => 15,
                 WrappingClause::Update if !has_qualifier => 15,
                 WrappingClause::Delete if !has_qualifier => 15,
+                WrappingClause::Merge if !has_qualifier => 15,
                 WrappingClause::AlterPolicy if !has_qualifier => 15,
                 WrappingClause::DropPolicy if !has_qualifier => 15,
                 WrappingClause::CreatePolicy if !has_qualifier => 15,

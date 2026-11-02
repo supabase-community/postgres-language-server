@@ -35,7 +35,11 @@ pub fn complete_columns<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText {
-    let alias = ctx.get_used_alias_for_table(col.table_name.as_str());
+    // A `column_identifier` is a column name that can't be qualified, like the target of
+    // `SET col = ...` or a column of an INSERT column list.
+    let alias = (ctx.node_under_cursor.kind() != "column_identifier")
+        .then(|| ctx.get_used_alias_for_table(col.table_name.as_str()))
+        .flatten();
 
     let with_schema_or_alias = with_schema_or_alias(ctx, col.name.as_str(), alias.as_deref());
 
@@ -769,6 +773,66 @@ mod tests {
         ] {
             let query = sql.replace("{}", &cursor.to_string());
             assert_eq!(columns_at(&query, &pool).await, [""; 0], "{sql}");
+        }
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_in_merge(pool: PgPool) {
+        let setup = r#"
+            create table public.users (id serial primary key, name text);
+            create table public.posts (post_id int, title text);
+        "#;
+
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(TestCompletionsCase::new().type_sql(
+                "merge into users u using posts p on p.post_id = u.id \
+                 when matched and p.title <> u.name then update set name = p.title \
+                 when not matched then insert (id, name) values (p.post_id, p.title);",
+            ))
+            .snapshot("completes_in_merge")
+            .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_the_columns_of_merge_aliases(pool: PgPool) {
+        pool.execute(
+            r#"
+            create table public.users (id serial primary key, name text);
+            create table public.posts (post_id int, title text);
+            "#,
+        )
+        .await
+        .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        let merge = "merge into users u using posts as p on p.post_id = u.id";
+
+        for (sql, columns) in [
+            (
+                "merge into users u using posts p on p.{}",
+                &["post_id", "title"][..],
+            ),
+            (
+                "merge into users u using posts p on p.post_id = u.{}",
+                &["id", "name"],
+            ),
+            ("{merge} when matched and u.{} then delete", &["id", "name"]),
+            (
+                "{merge} when matched then update set name = p.{}",
+                &["post_id", "title"],
+            ),
+            (
+                "{merge} when not matched then insert (id) values (p.{})",
+                &["post_id", "title"],
+            ),
+            (
+                "{merge} when matched then delete returning p.{}",
+                &["post_id", "title"],
+            ),
+        ] {
+            let query = sql
+                .replace("{merge}", merge)
+                .replace("{}", &cursor.to_string());
+            assert_eq!(columns_at(&query, &pool).await, columns, "{sql}");
         }
     }
 }
