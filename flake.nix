@@ -63,6 +63,10 @@
           git
           taplo
 
+          # Lints the GitHub Actions workflows; actionlint checks `run:` scripts with shellcheck
+          actionlint
+          shellcheck
+
           # Docker
           docker-compose
 

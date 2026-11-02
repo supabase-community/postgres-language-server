@@ -11,7 +11,10 @@ use parking_lot::{Mutex, RawMutex, RwLock, lock_api::ArcMutexGuard};
 use pgls_diagnostics::{Error, Severity};
 
 use crate::fs::OpenOptions;
-use crate::{FileSystem, PgLSPath, TraversalContext, TraversalScope};
+use crate::{FileSystem, PgLSPath, TraversalContext, TraversalScope, normalize_path};
+
+/// How many symlinks [MemoryFileSystem::canonicalize] follows, like Linux's `MAXSYMLINKS`.
+const SYMLINK_EXPANSIONS_MAX: usize = 40;
 
 use super::{
     BoxedTraversal, ErrorKind, File, FileSystemDiagnostic, FindFiles, FoundFiles,
@@ -29,6 +32,8 @@ type OnGetChangedFiles = Option<
 /// Fully in-memory file system, stores the content of all known files in a hashmap
 pub struct MemoryFileSystem {
     files: AssertUnwindSafe<RwLock<FxHashMap<PathBuf, FileEntry>>>,
+    /// The symlinks, by their path, with the path they point to.
+    symlinks: FxHashMap<PathBuf, PathBuf>,
     errors: FxHashMap<PathBuf, ErrorEntry>,
     allow_write: bool,
     home_directory: Option<PathBuf>,
@@ -41,6 +46,7 @@ impl Default for MemoryFileSystem {
     fn default() -> Self {
         Self {
             files: Default::default(),
+            symlinks: Default::default(),
             errors: Default::default(),
             allow_write: true,
             home_directory: None,
@@ -98,6 +104,12 @@ impl MemoryFileSystem {
     pub fn insert(&mut self, path: PathBuf, content: impl Into<Vec<u8>>) {
         let files = self.files.0.get_mut();
         files.insert(path, Arc::new(Mutex::new(content.into())));
+    }
+
+    /// Create or update a symlink at `path` that points to `target`. A relative target is
+    /// relative to the folder of the symlink.
+    pub fn insert_symlink(&mut self, path: impl Into<PathBuf>, target: impl Into<PathBuf>) {
+        self.symlinks.insert(path.into(), target.into());
     }
 
     /// Create or update an error in the filesystem
@@ -230,8 +242,32 @@ impl FileSystem for MemoryFileSystem {
         !self.path_is_file(path)
     }
 
-    fn path_is_symlink(&self, _path: &Path) -> bool {
-        false
+    fn path_is_symlink(&self, path: &Path) -> bool {
+        self.symlinks.contains_key(path)
+    }
+
+    /// Resolves `..` and the symlinks of [MemoryFileSystem::insert_symlink]. The folders of the
+    /// files exist implicitly, so a path doesn't have to be a file.
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+        let mut resolved = normalize_path(path);
+        // Like the operating system, which gives up after 40 symlinks on Linux, so that a cycle
+        // of symlinks fails instead of looping.
+        for _ in 0..SYMLINK_EXPANSIONS_MAX {
+            let link = resolved
+                .ancestors()
+                .find_map(|ancestor| Some((ancestor, self.symlinks.get(ancestor)?)));
+            let Some((link, target)) = link else {
+                return Ok(resolved);
+            };
+            let rest = resolved.strip_prefix(link).unwrap_or(Path::new(""));
+            // A relative target is relative to the folder of the symlink.
+            let target = link.parent().unwrap_or(link).join(target);
+            resolved = normalize_path(&target.join(rest));
+        }
+        Err(io::Error::other(format!(
+            "more than {SYMLINK_EXPANSIONS_MAX} symlinks in {}",
+            path.display()
+        )))
     }
 
     fn get_changed_files(&self, _base: &str) -> io::Result<Vec<String>> {
@@ -655,5 +691,32 @@ mod tests {
 
         assert_eq!(visited.len(), 1);
         assert!(visited.contains(&PgLSPath::new("dir2/file2")));
+    }
+
+    #[test]
+    fn canonicalize_resolves_symlinks_and_parent_folders() {
+        let mut fs = MemoryFileSystem::default();
+        fs.insert_symlink("/home/a/link", "/data/repo");
+        fs.insert_symlink("/data/repo/shared", "../common");
+
+        let canonical = |path: &str| fs.canonicalize(Path::new(path)).unwrap();
+        assert_eq!(canonical("/home/a/link"), PathBuf::from("/data/repo"));
+        assert_eq!(
+            canonical("/home/a/link/db/a.sql"),
+            PathBuf::from("/data/repo/db/a.sql")
+        );
+        assert_eq!(
+            canonical("/home/a/other/../link/b"),
+            PathBuf::from("/data/repo/b")
+        );
+        assert_eq!(
+            canonical("/home/a/link/shared/c"),
+            PathBuf::from("/data/common/c")
+        );
+        assert_eq!(canonical("/data/plain"), PathBuf::from("/data/plain"));
+
+        fs.insert_symlink("/loop/a", "/loop/b");
+        fs.insert_symlink("/loop/b", "/loop/a");
+        assert!(fs.canonicalize(Path::new("/loop/a/file")).is_err());
     }
 }
