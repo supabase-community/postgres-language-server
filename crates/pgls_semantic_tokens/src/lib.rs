@@ -30,7 +30,7 @@ pub struct SemanticTokensParams<'a> {
 pub enum SemanticTokenKind {
     /// A schema.
     Namespace,
-    /// A table, view, or other relation.
+    /// A table, view, or other relation, or a common table expression.
     Class,
     /// A column.
     Property,
@@ -40,6 +40,8 @@ pub enum SemanticTokenKind {
     Parameter,
     /// A string literal that is coerced to an enum type.
     EnumMember,
+    /// The alias of a FROM item, like `u` in `from users u` and in `u.name`.
+    Variable,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -149,12 +151,21 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                         push(Some(schema_part), SemanticTokenKind::Namespace, schema);
                         push(Some(table), SemanticTokenKind::Class, schema);
                     }
-                    // `table.column`, but not `alias.column`.
-                    [table, _]
-                        if relation
-                            .is_some_and(|(_, name)| identifier(&params.sql[*table]) == *name) =>
-                    {
-                        push(Some(table), SemanticTokenKind::Class, schema);
+                    // `table.column` or `cte.column`, and otherwise `alias.column`: the qualifier
+                    // is the name of the FROM item the column comes from.
+                    [qualifier, _] => {
+                        let qualifier_name = identifier(&params.sql[*qualifier]);
+                        let is_own_name = match source {
+                            ColumnSource::Relation { name, .. } | ColumnSource::Cte { name } => {
+                                qualifier_name == *name
+                            }
+                            ColumnSource::Subquery { .. } => false,
+                        };
+                        if is_own_name {
+                            push(Some(qualifier), SemanticTokenKind::Class, schema);
+                        } else {
+                            push(Some(qualifier), SemanticTokenKind::Variable, None);
+                        }
                     }
                     _ => {}
                 }
@@ -167,6 +178,8 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                 }
                 push(parts.last(), SemanticTokenKind::Parameter, None);
             }
+            Reference::Cte { .. } => push(parts.last(), SemanticTokenKind::Class, None),
+            Reference::Alias { .. } => push(parts.last(), SemanticTokenKind::Variable, None),
             Reference::EnumLiteral { .. } => {}
             // A `*` is not a name, and its qualifier is a table or alias that has a reference of
             // its own where it is defined.
