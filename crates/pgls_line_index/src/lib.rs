@@ -3,13 +3,17 @@
 //!
 //! Lines end at `\n`: a lone `\r` doesn't end a line, and the `\r` of a `\r\n` is the last
 //! column of its line.
+//!
+//! [`offset_of_char_position`] converts the character positions that Postgres reports.
 
+mod char_position;
 mod line_index;
 #[cfg(test)]
 mod tests;
 
 use pgls_text_size::TextSize;
 
+pub use char_position::offset_of_char_position;
 pub use line_index::LineIndex;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

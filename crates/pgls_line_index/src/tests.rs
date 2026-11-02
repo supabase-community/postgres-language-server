@@ -1,7 +1,7 @@
 use pgls_text_size::TextSize;
 
 use crate::WideEncoding::{Utf16, Utf32};
-use crate::{LineCol, LineIndex, WideLineCol};
+use crate::{LineCol, LineIndex, WideLineCol, offset_of_char_position};
 
 #[test]
 fn line_breaks_and_wide_characters() {
@@ -90,4 +90,25 @@ fn test_every_chars() {
             col_utf32 += 1;
         }
     }
+}
+
+#[test]
+fn character_positions_are_one_based() {
+    let text = "select 'prüfen', missing from t";
+    let missing = text.find("missing").unwrap();
+    let position = text[..missing].chars().count() + 1;
+    let chars = text.chars().count();
+
+    assert_eq!(
+        offset_of_char_position(text, position),
+        Some(TextSize::from(missing as u32))
+    );
+    assert_eq!(offset_of_char_position(text, 1), Some(TextSize::from(0)));
+    assert_eq!(
+        offset_of_char_position(text, chars + 1),
+        Some(TextSize::of(text))
+    );
+    assert_eq!(offset_of_char_position(text, 0), None);
+    assert_eq!(offset_of_char_position(text, chars + 2), None);
+    assert_eq!(offset_of_char_position("", 1), Some(TextSize::from(0)));
 }
