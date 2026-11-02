@@ -241,6 +241,7 @@ impl Builder {
             let column = match previous.remove(&column.name) {
                 Some(mut previous) if previous.type_name == column.type_name => {
                     previous.number = number as i64 + 1;
+                    previous.generated = column.generated;
                     previous
                 }
                 _ => Column {
@@ -264,6 +265,7 @@ impl Builder {
                     is_primary_key: false,
                     is_unique: false,
                     default_expr: None,
+                    generated: column.generated,
                     varchar_length: None,
                     comment: None,
                 },

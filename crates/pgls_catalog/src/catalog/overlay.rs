@@ -2,8 +2,8 @@
 //! functions, and schemas in the overlay.
 
 use crate::typing::TypeId;
-use crate::{FunctionArgumentMode, FunctionSignature};
-use pgls_query::{Node, protobuf};
+use crate::{FunctionArgumentMode, FunctionSignature, Generated};
+use pgls_query::{Node, NodeEnum, protobuf};
 
 use super::{
     Catalog, Entry, Key, key,
@@ -524,7 +524,31 @@ pub(super) fn column_info(
         name: column.colname.clone(),
         type_name,
         ty: type_id.map(crate::typing::Type::Named),
+        generated: column_generated(column),
     }
+}
+
+/// Whether a column definition has a `GENERATED ALWAYS AS (...)` clause, like
+/// [`transformColumnDefinition`].
+///
+/// [`transformColumnDefinition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L591
+fn column_generated(column: &protobuf::ColumnDef) -> Generated {
+    column
+        .constraints
+        .iter()
+        .find_map(|constraint| match &constraint.node {
+            Some(NodeEnum::Constraint(constraint))
+                if constraint.contype() == protobuf::ConstrType::ConstrGenerated =>
+            {
+                match constraint.generated_kind.as_str() {
+                    "s" => Some(Generated::Stored),
+                    "v" => Some(Generated::Virtual),
+                    _ => None,
+                }
+            }
+            _ => None,
+        })
+        .unwrap_or_default()
 }
 
 pub(super) fn function_info(

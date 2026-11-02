@@ -14,7 +14,7 @@ use super::{
 use crate::resolve::{
     FindingKind,
     expr::{check_assignment, infer_expr},
-    scope::{Columns, Level},
+    scope::{Columns, Item, Level},
 };
 use crate::typing::{Type, TypedColumn};
 
@@ -134,11 +134,86 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         }
     }
 
+    check_generated_insert(r, &target, n);
+
     if let Some(conflict) = &n.on_conflict_clause {
         resolve_on_conflict_clause(r, conflict, &target);
     }
 
     resolve_returning_clause(r, n.returning_clause.as_ref(), Level::with_item(target))
+}
+
+/// Reports an INSERT that assigns anything but `DEFAULT` to a generated column. Port of the check
+/// of [`rewriteTargetListIU`] for `CMD_INSERT`: in a VALUES list, every row must have `DEFAULT`
+/// for the column, and a SELECT can't assign it at all.
+///
+/// Targets with subscripts or fields, like `g[1]`, are not checked.
+///
+/// [`rewriteTargetListIU`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L808
+fn check_generated_insert(r: &mut Resolver, target: &Item, n: &InsertStmt) {
+    if target.generated_columns.is_empty() {
+        return;
+    }
+    // `DEFAULT VALUES` assigns nothing.
+    let Some(source) = n.select_stmt.as_deref() else {
+        return;
+    };
+    let rows = values_rows(source);
+
+    // The assigned columns and the location of each in the column list.
+    let targets: Vec<(&str, Option<i32>)> = if n.cols.is_empty() {
+        // Without a column list, the values go to the first columns of the table.
+        let width = match (&rows, &source.node) {
+            (Some(rows), _) => rows.first().map(|row| row.len()),
+            (None, Some(NodeEnum::SelectStmt(select))) => select_width(select),
+            _ => None,
+        };
+        let (Some(width), Some(columns)) = (width, target.columns.as_ref()) else {
+            return;
+        };
+        columns
+            .iter()
+            .take(width)
+            .map(|column| (column.as_str(), None))
+            .collect()
+    } else {
+        n.cols
+            .iter()
+            .map(|column| match &column.node {
+                Some(NodeEnum::ResTarget(column)) if column.indirection.is_empty() => {
+                    (column.name.as_str(), Some(column.location))
+                }
+                // Not checked: an empty name is never a generated column.
+                _ => ("", None),
+            })
+            .collect()
+    };
+
+    for (index, (column, column_location)) in targets.into_iter().enumerate() {
+        if !target.generated_columns.iter().any(|name| name == column) {
+            continue;
+        }
+        let location = match &rows {
+            Some(rows) => {
+                let value = rows.iter().find_map(|row| {
+                    row.get(index)
+                        .filter(|value| !matches!(value.node, Some(NodeEnum::SetToDefault(_))))
+                });
+                match value {
+                    Some(value) => column_location.or_else(|| node_location(value)),
+                    None => continue,
+                }
+            }
+            None => column_location.or_else(|| select_target_location(source, index)),
+        };
+        r.report(
+            FindingKind::GeneratedColumnAssignment {
+                column: column.to_owned(),
+                insert: true,
+            },
+            location.unwrap_or(-1),
+        );
+    }
 }
 
 fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32> {

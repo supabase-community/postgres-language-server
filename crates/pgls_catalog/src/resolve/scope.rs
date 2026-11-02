@@ -31,6 +31,8 @@ pub(super) struct Item {
     pub typed_columns: TypedColumns,
     /// Whether the item has system columns (`ctid`, `xmin`, ...).
     pub has_system_columns: bool,
+    /// The generated columns of a table, which INSERT and UPDATE can only set to `DEFAULT`.
+    pub generated_columns: Vec<String>,
     /// What the columns come from. Only set when references are collected.
     pub source: Option<Rc<ItemSource>>,
 }
@@ -66,6 +68,7 @@ impl ItemSource {
                         _ => None,
                     },
                     ty,
+                    generated: crate::Generated::No,
                 }
             })
             .collect();
@@ -81,6 +84,7 @@ impl Item {
             columns,
             typed_columns: None,
             has_system_columns: false,
+            generated_columns: Vec::new(),
             source: None,
         }
     }

@@ -36,6 +36,9 @@ create function total(variadic nums int[]) returns int language sql
     as 'select sum(n)::int from unnest(nums) n';
 create function pick(a anyelement, b anyelement) returns anyelement language sql as 'select a';
 create view item_names as select id, name from items;
+create table totals (price int, qty int, total int generated always as (price * qty) stored);
+create table child_totals (note text) inherits (totals);
+create table copied_totals (like totals);
 ";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,6 +48,7 @@ enum Kind {
     Cast,
     Assignment,
     Return,
+    Generated,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -397,6 +401,48 @@ const CASES: &[(&str, Expect)] = &[
         "update items set created_at = 1",
         Detect("42804", Kind::Assignment),
     ),
+    // Generated columns
+    (
+        "insert into totals (price, qty) values (1, 2) returning total",
+        Accept,
+    ),
+    (
+        "insert into totals (price, total) values (1, default), (2, default)",
+        Accept,
+    ),
+    ("update totals set price = 1, total = default", Accept),
+    (
+        "insert into copied_totals (price, total) values (1, 2)",
+        Accept,
+    ),
+    (
+        "insert into totals (price, total) values (1, 2)",
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "insert into totals values (1, 2, 3)",
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "insert into totals (price, total) values (1, default), (2, 3)",
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "insert into totals (total) select 1",
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "update totals set total = 1",
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "insert into child_totals (total) values (1)",
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "update child_totals set (price, total) = (1, 2)",
+        Detect("428C9", Kind::Generated),
+    ),
     // SQL function results
     (
         "create function f() returns int language sql as 'select 1'",
@@ -568,6 +614,7 @@ fn kind(finding: &FindingKind) -> Option<Kind> {
         FindingKind::InvalidCast { .. } => Some(Kind::Cast),
         FindingKind::AssignmentMismatch { .. } => Some(Kind::Assignment),
         FindingKind::FunctionReturnMismatch { .. } => Some(Kind::Return),
+        FindingKind::GeneratedColumnAssignment { .. } => Some(Kind::Generated),
         _ => None,
     }
 }

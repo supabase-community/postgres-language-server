@@ -38,6 +38,7 @@ fn base() -> Arc<CatalogBase> {
             is_primary_key: false,
             is_unique: false,
             default_expr: None,
+            generated: crate::Generated::No,
             varchar_length: None,
             comment: None,
         })

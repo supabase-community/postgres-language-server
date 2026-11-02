@@ -3,6 +3,7 @@ use pgls_query::{
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, ObjectType},
 };
 
+use crate::Generated;
 use crate::catalog::{
     Catalog, Entry, key,
     names::{range_var_name, type_label},
@@ -11,12 +12,13 @@ use crate::catalog::{
 use crate::lookup::{CatalogView, ColumnInfo, Origin};
 
 /// `ALTER TABLE`, and `ALTER TYPE ... ADD/DROP/ALTER ATTRIBUTE` on composite types.
-/// Models the column changes of [`ATExecAddColumn`], [`ATExecDropColumn`] and
-/// [`ATExecAlterColumnType`].
+/// Models the column changes of [`ATExecAddColumn`], [`ATExecDropColumn`],
+/// [`ATExecAlterColumnType`] and [`ATExecDropExpression`].
 ///
 /// [`ATExecAddColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L7226
 /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
 /// [`ATExecAlterColumnType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L14747
+/// [`ATExecDropExpression`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L8809
 pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search_path: &[String]) {
     let Some(range_var) = &n.relation else {
         return;
@@ -63,6 +65,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
             AlterTableType::AtAddColumn
                 | AlterTableType::AtDropColumn
                 | AlterTableType::AtAlterColumnType
+                | AlterTableType::AtDropExpression
         )
     });
     if !changes_columns {
@@ -92,7 +95,8 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
 }
 
 /// Applies `ADD COLUMN`, `DROP COLUMN` and `ALTER COLUMN TYPE` (and their `ATTRIBUTE`
-/// counterparts).
+/// counterparts), and `ALTER COLUMN DROP EXPRESSION`, which turns a generated column into an
+/// ordinary one.
 fn apply_column_change(
     c: &Catalog,
     columns: &mut Vec<ColumnInfo>,
@@ -109,6 +113,14 @@ fn apply_column_change(
             }
         }
         AlterTableType::AtDropColumn => columns.retain(|column| column.name != command.name),
+        AlterTableType::AtDropExpression => {
+            if let Some(column) = columns
+                .iter_mut()
+                .find(|column| column.name == command.name)
+            {
+                column.generated = Generated::No;
+            }
+        }
         AlterTableType::AtAlterColumnType => {
             if let (Some(NodeEnum::ColumnDef(definition)), Some(column)) = (
                 command.def.as_deref().and_then(|def| def.node.as_ref()),

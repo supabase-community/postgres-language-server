@@ -1,13 +1,19 @@
 use pgls_query::{NodeEnum, protobuf::CreateStmt};
 
+use crate::Generated;
 use crate::catalog::{Catalog, key, names::type_name, overlay::column_info};
 use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
 
+/// `CREATE_TABLE_LIKE_GENERATED` of `TableLikeOption`, the bit of `INCLUDING GENERATED`:
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/include/nodes/parsenodes.h#L791
+const CREATE_TABLE_LIKE_GENERATED: u32 = 1 << 4;
+
 /// `CREATE TABLE`. Models [`DefineRelation`], which merges inherited columns with
-/// [`MergeAttributes`].
+/// [`MergeAttributes`], and the columns copied by `LIKE` ([`transformTableLikeClause`]).
 ///
 /// [`DefineRelation`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L765
 /// [`MergeAttributes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L2555
+/// [`transformTableLikeClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L1126
 pub(super) fn apply_create_stmt(c: &mut Catalog, n: &CreateStmt, search_path: &[String]) {
     create_table(c, n, RelationKind::Table, search_path);
 }
@@ -51,7 +57,8 @@ pub(super) fn create_table(
         add_columns(attributes);
     }
 
-    // Inherited columns (`INHERITS`, `PARTITION OF`) come first.
+    // Inherited columns (`INHERITS`, `PARTITION OF`) come first. A column inherited from a
+    // generated column is generated too.
     let mut parents = Vec::new();
     for parent in &n.inh_relations {
         let parent = match parent.node.as_ref() {
@@ -74,7 +81,14 @@ pub(super) fn create_table(
                     .relation
                     .as_ref()
                     .and_then(|source| c.relation_of(source, search_path).found());
-                add_columns(source.and_then(|source| source.columns));
+                let mut columns = source.and_then(|source| source.columns);
+                // Columns copied by `LIKE` are only generated with `INCLUDING GENERATED`.
+                if like.options & CREATE_TABLE_LIKE_GENERATED == 0 {
+                    for column in columns.iter_mut().flatten() {
+                        column.generated = Generated::No;
+                    }
+                }
+                add_columns(columns);
             }
             _ => {}
         }
