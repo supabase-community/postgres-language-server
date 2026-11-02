@@ -1,7 +1,7 @@
-use pgls_text_size::TextSize;
+use pgls_text_size::{TextRange, TextSize};
 
 use crate::WideEncoding::{Utf16, Utf32};
-use crate::{LineCol, LineIndex, WideLineCol};
+use crate::{LineCol, LineIndex, WideLineCol, changed_range};
 
 #[test]
 fn line_breaks_and_wide_characters() {
@@ -96,6 +96,43 @@ fn test_every_chars() {
             lin_col.col += char.len_utf8() as u32;
             col_utf16 += char.len_utf16() as u32;
             col_utf32 += 1;
+        }
+    }
+}
+
+#[test]
+fn changed_range_keeps_the_common_start_and_end() {
+    let range = |start: u32, end: u32| TextRange::new(start.into(), end.into());
+    assert_eq!(
+        changed_range("drop index ä_idx;", "drop index concurrently ä_idx;"),
+        Some((range(11, 11), "concurrently "))
+    );
+    assert_eq!(changed_range("a", "a"), Some((range(1, 1), "")));
+    assert_eq!(changed_range("ab", "b"), Some((range(0, 1), "")));
+}
+
+#[test]
+fn changed_range_keeps_crlf_whole() {
+    for (old, new) in [
+        ("select 1;\r\nselect 2;", "select 1;\nselect 2;"),
+        ("select 1;\nselect 2;", "select 1;\r\nselect 2;"),
+        ("select 1;\r\n", "select 1;\r\r\n"),
+        ("select 1;\r\nselect 2;", "select 1;\r\n\r\nselect 2;"),
+    ] {
+        let (range, new_text) = changed_range(old, new).unwrap();
+        let mut applied = old.to_string();
+        applied.replace_range(std::ops::Range::<usize>::from(range), new_text);
+        assert_eq!(applied, new, "{range:?}");
+
+        // Neither end is between the `\r` and the `\n`, so a position can point at both.
+        let line_index = LineIndex::new(old);
+        for offset in [range.start(), range.end()] {
+            let line_col = line_index.line_col(offset).unwrap();
+            assert_eq!(
+                line_index.offset_clamped(line_col),
+                offset,
+                "{old:?} {offset:?}"
+            );
         }
     }
 }

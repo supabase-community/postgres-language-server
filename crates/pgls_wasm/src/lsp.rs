@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use lsp_types::*;
-use pgls_line_index::{LineIndex, WideEncoding, WideLineCol};
+use pgls_line_index::{LineIndex, WideEncoding, WideLineCol, changed_range};
 use pgls_text_size::TextSize;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -408,15 +408,12 @@ impl LspHandler {
         if wants_fix_all
             && let Ok(fixed) = self.workspace.fix_file(&uri, false)
             && fixed.code != doc.content
+            && let Some(edit) = fix_all_edit(&doc.content, &doc.line_index, &fixed.code)
         {
             actions.push(CodeAction {
                 title: "Apply all safe fixes".into(),
                 kind: Some(CodeActionKind::from(FIX_ALL_KIND)),
-                edit: Some(self.workspace_edit(
-                    &params.text_document.uri,
-                    doc.version,
-                    vec![changed_range(&doc.content, &doc.line_index, &fixed.code)],
-                )),
+                edit: Some(self.workspace_edit(&params.text_document.uri, doc.version, vec![edit])),
                 ..Default::default()
             });
         }
@@ -619,39 +616,16 @@ fn covers(requested: &CodeActionKind, kind: &str) -> bool {
 }
 
 /// The edit that turns `old` into `new`, replacing only what changed, so that the editor keeps
-/// the cursor and the folds.
-fn changed_range(old: &str, old_index: &LineIndex, new: &str) -> TextEdit {
-    let prefix = old
-        .char_indices()
-        .zip(new.chars())
-        .find(|((_, a), b)| a != b)
-        .map_or(old.len().min(new.len()), |((index, _), _)| index);
-    let suffix = old[prefix..]
-        .chars()
-        .rev()
-        .zip(new[prefix..].chars().rev())
-        .take_while(|(a, b)| a == b)
-        .map(|(a, _)| a.len_utf8())
-        .sum::<usize>();
-    // A position can't point into a `\r\n`, so the edit takes in the whole line break when only
-    // one half of it changed. The characters it takes in are the same in `old` and `new`.
-    let prefix = if splits_crlf(old, prefix) {
-        prefix - 1
-    } else {
-        prefix
-    };
-    let suffix = if splits_crlf(old, old.len() - suffix) {
-        suffix - 1
-    } else {
-        suffix
-    };
-    TextEdit {
+/// the cursor and the folds. `None` if `old` is too large for a `TextSize`.
+fn fix_all_edit(old: &str, old_index: &LineIndex, new: &str) -> Option<TextEdit> {
+    let (range, new_text) = changed_range(old, new)?;
+    Some(TextEdit {
         range: Range {
-            start: offset_to_position(old_index, prefix),
-            end: offset_to_position(old_index, old.len() - suffix),
+            start: offset_to_position(old_index, range.start().into()),
+            end: offset_to_position(old_index, range.end().into()),
         },
-        new_text: new[prefix..new.len() - suffix].to_string(),
-    }
+        new_text: new_text.to_string(),
+    })
 }
 
 // =============================================================================
@@ -679,11 +653,6 @@ fn offset_to_position(line_index: &LineIndex, offset: usize) -> Position {
         .map_or_else(Position::default, |line_col| {
             Position::new(line_col.line, line_col.col)
         })
-}
-
-/// Whether `offset` is between the `\r` and the `\n` of a line break.
-fn splits_crlf(content: &str, offset: usize) -> bool {
-    content[..offset].ends_with('\r') && content[offset..].starts_with('\n')
 }
 
 // =============================================================================
@@ -1152,7 +1121,7 @@ mod tests {
     }
 
     #[test]
-    fn test_changed_range_keeps_crlf_whole() {
+    fn test_fix_all_edit_keeps_crlf_whole() {
         for (old, new) in [
             ("select 1;\r\nselect 2;", "select 1;\nselect 2;"),
             ("select 1;\nselect 2;", "select 1;\r\nselect 2;"),
@@ -1160,7 +1129,7 @@ mod tests {
             ("select 1;\r\nselect 2;", "select 1;\r\n\r\nselect 2;"),
         ] {
             let index = LineIndex::new(old);
-            let edit = changed_range(old, &index, new);
+            let edit = fix_all_edit(old, &index, new).unwrap();
             let mut applied = old.to_string();
             applied.replace_range(
                 position_to_offset(&index, edit.range.start)
