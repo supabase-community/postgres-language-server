@@ -227,28 +227,25 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
         }
     };
 
-    // The line numbers start at 1. A statement without a valid one has no span.
+    // The line number and the text come from the database. If they don't fit the body we have,
+    // there is no span.
     let line_index = stmt.line_number.parse::<usize>().ok()?.checked_sub(1)?;
-
     let text = &stmt.text;
 
-    // calculate the offset to the target line
+    // calculate the offset to the target line, keeping `\r\n` line endings
     let line_offset: usize = fn_body
-        .lines()
+        .split_inclusive('\n')
         .take(line_index)
-        .map(|line| line.len() + 1) // +1 for newline
+        .map(str::len)
         .sum();
 
     // find the position within the target line
     let line = fn_body.lines().nth(line_index)?;
-    let start = line
-        .to_lowercase()
-        .find(&text.to_lowercase())
-        .unwrap_or_else(|| {
-            line.char_indices()
-                .find_map(|(i, c)| if !c.is_whitespace() { Some(i) } else { None })
-                .unwrap_or(0)
-        });
+    let start = find_ascii_case_insensitive(line, text).unwrap_or_else(|| {
+        line.char_indices()
+            .find_map(|(i, c)| if !c.is_whitespace() { Some(i) } else { None })
+            .unwrap_or(0)
+    });
 
     let stmt_offset = line_offset + start;
 
@@ -264,8 +261,8 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
 
     if text.to_uppercase() == "IF" || text.to_uppercase() == "ELSIF" {
         // Find the position of the next "THEN" after the statement
-        let remaining = &fn_body[stmt_offset..];
-        if let Some(then_pos) = remaining.to_uppercase().find("THEN") {
+        let remaining = fn_body.get(stmt_offset..)?;
+        if let Some(then_pos) = find_ascii_case_insensitive(remaining, "THEN") {
             let end = then_pos + "THEN".len();
             return Some(TextRange::new(
                 ((offset + stmt_offset) as u32).into(),
@@ -275,7 +272,7 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     }
 
     // if no specific end is found, use the next semicolon or the end of the line
-    let remaining = &fn_body[stmt_offset..];
+    let remaining = fn_body.get(stmt_offset..)?;
     let end = remaining
         .char_indices()
         .find(|(_, c)| matches!(c, ';' | '\n' | '\r'))
@@ -294,11 +291,21 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     ))
 }
 
+/// The byte offset of the first occurrence of `target` in `text`, ignoring ASCII case. Unlike
+/// lowercasing both, this keeps the offsets of `text`.
+fn find_ascii_case_insensitive(text: &str, target: &str) -> Option<usize> {
+    text.char_indices().map(|(i, _)| i).find(|&i| {
+        text[i..]
+            .get(..target.len())
+            .is_some_and(|candidate| candidate.eq_ignore_ascii_case(target))
+    })
+}
+
 /// The range in `fn_body` of the token at the position of the query, which is searched for
 /// after `search_from`.
 fn query_token_range(q: &Query, fn_body: &str, search_from: usize) -> Option<TextRange> {
     // first find the query within the fn body *after* search_from, ignoring string literals
-    let query_start = find_text_outside_strings(&fn_body[search_from..], &q.text)
+    let query_start = find_text_outside_strings(fn_body.get(search_from..)?, &q.text)
         .map(|pos| ByteOffset(pos.get() + search_from));
 
     // The position is *within* the query text. plpgsql_check/Postgres
@@ -314,7 +321,7 @@ fn query_token_range(q: &Query, fn_body: &str, search_from: usize) -> Option<Tex
     // the range of the diagnostics is the token that `pos` is on
     // Find the end of the current token by looking for whitespace or SQL delimiters
     let is_delimiter = |c: char| matches!(c, ',' | ';' | ')' | '(' | '=' | '<' | '>');
-    let remaining = &fn_body[start..];
+    let remaining = fn_body.get(start..)?;
     let end = match remaining.chars().next() {
         // the token is the delimiter itself, e.g. in `syntax error at or near ";"`
         Some(c) if is_delimiter(c) => c.len_utf8(),
@@ -361,6 +368,55 @@ mod tests {
         let diagnostics = create_diagnostics_from_check_result(&result, fn_body, 0, None);
         let span = diagnostics[0].span.expect("expected diagnostic span");
         fn_body[usize::from(span.start())..usize::from(span.end())].to_string()
+    }
+
+    /// The text of the span of an issue of a statement without a query.
+    fn statement_span_for(fn_body: &str, line_number: &str, text: &str) -> Option<String> {
+        let result = PlpgSqlCheckResult {
+            function: "public.f1".to_string(),
+            issues: vec![PlpgSqlCheckIssue {
+                level: "warning".to_string(),
+                message: "unused variable".to_string(),
+                detail: None,
+                hint: None,
+                statement: Some(Statement {
+                    line_number: line_number.to_string(),
+                    text: text.to_string(),
+                }),
+                query: None,
+                sql_state: None,
+            }],
+        };
+        let diagnostics = create_diagnostics_from_check_result(&result, fn_body, 0, None);
+        let span = diagnostics[0].span?;
+        Some(fn_body[usize::from(span.start())..usize::from(span.end())].to_string())
+    }
+
+    #[test]
+    fn maps_statements_on_lines_with_crlf_and_non_ascii_text() {
+        let fn_body = "BEGIN\r\n  x := 'é';\r\n  PERFORM 1;\r\nEND";
+        assert_eq!(
+            statement_span_for(fn_body, "3", "PERFORM").as_deref(),
+            Some("PERFORM 1;")
+        );
+        // `İ` gets longer when lowercased.
+        let fn_body = "BEGIN\n  İ PERFORM 1;\nEND";
+        assert_eq!(
+            statement_span_for(fn_body, "2", "perform").as_deref(),
+            Some("PERFORM 1;")
+        );
+    }
+
+    #[test]
+    fn ignores_line_numbers_that_are_not_in_the_body() {
+        let fn_body = "BEGIN\n  PERFORM 1;\nEND";
+        for line_number in ["0", "-1", "unknown", "4"] {
+            assert_eq!(
+                statement_span_for(fn_body, line_number, "PERFORM"),
+                None,
+                "{line_number}"
+            );
+        }
     }
 
     #[test]
