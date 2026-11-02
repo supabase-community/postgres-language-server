@@ -152,18 +152,8 @@ impl PgLSPath {
 
     /// Accepts a file opened in read mode and saves into it
     pub fn save(&mut self, content: &str) -> Result<(), std::io::Error> {
-        let mut file_to_write = File::create(&self.path).unwrap();
-        // TODO: handle error with diagnostic
+        let mut file_to_write = File::create(&self.path)?;
         file_to_write.write_all(content.as_bytes())
-    }
-
-    /// Returns the contents of a file, if it exists
-    ///
-    /// ## Error
-    /// If Postgres Language Server doesn't have permissions to read the file
-    pub fn get_buffer_from_file(&mut self) -> String {
-        // we assume we have permissions
-        read_to_string(&self.path).expect("cannot read the file to format")
     }
 
     /// Small wrapper for [read_to_string]
