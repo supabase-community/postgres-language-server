@@ -187,3 +187,14 @@ fn postgres_18_copy_options() {
         "copy t from stdin with (format csv, on_error ignore, reject_limit 10, log_verbosity silent);",
     );
 }
+
+#[test]
+fn privilege_names_as_role_names() {
+    // Without `ON`, Postgres grants and revokes roles, and reads privilege names as role names.
+    valid_snapshot("grant_role_named_usage", "grant usage, update to bob;");
+    valid_snapshot("revoke_role_named_usage", "revoke usage from bob;");
+    valid_snapshot(
+        "grant_usage_privilege",
+        "grant usage, update on my_sequence to bob;",
+    );
+}
