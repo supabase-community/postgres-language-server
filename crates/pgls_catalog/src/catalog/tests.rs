@@ -39,6 +39,7 @@ fn base() -> Arc<CatalogBase> {
             is_unique: false,
             default_expr: None,
             generated: crate::Generated::No,
+            identity: crate::Identity::No,
             varchar_length: None,
             comment: None,
         })
@@ -249,6 +250,55 @@ fn partitions_and_typed_tables_inherit_columns() {
         column_names(&catalog, None, "pairs", &search_path).unwrap(),
         ["l", "r"]
     );
+}
+
+#[test]
+fn partitions_inherit_identity_since_postgres_17() {
+    let search_path = path(&["public"]);
+    let sql = "create table events (id int generated always as identity, at date) partition by range (at);
+         create table events_2025 partition of events for values from ('2025-01-01') to ('2026-01-01');
+         alter table events add column seq int generated always as identity;
+         create table base_t (id int generated always as identity);
+         create table copies (n int) inherits (base_t);";
+    let identities = |version_num: Option<i64>| {
+        let snapshot = Snapshot {
+            schemas: vec![schema("public"), schema("pg_catalog")],
+            version: crate::Version {
+                version_num,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+        for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
+            catalog.apply(stmt, &search_path);
+        }
+        ["events", "events_2025", "copies"].map(|table| {
+            catalog
+                .relation(None, table, &search_path)
+                .found()
+                .unwrap()
+                .columns
+                .unwrap()
+                .into_iter()
+                .map(|column| column.identity)
+                .collect::<Vec<_>>()
+        })
+    };
+    use crate::Identity::{Always, No};
+    assert_eq!(
+        identities(Some(180_000)),
+        [
+            vec![Always, No, Always],
+            vec![Always, No, Always],
+            vec![No, No],
+        ]
+    );
+    assert_eq!(
+        identities(Some(160_000)),
+        [vec![Always, No, Always], vec![No, No, No], vec![No, No],]
+    );
+    assert_eq!(identities(None)[1], [No, No, No]);
 }
 
 #[test]

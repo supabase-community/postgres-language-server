@@ -242,6 +242,7 @@ impl Builder {
                 Some(mut previous) if previous.type_name == column.type_name => {
                     previous.number = number as i64 + 1;
                     previous.generated = column.generated;
+                    previous.identity = column.identity;
                     previous
                 }
                 _ => Column {
@@ -266,6 +267,7 @@ impl Builder {
                     is_unique: false,
                     default_expr: None,
                     generated: column.generated,
+                    identity: column.identity,
                     varchar_length: None,
                     comment: None,
                 },

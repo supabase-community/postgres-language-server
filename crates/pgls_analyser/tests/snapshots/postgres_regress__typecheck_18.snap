@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_18_6: 47289 statements and 373 in SQL function bodies, 1880 findings on statements Postgres rejected
+REL_18_6: 47289 statements and 373 in SQL function bodies, 1886 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 banDuplicateColumnAssignments 42601: 1
@@ -10,7 +10,7 @@ banDuplicateColumnAssignments 42701: 2
 functionArgumentMismatch 42725: 5
 functionArgumentMismatch 42883: 4
 functionReturnTypeMismatch 42P13: 5
-generatedColumnAssignment 428C9: 11
+generatedColumnAssignment 428C9: 17
 insertColumnMismatch 42601: 6
 invalidCast 42846: 2
 missingFromClauseEntry 42P01: 13
@@ -29,6 +29,8 @@ unknownType 42704: 88
 unknownType 42P01: 2
 
 Known artefacts
+constraints.sql:868:1
+  `ALTER COLUMN a ADD GENERATED ALWAYS AS IDENTITY` fails because `a` has an invalid NOT NULL constraint, so `a` is no identity column
 foreign_key.sql:1193:1
   `CREATE TEMP TABLE fktable2 (fk int references pktable ENFORCED NOT ENFORCED)` fails, so no temporary `fktable2` shadows the one created later
 transactions.sql:108:1
@@ -621,6 +623,12 @@ horology.sql:437:1 42P01 unknownRelation
 horology.sql:439:1 42P01 unknownRelation
 horology.sql:445:1 42P01 unknownRelation
 horology.sql:451:1 42P01 unknownRelation
+identity.sql:61:1 428C9 generatedColumnAssignment
+identity.sql:63:1 428C9 generatedColumnAssignment
+identity.sql:64:1 428C9 generatedColumnAssignment
+identity.sql:65:1 428C9 generatedColumnAssignment
+identity.sql:108:1 428C9 generatedColumnAssignment
+identity.sql:125:1 428C9 generatedColumnAssignment
 identity.sql:159:1 42P01 unknownRelation
 incremental_sort.sql:3:1 42P01 unknownRelation
 incremental_sort.sql:10:1 42P01 unknownRelation

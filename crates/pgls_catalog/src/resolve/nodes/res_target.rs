@@ -241,25 +241,27 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
     }
 }
 
-/// Reports an UPDATE or `ON CONFLICT DO UPDATE` that sets a generated column to anything but
-/// `DEFAULT`. Port of the check of [`rewriteTargetListIU`] for `CMD_UPDATE`.
+/// Reports an UPDATE or `ON CONFLICT DO UPDATE` that sets a generated column or a
+/// `GENERATED ALWAYS` identity column to anything but `DEFAULT`. Port of the checks of
+/// [`rewriteTargetListIU`] for `CMD_UPDATE`, which no `OVERRIDING` clause affects.
 ///
 /// Assignments to subscripts or fields of a column, like `g[1]`, are not checked.
 ///
 /// [`rewriteTargetListIU`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L808
 pub(super) fn check_generated_update(r: &mut Resolver, target: &Item, assignments: &[Node]) {
-    if target.generated_columns.is_empty() {
+    if target.generated_columns.is_empty() && target.identity_always_columns.is_empty() {
         return;
     }
     for assignment in assignments {
         let Some(NodeEnum::ResTarget(assignment)) = &assignment.node else {
             continue;
         };
-        if !assignment.indirection.is_empty()
-            || !target.generated_columns.contains(&assignment.name)
-        {
+        if !assignment.indirection.is_empty() {
             continue;
         }
+        let Some(identity) = target.default_only(&assignment.name, false) else {
+            continue;
+        };
         let value = assignment
             .val
             .as_deref()
@@ -289,6 +291,7 @@ pub(super) fn check_generated_update(r: &mut Resolver, target: &Item, assignment
                 FindingKind::GeneratedColumnAssignment {
                     column: assignment.name.clone(),
                     insert: false,
+                    identity,
                 },
                 assignment.location,
             );
