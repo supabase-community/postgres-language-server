@@ -31,6 +31,8 @@ pub enum WrappingClause<'a> {
     /// A `WHEN [NOT] MATCHED ... THEN` clause of MERGE.
     MergeWhen,
     ColumnDefinitions,
+    /// `INHERITS (...)` of CREATE TABLE.
+    TableInherits,
     Insert,
     AlterTable,
     DropTable,
@@ -490,6 +492,7 @@ impl<'a> TreesitterContext<'a> {
             "revoke_statement" => Some(WrappingClause::RevokeStatement),
             "grant_statement" => Some(WrappingClause::GrantStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
+            "table_inherits" => Some(WrappingClause::TableInherits),
             "create_policy" => Some(WrappingClause::CreatePolicy),
             "alter_policy" => Some(WrappingClause::AlterPolicy),
             "drop_policy" => Some(WrappingClause::DropPolicy),

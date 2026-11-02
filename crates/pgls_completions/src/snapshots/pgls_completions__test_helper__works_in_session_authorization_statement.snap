@@ -91,10 +91,10 @@ pg_read_all_settings - pg_read_all_settings (Role)
 set session authorization authenticated; |
 
 Results:
+alter - alter (Keyword)
 copy - copy (Keyword)
 create - create (Keyword)
 delete - delete (Keyword)
 drop - drop (Keyword)
-insert - insert (Keyword)
 
 --------------

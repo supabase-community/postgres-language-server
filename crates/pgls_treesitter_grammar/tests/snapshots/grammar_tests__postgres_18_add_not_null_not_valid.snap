@@ -13,12 +13,13 @@ program [0..63] 'alter table t add constraint t_a_not_null not null a not valid;
         any_identifier [12..13] 't' (@table_reference_1of1)
       add_constraint [14..62] 'add constraint t_a_not_null not null a not valid'
         keyword_add [14..17] 'add'
-        keyword_constraint [18..28] 'constraint'
-        any_identifier [29..41] 't_a_not_null'
-        constraint [42..62] 'not null a not valid'
+        constraint [18..62] 'constraint t_a_not_null not null a not valid' (@end)
+          constraint_name [18..41] 'constraint t_a_not_null'
+            keyword_constraint [18..28] 'constraint'
+            any_identifier [29..41] 't_a_not_null' (@end)
           keyword_not [42..45] 'not'
           keyword_null [46..50] 'null'
-          column_identifier [51..52] 'a'
+          column_identifier [51..52] 'a' (@end)
           constraint_attributes [53..62] 'not valid'
             constraint_attribute [53..62] 'not valid' (@end)
               keyword_not [53..56] 'not'

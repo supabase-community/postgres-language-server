@@ -35,6 +35,8 @@ update - update (Keyword)
 drop |
 
 Results:
+function - function (Keyword)
+index - index (Keyword)
 table - table (Keyword)
 
 --------------
@@ -43,6 +45,7 @@ drop t|
 
 Results:
 table - table (Keyword)
+function - function (Keyword)
 
 --------------
 
