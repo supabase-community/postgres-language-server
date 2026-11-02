@@ -1254,4 +1254,18 @@ mod tests {
             assert_eq!(keywords_at(&query, &pool).await, expected, "{sql}");
         }
     }
+
+    #[sqlx::test]
+    async fn completes_overlaps(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        assert_eq!(
+            keywords_at(
+                &format!("select * from t where (t.a, t.b) ov{cursor}"),
+                &pool
+            )
+            .await,
+            ["overlaps"]
+        );
+    }
 }

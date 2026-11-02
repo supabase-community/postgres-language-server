@@ -258,6 +258,14 @@ fn unfinished_create_and_alter_table() {
 }
 
 #[test]
+fn overlaps_operator() {
+    valid_snapshot(
+        "overlaps_operator",
+        "select * from t where (t.starts_at, t.ends_at) overlaps (date '2020-01-01', interval '1 day') and t.id = 1;",
+    );
+}
+
+#[test]
 fn privilege_names_as_role_names() {
     // Without `ON`, Postgres grants and revokes roles, and reads privilege names as role names.
     valid_snapshot("grant_role_named_usage", "grant usage, update to bob;");

@@ -3825,6 +3825,17 @@ module.exports = grammar({
             ),
           ),
         ),
+        // `(start, end) OVERLAPS (start, end)`, with a row on each side.
+        prec.right(
+          "binary_relation",
+          partialSeq(
+            seq(
+              field("binary_expr_left", choice($.list, $.invocation)),
+              field("binary_expr_operator", $.keyword_overlaps),
+            ),
+            field("end", choice($.list, $.invocation)),
+          ),
+        ),
         ...binaryChoices.map(([operator, precedence]) =>
           prec.right(
             precedence,
