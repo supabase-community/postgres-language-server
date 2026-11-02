@@ -8,12 +8,16 @@ use pgls_catalog::Snapshot;
 use crate::WorkspaceError;
 
 #[cfg(feature = "db")]
-use sqlx::PgPool;
+use sqlx::{PgPool, postgres::PgConnectOptions};
 #[cfg(feature = "db")]
 use std::collections::HashMap;
 
 #[cfg(feature = "db")]
-use super::{async_helper::run_async, connection_key::ConnectionKey, last_used::LastUsed};
+use super::{
+    async_helper::run_async, backoff::Backoff, connection_key::ConnectionKey, last_used::LastUsed,
+};
+#[cfg(feature = "db")]
+use crate::diagnostics::DatabaseConnectionError;
 #[cfg(feature = "db")]
 use std::time::Duration;
 
@@ -31,8 +35,39 @@ const IDLE_SWEEP_INTERVAL: Duration = Duration::from_secs(60);
 #[cfg(feature = "db")]
 #[derive(Default)]
 struct SnapshotSlot {
-    snapshot: Mutex<Option<Arc<Snapshot>>>,
+    state: Mutex<SlotState>,
     last_used: LastUsed,
+}
+
+#[cfg(feature = "db")]
+#[derive(Default)]
+struct SlotState {
+    snapshot: Option<Arc<Snapshot>>,
+    /// The last failure to load the snapshot on a working connection, e.g. because a catalog
+    /// table may not be read.
+    failure: Option<LoadFailure>,
+}
+
+/// A snapshot query that failed on a working connection. Unlike a connection failure, which the
+/// connection manager backs off, it would fail the same way on the next request, so the snapshot
+/// isn't loaded again with the same connection options until the backoff ends.
+#[cfg(feature = "db")]
+struct LoadFailure {
+    error: DatabaseConnectionError,
+    backoff: Backoff,
+    /// The options of the pool that the snapshot failed to load with. The connection manager
+    /// creates a pool with new options when the settings change in a way that [ConnectionKey]
+    /// doesn't cover, e.g. the password or the startup options, which may fix the failure.
+    connect_options: Arc<PgConnectOptions>,
+}
+
+#[cfg(feature = "db")]
+impl LoadFailure {
+    /// Whether it happened with the options of `pool`, so loading with it again would fail the
+    /// same way.
+    fn applies_to(&self, pool: &PgPool) -> bool {
+        Arc::ptr_eq(&self.connect_options, &pool.connect_options())
+    }
 }
 
 /// Manages database snapshot storage and retrieval.
@@ -118,17 +153,61 @@ impl SnapshotManager {
         self.drop_idle_snapshots();
 
         // Callers for the same connection wait for one load instead of starting their own.
-        let mut snapshot = slot.snapshot.lock().unwrap();
-        if let Some(cache) = snapshot.as_ref() {
+        let mut state = slot.state.lock().unwrap();
+        if let Some(cache) = state.snapshot.as_ref() {
             return Ok(Arc::clone(cache));
         }
+        // A failure with other connection options doesn't say anything about these.
+        if state
+            .failure
+            .as_ref()
+            .is_some_and(|failure| !failure.applies_to(pool))
+        {
+            state.failure = None;
+        }
+        if let Some(failure) = state.failure.as_ref()
+            && failure.backoff.is_active()
+        {
+            tracing::debug!(
+                "Skipping the schema snapshot during backoff until {:?}: {}",
+                failure.backoff.next_retry_at(),
+                failure.error.message
+            );
+            return Err(WorkspaceError::DatabaseConnectionError(
+                failure.error.clone(),
+            ));
+        }
 
-        // Load the snapshot from the database. A failure leaves the slot empty for a retry.
+        // Load the snapshot from the database. A failure leaves the slot empty, to retry after a
+        // connection failure right away and after a failing query once its backoff ends.
         let pool_clone = pool.clone();
-        let loaded = Arc::new(run_async(
-            async move { Snapshot::load(&pool_clone).await },
-        )??);
-        *snapshot = Some(Arc::clone(&loaded));
+        let loaded = match run_async(async move { Snapshot::load(&pool_clone).await })? {
+            Ok(snapshot) => Arc::new(snapshot),
+            Err(err) => {
+                let err = WorkspaceError::from(err);
+                // A connection failure is backed off by the connection manager.
+                if let WorkspaceError::DatabaseConnectionError(error) = &err
+                    && !error.connection_failure
+                {
+                    let backoff = Backoff::after_failure(
+                        state.failure.as_ref().map(|failure| &failure.backoff),
+                    );
+                    tracing::warn!(
+                        "Failed to load the schema snapshot. Retrying after {:?}: {}",
+                        backoff.delay(),
+                        error.message
+                    );
+                    state.failure = Some(LoadFailure {
+                        error: error.clone(),
+                        backoff,
+                        connect_options: pool.connect_options(),
+                    });
+                }
+                return Err(err);
+            }
+        };
+        state.snapshot = Some(Arc::clone(&loaded));
+        state.failure = None;
         Ok(loaded)
     }
 
@@ -219,7 +298,7 @@ mod tests {
 
     fn insert(manager: &SnapshotManager, database: &str) {
         let slot = SnapshotSlot::default();
-        *slot.snapshot.lock().unwrap() = Some(Arc::new(Snapshot::default()));
+        slot.state.lock().unwrap().snapshot = Some(Arc::new(Snapshot::default()));
         manager
             .db_schemas
             .write()
@@ -265,5 +344,93 @@ mod tests {
         manager.last_idle_sweep.backdate(IDLE_SWEEP_INTERVAL * 2);
         manager.drop_idle_snapshots();
         assert_eq!(databases(&manager), ["busy"]);
+    }
+
+    /// A snapshot query that fails on a working connection, here because the role may not read
+    /// `pg_proc`, isn't run again on every request, but only once its backoff ends.
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn failing_snapshot_queries_are_backed_off(test_db: sqlx::PgPool) {
+        use sqlx::Executor;
+
+        // The pool's connections run as `test_login`, a role of the test migrations that isn't a
+        // superuser. The revoke only affects the test's own database.
+        test_db
+            .execute("revoke select on pg_catalog.pg_proc from public")
+            .await
+            .unwrap();
+        let options = test_db
+            .connect_options()
+            .as_ref()
+            .clone()
+            .options([("role", "test_login")]);
+        let pool = sqlx::PgPool::connect_lazy_with(options);
+        let manager = SnapshotManager::new();
+
+        let permission_denied = |result: Result<Arc<Snapshot>, WorkspaceError>| {
+            matches!(
+                result,
+                Err(WorkspaceError::DatabaseConnectionError(error))
+                    if error.message.contains("permission denied") && !error.connection_failure
+            )
+        };
+        assert!(permission_denied(manager.load(&pool)));
+
+        // The next request gets the same error without querying the database again.
+        test_db
+            .execute("grant select on pg_catalog.pg_proc to public")
+            .await
+            .unwrap();
+        assert!(permission_denied(manager.load(&pool)));
+
+        manager.db_schemas.read().unwrap()[&ConnectionKey::from(&pool)]
+            .state
+            .lock()
+            .unwrap()
+            .failure
+            .as_mut()
+            .unwrap()
+            .backoff
+            .expire();
+        assert!(manager.load(&pool).is_ok());
+        assert!(
+            manager.db_schemas.read().unwrap()[&ConnectionKey::from(&pool)]
+                .state
+                .lock()
+                .unwrap()
+                .failure
+                .is_none()
+        );
+    }
+
+    /// A snapshot that failed to load is loaded again right away with other connection options
+    /// for the same database and user, e.g. without a startup `role` that may not read `pg_proc`.
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn failing_snapshot_queries_are_retried_with_other_options(test_db: sqlx::PgPool) {
+        use sqlx::Executor;
+
+        test_db
+            .execute("revoke select on pg_catalog.pg_proc from public")
+            .await
+            .unwrap();
+        let restricted = sqlx::PgPool::connect_lazy_with(
+            test_db
+                .connect_options()
+                .as_ref()
+                .clone()
+                .options([("role", "test_login")]),
+        );
+        let manager = SnapshotManager::new();
+        assert!(matches!(
+            manager.load(&restricted),
+            Err(WorkspaceError::DatabaseConnectionError(error)) if !error.connection_failure
+        ));
+
+        let unrestricted =
+            sqlx::PgPool::connect_lazy_with(test_db.connect_options().as_ref().clone());
+        assert_eq!(
+            ConnectionKey::from(&restricted),
+            ConnectionKey::from(&unrestricted)
+        );
+        assert!(manager.load(&unrestricted).is_ok());
     }
 }

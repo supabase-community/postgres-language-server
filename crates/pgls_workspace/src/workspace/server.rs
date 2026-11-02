@@ -84,6 +84,8 @@ mod annotation;
 #[cfg(feature = "db")]
 mod async_helper;
 #[cfg(feature = "db")]
+mod backoff;
+#[cfg(feature = "db")]
 mod connection_key;
 #[cfg(feature = "db")]
 use crate::settings::DatabaseSettings;
