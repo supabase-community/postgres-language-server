@@ -26,6 +26,8 @@ module.exports = grammar({
     [$.time],
     [$.timestamp],
     [$.grantable_on_function, $.grantable_on_table],
+    // `grant usage, update` is a list of privileges with `ON`, and of roles without it.
+    [$.grantable, $._unreserved_privilege],
 
     [$.any_identifier, $.column_identifier],
     [$.any_identifier, $.schema_identifier],
@@ -3417,7 +3419,24 @@ module.exports = grammar({
             $.grantable_on_all,
           ),
         ),
-        comma_list($.role_identifier, true),
+        // `GRANT role TO role`. Without `ON`, Postgres reads privilege names as role names, and
+        // the unreserved ones need no quotes, like `grant usage to bob`.
+        comma_list(choice($.role_identifier, $._unreserved_privilege), true),
+      ),
+
+    // Aliased keyword by keyword, so that the role name is a single node.
+    _unreserved_privilege: ($) =>
+      choice(
+        ...[
+          $.keyword_insert,
+          $.keyword_update,
+          $.keyword_delete,
+          $.keyword_truncate,
+          $.keyword_trigger,
+          $.keyword_maintain,
+          $.keyword_execute,
+          $.keyword_usage,
+        ].map((keyword) => alias(keyword, $.role_identifier)),
       ),
 
     grantable: ($) =>
