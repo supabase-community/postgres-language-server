@@ -170,6 +170,7 @@ fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDi
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
         sections: migration_sections(query),
+        source: Some(query.to_owned()),
         ..Default::default()
     })
 }

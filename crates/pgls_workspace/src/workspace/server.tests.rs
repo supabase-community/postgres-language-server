@@ -25,7 +25,8 @@ use sqlx::{Executor, PgPool, Row};
 use crate::{
     DynRef, Workspace, WorkspaceError,
     configuration::{
-        IncompleteSearch, NestedConfigurationSearch, apply_nested_configurations,
+        ConfigurationLayers, ConfigureProjectParams, IncompleteSearch, NestedConfigurationSearch,
+        VcsIntegration, apply_nested_configurations, configure_project,
         is_searched_for_configuration, load_configuration,
     },
     features::code_actions::{
@@ -39,9 +40,9 @@ use crate::{
     features::semantic_tokens::{PullSemanticTokensParams, SemanticTokenKind},
     settings::FilesSettings,
     workspace::{
-        IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
-        UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
-        server::WorkspaceServer,
+        FindProjectParams, IsPathIgnoredParams, OpenFileParams, ProjectKey,
+        RegisterProjectFolderParams, StatementId, UnregisterProjectFolderParams,
+        UpdateNestedSettingsParams, UpdateSettingsParams, server::WorkspaceServer,
     },
 };
 
@@ -51,8 +52,10 @@ fn get_test_workspace(
 ) -> Result<(WorkspaceServer, ProjectKey), WorkspaceError> {
     let workspace = WorkspaceServer::new();
 
-    let project_key =
-        workspace.register_project_folder(RegisterProjectFolderParams { path: None })?;
+    let project_key = workspace.register_project_folder(RegisterProjectFolderParams {
+        path: None,
+        real_path: None,
+    })?;
 
     workspace.update_settings(UpdateSettingsParams {
         project_key,
@@ -60,6 +63,7 @@ fn get_test_workspace(
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     })?;
 
     Ok((workspace, project_key))
@@ -939,6 +943,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     });
 
     let diagnostics = workspace
@@ -1034,6 +1039,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     });
 
     let diagnostics = workspace
@@ -3658,6 +3664,7 @@ impl TestProject {
         let project_key = workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: Some(root.to_path_buf()),
+                real_path: None,
             })
             .unwrap();
         workspace
@@ -3672,6 +3679,7 @@ impl TestProject {
                 gitignore_matches: vec![],
                 vcs_base_path: None,
                 workspace_directory: Some(root.to_path_buf()),
+                replace: false,
             })
             .unwrap();
 
@@ -3693,8 +3701,7 @@ impl TestProject {
             fs,
             self.project_key,
             search,
-            None,
-            |c| c,
+            &ConfigurationLayers::default(),
         )
         .unwrap();
         let directories = nested
@@ -3724,8 +3731,7 @@ impl TestProject {
             fs,
             self.project_key,
             NestedConfigurationSearch::new(root),
-            None,
-            |configuration| configuration,
+            &ConfigurationLayers::default(),
         )
         .unwrap()
         .configurations
@@ -3851,7 +3857,104 @@ fn files_use_the_nearest_configuration_file() {
     );
     // A relative path is relative to the root of the project, like the paths of the CLI.
     assert_eq!(project.severities("db2/a.sql"), [Severity::Error]);
+    // `..` leaves the folder it follows.
+    assert_eq!(
+        project.severities("/repo/db1/../db2/sub/a.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(project.severities("db2/nested/../a.sql"), [Severity::Error]);
     assert!(project.is_ignored("/repo/legacy/a.sql"));
+}
+
+/// Updating the root settings with `replace` resets what the configuration doesn't set, while a
+/// merge keeps it, which the wasm `format` call relies on.
+#[test]
+fn updating_the_settings_replaces_or_merges_them() {
+    let fs = file_system_with_configurations(&[(
+        "/repo",
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+    assert_eq!(project.severities("/repo/a.sql"), [Severity::Error]);
+
+    let update = |replace: bool| {
+        project
+            .workspace
+            .update_settings(UpdateSettingsParams {
+                project_key: project.project_key,
+                configuration: PartialConfiguration::default(),
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+                workspace_directory: Some(PathBuf::from("/repo")),
+                replace,
+            })
+            .unwrap();
+    };
+    update(false);
+    assert_eq!(project.severities("/repo/b.sql"), [Severity::Error]);
+    update(true);
+    assert_eq!(project.severities("/repo/c.sql"), [Severity::Warning]);
+}
+
+/// A file opened by its real path belongs to a folder that was opened through a symlink, and gets
+/// its settings. `configure_project` resolves the symlink through the file system.
+#[test]
+fn files_below_the_real_path_of_a_symlinked_folder_use_its_settings() {
+    let mut fs = MemoryFileSystem::default();
+    fs.insert_symlink("/home/a/link", "/data/repo");
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let workspace = WorkspaceServer::new();
+    let project_key = configure_project(
+        &workspace,
+        &fs,
+        ConfigureProjectParams {
+            hint: ConfigurationPathHint::FromWorkspace(PathBuf::from("/home/a/link")),
+            layers: &ConfigurationLayers::default(),
+            vcs: VcsIntegration::Enabled,
+        },
+    )
+    .unwrap()
+    .project_key;
+    workspace
+        .update_nested_settings(UpdateNestedSettingsParams {
+            project_key,
+            nested: vec![crate::workspace::NestedSettingsParams {
+                directory: PathBuf::from("/home/a/link/db1"),
+                configuration: serde_json::from_str(
+                    r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+                )
+                .unwrap(),
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+            }],
+        })
+        .unwrap();
+    let find = |path: &str| {
+        workspace
+            .find_project(FindProjectParams {
+                path: PgLSPath::new(path),
+            })
+            .unwrap()
+    };
+    assert_eq!(find("/data/repo/db1/b.sql"), Some(project_key));
+    assert_eq!(find("/data/other/../repo/c.sql"), Some(project_key));
+    assert_eq!(find("/data/other/c.sql"), None);
+
+    let project = TestProject {
+        workspace: Rc::new(workspace),
+        project_key,
+    };
+    assert_eq!(
+        project.severities("/home/a/link/db1/a.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(
+        project.severities("/data/repo/db1/b.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(project.severities("/data/repo/c.sql"), [Severity::Warning]);
 }
 
 /// The search doesn't descend into the folders that the root configuration ignores, except below
@@ -4066,8 +4169,7 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
         &fs,
         project.project_key,
         NestedConfigurationSearch::new("/repo"),
-        None,
-        |configuration| configuration,
+        &ConfigurationLayers::default(),
     )
     .unwrap()
     .configurations;
@@ -4095,6 +4197,46 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
     );
 }
 
+/// A file belongs to the project of the deepest folder that contains it, and a project without a
+/// folder contains every path.
+#[test]
+fn files_belong_to_the_project_of_the_deepest_folder() {
+    let workspace = WorkspaceServer::new();
+    let register = |path: Option<&str>| {
+        workspace
+            .register_project_folder(RegisterProjectFolderParams {
+                path: path.map(PathBuf::from),
+                real_path: None,
+            })
+            .unwrap()
+    };
+    let find = |path: &str| {
+        workspace
+            .find_project(FindProjectParams {
+                path: PgLSPath::new(path),
+            })
+            .unwrap()
+    };
+    let outer = register(Some("/outer"));
+    let inner = register(Some("/outer/inner"));
+
+    assert_eq!(find("/outer/a.sql"), Some(outer));
+    assert_eq!(find("/outer/inner/a.sql"), Some(inner));
+    assert_eq!(find("/outer/innermost/a.sql"), Some(outer));
+    assert_eq!(find("/elsewhere/a.sql"), None);
+
+    let folderless = register(None);
+    assert_eq!(find("/elsewhere/a.sql"), Some(folderless));
+    assert_eq!(find("/outer/inner/a.sql"), Some(inner));
+
+    workspace
+        .unregister_project_folder(UnregisterProjectFolderParams {
+            path: PgLSPath::new("/outer/inner"),
+        })
+        .unwrap();
+    assert_eq!(find("/outer/inner/a.sql"), Some(outer));
+}
+
 /// Each project has its own nested settings, even when the folder of one is below the other, as
 /// with nested workspace folders. Unregistering a project removes its nested settings with it.
 #[test]
@@ -4112,6 +4254,7 @@ fn projects_have_their_own_nested_settings() {
             .workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: Some(PathBuf::from("/outer/inner")),
+                real_path: None,
             })
             .unwrap(),
     );
@@ -4126,6 +4269,7 @@ fn projects_have_their_own_nested_settings() {
             gitignore_matches: vec![],
             vcs_base_path: None,
             workspace_directory: None,
+            replace: false,
         })
         .unwrap();
 
@@ -4159,6 +4303,7 @@ fn registering_a_project_folder_again_reuses_its_project() {
         workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: Some(PathBuf::from(path)),
+                real_path: None,
             })
             .unwrap()
     };
@@ -4178,6 +4323,7 @@ fn updating_the_settings_of_an_unknown_project_fails() {
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     });
     assert!(matches!(result, Err(WorkspaceError::NoProject(_))));
 }
@@ -4307,4 +4453,74 @@ ALTER TABLE users DROP COLUMN email;
     assert!(project.is_ignored("/repo/db/migrations/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/db/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
+}
+
+/// When no configuration points at a database any more, its pool and snapshot are dropped, so that
+/// a reload or a removed folder doesn't keep every database ever configured in memory.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
+    let workspace = WorkspaceServer::new();
+    let project_key = workspace
+        .register_project_folder(RegisterProjectFolderParams {
+            path: Some(PathBuf::from("/repo")),
+            real_path: None,
+        })
+        .unwrap();
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: serde_json::from_str(r#"{ "db": { "disableConnection": true } }"#)
+                .unwrap(),
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: Some(PathBuf::from("/repo")),
+            replace: true,
+        })
+        .unwrap();
+    let options = test_db.connect_options();
+    let nested = |databases: &[&str]| UpdateNestedSettingsParams {
+        project_key,
+        nested: databases
+            .iter()
+            .map(|database| crate::workspace::NestedSettingsParams {
+                directory: PathBuf::from("/repo").join(database),
+                configuration: PartialConfiguration {
+                    db: Some(PartialDatabaseConfiguration {
+                        host: Some(options.get_host().to_string()),
+                        port: Some(options.get_port()),
+                        database: Some(options.get_database().unwrap().to_string()),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+            })
+            .collect(),
+    };
+
+    workspace.update_nested_settings(nested(&["db1"])).unwrap();
+    let result = workspace
+        .check_database_connection(
+            crate::features::diagnostics::CheckDatabaseConnectionParams { project_key },
+        )
+        .unwrap();
+    assert_eq!(result.errors, Vec::<String>::new());
+    assert_eq!(workspace.connection.pool_count(), 1);
+    assert_eq!(workspace.snapshot.connection_count(), 1);
+    let pools = workspace.connection.cached_pools();
+
+    // Another folder with the same database keeps it.
+    workspace.update_nested_settings(nested(&["db2"])).unwrap();
+    assert_eq!(workspace.connection.pool_count(), 1);
+    assert_eq!(workspace.snapshot.connection_count(), 1);
+
+    workspace.update_nested_settings(nested(&[])).unwrap();
+    assert_eq!(workspace.connection.pool_count(), 0);
+    assert_eq!(workspace.snapshot.connection_count(), 0);
+    // Both pools of the database are closed, also the one for executed statements.
+    for pools in pools {
+        assert!(pools.pool.is_closed());
+        assert!(pools.statement_pool.is_closed());
+    }
 }

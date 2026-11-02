@@ -73,7 +73,7 @@ runs:
         rustup toolchain install 1.89.0 --profile minimal
         cargo +1.89.0 install cargo-pgrx --version 0.18.0 --locked
 
-        # Ensure we build the extension for the host architecture (macOS-14 runners are arm64).
+        # Ensure we build the extension for the host architecture (macOS-15 runners are arm64).
         # Release workflow also cross-compiles x86_64, but the local PostgreSQL installation is arm64.
         HOST_TARGET=$(rustc +1.89.0 -vV | sed -n 's/^host: //p')
         echo "Host target: ${HOST_TARGET}"
