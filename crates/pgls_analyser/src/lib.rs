@@ -351,10 +351,7 @@ impl<'a> Analyser<'a> {
                     result
                         .diagnostics
                         .extend(diagnostics.into_iter().map(|mut diagnostic| {
-                            diagnostic.span = Some(match diagnostic.span {
-                                Some(span) => span + stmt.range.start(),
-                                None => stmt.range,
-                            });
+                            diagnostic.move_into_file(stmt.range);
                             // Fixes are computed on the statement text, which only matches the
                             // source if it has the length of the statement range. A fix must
                             // keep the statement valid.
@@ -418,13 +415,16 @@ struct FileText<'a> {
 /// after the last statement, is checked on the text of the file from the start of the statement
 /// to the end of the last statement it edits. If that text doesn't parse without the fix, or the
 /// text of the file isn't known, the fix can't be checked and is kept.
+///
+/// Like the statements themselves, the SQL is parsed with its placeholders (psql variables such
+/// as `:name`, `$name`) converted to parameters, see [pgls_lexer::convert_to_positional_params].
 fn keeps_sql_valid(fix: &RuleFix, sql: &str, start: TextSize, file: Option<&FileText>) -> bool {
     let len = TextSize::of(sql);
     let Some(edits_end) = fix.edits.iter().map(|edit| edit.range.end()).max() else {
         return true;
     };
     if edits_end <= len {
-        return pgls_query::parse(&fix.apply(sql)).is_ok();
+        return parses(&fix.apply(sql));
     }
     let Some(file) = file else {
         return true;
@@ -439,10 +439,16 @@ fn keeps_sql_valid(fix: &RuleFix, sql: &str, start: TextSize, file: Option<&File
     let Some(text) = file.source.get(usize::from(start)..usize::from(end)) else {
         return true;
     };
-    if pgls_query::parse(text).is_err() {
+    if !parses(text) {
         return true;
     }
-    pgls_query::parse(&fix.apply(text)).is_ok()
+    parses(&fix.apply(text))
+}
+
+/// Whether the SQL parses with its placeholders converted to parameters. The conversion keeps the
+/// length of the text, so the fix edits apply to the source text unchanged.
+fn parses(sql: &str) -> bool {
+    pgls_query::parse(&pgls_lexer::convert_to_positional_params(sql)).is_ok()
 }
 
 /// Statements that run together: those before the first section marker, then each section.
@@ -591,7 +597,10 @@ mod tests {
     use pgls_text_size::TextRange;
     use termcolor::NoColor;
 
-    use crate::{AnalysableStatement, Analyser, FileText, RuleFix, keeps_sql_valid};
+    use crate::{
+        AnalysableStatement, Analyser, FileText, LinterDiagnostic, RuleFix, keeps_sql_valid,
+    };
+    use pgls_diagnostics::category;
 
     #[test]
     fn fixes_must_keep_the_statement_valid() {
@@ -641,6 +650,80 @@ mod tests {
         };
         let fix = RuleFix::new("").insert(at(30), "\ncommit;");
         assert!(keeps_sql_valid(&fix, "begin", at(0), Some(&file)));
+    }
+
+    #[test]
+    fn diagnostics_move_into_the_file() {
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        let statement = TextRange::new(at(10), at(30));
+        let mut diagnostic = LinterDiagnostic::new(
+            category!("lint/banDropColumn"),
+            Some(TextRange::new(at(2), at(4))),
+            "",
+        )
+        .detail(Some(TextRange::new(at(5), at(7))), "here")
+        .detail(None, "no span");
+        diagnostic.move_into_file(statement);
+        assert_eq!(diagnostic.span, Some(TextRange::new(at(12), at(14))));
+        let details: Vec<_> = diagnostic
+            .rule_advice
+            .details
+            .iter()
+            .map(|detail| detail.range)
+            .collect();
+        assert_eq!(details, [Some(TextRange::new(at(15), at(17))), None]);
+
+        // Without a span, the diagnostic points at the statement.
+        let mut diagnostic = LinterDiagnostic::new(category!("lint/banDropColumn"), None, "");
+        diagnostic.move_into_file(statement);
+        assert_eq!(diagnostic.span, Some(statement));
+    }
+
+    /// Placeholders are converted to parameters before the fixed statement is parsed, like
+    /// before the statement itself is parsed.
+    #[test]
+    fn fixes_of_statements_with_placeholders_are_checked_with_parameters() {
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        for sql in [
+            "create index users_tenant_idx on users (email) where tenant = :tenant",
+            "create index users_tenant_idx on users (email) where tenant = :'tenant'",
+            "create index users_tenant_idx on users (email) where tenant = $tenant",
+            "create index users_tenant_idx on :\"table\" (email)",
+        ] {
+            let valid = |fix: RuleFix| keeps_sql_valid(&fix, sql, at(0), None);
+            assert!(
+                valid(RuleFix::new("").insert(at(12), " concurrently")),
+                "{sql}"
+            );
+            assert!(
+                !valid(RuleFix::new("").insert(at(12), " concurrently (")),
+                "{sql}"
+            );
+        }
+    }
+
+    /// A fix that edits after its statement is checked on the text of the file, with the
+    /// placeholders of all statements in it converted to parameters.
+    #[test]
+    fn fixes_after_statements_with_placeholders_are_checked_with_parameters() {
+        let source = "insert into t values (:'v');\nupdate :\"schema\".t set id = $id;";
+        let at = |offset: usize| pgls_text_size::TextSize::from(u32::try_from(offset).unwrap());
+        let first = TextRange::new(at(0), at(source.find(';').unwrap()));
+        let second = TextRange::new(at(source.find("update").unwrap()), at(source.len() - 1));
+        let file = FileText {
+            source,
+            stmts: vec![first, second],
+        };
+        // A fix of the first statement.
+        let valid = |offset: usize, text: &str| {
+            let fix = RuleFix::new("").insert(at(offset), text);
+            keeps_sql_valid(&fix, &source[first], at(0), Some(&file))
+        };
+        // After the last statement.
+        assert!(valid(source.len(), "\ncommit;"));
+        // Before the semicolon of the last statement. Without the placeholders converted, the
+        // text wouldn't parse without the fix either, and the fix would be kept.
+        assert!(!valid(source.len() - 1, "\ncommit"));
     }
 
     #[ignore]

@@ -15,9 +15,9 @@ use super::{
     scope::{Cte, Level},
     span,
 };
+use crate::TypeKind;
 use crate::lookup::{CatalogView, Lookup, Origin};
-use crate::typing::TypeId;
-use crate::{FunctionInfo, TypeKind};
+use crate::typing::{ResolvedFunction, Type, TypeId};
 
 pub(super) struct Resolver<'a> {
     pub catalog: &'a dyn CatalogView,
@@ -152,8 +152,9 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    /// Records that `call` resolves to `function`, when references are being collected.
-    pub fn record_call(&mut self, call: &FuncCall, function: &FunctionInfo) {
+    /// Records that `call` resolves to `resolved`, when references are being collected.
+    pub fn record_call(&mut self, call: &FuncCall, resolved: &ResolvedFunction) {
+        let function = &resolved.function;
         if !self.collects_references() {
             return;
         }
@@ -190,20 +191,16 @@ impl<'a> Resolver<'a> {
             };
             arguments.push(ResolvedCallArgument { parameter, named });
         }
-        for (arg, argument) in call.args.iter().zip(&arguments) {
+        // The type each argument is coerced to, with polymorphic parameters like `anyelement`
+        // resolved from the other arguments.
+        for (arg, target) in call.args.iter().zip(&resolved.arguments) {
             let value = match arg.node.as_ref() {
                 Some(NodeEnum::NamedArgExpr(named)) => {
                     named.arg.as_deref().and_then(|arg| arg.node.as_ref())
                 }
                 value => value,
             };
-            let is_variadic = expanded && argument.parameter + 1 == parameters.len();
-            let target = if is_variadic {
-                signature.variadic_element.as_ref()
-            } else {
-                parameters[argument.parameter].ty.as_ref()
-            };
-            if let Some(target) = target {
+            if let Some(Type::Named(target)) = target {
                 self.record_enum_literal(value, target);
             }
         }
@@ -307,6 +304,41 @@ impl<'a> Resolver<'a> {
     /// The span of the string constant starting at `location`.
     pub fn literal_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::literal_end)
+    }
+
+    /// The alias `alias` after the (possibly qualified) name starting at `location`: its location
+    /// and span, if it is written there.
+    pub fn alias_location(&self, location: i32, alias: &str) -> Option<(i32, TextRange)> {
+        let sql = self.sql?;
+        let (start, end) = span::alias_span(sql, usize::try_from(location).ok()?)?;
+        if crate::identifier_name(&sql[start..end]) != alias {
+            return None;
+        }
+        Some((
+            i32::try_from(start).ok()?,
+            TextRange::new(
+                TextSize::try_from(start).ok()?,
+                TextSize::try_from(end).ok()?,
+            ),
+        ))
+    }
+
+    /// Records the alias of the FROM item named at `location`, when references are being
+    /// collected.
+    pub fn record_alias(&mut self, location: i32, alias: Option<&pgls_query::protobuf::Alias>) {
+        if !self.collects_references() {
+            return;
+        }
+        let Some(alias) = alias else {
+            return;
+        };
+        if let Some((location, span)) = self.alias_location(location, &alias.aliasname) {
+            self.record(Reference::Alias {
+                location,
+                span: Some(span),
+                name: alias.aliasname.clone(),
+            });
+        }
     }
 
     /// The span of the first token of an expression starting at `location`.

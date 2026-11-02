@@ -32,6 +32,10 @@ export interface RegisterProjectFolderParams {
    * The folder of the project. A project without a folder contains every path.
    */
   path?: string;
+  /**
+   * The folder with symlinks resolved, if that differs from `path`, e.g. for a folder opened through a symlink. The paths below it belong to the project too.
+   */
+  realPath?: string;
 }
 export interface GetFileContentParams {
   path: PgLSPath;
@@ -465,7 +469,14 @@ export interface UpdateSettingsParams {
    * The project whose root settings are updated.
    */
   project_key: ProjectKey;
+  /**
+   * Whether the configuration replaces the root settings. Otherwise it is merged into them, and the sections it doesn't set keep their values.
+   */
+  replace?: boolean;
   vcs_base_path?: string;
+  /**
+   * The folder that relative paths and globs of the configuration are resolved against: the folder of the configuration file.
+   */
   workspace_directory?: string;
 }
 /**
