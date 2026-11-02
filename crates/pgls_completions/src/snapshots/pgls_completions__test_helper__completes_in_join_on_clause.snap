@@ -100,8 +100,8 @@ select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id
 Results:
 copy - copy (Keyword)
 create - create (Keyword)
+delete - delete (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
-merge - merge (Keyword)
 
 --------------

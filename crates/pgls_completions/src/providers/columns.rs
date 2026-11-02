@@ -685,6 +685,38 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_the_columns_of_update_and_delete_aliases(pool: PgPool) {
+        pool.execute(
+            r#"
+            create table public.users (id serial primary key, name text);
+            create table public.posts (post_id int, title text);
+            "#,
+        )
+        .await
+        .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        for (sql, expected) in [
+            ("update users u set name = 'x' where u.{}", ["id", "name"]),
+            (
+                "update users as u set name = 'x' returning u.{}",
+                ["id", "name"],
+            ),
+            ("delete from users u where u.{}", ["id", "name"]),
+            ("delete from users as u returning u.{}", ["id", "name"]),
+            (
+                "delete from users u using posts p where p.{}",
+                ["post_id", "title"],
+            ),
+        ] {
+            let query = sql.replace("{}", &cursor.to_string());
+            let mut columns = columns_at(&query, &pool).await;
+            columns.sort();
+            assert_eq!(columns, expected, "{sql}");
+        }
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn completes_columns_of_old_and_new_in_returning(pool: PgPool) {
         pool.execute(
             r#"

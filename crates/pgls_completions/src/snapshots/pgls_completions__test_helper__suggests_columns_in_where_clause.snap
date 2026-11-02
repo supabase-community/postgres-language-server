@@ -168,8 +168,8 @@ select name from instruments i join others o on i.z = o.a where o.a = i.z and i.
 Results:
 copy - copy (Keyword)
 create - create (Keyword)
+delete - delete (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
-merge - merge (Keyword)
 
 --------------

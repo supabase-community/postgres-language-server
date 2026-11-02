@@ -70,8 +70,8 @@ set role anon; |
 Results:
 copy - copy (Keyword)
 create - create (Keyword)
+delete - delete (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
-merge - merge (Keyword)
 
 --------------

@@ -63,7 +63,7 @@ mod tests {
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
             CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
-            assert_complete_results, assert_no_complete_results, get_test_deps, get_test_params,
+            assert_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -286,8 +286,12 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(
+        assert_complete_results(
             format!("delete {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("from".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
+            ],
             None,
             &pool,
         )

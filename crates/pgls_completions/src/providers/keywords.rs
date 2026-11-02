@@ -538,6 +538,10 @@ mod tests {
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
+                    "delete".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
                     "drop".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
@@ -1097,7 +1101,7 @@ mod tests {
         ];
         let returning_with = ["new", "old"];
 
-        let cases: [(&str, &[&str]); 12] = [
+        let cases: [(&str, &[&str]); 13] = [
             ("explain ({})", &[explain.as_slice(), &["select"]].concat()),
             ("explain ({}", &explain),
             ("explain (analyze, {})", &explain),
@@ -1113,6 +1117,7 @@ mod tests {
                 "update t set a = 1 returning with (old as o, {})",
                 &returning_with,
             ),
+            ("delete from t returning with ({})", &returning_with),
         ];
 
         for (sql, expected) in cases {
