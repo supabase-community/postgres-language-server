@@ -417,6 +417,102 @@ fn updates_and_deletes() {
 }
 
 #[test]
+fn merge() {
+    let source = "merge into users u using posts p on p.user_id = u.id";
+    assert_valid(&format!(
+        "{source} when matched and p.title <> u.name then update set name = p.title \
+         when matched then delete \
+         when not matched by source and u.id > 0 then update set name = u.name \
+         when not matched then insert (id, name) values (p.user_id, p.title) \
+         when not matched by target then do nothing"
+    ));
+    assert_valid(&format!(
+        "{source} when not matched then insert default values"
+    ));
+    assert_valid(&format!(
+        "{source} when not matched then insert values (p.user_id, default)"
+    ));
+    // The target and the join condition.
+    assert_eq!(
+        findings("merge into nope using posts on true when matched then delete"),
+        [FindingKind::UnknownRelation {
+            schema: None,
+            name: "nope".into()
+        }]
+    );
+    assert_eq!(
+        findings("merge into users u using posts p on p.nope = u.id when matched then delete"),
+        [unknown_column(Some("p"), "nope")]
+    );
+    assert_eq!(
+        findings("merge into users using posts on id = 1 when matched then delete"),
+        [FindingKind::AmbiguousColumn {
+            column: "id".into(),
+            candidates: vec!["users".into(), "posts".into()],
+        }]
+    );
+    // UPDATE and INSERT target columns of the target.
+    assert_eq!(
+        findings(&format!("{source} when matched then update set nope = 1")),
+        [unknown_column(Some("u"), "nope")]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched then insert (nope) values (1)"
+        )),
+        [unknown_column(Some("u"), "nope")]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched then insert (id) values (1, 'x')"
+        )),
+        [FindingKind::InsertColumnMismatch {
+            expected: 1,
+            found: 2
+        }]
+    );
+    // `NOT MATCHED [BY TARGET]` only sees the source, `NOT MATCHED BY SOURCE` only the target.
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched then insert (id) values (u.id)"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "u".into() }]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched by source and p.id = 1 then delete"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "p".into() }]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched by source then update set name = title"
+        )),
+        [unknown_column(None, "title")]
+    );
+    // A source subquery and a CTE.
+    assert_valid(
+        "with c as (select 1 as id) merge into users using c on c.id = users.id \
+         when not matched then insert (id) values (c.id)",
+    );
+    assert_eq!(
+        findings(
+            "merge into users using (select 1 as x) s on s.x = users.id \
+             when not matched then insert (id) values (s.nope)"
+        ),
+        [unknown_column(Some("s"), "nope")]
+    );
+    // RETURNING sees the source and the target, and `merge_action()`.
+    assert_valid(&format!(
+        "{source} when matched then delete returning merge_action(), p.title, u.name, old.id"
+    ));
+    assert_eq!(
+        findings(&format!("{source} when matched then delete returning nope")),
+        [unknown_column(None, "nope")]
+    );
+}
+
+#[test]
 fn returning_old_and_new() {
     // Postgres 18 adds `old` and `new`; the snapshot here has no server version.
     assert_valid("update users set name = 'x' returning old.name, new.name, old.*");
