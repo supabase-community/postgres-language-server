@@ -167,7 +167,7 @@ mod tests {
 
     use crate::snapshot::{Behavior, Snapshot, functions::ProcKind};
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn loads(pool: PgPool) {
         let setup = r#"
           create table coos (

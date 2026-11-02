@@ -503,7 +503,7 @@ mod tests {
         keywords
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn completes_stmt_start_keywords(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -553,7 +553,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn completes_keywords(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -587,7 +587,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn does_not_complete_from_after_select(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -607,7 +607,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn completes_columns_after_select(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -629,7 +629,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn completes_after_from_clause(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -648,7 +648,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn stays_within_order_clause(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -674,7 +674,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn only_allows_identifier_in_alias_clause(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -691,7 +691,7 @@ mod tests {
         assert_no_complete_results(query.as_str(), Some(setup), &pool).await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn completes_from_keyword(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -717,7 +717,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn completes_from_keyword_after_aliases(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -750,7 +750,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn adds_where_after_clause(pool: PgPool) {
         let query = format!(
             "select * from public.users us left join client_settings as cs on us.id = cs.client_id whe{}",
@@ -769,7 +769,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn completes_keywords_after_column_aliases(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -858,7 +858,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn completes_join_kw(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -890,7 +890,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn stays_in_joins(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -913,7 +913,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn completes_join_after_alias(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -945,7 +945,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn allows_starting_new_select_stmt(pool: PgPool) {
         let setup = r#"
             create table public.users (

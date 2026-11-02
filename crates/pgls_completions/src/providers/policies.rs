@@ -55,7 +55,7 @@ mod tests {
     use crate::test_helper::{CompletionAssertion, assert_complete_results};
     use pgls_test_utils::QueryWithCursorPosition;
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_within_quotation_marks(pool: PgPool) {
         let setup = r#"
             create schema private;

@@ -2875,8 +2875,10 @@ dependencies = [
  "anyhow",
  "clap",
  "dotenv",
+ "pgls_test_macros",
  "pgls_treesitter_grammar",
  "sqlx",
+ "tokio",
  "tree-sitter",
  "uuid",
 ]

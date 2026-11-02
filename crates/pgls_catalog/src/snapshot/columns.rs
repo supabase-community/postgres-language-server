@@ -95,7 +95,7 @@ mod tests {
 
     use crate::snapshot::{Snapshot, columns::ColumnClassKind};
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn loads_columns(test_db: PgPool) {
         let setup = r#"
             create table public.users (

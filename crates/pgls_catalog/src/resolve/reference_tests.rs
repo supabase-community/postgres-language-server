@@ -164,7 +164,7 @@ fn function_references_in(
         .collect()
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -221,7 +221,7 @@ async fn function_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn procedure_call_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -303,7 +303,7 @@ async fn procedure_call_references(test_db: PgPool) {
 
 /// A best-effort catalog keeps resolving functions and enum literals after a statement whose
 /// effects are unknown, which makes the lookups of a normal catalog unknown.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn best_effort_catalogs_ignore_unmodelled_statements(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let mut best_effort = catalog.clone().best_effort();
@@ -339,7 +339,7 @@ async fn best_effort_catalogs_ignore_unmodelled_statements(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn column_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -402,7 +402,7 @@ async fn column_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn cte_and_subquery_columns(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -435,7 +435,7 @@ async fn cte_and_subquery_columns(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn relation_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -461,7 +461,7 @@ async fn relation_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn cte_and_alias_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let names = |sql| -> Vec<String> {
@@ -499,7 +499,7 @@ fn stars_of(catalog: &Catalog, search_path: &[String], sql: &str) -> Vec<String>
         .collect()
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn star_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let stars = |sql| stars_of(&catalog, &search_path, sql);
@@ -555,7 +555,7 @@ async fn star_references(test_db: PgPool) {
 
 /// The rows of `INSERT ... VALUES` are resolved more than once, and each reference is only
 /// recorded once.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn references_are_recorded_once(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -572,7 +572,7 @@ async fn references_are_recorded_once(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn type_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -591,7 +591,7 @@ async fn type_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn enum_literal_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -674,7 +674,7 @@ async fn enum_literal_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn enum_literals_coerced_to_a_common_or_resolved_type(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let enum_literals = |sql: &str| -> Vec<String> {
@@ -729,7 +729,7 @@ async fn enum_literals_coerced_to_a_common_or_resolved_type(test_db: PgPool) {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn parameter_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let param = |name: &str| FunctionParam {
@@ -762,7 +762,7 @@ async fn parameter_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn references_are_only_collected_on_request(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let sql = "select pick(1), name from users";

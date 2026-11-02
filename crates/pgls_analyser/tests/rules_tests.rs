@@ -30,12 +30,12 @@ fn typecheck_catalog() -> Arc<pgls_catalog::CatalogBase> {
                     .await
                     .unwrap_or_else(|error| {
                         panic!(
-                            "typecheck specs need the test database at {database_url}; run `docker compose up -d` ({error})"
+                            "typecheck specs need the test database at {database_url}; run `just db` ({error})"
                         )
                     });
                 pgls_catalog::Snapshot::load(&pool).await.unwrap_or_else(|error| {
                     panic!(
-                        "typecheck specs need the test database at {database_url}; run `docker compose up -d` ({error})"
+                        "typecheck specs need the test database at {database_url}; run `just db` ({error})"
                     )
                 })
             });

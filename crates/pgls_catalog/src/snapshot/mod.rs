@@ -219,14 +219,14 @@ mod tests {
     use crate::typing::TypeId;
     use std::sync::Arc;
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn it_loads(test_db: PgPool) {
         Snapshot::load(&test_db)
             .await
             .expect("Failed to load snapshot");
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn typing_snapshot_has_catalog_metadata(test_db: PgPool) {
         test_db.execute("CREATE FUNCTION public.typing_defaults(a int, b int DEFAULT 3) RETURNS int LANGUAGE sql AS 'SELECT a + b'").await.unwrap();
         let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
@@ -283,7 +283,7 @@ mod tests {
         }));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn it_does_not_have_duplicate_entries(test_db: PgPool) {
         // we had some duplicate columns in the snapshot because of indices including the same column multiple times.
         // the columns were unnested as duplicates in the query
@@ -312,7 +312,7 @@ mod tests {
         assert_eq!(set.len(), cache.columns.len());
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn it_skips_orphaned_catalog_objects(test_db: PgPool) {
         // objects whose namespace no longer exists must be skipped instead of failing the
         // whole snapshot. deleting the `pg_namespace` row directly leaves them orphaned.

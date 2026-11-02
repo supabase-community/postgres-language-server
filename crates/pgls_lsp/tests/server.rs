@@ -543,7 +543,7 @@ async fn client_disconnecting_mid_request_does_not_panic() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_database_connection(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -667,7 +667,7 @@ async fn wait_for_diagnostics(
 /// The configuration file has neither a `db` nor a `typecheck` section and there is no environment
 /// configuration, so the client override layer is the only thing that can enable database features
 /// here — and clearing it has to disable them again.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool) -> Result<()> {
     const STATEMENT: &str = "select unknown from public.users;";
 
@@ -809,7 +809,7 @@ async fn server_shutdown() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_completions(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -918,7 +918,7 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1000,7 +1000,7 @@ async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1118,7 +1118,7 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1293,7 +1293,7 @@ async fn test_completions_is_complete_when_no_db_configured() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_issue_271(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1684,7 +1684,7 @@ async fn execute_statement_at(
     Ok(result.flatten())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     let mut server = statement_execution_server(&test_db);
 
@@ -1751,7 +1751,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_the_postgres_error_at_its_position(
     test_db: PgPool,
 ) -> Result<()> {
@@ -1800,7 +1800,7 @@ async fn execute_statement_returns_the_postgres_error_at_its_position(
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1928,7 +1928,7 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2036,7 +2036,7 @@ async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2195,7 +2195,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_issue_281(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2281,7 +2281,7 @@ async fn test_issue_281(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_issue_303(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2414,7 +2414,7 @@ async fn test_issue_303(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn multiple_projects(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2599,7 +2599,7 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn extends_config(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2814,7 +2814,7 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_multiple_content_changes_single_request(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2964,7 +2964,7 @@ ALTER TABLE ONLY "public"."campaign_contact_list"
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_plpgsql(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -3617,7 +3617,7 @@ async fn semantic_token_count(server: &mut Server) -> Result<usize> {
 
 /// Inlay hints and semantic tokens are refreshed when the schema cache is invalidated and when the
 /// configuration changes, and the configuration can turn them off.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_editor_features_refresh_and_settings(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -3820,7 +3820,7 @@ async fn execute_statement_without_arguments_is_invalid() -> Result<()> {
 
 /// Inlay hints after multi-byte characters are positioned in UTF-16, and a range that ends past
 /// the end of the document, as some clients send, still gets them.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -3910,7 +3910,7 @@ async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> 
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();

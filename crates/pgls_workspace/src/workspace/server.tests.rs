@@ -69,7 +69,7 @@ fn get_test_workspace(
     Ok((workspace, project_key))
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_diagnostics(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -407,7 +407,7 @@ fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_syntax_error(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -612,7 +612,7 @@ async fn correctly_ignores_files() {
 }
 
 #[cfg(all(test, not(target_os = "windows")))]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_dedupe_diagnostics(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -687,7 +687,7 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
 /// Without a trigger, plpgsql_check cannot check a trigger function, so the syntax error of
 /// libpg_query remains.
 #[cfg(all(test, not(target_os = "windows")))]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -748,7 +748,7 @@ async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
     assert_eq!(diagnostics[0].category().map(|c| c.name()), Some("syntax"));
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
     let conf = PartialConfiguration::init();
 
@@ -804,7 +804,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
     assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_positional_params(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -862,7 +862,7 @@ async fn test_positional_params(test_db: PgPool) {
 }
 
 #[cfg(all(test, not(target_os = "windows")))]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_disable_plpgsql_check(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -968,7 +968,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_disable_typecheck(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -1061,7 +1061,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
     test_db
         .execute("CREATE TABLE public.t (a INT);")
@@ -1135,7 +1135,7 @@ async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn named_identifier_params_skip_only_affected_typecheck(test_db: PgPool) {
     let connect_options = test_db.connect_options();
     let host = connect_options.get_host().to_string();
@@ -1262,7 +1262,7 @@ fn typecheck_diagnostics(
 
 /// Postgres treats non-ASCII characters as letters in identifiers, so diagnostics and hover
 /// cover the whole name.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn non_ascii_names_get_whole_spans(test_db: PgPool) {
     let content = "create table café (id int);\nselect a.größe from café a;\n";
     let diagnostics = typecheck_diagnostics(&test_db, content);
@@ -1314,7 +1314,7 @@ async fn non_ascii_names_get_whole_spans(test_db: PgPool) {
 
 /// GitHub issue #835: `RETURNS TABLE` columns are not parameters of the body, and `r.received_at`
 /// is a column of `r` even if an output column has the same name.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn sql_function_output_columns_are_not_parameters(test_db: PgPool) {
     test_db
         .execute("CREATE TABLE ev (id bigint PRIMARY KEY, received_at timestamptz NOT NULL);")
@@ -1367,7 +1367,7 @@ $$;
 
 /// GitHub issue #856: parameters of a SQL function are resolved by the static typecheck rules,
 /// not by EXPLAIN, which got array parameters and parameters in `extract(... from ...)` wrong.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn sql_function_bodies_are_not_explained(test_db: PgPool) {
     let content = r#"
 create or replace function interval_to_ms_config(p_interval interval)
@@ -1406,7 +1406,7 @@ $$;
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_named_params(_test_db: PgPool) {
     let conf = PartialConfiguration::init();
 
@@ -1655,7 +1655,7 @@ async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     assert_eq!(format_content(&formatted), formatted);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -1712,7 +1712,7 @@ async fn test_cstyle_comments(test_db: PgPool) {
     assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_search_path_configuration(test_db: PgPool) {
     // Setup test schemas and functions
     let setup_sql = r#"
@@ -1827,7 +1827,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_multi_line_completions(test_db: PgPool) {
     let setup = r#"
         create schema auth;
@@ -1906,7 +1906,7 @@ select * from auth.users;
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
     test_db
         .execute("create schema auth; create table auth.users (id serial primary key);")
@@ -2083,7 +2083,7 @@ fn allow_test_host(test_db: &PgPool) -> Vec<String> {
     vec![format!("{}/*", test_db.connect_options().get_host())]
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool) {
     let (workspace, project_key) = get_statement_execution_workspace(&test_db, &[]);
 
@@ -2120,7 +2120,7 @@ async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool)
     assert!(!table_exists, "A disabled statement must not be executed");
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_ignores_invalid_patterns(test_db: PgPool) {
     let mut patterns = vec!["local[host/*".to_string()];
     patterns.extend(allow_test_host(&test_db));
@@ -2132,7 +2132,7 @@ async fn execute_statement_ignores_invalid_patterns(test_db: PgPool) {
     assert_eq!(result.rows, [[Some("1".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_rows(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2169,7 +2169,7 @@ async fn execute_statement_returns_rows(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_columns_without_rows(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2186,7 +2186,7 @@ async fn execute_statement_returns_columns_without_rows(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_truncates_rows(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2208,7 +2208,7 @@ async fn execute_statement_truncates_rows(test_db: PgPool) {
     assert_eq!(result.rows, [[Some("next".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_reports_rows_affected(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2247,7 +2247,7 @@ async fn execute_statement_reports_rows_affected(test_db: PgPool) {
     assert_eq!(result.rows_affected, None);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_sql_errors_without_disabling_the_database(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2273,7 +2273,7 @@ async fn execute_statement_returns_sql_errors_without_disabling_the_database(tes
     assert_eq!(result.rows, [[Some("1".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_locates_the_error_in_the_document(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2291,7 +2291,7 @@ async fn execute_statement_locates_the_error_in_the_document(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_detail_and_hint(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2308,7 +2308,7 @@ async fn execute_statement_returns_detail_and_hint(test_db: PgPool) {
     assert_eq!(error.hint.as_deref(), Some("the hint"));
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_rolls_back_the_transaction_it_opens(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2328,7 +2328,7 @@ async fn execute_statement_rolls_back_the_transaction_it_opens(test_db: PgPool) 
     assert_eq!(result.rows, [[Some("t".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_resets_session_settings(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2339,7 +2339,7 @@ async fn execute_statement_resets_session_settings(test_db: PgPool) {
     assert_eq!(result.rows, [[Some("\"$user\", public".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn executed_statements_do_not_affect_the_server_connections(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2728,7 +2728,7 @@ fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
     test_db
         .execute(
@@ -2778,7 +2778,7 @@ async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints(test_db: PgPool) {
     test_db
         .execute(
@@ -2852,7 +2852,7 @@ async fn test_inlay_hints(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_semantic_tokens(test_db: PgPool) {
     test_db
         .execute("create table db_items (id int, label text);")
@@ -2937,7 +2937,7 @@ async fn test_semantic_tokens(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_hover_shows_resolved_references(test_db: PgPool) {
     test_db
         .execute(
@@ -3021,7 +3021,7 @@ async fn test_hover_shows_resolved_references(test_db: PgPool) {
 
 /// `DO`, `CALL`, and statements that don't parse have effects the catalog can't follow. The linter
 /// treats everything after them as unknown, but hints, tokens, and hover keep working.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_editor_features_after_unmodelled_statements(test_db: PgPool) {
     test_db
         .execute("create procedure db_proc(p int, label text) language sql as 'select 1';")
@@ -3125,7 +3125,7 @@ async fn test_editor_features_after_unmodelled_statements(test_db: PgPool) {
 
 /// Hover shows the objects as the statement sees them: created earlier in the file, changed by
 /// the file, or unchanged in the database, also after the file changes.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn hover_follows_the_ddl_before_the_statement(test_db: PgPool) {
     test_db
         .execute(
@@ -3207,7 +3207,7 @@ async fn hover_follows_the_ddl_before_the_statement(test_db: PgPool) {
 /// Hover and code actions on a file with thousands of statements, on a thread with the 2 MiB
 /// stack of the language server's tokio workers. They used to recurse once per statement before
 /// or after the cursor and overflow the stack, which aborts the server.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -3284,7 +3284,7 @@ async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
     });
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_code_actions_expand_star(test_db: PgPool) {
     test_db
         .execute(r#"create table star_items (id int, "Label" text);"#)
@@ -3405,7 +3405,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     assert!(expand_actions("* */").is_empty());
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {

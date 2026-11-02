@@ -618,7 +618,7 @@ mod tests {
 
     use pgls_test_utils::QueryWithCursorPosition;
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completion_after_asterisk(pool: PgPool) {
         let setup = r#"
             create table users (
@@ -686,7 +686,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completion_after_create_table(pool: PgPool) {
         assert_no_complete_results(
             format!("create table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
@@ -696,7 +696,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completion_in_column_definitions(pool: PgPool) {
         let query = format!(
             r#"create table instruments ( {} )"#,

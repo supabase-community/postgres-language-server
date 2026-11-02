@@ -572,7 +572,7 @@ fn kind(finding: &FindingKind) -> Option<Kind> {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn agrees_with_postgres(pool: PgPool) {
     let before = Arc::new(CatalogBase::new(Arc::new(
         Snapshot::load(&pool).await.unwrap(),
