@@ -46,11 +46,11 @@ transaction - transaction (Keyword)
 set role |
 
 Results:
+none - none (Keyword)
 anon - anon (Role)
 authenticated - authenticated (Role)
 owner - owner (Role)
 service_role - service_role (Role)
-test_login - test_login (Role)
 
 --------------
 

@@ -149,6 +149,7 @@ where
 /// select| from users; -- cursor "touches" select node. returns false.
 /// select |from users; -- cursor "touches" from node. returns false.
 /// select | from users; -- cursor is between select and from nodes. returns true.
+/// vacuum (index_cleanup |) -- the next node is the closing parenthesis. returns true.
 /// ```
 fn cursor_inbetween_nodes(sql: &str, position: TextSize) -> bool {
     let position: usize = position.into();
@@ -158,9 +159,11 @@ fn cursor_inbetween_nodes(sql: &str, position: TextSize) -> bool {
         .nth(position.saturating_sub(1))
         .is_some_and(|c| c.is_ascii_whitespace());
 
-    let current_whitespace = chars.next().is_some_and(|c| c.is_ascii_whitespace());
+    let next_node = chars
+        .next()
+        .is_some_and(|c| c.is_ascii_whitespace() || [')', ','].contains(&c));
 
-    previous_whitespace && current_whitespace
+    previous_whitespace && next_node
 }
 
 /// Checks if the cursor is positioned after the last node,
@@ -481,6 +484,17 @@ mod tests {
 
         // select from users;|
         assert!(!cursor_inbetween_nodes(input, TextSize::new(19)));
+
+        // vacuum (index_cleanup |) <-- before the closing parenthesis
+        assert!(cursor_inbetween_nodes(
+            "vacuum (index_cleanup )",
+            TextSize::new(22)
+        ));
+        // insert into t (a |, b) <-- before a comma
+        assert!(cursor_inbetween_nodes(
+            "insert into t (a , b)",
+            TextSize::new(17)
+        ));
     }
 
     #[test]

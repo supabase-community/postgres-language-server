@@ -305,6 +305,13 @@ module.exports = grammar({
     keyword_memory: (_) => make_keyword("memory"),
     keyword_skip_locked: (_) => make_keyword("skip_locked"),
     keyword_buffer_usage_limit: (_) => make_keyword("buffer_usage_limit"),
+    keyword_disable_page_skipping: (_) => make_keyword("disable_page_skipping"),
+    keyword_index_cleanup: (_) => make_keyword("index_cleanup"),
+    keyword_auto: (_) => make_keyword("auto"),
+    keyword_process_main: (_) => make_keyword("process_main"),
+    keyword_process_toast: (_) => make_keyword("process_toast"),
+    keyword_skip_database_stats: (_) => make_keyword("skip_database_stats"),
+    keyword_only_database_stats: (_) => make_keyword("only_database_stats"),
 
     keyword_overriding: () => make_keyword("overriding"),
     keyword_system: () => make_keyword("system"),
@@ -744,7 +751,7 @@ module.exports = grammar({
         $._create_statement,
         $._alter_statement,
         $._drop_statement,
-        $._vacuum_table,
+        $.vacuum_statement,
         $._merge_statement,
         $.comment_statement,
         $.set_statement,
@@ -2530,18 +2537,69 @@ module.exports = grammar({
     merge_do_nothing: ($) =>
       partialSeq($.keyword_do, field("end", $.keyword_nothing)),
 
-    _vacuum_table: ($) =>
-      seq(
-        $.keyword_vacuum,
-        optional($._vacuum_option),
-        comma_list($._vacuum_relation, true),
+    vacuum_statement: ($) =>
+      choice(
+        partialSeq(
+          field("end", $.keyword_vacuum),
+          optional(choice($.vacuum_options, $._vacuum_legacy_options)),
+          optional(comma_list($.table_and_columns, true)),
+        ),
+        // While the options are typed, nothing follows them.
+        seq(
+          $.keyword_vacuum,
+          alias($._unfinished_vacuum_options, $.vacuum_options),
+        ),
       ),
 
-    _vacuum_relation: ($) =>
-      seq(
-        optional($.keyword_only),
-        $.table_reference,
-        optional(paren_list($.field, false)),
+    // `VACUUM [FULL] [FREEZE] [VERBOSE] [ANALYZE]`, the syntax from before the option list.
+    _vacuum_legacy_options: ($) =>
+      prec.right(
+        repeat1(
+          choice(
+            $.keyword_full,
+            $.keyword_freeze,
+            $.keyword_verbose,
+            $.keyword_analyze,
+          ),
+        ),
+      ),
+
+    vacuum_options: ($) =>
+      wrapped_in_parenthesis(comma_list($.vacuum_option, false)),
+
+    _unfinished_vacuum_options: ($) =>
+      prec(-1, seq("(", comma_list($.vacuum_option, false))),
+
+    vacuum_option: ($) =>
+      choice(
+        seq(
+          field(
+            "end",
+            choice(
+              $.keyword_full,
+              $.keyword_freeze,
+              $.keyword_verbose,
+              $.keyword_analyze,
+              $.keyword_disable_page_skipping,
+              $.keyword_skip_locked,
+              $.keyword_process_main,
+              $.keyword_process_toast,
+              $.keyword_truncate,
+              $.keyword_skip_database_stats,
+              $.keyword_only_database_stats,
+            ),
+          ),
+          optional($._boolean_on_off),
+        ),
+        partialSeq(
+          $.keyword_index_cleanup,
+          field("end", choice($.keyword_auto, $.keyword_on, $.keyword_off)),
+        ),
+        partialSeq($.keyword_parallel, field("end", $._integer)),
+        partialSeq(
+          $.keyword_buffer_usage_limit,
+          field("end", choice($._integer, $._literal_string)),
+        ),
       ),
 
     analyze_statement: ($) =>
@@ -2549,7 +2607,7 @@ module.exports = grammar({
         partialSeq(
           field("end", $.keyword_analyze),
           optional($.analyze_options),
-          optional(comma_list($.analyze_table_and_columns, true)),
+          optional(comma_list($.table_and_columns, true)),
         ),
         // While the options are typed, nothing follows them.
         seq(
@@ -2577,40 +2635,22 @@ module.exports = grammar({
         ),
       ),
 
-    analyze_table_and_columns: ($) =>
+    // A table and its columns in VACUUM and ANALYZE (`vacuum_relation` in Postgres).
+    table_and_columns: ($) =>
       choice(
-        partialSeq($.keyword_only, $._analyze_relation),
-        $._analyze_relation,
+        partialSeq($.keyword_only, $._table_and_columns),
+        $._table_and_columns,
       ),
 
-    _analyze_relation: ($) =>
+    _table_and_columns: ($) =>
       seq(
         field("end", $.table_reference),
         optional("*"),
-        optional($.analyze_columns),
+        optional($.table_columns),
       ),
 
-    analyze_columns: ($) =>
+    table_columns: ($) =>
       wrapped_in_parenthesis(comma_list($.column_identifier, true)),
-
-    _vacuum_option: ($) =>
-      choice(
-        seq($.keyword_full, optional(choice($.keyword_true, $.keyword_false))),
-        seq(
-          $.keyword_parallel,
-          optional(choice($.keyword_true, $.keyword_false)),
-        ),
-        seq(
-          $.keyword_analyze,
-          optional(choice($.keyword_true, $.keyword_false)),
-        ),
-        // seq($.keyword_freeze, choice($.keyword_true, $.keyword_false)),
-        // seq($.keyword_skip_locked, choice($.keyword_true, $.keyword_false)),
-        // seq($.keyword_truncate, choice($.keyword_true, $.keyword_false)),
-        // seq($.keyword_disable_page_skipping, choice($.keyword_true, $.keyword_false)),
-        // seq($.keyword_process_toast, choice($.keyword_true, $.keyword_false)),
-        // seq($.keyword_index_cleanup, choice($.keyword_auto, $.keyword_on, $.keyword_off)),
-      ),
 
     // TODO: this does not account for partitions specs like
     // (partcol1='2022-01-01', hr=11)
