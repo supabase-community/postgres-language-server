@@ -193,6 +193,31 @@ async fn test_column_hover_with_table_ref(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_shows_generated_columns(test_db: PgPool) {
+    let setup = r#"
+        create table orders (
+            price int not null,
+            quantity int not null,
+            total int generated always as (price * quantity) stored
+        );
+    "#;
+
+    let query = format!(
+        "select tot{}al from orders",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("column_hover_generated", query, Some(setup), &test_db).await;
+
+    let query = format!(
+        "select * from ord{}ers",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("table_hover_generated", query, None, &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_in_join(test_db: PgPool) {
     let setup = r#"
         create table users (

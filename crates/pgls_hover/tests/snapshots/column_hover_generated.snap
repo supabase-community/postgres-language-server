@@ -1,0 +1,21 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select total from orders
+          ↑ hovered here
+```
+
+# Hover Results
+### `public.orders.total`  
+```plain  
+int4 - nullable
+  
+```  
+---    
+```plain  
+
+Generated: (price * quantity) STORED  
+```

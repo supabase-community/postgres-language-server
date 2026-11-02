@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use humansize::DECIMAL;
-use pgls_catalog::{Snapshot, Table};
+use pgls_catalog::{Generated, Snapshot, Table};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
@@ -74,12 +74,19 @@ impl ToHoverMarkdown for Table {
                 write!(writer, " - not null")?;
             }
 
-            if let Some(default_expr) = column
-                .default_expr
-                .as_deref()
-                .and_then(extract_basic_default_literal)
-            {
-                write!(writer, " - default: {default_expr}")?;
+            // The expression of a generated column is its generation expression, not a default.
+            match column.generated {
+                Generated::Stored => write!(writer, " - generated STORED")?,
+                Generated::Virtual => write!(writer, " - generated VIRTUAL")?,
+                Generated::No => {
+                    if let Some(default_expr) = column
+                        .default_expr
+                        .as_deref()
+                        .and_then(extract_basic_default_literal)
+                    {
+                        write!(writer, " - default: {default_expr}")?;
+                    }
+                }
             }
 
             writeln!(writer)?;
