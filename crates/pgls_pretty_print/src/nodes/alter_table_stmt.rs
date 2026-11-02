@@ -4,7 +4,7 @@ use crate::{
 };
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{
-    AlterTableCmd, AlterTableStmt, AlterTableType, DropBehavior, ObjectType,
+    AlterTableCmd, AlterTableStmt, AlterTableType, AtAlterConstraint, DropBehavior, ObjectType,
 };
 
 use super::emit_node;
@@ -798,41 +798,14 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             }
         }
         AlterTableType::AtAlterConstraint => {
-            // ALTER CONSTRAINT constraint_name [DEFERRABLE | NOT DEFERRABLE] [INITIALLY DEFERRED | INITIALLY IMMEDIATE]
+            // ALTER CONSTRAINT name [ENFORCED | NOT ENFORCED] [[NOT] DEFERRABLE INITIALLY ...]
+            // ALTER CONSTRAINT name [NO] INHERIT
             e.token(TokenKind::ALTER_KW);
             e.space();
-            e.token(TokenKind::CONSTRAINT_KW);
-            e.space();
-
-            // constraint name comes from the def (Constraint node)
             if let Some(ref def) = cmd.def
-                && let Some(NodeEnum::Constraint(c)) = &def.node
+                && let Some(NodeEnum::AtalterConstraint(c)) = &def.node
             {
-                super::emit_identifier_maybe_quoted(e, &c.conname);
-
-                // DEFERRABLE or NOT DEFERRABLE
-                if c.deferrable {
-                    e.space();
-                    e.token(TokenKind::DEFERRABLE_KW);
-                } else {
-                    e.space();
-                    e.token(TokenKind::NOT_KW);
-                    e.space();
-                    e.token(TokenKind::DEFERRABLE_KW);
-                }
-
-                // INITIALLY DEFERRED or INITIALLY IMMEDIATE
-                if c.initdeferred {
-                    e.space();
-                    e.token(TokenKind::INITIALLY_KW);
-                    e.space();
-                    e.token(TokenKind::DEFERRED_KW);
-                } else {
-                    e.space();
-                    e.token(TokenKind::INITIALLY_KW);
-                    e.space();
-                    e.token(TokenKind::IMMEDIATE_KW);
-                }
+                emit_at_alter_constraint(e, c);
             }
         }
         AlterTableType::AtDropOids => {
@@ -896,5 +869,50 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             debug_assert!(false, "Unhandled AlterTableType: {:?}", cmd.subtype());
             e.token(TokenKind::IDENT(format!("TODO: {:?}", cmd.subtype())));
         }
+    }
+}
+
+/// Emits `CONSTRAINT name` and the attributes an `ALTER CONSTRAINT` changes.
+pub(super) fn emit_at_alter_constraint(e: &mut EventEmitter, c: &AtAlterConstraint) {
+    e.token(TokenKind::CONSTRAINT_KW);
+    e.space();
+    super::emit_identifier_maybe_quoted(e, &c.conname);
+
+    if c.alter_enforceability {
+        e.space();
+        if !c.is_enforced {
+            e.token(TokenKind::NOT_KW);
+            e.space();
+        }
+        e.token(TokenKind::ENFORCED_KW);
+    }
+
+    if c.alter_deferrability {
+        // DEFERRABLE or NOT DEFERRABLE
+        e.space();
+        if !c.deferrable {
+            e.token(TokenKind::NOT_KW);
+            e.space();
+        }
+        e.token(TokenKind::DEFERRABLE_KW);
+
+        // INITIALLY DEFERRED or INITIALLY IMMEDIATE
+        e.space();
+        e.token(TokenKind::INITIALLY_KW);
+        e.space();
+        if c.initdeferred {
+            e.token(TokenKind::DEFERRED_KW);
+        } else {
+            e.token(TokenKind::IMMEDIATE_KW);
+        }
+    }
+
+    if c.alter_inheritability {
+        e.space();
+        if c.noinherit {
+            e.token(TokenKind::NO_KW);
+            e.space();
+        }
+        e.token(TokenKind::INHERIT_KW);
     }
 }
