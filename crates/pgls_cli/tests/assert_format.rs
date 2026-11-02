@@ -62,6 +62,14 @@ fn template_format_array_slice_bounds_and_modulo_restore_their_syntax() {
 }
 
 #[test]
+fn template_format_restores_placeholders_quoted_by_the_formatter() {
+    let source = "SELECT %s.%[3]q FROM %s LEFT JOIN %s USING (%[3]q);";
+    let formatted = template_format(source, "go-printf");
+    assert!(formatted.contains("using (%[3]q)"), "{formatted}");
+    assert_eq!(template_format(&formatted, "go-printf"), formatted);
+}
+
+#[test]
 fn template_format_reports_ambiguous_fragments_and_keeps_the_source() {
     let source = "SELECT * FROM items %s;";
     let output = cargo_bin_cmd!("postgres-language-server")
