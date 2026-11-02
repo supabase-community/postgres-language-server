@@ -59,6 +59,7 @@ where
             || cursor_before_semicolon(params.tree, params.position)
             || cursor_on_a_dot(&params.text, params.position)
             || cursor_between_parentheses(&params.text, params.position)
+            || cursor_after_opening_parenthesis(&params.text, params.position)
             || cursor_after_opened_quote(&params.text, params.position)
         {
             SanitizedCompletionParams::with_adjusted_sql(params)
@@ -180,6 +181,23 @@ fn cursor_on_a_dot(sql: &str, position: TextSize) -> bool {
     sql.chars()
         .nth(position.saturating_sub(1))
         .is_some_and(|c| c == '.')
+}
+
+/// Checks if the cursor is right after an opening parenthesis, with no word after it yet:
+///
+/// ```sql
+/// explain (|            -- returns true.
+/// select count(| from   -- returns true.
+/// select (|a)           -- the cursor is on `a`. returns false.
+/// ```
+fn cursor_after_opening_parenthesis(sql: &str, position: TextSize) -> bool {
+    let position: usize = position.into();
+    position > 0
+        && sql.as_bytes().get(position - 1) == Some(&b'(')
+        && sql[position..]
+            .chars()
+            .next()
+            .is_none_or(|c| c.is_ascii_whitespace() || [')', ',', ';'].contains(&c))
 }
 
 fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool {
@@ -325,8 +343,8 @@ mod tests {
     use crate::{
         CompletionParams, SanitizedCompletionParams, is_sanitized_token_with_quote,
         sanitization::{
-            cursor_after_opened_quote, cursor_before_semicolon, cursor_between_parentheses,
-            cursor_inbetween_nodes, cursor_on_a_dot,
+            cursor_after_opened_quote, cursor_after_opening_parenthesis, cursor_before_semicolon,
+            cursor_between_parentheses, cursor_inbetween_nodes, cursor_on_a_dot,
             cursor_prepared_to_write_token_after_last_node,
         },
     };
@@ -606,6 +624,30 @@ mod tests {
 
         // does not break if sql is really short
         assert!(!cursor_between_parentheses("(a)", TextSize::new(2)));
+    }
+
+    #[test]
+    fn after_opening_parenthesis() {
+        // explain (|
+        assert!(cursor_after_opening_parenthesis(
+            "explain (",
+            TextSize::new(9)
+        ));
+        // select count(| from t
+        assert!(cursor_after_opening_parenthesis(
+            "select count( from t",
+            TextSize::new(13)
+        ));
+        // explain |(
+        assert!(!cursor_after_opening_parenthesis(
+            "explain (",
+            TextSize::new(8)
+        ));
+        // select (|a) <- already on `a`
+        assert!(!cursor_after_opening_parenthesis(
+            "select (a)",
+            TextSize::new(8)
+        ));
     }
 
     #[test]

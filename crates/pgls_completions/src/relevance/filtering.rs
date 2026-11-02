@@ -3,11 +3,14 @@ use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
     goto_node_at_position, previous_sibling_completed,
 };
+use std::ops::Range;
+
 use tree_sitter::{InputEdit, Point, Tree};
 
 use super::CompletionRelevanceData;
+use crate::providers::helper::word_at_cursor;
 
-/// Parses SQL with a keyword injected at the given position, using incremental parsing.
+/// Parses SQL with `keyword` in place of the bytes in `range`, using incremental parsing.
 ///
 /// Temporarily edits `shared_tree` to hint tree-sitter about the change location,
 /// then undoes the edit so the tree can be reused for subsequent keywords.
@@ -15,12 +18,12 @@ fn parse_with_replaced_keyword(
     shared_tree: &mut Tree,
     text: &str,
     keyword: &str,
-    node: tree_sitter::Node,
+    range: Range<usize>,
 ) -> Tree {
-    let start_position = node.start_position();
-    let start_byte = node.start_byte();
-    let old_end_position = node.end_position();
-    let old_end_byte = node.end_byte();
+    let start_byte = range.start;
+    let start_position = point_at(text, start_byte);
+    let old_end_byte = range.end;
+    let old_end_position = point_at(text, old_end_byte);
 
     let new_end_byte = start_byte + keyword.len();
     let new_end_position = Point {
@@ -62,6 +65,20 @@ fn parse_with_replaced_keyword(
     });
 
     tree
+}
+
+/// The row and the byte column of `byte` in `text`.
+fn point_at(text: &str, byte: usize) -> Point {
+    let before = &text.as_bytes()[..byte];
+    let line_start = before
+        .iter()
+        .rposition(|b| *b == b'\n')
+        .map_or(0, |i| i + 1);
+
+    Point {
+        row: before.iter().filter(|b| **b == b'\n').count(),
+        column: byte - line_start,
+    }
 }
 
 #[derive(Debug)]
@@ -531,8 +548,8 @@ impl CompletionFilter<'_> {
             return Some(());
         }
 
-        let content = ctx.get_node_under_cursor_content()?;
-        if content.is_empty() || crate::sanitization::is_sanitized_token(&content) {
+        let content = &ctx.text[word_at_cursor(ctx)];
+        if content.is_empty() || crate::sanitization::is_sanitized_token(content) {
             return None;
         }
 
@@ -575,14 +592,13 @@ impl CompletionFilter<'_> {
             return Some(());
         };
 
-        let tree =
-            parse_with_replaced_keyword(shared_tree, ctx.text, keyword.name, ctx.node_under_cursor);
+        let word = word_at_cursor(ctx);
+        let start_byte = word.start;
+        let tree = parse_with_replaced_keyword(shared_tree, ctx.text, keyword.name, word);
 
         if tree.root_node().has_error() {
             return None;
         }
-
-        let start_byte = ctx.node_under_cursor.start_byte();
 
         // The grammar reads some keywords as names in some places, like `usage` in
         // `grant usage to bob`. There, the keyword is a name and no keyword completion.

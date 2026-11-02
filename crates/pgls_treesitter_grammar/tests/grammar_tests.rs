@@ -189,6 +189,17 @@ fn postgres_18_copy_options() {
 }
 
 #[test]
+fn unfinished_option_lists() {
+    // While the options are typed, nothing follows them yet.
+    valid_snapshot("unfinished_explain_options", "explain (analyze, verbose");
+    valid_snapshot("unfinished_analyze_options", "analyze (verbose");
+    valid_snapshot(
+        "unfinished_copy_options",
+        "copy t from stdin with (format csv",
+    );
+}
+
+#[test]
 fn privilege_names_as_role_names() {
     // Without `ON`, Postgres grants and revokes roles, and reads privilege names as role names.
     valid_snapshot("grant_role_named_usage", "grant usage, update to bob;");

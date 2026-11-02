@@ -3,7 +3,7 @@ use pgls_treesitter::TreesitterContext;
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    providers::helper::get_range_to_replace,
+    providers::helper::get_keyword_range_to_replace,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
@@ -417,7 +417,7 @@ pub fn complete_keywords<'a>(
             kind: CompletionItemKind::Keyword,
             completion_text: Some(CompletionText {
                 text: label,
-                range: get_range_to_replace(ctx),
+                range: get_keyword_range_to_replace(ctx),
                 is_snippet: false,
             }),
             detail: None,
@@ -1056,6 +1056,81 @@ mod tests {
             )
             .await,
             ["deferrable", "enforced", "valid"]
+        );
+    }
+
+    #[sqlx::test]
+    async fn completes_options_after_opening_parenthesis(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `analyze` needs a prefix.
+        let explain = [
+            "buffers",
+            "costs",
+            "format",
+            "generic_plan",
+            "memory",
+            "serializable",
+            "settings",
+            "summary",
+            "timing",
+            "verbose",
+            "wal",
+        ];
+        let analyze = ["buffer_usage_limit", "skip_locked", "verbose"];
+        // `null` needs a prefix.
+        let copy = [
+            "default",
+            "delimiter",
+            "encoding",
+            "escape",
+            "force_not_null",
+            "force_null",
+            "force_quote",
+            "format",
+            "freeze",
+            "header",
+            "log_verbosity",
+            "on_error",
+            "quote",
+            "reject_limit",
+        ];
+        let returning_with = ["new", "old"];
+
+        let cases: [(&str, &[&str]); 12] = [
+            ("explain ({})", &[explain.as_slice(), &["select"]].concat()),
+            ("explain ({}", &explain),
+            ("explain (analyze, {})", &explain),
+            ("analyze ({})", &analyze),
+            ("analyze ({}", &analyze),
+            ("analyze (verbose, {})", &analyze),
+            ("copy t from stdin with ({})", &copy),
+            ("copy t from stdin with ({}", &copy),
+            ("copy t to stdout (format csv, {})", &copy),
+            ("update t set a = 1 returning with ({})", &returning_with),
+            ("update t set a = 1 returning with ({}", &returning_with),
+            (
+                "update t set a = 1 returning with (old as o, {})",
+                &returning_with,
+            ),
+        ];
+
+        for (sql, expected) in cases {
+            let mut expected = expected.to_vec();
+            expected.sort_unstable();
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(keywords_at(&query, &pool).await, expected, "{sql}");
+        }
+
+        // The keyword replaces only what was typed after the comma.
+        let query = format!("explain (analyze, ver{cursor})");
+        let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+        let params = get_test_params(&tree, &snapshot, query.as_str().into());
+        let items = complete(params);
+        let verbose = items.iter().find(|item| item.label == "verbose").unwrap();
+        assert_eq!(
+            verbose.completion_text.as_ref().map(|text| text.range),
+            Some(pgls_text_size::TextRange::new(18.into(), 21.into()))
         );
     }
 }

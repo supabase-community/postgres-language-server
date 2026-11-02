@@ -60,6 +60,7 @@ module.exports = grammar({
     [$.copy_statement, $.copy_data_stream],
     [$._copy_from, $._copy_to],
     [$.copy_stmt_options],
+    [$._explain_statement],
   ],
 
   precedences: ($) => [
@@ -677,44 +678,47 @@ module.exports = grammar({
       ),
 
     _explain_statement: ($) =>
-      partialSeq(
-        $.keyword_explain,
-        optional(
-          partialSeq(
-            "(",
-            comma_list(
-              choice(
-                seq($.keyword_verbose, optional($._boolean_on_off)),
-                seq($.keyword_analyze, optional($._boolean_on_off)),
-                seq($.keyword_costs, optional($._boolean_on_off)),
-                seq($.keyword_settings, optional($._boolean_on_off)),
-                seq($.keyword_generic_plan, optional($._boolean_on_off)),
-                seq($.keyword_buffers, optional($._boolean_on_off)),
-                seq($.keyword_wal, optional($._boolean_on_off)),
-                seq($.keyword_timing, optional($._boolean_on_off)),
-                seq($.keyword_summary, optional($._boolean_on_off)),
-                seq($.keyword_memory, optional($._boolean_on_off)),
-                $.explain_format_option,
-                $.explain_serializable_option,
-              ),
-              false,
+      choice(
+        seq(
+          $.keyword_explain,
+          optional(seq("(", comma_list($._explain_option, false), ")")),
+          field(
+            "end",
+            choice(
+              $._select_statement,
+              $._insert_statement,
+              $._update_statement,
+              $.delete_statement,
+              $._merge_statement,
+              $.create_materialized_view,
+              $.create_table,
+              // todo: declare, values, execute
             ),
-            ")",
           ),
         ),
-        field(
-          "end",
-          choice(
-            $._select_statement,
-            $._insert_statement,
-            $._update_statement,
-            $.delete_statement,
-            $._merge_statement,
-            $.create_materialized_view,
-            $.create_table,
-            // todo: declare, values, execute
+        // While the options are typed, the statement doesn't follow yet.
+        seq(
+          $.keyword_explain,
+          optional(
+            seq("(", comma_list($._explain_option, false), optional(")")),
           ),
         ),
+      ),
+
+    _explain_option: ($) =>
+      choice(
+        seq($.keyword_verbose, optional($._boolean_on_off)),
+        seq($.keyword_analyze, optional($._boolean_on_off)),
+        seq($.keyword_costs, optional($._boolean_on_off)),
+        seq($.keyword_settings, optional($._boolean_on_off)),
+        seq($.keyword_generic_plan, optional($._boolean_on_off)),
+        seq($.keyword_buffers, optional($._boolean_on_off)),
+        seq($.keyword_wal, optional($._boolean_on_off)),
+        seq($.keyword_timing, optional($._boolean_on_off)),
+        seq($.keyword_summary, optional($._boolean_on_off)),
+        seq($.keyword_memory, optional($._boolean_on_off)),
+        $.explain_format_option,
+        $.explain_serializable_option,
       ),
 
     explain_format_option: ($) =>
@@ -2227,7 +2231,10 @@ module.exports = grammar({
         choice(seq($.table_reference, optional($._column_list)), $.subquery),
         $.keyword_to,
         $._copy_stmt_target,
-        optional($.copy_stmt_options),
+        choice(
+          $.copy_stmt_options,
+          alias($._unfinished_copy_stmt_options, $.copy_stmt_options),
+        ),
       ),
 
     _copy_from: ($) =>
@@ -2237,8 +2244,10 @@ module.exports = grammar({
         optional($._column_list),
         $.keyword_from,
         $._copy_stmt_target,
-        optional($.copy_stmt_options),
-        optional($.where),
+        choice(
+          seq(optional($.copy_stmt_options), optional($.where)),
+          alias($._unfinished_copy_stmt_options, $.copy_stmt_options),
+        ),
       ),
 
     _copy_stmt_target: ($) =>
@@ -2263,6 +2272,17 @@ module.exports = grammar({
         ),
         wrapped_in_parenthesis(comma_list($._copy_stmt_option, false)),
         $._copy_stmt_legacy_options,
+      ),
+
+    // While the options are typed, nothing follows them.
+    _unfinished_copy_stmt_options: ($) =>
+      prec(
+        -1,
+        seq(
+          optional($.keyword_with),
+          "(",
+          comma_list($._copy_stmt_option, false),
+        ),
       ),
 
     _copy_stmt_legacy_options: ($) =>
@@ -2503,14 +2523,24 @@ module.exports = grammar({
       ),
 
     analyze_statement: ($) =>
-      partialSeq(
-        field("end", $.keyword_analyze),
-        optional($.analyze_options),
-        optional(comma_list($.analyze_table_and_columns, true)),
+      choice(
+        partialSeq(
+          field("end", $.keyword_analyze),
+          optional($.analyze_options),
+          optional(comma_list($.analyze_table_and_columns, true)),
+        ),
+        // While the options are typed, nothing follows them.
+        seq(
+          $.keyword_analyze,
+          alias($._unfinished_analyze_options, $.analyze_options),
+        ),
       ),
 
     analyze_options: ($) =>
-      wrapped_in_parenthesis(comma_list($.analyze_option, true)),
+      wrapped_in_parenthesis(comma_list($.analyze_option, false)),
+
+    _unfinished_analyze_options: ($) =>
+      prec(-1, seq("(", comma_list($.analyze_option, false))),
 
     analyze_option: ($) =>
       choice(
@@ -2570,7 +2600,7 @@ module.exports = grammar({
       partialSeq(
         $.keyword_update,
         $.update_target,
-        $.update_set_values,
+        field("end", $.update_set_values),
         optional($.update_from),
         optional(choice($.where, $.where_current_of)),
       ),
