@@ -182,14 +182,20 @@ mod tests {
             "merge into users u using posts p on u.id = p.user_id when matched then delete returning old.id",
             "with d as (delete from users returning old.id) select * from d",
         ] {
-            assert_eq!(returning_aliases(sql), [("users".into(), defaults())], "{sql}");
+            assert_eq!(
+                returning_aliases(sql),
+                [("users".into(), defaults())],
+                "{sql}"
+            );
         }
     }
 
     #[test]
     fn finds_the_names_given_in_with() {
         assert_eq!(
-            returning_aliases(r#"update users set name = 'x' returning with (old as "O") "O".name"#),
+            returning_aliases(
+                r#"update users set name = 'x' returning with (old as "O") "O".name"#
+            ),
             [(
                 "users".into(),
                 vec![alias(r#""O""#, true), alias("new", false)]

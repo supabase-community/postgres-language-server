@@ -56,10 +56,10 @@ mod tests {
 
     use crate::{
         CompletionItemKind, complete,
-        test_helper::{get_test_deps, get_test_params},
-    };
-    use crate::test_helper::{
-        CompletionAssertion, TestCompletionsCase, TestCompletionsSuite, assert_complete_results,
+        test_helper::{
+            CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
+            assert_complete_results, get_test_deps, get_test_params,
+        },
     };
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
