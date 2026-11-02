@@ -171,6 +171,7 @@ impl CompletionScore<'_> {
                 WrappingClause::Select if !has_mentioned_tables => 15,
                 WrappingClause::Select if has_mentioned_tables => 0,
                 WrappingClause::From => 0,
+                WrappingClause::Returning => 0,
                 WrappingClause::CheckOrUsingClause => 0,
                 _ => -50,
             },
@@ -178,6 +179,8 @@ impl CompletionScore<'_> {
                 WrappingClause::Select if has_mentioned_tables => 10,
                 WrappingClause::Select if !has_mentioned_tables => 0,
                 WrappingClause::Where => 10,
+                // RETURNING has the target table.
+                WrappingClause::Returning => 10,
                 WrappingClause::CheckOrUsingClause => 0,
                 WrappingClause::Join { on_node }
                     if on_node

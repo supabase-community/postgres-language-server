@@ -3252,18 +3252,38 @@ module.exports = grammar({
     offset: ($) => partialSeq($.keyword_offset, field("end", $.literal)),
 
     returning: ($) =>
-      partialSeq(
-        $.keyword_returning,
-        optional($.returning_with),
-        field("end", $.select_expression),
+      prec.right(
+        seq(
+          $.keyword_returning,
+          optional(
+            choice(
+              field("end", $.select_expression),
+              seq(
+                $.returning_with,
+                optional(field("end", $.select_expression)),
+              ),
+              // While `WITH (...)` is typed, nothing follows it.
+              alias($._unfinished_returning_with, $.returning_with),
+            ),
+          ),
+        ),
       ),
 
     returning_with: ($) =>
-      partialSeq(
+      seq(
         $.keyword_with,
         "(",
         comma_list($.returning_with_item, false),
         field("end", ")"),
+      ),
+
+    _unfinished_returning_with: ($) =>
+      prec(
+        -1,
+        seq(
+          $.keyword_with,
+          optional(seq("(", comma_list($.returning_with_item, false))),
+        ),
       ),
 
     returning_with_item: ($) =>
