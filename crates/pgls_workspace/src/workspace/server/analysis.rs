@@ -8,13 +8,16 @@ use pgls_analyser::{
     LinterDiagnostic, LinterOptions,
 };
 use pgls_configuration::RuleSelector;
+use pgls_diagnostics::Diagnostic;
 use pgls_fs::PgLSPath;
+use pgls_lexer::{TemplateSyntax, convert_template_parameters};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 
 use super::{
-    WorkspaceServer, analyser::AnalyserVisitorBuilder, document::AnalyserDiagnosticsMapper,
-    document::Document, document_sections, migration,
+    WorkspaceServer, analyser::AnalyserVisitorBuilder, contains_template_proxy,
+    document::AnalyserDiagnosticsMapper, document::DefaultMapper, document::Document,
+    document_sections, migration, protected_template_ranges, template_fix_is_safe,
 };
 use crate::{configuration::to_analyser_rules, settings::Settings, workspace::ProjectKey};
 
@@ -177,6 +180,15 @@ impl WorkspaceServer {
             unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
         }
 
+        let source = if settings.template_syntax == TemplateSyntax::default() {
+            doc.get_document_content().to_owned()
+        } else {
+            convert_template_parameters(doc.get_document_content(), settings.template_syntax)
+                .map_or_else(
+                    |_| doc.get_document_content().to_owned(),
+                    |conversion| conversion.sql,
+                )
+        };
         let result = analyser.analyse(AnalyserParams {
             stmts: analysable_stmts,
             unparsable,
@@ -185,7 +197,7 @@ impl WorkspaceServer {
             file_kind: self.file_kind(settings, path.as_path()),
             sections,
             typecheck,
-            source: Some(doc.get_document_content().to_owned()),
+            source: Some(source),
         });
 
         DocumentAnalysis {
@@ -216,11 +228,49 @@ impl WorkspaceServer {
             skip,
         );
         let suppressions = doc.suppressions();
+        let template_protection = (settings.template_syntax != TemplateSyntax::default()
+            && analysis
+                .lint_diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.get_fix().is_some()))
+        .then(|| protected_template_ranges(doc.get_document_content(), settings.template_syntax));
         analysis
             .lint_diagnostics()
             .iter()
             .filter(|diagnostic| !suppressions.is_suppressed(*diagnostic))
-            .cloned()
+            .map(|diagnostic| {
+                let unsafe_fix = template_protection.as_ref().is_some_and(|protection| {
+                    diagnostic.get_fix().is_some_and(|fix| {
+                        protection.as_ref().is_none_or(|conversion| {
+                            !template_fix_is_safe(
+                                doc.get_document_content(),
+                                settings.template_syntax,
+                                conversion,
+                                fix,
+                            )
+                            // Statement-local proxies can differ from whole-file proxies.
+                            || diagnostic.location().span.is_none_or(|span| {
+                                doc.iter_at(DefaultMapper, span.start()).any(|(_, _, sql)| {
+                                    convert_template_parameters(&sql, settings.template_syntax)
+                                        .map_or(true, |statement| {
+                                            fix.edits.iter().any(|edit| {
+                                                contains_template_proxy(
+                                                    &edit.replacement,
+                                                    &statement,
+                                                )
+                                            })
+                                        })
+                                })
+                            })
+                        })
+                    })
+                });
+                if unsafe_fix {
+                    diagnostic.clone().maybe_fix(None)
+                } else {
+                    diagnostic.clone()
+                }
+            })
             .collect()
     }
 }

@@ -10,11 +10,44 @@
 
 use std::io::{Read, Write};
 use std::path::Path;
+use std::path::PathBuf;
 
+use pgls_configuration::{
+    ConfigurationPathHint,
+    templating::{PartialTemplatingConfiguration, TemplateSyntaxList},
+};
 use pgls_console::{ConsoleExt, EnvConsole, markup};
 use prost::Message;
 
 use crate::CliDiagnostic;
+
+pub fn configured_syntax(
+    fs: &pgls_workspace::DynRef<'_, dyn pgls_fs::FileSystem>,
+    config_path: Option<PathBuf>,
+    path: Option<&Path>,
+    templating: Option<PartialTemplatingConfiguration>,
+) -> Result<TemplateSyntaxList, CliDiagnostic> {
+    let hint = match config_path {
+        Some(path) => ConfigurationPathHint::FromUser(path),
+        None => path
+            .and_then(Path::parent)
+            .map_or(ConfigurationPathHint::None, |parent| {
+                ConfigurationPathHint::FromWorkspace(
+                    fs.working_directory().unwrap_or_default().join(parent),
+                )
+            }),
+    };
+    let loaded = pgls_workspace::configuration::load_configuration(fs, hint)?;
+    Ok(templating
+        .and_then(|templating| templating.syntax)
+        .or_else(|| {
+            loaded
+                .configuration
+                .templating
+                .and_then(|templating| templating.syntax)
+        })
+        .unwrap_or_default())
+}
 
 /// Parse a SQL file (or standard input) and write the parse tree to standard
 /// output as a protobuf `ParseResult` message.
@@ -22,11 +55,17 @@ use crate::CliDiagnostic;
 /// # Arguments
 /// * `input` - SQL text to parse
 /// * `path` - path of the SQL file, used for diagnostics only
-pub fn run_parse(input: &str, path: Option<&Path>) -> Result<(), CliDiagnostic> {
+pub fn run_parse(
+    input: &str,
+    path: Option<&Path>,
+    syntax: TemplateSyntaxList,
+) -> Result<(), CliDiagnostic> {
     let mut console = EnvConsole::default();
 
-    let normalized = pgls_lexer::convert_to_positional_params(input);
-    let result = pgls_query::parse(&normalized).map_err(|error| {
+    let syntax = syntax.into();
+    let normalized = pgls_lexer::convert_template_parameters(input, syntax)
+        .map_err(|error| CliDiagnostic::parse_sql_error(error.to_string()))?;
+    let result = pgls_query::parse(&normalized.sql).map_err(|error| {
         CliDiagnostic::parse_sql_error(format!(
             "Failed to parse {}: {}",
             path.map(|path| path.to_string_lossy().into_owned())

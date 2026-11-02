@@ -534,6 +534,10 @@ export interface PartialConfiguration {
    */
   splinter?: PartialSplinterConfiguration;
   /**
+   * The syntax of host-language placeholders in SQL
+   */
+  templating?: PartialTemplatingConfiguration;
+  /**
    * The configuration for type checking
    */
   typecheck?: PartialTypecheckConfiguration;
@@ -819,6 +823,15 @@ export interface PartialSplinterConfiguration {
    * List of rules
    */
   rules?: SplinterRules;
+}
+/**
+ * SQL placeholders supplied by host languages or PostgreSQL bind parameters.
+ */
+export interface PartialTemplatingConfiguration {
+  /**
+   * Enabled syntaxes. CLI values are comma-separated; an empty array disables preprocessing.
+   */
+  syntax?: TemplateSyntax[];
 }
 /**
  * The configuration for type checking.
@@ -1304,6 +1317,10 @@ export interface SplinterRules {
   recommended?: boolean;
   security?: Security;
 }
+/**
+ * The syntax of host-language placeholders in SQL.
+ */
+export type TemplateSyntax = "go-printf" | "rust-fmt" | "dollar-values";
 export type VcsClientKind = "git";
 export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
 export type RuleConfiguration_for_Null = RulePlainConfiguration | RuleWithOptions_for_Null;

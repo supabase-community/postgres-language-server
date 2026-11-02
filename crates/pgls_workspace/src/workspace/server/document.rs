@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
+use pgls_lexer::{TemplateSyntax, convert_template_parameters};
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::OffsetMap};
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
@@ -19,8 +20,13 @@ pub struct Document {
 }
 
 impl Document {
+    #[cfg(test)]
     pub fn new(content: String, version: i32) -> Document {
-        let (ranges, diagnostics) = split_with_diagnostics(&content, None);
+        Self::with_template_syntax(content, version, TemplateSyntax::default())
+    }
+
+    pub fn with_template_syntax(content: String, version: i32, syntax: TemplateSyntax) -> Document {
+        let (ranges, diagnostics) = split_template_with_diagnostics(&content, syntax);
         let suppressions = Suppressions::from(content.as_str()).with_statements(ranges.clone());
 
         Document {
@@ -28,16 +34,29 @@ impl Document {
             diagnostics,
             content,
             version,
-            cache: DocumentCache::new(),
+            cache: DocumentCache::with_template_syntax(syntax),
             suppressions,
         }
+    }
+
+    /// A configuration change invalidates parse results even if the file text did not change.
+    pub fn set_template_syntax(&mut self, syntax: TemplateSyntax) {
+        if self.cache.template_syntax() != syntax {
+            self.cache.set_template_syntax(syntax);
+            self.update_content(self.content.clone(), self.version);
+        }
+    }
+
+    pub fn template_syntax(&self) -> TemplateSyntax {
+        self.cache.template_syntax()
     }
 
     pub fn update_content(&mut self, content: String, version: i32) {
         self.content = content;
         self.version = version;
 
-        let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
+        let (ranges, diagnostics) =
+            split_template_with_diagnostics(&self.content, self.cache.template_syntax());
 
         self.suppressions =
             Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
@@ -277,7 +296,11 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
         let ast_result = doc.cache.parse(&stmt.id);
         let result = match &*ast_result {
             Ok(node) => Ok(node.clone()),
-            Err(diag) => Err(diag.clone().span(stmt.range)),
+            Err(diag) => Err(diag.clone().span(
+                diag.location()
+                    .span
+                    .map_or(stmt.range, |span| stmt.document_range(span)),
+            )),
         };
 
         let sql = stmt.id.content().to_string();
@@ -333,7 +356,16 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
                     (Some(node.clone()), None)
                 }
             }
-            Err(diag) => (None, Some(diag.clone().span(range))),
+            Err(diag) => (
+                None,
+                Some(
+                    diag.clone().span(
+                        diag.location()
+                            .span
+                            .map_or(range, |span| offsets.range_to_source(span) + range.start()),
+                    ),
+                ),
+            ),
         };
         let unparsable =
             (ast_option.is_none() && id.parent().is_none()).then(|| UnparsableStatement {
@@ -354,19 +386,72 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
         (
             ast_option.map(|root| {
+                let syntax = doc.cache.template_syntax();
+                let conversion = convert_template_parameters(id.content(), syntax).ok();
+                let has_identifier_parameters = conversion
+                    .as_ref()
+                    .is_some_and(|conversion| conversion.has_identifier_parameters);
+                // Rules scan and reparse this text to validate fixes. Proxies keep the source
+                // offsets; the workspace then checks the edits against the original placeholders.
+                let sql = if syntax == TemplateSyntax::default() {
+                    id.content().to_string()
+                } else {
+                    conversion.map_or_else(|| id.content().to_string(), |conversion| conversion.sql)
+                };
                 AnalysableStatement {
                     offsets,
-                    ..AnalysableStatement::new(root, range).with_sql(id.content())
+                    ..AnalysableStatement::new(root, range).with_sql(sql)
                 }
                 .with_function(function)
-                .with_identifier_parameters(
-                    pgls_lexer::convert_to_positional_params_with_metadata(id.content())
-                        .has_identifier_parameters,
-                )
+                .with_identifier_parameters(has_identifier_parameters)
             }),
             diagnostics,
             unparsable,
         )
+    }
+}
+
+fn split_template_with_diagnostics(
+    content: &str,
+    syntax: TemplateSyntax,
+) -> (Vec<TextRange>, Vec<SDiagnostic>) {
+    if syntax == TemplateSyntax::default() {
+        return split_with_diagnostics(content, None);
+    }
+    match convert_template_parameters(content, syntax) {
+        Ok(conversion) => {
+            let (mut ranges, diagnostics) = split_with_diagnostics(&conversion.sql, None);
+            for range in &mut ranges {
+                let end = range.end();
+                let index = conversion
+                    .replacement_ranges
+                    .partition_point(|proxy| proxy.end() <= end);
+                if let Some(proxy) = conversion.replacement_ranges.get(index)
+                    && proxy.contains(end)
+                {
+                    *range = TextRange::new(range.start(), proxy.end());
+                }
+                debug_assert!(content.is_char_boundary(usize::from(range.start())));
+                debug_assert!(content.is_char_boundary(usize::from(range.end())));
+            }
+            (ranges, diagnostics)
+        }
+        Err(error) => {
+            let range = error
+                .range
+                .start
+                .try_into()
+                .ok()
+                .zip(error.range.end.try_into().ok())
+                .map(|(start, end)| TextRange::new(start, end));
+            (
+                Vec::new(),
+                vec![SDiagnostic::new(SyntaxDiagnostic::new(
+                    error.to_string(),
+                    range,
+                ))],
+            )
+        }
     }
 }
 pub struct WithCSTMapper;
@@ -539,6 +624,70 @@ mod tests {
             results[2].0.as_ref().unwrap().sql.as_deref(),
             Some("select a;")
         );
+    }
+
+    #[test]
+    fn template_sql_function_body_keeps_offsets_on_configuration_reload() {
+        let input = "create function f() returns text language sql as 'select ''é'', {value};';";
+        let mut doc = Document::new(input.to_owned(), 1);
+        let results = doc.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        assert_eq!(results.len(), 2);
+        assert!(results[1].1.is_some());
+
+        doc.set_template_syntax(TemplateSyntax {
+            rust_format: true,
+            ..TemplateSyntax::default()
+        });
+        let results = doc.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        assert_eq!(results.len(), 2);
+        assert!(
+            results
+                .iter()
+                .all(|(_, diagnostic, _)| diagnostic.is_none())
+        );
+        let body = results[1].0.as_ref().unwrap();
+        assert!(body.function.is_some());
+        let sql = body.sql.as_deref().unwrap();
+        assert!(!sql.contains("{value}"));
+        let start = TextSize::try_from(sql.find("'é'").unwrap()).unwrap();
+        let source_range = body
+            .offsets
+            .range_to_source(TextRange::at(start, TextSize::of("'é'")))
+            + body.range.start();
+        assert_eq!(&input[source_range], "''é''");
+
+        doc.set_template_syntax(TemplateSyntax::default());
+        let results = doc.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        assert_eq!(results.len(), 2);
+        assert!(results[1].1.is_some());
+    }
+
+    #[test]
+    fn template_sql_function_body_errors_map_to_source_offsets() {
+        let input = "select 1; create function f() returns text language sql as 'select ''é'' from items %s;';";
+        let doc = Document::with_template_syntax(
+            input.to_owned(),
+            1,
+            TemplateSyntax {
+                go_printf: true,
+                ..TemplateSyntax::default()
+            },
+        );
+        let analysis_errors = doc
+            .iter(AnalyserDiagnosticsMapper)
+            .filter_map(|(_, diagnostic, _)| diagnostic)
+            .collect::<Vec<_>>();
+        let format_errors = doc
+            .iter(FormatStatementMapper)
+            .filter_map(|(_, _, _, result)| result.err())
+            .collect::<Vec<_>>();
+        assert_eq!(analysis_errors.len(), 1);
+        assert_eq!(format_errors.len(), 1);
+        let start = TextSize::try_from(input.find("%s").unwrap()).unwrap();
+        let expected = TextRange::at(start, TextSize::of("%s"));
+        for diagnostic in analysis_errors.iter().chain(&format_errors) {
+            assert_eq!(diagnostic.span, Some(expected));
+        }
     }
 
     #[test]

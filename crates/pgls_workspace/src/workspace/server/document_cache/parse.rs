@@ -1,10 +1,13 @@
 use std::sync::{Arc, LazyLock, Mutex};
 
+#[cfg(test)]
 use pgls_lexer::convert_to_positional_params;
+use pgls_lexer::{TemplateSyntax, convert_template_parameters};
 use pgls_query_ext::{
     diagnostics::*,
     function_body::{EmbeddedStatement, function_body_location, sql_function_body},
 };
+use pgls_text_size::TextRange;
 use regex::Regex;
 use rustc_hash::FxHashMap;
 
@@ -21,14 +24,21 @@ pub struct PgQueryStore {
     plpgsql_db: Mutex<FxHashMap<StatementId, Result<(), SyntaxDiagnostic>>>,
     /// The statements embedded in each top-level statement, like those of a SQL function body.
     embedded_db: Mutex<FxHashMap<StatementId, Arc<[EmbeddedStatement]>>>,
+    pub template_syntax: TemplateSyntax,
 }
 
 impl PgQueryStore {
+    #[cfg(test)]
     pub fn new() -> PgQueryStore {
+        Self::with_template_syntax(TemplateSyntax::default())
+    }
+
+    pub fn with_template_syntax(template_syntax: TemplateSyntax) -> PgQueryStore {
         PgQueryStore {
             ast_db: Mutex::default(),
             plpgsql_db: Mutex::default(),
             embedded_db: Mutex::default(),
+            template_syntax,
         }
     }
 
@@ -65,8 +75,20 @@ impl PgQueryStore {
         }
 
         let r = Arc::new(
-            pgls_query::parse(&convert_to_positional_params(statement.content()))
-                .map_err(SyntaxDiagnostic::from)
+            convert_template_parameters(statement.content(), self.template_syntax)
+                .map_err(|error| {
+                    let range = error
+                        .range
+                        .start
+                        .try_into()
+                        .ok()
+                        .zip(error.range.end.try_into().ok())
+                        .map(|(start, end)| TextRange::new(start, end));
+                    SyntaxDiagnostic::new(error.to_string(), range)
+                })
+                .and_then(|conversion| {
+                    pgls_query::parse(&conversion.sql).map_err(SyntaxDiagnostic::from)
+                })
                 .and_then(|ast| {
                     ast.into_root().map(Arc::new).ok_or_else(|| {
                         SyntaxDiagnostic::new("No root node found in parse result", None)

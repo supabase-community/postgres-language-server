@@ -32,6 +32,10 @@ pub struct NamedParameterConversion {
     pub identifier_replacements: HashMap<String, String>,
     /// Positional index to the source text it replaced, for instance `1` to `:'agen_code'`.
     pub value_replacements: HashMap<usize, String>,
+    /// Parser token to its template spelling, for example `%` to Go's escaped `%%`.
+    pub symbol_replacements: HashMap<String, String>,
+    /// Source spans whose trailing proxy padding must remain part of a split statement.
+    pub replacement_ranges: Vec<pgls_text_size::TextRange>,
     /// False when a placeholder collides with a real identifier of the same statement, in which
     /// case the substitution cannot be undone and the caller must not rewrite the statement.
     pub restorable: bool,
@@ -53,16 +57,30 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
 
     // Identifiers written as such in the source. A placeholder equal to one of them cannot be
     // told apart from it after formatting, so the conversion is flagged as not restorable.
-    let plain_identifiers: HashSet<&str> = lexed
+    let plain_identifiers: HashSet<String> = lexed
         .tokens()
         .enumerate()
         .filter(|(idx, kind)| *kind == SyntaxKind::IDENT && !lexed.text(*idx).is_empty())
-        .map(|(idx, _)| lexed.text(idx))
+        .map(|(idx, _)| {
+            let text = lexed.text(idx);
+            if text.starts_with('"') {
+                text.trim_matches('"').replace("\"\"", "\"")
+            } else {
+                text.to_ascii_lowercase()
+            }
+        })
+        .collect();
+    let positional_parameters: HashSet<usize> = lexed
+        .tokens()
+        .enumerate()
+        .filter(|(_, kind)| *kind == SyntaxKind::POSITIONAL_PARAM)
+        .filter_map(|(index, _)| lexed.text(index).trim_start_matches('$').parse().ok())
         .collect();
 
     let mut identifier_replacements: HashMap<String, String> = HashMap::new();
     let mut value_replacements: HashMap<usize, String> = HashMap::new();
     let mut restorable = true;
+    let mut replacement_ranges = Vec::new();
 
     for (token_idx, kind) in lexed.tokens().enumerate() {
         if kind == SyntaxKind::EOF {
@@ -112,11 +130,26 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
                     value_index += 1;
                     index
                 });
+                restorable &= !positional_parameters.contains(&index);
                 value_replacements.insert(index, token_text.to_string());
                 format!("${index}")
             };
 
+            if replacement.len() > token_text.len() {
+                // Keep invalid input diagnosable rather than panicking when $10 no longer fits
+                // a two-byte parameter. Nothing may be restored from this partial conversion.
+                return NamedParameterConversion {
+                    sql: text.to_string(),
+                    has_identifier_parameters,
+                    identifier_replacements: HashMap::new(),
+                    value_replacements: HashMap::new(),
+                    symbol_replacements: HashMap::new(),
+                    replacement_ranges: Vec::new(),
+                    restorable: false,
+                };
+            }
             push_padded_replacement(&mut result, &replacement, token_text.len());
+            replacement_ranges.push(lexed.range(token_idx));
         } else {
             result.push_str(token_text);
         }
@@ -134,6 +167,8 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
         has_identifier_parameters,
         identifier_replacements,
         value_replacements,
+        symbol_replacements: HashMap::new(),
+        replacement_ranges,
         restorable,
     }
 }
