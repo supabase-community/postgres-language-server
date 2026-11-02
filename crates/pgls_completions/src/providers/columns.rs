@@ -640,9 +640,16 @@ mod tests {
         }
     }
 
-    /// The labels of the columns offered at the cursor, best first.
+    /// The labels of the columns offered at the cursor, best first, on a Postgres 18 server.
     async fn columns_at(query: &str, pool: &PgPool) -> Vec<String> {
-        let (tree, snapshot) = get_test_deps(None, query.into(), pool).await;
+        columns_on(180000, query, pool).await
+    }
+
+    /// The labels of the columns offered at the cursor, best first, as if the server had the
+    /// version `version_num`. The test database can be older than the syntax under test.
+    async fn columns_on(version_num: i64, query: &str, pool: &PgPool) -> Vec<String> {
+        let (tree, mut snapshot) = get_test_deps(None, query.into(), pool).await;
+        snapshot.version.version_num = Some(version_num);
         let params = get_test_params(&tree, &snapshot, query.into());
         complete(params)
             .into_iter()
@@ -704,6 +711,32 @@ mod tests {
             let query = sql.replace("{}", &cursor.to_string());
             assert_eq!(columns_at(&query, &pool).await, [""; 0], "{sql}");
         }
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn no_old_and_new_before_postgres_18(pool: PgPool) {
+        pool.execute("create table public.users (id serial primary key, name text);")
+            .await
+            .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        for sql in [
+            "update users set name = 'x' returning old.{}",
+            "update users set name = 'x' returning with (old as o) o.{}",
+        ] {
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(columns_on(170000, &query, &pool).await, [""; 0], "{sql}");
+        }
+        // The target's columns are still offered.
+        let mut columns = columns_on(
+            170000,
+            &format!("update users set name = 'x' returning {cursor}"),
+            &pool,
+        )
+        .await;
+        columns.truncate(2);
+        columns.sort();
+        assert_eq!(columns, ["id", "name"]);
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

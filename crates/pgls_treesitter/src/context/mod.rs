@@ -122,6 +122,10 @@ pub struct TreeSitterContextParams<'a> {
     pub position: TextSize,
     pub text: &'a str,
     pub tree: &'a tree_sitter::Tree,
+    /// The `server_version_num` of the database, like `180000`, if known. Syntax that is newer
+    /// than the server, like `old` and `new` in RETURNING, is only understood when it is
+    /// unknown or new enough.
+    pub server_version_num: Option<i64>,
 }
 
 #[derive(Debug)]
@@ -131,6 +135,8 @@ pub struct TreesitterContext<'a> {
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
     pub position: usize,
+    /// See [`TreeSitterContextParams::server_version_num`].
+    server_version_num: Option<i64>,
 
     /// Tuple containing up to two qualifiers for identifier-node under the cursor: (head, tail)
     ///
@@ -172,6 +178,7 @@ impl<'a> TreesitterContext<'a> {
             tree: params.tree,
             text: params.text,
             position: usize::from(params.position),
+            server_version_num: params.server_version_num,
             node_under_cursor: params.tree.root_node(),
             identifier_qualifiers: (None, None),
             wrapping_clause_type: None,
@@ -238,10 +245,13 @@ impl<'a> TreesitterContext<'a> {
                     );
                 }
 
-                // The names only exist inside the RETURNING list.
+                // The names exist since Postgres 18, and only inside the RETURNING list.
                 QueryResult::ReturningAliases(m)
-                    if (m.returning.start_byte()..=m.returning.end_byte())
-                        .contains(&self.position) =>
+                    if self
+                        .server_version_num
+                        .is_none_or(|version| version >= 180000)
+                        && (m.returning.start_byte()..=m.returning.end_byte())
+                            .contains(&self.position) =>
                 {
                     if let Some(table) = m.get_table(sql) {
                         let table = identifier_name(&table);
@@ -707,6 +717,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -756,6 +767,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -816,6 +828,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: text.as_str(),
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -846,6 +859,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -876,6 +890,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -897,6 +912,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -921,6 +937,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -945,6 +962,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -985,6 +1003,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         // should simply not panic
@@ -1032,6 +1051,7 @@ mod tests {
                 position: case.cursor_position.into(),
                 text: query,
                 tree: &tree,
+                server_version_num: None,
             };
 
             // should simply not panic
