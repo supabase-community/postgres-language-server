@@ -90,6 +90,7 @@ impl CompletionFilter<'_> {
 
             self.check_invocation(ctx)?;
             self.check_mentioned_schema_or_alias(ctx)?;
+            self.check_merge_visibility(ctx)?;
 
             Some(())
         }
@@ -453,6 +454,20 @@ impl CompletionFilter<'_> {
                 }
             })
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
+    }
+
+    /// A `WHEN` clause of MERGE sees only the target, only the source, or both.
+    fn check_merge_visibility(&self, ctx: &TreesitterContext) -> Option<()> {
+        let hidden = match self.data {
+            CompletionRelevanceData::Column(column) => {
+                ctx.is_hidden_merge_relation(&column.schema_name, &column.table_name)
+            }
+            CompletionRelevanceData::Table(table) => {
+                ctx.is_hidden_merge_relation(&table.schema, &table.name)
+            }
+            _ => false,
+        };
+        (!hidden).then_some(())
     }
 
     fn check_invocation(&self, ctx: &TreesitterContext) -> Option<()> {

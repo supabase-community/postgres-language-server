@@ -835,4 +835,60 @@ mod tests {
             assert_eq!(columns_at(&query, &pool).await, columns, "{sql}");
         }
     }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_the_columns_each_merge_branch_sees(pool: PgPool) {
+        pool.execute(
+            r#"
+            create table public.tgt (tgt_id int, tgt_label text);
+            create table public.src (src_id int, src_label text);
+            "#,
+        )
+        .await
+        .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        let merge = "merge into tgt t using src s on s.src_id = t.tgt_id";
+        let target = &["tgt_id", "tgt_label"][..];
+        let source = &["src_id", "src_label"][..];
+        let both = &["src_id", "src_label", "tgt_id", "tgt_label"][..];
+        let none = &[][..];
+
+        for (sql, expected) in [
+            ("{merge} when matched and {} then delete", both),
+            ("{merge} when matched then update set tgt_label = {}", both),
+            // `NOT MATCHED [BY TARGET]` only sees the source.
+            ("{merge} when not matched then insert values ({})", source),
+            (
+                "{merge} when not matched by target and {} then do nothing",
+                source,
+            ),
+            ("{merge} when not matched then insert values (t.{})", none),
+            // `NOT MATCHED BY SOURCE` only sees the target.
+            (
+                "{merge} when not matched by source and {} then delete",
+                target,
+            ),
+            (
+                "{merge} when not matched by source then update set tgt_label = s.{}",
+                none,
+            ),
+            // The target columns of INSERT and UPDATE.
+            ("{merge} when not matched then insert ({})", target),
+            ("{merge} when matched then update set {}", target),
+            // The same table as target and source stays visible. Columns of tables the
+            // statement doesn't mention are offered anyway, ranked lower.
+            (
+                "merge into tgt a using tgt b on a.tgt_id = b.tgt_id when not matched then insert values ({})",
+                both,
+            ),
+        ] {
+            let query = sql
+                .replace("{merge}", merge)
+                .replace("{}", &cursor.to_string());
+            let mut columns = columns_at(&query, &pool).await;
+            columns.retain(|column| column.starts_with("tgt_") || column.starts_with("src_"));
+            columns.sort();
+            assert_eq!(columns, expected, "{sql}");
+        }
+    }
 }
