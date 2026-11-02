@@ -5,6 +5,10 @@
 //! resolution. Calls with unknown argument types, or that match no function or more than one,
 //! get none.
 
+// Inlay hints read the client's SQL and the database's catalog, so a panic on unexpected input
+// takes down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use pgls_catalog::resolve::{FunctionContext, Reference, ResolveParams, resolve};
 use pgls_catalog::{CatalogView, identifier_name};
 use pgls_query::NodeEnum;
@@ -105,9 +109,10 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
             if argument.named || repeated {
                 continue;
             }
-            let Some(name) = signature.arguments[argument.parameter]
-                .name
-                .as_deref()
+            let Some(name) = signature
+                .arguments
+                .get(argument.parameter)
+                .and_then(|parameter| parameter.name.as_deref())
                 .filter(|name| !name.is_empty())
             else {
                 continue;
@@ -115,7 +120,7 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
             if is_reference_to(params.sql, tokens, name) {
                 continue;
             }
-            let Ok(offset) = u32::try_from(tokens[0].start) else {
+            let Some(Ok(offset)) = tokens.first().map(|token| u32::try_from(token.start)) else {
                 continue;
             };
             hints.push(InlayHint {
@@ -139,7 +144,8 @@ fn argument_tokens(tokens: &[ScanToken], location: i32) -> Option<Vec<&[ScanToke
     }
     // The name is at most `schema.name`.
     let open = name
-        + tokens[name..]
+        + tokens
+            .get(name..)?
             .iter()
             .take(4)
             .position(|token| token.token() == Token::Ascii40)?;
@@ -152,7 +158,7 @@ fn argument_tokens(tokens: &[ScanToken], location: i32) -> Option<Vec<&[ScanToke
             Token::Ascii40 | Token::Ascii91 => depth += 1,
             Token::Ascii41 | Token::Ascii93 if depth == 0 => {
                 if i > start {
-                    arguments.push(&tokens[start..i]);
+                    arguments.push(tokens.get(start..i)?);
                 }
                 return Some(arguments);
             }
@@ -171,8 +177,8 @@ fn argument_tokens(tokens: &[ScanToken], location: i32) -> Option<Vec<&[ScanToke
 /// Whether the argument is a column or parameter with the name of the parameter, like `x` or
 /// `t.x` for the parameter `x`. Hinting it would only repeat the name.
 fn is_reference_to(sql: &str, tokens: &[ScanToken], name: &str) -> bool {
-    let tokens = match tokens.first().map(ScanToken::token) {
-        Some(Token::Variadic) => &tokens[1..],
+    let tokens = match tokens {
+        [first, rest @ ..] if first.token() == Token::Variadic => rest,
         _ => tokens,
     };
     let text = |token: &ScanToken| {

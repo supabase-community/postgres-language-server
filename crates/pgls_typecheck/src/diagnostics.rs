@@ -104,6 +104,10 @@ struct ErrorRewriteRule {
     rewrite: fn(&regex::Captures, &IdentifierReplacement) -> String,
 }
 
+#[expect(
+    clippy::unwrap_used,
+    reason = "the patterns are constants, which the tests of the rewritten messages compile"
+)]
 static ERROR_REWRITE_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
     vec![
         ErrorRewriteRule {
@@ -156,22 +160,24 @@ pub(crate) fn create_type_error(
     source_offset: TextSize,
 ) -> TypecheckDiagnostic {
     let position = pg_err.position().and_then(|pos| match pos {
-        sqlx::postgres::PgErrorPosition::Original(pos) => Some(pos - 1),
+        sqlx::postgres::PgErrorPosition::Original(pos) => pos.checked_sub(1),
         _ => None,
     });
 
-    let original_position = position.map(|p| {
-        let pos = TextSize::new(p.try_into().unwrap());
+    let original_position = position.and_then(|p| {
+        let pos = TextSize::new(p.try_into().ok()?);
 
-        typed_replacement
-            .text_replacement()
-            .to_original_position(pos)
+        Some(
+            typed_replacement
+                .text_replacement()
+                .to_original_position(pos),
+        )
     });
 
     let range = original_position.and_then(|pos| {
         ts.root_node()
             .named_descendant_for_byte_range(pos.into(), pos.into())
-            .map(|node| {
+            .and_then(|node| {
                 let node = if source_offset == TextSize::from(0) {
                     node
                 } else {
@@ -187,10 +193,10 @@ pub(crate) fn create_type_error(
                         .unwrap_or(node)
                 };
 
-                TextRange::new(
-                    TextSize::from(u32::try_from(node.start_byte()).unwrap()) + source_offset,
-                    TextSize::from(u32::try_from(node.end_byte()).unwrap()) + source_offset,
-                )
+                Some(TextRange::new(
+                    TextSize::from(u32::try_from(node.start_byte()).ok()?) + source_offset,
+                    TextSize::from(u32::try_from(node.end_byte()).ok()?) + source_offset,
+                ))
             })
     });
 

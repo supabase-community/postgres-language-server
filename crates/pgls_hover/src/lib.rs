@@ -1,3 +1,7 @@
+// Hover reads the client's SQL and the database's catalog, so a panic on unexpected input takes
+// down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use pgls_catalog::Snapshot;
 use pgls_catalog::resolve::Reference;
 use pgls_text_size::TextSize;
