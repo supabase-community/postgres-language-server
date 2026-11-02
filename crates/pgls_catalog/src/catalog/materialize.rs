@@ -270,6 +270,10 @@ impl Builder {
             let column = match previous.remove(&column.name) {
                 Some(mut previous) if previous.type_name == column.type_name => {
                     previous.number = number as i64 + 1;
+                    // `DROP EXPRESSION` makes a generated column ordinary, without a default.
+                    if previous.generated.is_generated() && !column.generated.is_generated() {
+                        previous.default_expr = None;
+                    }
                     previous.generated = column.generated;
                     previous.identity = column.identity;
                     previous
