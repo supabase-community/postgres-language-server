@@ -757,6 +757,33 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn keeps_escaped_quotes_of_aliases(pool: PgPool) {
+        pool.execute("create table public.users (id int, name text);")
+            .await
+            .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        assert_eq!(
+            apply_column(
+                &format!(r#"update users as "a""b" set name = 1 where "i{cursor}d" = 1"#),
+                "id",
+                &pool
+            )
+            .await,
+            r#"update users as "a""b" set name = 1 where "a""b"."id" = 1"#
+        );
+        assert_eq!(
+            apply_column(
+                &format!(r#"select "{cursor} from users as "a""b""#),
+                "id",
+                &pool
+            )
+            .await,
+            r#"select "a""b"."id" from users as "a""b""#
+        );
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn completes_columns_of_old_and_new_in_returning(pool: PgPool) {
         pool.execute(
             r#"
