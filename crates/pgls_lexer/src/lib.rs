@@ -1,3 +1,7 @@
+// The lexer splits the client's SQL on every change, so a panic on unexpected input takes down
+// the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 mod codegen;
 mod lexed;
 mod lexer;
@@ -19,6 +23,7 @@ pub fn lex(input: &str) -> Lexed<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pgls_text_size::TextRange;
 
     #[test]
     fn test_basic_lexing() {
@@ -103,6 +108,18 @@ mod tests {
                 assert_eq!(u32::from(lexed.range(idx).end()), 9);
             }
         }
+    }
+
+    #[test]
+    fn eof_and_past_the_last_token() {
+        let lexed = lex("SELECT");
+        let eof = lexed.len() - 1;
+        assert_eq!(lexed.kind(eof), SyntaxKind::EOF);
+        assert_eq!(lexed.text(eof), "");
+        assert_eq!(lexed.range(eof), TextRange::empty(6.into()));
+        assert_eq!(lexed.kind(eof + 1), SyntaxKind::EOF);
+        assert_eq!(lexed.text(eof + 1), "");
+        assert_eq!(lexed.range(eof + 1), TextRange::empty(6.into()));
     }
 
     #[test]

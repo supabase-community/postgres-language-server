@@ -4,6 +4,8 @@
 //! changes of the current file. The resolver only depends on this trait, so it can be tested
 //! against small in-memory catalogs.
 
+use std::borrow::Cow;
+
 use crate::typing::{Type, TypeId};
 
 /// The result of a catalog lookup.
@@ -235,7 +237,8 @@ pub enum FunctionArgumentMode {
     In,
     InOut,
     Variadic,
-    /// An output argument of a procedure. `CALL` passes an argument for it too.
+    /// An output argument (`OUT`, or `TABLE` of a function). `CALL` passes an argument for it
+    /// too.
     Out,
 }
 
@@ -252,10 +255,32 @@ pub struct FunctionArgument {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionSignature {
     pub arguments: Vec<FunctionArgument>,
+    /// The output arguments of a function that `arguments` leaves out, with their position among
+    /// all of its arguments. Empty for procedures, whose output arguments are in `arguments`.
+    pub output_arguments: Vec<(usize, FunctionArgument)>,
     pub input_defaults: usize,
     pub variadic_element: Option<TypeId>,
     pub return_type: Option<TypeId>,
     pub returns_set: bool,
+}
+
+impl FunctionSignature {
+    /// The arguments that a call matches. `CALL` passes an argument for every output argument,
+    /// so it matches the output arguments of functions too, which it then rejects as not being
+    /// procedures ([`FuncnameGetCandidates`] with `include_out_arguments`, which uses
+    /// `proallargtypes`).
+    ///
+    /// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1272
+    pub fn call_arguments(&self, include_out_arguments: bool) -> Cow<'_, [FunctionArgument]> {
+        if !include_out_arguments || self.output_arguments.is_empty() {
+            return Cow::Borrowed(&self.arguments);
+        }
+        let mut all = self.arguments.clone();
+        for (position, argument) in &self.output_arguments {
+            all.insert((*position).min(all.len()), argument.clone());
+        }
+        Cow::Owned(all)
+    }
 }
 
 /// A database operator.

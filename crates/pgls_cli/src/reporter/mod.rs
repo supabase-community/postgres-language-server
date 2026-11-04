@@ -75,6 +75,8 @@ pub struct TraversalData {
     pub writes: bool,
     pub diagnostics_not_printed: u32,
     pub workspace_root: Option<PathBuf>,
+    /// Whether the files came from git, with `--staged` or `--changed`.
+    pub vcs_targeted: bool,
 }
 
 #[derive(Debug)]

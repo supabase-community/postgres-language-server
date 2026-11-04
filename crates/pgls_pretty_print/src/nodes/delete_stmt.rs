@@ -35,11 +35,9 @@ pub(super) fn emit_delete_stmt(e: &mut EventEmitter, n: &DeleteStmt) {
         super::emit_clause_condition(e, where_clause);
     }
 
-    if !n.returning_list.is_empty() {
+    if let Some(returning) = &n.returning_clause {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::RETURNING_KW);
-        e.space();
-        super::node_list::emit_comma_separated_list(e, &n.returning_list, super::emit_node);
+        super::emit_returning_clause(e, returning);
     }
 
     e.group_end();

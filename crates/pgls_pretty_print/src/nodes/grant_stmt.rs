@@ -103,6 +103,12 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
             ObjectType::ObjectSchema => {
                 e.token(TokenKind::SCHEMAS_KW);
             }
+            // Since Postgres 18
+            ObjectType::ObjectLargeobject => {
+                e.token(TokenKind::LARGE_KW);
+                e.space();
+                e.token(TokenKind::OBJECTS_KW);
+            }
             _ => {}
         }
         // No space here - will be added by line break before TO/FROM
