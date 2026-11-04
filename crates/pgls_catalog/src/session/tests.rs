@@ -309,18 +309,19 @@ fn implicit_block_runs_statements_in_a_transaction_until_the_query_ends() {
     assert_eq!(s.in_transaction(), Some(true));
     assert!(s.is_holding_access_exclusive());
 }
-#[test]
-fn created_relations_are_resolved_with_the_catalog() {
+/// A catalog over a snapshot with the schemas, `pg_catalog`, and the table `public.users`.
+fn catalog_with_users(schemas: &[&str]) -> Catalog {
     use std::sync::Arc;
 
-    // `app` is on the search path, but doesn't exist.
     let snapshot = crate::Snapshot {
-        schemas: ["public", "pg_catalog"]
+        schemas: schemas
+            .iter()
+            .chain(&["pg_catalog"])
             .map(|name| crate::Schema {
-                name: name.into(),
+                name: (*name).into(),
                 ..Default::default()
             })
-            .into(),
+            .collect(),
         tables: vec![crate::Table {
             id: 1,
             schema: "public".into(),
@@ -329,15 +330,22 @@ fn created_relations_are_resolved_with_the_catalog() {
         }],
         ..Default::default()
     };
-    let mut catalog = Catalog::new(Some(Arc::new(crate::CatalogBase::new(Arc::new(snapshot)))));
+    Catalog::new(Some(Arc::new(crate::CatalogBase::new(Arc::new(snapshot)))))
+}
+/// Applies a statement to the catalog and the session, like the analyser. Returns whether the
+/// statement was a dangerous lock statement.
+fn run(s: &mut Session, catalog: &mut Catalog, q: &str) -> bool {
+    let n = pgls_query::parse(q).unwrap().into_root().unwrap();
+    let dangerous = s.is_dangerous_lock_stmt(&n, catalog);
+    catalog.apply(&n, s.search_path());
+    s.apply(&n, catalog);
+    dangerous
+}
+#[test]
+fn created_relations_are_resolved_with_the_catalog() {
+    // `app` is on the search path, but doesn't exist.
+    let mut catalog = catalog_with_users(&["public"]);
     let mut s = Session::new(vec!["app".into(), "public".into()]);
-    let run = |s: &mut Session, catalog: &mut Catalog, q: &str| {
-        let n = pgls_query::parse(q).unwrap().into_root().unwrap();
-        let dangerous = s.is_dangerous_lock_stmt(&n, catalog);
-        catalog.apply(&n, s.search_path());
-        s.apply(&n, catalog);
-        dangerous
-    };
 
     run(&mut s, &mut catalog, "BEGIN");
     // Postgres creates `made` in `public`, the first schema of the search path that exists.
@@ -363,4 +371,82 @@ fn created_relations_are_resolved_with_the_catalog() {
         s.access_exclusive_tables(),
         [("public".to_string(), "users".to_string())]
     );
+}
+#[test]
+fn skipped_if_not_exists_creates_nothing() {
+    // Postgres skips both statements: `users` exists in `public`, and indexes share their names
+    // with tables.
+    let mut catalog = catalog_with_users(&["public"]);
+    let mut s = Session::new(vec!["app".into(), "public".into()]);
+    run(&mut s, &mut catalog, "BEGIN");
+    run(
+        &mut s,
+        &mut catalog,
+        "CREATE TABLE IF NOT EXISTS users (id bigint)",
+    );
+    run(
+        &mut s,
+        &mut catalog,
+        "CREATE INDEX IF NOT EXISTS users ON public.users (id)",
+    );
+    run(
+        &mut s,
+        &mut catalog,
+        "CREATE TABLE IF NOT EXISTS copy AS SELECT 1 AS id",
+    );
+    run(
+        &mut s,
+        &mut catalog,
+        "CREATE TABLE IF NOT EXISTS copy AS SELECT 1 AS id",
+    );
+    assert!(!s.has_created_relation(&range_var("public", "users"), &catalog));
+    assert!(run(
+        &mut s,
+        &mut catalog,
+        "ALTER TABLE public.users ADD COLUMN payload text"
+    ));
+    assert!(s.has_created_relation(&range_var("public", "copy"), &catalog));
+}
+#[test]
+fn temporary_tables_dont_capture_new_tables() {
+    // Without `TEMP`, Postgres creates the table in the first schema of the search path, even
+    // if a temporary table of that name exists.
+    let mut catalog = Catalog::new(None);
+    let mut s = Session::new(vec!["public".into()]);
+    run(&mut s, &mut catalog, "BEGIN");
+    run(&mut s, &mut catalog, "CREATE TEMP TABLE events (id bigint)");
+    run(&mut s, &mut catalog, "CREATE TABLE events (id bigint)");
+    run(&mut s, &mut catalog, "CREATE TEMP TABLE copy (id bigint)");
+    run(&mut s, &mut catalog, "CREATE TABLE copy AS SELECT 1 AS id");
+    assert!(!run(
+        &mut s,
+        &mut catalog,
+        "ALTER TABLE public.events ADD COLUMN payload text"
+    ));
+    assert!(!run(
+        &mut s,
+        &mut catalog,
+        "ALTER TABLE public.copy ADD COLUMN payload text"
+    ));
+    assert!(!s.is_holding_access_exclusive());
+}
+#[test]
+fn index_names_are_resolved_with_the_catalog() {
+    // Postgres creates the index in `public`, the schema of its table, and `ALTER INDEX` finds
+    // it there through the search path.
+    let mut catalog = catalog_with_users(&["app", "public"]);
+    let mut s = Session::new(vec!["app".into(), "public".into()]);
+    run(&mut s, &mut catalog, "BEGIN");
+    run(
+        &mut s,
+        &mut catalog,
+        "CREATE INDEX users_id_idx ON users (id)",
+    );
+    assert!(!run(
+        &mut s,
+        &mut catalog,
+        "ALTER INDEX users_id_idx SET (fillfactor = 70)"
+    ));
+    assert!(s.has_created_relation(&range_var("", "users_id_idx"), &catalog));
+    assert!(!s.is_holding_access_exclusive());
 }

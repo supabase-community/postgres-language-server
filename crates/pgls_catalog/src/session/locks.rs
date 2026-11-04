@@ -155,19 +155,26 @@ impl Locks {
     }
 
     /// Applies a statement. `catalog` is the catalog after the statement, which knows where
-    /// the statement created its objects.
+    /// the statement created its objects, and whether `IF NOT EXISTS` skipped them.
     pub(super) fn apply(&mut self, stmt: &NodeEnum, catalog: &Catalog, search_path: &[String]) {
         let name_of =
             |relation: &protobuf::RangeVar| catalog.relation_name_of(relation, search_path);
+        let created = |relation: &protobuf::RangeVar| {
+            if catalog.skipped_existing() {
+                return None;
+            }
+            catalog.relation_creation_name_of(relation, search_path)
+        };
         match stmt {
             NodeEnum::CreateStmt(s) => {
-                if let Some(r) = &s.relation {
-                    self.created_objects.push(name_of(r));
+                if let Some(key) = s.relation.as_ref().and_then(created) {
+                    self.created_objects.push(key);
                 }
             }
             // An index is in the schema of its table.
             NodeEnum::IndexStmt(s) => {
                 if !s.idxname.is_empty()
+                    && !catalog.skipped_existing()
                     && let Some(r) = &s.relation
                 {
                     let (schema, _) = name_of(r);
@@ -175,8 +182,13 @@ impl Locks {
                 }
             }
             NodeEnum::CreateTableAsStmt(s) => {
-                if let Some(r) = s.into.as_ref().and_then(|into| into.rel.as_ref()) {
-                    self.created_objects.push(name_of(r));
+                if let Some(key) = s
+                    .into
+                    .as_ref()
+                    .and_then(|into| into.rel.as_ref())
+                    .and_then(created)
+                {
+                    self.created_objects.push(key);
                 }
             }
             NodeEnum::AlterTableStmt(s) => {
