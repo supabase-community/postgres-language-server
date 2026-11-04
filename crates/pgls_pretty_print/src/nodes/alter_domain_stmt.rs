@@ -1,7 +1,8 @@
 use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
-use pgls_query::protobuf::AlterDomainStmt;
+use pgls_query::{NodeEnum, protobuf::AlterDomainStmt};
 
+use super::constraint::emit_domain_constraint;
 use super::node_list::emit_dot_separated_list;
 
 pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) {
@@ -59,7 +60,12 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             e.token(TokenKind::ADD_KW);
             if let Some(ref def) = n.def {
                 e.space();
-                super::emit_node(def, e);
+                match &def.node {
+                    Some(NodeEnum::Constraint(constraint)) => {
+                        emit_domain_constraint(e, constraint);
+                    }
+                    _ => super::emit_node(def, e),
+                }
             }
         }
         "X" => {
