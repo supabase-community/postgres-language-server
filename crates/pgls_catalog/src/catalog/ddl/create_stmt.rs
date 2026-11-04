@@ -36,16 +36,24 @@ pub(super) fn create_table(
     }
 
     let mut columns: Option<Vec<ColumnInfo>> = Some(Vec::new());
+    // Whether a column is defined more than once, or an unknown one might be.
+    let mut merged = false;
     let mut add_columns = |new: Option<Vec<ColumnInfo>>| match (&mut columns, new) {
         (Some(columns), Some(new)) => {
             for column in new {
                 match columns.iter_mut().find(|c| c.name == column.name) {
-                    Some(existing) => merge_column(existing, &column),
+                    Some(existing) => {
+                        merge_column(existing, &column);
+                        merged = true;
+                    }
                     None => columns.push(column),
                 }
             }
         }
-        _ => columns = None,
+        _ => {
+            columns = None;
+            merged = true;
+        }
     };
 
     // Typed tables (`OF type`) take the attributes of the type.
@@ -95,6 +103,12 @@ pub(super) fn create_table(
         }
     }
 
+    // A column of an inheritance child that is also defined by the table or inherited from
+    // another parent is kept when the parent drops it. Partitions have a single parent and no
+    // columns of their own.
+    if merged && n.partbound.is_none() && !parents.is_empty() {
+        c.children_with_own_columns.insert(new_key.clone());
+    }
     for parent in parents {
         c.children.entry(parent).or_default().push(new_key.clone());
     }

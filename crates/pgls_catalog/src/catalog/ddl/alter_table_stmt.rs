@@ -106,6 +106,30 @@ fn apply_column_changes(
             }
         }
     });
+
+    // A child keeps a dropped column that is also its own or inherited from another parent, and
+    // so do its own children ([`ATExecDropColumn`]). We don't know which columns those are.
+    //
+    // [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9419
+    let drops_columns = commands
+        .iter()
+        .any(|command| command.subtype() == AlterTableType::AtDropColumn);
+    if drops_columns {
+        let root = key(&relation.schema, &relation.name);
+        let keeping: Vec<_> = c
+            .with_descendants(root.clone())
+            .into_iter()
+            .filter(|child| *child != root && c.children_with_own_columns.contains(child))
+            .flat_map(|child| c.with_descendants(child))
+            .collect();
+        for child in keeping {
+            if let Some(mut child) = c.relation_in(&child.0, &child.1).found() {
+                child.columns = None;
+                child.origin = Origin::File;
+                c.define_relation(child);
+            }
+        }
+    }
 }
 
 /// `ATTACH PARTITION` and `INHERIT` make a table a child of another, so that it follows the
@@ -155,6 +179,11 @@ fn apply_inheritance_changes(
         // Postgres rejects circular inheritance.
         if attach && c.with_descendants(child.clone()).contains(&parent) {
             continue;
+        }
+        // The columns of a table that becomes an inheritance child stay its own. A partition's
+        // columns become inherited only.
+        if attach && !relation_is_parent {
+            c.children_with_own_columns.insert(child.clone());
         }
         let children = c.children.entry(parent).or_default();
         if attach {
