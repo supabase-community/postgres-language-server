@@ -1049,6 +1049,60 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn completes_default_privileges_options_in_any_order(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `in` needs a prefix.
+        assert_eq!(
+            keywords_at(&format!("alter default privileges {cursor}"), &pool).await,
+            ["for", "grant", "revoke"]
+        );
+        assert_eq!(
+            keywords_at(&format!("alter default privileges i{cursor}"), &pool).await,
+            ["in"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges for role admin i{cursor}"),
+                &pool
+            )
+            .await,
+            ["in"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges in schema public {cursor}"),
+                &pool
+            )
+            .await,
+            ["for", "grant", "revoke"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges in schema public for {cursor}"),
+                &pool
+            )
+            .await,
+            ["role", "user"]
+        );
+        // Postgres rejects an option given twice.
+        for options in [
+            "for role admin in schema public",
+            "in schema public for role admin",
+        ] {
+            assert_eq!(
+                keywords_at(
+                    &format!("alter default privileges {options} {cursor}"),
+                    &pool
+                )
+                .await,
+                ["grant", "revoke"],
+                "{options}"
+            );
+        }
+    }
+
+    #[sqlx::test]
     async fn completes_constraint_attributes(pool: PgPool) {
         let cursor = QueryWithCursorPosition::cursor_marker();
 
