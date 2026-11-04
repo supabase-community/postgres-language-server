@@ -414,3 +414,51 @@ async fn function_parameter_type_with_multiple_words(test_db: PgPool) {
     .test()
     .await;
 }
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn merge_invalid_column(test_db: PgPool) {
+    TestSetup {
+        name: "merge_invalid_column",
+        query: "merge into users u using imports i on i.id = u.id when matched then update set name = i.nope;",
+        setup: Some(
+            r#"
+        create table public.users (id int8 primary key, name text);
+        create table public.imports (id int8, name text);
+    "#,
+        ),
+        test_db: &test_db,
+        typed_identifiers: vec![],
+    }
+    .test()
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn merge_is_not_executed(test_db: PgPool) {
+    test_db
+        .execute(
+            "create table public.users (id int8 primary key, name text);
+             create table public.imports (id int8, name text);
+             insert into public.imports values (1, 'a');",
+        )
+        .await
+        .expect("Failed to set up the tables");
+
+    TestSetup {
+        name: "merge_valid",
+        query: "merge into users u using imports i on i.id = u.id \
+                when matched then update set name = i.name \
+                when not matched then insert values (i.id, i.name);",
+        setup: None,
+        test_db: &test_db,
+        typed_identifiers: vec![],
+    }
+    .test()
+    .await;
+
+    let rows = sqlx::query_scalar::<_, i64>("select count(*) from public.users")
+        .fetch_one(&test_db)
+        .await
+        .expect("Failed to count the rows");
+    assert_eq!(rows, 0, "the MERGE must not insert the row");
+}

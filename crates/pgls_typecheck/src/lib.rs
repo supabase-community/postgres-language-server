@@ -111,6 +111,8 @@ fn typecheck_target<'a>(
         | pgls_query::NodeEnum::InsertStmt(_)
         | pgls_query::NodeEnum::UpdateStmt(_)
         | pgls_query::NodeEnum::DeleteStmt(_)
+        // Postgres can prepare MERGE since 15, the oldest version we support.
+        | pgls_query::NodeEnum::MergeStmt(_)
         | pgls_query::NodeEnum::CommonTableExpr(_) => Some(TypecheckTarget::Direct),
         pgls_query::NodeEnum::CreateTableAsStmt(_) | pgls_query::NodeEnum::ViewStmt(_) => {
             let node = find_create_query(tree.root_node())?;

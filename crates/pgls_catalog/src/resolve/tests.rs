@@ -761,6 +761,10 @@ fn database_only() {
     assert!(database_only("", "create view v as select id from users"));
     assert!(database_only(
         "",
+        "merge into users using posts on posts.user_id = users.id when matched then delete"
+    ));
+    assert!(database_only(
+        "",
         "select count(*) from users join posts using (id)"
     ));
 
