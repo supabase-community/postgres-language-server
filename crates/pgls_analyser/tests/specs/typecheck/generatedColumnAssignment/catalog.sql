@@ -41,3 +41,32 @@ create table plain_parent (a int, g int);
 create table redeclared_child (g int generated always as (a * 2) stored) inherits (plain_parent);
 -- expect_lint/generatedColumnAssignment
 insert into redeclared_child values (1, 2);
+-- An attached partition follows the `DROP EXPRESSION` of its partitioned table.
+create table attach_parent (
+  a int,
+  g int generated always as (a * 2) stored
+) partition by range (a);
+create table attached (like attach_parent including generated);
+alter table attach_parent attach partition attached for values from (0) to (10);
+alter table attach_parent alter column g drop expression;
+insert into attached values (1, 2);
+-- A detached partition doesn't.
+create table detach_parent (
+  a int,
+  g int generated always as (a * 2) stored
+) partition by range (a);
+create table detached partition of detach_parent for values from (0) to (10);
+alter table detach_parent detach partition detached;
+alter table detach_parent alter column g drop expression;
+-- expect_lint/generatedColumnAssignment
+insert into detached values (1, 2);
+-- The same for `INHERIT` and `NO INHERIT`.
+create table inherit_parent (a int, g int generated always as (a * 2) stored);
+create table inherit_child (a int, g int generated always as (a * 2) stored);
+alter table inherit_child inherit inherit_parent;
+create table uninherited_child () inherits (inherit_parent);
+alter table uninherited_child no inherit inherit_parent;
+alter table inherit_parent alter column g drop expression;
+insert into inherit_child values (1, 2);
+-- expect_lint/generatedColumnAssignment
+insert into uninherited_child values (1, 2);
