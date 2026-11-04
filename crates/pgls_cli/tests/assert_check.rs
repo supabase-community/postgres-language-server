@@ -120,6 +120,27 @@ fn check_stdin_snapshot() {
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
+fn check_stdin_rejects_paths_snapshot() {
+    assert_snapshot!(run_check_with(
+        &[
+            "--config-path",
+            CONFIG_PATH,
+            "--stdin-file-path",
+            "virtual.sql",
+            "--log-level",
+            "none",
+            "tests/fixtures/test.sql"
+        ],
+        Some("select 1;\n"),
+        None
+    ));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
 fn check_indented_cte_after_blank_line_does_not_panic() {
     let output = run_check_with(
         &[
@@ -268,6 +289,52 @@ fn check_fails_when_database_is_unreachable() {
 
     assert!(output.starts_with("status: failure"), "{output}");
     assert!(output.contains("database/connection"), "{output}");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn check_stdin_fails_when_database_is_unreachable() {
+    // Nothing listens on port 1.
+    let output = run_check_without_db_env_with(
+        &[
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--conn_timeout_secs",
+            "1",
+            "--stdin-file-path",
+            "virtual.sql",
+        ],
+        &[],
+        Some("SELECT nonexistent_column FROM users;\n"),
+    );
+
+    assert!(output.starts_with("status: failure"), "{output}");
+    assert!(output.contains("database/connection"), "{output}");
+}
+
+#[test]
+fn check_stdin_fails_on_warnings_with_error_on_warnings() {
+    let args = [
+        "--config-path",
+        CONFIG_PATH,
+        "--log-level",
+        "none",
+        "--disable-db",
+        "--only=preferJsonb",
+        "--stdin-file-path",
+        "virtual.sql",
+    ];
+    let stdin = Some("CREATE TABLE t (data json);\n");
+
+    let output = run_check_with(&args, stdin, None);
+    assert!(output.starts_with("status: success"), "{output}");
+    assert!(output.contains("preferJsonb"), "{output}");
+
+    let output = run_check_with(&[&args[..], &["--error-on-warnings"]].concat(), stdin, None);
+    assert!(output.starts_with("status: failure"), "{output}");
+    assert!(output.contains("preferJsonb"), "{output}");
 }
 
 #[cfg(target_os = "linux")]
@@ -471,6 +538,40 @@ fn check_uses_the_nearest_configuration_file() {
     );
 }
 
+/// Lines end at `\n` only, like in the LSP and in the diffs of `format`: a lone `\r` is a
+/// character of its line, in the header, the code frame and every reporter.
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_lone_carriage_return_does_not_end_a_line_snapshot() {
+    let root = write_tree(&[(
+        "migration.sql",
+        "select 1;\ralter tqjable t drop column id;\n",
+    )]);
+    let output = [
+        None,
+        Some("json"),
+        Some("gitlab"),
+        Some("junit"),
+        Some("github"),
+    ]
+    .map(|reporter| {
+        let mut args = vec!["--disable-db", "migration.sql"];
+        args.extend(
+            reporter
+                .iter()
+                .flat_map(|reporter| ["--reporter", reporter]),
+        );
+        let (_, output) = check_in(root.path(), &args, &[]);
+        let reporter = reporter.unwrap_or("default");
+        format!("{reporter}:\n{}", normalize_durations(&output))
+    })
+    .join("\n");
+    assert_snapshot!(output.replace('\r', "\\r"));
+}
+
 /// Writes `files` below a new temporary directory.
 fn write_tree(files: &[(&str, &str)]) -> tempfile::TempDir {
     let root = tempfile::tempdir().unwrap();
@@ -480,6 +581,139 @@ fn write_tree(files: &[(&str, &str)]) -> tempfile::TempDir {
         std::fs::write(path, content).unwrap();
     }
     root
+}
+
+/// Commits `files` to a new git repository below a new temporary directory.
+fn git_repo(files: &[(&str, &str)]) -> tempfile::TempDir {
+    let root = write_tree(files);
+    git(root.path(), &["init", "--quiet"]);
+    git(root.path(), &["add", "--all"]);
+    git(
+        root.path(),
+        &["commit", "--quiet", "--no-verify", "--message", "init"],
+    );
+    root
+}
+
+fn git(cwd: &Path, args: &[&str]) {
+    let status = std::process::Command::new("git")
+        .current_dir(cwd)
+        .args(["-c", "user.name=test", "-c", "user.email=test@example.com"])
+        .args(["-c", "commit.gpgsign=false"])
+        .args(args)
+        .status()
+        .expect("failed to run git");
+    assert!(status.success(), "git {args:?} failed");
+}
+
+const DROP_COLUMN_REPO: &[(&str, &str)] = &[
+    (
+        "postgres-language-server.jsonc",
+        r#"{ "db": { "disableConnection": true } }"#,
+    ),
+    ("a.sql", "alter table users drop column name;\n"),
+];
+
+/// With nothing staged there is nothing to check, which is not an error: a pre-commit hook runs
+/// on every commit.
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_staged_without_staged_files_snapshot() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    assert_snapshot!(run_check_with(
+        &["--staged", "--log-level", "none"],
+        None,
+        Some(repo.path())
+    ));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_changed_without_changed_files_snapshot() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    assert_snapshot!(run_check_with(
+        &["--changed", "--since", "HEAD", "--log-level", "none"],
+        None,
+        Some(repo.path())
+    ));
+}
+
+#[test]
+fn check_staged_checks_only_the_staged_files() {
+    let repo = git_repo(&[
+        DROP_COLUMN_REPO[0],
+        DROP_COLUMN_REPO[1],
+        ("b.sql", "select 1;\n"),
+        ("notes.txt", "notes\n"),
+    ]);
+    std::fs::write(
+        repo.path().join("b.sql"),
+        "alter table users drop column name;\n",
+    )
+    .unwrap();
+    git(repo.path(), &["add", "b.sql"]);
+
+    let (_, output) = check_in(repo.path(), &["--staged", "--reporter", "github"], &[]);
+    assert!(output.contains("file=b.sql,"), "{output}");
+    assert!(!output.contains("a.sql"), "{output}");
+
+    // Only files that aren't SQL are staged.
+    git(repo.path(), &["reset", "--quiet"]);
+    std::fs::write(repo.path().join("notes.txt"), "more notes\n").unwrap();
+    git(repo.path(), &["add", "notes.txt"]);
+    let (success, output) = check_in(repo.path(), &["--staged"], &[]);
+    assert!(success, "{output}");
+    assert!(output.contains("Checked 0 files"), "{output}");
+}
+
+/// A base git doesn't know is an error, not a run without changed files.
+#[test]
+fn check_changed_fails_for_an_unknown_base() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    let (success, output) = check_in(repo.path(), &["--changed", "--since", "unknown"], &[]);
+    assert!(!success, "{output}");
+    assert!(output.contains("git diff failed"), "{output}");
+}
+
+/// A staged or changed file that can't be read fails the run, also when `--max-diagnostics 0`
+/// prints none of the diagnostics.
+#[test]
+fn check_fails_for_an_unreadable_staged_or_changed_file() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    std::fs::write(repo.path().join("invalid.sql"), b"select \xff\xfe;\n").unwrap();
+    git(repo.path(), &["add", "invalid.sql"]);
+    let (success, output) = check_in(repo.path(), &["--staged", "--max-diagnostics", "0"], &[]);
+    assert!(!success, "{output}");
+
+    git(
+        repo.path(),
+        &["commit", "--quiet", "--no-verify", "--message", "invalid"],
+    );
+    let (success, output) = check_in(
+        repo.path(),
+        &["--changed", "--since", "HEAD~1", "--max-diagnostics", "0"],
+        &[],
+    );
+    assert!(!success, "{output}");
+}
+
+/// The diagnostic limit only limits what is printed: the diagnostics that aren't printed still
+/// decide the exit code.
+#[test]
+fn diagnostics_that_are_not_printed_still_fail_the_run() {
+    let repo = git_repo(DROP_COLUMN_REPO);
+    let (success, output) = check_in(
+        repo.path(),
+        &["a.sql", "--max-diagnostics", "0", "--error-on-warnings"],
+        &[],
+    );
+    assert!(!success, "{output}");
 }
 
 /// Runs `check` in `cwd` without the connection settings of the environment but with `envs`.
@@ -667,11 +901,157 @@ fn check_announces_the_user_configuration() {
     );
 }
 
+/// Relative paths of the configuration file are relative to its folder, also when `check` runs
+/// in a folder below it.
+#[test]
+fn relative_paths_are_relative_to_the_configuration_file() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "migrations": { "migrationsDir": "migrations", "after": 5 } }"#,
+        ),
+        (
+            "migrations/0009_later.sql",
+            "alter table users drop column name;\n",
+        ),
+        ("sub/a.sql", "select 1;\n"),
+    ]);
+
+    let migration = Path::new("..").join("migrations").join("0009_later.sql");
+    let (_, output) = check_in(
+        &root.path().join("sub"),
+        &[migration.to_str().unwrap()],
+        &[],
+    );
+    // `banDropColumn` only runs on migrations once `migrations` is configured.
+    assert!(
+        output.contains("lint/banDropColumn"),
+        "the file is not recognised as a migration:\n{output}"
+    );
+}
+
+/// `check` verifies the databases of all configuration files at the same time, and reports each
+/// one it can't reach with its address and the folder that uses it.
+#[cfg(target_os = "linux")]
+#[test]
+fn check_reports_every_unreachable_database_at_once() {
+    let unreachable = |port: u16| {
+        format!(
+            r#"{{ "db": {{ "host": "10.255.255.1", "port": {port}, "username": "postgres", "password": "postgres", "connTimeoutSecs": 2 }} }}"#
+        )
+    };
+    let (one, two, three) = (unreachable(5001), unreachable(5002), unreachable(5003));
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        ("db1/postgres-language-server.jsonc", &one),
+        ("db2/postgres-language-server.jsonc", &two),
+        ("db3/postgres-language-server.jsonc", &three),
+        ("db1/a.sql", "select 1;\n"),
+        ("db2/a.sql", "select 1;\n"),
+        ("db3/a.sql", "select 1;\n"),
+    ]);
+
+    let start = std::time::Instant::now();
+    let (success, output) = check_in(root.path(), &[], &[]);
+    let elapsed = start.elapsed();
+    assert!(!success, "{output}");
+    for (port, folder) in [(5001, "db1"), (5002, "db2"), (5003, "db3")] {
+        let address = format!("postgres@10.255.255.1:{port}/postgres, the database of ");
+        assert!(
+            output.lines().any(|line| line.contains(&address)
+                && line.contains(&root.path().join(folder).display().to_string())),
+            "the database of {folder} is not reported:\n{output}"
+        );
+    }
+    // One connection timeout for the check, not one per database.
+    assert!(
+        elapsed < std::time::Duration::from_secs(5),
+        "the connection checks ran one after the other: {elapsed:?}"
+    );
+}
+
+/// Without `vcs.enabled`, `.gitignore` doesn't hide nested configuration files, like it doesn't
+/// hide the files to check.
+#[test]
+fn nested_configurations_ignore_gitignore_without_vcs() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "vcs": { "enabled": false } }"#,
+        ),
+        (".gitignore", "generated/\n"),
+        (
+            "generated/postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "linter": { "rules": { "banDropColumn": "error" } } }"#,
+        ),
+        ("generated/a.sql", "alter table users drop column name;\n"),
+    ]);
+
+    let (_, output) = check_in(root.path(), &["--reporter", "github"], &[]);
+    assert!(
+        output
+            .lines()
+            .any(|line| line.starts_with("::error title=lint/banDropColumn")
+                && line.contains("a.sql")),
+        "the configuration in the gitignored folder doesn't apply:\n{output}"
+    );
+}
+
+/// A relative path in the arguments is relative to the working directory, like any other path
+/// typed on the command line, not to the folder of the configuration file.
+#[test]
+fn relative_path_arguments_are_relative_to_the_working_directory() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        (
+            "sub/migrations/0009_later.sql",
+            "alter table users drop column name;\n",
+        ),
+    ]);
+
+    let migration = Path::new("migrations").join("0009_later.sql");
+    let (_, output) = check_in(
+        &root.path().join("sub"),
+        &[
+            "--migrations-dir",
+            "migrations",
+            "--after",
+            "5",
+            migration.to_str().unwrap(),
+        ],
+        &[],
+    );
+    // `banDropColumn` only runs on migrations once `migrations` is configured.
+    assert!(
+        output.contains("lint/banDropColumn"),
+        "the file is not recognised as a migration:\n{output}"
+    );
+}
+
 /// Runs `check` with the database settings given in `args` only, without the connection
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]
 fn run_check_without_db_env(args: &[&str], envs: &[(&str, &str)]) -> String {
+    run_check_without_db_env_with(args, envs, None)
+}
+
+/// [`run_check_without_db_env`] with `stdin`.
+#[cfg(target_os = "linux")]
+fn run_check_without_db_env_with(
+    args: &[&str],
+    envs: &[(&str, &str)],
+    stdin: Option<&str>,
+) -> String {
     let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    if let Some(input) = stdin {
+        cmd.write_stdin(input);
+    }
     for var in [
         "DATABASE_URL",
         "PGHOST",
@@ -822,7 +1202,7 @@ fn normalize_durations(input: &str) -> String {
 }
 
 fn normalize_output(status: ExitStatus, stdout: &str, stderr: &str) -> String {
-    let normalized_stdout = normalize_durations(stdout);
+    let normalized_stdout = normalize_test_environment(&normalize_durations(stdout));
     let normalized_stderr = normalize_diagnostics(stderr);
     let status_label = if status.success() {
         "success"
@@ -836,8 +1216,28 @@ fn normalize_output(status: ExitStatus, stdout: &str, stderr: &str) -> String {
     )
 }
 
+/// Replaces the address of the database in connection errors, which names the database that
+/// `sqlx::test` creates, and the working directory.
+fn normalize_test_environment(input: &str) -> String {
+    const PREFIX: &str = "Could not connect to ";
+    let mut output = String::new();
+    let mut rest = input;
+    while let Some(start) = rest.find(PREFIX) {
+        output.push_str(&rest[..start + PREFIX.len()]);
+        output.push_str("<database>");
+        rest = &rest[start + PREFIX.len()..];
+        let end = rest.find([',', ' ']).unwrap_or(rest.len());
+        rest = &rest[end..];
+    }
+    output.push_str(rest);
+    match std::env::current_dir() {
+        Ok(cwd) => output.replace(&cwd.display().to_string(), "<cwd>"),
+        Err(_) => output,
+    }
+}
+
 fn normalize_diagnostics(input: &str) -> String {
-    let normalized = normalize_durations(input);
+    let normalized = normalize_test_environment(&normalize_durations(input));
     let mut lines = normalized.lines().peekable();
     let mut diagnostic_sections: Vec<String> = Vec::new();
     let mut other_lines: Vec<String> = Vec::new();
