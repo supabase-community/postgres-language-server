@@ -31,3 +31,6 @@ ureq = "2.9"
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

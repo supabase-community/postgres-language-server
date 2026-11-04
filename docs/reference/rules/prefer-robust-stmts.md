@@ -21,7 +21,7 @@ CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferRobustStmts  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Concurrent index creation should use IF NOT EXISTS.
   
@@ -39,7 +39,7 @@ DROP INDEX CONCURRENTLY users_email_idx;
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferRobustStmts  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Concurrent drop should use IF EXISTS.
   
@@ -57,7 +57,7 @@ CREATE TABLE users (id int);
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferRobustStmts  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! CREATE TABLE should use IF NOT EXISTS.
   
@@ -75,7 +75,7 @@ DROP TABLE users;
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferRobustStmts  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! DROP TABLE should use IF EXISTS.
   

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tstypes.sql
-snapshot_kind: text
 ---
 set extra_float_digits = 0;
 
@@ -531,8 +530,10 @@ select setweight(cast('a asd w:5,6,12B,13A zxc' as tsvector), 'c', array['a', 'z
 
 select
   ts_filter(
-    cast('base:7A empir:17 evil:15 first:11 galact:16 hidden:6A rebel:1A spaceship:2A strike:3A victori:12 won:9'
-    as tsvector),
+    cast(
+      'base:7A empir:17 evil:15 first:11 galact:16 hidden:6A rebel:1A spaceship:2A strike:3A victori:12 won:9'
+      as tsvector
+    ),
     '{a}'
   );
 

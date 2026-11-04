@@ -144,7 +144,7 @@ select
     'explain (memory, analyze, format json) select * from int8_tbl i8'
   );
 
-prepare int8_query as select * from int8_tbl as i8;;
+prepare int8_query as select * from int8_tbl as i8;
 
 select explain_filter('explain (memory) execute int8_query');
 
@@ -185,7 +185,11 @@ set max_parallel_workers_per_gather = 4;
 select
   jsonb_pretty(
     explain_filter_to_json('explain (analyze, verbose, buffers, format json)
-                         select * from tenk1 order by tenthous') #- '{0,Plan,Plans,0,Plans,0,Workers}' #- '{0,Plan,Plans,0,Workers}' #- '{0,Plan,Plans,0,Sort Method}' #- '{0,Plan,Plans,0,Sort Space Type}'
+                         select * from tenk1 order by tenthous') #-
+    '{0,Plan,Plans,0,Plans,0,Workers}' #-
+    '{0,Plan,Plans,0,Workers}' #-
+    '{0,Plan,Plans,0,Sort Method}' #-
+    '{0,Plan,Plans,0,Sort Space Type}'
   );
 
 rollback;

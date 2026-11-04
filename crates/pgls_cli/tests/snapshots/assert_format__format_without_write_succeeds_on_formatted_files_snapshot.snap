@@ -4,5 +4,5 @@ expression: "run_format(&[FORMATTED_PATH])"
 ---
 status: success
 stdout:
-Processed 1 file in <duration>. No fixes applied.
+Processed 1 file in <duration>.
 stderr:

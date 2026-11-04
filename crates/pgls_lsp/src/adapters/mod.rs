@@ -1,12 +1,12 @@
 //! The crate contains a set of converters to translate between `lsp-types` and `text_size` (and vice versa) types.
 
+use pgls_line_index::WideEncoding;
 use pgls_text_size::TextSize;
 use tower_lsp_server::ls_types::{ClientCapabilities, Position, PositionEncodingKind, Uri};
 
 use crate::session::Session;
 
 pub mod from_lsp;
-pub mod line_index;
 pub mod to_lsp;
 
 pub fn negotiated_encoding(capabilities: &ClientCapabilities) -> PositionEncoding {
@@ -32,20 +32,12 @@ pub fn get_cursor_position(
     url: &Uri,
     position: Position,
 ) -> anyhow::Result<TextSize> {
-    let client_capabilities = session
-        .client_capabilities()
-        .expect("Client capabilities not established for current session.");
-
     let line_index = session
         .document(url)
         .map(|doc| doc.line_index)
         .map_err(|_| anyhow::anyhow!("Document not found."))?;
 
-    let cursor_pos = from_lsp::offset(
-        &line_index,
-        position,
-        negotiated_encoding(client_capabilities),
-    )?;
+    let cursor_pos = from_lsp::offset(&line_index, position, session.position_encoding())?;
 
     Ok(cursor_pos)
 }
@@ -56,68 +48,14 @@ pub enum PositionEncoding {
     Wide(WideEncoding),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum WideEncoding {
-    Utf16,
-    Utf32,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct LineCol {
-    /// Zero-based
-    pub line: u32,
-    /// Zero-based utf8 offset
-    pub col: u32,
-}
-
-/// Deliberately not a generic type and different from `LineCol`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct WideLineCol {
-    /// Zero-based
-    pub line: u32,
-    /// Zero-based
-    pub col: u32,
-}
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct WideChar {
-    /// Start offset of a character inside a line, zero-based
-    pub start: TextSize,
-    /// End offset of a character inside a line, zero-based
-    pub end: TextSize,
-}
-
-impl WideChar {
-    /// Returns the length in 8-bit UTF-8 code units.
-    fn len(&self) -> TextSize {
-        self.end - self.start
-    }
-
-    /// Returns the length in UTF-16 or UTF-32 code units.
-    fn wide_len(&self, enc: WideEncoding) -> usize {
-        match enc {
-            WideEncoding::Utf16 => {
-                if self.len() == TextSize::from(4) {
-                    2
-                } else {
-                    1
-                }
-            }
-
-            WideEncoding::Utf32 => 1,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::adapters::WideEncoding::{Utf16, Utf32};
-    use crate::adapters::from_lsp::offset;
-    use crate::adapters::line_index::LineIndex;
+    use crate::adapters::PositionEncoding;
+    use crate::adapters::from_lsp::{offset, text_range};
     use crate::adapters::to_lsp::position;
-    use crate::adapters::{LineCol, PositionEncoding, WideEncoding};
+    use pgls_line_index::{LineIndex, WideEncoding};
     use pgls_text_size::TextSize;
-    use tower_lsp_server::ls_types::Position;
+    use tower_lsp_server::ls_types::{Position, Range};
 
     macro_rules! check_conversion {
         ($line_index:ident : $position:expr_2021 => $text_size:expr_2021 ) => {
@@ -151,11 +89,48 @@ mod tests {
     }
 
     #[test]
-    fn out_of_bounds_line() {
-        let line_index = LineIndex::new("abcde\nfghij\n");
+    fn out_of_range_positions_are_clamped() {
+        // No line break at the end: lines 0 and 1.
+        let line_index = LineIndex::new("abcde\nfg😀");
+        let at = |line, character| {
+            offset(
+                &line_index,
+                Position { line, character },
+                PositionEncoding::Wide(WideEncoding::Utf16),
+            )
+            .unwrap()
+        };
+        assert_eq!(at(0, 3), TextSize::from(3));
+        // Past the end of a line: the end of that line.
+        assert_eq!(at(0, 10), TextSize::from(5));
+        assert_eq!(at(1, 100), TextSize::from(12));
+        assert_eq!(at(1, u32::MAX), TextSize::from(12));
+        // Past the last line: the end of the text.
+        assert_eq!(at(2, 0), TextSize::from(12));
+        assert_eq!(at(u32::MAX, u32::MAX), TextSize::from(12));
+    }
 
-        let offset = line_index.offset(LineCol { line: 5, col: 0 });
-        assert!(offset.is_none());
+    #[test]
+    fn positions_inside_a_character_are_its_start() {
+        // `é` is 2 bytes and 1 UTF-16 unit, `😀` is 4 bytes and 2 UTF-16 units.
+        let line_index = LineIndex::new("aé😀b");
+        let at = |character, encoding| {
+            offset(&line_index, Position { line: 0, character }, encoding).unwrap()
+        };
+        let utf16 = PositionEncoding::Wide(WideEncoding::Utf16);
+        // Between the two halves of the surrogate pair of `😀`.
+        assert_eq!(at(3, utf16), TextSize::from(3));
+        assert_eq!(at(4, utf16), TextSize::from(7));
+        // Inside `é` and `😀`.
+        assert_eq!(at(2, PositionEncoding::Utf8), TextSize::from(1));
+        assert_eq!(at(5, PositionEncoding::Utf8), TextSize::from(3));
+    }
+
+    #[test]
+    fn ranges_that_end_before_they_start_are_an_error() {
+        let line_index = LineIndex::new("select 1;");
+        let range = Range::new(Position::new(0, 5), Position::new(0, 2));
+        assert!(text_range(&line_index, range, PositionEncoding::Utf8).is_err());
     }
 
     #[test]
@@ -191,51 +166,5 @@ join public.client_identities c on u.id = c.user_id;
         check_conversion!(line_index: Position { line: 0, character: 15 } => TextSize::from(21));
         check_conversion!(line_index: Position { line: 0, character: 26 } => TextSize::from(32));
         check_conversion!(line_index: Position { line: 0, character: 27 } => TextSize::from(33));
-    }
-
-    #[ignore]
-    #[test]
-    fn test_every_chars() {
-        let text: String = {
-            let mut chars: Vec<char> = ((0 as char)..char::MAX).collect();
-            chars.extend("\n".repeat(chars.len() / 16).chars());
-            chars.into_iter().collect()
-        };
-
-        let line_index = LineIndex::new(&text);
-
-        let mut lin_col = LineCol { line: 0, col: 0 };
-        let mut col_utf16 = 0;
-        let mut col_utf32 = 0;
-        for (offset, char) in text.char_indices() {
-            let got_offset = line_index.offset(lin_col).unwrap();
-            assert_eq!(usize::from(got_offset), offset);
-
-            let got_lin_col = line_index.line_col(got_offset).unwrap();
-            assert_eq!(got_lin_col, lin_col);
-
-            for enc in [Utf16, Utf32] {
-                let wide_lin_col = line_index.to_wide(enc, lin_col).unwrap();
-                let got_lin_col = line_index.to_utf8(enc, wide_lin_col);
-                assert_eq!(got_lin_col, lin_col);
-
-                let want_col = match enc {
-                    Utf16 => col_utf16,
-                    Utf32 => col_utf32,
-                };
-                assert_eq!(wide_lin_col.col, want_col)
-            }
-
-            if char == '\n' {
-                lin_col.line += 1;
-                lin_col.col = 0;
-                col_utf16 = 0;
-                col_utf32 = 0;
-            } else {
-                lin_col.col += char.len_utf8() as u32;
-                col_utf16 += char.len_utf16() as u32;
-                col_utf32 += 1;
-            }
-        }
     }
 }

@@ -5,19 +5,24 @@ input_file: crates/pgls_pretty_print/tests/data/multi/json_returning.sql
 select json_value(cast('123' as jsonb), '$' returning int);
 
 select
-  json_value(cast('{"a": {"b": "a rather long string value"}}'
-  as jsonb), '$.a.b'
-  returning text
-  default 'fallback' on empty
-  error on error);
+  json_value(
+    cast('{"a": {"b": "a rather long string value"}}' as jsonb),
+    '$.a.b'
+    returning text
+    default 'fallback' on empty
+    error on error
+  );
 
 select json_query(cast('[1, 2]' as jsonb), '$' returning text);
 
 select
-  json_query(cast('{"a": [1, 2, 3, 4, 5, 6, 7, 8]}' as jsonb), '$.a'
-  returning jsonb
-  with conditional wrapper
-  keep quotes);
+  json_query(
+    cast('{"a": [1, 2, 3, 4, 5, 6, 7, 8]}' as jsonb),
+    '$.a'
+    returning jsonb
+    with conditional wrapper
+    keep quotes
+  );
 
 select
   json_arrayagg(i absent on null returning jsonb)

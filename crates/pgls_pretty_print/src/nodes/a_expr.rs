@@ -72,7 +72,13 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                 }
                 e.space();
                 emit_operator(e, &n.name);
-                e.line(LineType::SoftOrSpace);
+                // A subquery breaks inside its parentheses, so `= (` stays on the operator line,
+                // like `in (` and `exists (`.
+                if starts_with_subquery_parenthesis(rexpr) {
+                    e.space();
+                } else {
+                    e.line(LineType::SoftOrSpace);
+                }
                 emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
                 if grouped_suffix {
                     e.group_end();
@@ -217,7 +223,8 @@ fn emit_aexpr_distinct(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::DISTINCT_KW);
     e.space();
     e.token(TokenKind::FROM_KW);
-    e.space();
+    // Like a comparison operator, the right-hand side wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
         emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
@@ -244,7 +251,8 @@ fn emit_aexpr_not_distinct(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::DISTINCT_KW);
     e.space();
     e.token(TokenKind::FROM_KW);
-    e.space();
+    // Like a comparison operator, the right-hand side wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
         emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
@@ -335,7 +343,8 @@ fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     }
 
     e.token(TokenKind::LIKE_KW);
-    e.space();
+    // Like a comparison operator, the pattern wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
         super::emit_node(rexpr, e);
@@ -359,7 +368,8 @@ fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     }
 
     e.token(TokenKind::ILIKE_KW);
-    e.space();
+    // Like a comparison operator, the pattern wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
         super::emit_node(rexpr, e);
@@ -385,7 +395,8 @@ fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::SIMILAR_KW);
     e.space();
     e.token(TokenKind::TO_KW);
-    e.space();
+    // Like a comparison operator, the pattern wraps when the expression doesn't fit.
+    e.line(LineType::SoftOrSpace);
 
     // PostgreSQL stores SIMILAR TO as a call to similar_to_escape(pattern) or similar_to_escape(pattern, escape)
     // We need to emit the original pattern (and ESCAPE clause if present)
@@ -596,6 +607,18 @@ fn starts_with_operator_char(node: &Node) -> bool {
 
 fn operator_needs_space(op: &str) -> bool {
     op.chars().any(|c| c.is_alphabetic())
+}
+
+/// Whether `node` is printed as `(subquery)` or `array(subquery)`.
+fn starts_with_subquery_parenthesis(node: &Node) -> bool {
+    use pgls_query::protobuf::SubLinkType;
+
+    matches!(
+        node.node.as_ref(),
+        Some(NodeEnum::SubLink(sub_link))
+            if sub_link.sub_link_type == SubLinkType::ExprSublink as i32
+                || sub_link.sub_link_type == SubLinkType::ArraySublink as i32
+    )
 }
 
 fn operator_prefers_line_break(name: &[Node]) -> bool {

@@ -6,7 +6,7 @@ status: failure
 stdout:
 tests/fixtures/test.sql: 1 error
 
-Checked 1 file in <duration>. No fixes applied.
+Checked 1 file in <duration>.
 Found 1 error.
 stderr:
 check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

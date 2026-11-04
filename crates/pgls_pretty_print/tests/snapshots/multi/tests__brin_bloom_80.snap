@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/brin_bloom.sql
-snapshot_kind: text
 ---
 create table brintest_bloom (
   byteacol bytea,
@@ -42,8 +41,10 @@ select
   cast(unique1 as oid),
   (four + 1.0) / (hundred + 1),
   cast(odd as float8) / (tenthous + 1),
-  cast(format('%s:00:%s:00:%s:00', to_hex(odd), to_hex(even), to_hex(hundred))
-  as macaddr),
+  cast(
+    format('%s:00:%s:00:%s:00', to_hex(odd), to_hex(even), to_hex(hundred))
+    as macaddr
+  ),
   cast('10.2.3.4/24' as inet) + tenthous,
   cast('10.2.3/24' as cidr) + tenthous,
   cast(substr(stringu1, 1, 1) as bpchar),
@@ -56,18 +57,20 @@ select
   justify_days(justify_hours(tenthous * cast('12 minutes' as interval))),
   cast('01:30:20+02' as timetz) + hundred * cast('15 seconds' as interval),
   cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
-  cast(format(
-    '%s%s-%s-%s-%s-%s%s%s',
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000')
-  )
-  as uuid),
+  cast(
+    format(
+      '%s%s-%s-%s-%s-%s%s%s',
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000')
+    )
+    as uuid
+  ),
   cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn)
 from
   tenk1
@@ -284,8 +287,10 @@ select
   cast(unique1 as oid),
   (four + 1.0) / (hundred + 1),
   cast(odd as float8) / (tenthous + 1),
-  cast(format('%s:00:%s:00:%s:00', to_hex(odd), to_hex(even), to_hex(hundred))
-  as macaddr),
+  cast(
+    format('%s:00:%s:00:%s:00', to_hex(odd), to_hex(even), to_hex(hundred))
+    as macaddr
+  ),
   cast('10.2.3.4' as inet) + tenthous,
   cast('10.2.3/24' as cidr) + tenthous,
   cast(substr(stringu1, 1, 1) as bpchar),
@@ -298,18 +303,20 @@ select
   justify_days(justify_hours(tenthous * cast('12 minutes' as interval))),
   cast('01:30:20' as timetz) + hundred * cast('15 seconds' as interval),
   cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
-  cast(format(
-    '%s%s-%s-%s-%s-%s%s%s',
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000')
-  )
-  as uuid),
+  cast(
+    format(
+      '%s%s-%s-%s-%s-%s%s%s',
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000')
+    )
+    as uuid
+  ),
   cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn)
 from
   tenk1

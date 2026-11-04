@@ -46,7 +46,7 @@ as on insert to t1
 do
   nothing;
 
-prepare "primary" as select 1;;
+prepare "primary" as select 1;
 
 execute "primary";
 
@@ -76,7 +76,7 @@ create user mapping for u server "primary";
 
 drop user mapping for u server "primary";
 
-create foreign table ft1 ( x int ) server "primary";
+create foreign table ft1 (x int) server "primary";
 
 import foreign schema "primary" from server s into "select";
 

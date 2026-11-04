@@ -23,12 +23,12 @@ alter table users drop constraint users_email_key;
 ```
 
 ```sh
-code-block.sql:1:1 lint/banDropConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:19 lint/banDropConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! Dropping a constraint may break existing clients.
+  ! Dropping constraint users_email_key may break existing clients.
   
   > 1 │ alter table users drop constraint users_email_key;
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      │                   ^^^^^^^^^^^^^^^
     2 │ 
   
   i Clients may depend on the guarantee of the constraint, e.g. as the arbiter of INSERT ... ON CONFLICT.
@@ -43,12 +43,12 @@ alter domain positive_int drop constraint positive_int_check;
 ```
 
 ```sh
-code-block.sql:1:1 lint/banDropConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:27 lint/banDropConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! Dropping a constraint may break existing clients.
+  ! Dropping constraint positive_int_check may break existing clients.
   
   > 1 │ alter domain positive_int drop constraint positive_int_check;
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      │                           ^^^^^^^^^^^^^^^
     2 │ 
   
   i Clients may depend on the guarantee of the constraint, e.g. as the arbiter of INSERT ... ON CONFLICT.

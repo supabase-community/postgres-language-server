@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cmp::max};
+use std::borrow::Cow;
 
 use pgls_text_size::TextSize;
 
@@ -30,6 +30,15 @@ pub(crate) fn is_sanitized_token(node_under_cursor_txt: &str) -> bool {
         || is_sanitized_token_with_quote(node_under_cursor_txt)
 }
 
+/// Whether the node under the cursor is a quoted identifier that the user hasn't closed: the
+/// sanitized token with a quote closes it, as in `"MyREPLACED_TOKEN_WITH_QUOTE"`, or as just
+/// `"REPLACED_TOKEN_WITH_QUOTE"` right after the opening quote.
+pub(crate) fn is_unterminated_quote(node_under_cursor_txt: &str) -> bool {
+    node_under_cursor_txt.len() > 1
+        && node_under_cursor_txt.starts_with('"')
+        && node_under_cursor_txt.ends_with(SANITIZED_TOKEN_WITH_QUOTE)
+}
+
 pub(crate) fn is_sanitized_token_with_quote(node_under_cursor_txt: &str) -> bool {
     if node_under_cursor_txt.len() <= 1 {
         return false;
@@ -48,8 +57,6 @@ where
     'larger: 'smaller,
 {
     fn from(mut params: CompletionParams<'larger>) -> Self {
-        params.text = params.text.to_ascii_lowercase();
-
         while !params.text.is_char_boundary(params.position.into())
             && params.position < TextSize::new(params.text.len().try_into().unwrap())
         {
@@ -62,6 +69,7 @@ where
             || cursor_on_a_dot(&params.text, params.position)
             || cursor_between_parentheses(&params.text, params.position)
             || cursor_after_opened_quote(&params.text, params.position)
+            || cursor_in_unterminated_quote(&params.text, params.position)
         {
             SanitizedCompletionParams::with_adjusted_sql(params)
         } else {
@@ -75,48 +83,44 @@ where
     'larger: 'smaller,
 {
     fn with_adjusted_sql(params: CompletionParams<'larger>) -> Self {
+        // the position is a byte offset: the text is walked by its bytes, not by its chars,
+        // or a multi-byte char before the cursor puts the token after it
         let cursor_pos: usize = params.position.into();
         let mut sql = String::new();
 
-        let mut sql_iter = params.text.chars();
-
-        let max = max(cursor_pos + 1, params.text.len());
-
         let has_uneven_quotes = params.text.chars().filter(|c| *c == '"').count() % 2 != 0;
         let mut opened_quote = false;
+        let mut inserted = false;
 
-        for idx in 0..max {
-            match sql_iter.next() {
-                Some(c) => {
-                    if c == '"' {
-                        opened_quote = !opened_quote;
-                    }
+        for (idx, c) in params.text.char_indices() {
+            if c == '"' {
+                opened_quote = !opened_quote;
+            }
 
-                    if idx == cursor_pos {
-                        if opened_quote && has_uneven_quotes {
-                            sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
-                            opened_quote = false;
-                        } else {
-                            sql.push_str(SANITIZED_TOKEN);
-                        }
-                    }
-
-                    sql.push(c);
+            if idx == cursor_pos {
+                if opened_quote && has_uneven_quotes {
+                    sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
+                    opened_quote = false;
+                } else {
+                    sql.push_str(SANITIZED_TOKEN);
                 }
-                None => {
-                    // the cursor is outside the statement,
-                    // we want to push spaces until we arrive at the cursor position.
-                    // we'll then add the SANITIZED_TOKEN
-                    if idx == cursor_pos {
-                        if opened_quote && has_uneven_quotes {
-                            sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
-                        } else {
-                            sql.push_str(SANITIZED_TOKEN);
-                        }
-                    } else {
-                        sql.push(' ');
-                    }
-                }
+                inserted = true;
+            }
+
+            sql.push(c);
+        }
+
+        if !inserted {
+            // the cursor is outside the statement,
+            // we want to push spaces until we arrive at the cursor position.
+            // we'll then add the SANITIZED_TOKEN
+            for _ in params.text.len()..cursor_pos {
+                sql.push(' ');
+            }
+            if opened_quote && has_uneven_quotes {
+                sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
+            } else {
+                sql.push_str(SANITIZED_TOKEN);
             }
         }
 
@@ -144,6 +148,16 @@ where
     }
 }
 
+/// The char that ends right at the byte offset `position`, if any.
+fn char_before(sql: &str, position: usize) -> Option<char> {
+    sql.get(..position).and_then(|s| s.chars().next_back())
+}
+
+/// The char that starts at the byte offset `position`, if any.
+fn char_at(sql: &str, position: usize) -> Option<char> {
+    sql.get(position..).and_then(|s| s.chars().next())
+}
+
 /// Checks if the cursor is positioned inbetween two SQL nodes.
 ///
 /// ```sql
@@ -153,13 +167,10 @@ where
 /// ```
 fn cursor_inbetween_nodes(sql: &str, position: TextSize) -> bool {
     let position: usize = position.into();
-    let mut chars = sql.chars();
 
-    let previous_whitespace = chars
-        .nth(position.saturating_sub(1))
-        .is_some_and(|c| c.is_ascii_whitespace());
+    let previous_whitespace = char_before(sql, position).is_some_and(|c| c.is_ascii_whitespace());
 
-    let current_whitespace = chars.next().is_some_and(|c| c.is_ascii_whitespace());
+    let current_whitespace = char_at(sql, position).is_some_and(|c| c.is_ascii_whitespace());
 
     previous_whitespace && current_whitespace
 }
@@ -179,9 +190,7 @@ fn cursor_prepared_to_write_token_after_last_node(sql: &str, position: TextSize)
 
 fn cursor_on_a_dot(sql: &str, position: TextSize) -> bool {
     let position: usize = position.into();
-    sql.chars()
-        .nth(position.saturating_sub(1))
-        .is_some_and(|c| c == '.')
+    char_before(sql, position).is_some_and(|c| c == '.')
 }
 
 fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool {
@@ -232,7 +241,7 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
     let mut matching_open_idx = None;
     let mut matching_close_idx = None;
 
-    for (idx, char) in sql.chars().enumerate() {
+    for (idx, char) in sql.char_indices() {
         if char == '(' {
             tracking_open_idx = Some(idx);
             level += 1;
@@ -255,11 +264,8 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
 
     // early check: '(|)'
     // however, we want to check this after the level nesting.
-    let mut chars = sql.chars();
-    if chars
-        .nth(position.saturating_sub(1))
-        .is_some_and(|c| c == '(')
-        && chars.next().is_some_and(|c| c == ')')
+    if char_before(sql, position).is_some_and(|c| c == '(')
+        && char_at(sql, position).is_some_and(|c| c == ')')
     {
         return true;
     }
@@ -278,8 +284,9 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
         .unwrap_or_default();
 
     let after = sql
+        .get(position..)
+        .unwrap_or_default()
         .chars()
-        .skip(position)
         .find(|c| !c.is_whitespace())
         .unwrap_or_default();
 
@@ -296,6 +303,17 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
     let between_list_items = before == ',' && after == ',';
 
     head_of_list || end_of_list || between_list_items || after_and_keyword || after_eq_sign
+}
+
+/// Whether the cursor is inside a quoted identifier that isn't closed, like `select * from "My|`.
+/// The statement then gets the sanitized token with a closing quote at the cursor, as right after
+/// an opening quote.
+fn cursor_in_unterminated_quote(sql: &str, position: TextSize) -> bool {
+    let Some(before) = sql.get(..usize::from(position)) else {
+        return false;
+    };
+    let quotes = |text: &str| text.bytes().filter(|byte| *byte == b'"').count();
+    quotes(before) % 2 == 1 && quotes(sql) % 2 == 1
 }
 
 fn cursor_after_opened_quote(sql: &str, position: TextSize) -> bool {
@@ -353,8 +371,9 @@ mod tests {
     }
 
     #[test]
-    fn should_lowercase_everything_except_replaced_token() {
-        let input = "SELECT  FROM users WHERE ts = NOW();";
+    fn should_keep_the_case_of_the_sql() {
+        // Quoted identifiers like `"MyTable"` keep their case.
+        let input = r#"SELECT  FROM "MyTable" WHERE ts = NOW();"#;
         let position = TextSize::new(7);
 
         let params = get_test_params(input, position);
@@ -362,7 +381,7 @@ mod tests {
 
         assert_eq!(
             sanitized.text,
-            "select REPLACED_TOKEN from users where ts = now();"
+            r#"SELECT REPLACED_TOKEN FROM "MyTable" WHERE ts = NOW();"#
         );
     }
 
@@ -412,6 +431,25 @@ mod tests {
                 r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE""#
             );
         }
+    }
+
+    #[test]
+    fn should_sanitize_inside_an_unterminated_quote() {
+        // select * from "My|
+        let input = r#"select * from "My"#;
+        let sanitized = SanitizedCompletionParams::from(get_test_params(input, TextSize::new(17)));
+        assert_eq!(
+            sanitized.text,
+            r#"select * from "MyREPLACED_TOKEN_WITH_QUOTE""#
+        );
+
+        // select "I| from "MyTable"
+        let input = r#"select "I from "MyTable""#;
+        let sanitized = SanitizedCompletionParams::from(get_test_params(input, TextSize::new(9)));
+        assert_eq!(
+            sanitized.text,
+            r#"select "IREPLACED_TOKEN_WITH_QUOTE" from "MyTable""#
+        );
     }
 
     #[test]
@@ -663,7 +701,11 @@ mod tests {
 
             let sanitized = SanitizedCompletionParams::from(params);
 
-            assert_eq!(sanitized.text, r#"select * from "auth"."é;"#);
+            // The quote isn't closed, so the token closes it after the char.
+            assert_eq!(
+                sanitized.text,
+                r#"select * from "auth"."éREPLACED_TOKEN_WITH_QUOTE";"#
+            );
             assert_eq!(sanitized.position, TextSize::new(24)); // adjusts the cursor position to end of multibyte char
         }
 
@@ -679,9 +721,53 @@ mod tests {
 
             assert_eq!(
                 sanitized.text,
-                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é; "#
+                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é;"#
             );
             assert_eq!(sanitized.position, TextSize::new(22)); // leaves cursor position as is
+        }
+
+        {
+            // multi-byte chars before the cursor: the position is a byte offset
+            // select 'щщ', u.id from users u where u.|
+            let input = "select 'щщ', u.id from users u where u.";
+            let position = TextSize::new(input.len() as u32);
+
+            assert!(cursor_on_a_dot(input, position));
+
+            let params = get_test_params(input, position);
+
+            let sanitized = SanitizedCompletionParams::from(params);
+
+            assert_eq!(
+                sanitized.text,
+                "select 'щщ', u.id from users u where u.REPLACED_TOKEN"
+            );
+        }
+
+        {
+            // -- заказы
+            // select | from users;
+            let input = "-- заказы\nselect  from users;";
+            let position = TextSize::new("-- заказы\nselect ".len() as u32);
+
+            assert!(cursor_inbetween_nodes(input, position));
+
+            let params = get_test_params(input, position);
+
+            let sanitized = SanitizedCompletionParams::from(params);
+
+            assert_eq!(
+                sanitized.text,
+                "-- заказы\nselect REPLACED_TOKEN from users;"
+            );
+        }
+
+        {
+            // select 'щ' in (|)
+            let input = "select 'щ' in ()";
+            let position = TextSize::new("select 'щ' in (".len() as u32);
+
+            assert!(cursor_between_parentheses(input, position));
         }
 
         {

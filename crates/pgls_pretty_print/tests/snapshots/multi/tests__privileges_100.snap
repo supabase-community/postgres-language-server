@@ -50,11 +50,11 @@ create user regress_priv_user10;
 
 create role regress_priv_role;
 
-grant regress_priv_user1 to regress_priv_user2 with admin true;
+grant regress_priv_user1 to regress_priv_user2 with admin option;
 
-grant regress_priv_user1 to regress_priv_user3 with admin true granted by regress_priv_user2;
+grant regress_priv_user1 to regress_priv_user3 with admin option granted by regress_priv_user2;
 
-grant regress_priv_user1 to regress_priv_user2 with admin true granted by regress_priv_user3;
+grant regress_priv_user1 to regress_priv_user2 with admin option granted by regress_priv_user3;
 
 revoke admin option for regress_priv_user1 from regress_priv_user2 restrict;
 
@@ -92,7 +92,7 @@ from
 where
   roleid = cast('regress_priv_user1' as regrole);
 
-grant regress_priv_user1 to regress_priv_user2 with admin true;
+grant regress_priv_user1 to regress_priv_user2 with admin option;
 
 grant regress_priv_user2 to regress_priv_user3;
 
@@ -113,7 +113,7 @@ revoke regress_priv_user2 from regress_priv_user3 restrict;
 
 revoke regress_priv_user1 from regress_priv_user2 cascade;
 
-grant regress_priv_user1 to regress_priv_user2 with admin true;
+grant regress_priv_user1 to regress_priv_user2 with admin option;
 
 grant regress_priv_user1 to regress_priv_user3 granted by regress_priv_user2;
 
@@ -127,7 +127,7 @@ drop owned by regress_priv_user2;
 
 drop role regress_priv_user2;
 
-grant regress_priv_user1 to regress_priv_user3 with admin true;
+grant regress_priv_user1 to regress_priv_user3 with admin option;
 
 grant regress_priv_user1 to regress_priv_user4 granted by regress_priv_user3;
 
@@ -137,7 +137,7 @@ drop role regress_priv_user4;
 
 drop role regress_priv_user3;
 
-grant regress_priv_user1 to regress_priv_user5 with admin true;
+grant regress_priv_user1 to regress_priv_user5 with admin option;
 
 grant regress_priv_user1 to regress_priv_user6 granted by regress_priv_user5;
 
@@ -159,13 +159,13 @@ grant pg_read_all_data to regress_priv_user6;
 
 grant pg_write_all_data to regress_priv_user7;
 
-grant pg_read_all_settings to regress_priv_user8 with admin true;
+grant pg_read_all_settings to regress_priv_user8 with admin option;
 
 grant regress_priv_user9 to regress_priv_user8;
 
 set session authorization regress_priv_user8;
 
-grant pg_read_all_settings to regress_priv_user9 with admin true;
+grant pg_read_all_settings to regress_priv_user9 with admin option;
 
 set session authorization regress_priv_user9;
 
@@ -299,7 +299,7 @@ alter group regress_priv_group2 drop user regress_priv_user2;
 
 revoke admin option for regress_priv_group2 from regress_priv_user1 restrict;
 
-grant regress_priv_group2 to regress_priv_user4 with admin true;
+grant regress_priv_group2 to regress_priv_user4 with admin option;
 
 create function leak(int, int)
 returns boolean
@@ -310,9 +310,9 @@ as $$int4lt$$;
 
 alter function leak(int, int) owner to regress_priv_user1;
 
-grant regress_priv_role to regress_priv_user1 with admin true granted by regress_priv_role;
+grant regress_priv_role to regress_priv_user1 with admin option granted by regress_priv_role;
 
-grant regress_priv_role to regress_priv_user1 with admin true granted by current_role;
+grant regress_priv_role to regress_priv_user1 with admin option granted by current_role;
 
 revoke admin option for regress_priv_role from regress_priv_user1 granted by foo restrict;
 
@@ -2853,7 +2853,7 @@ create role regress_group_indirect_manager;
 
 create role regress_group_member;
 
-grant regress_group to regress_group_direct_manager with inherit false, admin true;
+grant regress_group to regress_group_direct_manager with inherit false, admin option;
 
 grant regress_group_direct_manager to regress_group_indirect_manager;
 

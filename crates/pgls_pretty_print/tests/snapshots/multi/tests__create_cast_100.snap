@@ -80,8 +80,7 @@ from
   pg_depend
 where
   classid = cast('pg_cast' as regclass) and
-  objid =
-  (
+  objid = (
     select
       oid
     from

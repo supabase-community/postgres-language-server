@@ -1,12 +1,8 @@
 use crate::adapters::from_lsp::text_range;
-use crate::adapters::line_index::LineIndex;
 use crate::adapters::{PositionEncoding, to_lsp};
 use anyhow::{Context, Result, ensure};
-use pgls_console::MarkupBuf;
-use pgls_console::fmt::Termcolor;
-use pgls_console::fmt::{self, Formatter};
-use pgls_diagnostics::termcolor::NoColor;
 use pgls_diagnostics::{Diagnostic, DiagnosticTags, Location, PrintDescription, Severity, Visit};
+use pgls_line_index::LineIndex;
 use pgls_text_size::{TextRange, TextSize};
 use std::any::Any;
 use std::borrow::Cow;
@@ -74,7 +70,7 @@ pub(crate) fn diagnostic_to_lsp<D: Diagnostic>(
         related_information: &mut related_information,
     };
 
-    diagnostic.advices(&mut visitor).unwrap();
+    diagnostic.advices(&mut visitor)?;
 
     let tags = diagnostic.tags();
     let tags = {
@@ -139,18 +135,6 @@ impl Visit for RelatedInformationVisitor<'_> {
 
         Ok(())
     }
-}
-
-/// Convert a piece of markup into a String
-#[allow(unused)]
-fn print_markup(markup: &MarkupBuf) -> String {
-    let mut message = Termcolor(NoColor::new(Vec::new()));
-    fmt::Display::fmt(markup, &mut Formatter::new(&mut message))
-        // SAFETY: Writing to a memory buffer should never fail
-        .unwrap();
-
-    // SAFETY: Printing uncolored markup never generates non UTF-8 byte sequences
-    String::from_utf8(message.0.into_inner()).unwrap()
 }
 
 /// Helper to create a [tower_lsp_server::jsonrpc::Error] from a message
@@ -228,6 +212,11 @@ pub(crate) fn apply_document_changes(
             }
             index_valid = range.start.line;
             if let Ok(range) = text_range(&line_index, range, position_encoding) {
+                debug_assert!(
+                    text.get(Range::<usize>::from(range)).is_some(),
+                    "{range:?} is not on char boundaries of a text of length {}",
+                    text.len()
+                );
                 text.replace_range(Range::<usize>::from(range), &change.text);
             }
         }
@@ -237,206 +226,42 @@ pub(crate) fn apply_document_changes(
 
 #[cfg(test)]
 mod tests {
-    use crate::adapters::line_index::LineIndex;
-    use crate::adapters::{PositionEncoding, to_lsp};
-    use anyhow::Result;
-    use pgls_text_edit::{CompressedOp, DiffOp, TextEdit};
-    use pgls_text_size::TextSize;
-    use tower_lsp_server::ls_types as lsp;
+    use pgls_line_index::WideEncoding;
+    use tower_lsp_server::ls_types::{Position, Range, TextDocumentContentChangeEvent};
 
-    fn text_edit(
-        line_index: &LineIndex,
-        diff: TextEdit,
-        position_encoding: PositionEncoding,
-        offset: Option<u32>,
-    ) -> Result<Vec<lsp::TextEdit>> {
-        let mut result: Vec<lsp::TextEdit> = Vec::new();
-        let mut offset = if let Some(offset) = offset {
-            TextSize::from(offset)
-        } else {
-            TextSize::from(0)
+    use super::apply_document_changes;
+    use crate::adapters::PositionEncoding;
+
+    #[test]
+    fn applies_changes_at_utf16_positions() {
+        let encoding = PositionEncoding::Wide(WideEncoding::Utf16);
+        let input = "(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");\n(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");\nisSpreadAssignment;\n".to_string();
+        let change = TextDocumentContentChangeEvent {
+            range: Some(Range::new(Position::new(0, 30), Position::new(1, 0))),
+            range_length: Some(1),
+            text: String::new(),
         };
 
-        for op in diff.iter() {
-            match op {
-                CompressedOp::DiffOp(DiffOp::Equal { range }) => {
-                    offset += range.len();
-                }
-                CompressedOp::DiffOp(DiffOp::Insert { range }) => {
-                    let start = to_lsp::position(line_index, offset, position_encoding)?;
+        let output = apply_document_changes(encoding, input, vec![change]);
+        let expected = "(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");\nisSpreadAssignment;\n";
 
-                    // Merge with a previous delete operation if possible
-                    let last_edit = result.last_mut().filter(|text_edit| {
-                        text_edit.range.end == start && text_edit.new_text.is_empty()
-                    });
-
-                    if let Some(last_edit) = last_edit {
-                        last_edit.new_text = diff.get_text(*range).to_string();
-                    } else {
-                        result.push(lsp::TextEdit {
-                            range: lsp::Range::new(start, start),
-                            new_text: diff.get_text(*range).to_string(),
-                        });
-                    }
-                }
-                CompressedOp::DiffOp(DiffOp::Delete { range }) => {
-                    let start = to_lsp::position(line_index, offset, position_encoding)?;
-                    offset += range.len();
-                    let end = to_lsp::position(line_index, offset, position_encoding)?;
-
-                    result.push(lsp::TextEdit {
-                        range: lsp::Range::new(start, end),
-                        new_text: String::new(),
-                    });
-                }
-
-                CompressedOp::EqualLines { line_count } => {
-                    let mut line_col = line_index
-                        .line_col(offset)
-                        .expect("diff length is overflowing the line count in the original file");
-
-                    line_col.line += line_count.get() + 1;
-                    line_col.col = 0;
-
-                    // SAFETY: This should only happen if `line_index` wasn't built
-                    // from the same string as the old revision of `diff`
-                    let new_offset = line_index
-                        .offset(line_col)
-                        .expect("diff length is overflowing the line count in the original file");
-
-                    offset = new_offset;
-                }
-            }
-        }
-
-        Ok(result)
+        assert_eq!(output, expected);
     }
 
     #[test]
-    fn test_diff_1() {
-        const OLD: &str = "line 1 old
-line 2
-line 3
-line 4
-line 5
-line 6
-line 7 old";
+    fn document_changes_with_invalid_ranges() {
+        let change = |start: u32, end: u32, text: &str| TextDocumentContentChangeEvent {
+            range: Some(Range::new(Position::new(0, start), Position::new(0, end))),
+            range_length: None,
+            text: text.to_string(),
+        };
+        let apply = |text: &str, change| {
+            apply_document_changes(PositionEncoding::Utf8, text.to_string(), vec![change])
+        };
 
-        const NEW: &str = "line 1 new
-line 2
-line 3
-line 4
-line 5
-line 6
-line 7 new";
-
-        let line_index = LineIndex::new(OLD);
-        let diff = TextEdit::from_unicode_words(OLD, NEW);
-
-        let text_edit = text_edit(&line_index, diff, PositionEncoding::Utf8, None).unwrap();
-
-        assert_eq!(
-            text_edit.as_slice(),
-            &[
-                lsp::TextEdit {
-                    range: lsp::Range {
-                        start: lsp::Position {
-                            line: 0,
-                            character: 7,
-                        },
-                        end: lsp::Position {
-                            line: 0,
-                            character: 10,
-                        },
-                    },
-                    new_text: String::from("new"),
-                },
-                lsp::TextEdit {
-                    range: lsp::Range {
-                        start: lsp::Position {
-                            line: 6,
-                            character: 7
-                        },
-                        end: lsp::Position {
-                            line: 6,
-                            character: 10
-                        }
-                    },
-                    new_text: String::from("new"),
-                },
-            ]
-        );
+        // A range that ends before it starts is skipped.
+        assert_eq!(apply("select 1;", change(5, 2, "x")), "select 1;");
+        // A column inside `é` (bytes 8..10) means the start of the character.
+        assert_eq!(apply("select 'é';", change(9, 10, "e")), "select 'e';");
     }
-
-    #[test]
-    fn test_diff_2() {
-        const OLD: &str = "console.log(\"Variable: \" + variable);";
-        const NEW: &str = "console.log(`Variable: ${variable}`);";
-
-        let line_index = LineIndex::new(OLD);
-        let diff = TextEdit::from_unicode_words(OLD, NEW);
-
-        let text_edit = text_edit(&line_index, diff, PositionEncoding::Utf8, None).unwrap();
-
-        assert_eq!(
-            text_edit.as_slice(),
-            &[
-                lsp::TextEdit {
-                    range: lsp::Range {
-                        start: lsp::Position {
-                            line: 0,
-                            character: 12,
-                        },
-                        end: lsp::Position {
-                            line: 0,
-                            character: 13,
-                        },
-                    },
-                    new_text: String::from("`"),
-                },
-                lsp::TextEdit {
-                    range: lsp::Range {
-                        start: lsp::Position {
-                            line: 0,
-                            character: 23
-                        },
-                        end: lsp::Position {
-                            line: 0,
-                            character: 27
-                        }
-                    },
-                    new_text: String::from("${"),
-                },
-                lsp::TextEdit {
-                    range: lsp::Range {
-                        start: lsp::Position {
-                            line: 0,
-                            character: 35
-                        },
-                        end: lsp::Position {
-                            line: 0,
-                            character: 35
-                        }
-                    },
-                    new_text: String::from("}`"),
-                },
-            ]
-        );
-    }
-
-    // #[test]
-    // fn test_range_formatting() {
-    //     let encoding = PositionEncoding::Wide(WideEncoding::Utf16);
-    //     let input = "(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");\n(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");\nisSpreadAssignment;\n".to_string();
-    //     let change = TextDocumentContentChangeEvent {
-    //         range: Some(Range::new(Position::new(0, 30), Position::new(1, 0))),
-    //         range_length: Some(1),
-    //         text: String::new(),
-    //     };
-    //
-    //     let output = apply_document_changes(encoding, input, vec![change]);
-    //     let expected = "(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");\nisSpreadAssignment;\n";
-    //
-    //     assert_eq!(output, expected);
-    // }
 }

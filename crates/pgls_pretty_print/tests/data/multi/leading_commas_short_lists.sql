@@ -1,0 +1,18 @@
+-- pgls-format: commaStyle=leading
+select a, b from t;
+
+select a, b, c from t order by a, b;
+
+insert into t (a, b) values (1, 2);
+
+insert into t (a, b) values (1, 2), (3, 4);
+
+select count(*), max(a) from t group by b, c;
+
+select * from a inner join b using (x, y);
+
+update t set a = 1, b = 2 where c = 3;
+
+create index on t (a, b);
+
+select first_column_with_a_long_name, second_column_with_a_long_name, third_column_with_a_long_name from t;

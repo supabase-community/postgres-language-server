@@ -502,7 +502,10 @@ impl CompletionFilter<'_> {
             return None;
         }
 
-        if !kw.name.starts_with(content.chars().next().unwrap()) {
+        if !kw
+            .name
+            .starts_with(content.chars().next().unwrap().to_ascii_lowercase())
+        {
             return None;
         }
 

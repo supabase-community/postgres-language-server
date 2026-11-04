@@ -8,6 +8,7 @@ use pgls_diagnostics::{
 };
 use pgls_text_size::{TextRange, TextSize};
 use std::fmt::Debug;
+use std::ops::Range;
 
 use crate::linter_context::LinterRuleContext;
 
@@ -45,7 +46,8 @@ pub struct LinterDiagnostic {
 pub struct RuleFix {
     /// What the fix does, e.g. "Add CONCURRENTLY".
     pub message: String,
-    /// Set by the analyser from the fix kind of the rule.
+    /// Set by the analyser from the fix kind of the rule, unless the rule marked the fix as
+    /// unsafe.
     pub applicability: Applicability,
     /// Non-overlapping edits, ordered by their position.
     pub edits: Vec<FixEdit>,
@@ -62,9 +64,15 @@ impl RuleFix {
     pub fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
-            applicability: Applicability::MaybeIncorrect,
+            applicability: Applicability::Always,
             edits: Vec::new(),
         }
+    }
+
+    /// Marks the fix as unsafe, even if the rule's fixes are safe in general.
+    pub fn unsafe_fix(mut self) -> Self {
+        self.applicability = Applicability::MaybeIncorrect;
+        self
     }
 
     /// Inserts `text` at `offset`.
@@ -88,6 +96,13 @@ impl RuleFix {
 
     /// Applies the fix to `text`. The edits must be relative to `text`.
     pub fn apply(&self, text: &str) -> String {
+        debug_assert!(
+            self.edits_fit(text),
+            "the edits of fix {:?} are not sorted, overlap, or are not on char boundaries of a text of length {}: {:?}",
+            self.message,
+            text.len(),
+            self.edits
+        );
         let mut result = String::with_capacity(text.len());
         let mut last = 0;
         for edit in &self.edits {
@@ -105,6 +120,17 @@ impl RuleFix {
         let first = self.edits.first()?;
         let last = self.edits.last()?;
         Some(first.range.cover(last.range))
+    }
+
+    /// Whether the edits are sorted, don't overlap, and lie on char boundaries of `text`.
+    fn edits_fit(&self, text: &str) -> bool {
+        let mut previous_end = TextSize::from(0);
+        self.edits.iter().all(|edit| {
+            let fits = edit.range.start() >= previous_end
+                && text.get(Range::<usize>::from(edit.range)).is_some();
+            previous_end = edit.range.end();
+            fits
+        })
     }
 
     pub(crate) fn shift(&mut self, offset: TextSize) {
@@ -219,6 +245,20 @@ impl LinterDiagnostic {
         self
     }
 
+    /// Moves the spans of the diagnostic, which are relative to the statement while the rule
+    /// runs, into the file. A diagnostic without a span points at the whole statement.
+    pub(crate) fn move_into_file(&mut self, statement: TextRange) {
+        self.span = Some(match self.span {
+            Some(span) => span + statement.start(),
+            None => statement,
+        });
+        for detail in &mut self.rule_advice.details {
+            if let Some(range) = &mut detail.range {
+                *range += statement.start();
+            }
+        }
+    }
+
     /// Sets the span of this diagnostic.
     pub fn span(mut self, span: TextRange) -> Self {
         self.span = Some(span);
@@ -236,7 +276,7 @@ impl LinterDiagnostic {
 
     /// Attaches a label to this [`LinterDiagnostic`].
     ///
-    /// The given span has to be in the file that was provided while creating this [`LinterDiagnostic`].
+    /// Like the span of the diagnostic, the given span is relative to the statement.
     pub fn label(mut self, span: Option<TextRange>, msg: impl Display) -> Self {
         self.rule_advice.details.push(Detail {
             log_category: LogCategory::Info,

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tsearch.sql
-snapshot_kind: text
 ---
 select
   oid,
@@ -908,7 +907,10 @@ Water, water, every where,
 S. T. Coleridge (1772-1834)
 ', to_tsquery('english', 'ocean & seahorse'), 'MaxFragments=1');
 
-select ts_headline('english', '
+select
+  ts_headline(
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -918,7 +920,10 @@ Water, water, every where
 Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
-', to_tsquery('english', 'Coleridge & stuck'), 'MaxFragments=2,FragmentDelimiter=***');
+',
+    to_tsquery('english', 'Coleridge & stuck'),
+    'MaxFragments=2,FragmentDelimiter=***'
+  );
 
 select
   ts_headline(

@@ -1,4 +1,4 @@
-use pgls_analyse::{AnalysisFilter, AppliesTo, GroupCategory, RuleGroup, RuleKey};
+use pgls_analyse::{AnalysisFilter, Applicability, AppliesTo, GroupCategory, RuleGroup, RuleKey};
 
 use crate::linter_context::{AnalysedFileContext, LinterRuleContext, StatementContext};
 use crate::linter_options::LinterOptions;
@@ -107,7 +107,9 @@ impl RegistryLinterRule {
                     "rule {} reports fixes but doesn't declare a fix_kind",
                     R::METADATA.name
                 );
-                if let Some(applicability) = R::METADATA.fix_kind.applicability() {
+                if let Some(applicability) = R::METADATA.fix_kind.applicability()
+                    && fix.applicability == Applicability::Always
+                {
                     fix.applicability = applicability;
                 }
             }

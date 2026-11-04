@@ -16,7 +16,8 @@ name                 = "{name}"
 repository.workspace = true
 version              = "0.0.0"
 
-
+[lints]
+workspace = true
 "#
     )
 }

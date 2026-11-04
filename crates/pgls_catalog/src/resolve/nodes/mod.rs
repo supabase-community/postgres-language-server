@@ -38,8 +38,10 @@ use delete_stmt::resolve_delete_stmt;
 use explain_stmt::resolve_explain_stmt;
 use func_call::resolve_func_call;
 use insert_stmt::resolve_insert_stmt;
+#[cfg(test)]
+pub(crate) use select_stmt::RESOLVED_QUERIES;
 use select_stmt::resolve_select_stmt;
-use type_name::resolve_type_name;
+use type_name::{record_type_names, resolve_type_name};
 use update_stmt::resolve_update_stmt;
 use view_stmt::resolve_view_stmt;
 
@@ -55,12 +57,20 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         NodeEnum::InsertStmt(n) => return resolve_insert_stmt(r, n),
         NodeEnum::UpdateStmt(n) => return resolve_update_stmt(r, n),
         NodeEnum::DeleteStmt(n) => return resolve_delete_stmt(r, n),
-        NodeEnum::CreateFunctionStmt(n) => resolve_create_function_stmt(r, n),
+        NodeEnum::CreateFunctionStmt(n) => {
+            record_type_names(r, node);
+            resolve_create_function_stmt(r, n);
+        }
         NodeEnum::CreateTableAsStmt(n) => resolve_create_table_as_stmt(r, n),
         NodeEnum::ViewStmt(n) => resolve_view_stmt(r, n),
         NodeEnum::ExplainStmt(n) => resolve_explain_stmt(r, n),
         NodeEnum::DeclareCursorStmt(n) => resolve_declare_cursor_stmt(r, n),
         NodeEnum::CopyStmt(n) => resolve_copy_stmt(r, n),
+        NodeEnum::CallStmt(n) => {
+            if let Some(call) = &n.funccall {
+                super::expr::resolve_procedure_call(r, call);
+            }
+        }
         NodeEnum::ColumnRef(n) => resolve_column_ref(r, n),
         NodeEnum::FuncCall(n) => resolve_func_call(r, n),
         NodeEnum::TypeCast(n) => {
@@ -71,7 +81,15 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         }
         NodeEnum::SubLink(n) => {
             resolve_opt(r, &n.testexpr);
-            resolve_opt(r, &n.subselect);
+            if let Some(query) = n.subselect.as_deref() {
+                // The subquery sees the enclosing queries, like in Postgres, where
+                // `transformSubLink` analyses it with the enclosing query as its parent.
+                let enclosing_output = r.output.take();
+                resolve_node(r, query);
+                let output = crate::resolve::resolve_unknown_outputs(r.catalog, r.output.take());
+                r.output = enclosing_output;
+                r.remember_subquery_output(query, output);
+            }
         }
         NodeEnum::ResTarget(n) => resolve_opt(r, &n.val),
         NodeEnum::AExpr(n) => {
@@ -115,16 +133,30 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
             resolve_opt(r, &n.end_offset);
         }
         NodeEnum::List(n) => resolve_list(r, &n.items),
+        // `$1` in the body of a SQL function.
+        NodeEnum::ParamRef(n) => {
+            let params = r.function.map_or(0, |function| function.params.len());
+            if let Some(index) = usize::try_from(n.number)
+                .ok()
+                .and_then(|number| number.checked_sub(1))
+                .filter(|&index| index < params)
+            {
+                r.record_parameter(index, n.location);
+            }
+        }
         // Field names in indirection (`(row).field`) and leaves.
         NodeEnum::String(_)
         | NodeEnum::AStar(_)
         | NodeEnum::AConst(_)
-        | NodeEnum::ParamRef(_)
         | NodeEnum::SqlvalueFunction(_)
         | NodeEnum::SetToDefault(_)
         | NodeEnum::CurrentOfExpr(_) => {}
-        // Anything else (XML and JSON expressions, ...) is not checked.
-        _ => r.depends_on_file(),
+        // Anything else (DDL, XML and JSON expressions, ...) is not checked, but its types are
+        // recorded.
+        _ => {
+            r.depends_on_file();
+            record_type_names(r, node);
+        }
     }
     None
 }

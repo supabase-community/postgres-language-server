@@ -17,10 +17,27 @@ drop table users;
 ```
 
 # Diagnostics
-lint/banUncommittedTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/banUncommittedTransaction  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Transaction is never committed or rolled back.
   
   i Postgres rolls back the open transaction when the session ends, so its changes are not applied.
   
   i Add a COMMIT or ROLLBACK statement to complete the transaction.
+  
+
+
+## Fix (unsafe): Add COMMIT at the end
+```
+-- A section that the migration tool runs in a transaction is committed by the tool.
+-- section: up
+begin;
+create table users (id bigint);
+
+-- section: down transaction:false
+-- expect_lint/banUncommittedTransaction
+begin;
+drop table users;
+commit;
+
+```

@@ -9,7 +9,7 @@ reindex index my_index;
 ```
 
 # Diagnostics
-lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireConcurrentReindex  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × REINDEX without CONCURRENTLY blocks all table access.
   
@@ -17,8 +17,8 @@ lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━�
   
 
 
-## Fix (safe): Add CONCURRENTLY
+## Fix (unsafe): Add CONCURRENTLY
 ```
 -- expect_lint/requireConcurrentReindex
-reindex index CONCURRENTLY my_index;
+reindex index concurrently my_index;
 ```

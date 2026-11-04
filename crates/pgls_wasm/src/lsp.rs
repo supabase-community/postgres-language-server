@@ -64,7 +64,6 @@ struct JsonRpcNotification {
 /// Document state stored in the handler
 struct DocumentState {
     content: String,
-    #[allow(dead_code)]
     version: i32,
 }
 
@@ -82,6 +81,8 @@ pub struct LspHandler {
     workspace: Workspace,
     documents: HashMap<String, DocumentState>,
     initialized: bool,
+    /// Whether the client accepts edits that name the document version.
+    versioned_edits: bool,
 }
 
 impl Default for LspHandler {
@@ -97,6 +98,7 @@ impl LspHandler {
             workspace: Workspace::new(),
             documents: HashMap::new(),
             initialized: false,
+            versioned_edits: false,
         }
     }
 
@@ -144,6 +146,7 @@ impl LspHandler {
             "shutdown" => self.shutdown(id),
             "textDocument/completion" => self.completion(params, id),
             "textDocument/hover" => self.hover(params, id),
+            "textDocument/codeAction" => self.code_action(params, id),
             _ => self.error_response(id, -32601, &format!("Method not found: {method}")),
         }
     }
@@ -171,7 +174,13 @@ impl LspHandler {
     // Request handlers
     // -------------------------------------------------------------------------
 
-    fn initialize(&mut self, _params: Option<Value>, id: Value) -> JsonRpcResponse {
+    fn initialize(&mut self, params: Option<Value>, id: Value) -> JsonRpcResponse {
+        self.versioned_edits = params
+            .and_then(|params| serde_json::from_value::<InitializeParams>(params).ok())
+            .and_then(|params| params.capabilities.workspace)
+            .and_then(|workspace| workspace.workspace_edit)
+            .and_then(|workspace_edit| workspace_edit.document_changes)
+            == Some(true);
         let capabilities = InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -182,6 +191,7 @@ impl LspHandler {
                     ..Default::default()
                 }),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
+                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 ..Default::default()
             },
             server_info: Some(ServerInfo {
@@ -296,6 +306,134 @@ impl LspHandler {
             id,
             result,
             error: None,
+        }
+    }
+
+    /// The fixes and suppressions of the lint diagnostics at the start of the range, like the
+    /// native language server, and the action that applies all safe fixes when `context.only`
+    /// asks for `source.fixAll.pgls`. There are no commands, since there is no database.
+    fn code_action(&mut self, params: Option<Value>, id: Value) -> JsonRpcResponse {
+        let params: CodeActionParams = match params.and_then(|p| serde_json::from_value(p).ok()) {
+            Some(p) => p,
+            None => {
+                return self.error_response(id, -32602, "Invalid params for codeAction");
+            }
+        };
+
+        let uri = params.text_document.uri.to_string();
+        let Some(doc) = self.documents.get(&uri) else {
+            return self.error_response(id, -32002, &format!("Document not found: {uri}"));
+        };
+
+        let requested = params
+            .context
+            .only
+            .as_deref()
+            .filter(|kinds| !kinds.is_empty());
+        let mut actions = Vec::new();
+        let only_fix_all =
+            requested.is_some_and(|kinds| kinds.iter().all(|kind| covers(kind, FIX_ALL_KIND)));
+        if !only_fix_all {
+            let offset = position_to_offset(&doc.content, params.range.start);
+            let workspace_actions = self
+                .workspace
+                .code_actions(&uri, offset as u32)
+                .unwrap_or_default();
+            for action in workspace_actions {
+                let pgls_workspace::features::code_actions::CodeActionKind::Edit(edit) =
+                    action.kind
+                else {
+                    continue;
+                };
+                let edits = edit
+                    .edits
+                    .iter()
+                    .map(|text_edit| TextEdit {
+                        range: Range {
+                            start: offset_to_position(
+                                &doc.content,
+                                usize::from(text_edit.range.start()),
+                            ),
+                            end: offset_to_position(
+                                &doc.content,
+                                usize::from(text_edit.range.end()),
+                            ),
+                        },
+                        new_text: text_edit.new_text.clone(),
+                    })
+                    .collect();
+                let diagnostics: Vec<Diagnostic> = params
+                    .context
+                    .diagnostics
+                    .iter()
+                    .filter(|diagnostic| {
+                        edit.rule.as_ref().is_some_and(|rule| {
+                            diagnostic.code == Some(NumberOrString::String(rule.clone()))
+                        })
+                    })
+                    .cloned()
+                    .collect();
+                let is_fix = edit.rule.is_some()
+                    && !edit
+                        .category
+                        .matches(pgls_analyse::SUPPRESSION_ACTION_CATEGORY);
+                actions.push(CodeAction {
+                    title: action.title,
+                    kind: Some(CodeActionKind::from(edit.category.to_str().into_owned())),
+                    diagnostics: (!diagnostics.is_empty()).then_some(diagnostics),
+                    edit: Some(self.workspace_edit(&params.text_document.uri, doc.version, edits)),
+                    is_preferred: (is_fix
+                        && edit.applicability == pgls_analyse::Applicability::Always)
+                        .then_some(true),
+                    ..Default::default()
+                });
+            }
+        }
+
+        let wants_fix_all =
+            requested.is_some_and(|kinds| kinds.iter().any(|kind| covers(kind, FIX_ALL_KIND)));
+        if wants_fix_all
+            && let Ok(fixed) = self.workspace.fix_file(&uri, false)
+            && fixed.code != doc.content
+        {
+            actions.push(CodeAction {
+                title: "Apply all safe fixes".into(),
+                kind: Some(CodeActionKind::from(FIX_ALL_KIND)),
+                edit: Some(self.workspace_edit(
+                    &params.text_document.uri,
+                    doc.version,
+                    vec![changed_range(&doc.content, &fixed.code)],
+                )),
+                ..Default::default()
+            });
+        }
+
+        JsonRpcResponse {
+            jsonrpc: "2.0".into(),
+            id,
+            result: Some(serde_json::to_value(actions).unwrap()),
+            error: None,
+        }
+    }
+
+    /// An edit of the document, with its version if the client accepts versioned edits.
+    fn workspace_edit(&self, uri: &Uri, version: i32, edits: Vec<TextEdit>) -> WorkspaceEdit {
+        if self.versioned_edits {
+            WorkspaceEdit {
+                document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
+                    text_document: OptionalVersionedTextDocumentIdentifier {
+                        uri: uri.clone(),
+                        version: Some(version),
+                    },
+                    edits: edits.into_iter().map(OneOf::Left).collect(),
+                }])),
+                ..Default::default()
+            }
+        } else {
+            WorkspaceEdit {
+                changes: Some(HashMap::from([(uri.clone(), edits)])),
+                ..Default::default()
+            }
         }
     }
 
@@ -431,6 +569,7 @@ impl LspHandler {
                     _ => DiagnosticSeverity::INFORMATION,
                 }),
                 message: d.message,
+                code: (!d.category.is_empty()).then_some(NumberOrString::String(d.category)),
                 source: Some("pgls".into()),
                 ..Default::default()
             })
@@ -463,35 +602,97 @@ impl LspHandler {
     }
 }
 
+/// The kind of the action that applies all safe fixes, like in the native language server.
+const FIX_ALL_KIND: &str = "source.fixAll.pgls";
+
+/// Whether the requested code action kind includes `kind`, e.g. `source` includes
+/// `source.fixAll.pgls`.
+fn covers(requested: &CodeActionKind, kind: &str) -> bool {
+    let requested = requested.as_str();
+    kind == requested
+        || kind
+            .strip_prefix(requested)
+            .is_some_and(|rest| rest.starts_with('.'))
+}
+
+/// The edit that turns `old` into `new`, replacing only what changed, so that the editor keeps
+/// the cursor and the folds.
+fn changed_range(old: &str, new: &str) -> TextEdit {
+    let prefix = old
+        .char_indices()
+        .zip(new.chars())
+        .find(|((_, a), b)| a != b)
+        .map_or(old.len().min(new.len()), |((index, _), _)| index);
+    let suffix = old[prefix..]
+        .chars()
+        .rev()
+        .zip(new[prefix..].chars().rev())
+        .take_while(|(a, b)| a == b)
+        .map(|(a, _)| a.len_utf8())
+        .sum::<usize>();
+    // A position can't point into a `\r\n`, so the edit takes in the whole line break when only
+    // one half of it changed. The characters it takes in are the same in `old` and `new`.
+    let prefix = if splits_crlf(old, prefix) {
+        prefix - 1
+    } else {
+        prefix
+    };
+    let suffix = if splits_crlf(old, old.len() - suffix) {
+        suffix - 1
+    } else {
+        suffix
+    };
+    TextEdit {
+        range: Range {
+            start: offset_to_position(old, prefix),
+            end: offset_to_position(old, old.len() - suffix),
+        },
+        new_text: new[prefix..new.len() - suffix].to_string(),
+    }
+}
+
 // =============================================================================
 // Position conversion utilities
 // =============================================================================
 
 /// Convert LSP Position (line:character in UTF-16) to byte offset.
+///
+/// Lines end at `\n`, like in the native language server; the `\r` of a `\r\n` belongs to the
+/// line break, not to the line.
 fn position_to_offset(content: &str, pos: Position) -> usize {
-    let mut offset = 0;
+    let line_start = match pos.line {
+        0 => 0,
+        line => match content.match_indices('\n').nth(line as usize - 1) {
+            Some((newline, _)) => newline + 1,
+            None => return content.len(),
+        },
+    };
+    let rest = &content[line_start..];
+    let line = rest.find('\n').map_or(rest, |end| &rest[..end]);
+    let line = line.strip_suffix('\r').unwrap_or(line);
 
-    for (i, line) in content.lines().enumerate() {
-        if i == pos.line as usize {
-            // Convert UTF-16 character offset to byte offset
-            let mut utf16_count = 0u32;
-            for (byte_idx, c) in line.char_indices() {
-                if utf16_count >= pos.character {
-                    return offset + byte_idx;
-                }
-                utf16_count += c.len_utf16() as u32;
-            }
-            return offset + line.len();
+    // Convert UTF-16 character offset to byte offset
+    let mut utf16_count = 0u32;
+    for (byte_idx, c) in line.char_indices() {
+        if utf16_count >= pos.character {
+            return line_start + byte_idx;
         }
-        offset += line.len() + 1; // +1 for newline
+        utf16_count += c.len_utf16() as u32;
     }
-
-    offset.min(content.len())
+    line_start + line.len()
 }
 
 /// Convert byte offset to LSP Position (line:character in UTF-16).
+///
+/// A position can't point between the `\r` and the `\n` of a line break, so an offset there
+/// becomes the end of the line.
 fn offset_to_position(content: &str, offset: usize) -> Position {
     let offset = offset.min(content.len());
+    let offset = if splits_crlf(content, offset) {
+        offset - 1
+    } else {
+        offset
+    };
     let text = &content[..offset];
 
     let line = text.matches('\n').count() as u32;
@@ -499,6 +700,11 @@ fn offset_to_position(content: &str, offset: usize) -> Position {
     let col = text[line_start..].encode_utf16().count() as u32;
 
     Position::new(line, col)
+}
+
+/// Whether `offset` is between the `\r` and the `\n` of a line break.
+fn splits_crlf(content: &str, offset: usize) -> bool {
+    content[..offset].ends_with('\r') && content[offset..].starts_with('\n')
 }
 
 // =============================================================================
@@ -666,6 +872,173 @@ mod tests {
         assert!(msgs[0]["result"].is_null());
     }
 
+    fn open(handler: &mut LspHandler, capabilities: &str, text: &str) {
+        handler.handle_message(&format!(
+            r#"{{"jsonrpc":"2.0","id":1,"method":"initialize","params":{{"capabilities":{capabilities}}}}}"#
+        ));
+        handler.handle_message(r#"{"jsonrpc":"2.0","method":"initialized","params":{}}"#);
+        handler.handle_message(
+            &serde_json::json!({
+                "jsonrpc": "2.0",
+                "method": "textDocument/didOpen",
+                "params": {
+                    "textDocument": {
+                        "uri": "file:///test.sql",
+                        "languageId": "sql",
+                        "version": 3,
+                        "text": text,
+                    }
+                }
+            })
+            .to_string(),
+        );
+    }
+
+    fn code_actions(handler: &mut LspHandler, only: Option<&[&str]>) -> Vec<CodeAction> {
+        code_actions_at(handler, Position::new(0, 2), only)
+    }
+
+    fn code_actions_at(
+        handler: &mut LspHandler,
+        position: Position,
+        only: Option<&[&str]>,
+    ) -> Vec<CodeAction> {
+        let response = handler.handle_message(
+            &serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "textDocument/codeAction",
+                "params": {
+                    "textDocument": { "uri": "file:///test.sql" },
+                    "range": { "start": position, "end": position },
+                    "context": { "diagnostics": [], "only": only }
+                }
+            })
+            .to_string(),
+        );
+        let msgs: Vec<Value> = serde_json::from_str(&response).unwrap();
+        serde_json::from_value(msgs[0]["result"].clone()).unwrap()
+    }
+
+    #[test]
+    fn test_code_actions_fix_and_suppress() {
+        let mut handler = test_handler();
+        open(&mut handler, "{}", "refresh materialized view user_stats;");
+
+        let actions = code_actions(&mut handler, None);
+        let titles: Vec<_> = actions.iter().map(|action| action.title.as_str()).collect();
+        assert_eq!(
+            titles,
+            [
+                "Add CONCURRENTLY",
+                "Suppress rule requireConcurrentRefreshMatview for this statement"
+            ]
+        );
+        // The fix is unsafe, since it needs a unique index on the view.
+        assert_eq!(actions[0].is_preferred, None);
+        let edits = &actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap()
+            [&Uri::from_str("file:///test.sql").unwrap()];
+        assert_eq!(edits[0].new_text.to_lowercase(), " concurrently");
+        assert_eq!(edits[0].range.start, Position::new(0, 25));
+    }
+
+    #[test]
+    fn test_code_actions_in_crlf_file() {
+        let mut handler = test_handler();
+        open(
+            &mut handler,
+            "{}",
+            "select 1;\r\nselect 2;\r\nrefresh materialized view user_stats;\r\n",
+        );
+
+        let actions = code_actions_at(&mut handler, Position::new(2, 0), None);
+        assert_eq!(actions[0].title, "Add CONCURRENTLY", "{actions:#?}");
+        let edits = &actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap()
+            [&Uri::from_str("file:///test.sql").unwrap()];
+        assert_eq!(edits[0].range.start, Position::new(2, 25));
+    }
+
+    #[test]
+    fn test_code_actions_use_versioned_edits() {
+        let mut handler = test_handler();
+        open(
+            &mut handler,
+            r#"{"workspace":{"workspaceEdit":{"documentChanges":true}}}"#,
+            "refresh materialized view user_stats;",
+        );
+
+        let actions = code_actions(&mut handler, None);
+        let Some(DocumentChanges::Edits(changes)) = actions[0]
+            .edit
+            .as_ref()
+            .and_then(|edit| edit.document_changes.as_ref())
+        else {
+            panic!("expected versioned edits: {actions:#?}");
+        };
+        assert_eq!(changes[0].text_document.version, Some(3));
+    }
+
+    #[test]
+    fn test_fix_all_code_action() {
+        let mut handler = test_handler();
+        let text = "reindex index my_index;";
+        open(&mut handler, "{}", text);
+
+        // Only the fix-all action is computed for `source.fixAll.pgls`. It applies what `fix_file`
+        // applies with the safe fixes, and is left out if that changes nothing.
+        let actions = code_actions(&mut handler, Some(&["source.fixAll.pgls"]));
+        let fixed = handler
+            .workspace
+            .fix_file("file:///test.sql", false)
+            .unwrap()
+            .code;
+        if fixed == text {
+            assert!(actions.is_empty(), "{actions:#?}");
+        } else {
+            assert_eq!(actions.len(), 1, "{actions:#?}");
+            assert_eq!(
+                actions[0].kind,
+                Some(CodeActionKind::from("source.fixAll.pgls"))
+            );
+            let edit = &actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap()
+                [&Uri::from_str("file:///test.sql").unwrap()][0];
+            let mut applied = text.to_string();
+            applied.replace_range(
+                position_to_offset(text, edit.range.start)
+                    ..position_to_offset(text, edit.range.end),
+                &edit.new_text,
+            );
+            assert_eq!(applied, fixed);
+        }
+
+        // The quick fixes come without the fix-all action.
+        let actions = code_actions(&mut handler, Some(&["quickfix"]));
+        assert!(
+            actions
+                .iter()
+                .all(|action| action.title != "Apply all safe fixes"),
+            "{actions:#?}"
+        );
+    }
+
+    #[test]
+    fn test_fix_file_applies_unsafe_fixes() {
+        let mut workspace = Workspace::new();
+        workspace.insert_file("/test.sql", "refresh materialized view user_stats;");
+        assert_eq!(
+            workspace
+                .fix_file("/test.sql", true)
+                .unwrap()
+                .code
+                .to_lowercase(),
+            "refresh materialized view concurrently user_stats;"
+        );
+        assert_eq!(
+            workspace.fix_file("/test.sql", false).unwrap().code,
+            "refresh materialized view user_stats;"
+        );
+    }
+
     #[test]
     fn test_shutdown() {
         let mut handler = test_handler();
@@ -737,5 +1110,71 @@ mod tests {
         let pos = offset_to_position(content, 17);
         assert_eq!(pos.line, 0);
         assert_eq!(pos.character, 11); // 8 + 3 = 11 UTF-16 units
+        assert_eq!(position_to_offset(content, pos), 17);
+    }
+
+    #[test]
+    fn test_position_conversion_lf() {
+        let content = "select 1;\nselect 2;\n";
+
+        // Past the end of a line is the end of that line, past the last line the end of the file.
+        assert_eq!(position_to_offset(content, Position::new(0, 100)), 9);
+        assert_eq!(position_to_offset(content, Position::new(2, 0)), 20);
+        assert_eq!(position_to_offset(content, Position::new(5, 3)), 20);
+
+        assert_eq!(offset_to_position(content, 9), Position::new(0, 9));
+        assert_eq!(offset_to_position(content, 10), Position::new(1, 0));
+        assert_eq!(offset_to_position(content, 20), Position::new(2, 0));
+    }
+
+    #[test]
+    fn test_position_conversion_crlf() {
+        let content = "select 1;\r\nselect '日本語';\r\nselect 3;";
+
+        // "select 1;\r\n" is 11 bytes, "select '日本語';\r\n" 21 bytes.
+        assert_eq!(position_to_offset(content, Position::new(1, 0)), 11);
+        assert_eq!(position_to_offset(content, Position::new(1, 11)), 28);
+        assert_eq!(position_to_offset(content, Position::new(2, 7)), 39);
+        assert_eq!(offset_to_position(content, 39), Position::new(2, 7));
+        assert_eq!(offset_to_position(content, 28), Position::new(1, 11));
+
+        // The `\r` is part of the line break, not of the line.
+        assert_eq!(position_to_offset(content, Position::new(0, 100)), 9);
+        assert_eq!(offset_to_position(content, 9), Position::new(0, 9));
+        assert_eq!(offset_to_position(content, 10), Position::new(0, 9));
+        assert_eq!(offset_to_position(content, 11), Position::new(1, 0));
+    }
+
+    #[test]
+    fn test_position_conversion_surrogate_pairs() {
+        // '😀' is 4 bytes in UTF-8 and a surrogate pair, 2 units, in UTF-16.
+        let content = "select '😀😀';\r\nselect 2;";
+
+        assert_eq!(offset_to_position(content, 12), Position::new(0, 10));
+        assert_eq!(position_to_offset(content, Position::new(0, 10)), 12);
+        assert_eq!(offset_to_position(content, 16), Position::new(0, 12));
+        assert_eq!(position_to_offset(content, Position::new(0, 14)), 18);
+        assert_eq!(position_to_offset(content, Position::new(1, 7)), 27);
+
+        // A position inside a surrogate pair moves past the character.
+        assert_eq!(position_to_offset(content, Position::new(0, 9)), 12);
+    }
+
+    #[test]
+    fn test_changed_range_keeps_crlf_whole() {
+        for (old, new) in [
+            ("select 1;\r\nselect 2;", "select 1;\nselect 2;"),
+            ("select 1;\nselect 2;", "select 1;\r\nselect 2;"),
+            ("select 1;\r\n", "select 1;\r\r\n"),
+            ("select 1;\r\nselect 2;", "select 1;\r\n\r\nselect 2;"),
+        ] {
+            let edit = changed_range(old, new);
+            let mut applied = old.to_string();
+            applied.replace_range(
+                position_to_offset(old, edit.range.start)..position_to_offset(old, edit.range.end),
+                &edit.new_text,
+            );
+            assert_eq!(applied, new, "{edit:?}");
+        }
     }
 }

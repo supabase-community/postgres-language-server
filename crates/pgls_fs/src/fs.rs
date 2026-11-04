@@ -67,6 +67,10 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     /// Checks if the given path is a symlink
     fn path_is_symlink(&self, path: &Path) -> bool;
 
+    /// The absolute form of `path` with `.`, `..` and symlinks resolved. Fails if it doesn't
+    /// exist.
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
+
     /// This method accepts a directory path (`search_dir`) and a list of filenames (`file_names`),
     /// It looks for the files in the specified directory in the order they appear in the list.
     /// If a file is not found in the initial directory, the search may continue into the parent
@@ -182,6 +186,78 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
         specifier: &str,
         path: &Path,
     ) -> Result<Resolution, ResolveError>;
+
+    /// Finds the files at or below `root` named like one of `search.file_names`.
+    ///
+    /// It skips hidden directories, the directories in [SKIPPED_DIRECTORIES], the directories that
+    /// [FindFiles::skip_directory] skips, and, on the OS file system, everything that `.ignore`
+    /// files and, with [FindFiles::vcs_ignore_files], `.gitignore` files exclude. It stops at [FindFiles::max_depth] and
+    /// [FindFiles::max_entries].
+    fn find_files(&self, root: &Path, search: &FindFiles) -> FoundFiles;
+}
+
+/// Directories that [FileSystem::find_files] never descends into.
+pub const SKIPPED_DIRECTORIES: &[&str] = &["node_modules", "target"];
+
+/// Decides whether [FileSystem::find_files] skips a directory, given its path.
+pub type SkipDirectory = Arc<dyn Fn(&Path) -> bool + Send + Sync>;
+
+/// What [FileSystem::find_files] looks for, and where it stops.
+pub struct FindFiles<'a> {
+    pub file_names: &'a [&'a str],
+    /// Skips the directories for which it returns `true`, except below a directory that contains
+    /// one of the files: the file there decides what applies below it.
+    pub skip_directory: Option<SkipDirectory>,
+    /// The search doesn't descend into directories deeper than this below the root.
+    pub max_depth: usize,
+    /// The search stops after this many files and directories.
+    pub max_entries: usize,
+    /// Whether the OS file system skips what `.gitignore` files and git's excludes exclude.
+    /// `.ignore` files are always honoured.
+    pub vcs_ignore_files: bool,
+}
+
+impl<'a> FindFiles<'a> {
+    /// The depth limit of [FindFiles::new]. Configuration files deeper below a workspace folder
+    /// are rare, and a deeper tree is more likely a vendored or generated one.
+    pub const DEFAULT_MAX_DEPTH: usize = 12;
+    /// The entry limit of [FindFiles::new]. Walking it takes about 0.2s on a warm cache.
+    pub const DEFAULT_MAX_ENTRIES: usize = 100_000;
+
+    pub fn new(file_names: &'a [&'a str]) -> Self {
+        Self {
+            file_names,
+            skip_directory: None,
+            max_depth: Self::DEFAULT_MAX_DEPTH,
+            max_entries: Self::DEFAULT_MAX_ENTRIES,
+            vcs_ignore_files: true,
+        }
+    }
+}
+
+/// Whether [FindFiles::skip_directory] skips the directory at `path` below `root`. `has_file`
+/// tells whether a directory contains one of the files.
+fn skips_directory(
+    skip_directory: Option<&SkipDirectory>,
+    root: &Path,
+    path: &Path,
+    has_file: impl Fn(&Path) -> bool,
+) -> bool {
+    skip_directory.is_some_and(|skip_directory| skip_directory(path))
+        && !path
+            .ancestors()
+            .skip(1)
+            .take_while(|ancestor| *ancestor != root && ancestor.starts_with(root))
+            .any(has_file)
+}
+
+/// The result of [FileSystem::find_files].
+#[derive(Debug, Default)]
+pub struct FoundFiles {
+    pub files: Vec<PathBuf>,
+    /// Whether the search stopped at [FindFiles::max_depth] or [FindFiles::max_entries], so that
+    /// it may have missed files.
+    pub truncated: bool,
 }
 
 /// Result of the auto search
@@ -374,6 +450,10 @@ where
         T::path_is_symlink(self, path)
     }
 
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+        T::canonicalize(self, path)
+    }
+
     fn get_changed_files(&self, base: &str) -> io::Result<Vec<String>> {
         T::get_changed_files(self, base)
     }
@@ -388,6 +468,10 @@ where
         path: &Path,
     ) -> Result<Resolution, ResolveError> {
         T::resolve_configuration(self, specifier, path)
+    }
+
+    fn find_files(&self, root: &Path, search: &FindFiles) -> FoundFiles {
+        T::find_files(self, root, search)
     }
 }
 

@@ -36,6 +36,5 @@ pub(super) fn emit_alter_type_stmt(e: &mut EventEmitter, n: &AlterTypeStmt) {
         });
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

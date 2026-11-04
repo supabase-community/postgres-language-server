@@ -21,3 +21,6 @@ pulldown-cmark   = { version = "0.12.2" }
 quote            = "1.0.36"
 regex            = "1.11"
 schemars         = { workspace = true }
+
+[lints]
+workspace = true

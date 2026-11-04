@@ -447,9 +447,7 @@ create cast (xfloat8 as bigint) without function;
 
 create cast (bigint as xfloat8) without function;
 
-with
-testdata (bits)
-as (
+with testdata (bits) as (
   values
     (X'0000000000000001'),
     (X'0000000000000002'),
@@ -476,9 +474,7 @@ select
 from
   (select cast(cast(cast(bits as bigint) as xfloat8) as float8) as flt from testdata offset 0) as s;
 
-with
-testdata (bits)
-as (
+with testdata (bits) as (
   values
     (X'0000000000000000'),
     (X'0010000000000000'),

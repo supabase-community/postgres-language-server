@@ -15,3 +15,6 @@ version              = "0.0.0"
 pgls_console = { workspace = true }
 
 [dev-dependencies]
+
+[lints]
+workspace = true

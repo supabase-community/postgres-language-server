@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/functional_deps.sql
-snapshot_kind: text
 ---
 create temporary table articles (
   id int constraint articles_pkey primary key,
@@ -225,7 +224,7 @@ alter table articles
 
 drop view fdv4;
 
-prepare foo as select id, keywords, title, body, created from articles group by id;;
+prepare foo as select id, keywords, title, body, created from articles group by id;
 
 execute foo;
 

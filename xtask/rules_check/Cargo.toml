@@ -17,3 +17,6 @@ pgls_query_ext          = { workspace = true }
 pgls_statement_splitter = { workspace = true }
 pgls_workspace          = { workspace = true }
 pulldown-cmark          = "0.12.2"
+
+[lints]
+workspace = true

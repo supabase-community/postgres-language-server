@@ -28,9 +28,12 @@ pub(super) fn emit_type_cast_call(e: &mut EventEmitter, n: &TypeCast) {
     e.group_end();
 }
 
+/// Laid out like a function call: on one line when it fits, otherwise `expr as type` on its own
+/// line one level in, broken before `as` only when it doesn't fit there either.
 fn emit_cast_call(e: &mut EventEmitter, n: &TypeCast) {
     e.token(TokenKind::CAST_KW);
-    e.token(TokenKind::L_PAREN);
+    super::open_call_arguments(e);
+    e.group_start(GroupKind::List);
 
     if let Some(ref arg) = n.arg {
         super::emit_node(arg, e);
@@ -44,7 +47,8 @@ fn emit_cast_call(e: &mut EventEmitter, n: &TypeCast) {
         super::emit_type_name(e, type_name);
     }
 
-    e.token(TokenKind::R_PAREN);
+    e.group_end();
+    super::close_call_arguments(e);
 }
 
 fn emit_operator_cast(e: &mut EventEmitter, n: &TypeCast) {

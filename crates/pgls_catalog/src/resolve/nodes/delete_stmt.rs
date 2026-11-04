@@ -2,7 +2,7 @@ use pgls_query::protobuf::DeleteStmt;
 
 use super::{
     Resolver, from_clause::resolve_from_clause, range_var::resolve_target_relation,
-    res_target::resolve_returning_list, resolve_node, with_clause::resolve_with_clause,
+    res_target::resolve_returning_clause, resolve_node, with_clause::resolve_with_clause,
 };
 use crate::resolve::{
     expr::infer_expr,
@@ -42,5 +42,5 @@ fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Columns {
     }
 
     let level = r.exit_level();
-    resolve_returning_list(r, &n.returning_list, level)
+    resolve_returning_clause(r, n.returning_clause.as_ref(), level)
 }

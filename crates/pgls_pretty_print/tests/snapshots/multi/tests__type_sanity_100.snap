@@ -630,8 +630,9 @@ select
 from
   pg_class as c1
 where
-  c1.relnatts <>
-  (select count(*) from pg_attribute as a1 where a1.attrelid = c1.oid and a1.attnum > 0);
+  c1.relnatts <> (
+    select count(*) from pg_attribute as a1 where a1.attrelid = c1.oid and a1.attnum > 0
+  );
 
 select
   a1.attrelid,
@@ -830,24 +831,20 @@ from
 where
   oid < 16384 and
   typtype not in ('p', 'c') and
-  oid <> all (cast(array['regproc',
-  'regprocedure',
-  'regoper',
-  'regoperator',
-  'regconfig',
-  'regdictionary',
-  'regnamespace',
-  'regcollation']
-  as regtype[])) and
-  oid <> all (cast(array['gtsvector',
-  'pg_node_tree',
-  'pg_ndistinct',
-  'pg_dependencies',
-  'pg_mcv_list',
-  'pg_brin_bloom_summary',
-  'pg_brin_minmax_multi_summary',
-  'xml']
-  as regtype[])) and
+  oid <> all (cast(
+    array[
+      'regproc', 'regprocedure', 'regoper', 'regoperator', 'regconfig', 'regdictionary',
+      'regnamespace', 'regcollation'
+    ]
+    as regtype[]
+  )) and
+  oid <> all (cast(
+    array[
+      'gtsvector', 'pg_node_tree', 'pg_ndistinct', 'pg_dependencies', 'pg_mcv_list',
+      'pg_brin_bloom_summary', 'pg_brin_minmax_multi_summary', 'xml'
+    ]
+    as regtype[]
+  )) and
   not exists (select 1 from pg_type as u where u.typarray = t.oid) and
   not exists (
     select

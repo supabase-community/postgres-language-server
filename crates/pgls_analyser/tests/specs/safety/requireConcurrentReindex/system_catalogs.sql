@@ -1,0 +1,14 @@
+-- Postgres can't reindex system catalogs concurrently, so only the last statement gets a fix.
+-- section: up transaction:false queries:separate
+-- expect_lint/requireConcurrentReindex
+reindex table pg_catalog.pg_class;
+-- expect_lint/requireConcurrentReindex
+reindex table pg_class;
+-- expect_lint/requireConcurrentReindex
+reindex index pg_class_oid_index;
+-- expect_lint/requireConcurrentReindex
+reindex table pg_toast.pg_toast_2619;
+-- expect_lint/requireConcurrentReindex
+reindex schema pg_catalog;
+-- expect_lint/requireConcurrentReindex
+reindex table information_schema.sql_features;

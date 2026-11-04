@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/jsonpath.sql
-snapshot_kind: text
 ---
 select cast('' as jsonpath);
 
@@ -93,8 +92,9 @@ select cast('$.g ? (exists (@.x))' as jsonpath);
 select cast('$.g ? (exists (@.x ? (@ == 14)))' as jsonpath);
 
 select
-  cast('$.g ? ((@.x >= 123 || @.a == 4) && exists (@.x ? (@ == 14)))'
-  as jsonpath);
+  cast(
+    '$.g ? ((@.x >= 123 || @.a == 4) && exists (@.x ? (@ == 14)))' as jsonpath
+  );
 
 select cast('$.g ? (+@.x >= +-(+@.a + 2))' as jsonpath);
 
@@ -462,11 +462,10 @@ select
   errinfo.hint
 from
   unnest(
-    array[cast('$ ? (@ like_regex "pattern" flag "smixq")' as text),
-    '$ ? (@ like_regex "pattern" flag "a")',
-    '@ + 1',
-    '00',
-    '1a']
+    array[
+      cast('$ ? (@ like_regex "pattern" flag "smixq")' as text),
+      '$ ? (@ like_regex "pattern" flag "a")', '@ + 1', '00', '1a'
+    ]
   )
   as str,
   lateral pg_input_error_info(str, 'jsonpath') as errinfo;

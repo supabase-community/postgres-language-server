@@ -1,0 +1,12 @@
+-- The parameters of a SQL function have their declared types in the body.
+create function name_length(n int) returns int language sql as $$
+  -- expect_lint/functionArgumentMismatch
+  select length(n);
+$$;
+create function first_length(names text[]) returns int language sql as 'select length(names[1])';
+
+-- Polymorphic parameters take the types of the call's arguments, so their types are unknown.
+create function formarray(anyelement, variadic anyarray) returns anyarray language sql as $$
+  select array_prepend($1, $2);
+$$;
+create function first_of(a anyelement, b anyarray) returns int language sql as 'select length(a) + length(b)';

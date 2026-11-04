@@ -234,3 +234,34 @@ fn transaction_mode_decides_whether_statements_run_in_a_transaction() {
     apply(&mut s, "ALTER TABLE users ADD COLUMN name text");
     assert!(s.is_holding_access_exclusive());
 }
+
+#[test]
+fn implicit_block_runs_statements_in_a_transaction_until_the_query_ends() {
+    let mut s =
+        Session::new(vec!["public".into()]).with_transaction_mode(TransactionMode::Autocommit);
+    s.begin_implicit_block();
+    assert_eq!(s.in_transaction(), Some(true));
+    apply(&mut s, "ALTER TABLE users ADD COLUMN name text");
+    apply(&mut s, "SET LOCAL search_path = other");
+    assert!(s.is_holding_access_exclusive());
+    assert_eq!(s.search_path(), ["other"]);
+
+    // A COMMIT in the query ends the block, but the next statement starts a new one.
+    apply(&mut s, "COMMIT");
+    assert_eq!(s.in_transaction(), Some(true));
+    apply(&mut s, "ALTER TABLE users ADD COLUMN email text");
+    assert!(s.is_holding_access_exclusive());
+
+    s.end_implicit_block();
+    assert_eq!(s.in_transaction(), Some(false));
+    assert!(!s.is_holding_access_exclusive());
+    assert_eq!(s.search_path(), ["public"]);
+
+    // An explicit transaction started in the query stays open after it.
+    s.begin_implicit_block();
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "ALTER TABLE users ADD COLUMN age int");
+    s.end_implicit_block();
+    assert_eq!(s.in_transaction(), Some(true));
+    assert!(s.is_holding_access_exclusive());
+}
