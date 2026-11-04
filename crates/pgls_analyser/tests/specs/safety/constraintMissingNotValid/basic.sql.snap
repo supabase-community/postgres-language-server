@@ -9,7 +9,7 @@ ALTER TABLE distributors ADD CONSTRAINT distfk FOREIGN KEY (address) REFERENCES 
 ```
 
 # Diagnostics
-lint/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/constraintMissingNotValid  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
   

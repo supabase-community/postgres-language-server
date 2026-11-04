@@ -17,12 +17,12 @@ fn format_with_guard<'ctx>(
     let path = workspace_file.path.clone();
     let pgls_path = pgls_fs::PgLSPath::new(&path);
 
-    let format_result = workspace_file
-        .guard()
-        .pull_file_formatting(PullFileFormattingParams {
-            path: pgls_path.clone(),
-            range: None,
-        });
+    let guard = workspace_file.guard();
+    let format_result = guard.pull_file_formatting(PullFileFormattingParams {
+        project_key: guard.project_key(),
+        path: pgls_path.clone(),
+        range: None,
+    });
 
     let format_result = format_result.map_err(Message::from)?;
 
@@ -75,6 +75,7 @@ fn format_with_guard<'ctx>(
             file_name: path.display().to_string(),
             diff,
             start_line,
+            statement: true,
         }));
     }
 
@@ -87,6 +88,7 @@ fn format_with_guard<'ctx>(
                 &format_result.formatted,
             ),
             start_line: 0,
+            statement: false,
         }));
     }
 

@@ -18,6 +18,11 @@ pub struct MigrationSection {
     pub direction: Direction,
     /// Whether the migration tool runs the section in a transaction.
     pub transaction: bool,
+    /// The parts of the section that the migration tool sends to Postgres as one query, like a
+    /// whole dbmate section or a goose `StatementBegin` block. Postgres runs a query with more
+    /// than one statement in a transaction block, also in a section without a transaction. The
+    /// other statements of the section are sent one by one.
+    pub queries: Vec<TextRange>,
 }
 
 impl MigrationSection {

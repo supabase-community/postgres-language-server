@@ -1,0 +1,13 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- myschema.json is a type of the user.
+-- expect_no_diagnostics
+create table documents (
+    body myschema.json
+);
+
+```

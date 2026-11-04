@@ -5,8 +5,12 @@
 //! resolution. Calls with unknown argument types, or that match no function or more than one,
 //! get none.
 
-use pgls_catalog::CatalogView;
+// Inlay hints read the client's SQL and the database's catalog, so a panic on unexpected input
+// takes down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use pgls_catalog::resolve::{FunctionContext, Reference, ResolveParams, resolve};
+use pgls_catalog::{CatalogView, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{ScanToken, Token};
 use pgls_text_size::TextSize;
@@ -58,6 +62,20 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
             } => Some((location, function, arguments)),
             _ => None,
         })
+        // Only positional arguments for named parameters get hints. Skip the other calls, like
+        // those of most built-in functions, before scanning the statement.
+        .filter(|(_, function, arguments)| {
+            function.signature.as_ref().is_some_and(|signature| {
+                arguments.iter().any(|argument| {
+                    !argument.named
+                        && signature
+                            .arguments
+                            .get(argument.parameter)
+                            .and_then(|parameter| parameter.name.as_deref())
+                            .is_some_and(|name| !name.is_empty())
+                })
+            })
+        })
         .collect();
     if calls.is_empty() {
         return Vec::new();
@@ -91,9 +109,10 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
             if argument.named || repeated {
                 continue;
             }
-            let Some(name) = signature.arguments[argument.parameter]
-                .name
-                .as_deref()
+            let Some(name) = signature
+                .arguments
+                .get(argument.parameter)
+                .and_then(|parameter| parameter.name.as_deref())
                 .filter(|name| !name.is_empty())
             else {
                 continue;
@@ -101,7 +120,7 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
             if is_reference_to(params.sql, tokens, name) {
                 continue;
             }
-            let Ok(offset) = u32::try_from(tokens[0].start) else {
+            let Some(Ok(offset)) = tokens.first().map(|token| u32::try_from(token.start)) else {
                 continue;
             };
             hints.push(InlayHint {
@@ -118,10 +137,15 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
 /// The tokens of each argument of the call whose name starts at `location`, without a leading
 /// `DISTINCT` or `ALL` of an aggregate.
 fn argument_tokens(tokens: &[ScanToken], location: i32) -> Option<Vec<&[ScanToken]>> {
-    let name = tokens.iter().position(|token| token.start == location)?;
+    // The tokens are ordered by their start.
+    let name = tokens.partition_point(|token| token.start < location);
+    if tokens.get(name)?.start != location {
+        return None;
+    }
     // The name is at most `schema.name`.
     let open = name
-        + tokens[name..]
+        + tokens
+            .get(name..)?
             .iter()
             .take(4)
             .position(|token| token.token() == Token::Ascii40)?;
@@ -134,7 +158,7 @@ fn argument_tokens(tokens: &[ScanToken], location: i32) -> Option<Vec<&[ScanToke
             Token::Ascii40 | Token::Ascii91 => depth += 1,
             Token::Ascii41 | Token::Ascii93 if depth == 0 => {
                 if i > start {
-                    arguments.push(&tokens[start..i]);
+                    arguments.push(tokens.get(start..i)?);
                 }
                 return Some(arguments);
             }
@@ -153,8 +177,8 @@ fn argument_tokens(tokens: &[ScanToken], location: i32) -> Option<Vec<&[ScanToke
 /// Whether the argument is a column or parameter with the name of the parameter, like `x` or
 /// `t.x` for the parameter `x`. Hinting it would only repeat the name.
 fn is_reference_to(sql: &str, tokens: &[ScanToken], name: &str) -> bool {
-    let tokens = match tokens.first().map(ScanToken::token) {
-        Some(Token::Variadic) => &tokens[1..],
+    let tokens = match tokens {
+        [first, rest @ ..] if first.token() == Token::Variadic => rest,
         _ => tokens,
     };
     let text = |token: &ScanToken| {
@@ -175,23 +199,14 @@ fn is_reference_to(sql: &str, tokens: &[ScanToken], name: &str) -> bool {
         && tokens
             .last()
             .and_then(text)
-            .is_some_and(|last| normalize_identifier(last) == name)
+            .is_some_and(|last| identifier_name(last) == name)
 }
 
+/// Postgres treats every non-ASCII character as a letter in identifiers.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332-L333
 fn is_identifier(text: &str) -> bool {
     text.starts_with('"')
         || text
             .chars()
-            .all(|c| c.is_alphanumeric() || c == '_' || c == '$')
-}
-
-/// The name an identifier refers to: unquoted identifiers are folded to lower case.
-fn normalize_identifier(text: &str) -> String {
-    match text
-        .strip_prefix('"')
-        .and_then(|text| text.strip_suffix('"'))
-    {
-        Some(quoted) => quoted.replace("\"\"", "\""),
-        None => text.to_lowercase(),
-    }
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$' || !c.is_ascii())
 }

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/reloptions.sql
-snapshot_kind: text
 ---
 create table reloptions_test (i int)
 with (
@@ -112,8 +111,7 @@ select
 from
   pg_class
 where
-  oid =
-  (
+  oid = (
     select
       reltoastrelid
     from
@@ -175,8 +173,7 @@ select
 from
   pg_class
 where
-  oid =
-  (
+  oid = (
     select
       reltoastrelid
     from

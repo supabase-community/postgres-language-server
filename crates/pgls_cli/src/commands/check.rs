@@ -1,27 +1,22 @@
 use crate::cli_options::CliOptions;
-use crate::commands::{get_files_to_process_with_cli_options, read_stdin_payload};
+use crate::commands::{FileTargets, enforce_exit_codes, print_diagnostics, read_stdin_payload};
 use crate::diagnostics::DatabaseUnavailable;
 use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
-use crate::{ExecutionConfig, ExecutionMode, VcsTargeting};
-use pgls_configuration::PartialConfiguration;
+use crate::{ExecutionConfig, ExecutionMode};
+use pgls_configuration::{PartialConfiguration, RuleSelector};
 use pgls_diagnostics::{Error, category};
-use pgls_fs::FileSystem;
-use pgls_workspace::DynRef;
 use pgls_workspace::features::code_actions::FixFileMode;
 use pgls_workspace::features::diagnostics::CheckDatabaseConnectionParams;
-use std::ffi::OsString;
 
 pub struct CheckArgs {
     pub configuration: Option<PartialConfiguration>,
-    pub paths: Vec<OsString>,
-    pub stdin_file_path: Option<String>,
-    pub staged: bool,
-    pub changed: bool,
-    pub since: Option<String>,
+    pub targets: FileTargets,
     pub fix: bool,
     pub unsafe_: bool,
+    pub only: Vec<RuleSelector>,
+    pub skip: Vec<RuleSelector>,
 }
 
 pub fn check(
@@ -29,17 +24,19 @@ pub fn check(
     cli_options: &CliOptions,
     args: CheckArgs,
 ) -> Result<(), CliDiagnostic> {
-    validate_args(&args)?;
+    args.targets.validate()?;
 
-    let configuration = session.prepare_with_config(cli_options, args.configuration.clone())?;
-    session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
+    let configuration = session.configure_workspace(
+        cli_options,
+        args.configuration.clone(),
+        VcsIntegration::Enabled,
+    )?;
 
-    let paths = resolve_paths(session.fs(), &configuration, &args)?;
-
-    let vcs = VcsTargeting {
-        staged: args.staged,
-        changed: args.changed,
-    };
+    let paths = args.targets.resolve_paths(session.fs(), &configuration)?;
+    let configuration_errors = session.apply_nested_configurations(
+        cli_options,
+        &args.targets.nested_configuration_paths(&paths),
+    )?;
 
     let max_diagnostics = if cli_options.reporter.is_default() {
         cli_options.max_diagnostics.into()
@@ -52,20 +49,36 @@ pub fn check(
         (true, false) => Some(FixFileMode::SafeFixes),
         (false, false) => None,
     };
-    let mode = ExecutionMode::Check { vcs, fix };
+    let mode = ExecutionMode::Check {
+        vcs: args.targets.vcs(),
+        fix,
+        only: args.only.clone(),
+        skip: args.skip.clone(),
+    };
     let execution = ExecutionConfig::new(mode, max_diagnostics);
 
-    if let Some(stdin_path) = args.stdin_file_path.as_deref() {
+    let database_errors = check_database_connection(&session)?;
+    if let Some(stdin_path) = args.targets.stdin_file_path.as_deref() {
+        // Stdout gets the checked code, so the diagnostics go to stderr. The errors of nested
+        // configuration files are only printed, the database errors also fail the command.
+        print_diagnostics(session.console(), &configuration_errors);
+        print_diagnostics(session.console(), &database_errors);
         let payload = read_stdin_payload(stdin_path, session.console(), "check")?;
-        run_stdin(&mut session, &execution, payload)
+        let mut report = run_stdin(&mut session, &execution, payload)?;
+        for error in database_errors.into_iter().rev() {
+            report.prepend_diagnostic(error);
+        }
+        enforce_exit_codes(cli_options, &report, category!("check"))
     } else {
-        let database_error = check_database_connection(&session)?;
         let mut report: Report = run_files(&mut session, &execution, paths)?;
-        if let Some(error) = database_error {
+        for error in database_errors.into_iter().rev() {
+            report.prepend_diagnostic(error);
+        }
+        for error in configuration_errors.into_iter().rev() {
             report.prepend_diagnostic(error);
         }
 
-        let exit_result = enforce_exit_codes(cli_options, &report);
+        let exit_result = enforce_exit_codes(cli_options, &report, category!("check"));
         session.report("check", cli_options, &report)?;
         exit_result
     }
@@ -73,76 +86,15 @@ pub fn check(
 
 /// A configured database that cannot be reached is an error: the checks that need it would
 /// otherwise be skipped silently.
-fn check_database_connection(session: &CliSession) -> Result<Option<Error>, CliDiagnostic> {
+fn check_database_connection(session: &CliSession) -> Result<Vec<Error>, CliDiagnostic> {
     let result = session
         .workspace()
-        .check_database_connection(CheckDatabaseConnectionParams::default())?;
+        .check_database_connection(CheckDatabaseConnectionParams {
+            project_key: session.project_key(),
+        })?;
     Ok(result
-        .error
-        .map(|message| Error::from(DatabaseUnavailable::new(message))))
-}
-
-fn resolve_paths(
-    fs: &DynRef<'_, dyn FileSystem>,
-    configuration: &PartialConfiguration,
-    args: &CheckArgs,
-) -> Result<Vec<OsString>, CliDiagnostic> {
-    let mut paths = get_files_to_process_with_cli_options(
-        args.since.as_deref(),
-        args.changed,
-        args.staged,
-        fs,
-        configuration,
-    )?
-    .unwrap_or_else(|| args.paths.clone());
-
-    if paths.is_empty()
-        && args.stdin_file_path.is_none()
-        && let Some(current_dir) = fs.working_directory()
-    {
-        paths.push(current_dir.into_os_string());
-    }
-
-    Ok(paths)
-}
-
-fn enforce_exit_codes(cli_options: &CliOptions, payload: &Report) -> Result<(), CliDiagnostic> {
-    let traversal = payload.traversal.as_ref();
-    let processed = traversal.map_or(0, |t| t.changed + t.unchanged);
-    let skipped = traversal.map_or(0, |t| t.skipped);
-
-    if processed.saturating_sub(skipped) == 0 && !cli_options.no_errors_on_unmatched {
-        return Err(CliDiagnostic::no_files_processed());
-    }
-
-    let warnings = payload.warnings;
-    let errors = payload.errors;
-    let category = category!("check");
-
-    if errors > 0 {
-        return Err(CliDiagnostic::check_error(category));
-    }
-
-    if warnings > 0 && cli_options.error_on_warnings {
-        return Err(CliDiagnostic::check_warnings(category));
-    }
-
-    Ok(())
-}
-
-fn validate_args(args: &CheckArgs) -> Result<(), CliDiagnostic> {
-    if args.since.is_some() {
-        if !args.changed {
-            return Err(CliDiagnostic::incompatible_arguments("since", "changed"));
-        }
-        if args.staged {
-            return Err(CliDiagnostic::incompatible_arguments("since", "staged"));
-        }
-    }
-
-    if args.changed && args.staged {
-        return Err(CliDiagnostic::incompatible_arguments("changed", "staged"));
-    }
-
-    Ok(())
+        .errors
+        .into_iter()
+        .map(|message| Error::from(DatabaseUnavailable::new(message)))
+        .collect())
 }

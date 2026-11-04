@@ -142,8 +142,8 @@ pub fn generate_tool_configuration(mode: Mode, tool_name: &str) -> Result<()> {
         "linter" => pgls_analyser::visit_registry(&mut visitor),
         "splinter" => pgls_splinter::registry::visit_registry(&mut visitor),
         "pglinter" => pgls_pglinter::registry::visit_registry(&mut visitor),
-        "assists" => unimplemented!("Assists rules not yet implemented"),
-        _ => unreachable!(),
+        "assists" => anyhow::bail!("Configuration generation for assists is not implemented yet"),
+        _ => unreachable!("every tool in `TOOLS` is handled above"),
     }
 
     // Generate configuration files based on category
@@ -151,7 +151,7 @@ pub fn generate_tool_configuration(mode: Mode, tool_name: &str) -> Result<()> {
         RuleCategory::Lint => generate_lint_config(tool, visitor.groups)?,
         RuleCategory::Action => generate_action_config(tool, visitor.groups)?,
         RuleCategory::Transformation => {
-            unimplemented!("Transformation category generation not yet implemented")
+            anyhow::bail!("Configuration generation for transformations is not implemented yet")
         }
     };
 

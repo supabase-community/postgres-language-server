@@ -53,8 +53,9 @@ select
 from
   pg_class
 where
-  relnamespace =
-  (select oid from pg_namespace where nspname = 'test_ns_schema_1');
+  relnamespace = (
+    select oid from pg_namespace where nspname = 'test_ns_schema_1'
+  );
 
 insert into test_ns_schema_1.abc default values;
 
@@ -73,8 +74,9 @@ select
 from
   pg_class
 where
-  relnamespace =
-  (select oid from pg_namespace where nspname = 'test_ns_schema_1');
+  relnamespace = (
+    select oid from pg_namespace where nspname = 'test_ns_schema_1'
+  );
 
 create schema test_ns_schema_renamed;
 
@@ -94,8 +96,9 @@ select
 from
   pg_class
 where
-  relnamespace =
-  (select oid from pg_namespace where nspname = 'test_ns_schema_renamed');
+  relnamespace = (
+    select oid from pg_namespace where nspname = 'test_ns_schema_renamed'
+  );
 
 create schema test_maint_search_path;
 

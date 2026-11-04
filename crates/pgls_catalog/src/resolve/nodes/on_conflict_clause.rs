@@ -42,6 +42,7 @@ pub(super) fn resolve_on_conflict_clause(r: &mut Resolver, n: &OnConflictClause,
                     r,
                     &assignment.name,
                     column_type,
+                    Some(expr),
                     expr_type,
                     assignment
                         .val

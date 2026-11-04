@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/xml.sql
-snapshot_kind: text
 ---
 create table xmltest (
   id int,
@@ -99,18 +98,19 @@ select xmlelement(name foo, cast('bar' as bytea));
 select xmlelement(name foo, xmlattributes(true as bar));
 
 select
-  xmlelement(name foo, xmlattributes(
-    cast('2009-04-09 00:24:37' as timestamp) as bar
-  ));
+  xmlelement(
+    name foo,
+    xmlattributes(cast('2009-04-09 00:24:37' as timestamp) as bar)
+  );
 
 select
   xmlelement(name foo, xmlattributes(cast('infinity' as timestamp) as bar));
 
 select
-  xmlelement(name foo, xmlattributes(
-    '<>&"''' as funny,
-    cast('b<a/>r' as xml) as funnier
-  ));
+  xmlelement(
+    name foo,
+    xmlattributes('<>&"''' as funny, cast('b<a/>r' as xml) as funnier)
+  );
 
 select xmlparse(content '');
 
@@ -177,27 +177,46 @@ select xmlroot(cast('<foo/>' as xml), version '2.0');
 select xmlroot(cast('<foo/>' as xml), version no value, standalone yes);
 
 select
-  xmlroot(cast('<?xml version="1.1"?><foo/>'
-  as xml), version no value, standalone yes);
+  xmlroot(
+    cast('<?xml version="1.1"?><foo/>' as xml),
+    version no value,
+    standalone yes
+  );
 
 select
-  xmlroot(xmlroot(cast('<foo/>'
-  as xml), version '1.0'), version '1.1', standalone no);
+  xmlroot(
+    xmlroot(cast('<foo/>' as xml), version '1.0'),
+    version '1.1',
+    standalone no
+  );
 
 select
-  xmlroot('<?xml version="1.1" standalone="yes"?><foo/>', version no value, standalone no);
+  xmlroot(
+    '<?xml version="1.1" standalone="yes"?><foo/>',
+    version no value,
+    standalone no
+  );
 
 select
-  xmlroot('<?xml version="1.1" standalone="yes"?><foo/>', version no value, standalone no value);
+  xmlroot(
+    '<?xml version="1.1" standalone="yes"?><foo/>',
+    version no value,
+    standalone no value
+  );
 
 select
   xmlroot('<?xml version="1.1" standalone="yes"?><foo/>', version no value);
 
 select
-  xmlroot(xmlelement(name gazonk, xmlattributes(
-    'val' as name,
-    1 + 1 as num
-  ), xmlelement(name qux, 'foo')), version '1.0', standalone yes);
+  xmlroot(
+    xmlelement(
+      name gazonk,
+      xmlattributes('val' as name, 1 + 1 as num),
+      xmlelement(name qux, 'foo')
+    ),
+    version '1.0',
+    standalone yes
+  );
 
 select xmlserialize(content data as varchar(20)) from xmltest;
 
@@ -206,10 +225,16 @@ select xmlserialize(content 'good' as char(10));
 select xmlserialize(document 'bad' as text);
 
 select
-  xmlserialize(document '<foo><bar><val x="y">42</val></bar></foo>' as text indent);
+  xmlserialize(
+    document '<foo><bar><val x="y">42</val></bar></foo>'
+    as text indent
+  );
 
 select
-  xmlserialize(content '<foo><bar><val x="y">42</val></bar></foo>' as text indent);
+  xmlserialize(
+    content '<foo><bar><val x="y">42</val></bar></foo>'
+    as text indent
+  );
 
 select
   xmlserialize(document '<foo><bar><val x="y">42</val></bar></foo>' as text);
@@ -218,22 +243,40 @@ select
   xmlserialize(content '<foo><bar><val x="y">42</val></bar></foo>' as text);
 
 select
-  xmlserialize(document '<foo>73</foo><bar><val x="y">42</val></bar>' as text indent);
+  xmlserialize(
+    document '<foo>73</foo><bar><val x="y">42</val></bar>'
+    as text indent
+  );
 
 select
-  xmlserialize(content '<foo>73</foo><bar><val x="y">42</val></bar>' as text indent);
+  xmlserialize(
+    content '<foo>73</foo><bar><val x="y">42</val></bar>'
+    as text indent
+  );
 
 select
-  xmlserialize(document 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as text indent);
+  xmlserialize(
+    document 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>'
+    as text indent
+  );
 
 select
-  xmlserialize(content 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as text indent);
+  xmlserialize(
+    content 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>'
+    as text indent
+  );
 
 select
-  xmlserialize(document '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as text indent);
+  xmlserialize(
+    document '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>'
+    as text indent
+  );
 
 select
-  xmlserialize(content '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as text indent);
+  xmlserialize(
+    content '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>'
+    as text indent
+  );
 
 select xmlserialize(document '' as text indent);
 
@@ -248,10 +291,16 @@ select xmlserialize(document null as text indent);
 select xmlserialize(content null as text indent);
 
 select
-  xmlserialize(document '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as text indent);
+  xmlserialize(
+    document '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>'
+    as text indent
+  );
 
 select
-  xmlserialize(content '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as text indent);
+  xmlserialize(
+    content '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>'
+    as text indent
+  );
 
 select xmlserialize(document '<!DOCTYPE a><a/>' as text indent);
 
@@ -311,8 +360,9 @@ execute foo ('<bar/>');
 execute foo ('good');
 
 select
-  cast('<!-- in SQL:2006+ a doc is content too--> <?y z?> <!DOCTYPE a><a/>'
-  as xml);
+  cast(
+    '<!-- in SQL:2006+ a doc is content too--> <?y z?> <!DOCTYPE a><a/>' as xml
+  );
 
 select cast('<?xml version="1.0"?> <!-- hi--> <!DOCTYPE a><a/>' as xml);
 
@@ -332,10 +382,11 @@ as select xmlconcat('hello', 'you');
 
 create view xmlview3
 as select
-  xmlelement(name element, xmlattributes(
-    1 as ":one:",
-    'deuce' as two
-  ), 'content&');
+  xmlelement(
+    name element,
+    xmlattributes(1 as ":one:", 'deuce' as two),
+    'content&'
+  );
 
 create view xmlview4
 as select
@@ -462,25 +513,35 @@ END
 $$;
 
 select
-  xmlexists('//town[text() = ''Toronto'']' passing '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>');
+  xmlexists(
+    '//town[text() = ''Toronto'']'
+    passing '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+  );
 
 select
-  xmlexists('//town[text() = ''Cwmbran'']' passing '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>');
+  xmlexists(
+    '//town[text() = ''Cwmbran'']'
+    passing '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+  );
 
 select xmlexists('count(/nosuchtag)' passing '<root/>');
 
 select
   xpath_exists(
     '//town[text() = ''Toronto'']',
-    cast('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
-    as xml)
+    cast(
+      '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+      as xml
+    )
   );
 
 select
   xpath_exists(
     '//town[text() = ''Cwmbran'']',
-    cast('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
-    as xml)
+    cast(
+      '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+      as xml
+    )
   );
 
 select xpath_exists('count(/nosuchtag)', cast('<root/>' as xml));
@@ -489,32 +550,40 @@ insert into xmltest
 values
   (
     4,
-    cast('<menu><beers><name>Budvar</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
-    as xml)
+    cast(
+      '<menu><beers><name>Budvar</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
+      as xml
+    )
   );
 
 insert into xmltest
 values
   (
     5,
-    cast('<menu><beers><name>Molson</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
-    as xml)
+    cast(
+      '<menu><beers><name>Molson</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
+      as xml
+    )
   );
 
 insert into xmltest
 values
   (
     6,
-    cast('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Budvar</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
-    as xml)
+    cast(
+      '<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Budvar</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
+      as xml
+    )
   );
 
 insert into xmltest
 values
   (
     7,
-    cast('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Molson</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
-    as xml)
+    cast(
+      '<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Molson</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
+      as xml
+    )
   );
 
 select count(id) from xmltest where xmlexists('/menu/beer' passing data);
@@ -638,13 +707,19 @@ select xpath('/*', '<nosuchprefix:tag/>');
 select xpath('/*', '<relativens xmlns=''relative''/>');
 
 select
-  xmlparse(document '<!DOCTYPE foo [<!ENTITY c SYSTEM "/etc/passwd">]><foo>&c;</foo>');
+  xmlparse(
+    document '<!DOCTYPE foo [<!ENTITY c SYSTEM "/etc/passwd">]><foo>&c;</foo>'
+  );
 
 select
-  xmlparse(document '<!DOCTYPE foo [<!ENTITY c SYSTEM "/etc/no.such.file">]><foo>&c;</foo>');
+  xmlparse(
+    document '<!DOCTYPE foo [<!ENTITY c SYSTEM "/etc/no.such.file">]><foo>&c;</foo>'
+  );
 
 select
-  xmlparse(document '<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"><chapter>&nbsp;</chapter>');
+  xmlparse(
+    document '<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"><chapter>&nbsp;</chapter>'
+  );
 
 create table xmldata (data xml);
 
@@ -686,7 +761,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -706,7 +780,6 @@ as select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -726,13 +799,12 @@ select * from xmltableview1;
 
 select * from xmltableview1;
 
-select * from xmltable( row() passing null columns v1 timestamp) as f (v1, v2);
+select * from xmltable(row() passing null columns v1 timestamp) as f (v1, v2);
 
 select
   *
 from
   xmltable(
-
     xmlnamespaces('http://x.y' as zz),
     '/zz:rows/zz:row'
     passing '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
@@ -745,7 +817,6 @@ as select
   *
 from
   xmltable(
-
     xmlnamespaces('http://x.y' as "Zz"),
     '/Zz:rows/Zz:row'
     passing '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
@@ -759,7 +830,6 @@ select
   *
 from
   xmltable(
-
     xmlnamespaces(default 'http://x.y'),
     '/rows/row'
     passing '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
@@ -770,7 +840,7 @@ from
 select
   *
 from
-  xmltable( '.' passing '<foo/>' columns a text path 'foo/namespace::node()');
+  xmltable('.' passing '<foo/>' columns a text path 'foo/namespace::node()');
 
 prepare pp
 as select
@@ -778,7 +848,6 @@ as select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -799,7 +868,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -812,7 +880,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -826,7 +893,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -840,7 +906,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -852,7 +917,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -864,7 +928,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -879,7 +942,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -893,7 +955,6 @@ select
   *
 from
   xmltable(
-
     '/root'
     passing '<root><element>a1a<!-- aaaa -->a2a<?aaaaa?> <!--z-->  bbbb<x>xxx</x>cccc</element></root>'
     columns
@@ -904,7 +965,6 @@ select
   *
 from
   xmltable(
-
     '/root'
     passing '<root><element>a1a<!-- aaaa -->a2a<?aaaaa?> <!--z-->  bbbb<x>xxx</x>cccc</element></root>'
     columns
@@ -915,7 +975,6 @@ select
   *
 from
   xmltable(
-
     'd/r'
     passing '<d><r><c><![CDATA[<hello> &"<>!<a>foo</a>]]></c></r><r><c>2</c></r></d>'
     columns
@@ -926,7 +985,6 @@ select
   *
 from
   xmltable(
-
     '/x/a'
     passing '<x><a><ent>&apos;</ent></a><a><ent>&quot;</ent></a><a><ent>&amp;</ent></a><a><ent>&lt;</ent></a><a><ent>&gt;</ent></a></x>'
     columns
@@ -937,7 +995,6 @@ select
   *
 from
   xmltable(
-
     '/x/a'
     passing '<x><a><ent>&apos;</ent></a><a><ent>&quot;</ent></a><a><ent>&amp;</ent></a><a><ent>&lt;</ent></a><a><ent>&gt;</ent></a></x>'
     columns
@@ -949,7 +1006,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -968,7 +1024,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -983,7 +1038,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -999,7 +1053,6 @@ select
 from
   xmldata,
   lateral xmltable(
-
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     passing data
     columns
@@ -1046,7 +1099,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -1065,7 +1117,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -1086,7 +1137,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -1107,7 +1157,6 @@ select
 from
   (select data from xmldata) as x,
   lateral xmltable(
-
     '/ROWS/ROW'
     passing data
     columns
@@ -1121,9 +1170,7 @@ from
       premier_name text path 'PREMIER_NAME' default 'not specified'
   );
 
-with
-x
-as (
+with x as (
   select
     proname,
     proowner,
@@ -1140,29 +1187,22 @@ as (
   where
     proname = 'f_leak'
 ),
-y
-as (
+y as (
   select
-    xmlelement(name proc, xmlforest(
-      proname,
-      proowner,
-      procost,
-      pronargs,
-      proargnames,
-      proargtypes
-    ))
+    xmlelement(
+      name proc,
+      xmlforest(proname, proowner, procost, pronargs, proargnames, proargtypes)
+    )
     as proc
   from
     x
 ),
-z
-as (
+z as (
   select
     xmltable.*
   from
     y,
     lateral xmltable(
-
       '/proc'
       passing proc
       columns
@@ -1178,9 +1218,7 @@ select * from z
 except
 select * from x;
 
-with
-x
-as (
+with x as (
   select
     proname,
     proowner,
@@ -1195,31 +1233,34 @@ as (
   from
     pg_proc
 ),
-y
-as (
+y as (
   select
-    xmlelement(name data, xmlagg(
-      xmlelement(name proc, xmlforest(
-        proname,
-        proowner,
-        procost,
-        pronargs,
-        proargnames,
-        proargtypes
-      ))
-    ))
+    xmlelement(
+      name data,
+      xmlagg(
+        xmlelement(
+          name proc,
+          xmlforest(
+            proname,
+            proowner,
+            procost,
+            pronargs,
+            proargnames,
+            proargtypes
+          )
+        )
+      )
+    )
     as doc
   from
     x
 ),
-z
-as (
+z as (
   select
     xmltable.*
   from
     y,
     lateral xmltable(
-
       '/data/proc'
       passing doc
       columns
@@ -1253,7 +1294,6 @@ select
 from
   xmltest2,
   lateral xmltable(
-
     '/d/r'
     passing x
     columns
@@ -1265,7 +1305,6 @@ select
 from
   xmltest2,
   lateral xmltable(
-
     ('/d/r/' || lower(_path) || 'c')
     passing x
     columns
@@ -1277,7 +1316,6 @@ select
 from
   xmltest2,
   lateral xmltable(
-
     ('/d/r/' || lower(_path) || 'c')
     passing x
     columns
@@ -1288,7 +1326,6 @@ select
   *
 from
   xmltable(
-
     '*'
     passing '<a>a</a>'
     columns
@@ -1303,7 +1340,6 @@ select
   *
 from
   xmltable(
-
     '*'
     passing '<e>pre<!--c1--><?pi arg?><![CDATA[&ent1]]><n2>&amp;deep</n2>post</e>'
     columns
@@ -1315,7 +1351,6 @@ select
   *
 from
   xmltable(
-
     '.'
     passing xmlelement(name a)
     columns

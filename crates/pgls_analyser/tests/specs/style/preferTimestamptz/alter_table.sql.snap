@@ -10,7 +10,7 @@ alter table events alter column created_at type TIMESTAMP WITHOUT TIME ZONE usin
 ```
 
 # Diagnostics
-lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferTimestamptz  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -23,6 +23,6 @@ lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━
 ## Fix (unsafe): Use TIMESTAMPTZ
 ```
 -- expect_lint/preferTimestamptz
-alter table events alter column created_at type timestamptz using created_at;
+alter table events alter column created_at type TIMESTAMPTZ using created_at;
 
 ```

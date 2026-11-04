@@ -10,7 +10,7 @@ DROP INDEX CONCURRENTLY users_email_idx;
 ```
 
 # Diagnostics
-lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/preferRobustStmts  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Concurrent drop should use IF EXISTS.
   

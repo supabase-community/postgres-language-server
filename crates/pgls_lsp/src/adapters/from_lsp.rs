@@ -1,6 +1,6 @@
-use crate::adapters::line_index::LineIndex;
-use crate::adapters::{LineCol, PositionEncoding, WideLineCol};
+use crate::adapters::PositionEncoding;
 use anyhow::{Result, ensure};
+use pgls_line_index::{LineCol, LineIndex, WideLineCol};
 use pgls_text_size::{TextRange, TextSize};
 use tower_lsp_server::ls_types;
 

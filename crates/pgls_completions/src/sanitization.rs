@@ -48,8 +48,6 @@ where
     'larger: 'smaller,
 {
     fn from(mut params: CompletionParams<'larger>) -> Self {
-        params.text = params.text.to_ascii_lowercase();
-
         while !params.text.is_char_boundary(params.position.into())
             && params.position < TextSize::new(params.text.len().try_into().unwrap())
         {
@@ -353,8 +351,9 @@ mod tests {
     }
 
     #[test]
-    fn should_lowercase_everything_except_replaced_token() {
-        let input = "SELECT  FROM users WHERE ts = NOW();";
+    fn should_keep_the_case_of_the_sql() {
+        // Quoted identifiers like `"MyTable"` keep their case.
+        let input = r#"SELECT  FROM "MyTable" WHERE ts = NOW();"#;
         let position = TextSize::new(7);
 
         let params = get_test_params(input, position);
@@ -362,7 +361,7 @@ mod tests {
 
         assert_eq!(
             sanitized.text,
-            "select REPLACED_TOKEN from users where ts = now();"
+            r#"SELECT REPLACED_TOKEN FROM "MyTable" WHERE ts = NOW();"#
         );
     }
 

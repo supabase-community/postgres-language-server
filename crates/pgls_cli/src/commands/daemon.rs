@@ -25,7 +25,7 @@ pub(crate) fn start(
     log_path: Option<PathBuf>,
     log_file_name_prefix: Option<String>,
 ) -> Result<(), CliDiagnostic> {
-    let rt = Runtime::new()?;
+    let rt = crate::runtime()?;
     let did_spawn = rt.block_on(ensure_daemon(
         false,
         config_path,
@@ -47,7 +47,7 @@ pub(crate) fn start(
 }
 
 pub(crate) fn stop(session: CliSession) -> Result<(), CliDiagnostic> {
-    let rt = Runtime::new()?;
+    let rt = crate::runtime()?;
 
     match open_transport(rt)? {
         Some(transport) => {
@@ -83,7 +83,7 @@ pub(crate) fn run_server(
 ) -> Result<(), CliDiagnostic> {
     setup_tracing_subscriber(log_path, log_file_name_prefix, log_level, log_kind);
 
-    let rt = Runtime::new()?;
+    let rt = crate::runtime()?;
     let factory = ServerFactory::new(stop_on_disconnect);
     let cancellation = factory.cancellation();
     let span = debug_span!("Running Server", pid = std::process::id());
@@ -105,7 +105,7 @@ pub(crate) fn run_server(
 }
 
 pub(crate) fn print_socket() -> Result<(), CliDiagnostic> {
-    let rt = Runtime::new()?;
+    let rt = crate::runtime()?;
     rt.block_on(service::print_socket())?;
     Ok(())
 }
@@ -115,7 +115,7 @@ pub(crate) fn lsp_proxy(
     log_path: Option<PathBuf>,
     log_file_name_prefix: Option<String>,
 ) -> Result<(), CliDiagnostic> {
-    let rt = Runtime::new()?;
+    let rt = crate::runtime()?;
     rt.block_on(start_lsp_proxy(
         &rt,
         config_path,

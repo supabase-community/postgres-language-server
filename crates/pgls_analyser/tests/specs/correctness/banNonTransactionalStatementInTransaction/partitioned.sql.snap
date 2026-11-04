@@ -1,0 +1,36 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create table events (id bigint, created_at timestamptz) partition by range (created_at);
+create index events_created_at_idx on events (created_at);
+create table users (id bigint);
+create index users_id_idx on users (id);
+begin;
+-- Postgres processes the partitions one by one, each in a transaction of its own.
+-- expect_lint/banNonTransactionalStatementInTransaction
+reindex table events;
+-- expect_lint/banNonTransactionalStatementInTransaction
+cluster events using events_created_at_idx;
+reindex table users;
+cluster users using users_id_idx;
+commit;
+
+```
+
+# Diagnostics
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REINDEX TABLE cannot run inside a transaction block.
+  
+  i Run REINDEX TABLE outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CLUSTER cannot run inside a transaction block.
+  
+  i Run CLUSTER outside of a transaction, e.g. in a migration of its own that runs without a transaction.

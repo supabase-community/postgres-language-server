@@ -24,3 +24,6 @@ pgls_postgres_regress.workspace   = true
 pgls_statement_splitter.workspace = true
 rayon.workspace                   = true
 regex.workspace                   = true
+
+[lints]
+workspace = true

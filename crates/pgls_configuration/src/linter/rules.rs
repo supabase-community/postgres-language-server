@@ -235,6 +235,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Error,
     },
     LinterRuleMetadata {
+        group: "correctness",
+        name: "banNonTransactionalStatementInTransaction",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
         group: "destructive",
         name: "banSetSchema",
         recommended: false,
@@ -594,7 +600,7 @@ pub struct Rules {
     #[doc = "Using CHAR(n) or CHARACTER(n) types is discouraged."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_char_field: Option<RuleConfiguration<pgls_analyser::options::BanCharField>>,
-    #[doc = "Concurrent index creation is not allowed within a transaction."]
+    #[doc = "Concurrent index operations are not allowed within a transaction."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_concurrent_index_creation_in_transaction:
         Option<RuleConfiguration<pgls_analyser::options::BanConcurrentIndexCreationInTransaction>>,
@@ -656,6 +662,11 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_duplicate_column_assignments:
         Option<RuleConfiguration<pgls_analyser::options::BanDuplicateColumnAssignments>>,
+    #[doc = "Statements that Postgres can't run inside a transaction block."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_non_transactional_statement_in_transaction: Option<
+        RuleConfiguration<pgls_analyser::options::BanNonTransactionalStatementInTransaction>,
+    >,
     #[doc = "Moving an object to another schema may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_set_schema: Option<RuleConfiguration<pgls_analyser::options::BanSetSchema>>,
@@ -937,6 +948,10 @@ impl Rules {
             "banDropView" => self.ban_drop_view.as_ref().map(RuleConfiguration::level),
             "banDuplicateColumnAssignments" => self
                 .ban_duplicate_column_assignments
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banNonTransactionalStatementInTransaction" => self
+                .ban_non_transactional_statement_in_transaction
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banSetSchema" => self.ban_set_schema.as_ref().map(RuleConfiguration::level),
@@ -1223,6 +1238,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "banDuplicateColumnAssignments" => self
                 .ban_duplicate_column_assignments
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banNonTransactionalStatementInTransaction" => self
+                .ban_non_transactional_statement_in_transaction
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banSetSchema" => self

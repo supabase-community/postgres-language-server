@@ -1,0 +1,52 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- section: up
+-- expect_lint/banNonTransactionalStatementInTransaction
+vacuum users;
+
+-- section: up transaction:false queries:separate
+vacuum users;
+vacuum posts;
+
+-- dbmate sends the section as one query, which runs in a transaction block.
+-- section: up transaction:false
+-- expect_lint/banNonTransactionalStatementInTransaction
+vacuum users;
+-- expect_lint/banNonTransactionalStatementInTransaction
+vacuum posts;
+
+-- section: down transaction:false
+vacuum users;
+
+```
+
+# Diagnostics
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × VACUUM cannot run inside a transaction block.
+  
+  i Run VACUUM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × VACUUM cannot run inside a transaction block.
+  
+  i Run VACUUM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+  i The migration tool sends the statements to Postgres as one query, and Postgres runs a query with more than one statement in a transaction block. Put the statement in a section of its own.
+  
+
+
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × VACUUM cannot run inside a transaction block.
+  
+  i Run VACUUM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  
+  i The migration tool sends the statements to Postgres as one query, and Postgres runs a query with more than one statement in a transaction block. Put the statement in a section of its own.
