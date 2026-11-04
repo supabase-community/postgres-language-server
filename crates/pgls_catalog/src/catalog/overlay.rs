@@ -55,6 +55,24 @@ impl Catalog {
         (key.0 != "pg_catalog").then_some(key)
     }
 
+    /// The relation that is already where `CREATE TABLE`, `CREATE TABLE AS` or `SELECT INTO`
+    /// would create `range_var`. With `IF NOT EXISTS`, Postgres skips the statement unless this
+    /// is [`Lookup::Missing`] ([`transformCreateStmt`], [`CreateTableAsRelExists`]).
+    ///
+    /// [`transformCreateStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L164
+    /// [`CreateTableAsRelExists`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/createas.c#L393
+    pub fn relation_at_creation(
+        &self,
+        range_var: &protobuf::RangeVar,
+        search_path: &[String],
+    ) -> Lookup<RelationInfo> {
+        match self.relation_creation_key(range_var, search_path) {
+            Some((schema, name)) => self.relation_in(&schema, &name),
+            // Postgres rejects new relations in `pg_catalog`.
+            None => Lookup::Unknown,
+        }
+    }
+
     // ----- schemas -----
 
     pub(super) fn drop_schema(&mut self, name: &str) {
