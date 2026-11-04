@@ -4,8 +4,17 @@ use pgls_query::{
 };
 use pgls_query_ext::utils::{QualifiedName, qualified_name, string_value, string_values};
 
-use super::{Resolver, alias::apply_alias, func_call::resolve_func_call, resolve_node};
-use crate::resolve::scope::{Columns, Item, Level};
+use super::{
+    Resolver,
+    alias::{apply_alias, apply_typed_alias},
+    func_call::resolve_func_call,
+    resolve_node,
+};
+use crate::resolve::{
+    expr::call_args,
+    scope::{Columns, Item, Level},
+    utils::named,
+};
 use crate::{
     lookup::Lookup,
     typing::{Selection, Type, TypedColumn, select_function},
@@ -90,7 +99,7 @@ pub(super) fn resolve_range_function(
     {
         columns.push(TypedColumn {
             name: "ordinality".into(),
-            ty: named_type(r, "int8"),
+            ty: named(r, "int8"),
         });
     }
 
@@ -106,16 +115,7 @@ pub(super) fn resolve_range_function(
         alias.map(|alias| alias.aliasname.clone()).or(function_name),
         apply_alias(columns, alias),
     );
-    item.typed_columns = typed_columns.map(|mut columns| {
-        if let Some(alias) = alias {
-            for (column, name) in columns.iter_mut().zip(&alias.colnames) {
-                if let Some(NodeEnum::String(name)) = name.node.as_ref() {
-                    column.name = name.sval.clone();
-                }
-            }
-        }
-        columns
-    });
+    item.typed_columns = apply_typed_alias(typed_columns, alias);
     item
 }
 
@@ -212,13 +212,6 @@ fn return_columns(r: &Resolver, call: &FuncCall) -> Columns {
         .then(|| first.into_iter().map(|column| column.name).collect())
 }
 
-fn named_type(r: &Resolver, name: &str) -> Option<Type> {
-    match r.catalog.type_(Some("pg_catalog"), name, r.search_path) {
-        Lookup::Found(info) => info.id.map(Type::Named),
-        _ => None,
-    }
-}
-
 fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<TypedColumn>> {
     let mut output = Vec::new();
     for entry in &n.functions {
@@ -233,7 +226,7 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
         if call.agg_within_group {
             return None;
         }
-        let args = super::super::expr::call_args(r, call);
+        let args = call_args(r, call);
         let Selection::Match(selected) = select_function(
             r.catalog,
             schema,
