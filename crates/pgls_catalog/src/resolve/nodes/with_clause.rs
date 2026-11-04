@@ -8,7 +8,7 @@ use super::{
     select_stmt::resolve_select_stmt,
 };
 use crate::resolve::{
-    resolve_unknown_outputs,
+    Reference, resolve_unknown_outputs,
     scope::{Cte, TypedColumns},
 };
 
@@ -36,6 +36,13 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
     }
 
     for cte in definitions {
+        if r.collects_references() {
+            r.record(Reference::Cte {
+                location: cte.location,
+                span: r.name_span(cte.location),
+                name: cte.ctename.clone(),
+            });
+        }
         let non_recursive = if n.recursive {
             non_recursive_term_columns(r, cte)
         } else {
