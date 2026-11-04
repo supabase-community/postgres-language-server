@@ -62,11 +62,7 @@ impl LinterRule for LockTimeoutWarning {
             // ALTER TABLE takes ACCESS EXCLUSIVE lock
             pgls_query::NodeEnum::AlterTableStmt(stmt) => {
                 if let Some(relation) = &stmt.relation {
-                    let schema = if relation.schemaname.is_empty() {
-                        "public"
-                    } else {
-                        &relation.schemaname
-                    };
+                    let schema = tx_state.object_schema(&relation.schemaname);
                     let table = &relation.relname;
 
                     // Only warn if the table wasn't created in this transaction
@@ -92,11 +88,7 @@ impl LinterRule for LockTimeoutWarning {
                 if !stmt.concurrent
                     && let Some(relation) = &stmt.relation
                 {
-                    let schema = if relation.schemaname.is_empty() {
-                        "public"
-                    } else {
-                        &relation.schemaname
-                    };
+                    let schema = tx_state.object_schema(&relation.schemaname);
                     let table = &relation.relname;
 
                     // Only warn if the table wasn't created in this transaction
