@@ -1,4 +1,5 @@
 use crate::fix::StatementTokens;
+use crate::linter_context::builtin_type_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -106,29 +107,22 @@ fn check_column_def(
         return;
     };
 
-    for name_node in &type_name.names {
-        let Some(pgls_query::NodeEnum::String(name)) = &name_node.node else {
-            continue;
-        };
-
-        let type_name_lower = name.sval.to_lowercase();
-        if type_name_lower != "json" {
-            continue;
-        }
-
-        diagnostics.push(
-            LinterDiagnostic::new(
-                rule_category!(),
-                None,
-                markup! {
-                    "Prefer JSONB over JSON for better performance and functionality."
-                },
-            )
-            .detail(None, "JSON stores exact text representation while JSONB stores parsed binary format. JSONB is faster for queries, supports indexing, and removes duplicate keys.")
-            .note("Consider using JSONB instead unless you specifically need to preserve formatting or duplicate keys.")
-            .maybe_fix(tokens.and_then(|tokens| use_jsonb(tokens, type_name.location))),
-        );
+    if builtin_type_name(type_name) != Some("json") {
+        return;
     }
+
+    diagnostics.push(
+        LinterDiagnostic::new(
+            rule_category!(),
+            None,
+            markup! {
+                "Prefer JSONB over JSON for better performance and functionality."
+            },
+        )
+        .detail(None, "JSON stores exact text representation while JSONB stores parsed binary format. JSONB is faster for queries, supports indexing, and removes duplicate keys.")
+        .note("Consider using JSONB instead unless you specifically need to preserve formatting or duplicate keys.")
+        .maybe_fix(tokens.and_then(|tokens| use_jsonb(tokens, type_name.location))),
+    );
 }
 
 /// Replaces `json` with `jsonb`. It is unsafe because JSONB doesn't keep the formatting, key order
@@ -138,5 +132,5 @@ fn use_jsonb(tokens: StatementTokens, location: i32) -> Option<RuleFix> {
     if !tokens.text(name).eq_ignore_ascii_case("json") {
         return None;
     }
-    Some(RuleFix::new("Use JSONB").replace(tokens.range(name), "jsonb"))
+    Some(tokens.replace(name, "Use JSONB", "jsonb"))
 }

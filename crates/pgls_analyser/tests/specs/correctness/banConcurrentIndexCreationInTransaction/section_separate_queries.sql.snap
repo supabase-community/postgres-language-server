@@ -1,0 +1,13 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_no_diagnostics
+-- goose sends the statements of a NO TRANSACTION migration one by one.
+-- section: up transaction:false queries:separate
+CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
+CREATE INDEX CONCURRENTLY users_name_idx ON users (name);
+
+```

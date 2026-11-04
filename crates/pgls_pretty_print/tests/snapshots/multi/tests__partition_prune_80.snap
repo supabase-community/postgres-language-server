@@ -1536,7 +1536,14 @@ deallocate mt_q1;
 
 prepare mt_q2 (int) as select * from ma_test where a >= $1 order by b limit 1;;
 
-explain (analyze, verbose, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (
+  analyze,
+  verbose,
+  costs 'off',
+  summary 'off',
+  timing 'off',
+  buffers 'off'
+)
 execute mt_q2 (35);
 
 deallocate mt_q2;
@@ -2153,9 +2160,7 @@ create table part_abc_log (
   c bool
 );
 
-with
-t
-as (
+with t as (
   merge into part_abc_view as pt
   using (select stable_one() + 1 as pid) as q
   inner join
@@ -2170,9 +2175,7 @@ insert into part_abc_log
 select * from t
 returning *;
 
-with
-t
-as (
+with t as (
   merge into part_abc_view as pt
   using (select stable_one() + 1 as pid) as q
   inner join

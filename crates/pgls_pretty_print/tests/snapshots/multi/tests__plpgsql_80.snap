@@ -293,15 +293,11 @@ begin
 end
 $$;
 
-comment on function tg_hub_adjustslots_wrong(
-  bpchar,
-  int,
-  int) is 'function with args';
+comment on function tg_hub_adjustslots_wrong(bpchar, int, int)
+  is 'function with args';
 
-comment on function tg_hub_adjustslots(
-  bpchar,
-  int,
-  int) is 'function with args';
+comment on function tg_hub_adjustslots(bpchar, int, int)
+  is 'function with args';
 
 comment on function tg_hub_adjustslots(bpchar, int, int) is null;
 
@@ -4619,8 +4615,9 @@ select foreach_test(cast(array[(10, 20), (40, 69), (35, 78)] as xy_tuple[]));
 
 select
   foreach_test(
-    cast(array[array[(10, 20), (40, 69)], array[(35, 78), (88, 76)]]
-    as xy_tuple[])
+    cast(
+      array[array[(10, 20), (40, 69)], array[(35, 78), (88, 76)]] as xy_tuple[]
+    )
   );
 
 create or replace function foreach_test(anyarray)
@@ -4640,8 +4637,9 @@ select foreach_test(cast(array[(10, 20), (40, 69), (35, 78)] as xy_tuple[]));
 
 select
   foreach_test(
-    cast(array[array[(10, 20), (40, 69)], array[(35, 78), (88, 76)]]
-    as xy_tuple[])
+    cast(
+      array[array[(10, 20), (40, 69)], array[(35, 78), (88, 76)]] as xy_tuple[]
+    )
   );
 
 create or replace function foreach_test(anyarray)
@@ -4661,8 +4659,9 @@ select foreach_test(cast(array[(10, 20), (40, 69), (35, 78)] as xy_tuple[]));
 
 select
   foreach_test(
-    cast(array[array[(10, 20), (40, 69)], array[(35, 78), (88, 76)]]
-    as xy_tuple[])
+    cast(
+      array[array[(10, 20), (40, 69)], array[(35, 78), (88, 76)]] as xy_tuple[]
+    )
   );
 
 drop function foreach_test(anyarray);

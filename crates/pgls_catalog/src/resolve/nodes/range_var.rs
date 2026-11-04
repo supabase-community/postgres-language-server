@@ -19,7 +19,22 @@ use crate::resolve::{
 pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
     let alias = n.alias.as_ref();
     let is_unqualified = n.schemaname.is_empty() && n.catalogname.is_empty();
-    if is_unqualified && let Some(cte) = r.ctes.iter().rev().find(|cte| cte.name == n.relname) {
+    if is_unqualified
+        && let Some(cte) = r
+            .ctes
+            .iter()
+            .rev()
+            .find(|cte| cte.name == n.relname)
+            .cloned()
+    {
+        if r.collects_references() {
+            r.record(Reference::Cte {
+                location: n.location,
+                span: r.name_span(n.location),
+                name: cte.name.clone(),
+            });
+            r.record_alias(n.location, alias);
+        }
         let mut item = Item::named(
             Some(alias.map_or_else(|| cte.name.clone(), |alias| alias.aliasname.clone())),
             apply_alias(cte.columns.clone(), alias),
@@ -55,6 +70,10 @@ pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
 pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
     let alias = n.alias.as_ref();
     let relation = lookup_relation(r, n);
+    // Like the relation, its alias only has a reference if the relation is known.
+    if relation.schema.is_some() {
+        r.record_alias(n.location, alias);
+    }
     Item {
         name: Some(alias.map_or_else(|| n.relname.clone(), |alias| alias.aliasname.clone())),
         schema: relation.schema.filter(|_| alias.is_none()),

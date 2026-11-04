@@ -22,3 +22,6 @@ serde  = ["dep:serde"]
 
 [build-dependencies]
 quote = "1.0.14"
+
+[lints]
+workspace = true

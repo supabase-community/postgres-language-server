@@ -11,8 +11,10 @@ pub(crate) fn on_hover(
     let url = params.text_document_position_params.text_document.uri;
     let position = params.text_document_position_params.position;
     let path = session.file_path(&url)?;
+    let project_key = session.project_key(&path);
 
     match session.workspace.on_hover(OnHoverParams {
+        project_key,
         path,
         position: get_cursor_position(session, &url, position)?,
     }) {

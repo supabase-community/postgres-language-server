@@ -27,3 +27,6 @@ serde                    = { workspace = true, features = ["derive"], optional =
 [features]
 schema = ["dep:schemars"]
 serde  = ["dep:serde"]
+
+[lints]
+workspace = true

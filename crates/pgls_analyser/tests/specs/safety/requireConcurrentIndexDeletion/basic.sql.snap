@@ -9,7 +9,7 @@ DROP INDEX IF EXISTS users_email_idx;
 ```
 
 # Diagnostics
-lint/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireConcurrentIndexDeletion  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Dropping an index non-concurrently blocks reads and writes to the table.
   
@@ -17,7 +17,7 @@ lint/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━�
   
 
 
-## Fix (safe): Add CONCURRENTLY
+## Fix (unsafe): Add CONCURRENTLY
 ```
 -- expect_lint/requireConcurrentIndexDeletion
 DROP INDEX CONCURRENTLY IF EXISTS users_email_idx;

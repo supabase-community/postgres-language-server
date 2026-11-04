@@ -22,11 +22,8 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
         emit_parenthesized_list(e, &n.aliascolnames, super::emit_node);
     }
 
-    if matches!(e.config().layout, crate::Layout::Expanded) {
-        e.space();
-    } else {
-        e.line(LineType::SoftOrSpace);
-    }
+    // `name as (` stays on one line; a body that doesn't fit breaks after the parenthesis.
+    e.space();
     e.token(TokenKind::AS_KW);
     e.space();
 

@@ -1,5 +1,8 @@
 //! Formats every statement Postgres accepted in its own regression suite and checks that the output
-//! parses back to the same AST, and that formatting the output again changes nothing.
+//! parses back to the same AST, that formatting the output again changes nothing, and that it has
+//! no stray whitespace.
+
+mod common;
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -77,6 +80,13 @@ fn round_trip(sql: &str) -> Result<(), String> {
             .map_err(|e| format!("output doesn't parse at width {max_line_length}: {e}\n{output}"))?
             .into_root()
             .ok_or("output has no statement")?;
+        let whitespace = common::whitespace_problems(&output);
+        if !whitespace.is_empty() {
+            return Err(format!(
+                "stray whitespace at width {max_line_length}: {}\n{output}",
+                whitespace.join(", ")
+            ));
+        }
         let mut formatted = reparsed.clone();
         normalize_ast(&mut formatted);
         if formatted != expected {

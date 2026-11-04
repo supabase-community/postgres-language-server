@@ -10,11 +10,13 @@ pub mod database;
 pub mod diagnostics;
 pub mod files;
 pub mod format;
+pub mod inlay_hints;
 pub mod linter;
 pub mod migrations;
 pub mod pglinter;
 pub mod plpgsql_check;
 pub mod rules;
+pub mod semantic_tokens;
 pub mod splinter;
 pub mod typecheck;
 pub mod utils;
@@ -37,6 +39,9 @@ pub use format::{
     FormatConfiguration, FunctionArgumentGroups, IndentStyle as FormatIndentStyle, KeywordCase,
     PartialFormatConfiguration, partial_format_configuration,
 };
+use inlay_hints::{
+    InlayHintsConfiguration, PartialInlayHintsConfiguration, partial_inlay_hints_configuration,
+};
 pub use linter::{
     LinterConfiguration, LinterRuleSettings, PartialLinterConfiguration, Rules,
     partial_linter_configuration,
@@ -56,6 +61,10 @@ use plpgsql_check::{
 pub use rules::{
     AnalyzerGroup, RuleConfiguration, RuleFixConfiguration, RulePlainConfiguration, RuleSelector,
     RuleWithFixOptions, RuleWithOptions,
+};
+use semantic_tokens::{
+    PartialSemanticTokensConfiguration, SemanticTokensConfiguration,
+    partial_semantic_tokens_configuration,
 };
 use serde::{Deserialize, Serialize};
 use splinter::{
@@ -131,6 +140,20 @@ pub struct Configuration {
         bpaf(external(partial_database_configuration), optional, hide_usage)
     )]
     pub db: DatabaseConfiguration,
+
+    /// The configuration for inlay hints in editors
+    #[partial(
+        type,
+        bpaf(external(partial_inlay_hints_configuration), optional, hide_usage)
+    )]
+    pub inlay_hints: InlayHintsConfiguration,
+
+    /// The configuration for semantic highlighting in editors
+    #[partial(
+        type,
+        bpaf(external(partial_semantic_tokens_configuration), optional, hide_usage)
+    )]
+    pub semantic_tokens: SemanticTokensConfiguration,
 }
 
 impl PartialConfiguration {
@@ -197,6 +220,8 @@ impl PartialConfiguration {
                 conn_timeout_secs: Some(10),
                 disable_connection: Some(false),
             }),
+            inlay_hints: None,
+            semantic_tokens: None,
         }
     }
 

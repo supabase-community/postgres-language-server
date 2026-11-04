@@ -7,6 +7,7 @@ use pgls_text_size::{TextRange, TextSize};
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct CodeActionsParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub path: PgLSPath,
     pub cursor_position: TextSize,
     pub only: Vec<RuleSelector>,
@@ -39,7 +40,8 @@ pub enum CodeActionKind {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct EditAction {
     /// The category of the diagnostic the action fixes or suppresses, e.g. `lint/banDropTable`.
-    pub rule: String,
+    /// `None` for refactors.
+    pub rule: Option<String>,
     pub category: ActionCategory,
     pub applicability: Applicability,
     /// Non-overlapping edits of the file, ordered by their position.
@@ -69,19 +71,65 @@ pub enum CommandActionCategory {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ExecuteStatementParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub statement_id: StatementId,
     pub path: PgLSPath,
 }
 
+/// The most rows an executed statement returns; the rest are dropped and the result is marked
+/// as truncated.
+pub const EXECUTE_STATEMENT_MAX_ROWS: usize = 100;
+
+/// The outcome of executing a statement.
+///
+/// A statement that returns rows (`select`, `values`, `returning`, `show`, `explain`, ...) fills
+/// `columns` and `rows`. Any other statement sets `rows_affected` instead.
 #[derive(Debug, serde::Serialize, serde::Deserialize, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
 pub struct ExecuteStatementResult {
+    /// A short summary for the user.
     pub message: String,
+    /// The names of the returned columns.
+    #[serde(default)]
+    pub columns: Vec<String>,
+    /// The returned rows, at most [`EXECUTE_STATEMENT_MAX_ROWS`]. Each value is in its Postgres
+    /// text representation, as `psql` shows it, and `null` for SQL `NULL`.
+    #[serde(default)]
+    pub rows: Vec<Vec<Option<String>>>,
+    /// Whether the statement returned more rows than `rows` holds.
+    #[serde(default)]
+    pub truncated: bool,
+    /// The number of rows affected, for a statement that returns no rows.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rows_affected: Option<u64>,
+    /// Why Postgres rejected the statement, if it did.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<ExecuteStatementError>,
+}
+
+/// An error that Postgres raised while executing a statement.
+#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteStatementError {
+    /// The primary error message, e.g. `division by zero`.
+    pub message: String,
+    /// The SQLSTATE error code, e.g. `22012`.
+    pub code: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hint: Option<String>,
+    /// The offset of the error in the document, if Postgres reported a position.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<TextSize>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FixFileParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub path: PgLSPath,
     pub fix_file_mode: FixFileMode,
     pub only: Vec<RuleSelector>,

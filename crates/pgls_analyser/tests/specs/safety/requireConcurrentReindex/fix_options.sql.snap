@@ -10,7 +10,7 @@ reindex (verbose) table users;
 ```
 
 # Diagnostics
-lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireConcurrentReindex  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × REINDEX without CONCURRENTLY blocks all table access.
   
@@ -18,9 +18,9 @@ lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━�
   
 
 
-## Fix (safe): Add CONCURRENTLY
+## Fix (unsafe): Add CONCURRENTLY
 ```
 -- expect_lint/requireConcurrentReindex
-reindex (verbose) table CONCURRENTLY users;
+reindex (verbose) table concurrently users;
 
 ```

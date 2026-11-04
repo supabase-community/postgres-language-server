@@ -1,7 +1,7 @@
 use pgls_query::protobuf::WithClause;
 
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
+use crate::emitter::{EventEmitter, GroupKind};
 
 use super::node_list::emit_comma_separated_list;
 
@@ -19,11 +19,8 @@ pub(super) fn emit_with_clause(e: &mut EventEmitter, n: &WithClause) {
         }
 
         if !n.ctes.is_empty() {
-            if matches!(e.config().layout, crate::Layout::Expanded) {
-                e.space();
-            } else {
-                e.line(LineType::SoftOrSpace);
-            }
+            // The first CTE stays on the WITH line. Its body breaks inside its own parentheses.
+            e.space();
             emit_comma_separated_list(e, &n.ctes, |node, e| {
                 super::emit_node(node, e);
             });

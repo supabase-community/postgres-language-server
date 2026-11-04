@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/numeric.sql
-snapshot_kind: text
 ---
 create table num_data (
   id int4,
@@ -1260,9 +1259,7 @@ select div(cast('nan' as numeric), '0');
 
 select div(cast('0' as numeric), '0');
 
-with
-v (x)
-as (
+with v (x) as (
   values (cast('0' as numeric)), ('1'), ('-1'), ('4.2'), ('-7.777'), ('inf'), ('-inf'), ('nan')
 )
 select
@@ -1276,9 +1273,7 @@ select
 from
   v;
 
-with
-v (x)
-as (
+with v (x) as (
   values (cast('0' as numeric)), ('1'), ('-1'), ('4.2'), ('-7.777'), ('inf'), ('-inf'), ('nan')
 )
 select
@@ -1290,9 +1285,7 @@ select
 from
   v;
 
-with
-v (x)
-as (
+with v (x) as (
   values
     (cast('0' as numeric)),
     ('1'),
@@ -1758,9 +1751,7 @@ select to_char(val, '9.999EEEE') from num_data;
 
 select to_char(val, 'FMRN') from num_data;
 
-with
-v (val)
-as (
+with v (val) as (
   values (cast('0' as numeric)), ('-4.2'), ('4.2e9'), ('1.2e-5'), ('inf'), ('-inf'), ('nan')
 )
 select
@@ -1771,9 +1762,7 @@ select
 from
   v;
 
-with
-v (exp)
-as (
+with v (exp) as (
   values
     (-16379),
     (-16378),
@@ -1804,9 +1793,7 @@ select
 from
   v;
 
-with
-v (val)
-as (
+with v (val) as (
   values (cast('0' as numeric)), ('-4.2'), ('4.2e9'), ('1.2e-5'), ('inf'), ('-inf'), ('nan')
 )
 select
@@ -1817,9 +1804,7 @@ select
 from
   v;
 
-with
-v (val)
-as (
+with v (val) as (
   values (cast('0' as numeric)), ('-4.2'), ('4.2e9'), ('1.2e-5'), ('inf'), ('-inf'), ('nan')
 )
 select

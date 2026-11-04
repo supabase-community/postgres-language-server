@@ -36,26 +36,26 @@ using (
 select *
 from public.permissions
 where exists (
-    select 1
-    from public.permission_set_permissions as rp
-    where rp.permission_name = permissions.name
-  );
+  select 1
+  from public.permission_set_permissions as rp
+  where rp.permission_name = permissions.name
+);
 
 select *
 from public.permissions
 where name = any (
-    select permission_name
-    from public.permission_set_permissions
-    where position_uuid is not null
-  );
+  select permission_name
+  from public.permission_set_permissions
+  where position_uuid is not null
+);
 
 select *
 from public.permissions
 where id > all (
-    select permission_id
-    from public.permission_set_permissions
-    where position_uuid is not null
-  );
+  select permission_id
+  from public.permission_set_permissions
+  where position_uuid is not null
+);
 
 select *
 from public.permissions

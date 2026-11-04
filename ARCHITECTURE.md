@@ -63,7 +63,7 @@ Tree-sitter integration used by features (e.g. completions and hover) that need 
 
 ##### `crates/pgls_catalog`
 
-The database catalog. `Snapshot` is the schema of the connected database (tables, columns, functions, types, ...), loaded by introspection queries or from JSON. `Catalog` applies the DDL of the current file on top of it without touching the database, and the name resolver checks statements against the result. On request, the resolver also returns the functions, columns, and relations that names resolve to with certainty, for features like inlay hints. Lookups answer found, missing, or unknown, so the typecheck rules only report what is certainly wrong.
+The database catalog. `Snapshot` is the schema of the connected database (tables, columns, functions, types, ...), loaded by introspection queries or from JSON. `Catalog` applies the DDL of the current file on top of it without touching the database, and the name resolver checks statements against the result. On request, the resolver also returns what names resolve to with certainty (functions, columns, relations, types, SQL function parameters, and string literals coerced to enums), for features like inlay hints and semantic tokens. Lookups answer found, missing, or unknown, so the typecheck rules only report what is certainly wrong.
 
 `typing/` ports Postgres' type rules (coercion, common types, polymorphic types, and function and operator overload resolution) from the latest supported Postgres, and links the Postgres function each port follows. The resolver infers the type of every expression with them.
 
@@ -107,11 +107,16 @@ Handles `-- pgls-ignore` style rule suppression comments.
 
 Autocompletion and hover providers. They operate on the catalog as of the statement at the cursor plus that statement and its parse results, and are intentionally free of any language-server flavour so they can be reused from the CLI. Hover shows the function overload, column, or relation that the name resolver resolves the hovered name to, and falls back to looking objects up by name when there is no unique reference.
 
+##### `crates/pgls_inlay_hints`, `crates/pgls_semantic_tokens`
+
+Inlay hints and semantic tokens of a single statement, built from the references of the name resolver. The workspace walks the file like the analyser does, so that each statement sees the objects created earlier in the file.
+
 #### Diagnostics and utilities
 
 - `crates/pgls_diagnostics` (+ `_categories`, `_macros`) — error and warning reporting model.
 - `crates/pgls_console` / `pgls_markup` — terminal output and markup.
 - `crates/pgls_text_edit`, `pgls_text_size` — text manipulation and byte/char range types.
+- `crates/pgls_line_index` — converts offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back, and the character positions that Postgres reports to offsets. Positions are converted with it, not by hand.
 - `crates/pgls_matcher` — Unix shell style pattern matching (glob).
 - `crates/pgls_test_utils`, `pgls_test_macros` — shared test helpers.
 - `crates/pgls_wasm` — WASM bindings for browser/editor integrations.

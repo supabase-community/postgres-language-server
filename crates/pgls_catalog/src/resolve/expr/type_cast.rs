@@ -17,6 +17,9 @@ pub(super) fn infer_type_cast(
             .as_ref()
             .and_then(|x| infer_expr(r, x));
         let (id, _) = normalize_type_name(r.catalog, n.type_name.as_ref()?, r.search_path);
+        if let Some(id) = id.as_ref() {
+            r.record_enum_literal(n.arg.as_deref().and_then(|arg| arg.node.as_ref()), id);
+        }
         if let (Some(from), Some(to)) = (from, id.as_ref())
             && !matches!(from, Type::UnknownLiteral)
             && matches!(

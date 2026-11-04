@@ -2,6 +2,7 @@ use std::io;
 
 use pgls_console::markup;
 use pgls_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
+use pgls_line_index::offset_of_char_position;
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::{PlpgSqlCheckIssue, PlpgSqlCheckResult, Query};
@@ -14,9 +15,6 @@ impl ByteOffset {
         self.0
     }
 }
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct OneBasedCharOffset(usize);
 
 /// Find the first occurrence of target text that is not within string literals.
 ///
@@ -42,12 +40,13 @@ fn find_text_outside_strings(text: &str, target: &str) -> Option<ByteOffset> {
                 // potentially different byte offsets.
                 if candidate == target || candidate.eq_ignore_ascii_case(target) {
                     // Check if this is a complete word (not part of another identifier)
-                    let is_word_start =
-                        i == 0 || !bytes[i - 1].is_ascii_alphanumeric() && bytes[i - 1] != b'_';
-                    let target_end = i + target.len();
-                    let is_word_end = target_end >= bytes.len()
-                        || (!bytes[target_end].is_ascii_alphanumeric()
-                            && bytes[target_end] != b'_');
+                    let is_word_boundary =
+                        |byte: &u8| !byte.is_ascii_alphanumeric() && *byte != b'_';
+                    let is_word_start = i
+                        .checked_sub(1)
+                        .and_then(|before| bytes.get(before))
+                        .is_none_or(is_word_boundary);
+                    let is_word_end = bytes.get(i + target.len()).is_none_or(is_word_boundary);
 
                     if is_word_start && is_word_end {
                         return Some(ByteOffset(i));
@@ -73,19 +72,6 @@ fn find_text_outside_strings(text: &str, target: &str) -> Option<ByteOffset> {
     }
 
     None
-}
-
-fn byte_offset_from_one_based_char_offset(
-    text: &str,
-    position: OneBasedCharOffset,
-) -> Option<ByteOffset> {
-    let zero_based_position = position.0.checked_sub(1)?;
-
-    match text.char_indices().nth(zero_based_position) {
-        Some((offset, _)) => Some(ByteOffset(offset)),
-        None if zero_based_position == text.chars().count() => Some(ByteOffset(text.len())),
-        None => None,
-    }
 }
 
 /// A specialized diagnostic for plpgsql_check.
@@ -218,38 +204,33 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
             let trailing_whitespace = fn_body.len() - fn_body.trim_ascii_end().len();
 
             return Some(TextRange::new(
-                (offset + leading_whitespace).try_into().unwrap(),
+                (offset + leading_whitespace).try_into().ok()?,
                 (offset + fn_body.len() - trailing_whitespace)
                     .try_into()
-                    .unwrap(),
+                    .ok()?,
             ));
         }
     };
 
-    let line_number = stmt
-        .line_number
-        .parse::<usize>()
-        .expect("Expected line number to be a valid usize");
-
+    // The line number and the text come from the database. If they don't fit the body we have,
+    // there is no span.
+    let line_index = stmt.line_number.parse::<usize>().ok()?.checked_sub(1)?;
     let text = &stmt.text;
 
-    // calculate the offset to the target line
+    // calculate the offset to the target line, keeping `\r\n` line endings
     let line_offset: usize = fn_body
-        .lines()
-        .take(line_number - 1)
-        .map(|line| line.len() + 1) // +1 for newline
+        .split_inclusive('\n')
+        .take(line_index)
+        .map(str::len)
         .sum();
 
     // find the position within the target line
-    let line = fn_body.lines().nth(line_number - 1)?;
-    let start = line
-        .to_lowercase()
-        .find(&text.to_lowercase())
-        .unwrap_or_else(|| {
-            line.char_indices()
-                .find_map(|(i, c)| if !c.is_whitespace() { Some(i) } else { None })
-                .unwrap_or(0)
-        });
+    let line = fn_body.lines().nth(line_index)?;
+    let start = find_ascii_case_insensitive(line, text).unwrap_or_else(|| {
+        line.char_indices()
+            .find_map(|(i, c)| if !c.is_whitespace() { Some(i) } else { None })
+            .unwrap_or(0)
+    });
 
     let stmt_offset = line_offset + start;
 
@@ -265,8 +246,8 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
 
     if text.to_uppercase() == "IF" || text.to_uppercase() == "ELSIF" {
         // Find the position of the next "THEN" after the statement
-        let remaining = &fn_body[stmt_offset..];
-        if let Some(then_pos) = remaining.to_uppercase().find("THEN") {
+        let remaining = fn_body.get(stmt_offset..)?;
+        if let Some(then_pos) = find_ascii_case_insensitive(remaining, "THEN") {
             let end = then_pos + "THEN".len();
             return Some(TextRange::new(
                 ((offset + stmt_offset) as u32).into(),
@@ -276,7 +257,7 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     }
 
     // if no specific end is found, use the next semicolon or the end of the line
-    let remaining = &fn_body[stmt_offset..];
+    let remaining = fn_body.get(stmt_offset..)?;
     let end = remaining
         .char_indices()
         .find(|(_, c)| matches!(c, ';' | '\n' | '\r'))
@@ -295,31 +276,32 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     ))
 }
 
+/// The byte offset of the first occurrence of `target` in `text`, ignoring ASCII case. Unlike
+/// lowercasing both, this keeps the offsets of `text`.
+fn find_ascii_case_insensitive(text: &str, target: &str) -> Option<usize> {
+    text.char_indices().map(|(i, _)| i).find(|&i| {
+        text[i..]
+            .get(..target.len())
+            .is_some_and(|candidate| candidate.eq_ignore_ascii_case(target))
+    })
+}
+
 /// The range in `fn_body` of the token at the position of the query, which is searched for
 /// after `search_from`.
 fn query_token_range(q: &Query, fn_body: &str, search_from: usize) -> Option<TextRange> {
     // first find the query within the fn body *after* search_from, ignoring string literals
-    let query_start = find_text_outside_strings(&fn_body[search_from..], &q.text)
+    let query_start = find_text_outside_strings(fn_body.get(search_from..)?, &q.text)
         .map(|pos| ByteOffset(pos.get() + search_from));
 
-    // The position is *within* the query text. plpgsql_check/Postgres
-    // reports it as a 1-based character position, while TextRange uses
-    // UTF-8 byte offsets.
-    let pos = byte_offset_from_one_based_char_offset(
-        &q.text,
-        OneBasedCharOffset(
-            q.position
-                .parse::<usize>()
-                .expect("Expected query position to be a valid usize"),
-        ),
-    )?;
+    // The position is *within* the query text, as a 1-based character position.
+    let pos = offset_of_char_position(&q.text, q.position.parse::<usize>().ok()?)?;
 
-    let start = query_start?.get() + pos.get();
+    let start = query_start?.get() + usize::from(pos);
 
     // the range of the diagnostics is the token that `pos` is on
     // Find the end of the current token by looking for whitespace or SQL delimiters
     let is_delimiter = |c: char| matches!(c, ',' | ';' | ')' | '(' | '=' | '<' | '>');
-    let remaining = &fn_body[start..];
+    let remaining = fn_body.get(start..)?;
     let end = match remaining.chars().next() {
         // the token is the delimiter itself, e.g. in `syntax error at or near ";"`
         Some(c) if is_delimiter(c) => c.len_utf8(),
@@ -366,6 +348,94 @@ mod tests {
         let diagnostics = create_diagnostics_from_check_result(&result, fn_body, 0, None);
         let span = diagnostics[0].span.expect("expected diagnostic span");
         fn_body[usize::from(span.start())..usize::from(span.end())].to_string()
+    }
+
+    /// The text of the span of an issue of a statement without a query.
+    fn statement_span_for(fn_body: &str, line_number: &str, text: &str) -> Option<String> {
+        let result = PlpgSqlCheckResult {
+            function: "public.f1".to_string(),
+            issues: vec![PlpgSqlCheckIssue {
+                level: "warning".to_string(),
+                message: "unused variable".to_string(),
+                detail: None,
+                hint: None,
+                statement: Some(Statement {
+                    line_number: line_number.to_string(),
+                    text: text.to_string(),
+                }),
+                query: None,
+                sql_state: None,
+            }],
+        };
+        let diagnostics = create_diagnostics_from_check_result(&result, fn_body, 0, None);
+        let span = diagnostics[0].span?;
+        Some(fn_body[usize::from(span.start())..usize::from(span.end())].to_string())
+    }
+
+    #[test]
+    fn maps_statements_on_lines_with_crlf_and_non_ascii_text() {
+        let fn_body = "BEGIN\r\n  x := 'é';\r\n  PERFORM 1;\r\nEND";
+        assert_eq!(
+            statement_span_for(fn_body, "3", "PERFORM").as_deref(),
+            Some("PERFORM 1;")
+        );
+        // `İ` gets longer when lowercased.
+        let fn_body = "BEGIN\n  İ PERFORM 1;\nEND";
+        assert_eq!(
+            statement_span_for(fn_body, "2", "perform").as_deref(),
+            Some("PERFORM 1;")
+        );
+    }
+
+    #[test]
+    fn ignores_line_numbers_that_are_not_in_the_body() {
+        let fn_body = "BEGIN\n  PERFORM 1;\nEND";
+        for line_number in ["0", "-1", "unknown", "4"] {
+            assert_eq!(
+                statement_span_for(fn_body, line_number, "PERFORM"),
+                None,
+                "{line_number}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_statement_without_a_valid_line_number_has_no_span() {
+        for line_number in ["", "unknown", "0"] {
+            let result = PlpgSqlCheckResult {
+                function: "public.f1".to_string(),
+                issues: vec![PlpgSqlCheckIssue {
+                    level: "error".to_string(),
+                    message: "column does not exist".to_string(),
+                    detail: None,
+                    hint: None,
+                    statement: Some(Statement {
+                        line_number: line_number.to_string(),
+                        text: "RETURN".to_string(),
+                    }),
+                    query: None,
+                    sql_state: Some("42703".to_string()),
+                }],
+            };
+
+            let diagnostics =
+                create_diagnostics_from_check_result(&result, "BEGIN\n  RETURN 1;\nEND", 0, None);
+
+            assert_eq!(diagnostics.len(), 1);
+            assert_eq!(diagnostics[0].span, None, "line number {line_number:?}");
+        }
+    }
+
+    #[test]
+    fn ignores_a_query_position_that_is_not_a_number() {
+        let query = Query {
+            position: "unknown".to_string(),
+            text: "SELECT 1".to_string(),
+        };
+        assert_eq!(
+            query_token_range(&query, "BEGIN\n  SELECT 1;\nEND", 0),
+            None
+        );
     }
 
     #[test]

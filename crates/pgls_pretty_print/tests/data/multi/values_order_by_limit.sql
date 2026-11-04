@@ -1,0 +1,13 @@
+values (1, 2), (3, 4) order by 1 limit 1;
+
+values (1, 'one'), (2, 'two'), (3, 'three') order by 2 desc offset 1;
+
+values (1), (2) order by 1 fetch first 1 rows only;
+
+select * from (values (1), (2), (3) order by 1 desc limit 2) as v (x);
+
+insert into t (a) values (1), (2) on conflict do nothing;
+
+with v (a, b) as (values (1, 2), (3, 4)) select * from v;
+
+with numbered_rows_with_a_long_name (id, label) as (values (1, 'first row label'), (2, 'second row label')) select * from numbered_rows_with_a_long_name;

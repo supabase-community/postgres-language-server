@@ -1,4 +1,5 @@
-use crate::fix::StatementTokens;
+use crate::fix::{StatementTokens, in_case_of};
+use crate::linter_context::builtin_type_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -90,25 +91,22 @@ fn check_column_def(
     col_def: &pgls_query::protobuf::ColumnDef,
     tokens: Option<StatementTokens>,
 ) {
-    if let Some(type_name) = &col_def.type_name {
-        for name_node in &type_name.names {
-            if let Some(pgls_query::NodeEnum::String(name)) = &name_node.node {
-                // Check if it's varchar with a size limit
-                if name.sval.to_lowercase() == "varchar" && !type_name.typmods.is_empty() {
-                    diagnostics.push(
-                        LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock."
-                            },
-                        )
-                        .note("Use a text field with a check constraint.")
-                        .maybe_fix(tokens.and_then(|tokens| use_text(tokens, type_name.location))),
-                    );
-                }
-            }
-        }
+    // Check if it's varchar with a size limit
+    if let Some(type_name) = &col_def.type_name
+        && builtin_type_name(type_name) == Some("varchar")
+        && !type_name.typmods.is_empty()
+    {
+        diagnostics.push(
+            LinterDiagnostic::new(
+                rule_category!(),
+                None,
+                markup! {
+                    "Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock."
+                },
+            )
+            .note("Use a text field with a check constraint.")
+            .maybe_fix(tokens.and_then(|tokens| use_text(tokens, type_name.location))),
+        );
     }
 }
 
@@ -116,5 +114,9 @@ fn check_column_def(
 fn use_text(tokens: StatementTokens, location: i32) -> Option<RuleFix> {
     let start = tokens.at(location)?;
     let (_, close) = tokens.type_modifiers(tokens.type_name_end(start))?;
-    Some(RuleFix::new("Use TEXT").replace(tokens.range(start).cover(tokens.range(close)), "text"))
+    Some(tokens.replace_keeping_comments(
+        RuleFix::new("Use TEXT"),
+        tokens.range(start).cover(tokens.range(close)),
+        &in_case_of("text", tokens.text(start)),
+    ))
 }

@@ -20,7 +20,7 @@ lint/requireTableSchema ━━━━━━━━━━━━━━━━━━�
   
   i Without a schema, the table is resolved through the search_path of the session that runs the statement.
   
-  i Specify the schema, e.g. public.my_table.
+  i Specify the schema, e.g. public.posts.
   
 
 
@@ -30,7 +30,7 @@ lint/requireTableSchema ━━━━━━━━━━━━━━━━━━�
   
   i Without a schema, the table is resolved through the search_path of the session that runs the statement.
   
-  i Specify the schema, e.g. public.my_table.
+  i Specify the schema, e.g. public.post_ids.
   
 
 
@@ -40,4 +40,4 @@ lint/requireTableSchema ━━━━━━━━━━━━━━━━━━�
   
   i Without a schema, the table is resolved through the search_path of the session that runs the statement.
   
-  i Specify the schema, e.g. public.my_table.
+  i Specify the schema, e.g. public.posts.

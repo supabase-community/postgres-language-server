@@ -35,6 +35,9 @@ pub struct Session {
     /// Transaction nesting depth (0 = not in explicit transaction)
     transaction_depth: usize,
     transaction_mode: TransactionMode,
+    /// Whether the statements run in an implicit transaction block, see
+    /// [`Session::begin_implicit_block`].
+    implicit_block: bool,
 }
 
 impl Session {
@@ -77,11 +80,38 @@ impl Session {
     /// unknown migration tool.
     pub fn in_transaction(&self) -> Option<bool> {
         match self.transaction_mode {
-            _ if self.transaction_depth > 0 => Some(true),
+            _ if self.transaction_depth > 0 || self.implicit_block => Some(true),
             TransactionMode::Unknown => None,
             TransactionMode::Transaction => Some(true),
             TransactionMode::Autocommit => Some(false),
         }
+    }
+
+    /// Starts a query with more than one statement that the migration tool sends to Postgres at
+    /// once, like a dbmate section with `transaction:false`. Postgres runs such a query in an
+    /// implicit transaction block: until the query ends, every statement runs in a transaction
+    /// block, also after a `COMMIT` in the query. Port of the implicit block in
+    /// [`exec_simple_query`].
+    ///
+    /// [`exec_simple_query`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/tcop/postgres.c#L1090
+    pub fn begin_implicit_block(&mut self) {
+        self.implicit_block = true;
+    }
+
+    /// Whether the statements run in an implicit transaction block, see
+    /// [`Session::begin_implicit_block`].
+    pub fn in_implicit_block(&self) -> bool {
+        self.implicit_block
+    }
+
+    /// Ends the query started with [`Session::begin_implicit_block`]. Outside of an explicit
+    /// transaction, the implicit block commits.
+    pub fn end_implicit_block(&mut self) {
+        if !std::mem::take(&mut self.implicit_block) || self.in_transaction() != Some(false) {
+            return;
+        }
+        self.settings.commit();
+        self.locks.release();
     }
 
     /// Returns true if a lock timeout has been set in this transaction

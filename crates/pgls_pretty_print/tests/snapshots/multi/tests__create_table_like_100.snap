@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_table_like.sql
-snapshot_kind: text
 ---
 create table inhx (xx text default 'text');
 
@@ -475,7 +474,7 @@ alter table ctl_table
 alter table ctl_table
   alter column b set storage main;
 
-create foreign table ctl_foreign_table1 ( like ctl_table ) server ctl_s0;
+create foreign table ctl_foreign_table1 (like ctl_table) server ctl_s0;
 
 select
   attname,
@@ -486,7 +485,7 @@ where
   attrelid = cast('ctl_foreign_table1' as regclass) and attnum > 0
 order by attnum;
 
-create foreign table ctl_foreign_table2 ( like ctl_table including all ) server ctl_s0;
+create foreign table ctl_foreign_table2 (like ctl_table including all) server ctl_s0;
 
 select
   attname,

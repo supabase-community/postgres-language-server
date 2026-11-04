@@ -1,3 +1,4 @@
+use pgls_catalog::identifier_name;
 use pgls_treesitter::WrappingClause;
 
 #[derive(Debug)]
@@ -23,35 +24,31 @@ impl HoveredNode {
             return None;
         }
 
+        // The catalog holds names, not identifiers as written.
+        let name = identifier_name(&node_content);
+
         let under_cursor = &ctx.node_under_cursor;
 
         match under_cursor.kind() {
             "column_identifier" => Some(HoveredNode::Column((
                 ctx.head_qualifier_sanitized(),
                 ctx.tail_qualifier_sanitized(),
-                node_content,
+                name,
             ))),
             "function_identifier" => Some(HoveredNode::Function((
                 ctx.tail_qualifier_sanitized(),
-                node_content,
+                name,
             ))),
-            "policy_identifier" => Some(HoveredNode::Policy((
-                ctx.tail_qualifier_sanitized(),
-                node_content,
-            ))),
-            "table_identifier" => Some(HoveredNode::Table((
-                ctx.tail_qualifier_sanitized(),
-                node_content,
-            ))),
+            "policy_identifier" => {
+                Some(HoveredNode::Policy((ctx.tail_qualifier_sanitized(), name)))
+            }
+            "table_identifier" => Some(HoveredNode::Table((ctx.tail_qualifier_sanitized(), name))),
 
-            "schema_identifier" => Some(HoveredNode::Schema(node_content)),
-            "role_identifier" => Some(HoveredNode::Role(node_content)),
+            "schema_identifier" => Some(HoveredNode::Schema(name)),
+            "role_identifier" => Some(HoveredNode::Role(name)),
 
             "any_identifier" if ctx.history_ends_with(&["table_reference", "any_identifier"]) => {
-                Some(HoveredNode::Table((
-                    ctx.tail_qualifier_sanitized(),
-                    node_content,
-                )))
+                Some(HoveredNode::Table((ctx.tail_qualifier_sanitized(), name)))
             }
 
             "any_identifier"
@@ -65,10 +62,7 @@ impl HoveredNode {
                         )
                     }) =>
             {
-                Some(HoveredNode::Table((
-                    ctx.tail_qualifier_sanitized(),
-                    node_content,
-                )))
+                Some(HoveredNode::Table((ctx.tail_qualifier_sanitized(), name)))
             }
 
             "any_identifier"
@@ -81,7 +75,7 @@ impl HoveredNode {
                 Some(HoveredNode::Column((
                     ctx.head_qualifier_sanitized(),
                     ctx.tail_qualifier_sanitized(),
-                    node_content,
+                    name,
                 )))
             }
 
@@ -94,7 +88,7 @@ impl HoveredNode {
             {
                 Some(HoveredNode::Function((
                     ctx.tail_qualifier_sanitized(),
-                    node_content,
+                    name,
                 )))
             }
 
@@ -112,13 +106,13 @@ impl HoveredNode {
                     // make sure we're not checking against an alias
                     && ctx
                         .get_mentioned_table_for_alias(
-                            node_content.as_str(),
+                            name.as_str(),
                         )
                         .is_none() =>
             {
                 Some(HoveredNode::PostgresType((
                     ctx.tail_qualifier_sanitized(),
-                    node_content,
+                    name,
                 )))
             }
 
@@ -127,7 +121,7 @@ impl HoveredNode {
                 Some(HoveredNode::Column((
                     ctx.head_qualifier_sanitized(),
                     ctx.tail_qualifier_sanitized(),
-                    node_content,
+                    name,
                 )))
             }
 

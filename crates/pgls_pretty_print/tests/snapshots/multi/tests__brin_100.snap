@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/brin.sql
-snapshot_kind: text
 ---
 create table brintest (
   byteacol bytea,
@@ -61,18 +60,20 @@ select
   cast(thousand as bit(10)),
   cast(cast(tenthous as bit(16)) as varbit),
   cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
-  cast(format(
-    '%s%s-%s-%s-%s-%s%s%s',
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000')
-  )
-  as uuid),
+  cast(
+    format(
+      '%s%s-%s-%s-%s-%s%s%s',
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000')
+    )
+    as uuid
+  ),
   int4range(thousand, twothousand),
   cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn),
   box(point(odd, even), point(thousand, twothousand))
@@ -494,18 +495,20 @@ select
   cast(thousand as bit(10)),
   cast(cast(tenthous as bit(16)) as varbit),
   cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
-  cast(format(
-    '%s%s-%s-%s-%s-%s%s%s',
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000'),
-    to_char(tenthous, 'FM0000')
-  )
-  as uuid),
+  cast(
+    format(
+      '%s%s-%s-%s-%s-%s%s%s',
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000'),
+      to_char(tenthous, 'FM0000')
+    )
+    as uuid
+  ),
   int4range(thousand, twothousand),
   cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn),
   box(point(odd, even), point(thousand, twothousand))
@@ -603,9 +606,7 @@ create table brintest_3 (
   d text
 );
 
-with
-rand_value
-as (
+with rand_value as (
   select string_agg(fipshash(cast(i as text)), '') as val from generate_series(1, 60) as s (i)
 )
 insert into brintest_3
@@ -621,9 +622,7 @@ drop index brin_test_temp_idx;
 
 vacuum brintest_3;
 
-with
-rand_value
-as (
+with rand_value as (
   select string_agg(fipshash(cast(-i as text)), '') as val from generate_series(1, 60) as s (i)
 )
 insert into brintest_3

@@ -206,7 +206,9 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
         }
     }
 
-    e.space();
+    // A comment that doesn't fit goes on its own line, one level in.
+    e.indent_start();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::IS_KW);
     e.space();
 
@@ -216,6 +218,7 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
     } else {
         emit_single_quoted_str(e, &n.comment);
     }
+    e.indent_end();
 
     e.token(TokenKind::SEMICOLON);
 
