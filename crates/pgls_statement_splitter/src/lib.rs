@@ -1167,6 +1167,19 @@ VALUES
     }
 
     #[test]
+    fn with_at_the_end_does_not_panic() {
+        for (sql, last) in [
+            ("with", "with"),
+            ("select 1;\nwith", "with"),
+            ("''with", "with"),
+            ("with recursive", "with recursive"),
+        ] {
+            let ranges = split(sql).ranges;
+            assert_eq!(ranges.last().map(|range| &sql[*range]), Some(last), "{sql}");
+        }
+    }
+
+    #[test]
     fn empty_input() {
         assert_eq!(split("").ranges.len(), 0);
         assert_eq!(split("   \n  \n ").ranges.len(), 0);

@@ -5,6 +5,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 
 - [ambiguousColumn](./rules/ambiguous-column.md) 
 - [assignmentTypeMismatch](./rules/assignment-type-mismatch.md) 
+- [banNonTransactionalStatementInTransaction](./rules/ban-non-transactional-statement-in-transaction.md) 
 - [functionArgumentMismatch](./rules/function-argument-mismatch.md) 
 - [functionReturnTypeMismatch](./rules/function-return-type-mismatch.md) 
 - [insertColumnMismatch](./rules/insert-column-mismatch.md) 

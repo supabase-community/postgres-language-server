@@ -52,6 +52,7 @@ impl<'a> SuppressionsParser<'a> {
             range_suppressions: parser.range_suppressions,
             diagnostics: parser.diagnostics,
             line_index: parser.line_index,
+            statements: Vec::new(),
         }
     }
 

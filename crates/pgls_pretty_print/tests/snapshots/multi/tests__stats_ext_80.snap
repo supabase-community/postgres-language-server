@@ -77,11 +77,11 @@ create statistics tst on a from (select * from ext_stats_test) as foo;
 
 create statistics tst on a from ext_stats_test as s tablesample system (x);
 
-create statistics tst on a from xmltable( 'foo' passing 'bar' columns a text);
+create statistics tst on a from xmltable('foo' passing 'bar' columns a text);
 
 create statistics tst
 on a
-from json_table( cast('123' as jsonb), '$' columns (item int ) );
+from json_table(cast('123' as jsonb), '$' columns (item int));
 
 create function tftest(int)
 returns table (
@@ -3013,12 +3013,14 @@ with (autovacuum_enabled = off);
 
 insert into mcv_lists_arrays (a, b, c)
 select
-  array[fipshash(cast(i / 100 as text)),
-  fipshash(cast(i / 100 - 1 as text)),
-  fipshash(cast(i / 100 + 1 as text))],
-  array[cast(i / 100 - 1 as numeric) / 1000,
-  cast(i / 100 as numeric) / 1000,
-  cast(i / 100 + 1 as numeric) / 1000],
+  array[
+    fipshash(cast(i / 100 as text)), fipshash(cast(i / 100 - 1 as text)),
+    fipshash(cast(i / 100 + 1 as text))
+  ],
+  array[
+    cast(i / 100 - 1 as numeric) / 1000, cast(i / 100 as numeric) / 1000,
+    cast(i / 100 + 1 as numeric) / 1000
+  ],
   array[i / 100 - 1, i / 100, i / 100 + 1]
 from
   generate_series(1, 5000) as s (i);

@@ -5,6 +5,7 @@ use std::{
 
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode, resolve::FunctionContext};
+use pgls_diagnostics::DiagnosticTags;
 use pgls_text_size::{TextRange, TextSize};
 pub use registry::visit_registry;
 
@@ -132,6 +133,10 @@ pub struct AnalyserParams {
     pub sections: Vec<MigrationSection>,
     /// Whether the rules of the typecheck group run.
     pub typecheck: bool,
+    /// The text of the file. Fixes that also edit after their statement, like the `COMMIT` that
+    /// `banUncommittedTransaction` adds after the last statement, are checked on it. Without
+    /// it, such fixes are kept unchecked.
+    pub source: Option<String>,
 }
 
 /// A top-level statement that doesn't parse, e.g. because it uses syntax of a newer Postgres.
@@ -193,6 +198,16 @@ impl<'a> Analyser<'a> {
             .map(|base| base.snapshot().as_ref());
         let roots: Vec<pgls_query::NodeEnum> =
             params.stmts.iter().map(|s| s.root.clone()).collect();
+        let file = params.source.as_deref().map(|source| FileText {
+            source,
+            stmts: params
+                .stmts
+                .iter()
+                .filter(|stmt| stmt.function.is_none())
+                .map(|stmt| stmt.range)
+                .chain(params.unparsable.iter().map(|stmt| stmt.range))
+                .collect(),
+        });
 
         let rules: Vec<_> = self
             .registry
@@ -224,13 +239,82 @@ impl<'a> Analyser<'a> {
                 unit.section
                     .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
             );
+            let stmts = &params.stmts[unit.stmts.clone()];
+            // The last statement of the unit, including those that don't parse. The statements
+            // of a function body end within their `CREATE FUNCTION`.
+            let last = stmts
+                .iter()
+                .filter(|stmt| stmt.function.is_none())
+                .map(|stmt| (stmt.range, stmt.sql.as_deref()))
+                .chain(
+                    params
+                        .unparsable
+                        .iter()
+                        .filter(|skipped| unit.range.contains(skipped.range.start()))
+                        .map(|skipped| (skipped.range, Some(skipped.sql.as_str()))),
+                )
+                .max_by_key(|(range, _)| range.end());
+            let end = last.map_or(TextSize::default(), |(range, _)| range.end());
+            // Without the text of the last statement, assume that it ends with a semicolon. The
+            // fix guard below still checks the fixes that rely on it on the file.
+            let terminated = last
+                .and_then(|(_, sql)| sql)
+                .is_none_or(|sql| sql.trim_end().ends_with(';'));
+            // The statements the unit runs, including those that don't parse, but not those in
+            // function bodies.
+            let stmt_count = |range: TextRange| {
+                params.stmts[unit.stmts.clone()]
+                    .iter()
+                    .filter(|stmt| stmt.function.is_none() && range.contains(stmt.range.start()))
+                    .count()
+                    + params
+                        .unparsable
+                        .iter()
+                        .filter(|skipped| range.contains(skipped.range.start()))
+                        .count()
+            };
+            // Outside a transaction, the queries with more than one statement run in an implicit
+            // transaction block.
+            let implicit_blocks: Vec<TextRange> = unit
+                .section
+                .filter(|section| !section.transaction)
+                .map(|section| {
+                    section
+                        .queries
+                        .iter()
+                        .copied()
+                        .filter(|query| stmt_count(*query) > 1)
+                        .collect()
+                })
+                .unwrap_or_default();
             let mut file_context =
-                AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session);
+                AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
+                    .with_positions(
+                        stmts.iter().map(|stmt| stmt.range.start()).collect(),
+                        end,
+                        terminated,
+                    )
+                    .with_stmt_count(stmt_count(unit.range));
+            let mut implicit_block = None;
 
             for (stmt, root) in params.stmts[unit.stmts.clone()]
                 .iter()
                 .zip(&roots[unit.stmts.clone()])
             {
+                if stmt.function.is_none() {
+                    let block = implicit_blocks
+                        .iter()
+                        .position(|block| block.contains(stmt.range.start()));
+                    if block != implicit_block {
+                        if implicit_block.is_some() {
+                            file_context.end_implicit_block();
+                        }
+                        if block.is_some() {
+                            file_context.begin_implicit_block();
+                        }
+                        implicit_block = block;
+                    }
+                }
                 while let Some(skipped) =
                     unparsable.next_if(|skipped| skipped.range.start() < stmt.range.start())
                 {
@@ -267,21 +351,23 @@ impl<'a> Analyser<'a> {
                     result
                         .diagnostics
                         .extend(diagnostics.into_iter().map(|mut diagnostic| {
-                            diagnostic.span = Some(match diagnostic.span {
-                                Some(span) => span + stmt.range.start(),
-                                None => stmt.range,
-                            });
+                            debug_assert_in_statement(&diagnostic, stmt);
+                            diagnostic.move_into_file(stmt.range);
                             // Fixes are computed on the statement text, which only matches the
-                            // source if it has the length of the statement range.
-                            let fix_matches_source = stmt
-                                .sql
-                                .as_ref()
-                                .is_some_and(|sql| TextSize::of(sql.as_str()) == stmt.range.len());
-                            if !fix_matches_source {
+                            // source if it has the length of the statement range. A fix must
+                            // keep the statement valid.
+                            let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
+                                TextSize::of(sql.as_str()) == stmt.range.len()
+                                    && diagnostic.fix.as_ref().is_none_or(|fix| {
+                                        keeps_sql_valid(fix, sql, stmt.range.start(), file.as_ref())
+                                    })
+                            });
+                            if !fix_is_valid {
                                 diagnostic.fix = None;
                             }
                             if let Some(fix) = &mut diagnostic.fix {
                                 fix.shift(stmt.range.start());
+                                diagnostic.tags |= DiagnosticTags::FIXABLE;
                             }
                             diagnostic
                         }));
@@ -302,7 +388,8 @@ impl<'a> Analyser<'a> {
                 file_context.next(stmt.function.is_none());
             }
 
-            while let Some(skipped) = unparsable.next_if(|skipped| skipped.range.start() < unit.end)
+            while let Some(skipped) =
+                unparsable.next_if(|skipped| skipped.range.start() < unit.range.end())
             {
                 if may_change_catalog(&skipped.sql) {
                     file_context.taint_catalog();
@@ -317,12 +404,96 @@ impl<'a> Analyser<'a> {
     }
 }
 
+/// The text of the file, and the ranges of its top-level statements.
+struct FileText<'a> {
+    source: &'a str,
+    stmts: Vec<TextRange>,
+}
+
+/// Whether the SQL still parses with the fix applied. The edits are relative to the statement
+/// `sql`, which starts at `start` in the file. A fix within the statement, or at its end, is
+/// checked on the statement. A fix that also edits after the statement, e.g. to add a `COMMIT`
+/// after the last statement, is checked on the text of the file from the start of the statement
+/// to the end of the last statement it edits. If that text doesn't parse without the fix, or the
+/// text of the file isn't known, the fix can't be checked and is kept.
+///
+/// Like the statements themselves, the SQL is parsed with its placeholders (psql variables such
+/// as `:name`, `$name`) converted to parameters, see [pgls_lexer::convert_to_positional_params].
+fn keeps_sql_valid(fix: &RuleFix, sql: &str, start: TextSize, file: Option<&FileText>) -> bool {
+    let len = TextSize::of(sql);
+    let Some(edits_end) = fix.edits.iter().map(|edit| edit.range.end()).max() else {
+        return true;
+    };
+    if edits_end <= len {
+        return parses(&fix.apply(sql));
+    }
+    let Some(file) = file else {
+        return true;
+    };
+    let edits_end = start + edits_end;
+    let end = file
+        .stmts
+        .iter()
+        .filter(|stmt| stmt.start() >= start && stmt.start() < edits_end)
+        .map(|stmt| stmt.end())
+        .fold(edits_end, TextSize::max);
+    let Some(text) = file.source.get(usize::from(start)..usize::from(end)) else {
+        return true;
+    };
+    if !parses(text) {
+        return true;
+    }
+    parses(&fix.apply(text))
+}
+
+/// Whether the SQL parses with its placeholders converted to parameters. The conversion keeps the
+/// length of the text, so the fix edits apply to the source text unchanged.
+fn parses(sql: &str) -> bool {
+    pgls_query::parse(&pgls_lexer::convert_to_positional_params(sql)).is_ok()
+}
+
+/// The span, the detail spans and the fix edits of a rule's diagnostic are relative to the
+/// statement and must lie on char boundaries of its text. Fix edits may also start at or after
+/// its end, e.g. to add a `COMMIT` after it. They are moved into the file next, and checked again
+/// where they are used.
+fn debug_assert_in_statement(diagnostic: &LinterDiagnostic, stmt: &AnalysableStatement) {
+    if !cfg!(debug_assertions) {
+        return;
+    }
+    let in_statement = |range: TextRange| match &stmt.sql {
+        Some(sql) => sql.get(Range::<usize>::from(range)).is_some(),
+        None => range.end() <= stmt.range.len(),
+    };
+    let category = diagnostic.category.name();
+    let details = diagnostic
+        .rule_advice
+        .details
+        .iter()
+        .filter_map(|detail| detail.range);
+    for span in diagnostic.span.into_iter().chain(details) {
+        debug_assert!(
+            in_statement(span),
+            "{category}: span {span:?} is not inside the statement at {:?}",
+            stmt.range
+        );
+    }
+    let len = stmt.sql.as_deref().map_or(stmt.range.len(), TextSize::of);
+    for edit in diagnostic.fix.iter().flat_map(|fix| &fix.edits) {
+        debug_assert!(
+            edit.range.start() >= len || in_statement(edit.range),
+            "{category}: fix edit {:?} is not on char boundaries of the statement at {:?}",
+            edit.range,
+            stmt.range
+        );
+    }
+}
+
 /// Statements that run together: those before the first section marker, then each section.
 struct MigrationUnit<'a> {
     section: Option<&'a MigrationSection>,
     /// The indices of the statements.
     stmts: Range<usize>,
-    end: TextSize,
+    range: TextRange,
 }
 
 fn migration_units<'a>(
@@ -332,24 +503,26 @@ fn migration_units<'a>(
     let before_sections = sections
         .first()
         .map_or(TextSize::from(u32::MAX), |section| section.range.start());
-    let ends = std::iter::once((None, before_sections)).chain(
+    let ranges = std::iter::once((None, TextRange::up_to(before_sections))).chain(
         sections
             .iter()
-            .map(|section| (Some(section), section.range.end())),
+            .map(|section| (Some(section), section.range)),
     );
 
     let mut first = 0;
-    ends.map(|(section, end)| {
-        let last = first + stmts[first..].partition_point(|stmt| stmt.range.start() < end);
-        let unit = MigrationUnit {
-            section,
-            stmts: first..last,
-            end,
-        };
-        first = last;
-        unit
-    })
-    .collect()
+    ranges
+        .map(|(section, range)| {
+            let last =
+                first + stmts[first..].partition_point(|stmt| stmt.range.start() < range.end());
+            let unit = MigrationUnit {
+                section,
+                stmts: first..last,
+                range,
+            };
+            first = last;
+            unit
+        })
+        .collect()
 }
 
 /// Whether a statement that doesn't parse may have changed the catalog. Queries, `COPY`,
@@ -416,6 +589,36 @@ pub fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
     }
 }
 
+/// Runs a single rule on a statement and returns the text each diagnostic points at.
+#[cfg(test)]
+pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
+    let rule_filter = pgls_analyse::RuleFilter::Rule(group, rule);
+    let options = LinterOptions::default();
+    let analyser = Analyser::new(AnalyserConfig {
+        options: &options,
+        filter: AnalysisFilter {
+            enabled_rules: Some(std::slice::from_ref(&rule_filter)),
+            ..Default::default()
+        },
+    });
+    let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
+    let range = TextRange::up_to(TextSize::of(sql));
+    analyser
+        .run(AnalyserParams {
+            stmts: vec![AnalysableStatement::new(root, range).with_sql(sql)],
+            source: Some(sql.to_owned()),
+            ..Default::default()
+        })
+        .iter()
+        .map(|diagnostic| {
+            let span = pgls_diagnostics::Diagnostic::location(diagnostic)
+                .span
+                .unwrap();
+            sql[span].to_owned()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use core::slice;
@@ -431,7 +634,134 @@ mod tests {
     use pgls_text_size::TextRange;
     use termcolor::NoColor;
 
-    use crate::{AnalysableStatement, Analyser};
+    use crate::{
+        AnalysableStatement, Analyser, FileText, LinterDiagnostic, RuleFix, keeps_sql_valid,
+    };
+    use pgls_diagnostics::category;
+
+    #[test]
+    fn fixes_must_keep_the_statement_valid() {
+        let sql = "create index users_email_idx on users (email)";
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        let valid = |fix: RuleFix| keeps_sql_valid(&fix, sql, at(0), None);
+        assert!(valid(RuleFix::new("").insert(at(12), " concurrently")));
+        assert!(!valid(RuleFix::new("").insert(at(12), " concurrently (")));
+        // At the end of the statement, the edit is checked with it.
+        assert!(valid(
+            RuleFix::new("").insert(at(45), " where email is not null")
+        ));
+        assert!(!valid(RuleFix::new("").insert(at(45), " where")));
+        // After the statement, the fix can't be checked without the file.
+        assert!(valid(RuleFix::new("").insert(at(47), "\ncommit;")));
+    }
+
+    #[test]
+    fn fixes_after_the_statement_are_checked_on_the_file() {
+        let source = "begin;\ncreate table t (id int);\ncreate table u (id int)";
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        let file = FileText {
+            source,
+            stmts: vec![
+                TextRange::new(at(0), at(5)),
+                TextRange::new(at(7), at(30)),
+                TextRange::new(at(32), at(55)),
+            ],
+        };
+        // A fix of `begin`.
+        let valid = |offset: u32, text: &str| {
+            let fix = RuleFix::new("").insert(at(offset), text);
+            keeps_sql_valid(&fix, &source[..5], at(0), Some(&file))
+        };
+        // After `create table t (id int);`.
+        assert!(valid(31, "\ncommit;"));
+        assert!(!valid(30, "\ncommit"));
+        // After the last statement, which has no semicolon.
+        assert!(valid(55, ";\ncommit;"));
+        assert!(!valid(55, "\ncommit;"));
+        // Inside `create table t`.
+        assert!(!valid(14, "\ncommit;"));
+        // Text that doesn't parse can't be checked.
+        let file = FileText {
+            source: "begin;\ncreate tabel t (id int)",
+            stmts: vec![TextRange::new(at(0), at(5)), TextRange::new(at(7), at(30))],
+        };
+        let fix = RuleFix::new("").insert(at(30), "\ncommit;");
+        assert!(keeps_sql_valid(&fix, "begin", at(0), Some(&file)));
+    }
+
+    #[test]
+    fn diagnostics_move_into_the_file() {
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        let statement = TextRange::new(at(10), at(30));
+        let mut diagnostic = LinterDiagnostic::new(
+            category!("lint/banDropColumn"),
+            Some(TextRange::new(at(2), at(4))),
+            "",
+        )
+        .detail(Some(TextRange::new(at(5), at(7))), "here")
+        .detail(None, "no span");
+        diagnostic.move_into_file(statement);
+        assert_eq!(diagnostic.span, Some(TextRange::new(at(12), at(14))));
+        let details: Vec<_> = diagnostic
+            .rule_advice
+            .details
+            .iter()
+            .map(|detail| detail.range)
+            .collect();
+        assert_eq!(details, [Some(TextRange::new(at(15), at(17))), None]);
+
+        // Without a span, the diagnostic points at the statement.
+        let mut diagnostic = LinterDiagnostic::new(category!("lint/banDropColumn"), None, "");
+        diagnostic.move_into_file(statement);
+        assert_eq!(diagnostic.span, Some(statement));
+    }
+
+    /// Placeholders are converted to parameters before the fixed statement is parsed, like
+    /// before the statement itself is parsed.
+    #[test]
+    fn fixes_of_statements_with_placeholders_are_checked_with_parameters() {
+        let at = |offset: u32| pgls_text_size::TextSize::from(offset);
+        for sql in [
+            "create index users_tenant_idx on users (email) where tenant = :tenant",
+            "create index users_tenant_idx on users (email) where tenant = :'tenant'",
+            "create index users_tenant_idx on users (email) where tenant = $tenant",
+            "create index users_tenant_idx on :\"table\" (email)",
+        ] {
+            let valid = |fix: RuleFix| keeps_sql_valid(&fix, sql, at(0), None);
+            assert!(
+                valid(RuleFix::new("").insert(at(12), " concurrently")),
+                "{sql}"
+            );
+            assert!(
+                !valid(RuleFix::new("").insert(at(12), " concurrently (")),
+                "{sql}"
+            );
+        }
+    }
+
+    /// A fix that edits after its statement is checked on the text of the file, with the
+    /// placeholders of all statements in it converted to parameters.
+    #[test]
+    fn fixes_after_statements_with_placeholders_are_checked_with_parameters() {
+        let source = "insert into t values (:'v');\nupdate :\"schema\".t set id = $id;";
+        let at = |offset: usize| pgls_text_size::TextSize::from(u32::try_from(offset).unwrap());
+        let first = TextRange::new(at(0), at(source.find(';').unwrap()));
+        let second = TextRange::new(at(source.find("update").unwrap()), at(source.len() - 1));
+        let file = FileText {
+            source,
+            stmts: vec![first, second],
+        };
+        // A fix of the first statement.
+        let valid = |offset: usize, text: &str| {
+            let fix = RuleFix::new("").insert(at(offset), text);
+            keeps_sql_valid(&fix, &source[first], at(0), Some(&file))
+        };
+        // After the last statement.
+        assert!(valid(source.len(), "\ncommit;"));
+        // Before the semicolon of the last statement. Without the placeholders converted, the
+        // text wouldn't parse without the fix either, and the fix would be kept.
+        assert!(!valid(source.len() - 1, "\ncommit"));
+    }
 
     #[ignore]
     #[test]

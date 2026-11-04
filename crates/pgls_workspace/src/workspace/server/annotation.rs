@@ -1,12 +1,9 @@
-use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
-use lru::LruCache;
 use pgls_lexer::SyntaxKind;
+use rustc_hash::FxHashMap;
 
 use super::statement_identifier::StatementId;
-
-const DEFAULT_CACHE_SIZE: usize = 1000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatementAnnotations {
@@ -14,7 +11,7 @@ pub struct StatementAnnotations {
 }
 
 pub struct AnnotationStore {
-    db: Mutex<LruCache<StatementId, Arc<StatementAnnotations>>>,
+    db: Mutex<FxHashMap<StatementId, Arc<StatementAnnotations>>>,
 }
 
 const WHITESPACE_TOKENS: [SyntaxKind; 6] = [
@@ -29,10 +26,13 @@ const WHITESPACE_TOKENS: [SyntaxKind; 6] = [
 impl AnnotationStore {
     pub fn new() -> AnnotationStore {
         AnnotationStore {
-            db: Mutex::new(LruCache::new(
-                NonZeroUsize::new(DEFAULT_CACHE_SIZE).unwrap(),
-            )),
+            db: Mutex::default(),
         }
+    }
+
+    /// Drops the annotations of the statements for which `keep` returns `false`.
+    pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
+        self.db.lock().unwrap().retain(|id, _| keep(id));
     }
 
     #[allow(unused)]
@@ -58,7 +58,7 @@ impl AnnotationStore {
             ends_with_semicolon,
         });
 
-        cache.put(statement_id.clone(), annotations.clone());
+        cache.insert(statement_id.clone(), annotations.clone());
 
         annotations
     }

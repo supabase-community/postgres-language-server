@@ -206,9 +206,7 @@ create cast (xfloat4 as int) without function;
 
 create cast (int as xfloat4) without function;
 
-with
-testdata (bits)
-as (
+with testdata (bits) as (
   values
     (X'00000001'),
     (X'00000002'),
@@ -238,9 +236,7 @@ select
 from
   (select cast(cast(cast(bits as int) as xfloat4) as float4) as flt from testdata offset 0) as s;
 
-with
-testdata (bits)
-as (
+with testdata (bits) as (
   values
     (X'00000000'),
     (X'00800000'),

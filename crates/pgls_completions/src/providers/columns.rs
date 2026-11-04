@@ -1,4 +1,4 @@
-use pgls_catalog::{Column, Snapshot};
+use pgls_catalog::{Column, NamePosition, Snapshot, identifier_name};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::with_schema_or_alias;
+use super::helper::{Qualifier, with_schema_or_alias};
 
 pub fn complete_columns<'a>(
     ctx: &TreesitterContext<'a>,
@@ -35,9 +35,17 @@ pub fn complete_columns<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText {
-    let alias = ctx.get_used_alias_for_table(col.table_name.as_str());
+    // The alias as a name, which is quoted again if needed.
+    let alias = ctx
+        .get_used_alias_for_table(col.table_name.as_str())
+        .map(|alias| identifier_name(&alias));
 
-    let with_schema_or_alias = with_schema_or_alias(ctx, col.name.as_str(), alias.as_deref());
+    let with_schema_or_alias = with_schema_or_alias(
+        ctx,
+        col.name.as_str(),
+        alias.as_deref().map(Qualifier::Alias),
+        NamePosition::ColId,
+    );
 
     let range = get_range_to_replace(ctx);
 
@@ -51,9 +59,12 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 #[cfg(test)]
 mod tests {
 
-    use sqlx::PgPool;
+    use pgls_test_utils::QueryWithCursorPosition;
+    use sqlx::{Executor, PgPool};
 
-    use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
+    use crate::test_helper::{
+        CompletionAssertion, TestCompletionsCase, TestCompletionsSuite, assert_complete_results,
+    };
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn handles_nested_queries(pool: PgPool) {
@@ -596,5 +607,40 @@ mod tests {
             )
             .snapshot("completes_quoted_columns_with_aliases")
             .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_the_columns_of_the_table_an_identifier_names(pool: PgPool) {
+        let setup = r#"
+            create table "MyTable" (quoted_id int);
+            create table mytable (folded_id int);
+            create table "a""b" (escaped_id int);
+        "#;
+        pool.execute(setup).await.unwrap();
+
+        // Unquoted names are downcased, quoted names keep their case and unescape `""`.
+        for (table, column) in [
+            (r#""MyTable""#, "quoted_id"),
+            ("MyTable", "folded_id"),
+            (r#""a""b""#, "escaped_id"),
+        ] {
+            let others = ["quoted_id", "folded_id", "escaped_id"]
+                .into_iter()
+                .filter(|other| *other != column)
+                .map(|other| CompletionAssertion::LabelNotExists(other.into()));
+            assert_complete_results(
+                format!(
+                    "select t.{} from {table} t",
+                    QueryWithCursorPosition::cursor_marker()
+                )
+                .as_str(),
+                std::iter::once(CompletionAssertion::Label(column.into()))
+                    .chain(others)
+                    .collect(),
+                None,
+                &pool,
+            )
+            .await;
+        }
     }
 }

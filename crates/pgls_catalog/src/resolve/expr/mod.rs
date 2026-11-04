@@ -26,7 +26,7 @@ use pgls_query::NodeEnum;
 use super::resolver::Resolver;
 use crate::typing::Type;
 pub(super) use assignment::check_assignment;
-pub(super) use func_call::call_args;
+pub(super) use func_call::{call_args, resolve_procedure_call};
 
 pub(super) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type> {
     match expr {

@@ -4,6 +4,7 @@ use pgls_text_size::TextRange;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullFileFormattingParams {
+    pub project_key: crate::workspace::ProjectKey,
     pub path: PgLSPath,
     /// Optional range to format. If None, format the entire file.
     pub range: Option<TextRange>,

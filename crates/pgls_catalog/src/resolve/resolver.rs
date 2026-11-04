@@ -1,10 +1,13 @@
 //! The state of name resolution: the catalog, the names in scope, and the findings so far.
 
+use std::mem::Discriminant;
+
 use pgls_text_size::{TextRange, TextSize};
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use pgls_query::{
     NodeEnum,
-    protobuf::{CoercionForm, FuncCall},
+    protobuf::{self, CoercionForm, FuncCall},
 };
 
 use super::{
@@ -12,8 +15,9 @@ use super::{
     scope::{Cte, Level},
     span,
 };
-use crate::FunctionInfo;
+use crate::TypeKind;
 use crate::lookup::{CatalogView, Lookup, Origin};
+use crate::typing::{ResolvedFunction, Type, TypeId};
 
 pub(super) struct Resolver<'a> {
     pub catalog: &'a dyn CatalogView,
@@ -31,6 +35,12 @@ pub(super) struct Resolver<'a> {
     pub output: crate::typing::QueryColumns,
     /// The references resolved so far, when they are being collected.
     pub references: Option<Vec<Reference>>,
+    /// The location and kind of each reference in `references`.
+    recorded: FxHashSet<(i32, Discriminant<Reference>)>,
+    /// The output columns of the subqueries of sublinks resolved so far, by the address of the
+    /// subquery's node, so that typing a sublink doesn't resolve its subquery again. Resolving
+    /// it again at every level of nested subqueries took time exponential in their depth.
+    subquery_outputs: FxHashMap<usize, crate::typing::QueryColumns>,
 }
 
 impl<'a> Resolver<'a> {
@@ -51,7 +61,25 @@ impl<'a> Resolver<'a> {
             ctes: Vec::new(),
             output: None,
             references: None,
+            recorded: FxHashSet::default(),
+            subquery_outputs: FxHashMap::default(),
         }
+    }
+
+    /// Remembers the output columns of `query`, the subquery of a sublink.
+    pub fn remember_subquery_output(
+        &mut self,
+        query: &protobuf::Node,
+        columns: crate::typing::QueryColumns,
+    ) {
+        self.subquery_outputs
+            .insert(std::ptr::from_ref(query) as usize, columns);
+    }
+
+    /// The output columns of `query`, the subquery of a sublink, if it was resolved before.
+    pub fn subquery_output(&self, query: &protobuf::Node) -> Option<&crate::typing::QueryColumns> {
+        self.subquery_outputs
+            .get(&(std::ptr::from_ref(query) as usize))
     }
 
     /// Makes the FROM items of `level` visible, until [`Resolver::exit_level`].
@@ -73,10 +101,16 @@ impl<'a> Resolver<'a> {
 
     /// The parameter of the SQL function with this name.
     pub fn function_param(&self, name: &str) -> Option<&'a FunctionParam> {
+        let index = self.function_param_index(name)?;
+        self.function?.params.get(index)
+    }
+
+    /// The index of the parameter of the SQL function with this name.
+    pub fn function_param_index(&self, name: &str) -> Option<usize> {
         self.function?
             .params
             .iter()
-            .find(|param| param.name.as_deref() == Some(name))
+            .position(|param| param.name.as_deref() == Some(name))
     }
 
     /// SQL function bodies are only checked against the database if their parameters have
@@ -110,17 +144,17 @@ impl<'a> Resolver<'a> {
             return;
         };
         // Some expressions are resolved more than once, e.g. VALUES rows in INSERT.
-        let known = references.iter().any(|known| {
-            known.location() == reference.location()
-                && std::mem::discriminant(known) == std::mem::discriminant(&reference)
-        });
-        if !known {
+        if self
+            .recorded
+            .insert((reference.location(), std::mem::discriminant(&reference)))
+        {
             references.push(reference);
         }
     }
 
-    /// Records that `call` resolves to `function`, when references are being collected.
-    pub fn record_call(&mut self, call: &FuncCall, function: &FunctionInfo) {
+    /// Records that `call` resolves to `resolved`, when references are being collected.
+    pub fn record_call(&mut self, call: &FuncCall, resolved: &ResolvedFunction) {
+        let function = &resolved.function;
         if !self.collects_references() {
             return;
         }
@@ -157,11 +191,62 @@ impl<'a> Resolver<'a> {
             };
             arguments.push(ResolvedCallArgument { parameter, named });
         }
+        // The type each argument is coerced to, with polymorphic parameters like `anyelement`
+        // resolved from the other arguments.
+        for (arg, target) in call.args.iter().zip(&resolved.arguments) {
+            let value = match arg.node.as_ref() {
+                Some(NodeEnum::NamedArgExpr(named)) => {
+                    named.arg.as_deref().and_then(|arg| arg.node.as_ref())
+                }
+                value => value,
+            };
+            if let Some(Type::Named(target)) = target {
+                self.record_enum_literal(value, target);
+            }
+        }
         self.record(Reference::Function {
             location: call.location,
             span: self.name_span(call.location),
             function: function.clone(),
             arguments,
+        });
+    }
+
+    /// Records that the parameter `index` of the SQL function is referenced at `location`, when
+    /// references are being collected.
+    pub fn record_parameter(&mut self, index: usize, location: i32) {
+        if !self.collects_references() {
+            return;
+        }
+        self.record(Reference::Parameter {
+            location,
+            span: self.name_span(location),
+            index,
+        });
+    }
+
+    /// Records `node` if it is a string literal that is coerced to `target`, and `target` is an
+    /// enum type.
+    pub fn record_enum_literal(&mut self, node: Option<&NodeEnum>, target: &TypeId) {
+        if !self.collects_references() {
+            return;
+        }
+        let Some(NodeEnum::AConst(constant)) = node else {
+            return;
+        };
+        if !matches!(constant.val, Some(protobuf::a_const::Val::Sval(_))) {
+            return;
+        }
+        let Lookup::Found(type_info) = self.catalog.type_by_id(target) else {
+            return;
+        };
+        if type_info.kind != Some(TypeKind::Enum) {
+            return;
+        }
+        self.record(Reference::EnumLiteral {
+            location: constant.location,
+            span: self.literal_span(constant.location),
+            type_info,
         });
     }
 
@@ -196,6 +281,17 @@ impl<'a> Resolver<'a> {
         self.span_to(location, span::reference_end)
     }
 
+    /// The span of the (possibly qualified) type name starting at `location`, with all the words
+    /// of multi-word types like `double precision`.
+    pub fn type_name_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::type_name_end)
+    }
+
+    /// The span of the `*` or `t.*` starting at `location`.
+    pub fn star_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::star_end)
+    }
+
     /// The span of the operator token starting at `location`.
     pub fn operator_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::operator_end)
@@ -203,6 +299,46 @@ impl<'a> Resolver<'a> {
 
     pub fn cast_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, span::cast_end)
+    }
+
+    /// The span of the string constant starting at `location`.
+    pub fn literal_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::literal_end)
+    }
+
+    /// The alias `alias` after the (possibly qualified) name starting at `location`: its location
+    /// and span, if it is written there.
+    pub fn alias_location(&self, location: i32, alias: &str) -> Option<(i32, TextRange)> {
+        let sql = self.sql?;
+        let (start, end) = span::alias_span(sql, usize::try_from(location).ok()?)?;
+        if crate::identifier_name(&sql[start..end]) != alias {
+            return None;
+        }
+        Some((
+            i32::try_from(start).ok()?,
+            TextRange::new(
+                TextSize::try_from(start).ok()?,
+                TextSize::try_from(end).ok()?,
+            ),
+        ))
+    }
+
+    /// Records the alias of the FROM item named at `location`, when references are being
+    /// collected.
+    pub fn record_alias(&mut self, location: i32, alias: Option<&pgls_query::protobuf::Alias>) {
+        if !self.collects_references() {
+            return;
+        }
+        let Some(alias) = alias else {
+            return;
+        };
+        if let Some((location, span)) = self.alias_location(location, &alias.aliasname) {
+            self.record(Reference::Alias {
+                location,
+                span: Some(span),
+                name: alias.aliasname.clone(),
+            });
+        }
     }
 
     /// The span of the first token of an expression starting at `location`.

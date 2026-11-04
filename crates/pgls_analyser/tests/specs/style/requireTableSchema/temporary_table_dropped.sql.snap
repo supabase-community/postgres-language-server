@@ -1,0 +1,22 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create temp table scratch (id int);
+drop table scratch;
+-- After the drop, the name refers to a permanent table again.
+-- expect_lint/requireTableSchema
+alter table scratch add column name text;
+
+```
+
+# Diagnostics
+lint/requireTableSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Table scratch is not schema-qualified.
+  
+  i Without a schema, the table is resolved through the search_path of the session that runs the statement.
+  
+  i Specify the schema, e.g. public.scratch.

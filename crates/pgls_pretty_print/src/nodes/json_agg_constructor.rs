@@ -38,12 +38,7 @@ pub(super) fn emit_json_agg_tail(
         if has_content {
             e.line(LineType::SoftOrSpace);
         }
-        e.token(TokenKind::FILTER_KW);
-        e.space();
-        e.token(TokenKind::L_PAREN);
-        e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, filter);
-        e.token(TokenKind::R_PAREN);
+        super::func_call::emit_filter_clause(e, filter);
         has_content = true;
     }
 

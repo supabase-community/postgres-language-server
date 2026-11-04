@@ -1,6 +1,6 @@
-use crate::adapters::line_index::LineIndex;
-use crate::adapters::{LineCol, PositionEncoding, WideLineCol};
-use anyhow::{Context, Result};
+use crate::adapters::PositionEncoding;
+use anyhow::{Result, ensure};
+use pgls_line_index::{LineCol, LineIndex, WideLineCol};
 use pgls_text_size::{TextRange, TextSize};
 use tower_lsp_server::ls_types;
 
@@ -24,9 +24,7 @@ pub fn offset(
         }
     };
 
-    line_index
-        .offset(line_col)
-        .with_context(|| format!("position {position:?} is out of range"))
+    Ok(line_index.offset_clamped(line_col))
 }
 
 /// The function is used to convert a LSP range to TextRange.
@@ -37,5 +35,7 @@ pub fn text_range(
 ) -> Result<TextRange> {
     let start = offset(line_index, range.start, position_encoding)?;
     let end = offset(line_index, range.end, position_encoding)?;
+    // `TextRange::new` panics on a range that ends before it starts.
+    ensure!(start <= end, "range {range:?} ends before it starts");
     Ok(TextRange::new(start, end))
 }

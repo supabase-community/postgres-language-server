@@ -154,7 +154,7 @@ group by sp_parallel_restricted(unique1);
 
 prepare tenk1_count
 (int)
-as select count(unique1) from tenk1 where hundred > $1;;
+as select count(unique1) from tenk1 where hundred > $1;
 
 explain (costs 'off') execute tenk1_count (1);
 
@@ -236,20 +236,18 @@ select
 from
   tenk1
 where
-  hundred = any (cast((
-    select array_agg(i) from generate_series(1, 100, 15) as i
-  )
-  as int[]));
+  hundred = any (cast(
+    (select array_agg(i) from generate_series(1, 100, 15) as i) as int[]
+  ));
 
 select
   count(unique1)
 from
   tenk1
 where
-  hundred = any (cast((
-    select array_agg(i) from generate_series(1, 100, 15) as i
-  )
-  as int[]));
+  hundred = any (cast(
+    (select array_agg(i) from generate_series(1, 100, 15) as i) as int[]
+  ));
 
 select count(*) from tenk1 where thousand > 95;
 
@@ -736,7 +734,7 @@ create table fooarr (
 
 insert into fooarr values ('1', array[1, 2], 'one');
 
-prepare pstmt (text, int[]) as select * from fooarr where f1 = $1 and f2 = $2;;
+prepare pstmt (text, int[]) as select * from fooarr where f1 = $1 and f2 = $2;
 
 explain (costs 'off') execute pstmt ('1', make_some_array(1, 2));
 

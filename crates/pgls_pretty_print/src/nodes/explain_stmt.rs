@@ -15,15 +15,9 @@ pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
     // EXPLAIN options use "name value" syntax without equals sign
     if !n.options.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        for (idx, opt) in n.options.iter().enumerate() {
-            if idx > 0 {
-                e.token(TokenKind::COMMA);
-                e.space();
-            }
-            emit_explain_option(e, opt);
-        }
-        e.token(TokenKind::R_PAREN);
+        super::node_list::emit_parenthesized_list(e, &n.options, |opt, e| {
+            emit_explain_option(e, opt)
+        });
     }
 
     // The query to explain

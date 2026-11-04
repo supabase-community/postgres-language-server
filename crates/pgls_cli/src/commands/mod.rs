@@ -1,11 +1,13 @@
 use crate::changed::{get_changed_files, get_staged_files};
 use crate::cli_options::{CliOptions, CliReporter, ColorsArg, cli_options};
-use crate::execute::StdinPayload;
+use crate::execute::{StdinPayload, VcsTargeting};
 use crate::logging::LoggingKind;
+use crate::reporter::Report;
 use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
-use pgls_configuration::{PartialConfiguration, partial_configuration};
-use pgls_console::Console;
+use pgls_configuration::{PartialConfiguration, RuleSelector, partial_configuration};
+use pgls_console::{Console, ConsoleExt, markup};
+use pgls_diagnostics::{Category, Error, PrintDiagnostic};
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
 use std::ffi::OsString;
@@ -48,11 +50,13 @@ pub enum PgLSCommand {
         #[bpaf(external, hide_usage)]
         cli_options: CliOptions,
 
-        /// Use this option when you want to format code piped from `stdin`, and print the output to `stdout`.
+        /// Use this option when you want to check code piped from `stdin`. The code is printed to
+        /// `stdout`, with the fixes applied if `--fix` is set, and the diagnostics to `stderr`.
         ///
-        /// The file doesn't need to exist on disk, what matters is the extension of the file. Based on the extension, we know how to check the code.
+        /// The file doesn't need to exist on disk. Its path is used to apply the configuration and
+        /// to label the diagnostics.
         ///
-        /// Example: `echo 'let a;' | pgls_cli check --stdin-file-path=test.sql`
+        /// Example: `echo 'drop table users;' | postgres-language-server check --stdin-file-path=test.sql`
         #[bpaf(long("stdin-file-path"), argument("PATH"), hide_usage)]
         stdin_file_path: Option<String>,
 
@@ -78,6 +82,16 @@ pub enum PgLSCommand {
         /// Also apply the unsafe fixes, which may change what a statement does. Implies `--fix`.
         #[bpaf(long("unsafe"), switch)]
         unsafe_: bool,
+
+        /// Only run the given lint rule or group, e.g. `--only=requireConcurrentIndexCreation` or
+        /// `--only=style`, also if the configuration disables it. Can be repeated. With `--fix`,
+        /// only its fixes are applied.
+        #[bpaf(long("only"), argument("GROUP|RULE"))]
+        only: Vec<RuleSelector>,
+
+        /// Skip the given lint rule or group, e.g. `--skip=preferRobustStmts`. Can be repeated.
+        #[bpaf(long("skip"), argument("GROUP|RULE"))]
+        skip: Vec<RuleSelector>,
 
         /// Single file, single path or list of paths
         #[bpaf(positional("PATH"), many)]
@@ -364,31 +378,129 @@ impl PgLSCommand {
     }
 }
 
-pub(crate) fn get_files_to_process_with_cli_options(
-    since: Option<&str>,
-    changed: bool,
-    staged: bool,
-    fs: &DynRef<'_, dyn FileSystem>,
-    configuration: &PartialConfiguration,
-) -> Result<Option<Vec<OsString>>, CliDiagnostic> {
-    if since.is_some() {
-        if !changed {
-            return Err(CliDiagnostic::incompatible_arguments("since", "changed"));
+/// The files that `check` and `format` process: the given paths, the files changed or staged in
+/// git, or the code piped to `stdin`.
+pub(crate) struct FileTargets {
+    pub paths: Vec<OsString>,
+    pub stdin_file_path: Option<String>,
+    pub staged: bool,
+    pub changed: bool,
+    pub since: Option<String>,
+}
+
+impl FileTargets {
+    /// Rejects the arguments that can't be combined, before the workspace is set up.
+    pub(crate) fn validate(&self) -> Result<(), CliDiagnostic> {
+        if self.stdin_file_path.is_some() {
+            let incompatible = [
+                ("PATH", !self.paths.is_empty()),
+                ("staged", self.staged),
+                ("changed", self.changed),
+            ];
+            if let Some((argument, _)) = incompatible.iter().find(|(_, is_set)| *is_set) {
+                return Err(CliDiagnostic::incompatible_arguments(
+                    "stdin-file-path",
+                    *argument,
+                ));
+            }
         }
-        if staged {
-            return Err(CliDiagnostic::incompatible_arguments("since", "staged"));
+
+        if self.since.is_some() {
+            if !self.changed {
+                return Err(CliDiagnostic::incompatible_arguments("since", "changed"));
+            }
+            if self.staged {
+                return Err(CliDiagnostic::incompatible_arguments("since", "staged"));
+            }
+        }
+
+        if self.changed && self.staged {
+            return Err(CliDiagnostic::incompatible_arguments("changed", "staged"));
+        }
+
+        Ok(())
+    }
+
+    /// The paths to process: the changed or staged files, else the given paths, else the working
+    /// directory. Empty for the code piped to `stdin`, and when no file is changed or staged.
+    pub(crate) fn resolve_paths(
+        &self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        configuration: &PartialConfiguration,
+    ) -> Result<Vec<OsString>, CliDiagnostic> {
+        if self.stdin_file_path.is_some() {
+            return Ok(Vec::new());
+        }
+
+        if self.changed {
+            return get_changed_files(fs, configuration, self.since.as_deref());
+        }
+        if self.staged {
+            return get_staged_files(fs);
+        }
+
+        let mut paths = self.paths.clone();
+        if paths.is_empty()
+            && let Some(current_dir) = fs.working_directory()
+        {
+            paths.push(current_dir.into_os_string());
+        }
+
+        Ok(paths)
+    }
+
+    /// The paths whose nested configuration files apply: the virtual path of the code piped to
+    /// `stdin`, or else the paths to process.
+    pub(crate) fn nested_configuration_paths(&self, paths: &[OsString]) -> Vec<OsString> {
+        match &self.stdin_file_path {
+            Some(path) => vec![OsString::from(path)],
+            None => paths.to_vec(),
         }
     }
 
-    if changed {
-        if staged {
-            return Err(CliDiagnostic::incompatible_arguments("changed", "staged"));
+    pub(crate) fn vcs(&self) -> VcsTargeting {
+        VcsTargeting {
+            staged: self.staged,
+            changed: self.changed,
         }
-        Ok(Some(get_changed_files(fs, configuration, since)?))
-    } else if staged {
-        Ok(Some(get_staged_files(fs)?))
-    } else {
-        Ok(None)
+    }
+}
+
+/// Fails the command if the report has errors, warnings with `--error-on-warnings`, or, for the
+/// commands that process files, no successfully processed file without
+/// `--no-errors-on-unmatched`. With `--staged` or `--changed`, selecting no file is not an error:
+/// a commit can stage only files of other languages. Selected files that all fail still are.
+pub(crate) fn enforce_exit_codes(
+    cli_options: &CliOptions,
+    report: &Report,
+    category: &'static Category,
+) -> Result<(), CliDiagnostic> {
+    if let Some(traversal) = &report.traversal {
+        let processed = traversal.changed + traversal.unchanged;
+        let nothing_selected = traversal.vcs_targeted && processed == 0;
+        if processed.saturating_sub(traversal.skipped) == 0
+            && !nothing_selected
+            && !cli_options.no_errors_on_unmatched
+        {
+            return Err(CliDiagnostic::no_files_processed());
+        }
+    }
+
+    if report.errors > 0 {
+        return Err(CliDiagnostic::check_error(category));
+    }
+
+    if report.warnings > 0 && cli_options.error_on_warnings {
+        return Err(CliDiagnostic::check_warnings(category));
+    }
+
+    Ok(())
+}
+
+/// Prints diagnostics to stderr, for the commands that write their result to stdout.
+pub(crate) fn print_diagnostics(console: &mut dyn Console, diagnostics: &[Error]) {
+    for diagnostic in diagnostics {
+        console.error(markup! {{PrintDiagnostic::simple(diagnostic)}});
     }
 }
 
@@ -410,6 +522,134 @@ pub(crate) fn read_stdin_payload(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::reporter::TraversalData;
+    use pgls_diagnostics::{Diagnostic, category};
+    use std::collections::BTreeSet;
+    use std::time::Duration;
+
+    #[derive(Debug, Diagnostic)]
+    #[diagnostic(category = "format", severity = Warning, message = "A warning")]
+    struct TestWarning;
+
+    fn cli_options(args: &[&str]) -> CliOptions {
+        bpaf::Parser::to_options(super::cli_options())
+            .run_inner(args)
+            .unwrap()
+    }
+
+    fn file_targets() -> FileTargets {
+        FileTargets {
+            paths: Vec::new(),
+            stdin_file_path: None,
+            staged: false,
+            changed: false,
+            since: None,
+        }
+    }
+
+    fn traversal(unchanged: usize) -> TraversalData {
+        TraversalData {
+            evaluated_paths: BTreeSet::new(),
+            changed: 0,
+            unchanged,
+            matches: 0,
+            skipped: 0,
+            suggested_fixes_skipped: 0,
+            fixable_diagnostics: 0,
+            writes: false,
+            diagnostics_not_printed: 0,
+            workspace_root: None,
+            vcs_targeted: false,
+        }
+    }
+
+    #[test]
+    fn stdin_file_path_rejects_the_other_targets() {
+        let stdin = || FileTargets {
+            stdin_file_path: Some("virtual.sql".into()),
+            ..file_targets()
+        };
+        assert!(stdin().validate().is_ok());
+        for targets in [
+            FileTargets {
+                paths: vec!["file.sql".into()],
+                ..stdin()
+            },
+            FileTargets {
+                staged: true,
+                ..stdin()
+            },
+            FileTargets {
+                changed: true,
+                ..stdin()
+            },
+        ] {
+            assert!(matches!(
+                targets.validate(),
+                Err(CliDiagnostic::IncompatibleArguments(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn warnings_fail_every_command_with_error_on_warnings() {
+        let report = Report::new(
+            vec![TestWarning.into()],
+            Duration::ZERO,
+            0,
+            Some(traversal(1)),
+        );
+        let format = category!("format");
+
+        assert!(enforce_exit_codes(&cli_options(&[]), &report, format).is_ok());
+        assert!(matches!(
+            enforce_exit_codes(&cli_options(&["--error-on-warnings"]), &report, format),
+            Err(CliDiagnostic::CheckError(_))
+        ));
+    }
+
+    #[test]
+    fn only_commands_that_process_files_fail_without_files() {
+        let without_traversal = Report::new(Vec::new(), Duration::ZERO, 0, None);
+        let without_files = Report::new(Vec::new(), Duration::ZERO, 0, Some(traversal(0)));
+        let check = category!("check");
+
+        assert!(enforce_exit_codes(&cli_options(&[]), &without_traversal, check).is_ok());
+        assert!(matches!(
+            enforce_exit_codes(&cli_options(&[]), &without_files, check),
+            Err(CliDiagnostic::NoFilesWereProcessed(_))
+        ));
+        assert!(
+            enforce_exit_codes(
+                &cli_options(&["--no-errors-on-unmatched"]),
+                &without_files,
+                check
+            )
+            .is_ok()
+        );
+    }
+
+    /// With `--staged` or `--changed`, selecting no file passes, but selected files that all
+    /// failed to process don't.
+    #[test]
+    fn vcs_targeted_runs_fail_only_when_every_selected_file_failed() {
+        let vcs_targeted = |unchanged, skipped| {
+            let traversal = TraversalData {
+                skipped,
+                vcs_targeted: true,
+                ..traversal(unchanged)
+            };
+            Report::new(Vec::new(), Duration::ZERO, 0, Some(traversal))
+        };
+        let check = category!("check");
+
+        assert!(enforce_exit_codes(&cli_options(&[]), &vcs_targeted(0, 0), check).is_ok());
+        assert!(matches!(
+            enforce_exit_codes(&cli_options(&[]), &vcs_targeted(1, 1), check),
+            Err(CliDiagnostic::NoFilesWereProcessed(_))
+        ));
+        assert!(enforce_exit_codes(&cli_options(&[]), &vcs_targeted(2, 1), check).is_ok());
+    }
 
     /// Tests that all CLI options adhere to the invariants expected by `bpaf`.
     #[test]

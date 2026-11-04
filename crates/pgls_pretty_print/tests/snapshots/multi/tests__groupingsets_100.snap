@@ -253,7 +253,7 @@ select
   sum(t1.v),
   max(t2.c)
 from
-  gstest1 as t1 inner join gstest2 as t2 using ( a, b)
+  gstest1 as t1 inner join gstest2 as t2 using (a, b)
 group by grouping sets ((a, b), ());
 
 select a, d, grouping(a, b, c) from gstest3 group by grouping sets ((a, b), (a, c));

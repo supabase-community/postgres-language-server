@@ -1,11 +1,13 @@
-use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
+use crate::adapters::{PositionEncoding, negotiated_encoding};
 use crate::handlers::code_actions::command_id;
+use pgls_line_index::WideEncoding;
 use pgls_workspace::features::code_actions::CommandActionCategory;
 use strum::IntoEnumIterator;
 use tower_lsp_server::ls_types::{
     ClientCapabilities, CompletionOptions, ExecuteCommandOptions, HoverProviderCapability,
-    InlayHintServerCapabilities, OneOf, PositionEncodingKind, SaveOptions, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    InlayHintServerCapabilities, OneOf, PositionEncodingKind, SaveOptions,
+    SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensServerCapabilities,
+    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
     TextDocumentSyncSaveOptions, WorkDoneProgressOptions,
 };
 
@@ -72,6 +74,14 @@ pub(crate) fn server_capabilities(capabilities: &ClientCapabilities) -> ServerCa
         inlay_hint_provider: Some(OneOf::Right(InlayHintServerCapabilities::Options(
             Default::default(),
         ))),
+        semantic_tokens_provider: Some(SemanticTokensServerCapabilities::SemanticTokensOptions(
+            SemanticTokensOptions {
+                legend: crate::handlers::semantic_tokens::legend(),
+                range: Some(true),
+                full: Some(SemanticTokensFullOptions::Bool(true)),
+                ..Default::default()
+            },
+        )),
         ..Default::default()
     }
 }

@@ -1,31 +1,32 @@
-use std::num::NonZeroUsize;
 use std::sync::{Arc, LazyLock, Mutex};
 
-use lru::LruCache;
 pub use pgls_lexer::{convert_to_positional_params, convert_to_positional_params_with_metadata};
 use pgls_query_ext::diagnostics::*;
 use pgls_text_size::TextRange;
 use regex::Regex;
+use rustc_hash::FxHashMap;
 
 use super::statement_identifier::StatementId;
 
-const DEFAULT_CACHE_SIZE: usize = 1000;
-
+/// The parse results of the statements of a document. They are kept until the statement is
+/// no longer in the document, see [`PgQueryStore::retain`].
 pub struct PgQueryStore {
-    ast_db: Mutex<LruCache<StatementId, Arc<Result<pgls_query::NodeEnum, SyntaxDiagnostic>>>>,
-    plpgsql_db: Mutex<LruCache<StatementId, Result<(), SyntaxDiagnostic>>>,
+    ast_db: Mutex<FxHashMap<StatementId, Arc<Result<pgls_query::NodeEnum, SyntaxDiagnostic>>>>,
+    plpgsql_db: Mutex<FxHashMap<StatementId, Result<(), SyntaxDiagnostic>>>,
 }
 
 impl PgQueryStore {
     pub fn new() -> PgQueryStore {
         PgQueryStore {
-            ast_db: Mutex::new(LruCache::new(
-                NonZeroUsize::new(DEFAULT_CACHE_SIZE).unwrap(),
-            )),
-            plpgsql_db: Mutex::new(LruCache::new(
-                NonZeroUsize::new(DEFAULT_CACHE_SIZE).unwrap(),
-            )),
+            ast_db: Mutex::default(),
+            plpgsql_db: Mutex::default(),
         }
+    }
+
+    /// Drops the results of the statements for which `keep` returns `false`.
+    pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
+        self.ast_db.lock().unwrap().retain(|id, _| keep(id));
+        self.plpgsql_db.lock().unwrap().retain(|id, _| keep(id));
     }
 
     pub fn get_or_cache_ast(
@@ -47,7 +48,7 @@ impl PgQueryStore {
                     })
                 }),
         );
-        cache.put(statement.clone(), r.clone());
+        cache.insert(statement.clone(), r.clone());
         r
     }
 
@@ -90,7 +91,7 @@ impl PgQueryStore {
             })
             .map_err(|e| SyntaxDiagnostic::new(e.to_string(), Some(range)));
 
-        cache.put(statement.clone(), r.clone());
+        cache.insert(statement.clone(), r.clone());
 
         Some(r)
     }

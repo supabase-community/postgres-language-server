@@ -19,6 +19,7 @@ oxc_resolver                = { workspace = true }
 pgls_console                = { workspace = true, features = ["serde"] }
 pgls_diagnostics_categories = { workspace = true, features = ["serde"] }
 pgls_diagnostics_macros     = { workspace = true }
+pgls_line_index             = { workspace = true }
 pgls_text_edit              = { workspace = true, features = ["serde"] }
 pgls_text_size.workspace    = true
 schemars                    = { workspace = true, optional = true }
@@ -34,3 +35,6 @@ schema = ["dep:schemars", "pgls_text_edit/schema", "pgls_diagnostics_categories/
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

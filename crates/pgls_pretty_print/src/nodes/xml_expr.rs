@@ -27,7 +27,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
         2 => {
             // XMLELEMENT
             e.token(TokenKind::XMLELEMENT_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             e.token(TokenKind::NAME_KW);
             e.space();
             // Names with special characters need quoting
@@ -36,7 +36,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             // Named args represent XML attributes (XMLATTRIBUTES)
             if !n.named_args.is_empty() {
                 e.token(TokenKind::COMMA);
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::XMLATTRIBUTES_KW);
                 emit_parenthesized_list(e, &n.named_args, super::emit_node);
             }
@@ -44,11 +44,11 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             // Args represent content
             if !n.args.is_empty() {
                 e.token(TokenKind::COMMA);
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 emit_comma_separated_list(e, &n.args, super::emit_node);
             }
 
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         3 => {
             // XMLFOREST
@@ -58,7 +58,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
         4 => {
             // XMLPARSE
             e.token(TokenKind::XMLPARSE_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             // XmlOptionType: XmloptionDocument=1, XmloptionContent=2
             match n.xmloption() {
                 XmlOptionType::XmloptionDocument => {
@@ -72,12 +72,12 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             if !n.args.is_empty() {
                 super::emit_node(&n.args[0], e);
             }
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         5 => {
             // XMLPI
             e.token(TokenKind::XMLPI_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             e.token(TokenKind::NAME_KW);
             e.space();
             // Names with special characters need quoting
@@ -85,21 +85,21 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
 
             if !n.args.is_empty() {
                 e.token(TokenKind::COMMA);
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 super::emit_node(&n.args[0], e);
             }
 
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         6 => {
             // XMLROOT
             e.token(TokenKind::XMLROOT_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             if !n.args.is_empty() {
                 super::emit_node(&n.args[0], e);
             }
             e.token(TokenKind::COMMA);
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::VERSION_KW);
             e.space();
             if n.args.len() > 1 {
@@ -127,7 +127,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
                     0 => {
                         // XML_STANDALONE_YES
                         e.token(TokenKind::COMMA);
-                        e.space();
+                        e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::STANDALONE_KW);
                         e.space();
                         e.token(TokenKind::YES_KW);
@@ -135,7 +135,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
                     1 => {
                         // XML_STANDALONE_NO
                         e.token(TokenKind::COMMA);
-                        e.space();
+                        e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::STANDALONE_KW);
                         e.space();
                         e.token(TokenKind::NO_KW);
@@ -143,7 +143,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
                     2 => {
                         // XML_STANDALONE_NO_VALUE
                         e.token(TokenKind::COMMA);
-                        e.space();
+                        e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::STANDALONE_KW);
                         e.space();
                         e.token(TokenKind::NO_KW);
@@ -154,13 +154,13 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
                     _ => {}
                 }
             }
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         7 => {
             // XMLSERIALIZE - this is handled by XmlSerialize node, not XmlExpr
             // But we'll handle it here just in case
             e.token(TokenKind::XMLSERIALIZE_KW);
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             match n.xmloption() {
                 XmlOptionType::XmloptionDocument => {
                     e.token(TokenKind::DOCUMENT_KW);
@@ -173,7 +173,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             if !n.args.is_empty() {
                 emit_comma_separated_list(e, &n.args, super::emit_node);
             }
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
         8 => {
             // IS DOCUMENT - expr IS DOCUMENT
@@ -188,11 +188,11 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
         _ => {
             // Unknown/Undefined XML operation - emit XMLCOMMENT as fallback
             e.token(TokenKind::IDENT("xmlcomment".to_string()));
-            e.token(TokenKind::L_PAREN);
+            super::open_call_arguments(e);
             if !n.args.is_empty() {
                 super::emit_node(&n.args[0], e);
             }
-            e.token(TokenKind::R_PAREN);
+            super::close_call_arguments(e);
         }
     }
 

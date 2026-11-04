@@ -1,5 +1,6 @@
 use assert_cmd::cargo_bin_cmd;
 use insta::assert_snapshot;
+use std::path::Path;
 use std::process::ExitStatus;
 
 const CONFIG_PATH: &str = "tests/fixtures/postgres-language-server.jsonc";
@@ -27,6 +28,50 @@ fn format_values_rows_from_cli_options() {
     .assert()
     .success()
     .stdout("values\n  (1, 'one')\n  , (2, 'two');");
+}
+
+fn format_stdin_with_option(option: &str, value: &str) -> assert_cmd::assert::Assert {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    cmd.args([
+        "format",
+        "--config-path",
+        CONFIG_PATH,
+        "--log-level",
+        "none",
+        "--stdin-file-path",
+        "virtual.sql",
+        option,
+        value,
+    ])
+    .write_stdin("select 1;")
+    .assert()
+}
+
+#[test]
+fn format_option_errors_list_the_valid_values() {
+    let output = format_stdin_with_option("--clause-body-style", "foo")
+        .failure()
+        .get_output()
+        .clone();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("expected 'break' or 'compact'"), "{stderr}");
+
+    // The values-row layout shares its values with the layout, and the error doesn't name either.
+    let output = format_stdin_with_option("--values-row-layout", "foo")
+        .failure()
+        .get_output()
+        .clone();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("expected 'fit' or 'expanded'"), "{stderr}");
+    assert!(!stderr.contains("Layout"), "{stderr}");
+}
+
+#[test]
+fn format_rejects_a_zero_line_width_or_indent_size() {
+    for option in ["--line-width", "--indent-size"] {
+        format_stdin_with_option(option, "0").failure();
+        format_stdin_with_option(option, "1").success();
+    }
 }
 
 #[test]
@@ -168,4 +213,71 @@ fn normalize_output(status: ExitStatus, stdout: &str, stderr: &str) -> String {
         normalize_durations(stdout).trim_end(),
         stderr.trim_end()
     )
+}
+
+/// Commits a configuration and an unformatted file to a new git repository below a new
+/// temporary directory.
+fn git_repo() -> tempfile::TempDir {
+    let root = tempfile::tempdir().unwrap();
+    std::fs::write(
+        root.path().join("postgres-language-server.jsonc"),
+        r#"{ "db": { "disableConnection": true } }"#,
+    )
+    .unwrap();
+    std::fs::write(root.path().join("a.sql"), "SELECT a,b FROM t;\n").unwrap();
+    for args in [
+        &["init", "--quiet"][..],
+        &["add", "--all"],
+        &["commit", "--quiet", "--no-verify", "--message", "init"],
+    ] {
+        let status = std::process::Command::new("git")
+            .current_dir(root.path())
+            .args(["-c", "user.name=test", "-c", "user.email=test@example.com"])
+            .args(["-c", "commit.gpgsign=false"])
+            .args(args)
+            .status()
+            .expect("failed to run git");
+        assert!(status.success(), "git {args:?} failed");
+    }
+    root
+}
+
+fn run_format_in(cwd: &Path, args: &[&str]) -> String {
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .current_dir(cwd)
+        .args(["format", "--log-level", "none"])
+        .args(args)
+        .output()
+        .expect("failed to run CLI");
+
+    normalize_output(
+        output.status,
+        &String::from_utf8_lossy(&output.stdout),
+        &String::from_utf8_lossy(&output.stderr),
+    )
+}
+
+/// With nothing staged there is nothing to format, which is not an error: a pre-commit hook runs
+/// on every commit.
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn format_staged_without_staged_files_snapshot() {
+    let repo = git_repo();
+    assert_snapshot!(run_format_in(repo.path(), &["--staged"]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn format_changed_without_changed_files_snapshot() {
+    let repo = git_repo();
+    assert_snapshot!(run_format_in(
+        repo.path(),
+        &["--changed", "--since", "HEAD"]
+    ));
 }

@@ -2,7 +2,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::AlterTableType;
+use pgls_query::protobuf::{AlterTableType, Token};
 
 declare_lint_rule! {
     /// Dropping a constraint may break existing clients.
@@ -39,36 +39,63 @@ impl LinterRule for BanDropConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let drops_constraint = match ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => stmt.cmds.iter().any(|cmd| {
-                matches!(
-                    &cmd.node,
+        let constraints: Vec<&str> = match ctx.stmt() {
+            pgls_query::NodeEnum::AlterTableStmt(stmt) => stmt
+                .cmds
+                .iter()
+                .filter_map(|cmd| match &cmd.node {
                     Some(pgls_query::NodeEnum::AlterTableCmd(cmd))
-                        if cmd.subtype() == AlterTableType::AtDropConstraint
-                )
-            }),
+                        if cmd.subtype() == AlterTableType::AtDropConstraint =>
+                    {
+                        Some(cmd.name.as_str())
+                    }
+                    _ => None,
+                })
+                .collect(),
             // 'X' is `DROP CONSTRAINT`.
-            pgls_query::NodeEnum::AlterDomainStmt(stmt) => stmt.subtype == "X",
-            _ => false,
+            pgls_query::NodeEnum::AlterDomainStmt(stmt) if stmt.subtype == "X" => {
+                vec![stmt.name.as_str()]
+            }
+            _ => return vec![],
         };
 
-        if !drops_constraint {
-            return vec![];
-        }
+        // Each command has a `DROP CONSTRAINT`, in the order of the commands.
+        let mut spans = ctx
+            .tokens()
+            .map(|tokens| tokens.keyword_pairs(Token::Drop, Token::Constraint))
+            .unwrap_or_default()
+            .into_iter();
+        constraints
+            .into_iter()
+            .map(|constraint| {
+                LinterDiagnostic::new(
+                    rule_category!(),
+                    spans.next(),
+                    markup! {
+                        "Dropping constraint "<Emphasis>{constraint}</Emphasis>" may break existing clients."
+                    },
+                )
+                .detail(
+                    None,
+                    "Clients may depend on the guarantee of the constraint, e.g. as the arbiter of INSERT ... ON CONFLICT.",
+                )
+                .note("Update clients to no longer depend on the constraint, then drop it in a later migration.")
+            })
+            .collect()
+    }
+}
 
-        vec![
-            LinterDiagnostic::new(
-                rule_category!(),
-                None,
-                markup! {
-                    "Dropping a constraint may break existing clients."
-                },
-            )
-            .detail(
-                None,
-                "Clients may depend on the guarantee of the constraint, e.g. as the arbiter of INSERT ... ON CONFLICT.",
-            )
-            .note("Update clients to no longer depend on the constraint, then drop it in a later migration."),
-        ]
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn points_at_each_drop() {
+        assert_eq!(
+            crate::spanned_texts(
+                "destructive",
+                "banDropConstraint",
+                "alter table users drop constraint a, add check (b > 0), drop  constraint if exists c"
+            ),
+            ["drop constraint", "drop  constraint"]
+        );
     }
 }

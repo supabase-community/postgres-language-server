@@ -184,9 +184,16 @@ impl CatalogBase {
         let mut functions: FxHashMap<Key, Vec<FunctionInfo>> = FxHashMap::default();
         for function in &snapshot.functions {
             let args = &function.args.args;
+            // `CALL` passes the output arguments of procedures too (`FuncnameGetCandidates`
+            // with `include_out_arguments`):
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1272
+            let is_procedure = function.kind == ProcKind::Procedure;
+            let is_call_argument = |mode: &str| {
+                matches!(mode, "in" | "inout" | "variadic") || (is_procedure && mode == "out")
+            };
             let inputs = args
                 .iter()
-                .filter(|arg| matches!(arg.mode.as_str(), "in" | "inout" | "variadic"))
+                .filter(|arg| is_call_argument(&arg.mode))
                 .count();
             // Defaults belong to the last input arguments. The snapshot doesn't attach them to
             // the right arguments when there are output arguments, but their number is correct.
@@ -245,6 +252,7 @@ impl CatalogBase {
                                     "in" => FunctionArgumentMode::In,
                                     "inout" => FunctionArgumentMode::InOut,
                                     "variadic" => FunctionArgumentMode::Variadic,
+                                    "out" if is_procedure => FunctionArgumentMode::Out,
                                     _ => return None,
                                 };
                                 Some(FunctionArgument {
@@ -256,6 +264,26 @@ impl CatalogBase {
                                 })
                             })
                             .collect(),
+                        output_arguments: if is_procedure {
+                            Vec::new()
+                        } else {
+                            args.iter()
+                                .enumerate()
+                                .filter(|(_, arg)| matches!(arg.mode.as_str(), "out" | "table"))
+                                .map(|(position, arg)| {
+                                    (
+                                        position,
+                                        FunctionArgument {
+                                            name: (!arg.name.is_empty()).then(|| arg.name.clone()),
+                                            ty: types_by_id
+                                                .contains_key(&arg.type_id)
+                                                .then_some(TypeId::Snapshot(arg.type_id)),
+                                            mode: FunctionArgumentMode::Out,
+                                        },
+                                    )
+                                })
+                                .collect()
+                        },
                         input_defaults: defaults,
                         variadic_element: (function.variadic_type_id != 0
                             && types_by_id.contains_key(&function.variadic_type_id))

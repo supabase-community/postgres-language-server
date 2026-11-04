@@ -15,6 +15,7 @@ version              = "0.0.0"
 pgls_catalog     = { workspace = true, features = ["db"] }
 pgls_console     = { workspace = true }
 pgls_diagnostics = { workspace = true }
+pgls_line_index  = { workspace = true }
 pgls_query       = { workspace = true }
 pgls_query_ext   = { workspace = true }
 pgls_text_size   = { workspace = true }
@@ -28,3 +29,6 @@ tree-sitter      = { workspace = true }
 pgls_test_utils = { workspace = true }
 
 [lib]
+
+[lints]
+workspace = true

@@ -33,7 +33,7 @@ CREATE TABLE users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferJsonb  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
   
@@ -56,7 +56,7 @@ ALTER TABLE users ADD COLUMN metadata json;
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferJsonb  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
   
@@ -76,7 +76,7 @@ ALTER TABLE users ALTER COLUMN data TYPE json;
 ```
 
 ```sh
-code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferJsonb  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
   

@@ -32,3 +32,6 @@ ureq       = { version = "2.9", features = ["json"] }
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

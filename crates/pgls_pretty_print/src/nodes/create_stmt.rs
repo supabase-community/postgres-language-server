@@ -30,14 +30,6 @@ fn emit_typed_table_column_override(e: &mut EventEmitter, item: &pgls_query::pro
 }
 
 pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
-    emit_create_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_create_stmt_no_semicolon(e: &mut EventEmitter, n: &CreateStmt) {
-    emit_create_stmt_impl(e, n, false);
-}
-
-fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: bool) {
     e.group_start(GroupKind::CreateStmt);
 
     e.token(TokenKind::CREATE_KW);
@@ -171,7 +163,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
             }
 
             e.indent_end();
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
         }
     } else {
@@ -182,10 +174,11 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.space();
         e.group_start(GroupKind::List);
         e.token(TokenKind::L_PAREN);
-        // Force break for tables with multiple columns for readability
+        // Force break for tables with multiple columns for readability. A table without columns
+        // keeps `()` together.
         if multiple_items {
             e.line(LineType::Hard);
-        } else {
+        } else if has_content {
             e.line(LineType::Soft);
         }
 
@@ -223,7 +216,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
 
         if multiple_items {
             e.line(LineType::Hard);
-        } else {
+        } else if has_content {
             e.line(LineType::Soft);
         }
         e.token(TokenKind::R_PAREN);
@@ -303,10 +296,6 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
         super::emit_identifier_maybe_quoted(e, &n.tablespacename);
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
     }
 
     e.group_end();

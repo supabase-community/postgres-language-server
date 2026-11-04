@@ -1170,11 +1170,8 @@ from
 select
   (
     select
-      max(
-        (select i.unique2 from tenk1 as i where i.unique1 = o.unique1)
-      )
-      filter (where
-        o.unique1 < 10)
+      max((select i.unique2 from tenk1 as i where i.unique1 = o.unique1))
+        filter (where o.unique1 < 10)
   )
 from
   tenk1 as o;
@@ -1262,18 +1259,14 @@ from
 select percentile_cont(array[0, 0.25, 0.5, 0.75, 1]) within group (order by thousand) from tenk1;
 
 select
-  percentile_disc(
-    array[array[null, 1, 0.5], array[0.75, 0.25, null]]
-  )
-  within group (order by thousand)
+  percentile_disc(array[array[null, 1, 0.5], array[0.75, 0.25, null]])
+    within group (order by thousand)
 from
   tenk1;
 
 select
-  percentile_cont(
-    array[0, 1, 0.25, 0.75, 0.5, 1, 0.3, 0.32, 0.35, 0.38, 0.4]
-  )
-  within group (order by x)
+  percentile_cont(array[0, 1, 0.25, 0.75, 0.5, 1, 0.3, 0.32, 0.35, 0.38, 0.4])
+    within group (order by x)
 from
   generate_series(1, 6) as x;
 

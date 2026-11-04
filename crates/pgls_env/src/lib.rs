@@ -70,7 +70,7 @@ impl PgLSEnv {
             ),
             pgls_config_path: PgLSEnvVariable::new(
                 "PGLS_CONFIG_PATH",
-                "A path to the configuration file",
+                "A path to the configuration file, or to a folder with one, for the language server (`lsp-proxy`, `start`). `check` and `format` take `--config-path` instead.",
             ),
 
             database_url: PgLSEnvVariable::new(

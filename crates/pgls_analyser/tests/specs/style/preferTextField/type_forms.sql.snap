@@ -1,0 +1,88 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- myschema.varchar is a type of the user.
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+create table names (
+    a varchar(255)[],
+    b character varying(20) collate "C",
+    c varchar /* name */ (40),
+    d myschema.varchar(10)
+);
+
+```
+
+# Diagnostics
+lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
+  
+  i Use a text field with a check constraint.
+  
+
+
+## Fix (unsafe): Use TEXT
+```
+-- myschema.varchar is a type of the user.
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+create table names (
+    a text[],
+    b character varying(20) collate "C",
+    c varchar /* name */ (40),
+    d myschema.varchar(10)
+);
+
+```
+
+lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
+  
+  i Use a text field with a check constraint.
+  
+
+
+## Fix (unsafe): Use TEXT
+```
+-- myschema.varchar is a type of the user.
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+create table names (
+    a varchar(255)[],
+    b text collate "C",
+    c varchar /* name */ (40),
+    d myschema.varchar(10)
+);
+
+```
+
+lint/preferTextField  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
+  
+  i Use a text field with a check constraint.
+  
+
+
+## Fix (unsafe): Use TEXT
+```
+-- myschema.varchar is a type of the user.
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+create table names (
+    a varchar(255)[],
+    b character varying(20) collate "C",
+    c text /* name */,
+    d myschema.varchar(10)
+);
+
+```

@@ -11,7 +11,8 @@ declare_lint_rule! {
     /// constraint, role, or any other object fail after the rename. The same goes for enum values
     /// renamed with `ALTER TYPE ... RENAME VALUE`.
     ///
-    /// Tables and columns are covered by `renamingTable` and `renamingColumn`.
+    /// Tables are covered by `renamingTable`, and columns and the attributes of composite types by
+    /// `renamingColumn`.
     ///
     /// ## Examples
     ///
@@ -43,7 +44,9 @@ impl LinterRule for RenamingObject {
             pgls_query::NodeEnum::RenameStmt(stmt)
                 if !matches!(
                     stmt.rename_type(),
-                    ObjectType::ObjectTable | ObjectType::ObjectColumn
+                    ObjectType::ObjectTable
+                        | ObjectType::ObjectColumn
+                        | ObjectType::ObjectAttribute
                 ) =>
             {
                 object_type_noun(stmt.rename_type())

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/jsonb_jsonpath.sql
-snapshot_kind: text
 ---
 select cast('{"a": 12}' as jsonb) @? '$';
 
@@ -2376,16 +2375,16 @@ select jsonb_path_match('[{"a": 1}]', '$undefined_var');
 
 select jsonb_path_match('[{"a": 1}]', 'false');
 
-with
-str (j, num)
-as (
+with str (j, num) as (
   select
     jsonb_build_object('s', s),
     num
   from
     unnest(
-      cast('{"", "a", "ab", "abc", "abcd", "b", "A", "AB", "ABC", "ABc", "ABcD", "B"}'
-      as text[])
+      cast(
+        '{"", "a", "ab", "abc", "abcd", "b", "A", "AB", "ABC", "ABc", "ABcD", "B"}'
+        as text[]
+      )
     )
     with ordinality
     as a (s, num)

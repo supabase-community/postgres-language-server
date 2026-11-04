@@ -7,7 +7,7 @@ use super::{
     Resolver,
     on_conflict_clause::resolve_on_conflict_clause,
     range_var::resolve_target_relation,
-    res_target::{check_target_column, resolve_returning_list},
+    res_target::{check_target_column, resolve_returning_clause},
     resolve_node,
     with_clause::resolve_with_clause,
 };
@@ -75,14 +75,17 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
                 })
                 .collect()
         };
-        let check =
-            |r: &mut Resolver, value: Option<Type>, target: Option<&TypedColumn>, location: i32| {
-                if let Some(target) = target
-                    && let Some(column_type) = target.ty.clone()
-                {
-                    check_assignment(r, &target.name, column_type, value, location);
-                }
-            };
+        let check = |r: &mut Resolver,
+                     expr: Option<&NodeEnum>,
+                     value: Option<Type>,
+                     target: Option<&TypedColumn>,
+                     location: i32| {
+            if let Some(target) = target
+                && let Some(column_type) = target.ty.clone()
+            {
+                check_assignment(r, &target.name, column_type, expr, value, location);
+            }
+        };
         match values_rows(source) {
             // Each row of `INSERT ... VALUES` is coerced to the target columns on its own.
             Some(rows) => {
@@ -92,8 +95,8 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
                         let Some(value) = value.node.as_ref() else {
                             continue;
                         };
-                        let value = infer_expr(r, value);
-                        check(r, value, *target, location);
+                        let value_type = infer_expr(r, value);
+                        check(r, Some(value), value_type, *target, location);
                     }
                 }
             }
@@ -105,7 +108,8 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
                     .enumerate()
                 {
                     let location = select_target_location(source, index).unwrap_or_default();
-                    check(r, value.ty.clone(), *target, location);
+                    let expr = select_value(source, index);
+                    check(r, expr, value.ty.clone(), *target, location);
                 }
             }
         }
@@ -135,7 +139,7 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         resolve_on_conflict_clause(r, conflict, &target);
     }
 
-    resolve_returning_list(r, &n.returning_list, Level::with_item(target))
+    resolve_returning_clause(r, n.returning_clause.as_ref(), Level::with_item(target))
 }
 
 fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32> {
@@ -152,6 +156,42 @@ fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32
         return None;
     };
     node_location(target.val.as_deref()?)
+}
+
+/// The value of the select list entry at `index` of a plain SELECT. Postgres doesn't resolve
+/// the unknown literals of the source of an INSERT, so they are coerced to the target columns
+/// like the values of `INSERT ... VALUES` ([`transformInsertStmt`]). Except where DISTINCT,
+/// GROUP BY or ORDER BY sort them, which makes them text ([`addTargetToSortList`]), so `None`
+/// for a SELECT with any of them, and for set operations, which resolve them too.
+///
+/// [`transformInsertStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L771
+/// [`addTargetToSortList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L3393
+fn select_value(source: &pgls_query::Node, index: usize) -> Option<&NodeEnum> {
+    let NodeEnum::SelectStmt(select) = source.node.as_ref()? else {
+        return None;
+    };
+    if select.op() != SetOperation::SetopNone
+        || !select.values_lists.is_empty()
+        || !select.distinct_clause.is_empty()
+        || !select.group_clause.is_empty()
+        || !select.sort_clause.is_empty()
+    {
+        return None;
+    }
+    let mut values = select
+        .target_list
+        .iter()
+        .map(|target| match target.node.as_ref()? {
+            NodeEnum::ResTarget(target) => target.val.as_deref()?.node.as_ref(),
+            _ => None,
+        });
+    // A `*` before the entry expands to any number of columns.
+    for _ in 0..index {
+        if values.next()?.is_none_or(expands_to_columns) {
+            return None;
+        }
+    }
+    values.next()?
 }
 
 /// The rows of a plain `VALUES` list.

@@ -25,6 +25,5 @@ pub(super) fn emit_notify_stmt(e: &mut EventEmitter, n: &NotifyStmt) {
         emit_single_quoted_str(e, &n.payload);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

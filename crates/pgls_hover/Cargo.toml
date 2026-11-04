@@ -35,3 +35,6 @@ doctest = false
 
 [features]
 schema = ["dep:schemars"]
+
+[lints]
+workspace = true

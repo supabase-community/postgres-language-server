@@ -4,3 +4,4 @@ pub mod diagnostics;
 pub mod format;
 pub mod inlay_hints;
 pub mod on_hover;
+pub mod semantic_tokens;

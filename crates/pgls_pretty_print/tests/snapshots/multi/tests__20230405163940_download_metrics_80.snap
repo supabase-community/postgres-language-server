@@ -62,23 +62,14 @@ as
   select
     dl.package_id,
     count(dl.id) as downloads_all_time,
-    count(
-      dl.id
-    )
-    filter (where
-      dl.created_at > now() - cast('180 days' as interval))
+    count(dl.id)
+      filter (where dl.created_at > now() - cast('180 days' as interval))
     as downloads_180_days,
-    count(
-      dl.id
-    )
-    filter (where
-      dl.created_at > now() - cast('90 days' as interval))
+    count(dl.id)
+      filter (where dl.created_at > now() - cast('90 days' as interval))
     as downloads_90_days,
-    count(
-      dl.id
-    )
-    filter (where
-      dl.created_at > now() - cast('30 days' as interval))
+    count(dl.id)
+      filter (where dl.created_at > now() - cast('30 days' as interval))
     as downloads_30_day
   from
     app.downloads as dl
