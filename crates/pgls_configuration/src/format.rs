@@ -4,7 +4,7 @@ use pgls_configuration_macros::{Merge, Partial};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
-    num::NonZeroU8,
+    num::{NonZeroU8, NonZeroU16},
     ops::{Deref, DerefMut},
     str::FromStr,
 };
@@ -79,7 +79,7 @@ impl FromStr for IndentStyle {
         match s {
             "spaces" => Ok(Self::Spaces),
             "tabs" => Ok(Self::Tabs),
-            _ => Err("Value not supported for IndentStyle. Use 'spaces' or 'tabs'."),
+            _ => Err("expected 'spaces' or 'tabs'"),
         }
     }
 }
@@ -112,7 +112,7 @@ impl FromStr for KeywordCase {
         match s {
             "upper" => Ok(Self::Upper),
             "lower" => Ok(Self::Lower),
-            _ => Err("Value not supported for KeywordCase. Use 'upper' or 'lower'."),
+            _ => Err("expected 'upper' or 'lower'"),
         }
     }
 }
@@ -143,7 +143,7 @@ impl FromStr for CommaStyle {
         match s {
             "trailing" => Ok(Self::Trailing),
             "leading" => Ok(Self::Leading),
-            _ => Err("Value not supported for CommaStyle. Use 'trailing' or 'leading'."),
+            _ => Err("expected 'trailing' or 'leading'"),
         }
     }
 }
@@ -174,9 +174,7 @@ impl FromStr for LogicalOperatorPlacement {
         match s {
             "trailing" => Ok(Self::Trailing),
             "leading" => Ok(Self::Leading),
-            _ => Err(
-                "Value not supported for LogicalOperatorPlacement. Use 'trailing' or 'leading'.",
-            ),
+            _ => Err("expected 'trailing' or 'leading'"),
         }
     }
 }
@@ -207,7 +205,7 @@ impl FromStr for Layout {
         match s {
             "fit" => Ok(Self::Fit),
             "expanded" => Ok(Self::Expanded),
-            _ => Err("Value not supported for Layout. Use 'fit' or 'expanded'."),
+            _ => Err("expected 'fit' or 'expanded'"),
         }
     }
 }
@@ -238,7 +236,7 @@ impl FromStr for CastStyle {
         match s {
             "cast" => Ok(Self::Cast),
             "operator" => Ok(Self::Operator),
-            _ => Err("Value not supported for CastStyle. Use 'cast' or 'operator'."),
+            _ => Err("expected 'cast' or 'operator'"),
         }
     }
 }
@@ -269,7 +267,7 @@ impl FromStr for ClauseBodyStyle {
         match s {
             "break" => Ok(Self::Break),
             "compact" => Ok(Self::Compact),
-            _ => Err("Value not supported for clause body style"),
+            _ => Err("expected 'break' or 'compact'"),
         }
     }
 }
@@ -293,50 +291,51 @@ pub struct FormatConfiguration {
     #[partial(bpaf(hide))]
     pub enabled: bool,
     /// Maximum line width before breaking. Default: 100.
-    #[partial(bpaf(long("line-width")))]
-    pub line_width: u16,
+    #[partial(bpaf(long("line-width"), argument("NUMBER")))]
+    pub line_width: NonZeroU16,
     /// Number of spaces (or tab width) for indentation. Default: 2.
-    #[partial(bpaf(long("indent-size")))]
-    pub indent_size: u8,
+    #[partial(bpaf(long("indent-size"), argument("NUMBER")))]
+    pub indent_size: NonZeroU8,
     /// Indentation style: "spaces" or "tabs". Default: "spaces".
-    #[partial(bpaf(long("indent-style")))]
+    #[partial(bpaf(long("indent-style"), argument("spaces|tabs")))]
     pub indent_style: IndentStyle,
     /// Keyword casing: "upper" or "lower". Default: "lower".
-    #[partial(bpaf(long("keyword-case")))]
+    #[partial(bpaf(long("keyword-case"), argument("upper|lower")))]
     pub keyword_case: KeywordCase,
     /// Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-    #[partial(bpaf(long("constant-case")))]
+    #[partial(bpaf(long("constant-case"), argument("upper|lower")))]
     pub constant_case: KeywordCase,
     /// Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-    #[partial(bpaf(long("type-case")))]
+    #[partial(bpaf(long("type-case"), argument("upper|lower")))]
     pub type_case: KeywordCase,
     /// Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
-    #[partial(bpaf(long("comma-style")))]
+    #[partial(bpaf(long("comma-style"), argument("trailing|leading")))]
     pub comma_style: CommaStyle,
     /// Where a boolean operator sits when a condition breaks: "trailing" or "leading".
     /// Default: "trailing".
-    #[partial(bpaf(long("logical-operator-placement")))]
+    #[partial(bpaf(long("logical-operator-placement"), argument("trailing|leading")))]
     pub logical_operator_placement: LogicalOperatorPlacement,
     /// How a statement is laid out: "fit" breaks only when a line would exceed the line width,
-    /// "expanded" always breaks between clauses. Default: "fit".
-    #[partial(bpaf(long("layout")))]
+    /// "expanded" always breaks between clauses, between the items of a select list, before
+    /// every AND/OR of a condition and before every CASE branch. Default: "fit".
+    #[partial(bpaf(long("layout"), argument("fit|expanded")))]
     pub layout: Layout,
     /// How VALUES rows are laid out: "fit" breaks only past the line width,
     /// "expanded" puts each row on its own indented line. Default: "fit".
-    #[partial(bpaf(long("values-row-layout")))]
+    #[partial(bpaf(long("values-row-layout"), argument("fit|expanded")))]
     pub values_row_layout: Layout,
     /// How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`.
     /// Default: "cast".
-    #[partial(bpaf(long("cast-style")))]
+    #[partial(bpaf(long("cast-style"), argument("cast|operator")))]
     pub cast_style: CastStyle,
     /// Where the body of a clause starts: "break" for a new line, "compact" to keep the first
     /// element on the keyword line. Compact also keeps a select list of a single item on the
     /// select line. Default: "break".
-    #[partial(bpaf(long("clause-body-style")))]
+    #[partial(bpaf(long("clause-body-style"), argument("break|compact")))]
     pub clause_body_style: ClauseBodyStyle,
     /// If `true`, the terminating semicolon goes on its own line when the statement spans several
     /// lines. Default: `false`.
-    #[partial(bpaf(long("isolate-semicolon")))]
+    #[partial(bpaf(long("isolate-semicolon"), argument("true|false")))]
     pub isolate_semicolon: bool,
     /// Function names mapped to the number of adjacent arguments in one logical group.
     /// `json_build_object` and `jsonb_build_object` are grouped in pairs by default;
@@ -344,7 +343,7 @@ pub struct FormatConfiguration {
     #[partial(bpaf(hide))]
     pub function_argument_groups: FunctionArgumentGroups,
     /// If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
-    #[partial(bpaf(long("skip-fn-bodies")))]
+    #[partial(bpaf(long("skip-fn-bodies"), argument("true|false")))]
     pub skip_fn_bodies: bool,
     /// A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
     #[partial(bpaf(hide))]
@@ -358,8 +357,8 @@ impl Default for FormatConfiguration {
     fn default() -> Self {
         Self {
             enabled: true,
-            line_width: 100,
-            indent_size: 2,
+            line_width: NonZeroU16::new(100).unwrap(),
+            indent_size: NonZeroU8::new(2).unwrap(),
             indent_style: IndentStyle::Spaces,
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
@@ -404,6 +403,17 @@ mod tests {
             serde_json::from_str::<PartialFormatConfiguration>(r#"{"valuesRowLayout": "unknown"}"#)
                 .is_err()
         );
+    }
+
+    #[test]
+    fn rejects_a_zero_line_width_and_indent_size() {
+        for json in [r#"{"lineWidth": 0}"#, r#"{"indentSize": 0}"#] {
+            assert!(serde_json::from_str::<PartialFormatConfiguration>(json).is_err());
+        }
+        let config: PartialFormatConfiguration =
+            serde_json::from_str(r#"{"lineWidth": 80, "indentSize": 4}"#).unwrap();
+        assert_eq!(config.line_width.map(NonZeroU16::get), Some(80));
+        assert_eq!(config.indent_size.map(NonZeroU8::get), Some(4));
     }
 
     #[test]

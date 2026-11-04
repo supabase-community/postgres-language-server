@@ -7,6 +7,7 @@ declare_lint_rule! {
     /// Renaming columns may break existing queries and application code.
     ///
     /// Renaming a column that is being used by an existing application or query can cause unexpected downtime.
+    /// This includes the attributes of composite types, renamed with `ALTER TYPE ... RENAME ATTRIBUTE`.
     /// Consider creating a new column instead and migrating the data, then dropping the old column after ensuring
     /// no dependencies exist.
     ///
@@ -34,14 +35,18 @@ impl LinterRule for RenamingColumn {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::RenameStmt(stmt) = &ctx.stmt()
-            && stmt.rename_type() == pgls_query::protobuf::ObjectType::ObjectColumn
-        {
+        if let pgls_query::NodeEnum::RenameStmt(stmt) = &ctx.stmt() {
+            // The attributes of a composite type are its columns.
+            let column = match stmt.rename_type() {
+                pgls_query::protobuf::ObjectType::ObjectColumn => "a column",
+                pgls_query::protobuf::ObjectType::ObjectAttribute => "an attribute",
+                _ => return diagnostics,
+            };
             diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),
                     None,
                     markup! {
-                        "Renaming a column may break existing clients."
+                        "Renaming "{column}" may break existing clients."
                     },
                 ).detail(None, "Consider creating a new column with the desired name and migrating data instead."));
         }

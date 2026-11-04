@@ -34,3 +34,6 @@ schema = ["dep:schemars", "pgls_text_edit/schema", "pgls_diagnostics_categories/
 
 [lib]
 doctest = false
+
+[lints]
+workspace = true

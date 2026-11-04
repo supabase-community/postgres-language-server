@@ -221,11 +221,11 @@ with (publish = 'insert');
 
 reset client_min_messages;
 
-alter publication testpub5 add table testpub_rf_tbl3 where ( e > 1000 and e < 2000);
+alter publication testpub5 add table testpub_rf_tbl3 where (e > 1000 and e < 2000);
 
 alter publication testpub5 drop table testpub_rf_tbl2;
 
-alter publication testpub5 set table testpub_rf_tbl3 where ( e > 300 and e < 500);
+alter publication testpub5 set table testpub_rf_tbl3 where (e > 300 and e < 500);
 
 set client_min_messages = 'ERROR';
 
@@ -277,9 +277,9 @@ with (publish = 'insert');
 
 reset client_min_messages;
 
-alter publication testpub5 set table testpub_rf_tbl3 where ( 1234);
+alter publication testpub5 set table testpub_rf_tbl3 where (1234);
 
-alter publication testpub5 set table testpub_rf_tbl3 where ( e < avg(e));
+alter publication testpub5 set table testpub_rf_tbl3 where (e < avg(e));
 
 create function testpub_rf_func1(int, int)
 returns boolean
@@ -296,27 +296,27 @@ language plpgsql
 immutable
 as $$ BEGIN RETURN 123; END; $$;
 
-alter publication testpub5 add table testpub_rf_tbl1 where ( a >= testpub_rf_func2());
+alter publication testpub5 add table testpub_rf_tbl1 where (a >= testpub_rf_func2());
 
-alter publication testpub5 add table testpub_rf_tbl1 where ( a < random());
+alter publication testpub5 add table testpub_rf_tbl1 where (a < random());
 
 create collation user_collation from "C";
 
-alter publication testpub5 add table testpub_rf_tbl1 where ( b < '2' collate "user_collation");
+alter publication testpub5 add table testpub_rf_tbl1 where (b < '2' collate "user_collation");
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( nullif(1, 2) = a);
+alter publication testpub5 set table testpub_rf_tbl1 where (nullif(1, 2) = a);
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( a is null);
+alter publication testpub5 set table testpub_rf_tbl1 where (a is null);
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( a > 5 is false);
+alter publication testpub5 set table testpub_rf_tbl1 where (a > 5 is false);
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( a is distinct from 5);
+alter publication testpub5 set table testpub_rf_tbl1 where (a is distinct from 5);
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( (a, a + 1) < (2, 3));
+alter publication testpub5 set table testpub_rf_tbl1 where ((a, a + 1) < (2, 3));
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( cast(b as varchar) < '2');
+alter publication testpub5 set table testpub_rf_tbl1 where (cast(b as varchar) < '2');
 
-alter publication testpub5 set table testpub_rf_tbl4 where ( length(g) < 6);
+alter publication testpub5 set table testpub_rf_tbl4 where (length(g) < 6);
 
 create type rf_bug_status as enum ('new', 'open', 'closed');
 
@@ -336,27 +336,26 @@ create publication testpub6 for table testpub_rf_tbl1 where (a in (select genera
 
 create publication testpub6 for table testpub_rf_tbl1 where (cast('(0,1)' as tid) = ctid);
 
-alter publication testpub5 set table testpub_rf_tbl5 where ( a is document);
+alter publication testpub5 set table testpub_rf_tbl5 where (a is document);
 
 alter publication testpub5 set
-table testpub_rf_tbl5 where ( xmlexists('//foo[text() = ''bar'']' passing a));
+table testpub_rf_tbl5 where (xmlexists('//foo[text() = ''bar'']' passing a));
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( nullif(1, 2) = a);
+alter publication testpub5 set table testpub_rf_tbl1 where (nullif(1, 2) = a);
 
-alter publication testpub5 set
-table testpub_rf_tbl1 where ( case a when 5 then true else false end);
+alter publication testpub5 set table testpub_rf_tbl1 where (case a when 5 then true else false end);
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( coalesce(b, 'foo') = 'foo');
+alter publication testpub5 set table testpub_rf_tbl1 where (coalesce(b, 'foo') = 'foo');
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( greatest(a, 10) > 10);
+alter publication testpub5 set table testpub_rf_tbl1 where (greatest(a, 10) > 10);
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( a in (2, 4, 6));
+alter publication testpub5 set table testpub_rf_tbl1 where (a in (2, 4, 6));
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( array[a] <@ array[2, 4, 6]);
+alter publication testpub5 set table testpub_rf_tbl1 where (array[a] <@ array[2, 4, 6]);
 
-alter publication testpub5 set table testpub_rf_tbl1 where ( row(a, 2) is null);
+alter publication testpub5 set table testpub_rf_tbl1 where (row(a, 2) is null);
 
-alter publication testpub5 drop table testpub_rf_tbl1 where ( e < 27);
+alter publication testpub5 drop table testpub_rf_tbl1 where (e < 27);
 
 set client_min_messages = 'ERROR';
 
@@ -364,7 +363,7 @@ create publication testpub6 for tables in schema testpub_rf_schema2;
 
 alter publication testpub6 set
 tables in schema testpub_rf_schema2,
-table testpub_rf_schema2.testpub_rf_tbl6 where ( i < 99);
+table testpub_rf_schema2.testpub_rf_tbl6 where (i < 99);
 
 reset client_min_messages;
 
@@ -452,19 +451,19 @@ reset client_min_messages;
 
 update rf_tbl_abcd_pk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_pk where ( b > 99);
+alter publication testpub6 set table rf_tbl_abcd_pk where (b > 99);
 
 update rf_tbl_abcd_pk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_pk where ( c > 99);
+alter publication testpub6 set table rf_tbl_abcd_pk where (c > 99);
 
 update rf_tbl_abcd_pk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_pk where ( d > 99);
+alter publication testpub6 set table rf_tbl_abcd_pk where (d > 99);
 
 update rf_tbl_abcd_pk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_nopk where ( a > 99);
+alter publication testpub6 set table rf_tbl_abcd_nopk where (a > 99);
 
 update rf_tbl_abcd_nopk set a = 1;
 
@@ -474,11 +473,11 @@ alter table rf_tbl_abcd_pk
 alter table rf_tbl_abcd_nopk
   replica identity full;
 
-alter publication testpub6 set table rf_tbl_abcd_pk where ( c > 99);
+alter publication testpub6 set table rf_tbl_abcd_pk where (c > 99);
 
 update rf_tbl_abcd_pk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_nopk where ( a > 99);
+alter publication testpub6 set table rf_tbl_abcd_nopk where (a > 99);
 
 update rf_tbl_abcd_nopk set a = 1;
 
@@ -488,15 +487,15 @@ alter table rf_tbl_abcd_pk
 alter table rf_tbl_abcd_nopk
   replica identity nothing;
 
-alter publication testpub6 set table rf_tbl_abcd_pk where ( a > 99);
+alter publication testpub6 set table rf_tbl_abcd_pk where (a > 99);
 
 update rf_tbl_abcd_pk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_pk where ( c > 99);
+alter publication testpub6 set table rf_tbl_abcd_pk where (c > 99);
 
 update rf_tbl_abcd_pk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_nopk where ( a > 99);
+alter publication testpub6 set table rf_tbl_abcd_nopk where (a > 99);
 
 update rf_tbl_abcd_nopk set a = 1;
 
@@ -516,33 +515,33 @@ create unique index idx_abcd_nopk_c on rf_tbl_abcd_nopk using btree (c);
 alter table rf_tbl_abcd_nopk
   replica identity using index idx_abcd_nopk_c;
 
-alter publication testpub6 set table rf_tbl_abcd_pk where ( a > 99);
+alter publication testpub6 set table rf_tbl_abcd_pk where (a > 99);
 
 update rf_tbl_abcd_pk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_pk where ( c > 99);
+alter publication testpub6 set table rf_tbl_abcd_pk where (c > 99);
 
 update rf_tbl_abcd_pk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_nopk where ( a > 99);
+alter publication testpub6 set table rf_tbl_abcd_nopk where (a > 99);
 
 update rf_tbl_abcd_nopk set a = 1;
 
-alter publication testpub6 set table rf_tbl_abcd_nopk where ( c > 99);
+alter publication testpub6 set table rf_tbl_abcd_nopk where (c > 99);
 
 update rf_tbl_abcd_nopk set a = 1;
 
 alter publication testpub6 set (publish_via_partition_root = 0);
 
-alter publication testpub6 set table rf_tbl_abcd_part_pk where ( a > 99);
+alter publication testpub6 set table rf_tbl_abcd_part_pk where (a > 99);
 
-alter publication testpub6 set table rf_tbl_abcd_part_pk_1 where ( a > 99);
+alter publication testpub6 set table rf_tbl_abcd_part_pk_1 where (a > 99);
 
 update rf_tbl_abcd_part_pk set a = 1;
 
 alter publication testpub6 set (publish_via_partition_root = 1);
 
-alter publication testpub6 set table rf_tbl_abcd_part_pk where ( a > 99);
+alter publication testpub6 set table rf_tbl_abcd_part_pk where (a > 99);
 
 update rf_tbl_abcd_part_pk set a = 1;
 
@@ -552,7 +551,7 @@ alter publication testpub6 set table rf_tbl_abcd_part_pk;
 
 alter publication testpub6 set (publish_via_partition_root = 0);
 
-alter publication testpub6 set table rf_tbl_abcd_part_pk_1 where ( b > 99);
+alter publication testpub6 set table rf_tbl_abcd_part_pk_1 where (b > 99);
 
 alter publication testpub6 set (publish_via_partition_root = 0);
 
@@ -560,7 +559,7 @@ update rf_tbl_abcd_part_pk set a = 1;
 
 alter publication testpub6 set (publish_via_partition_root = 1);
 
-alter publication testpub6 set table rf_tbl_abcd_part_pk where ( b > 99);
+alter publication testpub6 set table rf_tbl_abcd_part_pk where (b > 99);
 
 update rf_tbl_abcd_part_pk set a = 1;
 
@@ -907,7 +906,7 @@ create table testpub_tbl_both_filters (
 alter table testpub_tbl_both_filters
   replica identity using index testpub_tbl_both_filters_pkey;
 
-alter publication testpub_both_filters add table testpub_tbl_both_filters (a, c) where ( c <> 1);
+alter publication testpub_both_filters add table testpub_tbl_both_filters (a, c) where (c <> 1);
 
 drop table testpub_tbl_both_filters;
 

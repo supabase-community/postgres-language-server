@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/name.sql
-snapshot_kind: text
 ---
 select cast('name string' as name) = cast('name string' as name) as "True";
 
@@ -122,10 +121,12 @@ select
   );
 
 select
-  cast(parse_ident(
-    ' first . "  second  " ."   third   ". "  ' || repeat('x', 66) || '"'
-  )
-  as name[]);
+  cast(
+    parse_ident(
+      ' first . "  second  " ."   third   ". "  ' || repeat('x', 66) || '"'
+    )
+    as name[]
+  );
 
 select parse_ident('"c".X XXXXXXXXXX');
 

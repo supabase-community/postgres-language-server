@@ -55,6 +55,17 @@
         }
       ]
     },
+    "inlayHints": {
+      "description": "The configuration for inlay hints in editors",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/InlayHintsConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "linter": {
       "description": "The configuration for the linter",
       "anyOf": [
@@ -93,6 +104,17 @@
       "anyOf": [
         {
           "$ref": "#/definitions/PlPgSqlCheckConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "semanticTokens": {
+      "description": "The configuration for semantic highlighting in editors",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SemanticTokensConfiguration"
         },
         {
           "type": "null"
@@ -372,6 +394,7 @@
       "type": "object",
       "properties": {
         "allowStatementExecutionsAgainst": {
+          "description": "Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.",
           "anyOf": [
             {
               "$ref": "#/definitions/StringSet"
@@ -571,7 +594,7 @@
             "null"
           ],
           "format": "uint8",
-          "minimum": 0.0
+          "minimum": 1.0
         },
         "indentStyle": {
           "description": "Indentation style: \"spaces\" or \"tabs\". Default: \"spaces\".",
@@ -603,7 +626,7 @@
           ]
         },
         "layout": {
-          "description": "How a statement is laid out: \"fit\" breaks only when a line would exceed the line width, \"expanded\" always breaks between clauses. Default: \"fit\".",
+          "description": "How a statement is laid out: \"fit\" breaks only when a line would exceed the line width, \"expanded\" always breaks between clauses, between the items of a select list, before every AND/OR of a condition and before every CASE branch. Default: \"fit\".",
           "anyOf": [
             {
               "$ref": "#/definitions/Layout"
@@ -620,7 +643,7 @@
             "null"
           ],
           "format": "uint16",
-          "minimum": 0.0
+          "minimum": 1.0
         },
         "logicalOperatorPlacement": {
           "description": "Where a boolean operator sits when a condition breaks: \"trailing\" or \"leading\". Default: \"trailing\".",
@@ -683,6 +706,20 @@
           ]
         }
       ]
+    },
+    "InlayHintsConfiguration": {
+      "description": "The configuration for inlay hints.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, the language server sends no inlay hints. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "KeywordCase": {
       "description": "Keyword casing style for the formatter.",
@@ -1238,6 +1275,17 @@
         },
         "banDuplicateColumnAssignments": {
           "description": "A column is assigned or declared more than once.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banNonTransactionalStatementInTransaction": {
+          "description": "Statements that Postgres can't run inside a transaction block.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -3031,6 +3079,20 @@
             {
               "type": "null"
             }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SemanticTokensConfiguration": {
+      "description": "The configuration for semantic highlighting.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, the language server sends no semantic tokens, and editors keep the highlighting of their grammar. `true` by default",
+          "type": [
+            "boolean",
+            "null"
           ]
         }
       },

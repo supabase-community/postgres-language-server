@@ -1075,8 +1075,9 @@ from
   onek as o
   inner join
     lateral (
-      with recursive
-      x (a) as (select o.four as a union select a + 1 from x where a < 10)
+      with recursive x (a) as (
+        select o.four as a union select a + 1 from x where a < 10
+      )
       select
         *
       from
@@ -1094,8 +1095,9 @@ from
   onek as o
   inner join
     lateral (
-      with recursive
-      x (a) as (select o.four as a union select a + 1 from x where a < 10)
+      with recursive x (a) as (
+        select o.four as a union select a + 1 from x where a < 10
+      )
       select
         *
       from

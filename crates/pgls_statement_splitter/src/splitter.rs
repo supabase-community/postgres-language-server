@@ -176,17 +176,15 @@ impl<'a> Splitter<'a> {
         Ok(self.lexed.kind(self.current_pos))
     }
 
+    /// The next token, or EOF at the end.
     fn look_ahead(&self, ignore_trivia: bool) -> SyntaxKind {
         let pos = if ignore_trivia {
-            (self.current_pos + 1..self.lexed.len())
-                .find(|&idx| !self.is_trivia(idx))
-                .expect("lexed should have non-trivia eof token")
+            (self.current_pos + 1..self.lexed.len()).find(|&idx| !self.is_trivia(idx))
         } else {
-            (self.current_pos + 1..self.lexed.len())
-                .next()
-                .expect("lexed should have a eof token")
+            (self.current_pos + 1..self.lexed.len()).next()
         };
-        self.lexed.kind(pos)
+        // There is nothing after EOF, e.g. after a `WITH` at the end of the text.
+        pos.map_or(SyntaxKind::EOF, |pos| self.lexed.kind(pos))
     }
 
     /// Returns `None` if there are no previous relevant tokens

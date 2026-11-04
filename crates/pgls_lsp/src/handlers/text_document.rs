@@ -17,9 +17,11 @@ pub(crate) async fn did_open(
     let content = params.text_document.text;
 
     let path = session.file_path(&url)?;
+    let project_key = session.project_key(&path);
     let doc = Document::new(version, &content);
 
     session.workspace.open_file(OpenFileParams {
+        project_key,
         path,
         version,
         content,
@@ -50,8 +52,10 @@ pub(crate) async fn did_change(
     let version = params.text_document.version;
 
     let pgls_path = session.file_path(&url)?;
+    let project_key = session.project_key(&pgls_path);
 
     let old_text = session.workspace.get_file_content(GetFileContentParams {
+        project_key,
         path: pgls_path.clone(),
     })?;
     tracing::trace!("old document: {:?}", old_text);
@@ -68,6 +72,7 @@ pub(crate) async fn did_change(
     session.insert_document(url.clone(), Document::new(version, &text));
 
     session.workspace.change_file(ChangeFileParams {
+        project_key,
         path: pgls_path,
         version,
         content: text,
@@ -93,9 +98,10 @@ pub(crate) async fn did_close(
     // so that no stale diagnostics are published after the file is closed.
     session.cancel_pending_diagnostics(&url);
 
-    session
-        .workspace
-        .close_file(CloseFileParams { path: pgls_path })?;
+    session.workspace.close_file(CloseFileParams {
+        project_key: session.project_key(&pgls_path),
+        path: pgls_path,
+    })?;
 
     session.remove_document(&url);
 

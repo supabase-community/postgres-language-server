@@ -40,6 +40,7 @@ pub(crate) fn check_with_guard<'ctx>(
                 let fixed = ctx
                     .workspace
                     .fix_file(FixFileParams {
+                        project_key: ctx.project_key,
                         path: PgLSPath::new(&workspace_file.path),
                         fix_file_mode,
                         only: only.clone(),

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tablespace.sql
-snapshot_kind: text
 ---
 create tablespace regress_tblspace location 'relative';
 
@@ -111,8 +110,7 @@ select
 from
   pg_class
 where
-  oid =
-  (
+  oid = (
     select
       i.indexrelid
     from
@@ -184,8 +182,7 @@ select
 from
   pg_class
 where
-  oid =
-  (
+  oid = (
     select
       i.indexrelid
     from

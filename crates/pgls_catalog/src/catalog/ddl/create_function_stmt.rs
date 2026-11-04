@@ -32,7 +32,8 @@ pub(super) fn apply_create_function_stmt(
     let mut variadic = false;
     let mut outputs = Vec::new();
     let mut arguments = Vec::new();
-    for parameter in &n.parameters {
+    let mut output_arguments = Vec::new();
+    for (position, parameter) in n.parameters.iter().enumerate() {
         let Some(NodeEnum::FunctionParameter(parameter)) = &parameter.node else {
             continue;
         };
@@ -58,25 +59,30 @@ pub(super) fn apply_create_function_stmt(
         let argument_mode = match mode {
             Mode::FuncParamInout => crate::FunctionArgumentMode::InOut,
             Mode::FuncParamVariadic => crate::FunctionArgumentMode::Variadic,
+            Mode::FuncParamOut | Mode::FuncParamTable => crate::FunctionArgumentMode::Out,
             _ => crate::FunctionArgumentMode::In,
         };
         let is_output = matches!(mode, Mode::FuncParamOut | Mode::FuncParamTable);
-        // Postgres rejects defaults for output parameters, and input parameters without a
-        // default after one with a default (`interpret_function_parameter_list`):
+        // Postgres rejects defaults for output parameters, input parameters without a default
+        // after one with a default, and for procedures also output parameters after one with a
+        // default (`interpret_function_parameter_list`):
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L183
         if parameter.defexpr.is_some() && is_output
-            || parameter.defexpr.is_none() && !is_output && defaults > 0
+            || parameter.defexpr.is_none() && (!is_output || n.is_procedure) && defaults > 0
         {
             return;
         }
-        if is_output {
-            continue;
-        }
-        arguments.push(crate::FunctionArgument {
+        let argument = crate::FunctionArgument {
             name: (!parameter.name.is_empty()).then(|| parameter.name.clone()),
             ty: argument_type,
             mode: argument_mode,
-        });
+        };
+        // `CALL` passes the output arguments of procedures too. Functions keep theirs apart.
+        if is_output && !(n.is_procedure && mode == Mode::FuncParamOut) {
+            output_arguments.push((position, argument));
+            continue;
+        }
+        arguments.push(argument);
         inputs += 1;
         variadic |= mode == Mode::FuncParamVariadic;
         if parameter.defexpr.is_some() {
@@ -117,7 +123,14 @@ pub(super) fn apply_create_function_stmt(
     );
     function.returns_set = returns_set;
     function.return_columns = return_columns;
-    let return_type = if !has_outputs {
+    let return_type = if n.is_procedure {
+        // Procedures return `record` with output parameters and `void` without (`CreateFunction`):
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L1188
+        let name = if has_outputs { "record" } else { "void" };
+        c.type_(Some("pg_catalog"), name, search_path)
+            .found()
+            .and_then(|type_info| type_info.id)
+    } else if !has_outputs {
         n.return_type
             .as_ref()
             .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0)
@@ -159,6 +172,7 @@ pub(super) fn apply_create_function_stmt(
     // A variadic function whose element type is unknown can't be matched.
     function.signature = variadic_element.map(|variadic_element| crate::FunctionSignature {
         arguments,
+        output_arguments,
         input_defaults: defaults,
         variadic_element,
         return_type,

@@ -1,0 +1,20 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select "Hover.Users"."Id" from "Hover.Users"
+                       ↑ hovered here
+```
+
+# Hover Results
+### `public.Hover.Users.Id`  
+```plain  
+int4 - 🔑 primary key - not null
+  
+```  
+---    
+```plain  
+  
+```

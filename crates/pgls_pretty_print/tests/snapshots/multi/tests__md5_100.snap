@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/md5.sql
-snapshot_kind: text
 ---
 select md5('') = 'd41d8cd98f00b204e9800998ecf8427e' as "TRUE";
 
@@ -41,8 +40,9 @@ select
 
 select
   md5(
-    cast('12345678901234567890123456789012345678901234567890123456789012345678901234567890'
-    as bytea)
+    cast(
+      '12345678901234567890123456789012345678901234567890123456789012345678901234567890' as bytea
+    )
   ) =
   '57edf4a22be3c955ac49da2e2107b67a'
   as "TRUE";

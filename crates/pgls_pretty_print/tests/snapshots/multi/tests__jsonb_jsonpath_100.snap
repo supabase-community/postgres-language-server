@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/jsonb_jsonpath.sql
-snapshot_kind: text
 ---
 select cast('{"a": 12}' as jsonb) @? '$';
 
@@ -324,7 +323,8 @@ select
   y,
   jsonb_path_query('[true, false, null]', '$[*] ? (@ == true  &&  ($x == true && $y == true) ||
 				 @ == false && !($x == true && $y == true) ||
-				 @ == null  &&  ($x == true && $y == true) is unknown)', jsonb_build_object('x', x, 'y', y)) as "x && y"
+				 @ == null  &&  ($x == true && $y == true) is unknown)', jsonb_build_object('x', x, 'y', y))
+  as "x && y"
 from
   (values (cast('true' as jsonb)), ('false'), ('"null"')) as x (x),
   (values (cast('true' as jsonb)), ('false'), ('"null"')) as y (y);
@@ -334,7 +334,8 @@ select
   y,
   jsonb_path_query('[true, false, null]', '$[*] ? (@ == true  &&  ($x == true || $y == true) ||
 				 @ == false && !($x == true || $y == true) ||
-				 @ == null  &&  ($x == true || $y == true) is unknown)', jsonb_build_object('x', x, 'y', y)) as "x || y"
+				 @ == null  &&  ($x == true || $y == true) is unknown)', jsonb_build_object('x', x, 'y', y))
+  as "x || y"
 from
   (values (cast('true' as jsonb)), ('false'), ('"null"')) as x (x),
   (values (cast('true' as jsonb)), ('false'), ('"null"')) as y (y);
@@ -2101,9 +2102,7 @@ select jsonb_path_match('[{"a": 1}]', '$undefined_var');
 
 select jsonb_path_match('[{"a": 1}]', 'false');
 
-with
-str (j, num)
-as (
+with str (j, num) as (
   select
     jsonb_build_object('s', s),
     num

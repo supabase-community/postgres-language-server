@@ -21,3 +21,6 @@ pgls_tokenizer.workspace     = true
 insta.workspace = true
 
 [lib]
+
+[lints]
+workspace = true

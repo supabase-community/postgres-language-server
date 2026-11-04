@@ -76,6 +76,9 @@ impl LinterRule for AddSerialColumn {
                         if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
                             c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
                                 && c.generated_when == "a" // 'a' = ALWAYS
+                                // 's' = STORED. A VIRTUAL column (Postgres 18) is computed on
+                                // read and needs no rewrite.
+                                && c.generated_kind == "s"
                         } else {
                             false
                         }

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/uuid.sql
-snapshot_kind: text
 ---
 create table guid1 (
   guid_field uuid,
@@ -140,9 +139,7 @@ insert into guid3 (guid_field) select uuidv7() from generate_series(1, 10);
 
 select array_agg(id order by guid_field) from guid3;
 
-with
-uuidts
-as (
+with uuidts as (
   select
     y,
     ts as ts,

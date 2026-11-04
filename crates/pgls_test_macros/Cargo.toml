@@ -20,3 +20,6 @@ proc-macro-error = { version = "1.0.4" }
 proc-macro2      = { version = '1.0.93' }
 quote            = { workspace = true }
 syn              = { workspace = true }
+
+[lints]
+workspace = true

@@ -6,13 +6,37 @@ expression: snapshot
 ```
 -- expect_lint/banDropDefault
 alter table users alter column created_at drop default;
+-- Each dropped default is reported.
+-- expect_lint/banDropDefault
+-- expect_lint/banDropDefault
+alter table users alter column created_at drop default, alter column updated_at set default now(), alter updated_by drop default;
 
 ```
 
 # Diagnostics
 lint/banDropDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Dropping a default may break existing clients.
+  × Dropping the default of column created_at may break existing clients.
+  
+  i Inserts that omit the column fail if it is NOT NULL, and write NULL otherwise.
+  
+  i Update your application code to provide a value, then drop the default in a later migration.
+  
+
+
+lint/banDropDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping the default of column created_at may break existing clients.
+  
+  i Inserts that omit the column fail if it is NOT NULL, and write NULL otherwise.
+  
+  i Update your application code to provide a value, then drop the default in a later migration.
+  
+
+
+lint/banDropDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping the default of column updated_by may break existing clients.
   
   i Inserts that omit the column fail if it is NOT NULL, and write NULL otherwise.
   

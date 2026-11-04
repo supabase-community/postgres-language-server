@@ -1,5 +1,8 @@
 //! Implementation of the [FileSystem] and related traits for the underlying OS filesystem
-use super::{BoxedTraversal, ErrorKind, File, FileSystemDiagnostic};
+use super::{
+    BoxedTraversal, ErrorKind, File, FileSystemDiagnostic, FindFiles, FoundFiles,
+    SKIPPED_DIRECTORIES, skips_directory,
+};
 use crate::fs::OpenOptions;
 use crate::{
     FileSystem, PgLSPath, dir,
@@ -10,7 +13,9 @@ use pgls_diagnostics::{DiagnosticExt, Error, Severity, adapters::IoError};
 use rayon::{Scope, scope};
 use std::fs::{DirEntry, FileType};
 use std::panic::AssertUnwindSafe;
-use std::process::Command;
+use std::process::{Command, Output};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     env, fs,
     io::{self, ErrorKind as IoErrorKind, Read, Seek, Write},
@@ -98,6 +103,21 @@ impl FileSystem for OsFileSystem {
         path.is_symlink()
     }
 
+    /// On Windows without the `\\?\` prefix that [std::fs::canonicalize] adds, so that the path
+    /// compares with the paths of editors.
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+        let canonical = std::fs::canonicalize(path)?;
+        #[cfg(windows)]
+        let canonical = match canonical
+            .to_str()
+            .and_then(|canonical| canonical.strip_prefix(r"\\?\"))
+        {
+            Some(stripped) if !stripped.starts_with("UNC") => PathBuf::from(stripped),
+            _ => canonical,
+        };
+        Ok(canonical)
+    }
+
     fn get_changed_files(&self, base: &str) -> io::Result<Vec<String>> {
         let output = Command::new("git")
             .arg("diff")
@@ -112,10 +132,7 @@ impl FileSystem for OsFileSystem {
             .arg(format!("{base}...HEAD"))
             .output()?;
 
-        Ok(String::from_utf8_lossy(&output.stdout)
-            .lines()
-            .map(|l| l.to_string())
-            .collect())
+        git_output_lines(output)
     }
 
     fn get_staged_files(&self) -> io::Result<Vec<String>> {
@@ -132,10 +149,7 @@ impl FileSystem for OsFileSystem {
             .arg("--diff-filter=ACMR")
             .output()?;
 
-        Ok(String::from_utf8_lossy(&output.stdout)
-            .lines()
-            .map(|l| l.to_string())
-            .collect())
+        git_output_lines(output)
     }
 
     fn resolve_configuration(
@@ -144,6 +158,72 @@ impl FileSystem for OsFileSystem {
         path: &Path,
     ) -> Result<Resolution, ResolveError> {
         self.configuration_resolver.resolve(path, specifier)
+    }
+
+    fn find_files(&self, root: &Path, search: &FindFiles) -> FoundFiles {
+        let file_names: Vec<String> = search.file_names.iter().map(|&name| name.into()).collect();
+        let truncated = Arc::new(AtomicBool::new(false));
+        let filter = {
+            let root = root.to_path_buf();
+            let skip_directory = search.skip_directory.clone();
+            let max_depth = search.max_depth;
+            let file_names = file_names.clone();
+            let truncated = Arc::clone(&truncated);
+            move |entry: &ignore::DirEntry| {
+                if !entry
+                    .file_type()
+                    .is_some_and(|file_type| file_type.is_dir())
+                    || entry.depth() == 0
+                {
+                    return true;
+                }
+                if entry
+                    .file_name()
+                    .to_str()
+                    .is_some_and(|name| SKIPPED_DIRECTORIES.contains(&name))
+                {
+                    return false;
+                }
+                if entry.depth() > max_depth {
+                    truncated.store(true, Ordering::Relaxed);
+                    return false;
+                }
+                !skips_directory(skip_directory.as_ref(), &root, entry.path(), |directory| {
+                    file_names.iter().any(|name| directory.join(name).is_file())
+                })
+            }
+        };
+
+        let mut files = Vec::new();
+        let walk = ignore::WalkBuilder::new(root)
+            .hidden(true)
+            .require_git(false)
+            .git_ignore(search.vcs_ignore_files)
+            .git_global(search.vcs_ignore_files)
+            .git_exclude(search.vcs_ignore_files)
+            .filter_entry(filter)
+            .build();
+        for (index, entry) in walk.filter_map(Result::ok).enumerate() {
+            if index >= search.max_entries {
+                truncated.store(true, Ordering::Relaxed);
+                break;
+            }
+            let is_match = entry
+                .file_type()
+                .is_some_and(|file_type| file_type.is_file())
+                && entry
+                    .file_name()
+                    .to_str()
+                    .is_some_and(|name| file_names.iter().any(|file_name| file_name == name));
+            if is_match {
+                files.push(entry.into_path());
+            }
+        }
+
+        FoundFiles {
+            files,
+            truncated: truncated.load(Ordering::Relaxed),
+        }
     }
 }
 
@@ -453,4 +533,22 @@ impl From<FileType> for ErrorKind {
     fn from(_: FileType) -> Self {
         Self::UnknownFileType
     }
+}
+
+/// The lines git printed, or the first line of its error if it failed, e.g. outside a repository
+/// or for an unknown base. An empty list would otherwise read as "no files".
+fn git_output_lines(output: Output) -> io::Result<Vec<String>> {
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let error = stderr.lines().find(|line| !line.trim().is_empty());
+        return Err(io::Error::other(format!(
+            "git diff failed: {}",
+            error.unwrap_or_default().trim()
+        )));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(|l| l.to_string())
+        .collect())
 }

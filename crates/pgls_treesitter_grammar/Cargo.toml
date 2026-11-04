@@ -37,3 +37,6 @@ name    = "parsing"
 [[bench]]
 harness = false
 name    = "parsing_with_existing_tree"
+
+[lints]
+workspace = true
