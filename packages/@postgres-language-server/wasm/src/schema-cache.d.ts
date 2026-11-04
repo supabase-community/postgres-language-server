@@ -48,6 +48,10 @@ export interface Column {
    * Whether the column is a generated column.
    */
   generated?: Generated;
+  /**
+   * Whether the column is an identity column.
+   */
+  identity?: Identity;
   is_nullable: boolean;
   is_primary_key: boolean;
   is_unique: boolean;
@@ -259,6 +263,10 @@ export type ColumnClassKind =
  * Whether a column is a generated column (`pg_attribute.attgenerated`).
  */
 export type Generated = "No" | "Stored" | "Virtual";
+/**
+ * Whether a column is an identity column (`pg_attribute.attidentity`).
+ */
+export type Identity = "No" | "Always" | "ByDefault";
 export interface FunctionArgs {
   args: FunctionArg[];
 }

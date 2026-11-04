@@ -51,6 +51,7 @@ pub(super) fn apply_create_function_stmt(
                 type_name: parameter.arg_type.as_ref().and_then(type_label),
                 ty: argument_type.clone().map(crate::typing::Type::Named),
                 generated: crate::Generated::No,
+                identity: crate::Identity::No,
             });
         }
         let argument_type = parameter

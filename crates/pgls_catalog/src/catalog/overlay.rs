@@ -2,7 +2,7 @@
 //! functions, and schemas in the overlay.
 
 use crate::typing::TypeId;
-use crate::{FunctionArgumentMode, FunctionSignature, Generated};
+use crate::{FunctionArgumentMode, FunctionSignature, Generated, Identity};
 use pgls_query::{Node, NodeEnum, protobuf};
 use rustc_hash::FxHashSet;
 
@@ -144,11 +144,22 @@ impl Catalog {
                 .is_some_and(|base| base.is_inheritance_child(&relation.schema, &relation.name))
     }
 
-    /// Changes the columns of a relation and of its inheritance children and partitions.
+    /// Whether partitions inherit the identity of their partitioned table's columns, and follow
+    /// its identity changes. Partitions do since Postgres 17 ([`MergeAttributes`]). `None` when
+    /// the server version isn't known.
+    ///
+    /// [`MergeAttributes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L2798
+    pub(super) fn partitions_inherit_identity(&self) -> Option<bool> {
+        self.server_version_num().map(|version| version >= 170_000)
+    }
+
+    /// Changes the columns of a relation and of its inheritance children and partitions. The
+    /// second argument of `change` is whether the relation is a child or partition of
+    /// `relation`.
     pub(super) fn change_columns(
         &mut self,
         relation: &RelationInfo,
-        change: impl Fn(&mut Option<Vec<ColumnInfo>>),
+        change: impl Fn(&mut Option<Vec<ColumnInfo>>, bool),
     ) {
         // Column changes of a database table also change its children in the database.
         let is_database_table = self
@@ -159,11 +170,12 @@ impl Catalog {
             self.database_columns_changed = true;
         }
 
-        for key in self.with_descendants(key(&relation.schema, &relation.name)) {
+        let root = key(&relation.schema, &relation.name);
+        for key in self.with_descendants(root.clone()) {
             let Some(mut relation) = self.relation_in(&key.0, &key.1).found() else {
                 continue;
             };
-            change(&mut relation.columns);
+            change(&mut relation.columns, key != root);
             relation.origin = Origin::File;
             self.define_relation(relation);
         }
@@ -540,6 +552,7 @@ pub(super) fn column_info(
         type_name,
         ty: type_id.map(crate::typing::Type::Named),
         generated: column_generated(column),
+        identity: column_identity(column),
     }
 }
 
@@ -564,6 +577,34 @@ fn column_generated(column: &protobuf::ColumnDef) -> Generated {
             _ => None,
         })
         .unwrap_or_default()
+}
+
+/// Whether a column definition has a `GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY` clause, like
+/// [`transformColumnDefinition`].
+///
+/// [`transformColumnDefinition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L591
+fn column_identity(column: &protobuf::ColumnDef) -> Identity {
+    column
+        .constraints
+        .iter()
+        .find_map(|constraint| match &constraint.node {
+            Some(NodeEnum::Constraint(constraint))
+                if constraint.contype() == protobuf::ConstrType::ConstrIdentity =>
+            {
+                Some(identity_kind(&constraint.generated_when))
+            }
+            _ => None,
+        })
+        .unwrap_or_default()
+}
+
+/// The identity kind of `generated_when` (`ATTRIBUTE_IDENTITY_ALWAYS` or `_BY_DEFAULT`).
+pub(super) fn identity_kind(generated_when: &str) -> Identity {
+    match generated_when {
+        "a" => Identity::Always,
+        "d" => Identity::ByDefault,
+        _ => Identity::No,
+    }
 }
 
 pub(super) fn function_info(

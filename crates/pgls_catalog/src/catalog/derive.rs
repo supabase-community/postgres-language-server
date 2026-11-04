@@ -30,6 +30,7 @@ impl Catalog {
                     type_name: None,
                     ty: column.ty,
                     generated: Generated::No,
+                    identity: crate::Identity::No,
                 })
                 .collect(),
         )

@@ -5,7 +5,7 @@ use crate::{
     CastContext, CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature,
     OperatorInfo, OperatorKind, TypeKind,
 };
-use crate::{Generated, ProcKind, Snapshot, TableKind};
+use crate::{Generated, Identity, ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{Key, key};
@@ -58,6 +58,7 @@ impl CatalogBase {
                             .contains_key(&attribute.type_id)
                             .then_some(Type::Named(TypeId::Snapshot(attribute.type_id))),
                         generated: Generated::No,
+                        identity: Identity::No,
                     })
                     .collect()
             })
@@ -113,6 +114,7 @@ impl CatalogBase {
                         .contains_key(&column.type_id)
                         .then_some(Type::Named(TypeId::Snapshot(column.type_id))),
                     generated: column.generated,
+                    identity: column.identity,
                 });
         }
 
@@ -131,13 +133,13 @@ impl CatalogBase {
                 .get(&key)
                 .and_then(|row_type: &TypeInfo| row_type.attributes.clone())
                 .map(|mut columns| {
-                    // The row type doesn't know which columns are generated.
+                    // The row type doesn't know which columns are generated or identity columns.
                     for column in &mut columns {
-                        column.generated = table_columns
-                            .and_then(|table_columns| {
-                                table_columns.iter().find(|c| c.name == column.name)
-                            })
-                            .map_or(Generated::No, |c| c.generated);
+                        let table_column = table_columns.and_then(|table_columns| {
+                            table_columns.iter().find(|c| c.name == column.name)
+                        });
+                        column.generated = table_column.map_or(Generated::No, |c| c.generated);
+                        column.identity = table_column.map_or(Identity::No, |c| c.identity);
                     }
                     columns
                 })
@@ -225,6 +227,7 @@ impl CatalogBase {
                         .contains_key(&arg.type_id)
                         .then_some(Type::Named(TypeId::Snapshot(arg.type_id))),
                     generated: Generated::No,
+                    identity: Identity::No,
                 })
                 .collect();
             let return_columns = if outputs.is_empty() {
@@ -472,6 +475,7 @@ pub(super) fn sequence_columns(types: &FxHashMap<i64, &crate::PostgresType>) -> 
             .find(|type_| type_.name == type_name && type_.schema == "pg_catalog")
             .map(|type_| Type::Named(TypeId::Snapshot(type_.id))),
         generated: Generated::No,
+        identity: Identity::No,
     })
     .collect()
 }

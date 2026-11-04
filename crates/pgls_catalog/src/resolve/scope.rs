@@ -33,6 +33,9 @@ pub(super) struct Item {
     pub has_system_columns: bool,
     /// The generated columns of a table, which INSERT and UPDATE can only set to `DEFAULT`.
     pub generated_columns: Vec<String>,
+    /// The `GENERATED ALWAYS` identity columns of a table, which UPDATE can only set to
+    /// `DEFAULT`, and INSERT only with `OVERRIDING`.
+    pub identity_always_columns: Vec<String>,
     /// What the columns come from. Only set when references are collected.
     pub source: Option<Rc<ItemSource>>,
 }
@@ -69,6 +72,7 @@ impl ItemSource {
                     },
                     ty,
                     generated: crate::Generated::No,
+                    identity: crate::Identity::No,
                 }
             })
             .collect();
@@ -85,6 +89,7 @@ impl Item {
             typed_columns: None,
             has_system_columns: false,
             generated_columns: Vec::new(),
+            identity_always_columns: Vec::new(),
             source: None,
         }
     }
@@ -115,6 +120,24 @@ impl Item {
             .iter()
             .find(|c| c.name == column)
             .map(|c| c.ty.clone())
+    }
+
+    /// Whether a value for the column can only be `DEFAULT`: `Some(false)` for a generated
+    /// column, `Some(true)` for a `GENERATED ALWAYS` identity column, unless an INSERT has an
+    /// `OVERRIDING` clause (`overriding`).
+    pub fn default_only(&self, column: &str, overriding: bool) -> Option<bool> {
+        if self.generated_columns.iter().any(|name| name == column) {
+            Some(false)
+        } else if !overriding
+            && self
+                .identity_always_columns
+                .iter()
+                .any(|name| name == column)
+        {
+            Some(true)
+        } else {
+            None
+        }
     }
 
     pub fn has_column(&self, column: &str) -> Option<bool> {

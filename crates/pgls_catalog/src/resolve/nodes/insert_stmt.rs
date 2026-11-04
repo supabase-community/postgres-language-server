@@ -1,6 +1,6 @@
 use pgls_query::{
     NodeEnum,
-    protobuf::{InsertStmt, SelectStmt, SetOperation},
+    protobuf::{InsertStmt, OverridingKind, SelectStmt, SetOperation},
 };
 
 use super::{
@@ -147,9 +147,10 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     resolve_returning_clause(r, n.returning_clause.as_ref(), Level::with_item(target))
 }
 
-/// Reports an INSERT that assigns anything but `DEFAULT` to a generated column. Port of the check
-/// of [`rewriteTargetListIU`] for `CMD_INSERT`: in a VALUES list, every row must have `DEFAULT`
-/// for the column, and a SELECT can't assign it at all.
+/// Reports an INSERT that assigns anything but `DEFAULT` to a generated column, or to a
+/// `GENERATED ALWAYS` identity column without `OVERRIDING SYSTEM VALUE` or `OVERRIDING USER
+/// VALUE`. Port of the checks of [`rewriteTargetListIU`] for `CMD_INSERT`: in a VALUES list,
+/// every row must have `DEFAULT` for the column, and a SELECT can't assign it at all.
 ///
 /// Targets with subscripts or fields, like `g[1]`, are not checked. Without a column list, a
 /// SELECT whose `*` expands to unknown columns isn't either.
@@ -161,7 +162,13 @@ fn check_generated_insert(
     n: &InsertStmt,
     source_width: Option<usize>,
 ) {
-    if target.generated_columns.is_empty() {
+    let overriding = matches!(
+        n.r#override(),
+        OverridingKind::OverridingSystemValue | OverridingKind::OverridingUserValue
+    );
+    if target.generated_columns.is_empty()
+        && (overriding || target.identity_always_columns.is_empty())
+    {
         return;
     }
     // `DEFAULT VALUES` assigns nothing.
@@ -200,9 +207,9 @@ fn check_generated_insert(
     };
 
     for (index, (column, column_location)) in targets.into_iter().enumerate() {
-        if !target.generated_columns.iter().any(|name| name == column) {
+        let Some(identity) = target.default_only(column, overriding) else {
             continue;
-        }
+        };
         let span = match &rows {
             Some(rows) => {
                 let value = rows.iter().find_map(|row| {
@@ -225,6 +232,7 @@ fn check_generated_insert(
             FindingKind::GeneratedColumnAssignment {
                 column: column.to_owned(),
                 insert: true,
+                identity,
             },
             span,
         );
