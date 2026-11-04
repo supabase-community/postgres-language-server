@@ -70,7 +70,8 @@ pub(super) fn create_table(
 
     // Inherited columns (`INHERITS`, `PARTITION OF`) come first. A column inherited from a
     // generated column is generated too. Only partitions inherit identity, since Postgres 17.
-    let inherits_identity = n.partbound.is_some() && c.partitions_inherit_identity();
+    // When the server version isn't known, a partition's identity is unknown.
+    let inherits_identity = n.partbound.is_some() && c.partitions_inherit_identity() == Some(true);
     let mut parents = Vec::new();
     for parent in &n.inh_relations {
         let parent = match parent.node.as_ref() {

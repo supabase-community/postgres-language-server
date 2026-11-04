@@ -4,7 +4,7 @@ use pgls_query::{
 };
 
 use crate::catalog::{
-    Catalog, Entry, key,
+    Catalog, Entry, Key, key,
     names::{range_var_name, type_label},
     overlay::{column_info, identity_kind},
 };
@@ -42,7 +42,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
         {
             if let Some(attributes) = type_info.attributes.as_mut() {
                 for command in &commands {
-                    apply_column_change(c, attributes, command, search_path, true);
+                    apply_column_change(c, attributes, command, search_path, IdentityChange::Apply);
                 }
             }
             type_info.origin = Origin::File;
@@ -101,19 +101,36 @@ fn apply_column_changes(
         c.change_columns(relation, |columns, _| *columns = None);
         return;
     }
-    // Partitions follow the identity changes of their partitioned table on Postgres 17+.
-    // Inheritance children never do ([`ATExecAddIdentity`], [`ATPrepAddColumn`]).
+    // `ADD/SET/DROP IDENTITY` recurse to the partitions of a partitioned table on Postgres 17+
+    // ([`ATExecAddIdentity`], [`ATExecSetIdentity`], [`ATExecDropIdentity`]), and to no child
+    // before ([`ATPrepCmd`]). Inheritance children never follow them, and keep their own
+    // identity. Only partitions on Postgres 17+ get the identity of an added column
+    // ([`ATPrepAddColumn`]).
     //
     // [`ATExecAddIdentity`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L8354
+    // [`ATExecSetIdentity`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L8471
+    // [`ATExecDropIdentity`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L8572
+    // [`ATPrepCmd`]: https://github.com/postgres/postgres/blob/REL_15_14/src/backend/commands/tablecmds.c#L4605
     // [`ATPrepAddColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L7352
-    let partitions_follow_identity =
-        relation.kind == RelationKind::PartitionedTable && c.partitions_inherit_identity();
+    let descendant_identity = if relation.kind == RelationKind::PartitionedTable {
+        match c.partitions_inherit_identity() {
+            Some(true) => IdentityChange::Apply,
+            Some(false) => IdentityChange::Keep,
+            None => IdentityChange::Unknown,
+        }
+    } else {
+        IdentityChange::Keep
+    };
     let catalog = c.clone();
     c.change_columns(relation, |columns, is_descendant| {
         if let Some(columns) = columns.as_mut() {
-            let identity_follows = !is_descendant || partitions_follow_identity;
+            let identity = if is_descendant {
+                descendant_identity
+            } else {
+                IdentityChange::Apply
+            };
             for command in commands {
-                apply_column_change(&catalog, columns, command, search_path, identity_follows);
+                apply_column_change(&catalog, columns, command, search_path, identity);
             }
         }
     });
@@ -196,38 +213,128 @@ fn apply_inheritance_changes(
         if attach && !relation_is_parent {
             c.children_with_own_columns.insert(child.clone());
         }
-        let children = c.children.entry(parent).or_default();
+        let children = c.children.entry(parent.clone()).or_default();
         if attach {
             if !children.contains(&child) {
-                children.push(child);
+                children.push(child.clone());
             }
         } else {
             children.retain(|existing| *existing != child);
         }
+        if relation_is_parent {
+            if attach {
+                attach_partition_identity(c, &parent, &child);
+            } else {
+                detach_partition_identity(c, &child);
+            }
+        }
     }
+}
+
+/// On Postgres 17+, an attached partition takes the identity of its partitioned table's columns
+/// ([`MergeAttributesIntoExisting`]); its own partitions keep theirs. Before, it keeps its own.
+///
+/// [`MergeAttributesIntoExisting`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L17619
+fn attach_partition_identity(c: &mut Catalog, parent: &Key, partition: &Key) {
+    let inherits_identity = c.partitions_inherit_identity();
+    if inherits_identity == Some(false) {
+        return;
+    }
+    let Some(mut info) = c.relation_in(&partition.0, &partition.1).found() else {
+        return;
+    };
+    let parent_columns = c
+        .relation_in(&parent.0, &parent.1)
+        .found()
+        .and_then(|parent| parent.columns);
+    let Some(columns) = info.columns.as_mut() else {
+        return;
+    };
+    for column in columns {
+        let parent_identity = parent_columns
+            .iter()
+            .flatten()
+            .find(|parent| parent.name == column.name)
+            .map(|parent| parent.identity);
+        column.identity = match (inherits_identity, parent_identity) {
+            (Some(true), Some(identity)) => identity,
+            // Without the server version, the identity is only known if both versions agree.
+            (None, Some(identity)) if identity == column.identity => identity,
+            _ => Identity::No,
+        };
+    }
+    info.origin = Origin::File;
+    c.define_relation(info);
+}
+
+/// On Postgres 17+, `DETACH PARTITION` drops the identity of the partition's identity columns,
+/// and of the same columns of its own partitions ([`DetachPartitionFinalize`]). Before, the
+/// partition keeps its identity.
+///
+/// [`DetachPartitionFinalize`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L21416
+fn detach_partition_identity(c: &mut Catalog, partition: &Key) {
+    if c.partitions_inherit_identity() == Some(false) {
+        return;
+    }
+    let Some(info) = c.relation_in(&partition.0, &partition.1).found() else {
+        return;
+    };
+    // Without the partition's columns, the identity of every column is unknown.
+    let dropped: Option<Vec<String>> = info.columns.as_ref().map(|columns| {
+        columns
+            .iter()
+            .filter(|column| column.identity != Identity::No)
+            .map(|column| column.name.clone())
+            .collect()
+    });
+    if dropped.as_ref().is_some_and(Vec::is_empty) {
+        return;
+    }
+    c.change_columns(&info, |columns, _| {
+        for column in columns.iter_mut().flatten() {
+            if dropped
+                .as_ref()
+                .is_none_or(|dropped| dropped.contains(&column.name))
+            {
+                column.identity = Identity::No;
+            }
+        }
+    });
+}
+
+/// What an identity change does to a column of a table or of one of its descendants.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum IdentityChange {
+    /// The column takes the new identity.
+    Apply,
+    /// The column keeps its identity.
+    Keep,
+    /// The column's identity is unknown, so it's not treated as an identity column.
+    Unknown,
 }
 
 /// Applies `ADD COLUMN`, `DROP COLUMN` and `ALTER COLUMN TYPE` (and their `ATTRIBUTE`
 /// counterparts), `ALTER COLUMN DROP EXPRESSION`, which turns a generated column into an
 /// ordinary one, and the identity changes `ADD GENERATED ... AS IDENTITY`, `SET GENERATED` and
-/// `DROP IDENTITY`. Without `identity_follows`, the identity of the changed columns is unknown.
+/// `DROP IDENTITY`, as `identity_change` says. A column added to a table that doesn't
+/// [`IdentityChange::Apply`] the identity changes isn't an identity column.
 fn apply_column_change(
     c: &Catalog,
     columns: &mut Vec<ColumnInfo>,
     command: &AlterTableCmd,
     search_path: &[String],
-    identity_follows: bool,
+    identity_change: IdentityChange,
 ) {
     let set_identity = |columns: &mut Vec<ColumnInfo>, identity: Identity| {
         if let Some(column) = columns
             .iter_mut()
             .find(|column| column.name == command.name)
         {
-            column.identity = if identity_follows {
-                identity
-            } else {
-                Identity::No
-            };
+            match identity_change {
+                IdentityChange::Apply => column.identity = identity,
+                IdentityChange::Keep => {}
+                IdentityChange::Unknown => column.identity = Identity::No,
+            }
         }
     };
     match command.subtype() {
@@ -237,7 +344,7 @@ fn apply_column_change(
                 && !columns.iter().any(|c| c.name == column.colname)
             {
                 let mut column = column_info(c, column, search_path);
-                if !identity_follows {
+                if identity_change != IdentityChange::Apply {
                     column.identity = Identity::No;
                 }
                 columns.push(column);

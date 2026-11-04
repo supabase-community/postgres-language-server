@@ -145,13 +145,12 @@ impl Catalog {
     }
 
     /// Whether partitions inherit the identity of their partitioned table's columns, and follow
-    /// its identity changes. Partitions do since Postgres 17 ([`MergeAttributes`]); before, and
-    /// when the server version isn't known, their identity is treated as unknown.
+    /// its identity changes. Partitions do since Postgres 17 ([`MergeAttributes`]). `None` when
+    /// the server version isn't known.
     ///
     /// [`MergeAttributes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L2798
-    pub(super) fn partitions_inherit_identity(&self) -> bool {
-        self.server_version_num()
-            .is_some_and(|version| version >= 170_000)
+    pub(super) fn partitions_inherit_identity(&self) -> Option<bool> {
+        self.server_version_num().map(|version| version >= 170_000)
     }
 
     /// Changes the columns of a relation and of its inheritance children and partitions. The
