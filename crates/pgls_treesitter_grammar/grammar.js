@@ -2865,14 +2865,22 @@ module.exports = grammar({
             $.keyword_check,
             wrapped_in_parenthesis(optional($._expression)),
           ),
+          // `BY` needs its `DEFAULT` before `AS`, so each branch is its own sequence.
           partialSeq(
             $.keyword_generated,
             choice(
-              $.keyword_always,
-              partialSeq($.keyword_by, $.keyword_default),
+              partialSeq(
+                $.keyword_always,
+                $.keyword_as,
+                field("end", $._expression),
+              ),
+              partialSeq(
+                $.keyword_by,
+                $.keyword_default,
+                $.keyword_as,
+                field("end", $._expression),
+              ),
             ),
-            $.keyword_as,
-            field("end", $._expression),
           ),
           partialSeq($.keyword_as, field("end", $._expression)),
           field("end", $.keyword_stored),

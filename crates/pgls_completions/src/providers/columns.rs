@@ -38,7 +38,7 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
     // A `column_identifier` is a column name that can't be qualified, like the target of
     // `SET col = ...` or a column of an INSERT column list.
     let alias = (ctx.node_under_cursor.kind() != "column_identifier")
-        .then(|| ctx.get_used_alias_for_table(col.table_name.as_str()))
+        .then(|| ctx.get_used_alias_for_table(&col.schema_name, &col.table_name))
         .flatten();
 
     let with_schema_or_alias = with_schema_or_alias(ctx, col.name.as_str(), alias.as_deref());
@@ -714,6 +714,73 @@ mod tests {
             columns.sort();
             assert_eq!(columns, expected, "{sql}");
         }
+    }
+
+    /// The source after applying the completion of the column `label` at the cursor.
+    async fn apply_column(query: &str, label: &str, pool: &PgPool) -> String {
+        let (tree, snapshot) = get_test_deps(None, query.into(), pool).await;
+        let params = get_test_params(&tree, &snapshot, query.into());
+        let (_, mut source) = QueryWithCursorPosition::from(query).get_text_and_position();
+        let item = complete(params)
+            .into_iter()
+            .find(|item| item.kind == CompletionItemKind::Column && item.label == label)
+            .unwrap_or_else(|| panic!("no column {label} in {query}"));
+        let edit = item.completion_text.unwrap();
+        source.replace_range(std::ops::Range::<usize>::from(edit.range), &edit.text);
+        source
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn qualifies_columns_with_the_alias_of_their_schema(pool: PgPool) {
+        pool.execute(
+            r#"
+            create schema auth;
+            create table public.users (name text);
+            create table auth.users (auth_only int);
+            "#,
+        )
+        .await
+        .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // Both aliases stand for a table named `users`; the aliases are kept in a hash map, so
+        // a lookup by the table name alone picks either.
+        let query = format!(
+            "update public.users u set name = 1 from auth.users p where auth_{cursor}only = 1"
+        );
+        for _ in 0..20 {
+            assert_eq!(
+                apply_column(&query, "auth_only", &pool).await,
+                "update public.users u set name = 1 from auth.users p where p.auth_only = 1"
+            );
+        }
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn keeps_escaped_quotes_of_aliases(pool: PgPool) {
+        pool.execute("create table public.users (id int, name text);")
+            .await
+            .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        assert_eq!(
+            apply_column(
+                &format!(r#"update users as "a""b" set name = 1 where "i{cursor}d" = 1"#),
+                "id",
+                &pool
+            )
+            .await,
+            r#"update users as "a""b" set name = 1 where "a""b"."id" = 1"#
+        );
+        assert_eq!(
+            apply_column(
+                &format!(r#"select "{cursor} from users as "a""b""#),
+                "id",
+                &pool
+            )
+            .await,
+            r#"select "a""b"."id" from users as "a""b""#
+        );
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

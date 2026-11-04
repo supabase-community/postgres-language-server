@@ -108,8 +108,9 @@ impl CompletionScore<'_> {
             _ => match self.data {
                 // for columns and functions, we fuzzy match with a possible alias.
                 CompletionRelevanceData::Column(_) | CompletionRelevanceData::Policy(_) => self
-                    .get_table_name()
-                    .and_then(|tbl| ctx.get_used_alias_for_table(tbl))
+                    .get_schema_name()
+                    .zip(self.get_table_name())
+                    .and_then(|(schema, tbl)| ctx.get_used_alias_for_table(schema, tbl))
                     .map(|t| format!("{t}.{name}"))
                     .unwrap_or(name.clone()),
 
