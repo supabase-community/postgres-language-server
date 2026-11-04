@@ -60,6 +60,9 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
         let typed_columns = if cte.search_clause.is_some() || cte.cycle_clause.is_some() {
             None
         } else {
+            // The column list renames the first columns ([`analyzeCTETargetList`]).
+            //
+            // [`analyzeCTETargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L571
             let output = rename_typed_columns(
                 resolve_unknown_outputs(r.catalog, r.output.clone()),
                 &cte.aliascolnames,

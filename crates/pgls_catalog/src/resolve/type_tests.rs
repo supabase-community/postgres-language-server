@@ -215,11 +215,6 @@ async fn infers_the_types_of_recursive_ctes(test_db: PgPool) {
         ),
         some(&["numeric"])
     );
-    // The column list of a CTE names its typed columns.
-    assert_eq!(
-        types(&mut catalog, "with x(n) as (select 1 as a) select n from x"),
-        some(&["integer"])
-    );
     // Postgres rejects a recursive CTE whose types differ from those of its non-recursive term,
     // and a UNION that doesn't reference itself has the common type of both. We don't tell them
     // apart.

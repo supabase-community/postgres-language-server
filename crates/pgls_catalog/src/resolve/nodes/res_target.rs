@@ -10,6 +10,7 @@ use super::{Resolver, resolve_list};
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
+    expr::infer_expr,
     scope::{Columns, Item, Level, find_item},
 };
 
@@ -203,7 +204,7 @@ pub(super) fn resolve_returning_clause(
                 } else {
                     target.name.clone()
                 },
-                ty: super::super::expr::infer_expr(r, value),
+                ty: infer_expr(r, value),
             });
         }
         if typed.len() == names.len() {
