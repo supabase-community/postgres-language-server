@@ -402,7 +402,9 @@ fn inserts() {
 
 #[test]
 fn generated_columns() {
-    let setup = "create table items (price int, total int generated always as (price * 2) stored)";
+    let setup = "create table items (price int, total int generated always as (price * 2) stored);
+        create table src (price int, total int);
+        create table one (price int)";
     let spans = |sql: &str| {
         resolve_after(setup, sql, None)
             .findings
@@ -422,6 +424,18 @@ fn generated_columns() {
     );
     assert_eq!(spans("insert into items values (1, 2)"), ["2"]);
     assert_eq!(spans("insert into items select 1, 2"), ["2"]);
+    // A `*` assigns the columns it expands to.
+    assert_eq!(spans("insert into items select * from src"), ["*"]);
+    assert_eq!(spans("insert into items select src.* from src"), ["src.*"]);
+    assert_eq!(spans("insert into items select *, 2 from one"), ["2"]);
+    assert_eq!(
+        spans("insert into items select 1, one.* from one"),
+        ["one.*"]
+    );
+    assert_eq!(
+        spans("insert into items select * from one"),
+        [] as [&str; 0]
+    );
     assert_eq!(spans("update items set price = 1, total = 2"), ["total"]);
     assert_eq!(
         spans("insert into items (total[1]) values (2)"),

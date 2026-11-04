@@ -691,6 +691,102 @@ fn column_changes_make_database_children_unknown() {
     assert!(child.columns.is_none());
 }
 
+/// Whether each column of a relation is generated.
+fn generated_columns(
+    catalog: &Catalog,
+    name: &str,
+    search_path: &[String],
+) -> Option<Vec<(String, crate::Generated)>> {
+    catalog
+        .relation(None, name, search_path)
+        .found()
+        .and_then(|relation| relation.columns)
+        .map(|columns| {
+            columns
+                .into_iter()
+                .map(|column| (column.name, column.generated))
+                .collect()
+        })
+}
+
+#[test]
+fn redeclared_inherited_columns_merge_generated() {
+    use crate::Generated;
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create table plain_parent (a int, g int);
+         create table generated_child (g int generated always as (a * 2) stored) inherits (plain_parent);
+         create table generated_parent (a int, g int generated always as (a * 2) stored);
+         create table plain_child (g int) inherits (generated_parent);",
+        &search_path,
+    );
+    let expected = Some(vec![
+        ("a".to_owned(), Generated::No),
+        ("g".to_owned(), Generated::Stored),
+    ]);
+    assert_eq!(
+        generated_columns(&catalog, "generated_child", &search_path),
+        expected
+    );
+    assert_eq!(
+        generated_columns(&catalog, "plain_child", &search_path),
+        expected
+    );
+}
+
+#[test]
+fn drop_expression_follows_attached_partitions_and_inheritance() {
+    use crate::Generated;
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create table parent (a int, g int generated always as (a * 2) stored) partition by range (a);
+         create table attached (like parent including generated);
+         alter table parent attach partition attached for values from (0) to (10);
+         create table detached partition of parent for values from (10) to (20);
+         alter table parent detach partition detached;
+         create table base_t (a int, g int generated always as (a * 2) stored);
+         create table inheriting (a int, g int generated always as (a * 2) stored);
+         alter table inheriting inherit base_t;
+         create table uninherited () inherits (base_t);
+         alter table uninherited no inherit base_t;
+         alter table parent alter column g drop expression;
+         alter table base_t alter column g drop expression;",
+        &search_path,
+    );
+    let g = |name: &str| generated_columns(&catalog, name, &search_path).unwrap()[1].1;
+    assert_eq!(g("attached"), Generated::No);
+    assert_eq!(g("detached"), Generated::Stored);
+    assert_eq!(g("inheriting"), Generated::No);
+    assert_eq!(g("uninherited"), Generated::Stored);
+}
+
+#[test]
+fn circular_inheritance_is_ignored() {
+    let search_path = path(&["public"]);
+    // Postgres rejects the `INHERIT` statements. A dropped parent leaves a stale edge behind.
+    let catalog = catalog_after(
+        "create table a (x int);
+         create table b () inherits (a);
+         alter table a inherit b;
+         alter table b inherit b;
+         alter table a add column y int;
+         create table p (x int);
+         create table c () inherits (p);
+         drop table c;
+         drop table p;
+         create table c (x int);
+         create table p () inherits (c);
+         alter table c add column y int;",
+        &search_path,
+    );
+    for table in ["a", "b", "c", "p"] {
+        assert_eq!(
+            column_names(&catalog, None, table, &search_path).unwrap(),
+            ["x", "y"]
+        );
+    }
+}
+
 fn table_columns(snapshot: &Snapshot, schema: &str, table: &str) -> Vec<String> {
     let mut columns: Vec<_> = snapshot
         .columns
