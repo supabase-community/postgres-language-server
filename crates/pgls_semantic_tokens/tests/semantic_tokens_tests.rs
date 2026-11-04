@@ -243,3 +243,32 @@ async fn non_ascii_identifiers(test_db: PgPool) {
         r#"select [CAFÉ:class].[größe:property], ["Ölstand":property] from [CAFÉ:class]"#
     );
 }
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn merge(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted(
+            "merge into users u using posts p on p.user_id = u.id \
+             when matched and p.title <> u.name then update set name = p.title \
+             when not matched then insert (id, name) values (p.user_id, upper(p.title)) \
+             when not matched by source then delete"
+        ),
+        "merge into [users:class] [u:variable] using [posts:class] [p:variable] \
+         on [p:variable].[user_id:property] = [u:variable].[id:property] \
+         when matched and [p:variable].[title:property] <> [u:variable].[name:property] \
+         then update set name = [p:variable].[title:property] \
+         when not matched then insert (id, name) \
+         values ([p:variable].[user_id:property], [upper:function+]([p:variable].[title:property])) \
+         when not matched by source then delete"
+    );
+    assert_eq!(
+        f.highlighted(
+            "with c as (select id from posts) merge into public.users using c \
+             on c.id = users.id when matched then do nothing"
+        ),
+        "with [c:class] as (select [id:property] from [posts:class]) \
+         merge into [public:namespace].[users:class] using [c:class] \
+         on [c:class].[id:property] = [users:class].[id:property] when matched then do nothing"
+    );
+}

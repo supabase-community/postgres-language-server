@@ -921,3 +921,44 @@ async fn test_column_hover_on_last_part_of_quoted_name(test_db: PgPool) {
     )
     .await;
 }
+
+const MERGE_SETUP: &str = r#"
+    create table hover_users (id serial primary key, name text not null);
+    create table hover_posts (post_id int, title text);
+"#;
+
+/// Hovers `sql` with the cursor after `needle`.
+async fn test_merge_hover(name: &str, sql: &str, needle: &str, test_db: &PgPool) {
+    let position = sql.find(needle).unwrap() + needle.len();
+    let query = format!(
+        "{}{}{}",
+        &sql[..position],
+        QueryWithCursorPosition::cursor_marker(),
+        &sql[position..]
+    );
+    test_hover_at_cursor(name, query, Some(MERGE_SETUP), test_db).await;
+}
+
+const MERGE: &str = "merge into hover_users u using hover_posts p on p.post_id = u.id \
+    when matched and p.title <> u.name then update set name = p.title \
+    when not matched then insert (id, name) values (p.post_id, p.title)";
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_merge_hover_source_table(test_db: PgPool) {
+    test_merge_hover("merge_source_table", MERGE, "using hover_po", &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_merge_hover_join_condition_column(test_db: PgPool) {
+    test_merge_hover("merge_join_condition_column", MERGE, "u.i", &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_merge_hover_update_value_column(test_db: PgPool) {
+    test_merge_hover("merge_update_value_column", MERGE, "name = p.ti", &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_merge_hover_insert_value_column(test_db: PgPool) {
+    test_merge_hover("merge_insert_value_column", MERGE, "values (p.po", &test_db).await;
+}

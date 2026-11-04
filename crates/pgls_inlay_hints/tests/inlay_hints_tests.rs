@@ -227,3 +227,18 @@ async fn only_ascii_letters_of_unquoted_arguments_are_downcased(test_db: PgPool)
         r#"select accent(t.ÉA) from (select 1 as "Éa") t"#
     );
 }
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn merge(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.hinted(
+            "merge into points p using points q on make_point(p.y, 1) = q.y \
+             when matched then update set x = make_point(q.y, q.x) \
+             when not matched then insert values (make_point(q.y, 2), 1)"
+        ),
+        "merge into points p using points q on make_point(x: p.y, y: 1) = q.y \
+         when matched then update set x = make_point(x: q.y, y: q.x) \
+         when not matched then insert values (make_point(x: q.y, y: 2), 1)"
+    );
+}
