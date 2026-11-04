@@ -28,3 +28,11 @@ insert into item_view (price, total) values (1, 2);
 alter table items alter column total drop expression;
 insert into items (price, total) values (1, 2);
 insert into child_items (price, total) values (1, 2);
+-- `SELECT *` assigns the columns of its FROM items.
+create table generated_dst (a int, g int generated always as (a * 2) stored);
+create table plain_src (a int, g int);
+-- expect_lint/generatedColumnAssignment
+insert into generated_dst select * from plain_src;
+-- expect_lint/generatedColumnAssignment
+insert into generated_dst select plain_src.* from plain_src;
+insert into generated_dst select a from plain_src;
