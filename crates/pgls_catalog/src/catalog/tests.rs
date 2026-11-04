@@ -971,6 +971,65 @@ fn snapshot_includes_the_changes_of_the_file() {
 }
 
 #[test]
+fn snapshot_drops_the_expression_of_a_generated_column() {
+    let search_path = path(&["public"]);
+    let columns = [
+        ("price", None, crate::Generated::No),
+        (
+            "total",
+            Some("(price * 2)".into()),
+            crate::Generated::Stored,
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(i, (name, default_expr, generated))| crate::Column {
+        name: name.into(),
+        table_name: "orders".into(),
+        table_oid: 1,
+        class_kind: crate::ColumnClassKind::OrdinaryTable,
+        number: i as i64 + 1,
+        schema_name: "public".into(),
+        type_id: 23,
+        type_name: Some("int4".into()),
+        is_nullable: true,
+        is_primary_key: false,
+        is_unique: false,
+        default_expr,
+        generated,
+        identity: crate::Identity::No,
+        varchar_length: None,
+        comment: None,
+    })
+    .collect();
+    let cache = Snapshot {
+        schemas: vec![schema("public"), schema("pg_catalog")],
+        tables: vec![crate::Table {
+            id: 1,
+            schema: "public".into(),
+            name: "orders".into(),
+            ..Default::default()
+        }],
+        columns,
+        typing_metadata: true,
+        ..Default::default()
+    };
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(cache)))));
+    let parsed =
+        pgls_query::parse("alter table orders alter column total drop expression").unwrap();
+    catalog.apply(parsed.stmts()[0], &search_path);
+
+    let snapshot = catalog.snapshot().unwrap();
+    let total = snapshot
+        .columns
+        .iter()
+        .find(|column| column.name == "total")
+        .unwrap();
+    assert_eq!(total.generated, crate::Generated::No);
+    assert_eq!(total.default_expr, None);
+}
+
+#[test]
 fn snapshot_excludes_dropped_objects() {
     let search_path = path(&["public"]);
     let catalog = catalog_after(

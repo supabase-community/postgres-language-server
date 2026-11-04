@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use pgls_catalog::{Column, Snapshot};
+use pgls_catalog::{Column, Generated, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
@@ -59,13 +59,22 @@ impl ToHoverMarkdown for pgls_catalog::Column {
         writer: &mut W,
         _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
-        if let Some(default) = &self.default_expr {
-            writeln!(writer)?;
-            write!(writer, "Default: {default}")?;
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+        let generated = match self.generated {
+            Generated::No => None,
+            Generated::Stored => Some("STORED"),
+            Generated::Virtual => Some("VIRTUAL"),
+        };
+        let footer = match (generated, &self.default_expr) {
+            // The expression of a generated column is its generation expression, not a default.
+            (Some(kind), Some(expression)) => format!("Generated: {expression} {kind}"),
+            // Columns that the file creates have no expression.
+            (Some(kind), None) => format!("Generated: {kind}"),
+            (None, Some(default)) => format!("Default: {default}"),
+            (None, None) => return Ok(false),
+        };
+        writeln!(writer)?;
+        write!(writer, "{footer}")?;
+        Ok(true)
     }
 }
 
@@ -146,6 +155,34 @@ mod tests {
             varchar_length: None,
             comment: None,
         }
+    }
+
+    fn footer(column: &Column) -> String {
+        let mut footer = String::new();
+        column
+            .hover_footer(&mut footer, &Snapshot::default())
+            .unwrap();
+        footer
+    }
+
+    #[test]
+    fn footer_shows_generation_expressions_as_generated() {
+        let mut column = create_test_column("public", "orders", "total", false);
+        column.default_expr = Some("(price * quantity)".into());
+        assert_eq!(footer(&column), "\nDefault: (price * quantity)");
+
+        column.generated = Generated::Stored;
+        assert_eq!(footer(&column), "\nGenerated: (price * quantity) STORED");
+
+        column.generated = Generated::Virtual;
+        assert_eq!(footer(&column), "\nGenerated: (price * quantity) VIRTUAL");
+
+        // Columns that the file creates have no expression.
+        column.default_expr = None;
+        assert_eq!(footer(&column), "\nGenerated: VIRTUAL");
+
+        column.generated = Generated::No;
+        assert_eq!(footer(&column), "");
     }
 
     #[test]
