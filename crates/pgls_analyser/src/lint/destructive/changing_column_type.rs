@@ -1,5 +1,6 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::{CatalogView, Generated};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -14,6 +15,9 @@ declare_lint_rule! {
     /// - Changing to `text` (binary compatible with varchar/char types)
     /// - Changing to `varchar` without a length limit
     /// - Dropping a `numeric` precision constraint (e.g., `numeric(10,2)` to `numeric`)
+    ///
+    /// Changing the type of a virtual generated column (Postgres 18) doesn't rewrite the table
+    /// either: its values are computed when rows are read.
     ///
     /// For unsafe type changes, consider creating a new column with the desired type,
     /// migrating the data, and then dropping the old column.
@@ -59,6 +63,9 @@ impl LinterRule for ChangingColumnType {
                     {
                         continue;
                     }
+                    if is_virtual_column(ctx, stmt.relation.as_ref(), &cmd.name) {
+                        continue;
+                    }
 
                     diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
@@ -73,6 +80,30 @@ impl LinterRule for ChangingColumnType {
 
         diagnostics
     }
+}
+
+/// Whether the column is a virtual generated column, which [`ATExecAlterColumnType`] doesn't
+/// rewrite.
+///
+/// [`ATExecAlterColumnType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L14747
+fn is_virtual_column(
+    ctx: &LinterRuleContext<ChangingColumnType>,
+    relation: Option<&pgls_query::protobuf::RangeVar>,
+    column: &str,
+) -> bool {
+    let Some(relation) = relation else {
+        return false;
+    };
+    let schema = Some(relation.schemaname.as_str()).filter(|schema| !schema.is_empty());
+    ctx.catalog()
+        .relation(schema, &relation.relname, ctx.session().search_path())
+        .found()
+        .and_then(|relation| relation.columns)
+        .is_some_and(|columns| {
+            columns.iter().any(|candidate| {
+                candidate.name == column && candidate.generated == Generated::Virtual
+            })
+        })
 }
 
 fn is_safe_type_widening(col_def: &pgls_query::protobuf::ColumnDef) -> bool {
