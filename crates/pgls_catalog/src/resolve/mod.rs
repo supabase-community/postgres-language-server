@@ -204,7 +204,8 @@ pub enum Reference {
         span: Option<TextRange>,
         relation: crate::RelationInfo,
     },
-    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`.
+    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`, or a type in DDL,
+    /// like a column type in `CREATE TABLE` or a parameter type in `CREATE FUNCTION`.
     Type {
         /// The location of the type name in the statement.
         location: i32,
@@ -224,16 +225,37 @@ pub enum Reference {
         /// The index of the parameter in [`FunctionContext::params`].
         index: usize,
     },
-    /// A string literal that is coerced to an enum type, like `'happy'` in `mood = 'happy'`.
-    /// Only recorded where the enum type is certain: casts, operators whose other operand is the
-    /// enum, function parameters of the enum type, and values assigned to enum columns in INSERT
-    /// and UPDATE.
+    /// A string literal that is coerced to an enum type, like `'happy'` in `mood = 'happy'`, or
+    /// to an array of it, like `'{happy,sad}'` in `mood = any('{happy,sad}')`. Only recorded
+    /// where the enum type is certain: casts, operators whose other operand is the enum,
+    /// function parameters of the enum type or of a polymorphic type that the other arguments
+    /// resolve to it, the values of `CASE` and `COALESCE` whose common type is the enum, and
+    /// values assigned to enum columns in INSERT (also from a plain SELECT) and UPDATE.
     EnumLiteral {
         /// The location of the literal in the statement.
         location: i32,
         /// The span of the literal, including its quotes.
         span: Option<TextRange>,
         type_info: crate::TypeInfo,
+    },
+    /// The name of a common table expression, where the WITH clause defines it and where FROM
+    /// references it.
+    Cte {
+        /// The location of the name in the statement.
+        location: i32,
+        /// The span of the name.
+        span: Option<TextRange>,
+        name: String,
+    },
+    /// The alias of a table or CTE in FROM, or of the target of INSERT, UPDATE, or DELETE, where
+    /// it is defined, like `u` in `from users as u`. References to it, like `u` in `u.name`,
+    /// are part of their column reference.
+    Alias {
+        /// The location of the alias in the statement.
+        location: i32,
+        /// The span of the alias.
+        span: Option<TextRange>,
+        name: String,
     },
     /// A `*` or `t.*` in a select list or RETURNING list whose columns are all known, and each
     /// can be referenced by a name that resolves to it.
@@ -265,6 +287,8 @@ impl Reference {
             | Self::Type { location, .. }
             | Self::Parameter { location, .. }
             | Self::EnumLiteral { location, .. }
+            | Self::Cte { location, .. }
+            | Self::Alias { location, .. }
             | Self::Star { location, .. } => *location,
         }
     }
@@ -277,6 +301,8 @@ impl Reference {
             | Self::Type { span, .. }
             | Self::Parameter { span, .. }
             | Self::EnumLiteral { span, .. }
+            | Self::Cte { span, .. }
+            | Self::Alias { span, .. }
             | Self::Star { span, .. } => *span,
         }
     }
