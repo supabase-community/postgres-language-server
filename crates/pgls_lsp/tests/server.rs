@@ -11,7 +11,7 @@ use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_configuration::StringSet;
 use pgls_configuration::database::PartialDatabaseConfiguration;
-use pgls_configuration::migrations::{PartialMigrationsConfiguration, SectionMarkers};
+use pgls_configuration::migrations::{MigrationTool, PartialMigrationsConfiguration};
 use pgls_fs::{ConfigName, MemoryFileSystem, OsFileSystem};
 use pgls_lsp::LSPServer;
 use pgls_lsp::ServerFactory;
@@ -3929,7 +3929,7 @@ async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
             ..Default::default()
         }),
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Dbmate),
+            tool: Some(MigrationTool::Dbmate),
             ..Default::default()
         }),
         ..Default::default()

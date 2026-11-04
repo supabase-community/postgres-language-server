@@ -249,7 +249,7 @@ fn annotation(line: &str) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use pgls_analyser::Direction;
-    use pgls_configuration::migrations::SectionMarkers;
+    use pgls_configuration::migrations::MigrationTool::{self as Tool};
 
     use crate::migrations::{
         migration_tool,
@@ -260,7 +260,7 @@ mod tests {
     fn goose_sections() {
         let text = "-- +goose Up\n-- +goose StatementBegin\nselect 1;\n-- +goose StatementEnd\n-- +goose down\nselect 2;";
         assert_eq!(
-            sections(text, SectionMarkers::Goose),
+            sections(text, Tool::Goose),
             vec![
                 (
                     "-- +goose Up\n-- +goose StatementBegin\nselect 1;\n-- +goose StatementEnd\n",
@@ -275,7 +275,7 @@ mod tests {
     #[test]
     fn queries_sent_at_once() {
         let text = "-- +goose NO TRANSACTION\n-- +goose Up\nselect 1;\n-- +goose StatementBegin\nselect 2;\nselect 3;\n-- +goose StatementEnd\n-- +goose Down\nselect 4;\n";
-        let queries = migration_tool(SectionMarkers::Goose)
+        let queries = migration_tool(Tool::Goose)
             .map_or_else(Vec::new, |tool| tool.sections(text))
             .into_iter()
             .map(|section| {
@@ -299,14 +299,14 @@ mod tests {
     #[test]
     fn statements_before_the_first_marker() {
         let text = "select 1;\n-- +goose Up\nselect 2;\n";
-        assert_eq!(marker_problems(text, SectionMarkers::Goose).len(), 1);
+        assert_eq!(marker_problems(text, Tool::Goose).len(), 1);
     }
 
     #[test]
     fn lines_that_look_like_markers() {
         let text =
             "-- +goose Up\nselect 1;\n-- +Goose Down\n  -- +goose StatementBegin\nselect 2;\n";
-        let problems = marker_problems(text, SectionMarkers::Goose);
+        let problems = marker_problems(text, Tool::Goose);
         assert_eq!(
             problems.iter().map(|(line, _)| *line).collect::<Vec<_>>(),
             ["-- +Goose Down", "  -- +goose StatementBegin"]
@@ -317,9 +317,7 @@ mod tests {
 
     /// The text that is analysed for `text`, and the parts that goose replaces.
     fn envsub(text: &str) -> Option<(String, Vec<&str>)> {
-        let preprocessed = migration_tool(SectionMarkers::Goose)
-            .unwrap()
-            .preprocess(text)?;
+        let preprocessed = migration_tool(Tool::Goose).unwrap().preprocess(text)?;
         assert_eq!(preprocessed.text.len(), text.len());
         let placeholders = preprocessed
             .placeholders
@@ -391,7 +389,7 @@ mod tests {
             Some((text.to_string(), vec!["${MESSAGE}", "${NOTE}"]))
         );
         // Only the one in the string literal is a value that we don't know.
-        let preprocessed = migration_tool(SectionMarkers::Goose)
+        let preprocessed = migration_tool(Tool::Goose)
             .unwrap()
             .preprocess(text)
             .unwrap();
@@ -409,7 +407,7 @@ mod tests {
     fn goose_no_transaction_applies_to_the_whole_file() {
         let text = "-- +goose Up\nselect 1;\n-- +goose Down\nselect 2;\n-- +goose NO TRANSACTION\n";
         assert!(
-            sections(text, SectionMarkers::Goose)
+            sections(text, Tool::Goose)
                 .iter()
                 .all(|(_, _, transaction)| !transaction)
         );

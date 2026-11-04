@@ -936,11 +936,32 @@ fn check_fix_writes_safe_fixes() {
     assert_eq!(
         check_fixed(
             "fix-safe",
-            r#""migrations": {"sectionMarkers": "dbmate"}"#,
+            r#""migrations": {"tool": "dbmate"}"#,
             &["--fix"],
             content
         ),
         "-- migrate:up transaction:false\nreindex index concurrently my_index;\n",
+    );
+}
+
+/// The deprecated `migrations.sectionMarkers` still selects the migration tool, with a warning.
+#[test]
+fn deprecated_section_markers_still_select_the_migration_tool() {
+    let content = "-- migrate:up transaction:false\nreindex index my_index;\n";
+    let (fixed, output) = check_file(
+        "fix-section-markers",
+        r#""migrations": {"sectionMarkers": "dbmate"}"#,
+        &["--fix"],
+        content,
+    );
+    assert_eq!(
+        fixed, "-- migrate:up transaction:false\nreindex index concurrently my_index;\n",
+        "{output}"
+    );
+    assert!(
+        output
+            .contains("`migrations.sectionMarkers` is deprecated. Use `migrations.tool` instead."),
+        "{output}"
     );
 }
 
