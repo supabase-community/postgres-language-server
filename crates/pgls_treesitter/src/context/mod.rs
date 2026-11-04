@@ -62,6 +62,8 @@ pub struct MentionedColumn {
 /// A table alias of the statement.
 #[derive(Debug)]
 struct TableAlias {
+    /// The name of the schema, if the table is qualified with one.
+    schema: Option<String>,
     /// The name of the table.
     table: String,
     /// The alias as written, like `"U"`.
@@ -258,6 +260,10 @@ impl<'a> TreesitterContext<'a> {
                     self.mentioned_table_aliases.insert(
                         identifier_name(&text),
                         TableAlias {
+                            schema: table_alias_match
+                                .get_schema(sql)
+                                .as_deref()
+                                .map(identifier_name),
                             table: identifier_name(&table_alias_match.get_table(sql)),
                             text,
                         },
@@ -662,11 +668,17 @@ impl<'a> TreesitterContext<'a> {
             .or(returning.map(|returning| &returning.table))
     }
 
-    /// An alias of the table with the name `table_name`, as written.
-    pub fn get_used_alias_for_table(&self, table_name: &str) -> Option<String> {
-        self.mentioned_table_aliases
-            .values()
-            .find(|alias| alias.table == table_name)
+    /// An alias of the table `schema_name.table_name`, as written. An alias of a table that
+    /// names the same schema comes first, then one of a table without a schema.
+    pub fn get_used_alias_for_table(&self, schema_name: &str, table_name: &str) -> Option<String> {
+        let aliases = || {
+            self.mentioned_table_aliases
+                .values()
+                .filter(|alias| alias.table == table_name)
+        };
+        aliases()
+            .find(|alias| alias.schema.as_deref() == Some(schema_name))
+            .or_else(|| aliases().find(|alias| alias.schema.is_none()))
             .map(|alias| alias.text.clone())
     }
 

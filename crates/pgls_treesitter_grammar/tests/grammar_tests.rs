@@ -203,7 +203,12 @@ fn unfinished_option_lists() {
 fn delete_target_alias_and_using() {
     valid_snapshot(
         "delete_alias_and_using",
-        "delete from only users * as u using posts p join comments c on c.post_id = p.id where p.user_id = u.id returning u.id;",
+        "delete from only users as u using posts p join comments c on c.post_id = p.id where p.user_id = u.id returning u.id;",
+    );
+    // Postgres takes `ONLY` or `*`, not both.
+    valid_snapshot(
+        "delete_descendants_alias",
+        "delete from users * as u where u.id = 1;",
     );
     valid_snapshot(
         "delete_where_current_of",
