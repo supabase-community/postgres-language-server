@@ -11,6 +11,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 - [insertColumnMismatch](./rules/insert-column-mismatch.md) 
 - [invalidCast](./rules/invalid-cast.md) 
 - [invalidDropTypeSignature](./rules/invalid-drop-type-signature.md) 
+- [invalidMerge](./rules/invalid-merge.md) 
 - [missingFromClauseEntry](./rules/missing-from-clause-entry.md) 
 - [operatorTypeMismatch](./rules/operator-type-mismatch.md) 
 - [unknownColumn](./rules/unknown-column.md) 

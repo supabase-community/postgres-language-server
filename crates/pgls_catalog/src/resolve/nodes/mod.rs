@@ -76,6 +76,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
             }
         }
         NodeEnum::ColumnRef(n) => resolve_column_ref(r, n),
+        NodeEnum::MergeSupportFunc(n) => merge_stmt::check_merge_action(r, n),
         NodeEnum::FuncCall(n) => resolve_func_call(r, n),
         NodeEnum::TypeCast(n) => {
             resolve_opt(r, &n.arg);
@@ -154,7 +155,6 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         | NodeEnum::AConst(_)
         | NodeEnum::SqlvalueFunction(_)
         | NodeEnum::SetToDefault(_)
-        | NodeEnum::MergeSupportFunc(_)
         | NodeEnum::CurrentOfExpr(_) => {}
         // Anything else (DDL, XML and JSON expressions, ...) is not checked, but its types are
         // recorded.

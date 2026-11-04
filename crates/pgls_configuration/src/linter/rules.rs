@@ -337,6 +337,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Error,
     },
     LinterRuleMetadata {
+        group: "typecheck",
+        name: "invalidMerge",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
         group: "safety",
         name: "lockTimeoutWarning",
         recommended: true,
@@ -723,6 +729,9 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invalid_drop_type_signature:
         Option<RuleConfiguration<pgls_analyser::options::InvalidDropTypeSignature>>,
+    #[doc = "A MERGE, or merge_action(), that Postgres rejects."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_merge: Option<RuleConfiguration<pgls_analyser::options::InvalidMerge>>,
     #[doc = "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_timeout_warning: Option<RuleConfiguration<pgls_analyser::options::LockTimeoutWarning>>,
@@ -1003,6 +1012,7 @@ impl Rules {
                 .invalid_drop_type_signature
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "invalidMerge" => self.invalid_merge.as_ref().map(RuleConfiguration::level),
             "lockTimeoutWarning" => self
                 .lock_timeout_warning
                 .as_ref()
@@ -1306,6 +1316,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "invalidDropTypeSignature" => self
                 .invalid_drop_type_signature
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "invalidMerge" => self
+                .invalid_merge
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "lockTimeoutWarning" => self
