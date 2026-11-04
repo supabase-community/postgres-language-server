@@ -3361,12 +3361,27 @@ module.exports = grammar({
         partialSeq(
           $.keyword_default,
           $.keyword_privileges,
-          optional($.default_privileges_for_role),
-          optional($.default_privileges_in_schema),
+          optional($._default_privileges_options),
           field(
             "end",
             choice($.default_privileges_grant, $.default_privileges_revoke),
           ),
+        ),
+      ),
+
+    // `FOR ROLE` and `IN SCHEMA` in either order (`DefACLOptionList`,
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L8105).
+    // Postgres rejects an option given twice:
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/aclchk.c#L930
+    _default_privileges_options: ($) =>
+      choice(
+        seq(
+          $.default_privileges_for_role,
+          optional($.default_privileges_in_schema),
+        ),
+        seq(
+          $.default_privileges_in_schema,
+          optional($.default_privileges_for_role),
         ),
       ),
 
