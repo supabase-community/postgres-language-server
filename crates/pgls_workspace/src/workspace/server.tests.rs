@@ -4636,3 +4636,16 @@ fn named_parameter_in_a_join_condition_is_a_value() {
         "{categories:?}"
     );
 }
+
+#[test]
+fn test_goose_envsub_expansion_in_a_string_is_not_typechecked() {
+    // goose runs `select '5'::int;` with `N=5`, so only the second statement is an error.
+    let categories = goose_envsub_diagnostics("select '${N}'::int;\nselect 'abc'::int;");
+    assert_eq!(categories, ["typecheck"]);
+
+    // The table is still created for the statements after it.
+    let categories = goose_envsub_diagnostics(
+        "create table events (id int default '${ID}');\nselect missing from events;",
+    );
+    assert_eq!(categories, ["lint/unknownColumn"]);
+}

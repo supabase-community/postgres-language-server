@@ -60,18 +60,33 @@ pub(crate) struct Preprocessed {
     /// placeholder there, or the file as written where a placeholder wouldn't parse, like in a
     /// string literal.
     pub(crate) placeholders: Vec<TextRange>,
+    /// The placeholders that stay as written in a value, like in a string literal, in file
+    /// order. The text holds what is written there, not the value that the tool puts there.
+    pub(crate) unknown_values: Vec<TextRange>,
 }
 
 impl Preprocessed {
     /// Whether `range` overlaps a placeholder. An empty range touches it if it's inside it.
     pub(crate) fn touches_placeholder(&self, range: TextRange) -> bool {
-        self.placeholders.iter().any(|placeholder| {
-            if range.is_empty() {
-                placeholder.start() < range.start() && range.start() < placeholder.end()
-            } else {
-                placeholder.start() < range.end() && range.start() < placeholder.end()
-            }
-        })
+        self.placeholders
+            .iter()
+            .any(|placeholder| overlaps(*placeholder, range))
+    }
+
+    /// Whether `range` overlaps a placeholder that stays as written in a value.
+    pub(crate) fn touches_unknown_value(&self, range: TextRange) -> bool {
+        self.unknown_values
+            .iter()
+            .any(|placeholder| overlaps(*placeholder, range))
+    }
+}
+
+/// Whether `range` overlaps `placeholder`. An empty range overlaps it if it's inside it.
+fn overlaps(placeholder: TextRange, range: TextRange) -> bool {
+    if range.is_empty() {
+        placeholder.start() < range.start() && range.start() < placeholder.end()
+    } else {
+        placeholder.start() < range.end() && range.start() < placeholder.end()
     }
 }
 

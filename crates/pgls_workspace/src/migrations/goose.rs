@@ -91,7 +91,8 @@ impl MigrationTool for Goose {
     /// `$PREFIX_events` or `$SCHEMA`, padded with `_` to the same length, so that the whole
     /// identifier is one token with room for the index of a parameter. Named parameters are
     /// analysed like psql variables: as values, or as identifiers that aren't typechecked.
-    /// Expansions in string literals and comments stay as written.
+    /// Expansions in string literals and comments stay as written, and those outside comments
+    /// are [`Preprocessed::unknown_values`].
     ///
     /// [interpolate]: https://github.com/mfridman/interpolate/blob/v0.0.2/parser.go
     fn preprocess(&self, text: &str) -> Option<Preprocessed> {
@@ -146,21 +147,26 @@ fn substitute(text: &str, expansions: &[Expansion]) -> Preprocessed {
     filled.push_str(&text[end..]);
     let lexed = pgls_lexer::lex(&filled);
 
-    // The identifiers with expansions, extended to whole expansions.
+    // The identifiers with expansions, extended to whole expansions, and the expansions in
+    // other tokens than identifiers and comments, like string literals.
     let mut identifiers: Vec<TextRange> = Vec::new();
-    for index in 0..lexed.len() {
-        if lexed.kind(index) != SyntaxKind::IDENT {
+    let mut in_values: Vec<TextRange> = Vec::new();
+    for (index, kind) in lexed.tokens().enumerate() {
+        if matches!(kind, SyntaxKind::COMMENT | SyntaxKind::EOF) {
             continue;
         }
         let token = lexed.range(index);
         let first = expansions.partition_point(|expansion| expansion.range.end() <= token.start());
-        let Some(range) = expansions[first..]
+        let in_token = expansions[first..]
             .iter()
-            .take_while(|expansion| expansion.range.start() < token.end())
-            .fold(None, |range: Option<TextRange>, expansion| {
-                Some(range.unwrap_or(token).cover(expansion.range))
-            })
-        else {
+            .take_while(|expansion| expansion.range.start() < token.end());
+        if kind != SyntaxKind::IDENT {
+            in_values.extend(in_token.map(|expansion| expansion.range));
+            continue;
+        }
+        let Some(range) = in_token.fold(None, |range: Option<TextRange>, expansion| {
+            Some(range.unwrap_or(token).cover(expansion.range))
+        }) else {
             continue;
         };
         match identifiers.last_mut() {
@@ -171,6 +177,7 @@ fn substitute(text: &str, expansions: &[Expansion]) -> Preprocessed {
 
     let mut substituted = String::with_capacity(text.len());
     let mut placeholders = Vec::new();
+    let mut unknown_values = Vec::new();
     let mut end = TextSize::from(0);
     let mut expansions = expansions.iter().peekable();
     for identifier in identifiers {
@@ -180,6 +187,9 @@ fn substitute(text: &str, expansions: &[Expansion]) -> Preprocessed {
             expansions.next_if(|expansion| expansion.range.start() < identifier.start())
         {
             placeholders.push(expansion.range);
+            if in_values.contains(&expansion.range) {
+                unknown_values.push(expansion.range);
+            }
         }
         let mut name = String::new();
         let mut written = identifier.start();
@@ -205,12 +215,18 @@ fn substitute(text: &str, expansions: &[Expansion]) -> Preprocessed {
         end = identifier.end();
     }
     substituted.push_str(&text[usize::from(end)..]);
-    placeholders.extend(expansions.map(|expansion| expansion.range));
+    for expansion in expansions {
+        placeholders.push(expansion.range);
+        if in_values.contains(&expansion.range) {
+            unknown_values.push(expansion.range);
+        }
+    }
 
     debug_assert_eq!(substituted.len(), text.len());
     Preprocessed {
         text: substituted,
         placeholders,
+        unknown_values,
     }
 }
 
@@ -371,6 +387,19 @@ mod tests {
         assert_eq!(
             envsub(text),
             Some((text.to_string(), vec!["${MESSAGE}", "${NOTE}"]))
+        );
+        // Only the one in the string literal is a value that we don't know.
+        let preprocessed = migration_tool(Tool::Goose)
+            .unwrap()
+            .preprocess(text)
+            .unwrap();
+        assert_eq!(
+            preprocessed
+                .unknown_values
+                .iter()
+                .map(|range| &text[*range])
+                .collect::<Vec<_>>(),
+            ["${MESSAGE}"]
         );
     }
 
