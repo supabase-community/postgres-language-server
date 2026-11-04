@@ -72,6 +72,11 @@ impl LineIndex {
         }
     }
 
+    /// The offset of the start of each line, starting with `0`.
+    pub fn line_starts(&self) -> &[TextSize] {
+        &self.newlines
+    }
+
     pub fn line_col(&self, offset: TextSize) -> Option<LineCol> {
         let line = self.newlines.partition_point(|&it| it <= offset) - 1;
         let line_start_offset = self.newlines.get(line)?;
