@@ -14,7 +14,7 @@ use super::{
 use crate::resolve::{
     FindingKind,
     expr::{check_assignment, infer_expr},
-    scope::{Columns, Level},
+    scope::{Columns, Item, Level},
 };
 use crate::typing::{Type, TypedColumn};
 
@@ -59,21 +59,7 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         resolve_node(r, source);
         let source_types = r.output.clone();
 
-        // The type of each target column, in the order of the values.
-        let targets = target.typed_columns.as_deref().unwrap_or_default();
-        let target_types: Vec<Option<&TypedColumn>> = if target_columns.is_empty() {
-            targets.iter().map(Some).collect()
-        } else {
-            target_columns
-                .iter()
-                .zip(&partial_targets)
-                .map(|(name, partial)| {
-                    (!partial)
-                        .then(|| targets.iter().find(|column| column.name == *name))
-                        .flatten()
-                })
-                .collect()
-        };
+        let target_types = insert_target_types(&target, &target_columns, &partial_targets);
         let check = |r: &mut Resolver,
                      expr: Option<&NodeEnum>,
                      value: Option<Type>,
@@ -116,21 +102,8 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
             Some(NodeEnum::SelectStmt(select)) => select_width(select),
             _ => None,
         };
-        let expected = if target_columns.is_empty() {
-            target.columns.as_ref().map(Vec::len)
-        } else {
-            Some(target_columns.len())
-        };
-        if let (Some(found), Some(expected)) = (found, expected) {
-            // Without a column list, fewer values than columns are fine.
-            let mismatch = if target_columns.is_empty() {
-                found > expected
-            } else {
-                found != expected
-            };
-            if mismatch {
-                r.report(FindingKind::InsertColumnMismatch { expected, found }, -1);
-            }
+        if let Some(found) = found {
+            check_insert_width(r, &target, &target_columns, found);
         }
     }
 
@@ -139,6 +112,59 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     }
 
     resolve_returning_clause(r, n.returning_clause.as_ref(), Level::with_item(target))
+}
+
+/// The type of each target column of an INSERT, in the order of the values. `None` for columns
+/// whose type is unknown and for targets with subscripts or fields, like `a[1]` or `c.f`, which
+/// assign to part of a column.
+pub(super) fn insert_target_types<'a>(
+    target: &'a Item,
+    target_columns: &[String],
+    partial_targets: &[bool],
+) -> Vec<Option<&'a TypedColumn>> {
+    let targets = target.typed_columns.as_deref().unwrap_or_default();
+    if target_columns.is_empty() {
+        targets.iter().map(Some).collect()
+    } else {
+        target_columns
+            .iter()
+            .zip(partial_targets)
+            .map(|(name, partial)| {
+                (!partial)
+                    .then(|| targets.iter().find(|column| column.name == *name))
+                    .flatten()
+            })
+            .collect()
+    }
+}
+
+/// Reports an INSERT with more values than target columns, or, with a column list, fewer
+/// ([`transformInsertRow`]).
+///
+/// [`transformInsertRow`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1060
+pub(super) fn check_insert_width(
+    r: &mut Resolver,
+    target: &Item,
+    target_columns: &[String],
+    found: usize,
+) {
+    let expected = if target_columns.is_empty() {
+        target.columns.as_ref().map(Vec::len)
+    } else {
+        Some(target_columns.len())
+    };
+    let Some(expected) = expected else {
+        return;
+    };
+    // Without a column list, fewer values than columns are fine.
+    let mismatch = if target_columns.is_empty() {
+        found > expected
+    } else {
+        found != expected
+    };
+    if mismatch {
+        r.report(FindingKind::InsertColumnMismatch { expected, found }, -1);
+    }
 }
 
 fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32> {

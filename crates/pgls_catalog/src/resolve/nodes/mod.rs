@@ -14,6 +14,7 @@ mod from_clause;
 mod func_call;
 mod insert_stmt;
 mod join_expr;
+mod merge_stmt;
 mod on_conflict_clause;
 mod range_function;
 mod range_subselect;
@@ -39,6 +40,7 @@ use delete_stmt::resolve_delete_stmt;
 use explain_stmt::resolve_explain_stmt;
 use func_call::resolve_func_call;
 use insert_stmt::resolve_insert_stmt;
+use merge_stmt::resolve_merge_stmt;
 #[cfg(test)]
 pub(crate) use select_stmt::RESOLVED_QUERIES;
 use select_stmt::resolve_select_stmt;
@@ -58,6 +60,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         NodeEnum::InsertStmt(n) => return resolve_insert_stmt(r, n),
         NodeEnum::UpdateStmt(n) => return resolve_update_stmt(r, n),
         NodeEnum::DeleteStmt(n) => return resolve_delete_stmt(r, n),
+        NodeEnum::MergeStmt(n) => return resolve_merge_stmt(r, n),
         NodeEnum::CreateFunctionStmt(n) => {
             record_type_names(r, node);
             resolve_create_function_stmt(r, n);
@@ -151,6 +154,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         | NodeEnum::AConst(_)
         | NodeEnum::SqlvalueFunction(_)
         | NodeEnum::SetToDefault(_)
+        | NodeEnum::MergeSupportFunc(_)
         | NodeEnum::CurrentOfExpr(_) => {}
         // Anything else (DDL, XML and JSON expressions, ...) is not checked, but its types are
         // recorded.

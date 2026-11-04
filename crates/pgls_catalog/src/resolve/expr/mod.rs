@@ -64,6 +64,8 @@ pub(super) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type> 
         NodeEnum::CaseExpr(n) => case_expr::infer_case_expr(r, n),
         NodeEnum::AArrayExpr(n) => a_array_expr::infer_a_array_expr(r, n),
         NodeEnum::MinMaxExpr(n) => min_max_expr::infer_min_max_expr(r, n),
+        // `merge_action()` in the RETURNING list of MERGE.
+        NodeEnum::MergeSupportFunc(_) => named(r, "text"),
         _ => None,
     }
 }

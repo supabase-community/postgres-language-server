@@ -224,6 +224,40 @@ pub(super) fn resolve_returning_clause(
     columns
 }
 
+/// Resolves the `SET` list of UPDATE, `ON CONFLICT DO UPDATE`, or `MERGE ... UPDATE`: each
+/// target column must exist, and each value must be assignable to it. Port of
+/// [`transformUpdateTargetList`].
+///
+/// [`transformUpdateTargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2546
+pub(super) fn resolve_set_clause(r: &mut Resolver, target: &Item, assignments: &[Node]) {
+    for assignment in assignments {
+        if let Some(NodeEnum::ResTarget(assignment)) = &assignment.node {
+            check_target_column(r, target, &assignment.name, assignment.location);
+            // Assignments to subscripts or fields, like `a[1]` or `c.f`, aren't checked.
+            if let (true, Some(column_type), Some(expr)) = (
+                assignment.indirection.is_empty(),
+                target.type_of(&assignment.name).flatten(),
+                assignment.val.as_deref().and_then(|v| v.node.as_ref()),
+            ) {
+                let expr_type = super::super::expr::infer_expr(r, expr);
+                super::super::expr::check_assignment(
+                    r,
+                    &assignment.name,
+                    column_type,
+                    Some(expr),
+                    expr_type,
+                    assignment
+                        .val
+                        .as_deref()
+                        .and_then(super::insert_stmt::node_location)
+                        .unwrap_or(assignment.location),
+                );
+            }
+        }
+        super::resolve_node(r, assignment);
+    }
+}
+
 /// Reports a column of the target relation of INSERT or UPDATE that doesn't exist, like
 /// [`checkInsertTargets`] and [`transformUpdateTargetList`].
 ///
