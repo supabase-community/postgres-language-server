@@ -1,6 +1,6 @@
 use pgls_query::{Node, protobuf::Alias};
+use pgls_query_ext::utils::string_values;
 
-use super::string::string_values;
 use crate::resolve::scope::Columns;
 
 /// Applies the column names of an alias (`AS t(a, b)`) to the first columns.

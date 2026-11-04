@@ -130,8 +130,6 @@ pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjec
         super::emit_identifier_maybe_quoted(e, &n.newschema);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
 
