@@ -1192,4 +1192,25 @@ mod tests {
             Some(pgls_text_size::TextRange::new(18.into(), 21.into()))
         );
     }
+
+    #[sqlx::test]
+    async fn completes_options_after_opening_parenthesis_with_multibyte_text(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // The cursor is a byte offset; a multi-byte char before it must not move the edit.
+        for sql in ["explain /*é*/ ({}", "copy café from stdin with ({}"] {
+            let query = sql.replace("{}", &cursor.to_string());
+            let source = sql.replace("{}", "");
+            let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+            let params = get_test_params(&tree, &snapshot, query.as_str().into());
+            let items = complete(params);
+
+            assert!(!items.is_empty(), "{sql}");
+            for item in &items {
+                let range = item.completion_text.as_ref().map(|text| text.range);
+                let cursor_range = pgls_text_size::TextRange::empty((source.len() as u32).into());
+                assert_eq!(range, Some(cursor_range), "{sql}: {}", item.label);
+            }
+        }
+    }
 }
