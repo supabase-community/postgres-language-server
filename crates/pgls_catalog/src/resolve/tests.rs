@@ -401,6 +401,53 @@ fn inserts() {
 }
 
 #[test]
+fn generated_columns() {
+    let setup = "create table items (price int, total int generated always as (price * 2) stored);
+        create table src (price int, total int);
+        create table one (price int)";
+    let spans = |sql: &str| {
+        resolve_after(setup, sql, None)
+            .findings
+            .into_iter()
+            .map(|finding| {
+                assert!(matches!(
+                    finding.kind,
+                    FindingKind::GeneratedColumnAssignment { .. }
+                ));
+                sql[finding.span.unwrap()].to_owned()
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        spans("insert into items (price, total) values (1, 2)"),
+        ["total"]
+    );
+    assert_eq!(spans("insert into items values (1, 2)"), ["2"]);
+    assert_eq!(spans("insert into items select 1, 2"), ["2"]);
+    // A `*` assigns the columns it expands to.
+    assert_eq!(spans("insert into items select * from src"), ["*"]);
+    assert_eq!(spans("insert into items select src.* from src"), ["src.*"]);
+    assert_eq!(spans("insert into items select *, 2 from one"), ["2"]);
+    assert_eq!(
+        spans("insert into items select 1, one.* from one"),
+        ["one.*"]
+    );
+    assert_eq!(
+        spans("insert into items select * from one"),
+        [] as [&str; 0]
+    );
+    assert_eq!(spans("update items set price = 1, total = 2"), ["total"]);
+    assert_eq!(
+        spans("insert into items (total[1]) values (2)"),
+        [] as [&str; 0]
+    );
+    assert_eq!(
+        spans("update items set (price, total) = (1, default)"),
+        [] as [&str; 0]
+    );
+}
+
+#[test]
 fn updates_and_deletes() {
     assert_valid(
         "update users set name = posts.title from posts where posts.user_id = users.id returning users.*",

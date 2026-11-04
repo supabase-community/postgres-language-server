@@ -6,6 +6,7 @@
 
 use std::borrow::Cow;
 
+use crate::Generated;
 use crate::typing::{Type, TypeId};
 
 /// The result of a catalog lookup.
@@ -67,6 +68,9 @@ pub struct ColumnInfo {
     pub type_name: Option<String>,
     /// Resolved type identity, when available.
     pub ty: Option<Type>,
+    /// Whether the column of a table is a generated column. [`Generated::No`] also when that is
+    /// not known, and for the columns of anything but tables.
+    pub generated: Generated,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

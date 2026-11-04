@@ -1427,6 +1427,17 @@
             }
           ]
         },
+        "generatedColumnAssignment": {
+          "description": "An INSERT or UPDATE assigns a value to a generated column.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "identifierTooLong": {
           "description": "Identifiers longer than 63 bytes are silently truncated.",
           "anyOf": [

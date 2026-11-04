@@ -44,6 +44,7 @@ select
     -1
   ) as varchar_length,
   pg_get_expr (def.adbin, def.adrelid) as default_expr,
+  atts.attgenerated :: text as "generated!",
   coalesce(ix.is_primary, false) as "is_primary_key!",
   coalesce(ix.is_unique, false) as "is_unique!",
   pg_catalog.col_description (ts.table_oid, atts.attnum) as comment

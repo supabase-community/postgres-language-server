@@ -241,6 +241,61 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
     }
 }
 
+/// Reports an UPDATE or `ON CONFLICT DO UPDATE` that sets a generated column to anything but
+/// `DEFAULT`. Port of the check of [`rewriteTargetListIU`] for `CMD_UPDATE`.
+///
+/// Assignments to subscripts or fields of a column, like `g[1]`, are not checked.
+///
+/// [`rewriteTargetListIU`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L808
+pub(super) fn check_generated_update(r: &mut Resolver, target: &Item, assignments: &[Node]) {
+    if target.generated_columns.is_empty() {
+        return;
+    }
+    for assignment in assignments {
+        let Some(NodeEnum::ResTarget(assignment)) = &assignment.node else {
+            continue;
+        };
+        if !assignment.indirection.is_empty()
+            || !target.generated_columns.contains(&assignment.name)
+        {
+            continue;
+        }
+        let value = assignment
+            .val
+            .as_deref()
+            .and_then(|value| value.node.as_ref());
+        let is_default = match value {
+            Some(NodeEnum::SetToDefault(_)) => Some(true),
+            // `SET (a, g) = (1, DEFAULT)` and `SET (a, g) = (select ...)`.
+            Some(NodeEnum::MultiAssignRef(multi)) => {
+                match multi
+                    .source
+                    .as_deref()
+                    .and_then(|source| source.node.as_ref())
+                {
+                    Some(NodeEnum::RowExpr(row)) => usize::try_from(multi.colno - 1)
+                        .ok()
+                        .and_then(|index| row.args.get(index))
+                        .map(|value| matches!(value.node, Some(NodeEnum::SetToDefault(_)))),
+                    Some(NodeEnum::SubLink(_)) => Some(false),
+                    _ => None,
+                }
+            }
+            Some(_) => Some(false),
+            None => None,
+        };
+        if is_default == Some(false) {
+            r.report(
+                FindingKind::GeneratedColumnAssignment {
+                    column: assignment.name.clone(),
+                    insert: false,
+                },
+                assignment.location,
+            );
+        }
+    }
+}
+
 /// Since Postgres 18, `old` and `new` in a RETURNING list are the target row before and after
 /// the change. They are only reachable by name. `RETURNING WITH (OLD AS o, NEW AS n)` renames
 /// them; a name that is not given explicitly is only added if no visible item, in this or an

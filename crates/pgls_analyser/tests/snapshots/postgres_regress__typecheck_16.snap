@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_16_15: 41492 statements and 360 in SQL function bodies, 1699 findings on statements Postgres rejected
+REL_16_15: 41492 statements and 360 in SQL function bodies, 1705 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 banDuplicateColumnAssignments 42601: 1
@@ -10,6 +10,7 @@ banDuplicateColumnAssignments 42701: 2
 functionArgumentMismatch 42725: 5
 functionArgumentMismatch 42883: 4
 functionReturnTypeMismatch 42P13: 5
+generatedColumnAssignment 428C9: 6
 insertColumnMismatch 42601: 6
 invalidCast 42846: 2
 missingFromClauseEntry 42P01: 13
@@ -260,6 +261,11 @@ errors.sql:52:1 42P01 unknownRelation
 expressions.sql:95:1 42883 operatorTypeMismatch
 expressions.sql:95:1 42883 operatorTypeMismatch
 float8.sql:261:1 42P01 unknownRelation
+generated.sql:52:1 428C9 generatedColumnAssignment
+generated.sql:53:1 428C9 generatedColumnAssignment
+generated.sql:54:1 428C9 generatedColumnAssignment
+generated.sql:55:1 428C9 generatedColumnAssignment
+generated.sql:62:1 428C9 generatedColumnAssignment
 geometry.sql:13:1 42P01 unknownRelation
 geometry.sql:16:1 42P01 unknownRelation
 geometry.sql:19:1 42P01 unknownRelation
@@ -1589,6 +1595,7 @@ union.sql:532:1 42P01 unknownRelation
 union.sql:532:1 42P01 unknownRelation
 union.sql:538:1 42P01 unknownRelation
 union.sql:538:1 42P01 unknownRelation
+updatable_views.sql:907:1 428C9 generatedColumnAssignment
 updatable_views.sql:1741:46 42P01 missingFromClauseEntry
 updatable_views.sql:1741:46 42P01 missingFromClauseEntry
 update.sql:59:1 42601 banDuplicateColumnAssignments

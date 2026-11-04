@@ -40,6 +40,35 @@ impl From<char> for ColumnClassKind {
     }
 }
 
+/// Whether a column is a generated column (`pg_attribute.attgenerated`).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub enum Generated {
+    /// An ordinary column.
+    #[default]
+    No,
+    /// `GENERATED ALWAYS AS (...) STORED`: computed when a row is written.
+    Stored,
+    /// `GENERATED ALWAYS AS (...) VIRTUAL` (Postgres 18): computed when a row is read.
+    Virtual,
+}
+
+impl Generated {
+    pub fn is_generated(self) -> bool {
+        self != Generated::No
+    }
+}
+
+impl From<String> for Generated {
+    fn from(value: String) -> Self {
+        match value.as_str() {
+            "s" => Generated::Stored,
+            "v" => Generated::Virtual,
+            _ => Generated::No,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Column {
@@ -62,7 +91,12 @@ pub struct Column {
     pub is_unique: bool,
 
     /// The Default "value" of the column. Might be a function call, hence "_expr".
+    /// For a generated column, its generation expression.
     pub default_expr: Option<String>,
+
+    /// Whether the column is a generated column.
+    #[serde(default)]
+    pub generated: Generated,
 
     pub varchar_length: Option<i32>,
 
