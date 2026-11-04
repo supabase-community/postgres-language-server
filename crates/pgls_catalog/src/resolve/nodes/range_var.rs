@@ -91,6 +91,7 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
         }),
         has_system_columns: relation.has_system_columns,
         generated_columns: relation.generated_columns,
+        identity_always_columns: relation.identity_always_columns,
         source: relation.source,
     }
 }
@@ -104,6 +105,8 @@ pub(super) struct ResolvedRelation {
     pub has_system_columns: bool,
     /// The generated columns of a table.
     pub generated_columns: Vec<String>,
+    /// The `GENERATED ALWAYS` identity columns of a table.
+    pub identity_always_columns: Vec<String>,
     /// Only set when references are collected.
     pub source: Option<Rc<ItemSource>>,
 }
@@ -145,18 +148,22 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
                     relation: relation.clone(),
                 });
             }
-            let generated_columns = match relation.kind {
-                RelationKind::Table
-                | RelationKind::PartitionedTable
-                | RelationKind::ForeignTable => relation
+            let is_table = matches!(
+                relation.kind,
+                RelationKind::Table | RelationKind::PartitionedTable | RelationKind::ForeignTable
+            );
+            let table_columns = |include: fn(&crate::ColumnInfo) -> bool| -> Vec<String> {
+                relation
                     .columns
                     .iter()
                     .flatten()
-                    .filter(|column| column.generated.is_generated())
+                    .filter(|column| is_table && include(column))
                     .map(|column| column.name.clone())
-                    .collect(),
-                _ => Vec::new(),
+                    .collect()
             };
+            let generated_columns = table_columns(|column| column.generated.is_generated());
+            let identity_always_columns =
+                table_columns(|column| column.identity == crate::Identity::Always);
             ResolvedRelation {
                 schema: Some(relation.schema),
                 columns: relation
@@ -174,6 +181,7 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
                 }),
                 has_system_columns: relation.kind != RelationKind::View,
                 generated_columns,
+                identity_always_columns,
                 source,
             }
         }

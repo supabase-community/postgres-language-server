@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_16_15: 41492 statements and 360 in SQL function bodies, 1705 findings on statements Postgres rejected
+REL_16_15: 41492 statements and 360 in SQL function bodies, 1711 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 banDuplicateColumnAssignments 42601: 1
@@ -10,7 +10,7 @@ banDuplicateColumnAssignments 42701: 2
 functionArgumentMismatch 42725: 5
 functionArgumentMismatch 42883: 4
 functionReturnTypeMismatch 42P13: 5
-generatedColumnAssignment 428C9: 6
+generatedColumnAssignment 428C9: 12
 insertColumnMismatch 42601: 6
 invalidCast 42846: 2
 missingFromClauseEntry 42P01: 13
@@ -594,6 +594,12 @@ horology.sql:430:1 42P01 unknownRelation
 horology.sql:432:1 42P01 unknownRelation
 horology.sql:438:1 42P01 unknownRelation
 horology.sql:444:1 42P01 unknownRelation
+identity.sql:60:1 428C9 generatedColumnAssignment
+identity.sql:62:1 428C9 generatedColumnAssignment
+identity.sql:63:1 428C9 generatedColumnAssignment
+identity.sql:64:1 428C9 generatedColumnAssignment
+identity.sql:107:1 428C9 generatedColumnAssignment
+identity.sql:124:1 428C9 generatedColumnAssignment
 identity.sql:158:1 42P01 unknownRelation
 incremental_sort.sql:3:1 42P01 unknownRelation
 incremental_sort.sql:10:1 42P01 unknownRelation
