@@ -3348,7 +3348,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     };
 
     // The columns of a table of the database and of one created in the file, qualified since
-    // there are two FROM items.
+    // there are two FROM items. After a dot, the keyword `select` needs no quotes.
     let actions = expand_actions("* from star_items");
     assert_eq!(actions.len(), 1, "{actions:?}");
     let (title, edit) = &actions[0];
@@ -3361,7 +3361,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         edit.edits,
         vec![TextEdit {
             range: range_of("*"),
-            new_text: r#"i.id, i."Label", t.id, t.item_id, t."select""#.into(),
+            new_text: r#"i.id, i."Label", t.id, t.item_id, t.select"#.into(),
         }]
     );
 
@@ -3373,7 +3373,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         actions[0].1.edits,
         vec![TextEdit {
             range: range_of("t.*"),
-            new_text: r#"t.id, t.item_id, t."select""#.into(),
+            new_text: r#"t.id, t.item_id, t.select"#.into(),
         }]
     );
 
