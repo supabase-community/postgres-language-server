@@ -2,6 +2,11 @@ create table parent (id int generated always as identity, name text);
 -- Inheritance children don't inherit identity
 create table child (extra int) inherits (parent);
 insert into child (id, name) values (1, 'a');
+-- A child that redeclares an inherited column can make it an identity column.
+create table plain_parent (id int, name text);
+create table identity_child (id int generated always as identity) inherits (plain_parent);
+-- expect_lint/generatedColumnAssignment
+insert into identity_child (id, name) values (1, 'a');
 -- `LIKE` copies identity only with `INCLUDING IDENTITY`
 create table copied (like parent);
 insert into copied (id, name) values (1, 'a');

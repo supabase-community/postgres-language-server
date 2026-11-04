@@ -137,10 +137,16 @@ pub(super) fn create_table(
 /// another kind, on Postgres 16+ a generation expression for an ordinary parent column, and
 /// parents that disagree) fail the `CREATE TABLE`, so they don't matter.
 ///
+/// The identity is the one the table declares: inheritance children don't inherit identity, and
+/// partitions, which do, can't declare one.
+///
 /// [`MergeChildAttribute`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L3255
 /// [`MergeInheritedAttribute`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L3425
 fn merge_column(existing: &mut ColumnInfo, column: &ColumnInfo) {
     if existing.generated == Generated::No {
         existing.generated = column.generated;
+    }
+    if column.identity != Identity::No {
+        existing.identity = column.identity;
     }
 }
