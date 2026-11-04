@@ -1356,6 +1356,7 @@ fn snapshot_drops_the_expression_of_a_generated_column() {
         is_unique: false,
         default_expr,
         generated,
+        identity: crate::Identity::No,
         varchar_length: None,
         comment: None,
     })
