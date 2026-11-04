@@ -641,6 +641,49 @@ fn column_changes_make_database_children_unknown() {
     assert!(child.columns.is_none());
 }
 
+/// Whether each column of a relation is generated.
+fn generated_columns(
+    catalog: &Catalog,
+    name: &str,
+    search_path: &[String],
+) -> Option<Vec<(String, crate::Generated)>> {
+    catalog
+        .relation(None, name, search_path)
+        .found()
+        .and_then(|relation| relation.columns)
+        .map(|columns| {
+            columns
+                .into_iter()
+                .map(|column| (column.name, column.generated))
+                .collect()
+        })
+}
+
+#[test]
+fn redeclared_inherited_columns_merge_generated() {
+    use crate::Generated;
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create table plain_parent (a int, g int);
+         create table generated_child (g int generated always as (a * 2) stored) inherits (plain_parent);
+         create table generated_parent (a int, g int generated always as (a * 2) stored);
+         create table plain_child (g int) inherits (generated_parent);",
+        &search_path,
+    );
+    let expected = Some(vec![
+        ("a".to_owned(), Generated::No),
+        ("g".to_owned(), Generated::Stored),
+    ]);
+    assert_eq!(
+        generated_columns(&catalog, "generated_child", &search_path),
+        expected
+    );
+    assert_eq!(
+        generated_columns(&catalog, "plain_child", &search_path),
+        expected
+    );
+}
+
 fn table_columns(snapshot: &Snapshot, schema: &str, table: &str) -> Vec<String> {
     let mut columns: Vec<_> = snapshot
         .columns

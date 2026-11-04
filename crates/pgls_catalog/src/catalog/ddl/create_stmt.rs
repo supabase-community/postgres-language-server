@@ -39,8 +39,9 @@ pub(super) fn create_table(
     let mut add_columns = |new: Option<Vec<ColumnInfo>>| match (&mut columns, new) {
         (Some(columns), Some(new)) => {
             for column in new {
-                if !columns.iter().any(|c: &ColumnInfo| c.name == column.name) {
-                    columns.push(column);
+                match columns.iter_mut().find(|c| c.name == column.name) {
+                    Some(existing) => merge_column(existing, &column),
+                    None => columns.push(column),
                 }
             }
         }
@@ -110,4 +111,21 @@ pub(super) fn create_table(
         columns,
         origin: Origin::File,
     });
+}
+
+/// Merges a column definition into an earlier one with the same name: an inherited column
+/// redeclared by the table, or inherited from several parents. The first definition keeps its
+/// place and type. The merged column is generated if either definition is ([`MergeChildAttribute`],
+/// [`MergeInheritedAttribute`]): a generated parent column makes the redeclared column generated,
+/// and on Postgres 15 a generation expression of the table makes an ordinary parent column
+/// generated. The combinations Postgres rejects (a generated parent column redeclared with
+/// another kind, on Postgres 16+ a generation expression for an ordinary parent column, and
+/// parents that disagree) fail the `CREATE TABLE`, so they don't matter.
+///
+/// [`MergeChildAttribute`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L3255
+/// [`MergeInheritedAttribute`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L3425
+fn merge_column(existing: &mut ColumnInfo, column: &ColumnInfo) {
+    if existing.generated == Generated::No {
+        existing.generated = column.generated;
+    }
 }

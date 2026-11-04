@@ -36,3 +36,8 @@ insert into generated_dst select * from plain_src;
 -- expect_lint/generatedColumnAssignment
 insert into generated_dst select plain_src.* from plain_src;
 insert into generated_dst select a from plain_src;
+-- A column that redeclares an inherited ordinary column can make it generated (Postgres 15).
+create table plain_parent (a int, g int);
+create table redeclared_child (g int generated always as (a * 2) stored) inherits (plain_parent);
+-- expect_lint/generatedColumnAssignment
+insert into redeclared_child values (1, 2);
