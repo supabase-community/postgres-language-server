@@ -2,16 +2,20 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use anyhow::bail;
+use futures::FutureExt;
 use futures::Sink;
 use futures::SinkExt;
 use futures::Stream;
 use futures::StreamExt;
 use futures::channel::mpsc::{Receiver, Sender, channel};
+use futures::future::BoxFuture;
 use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_configuration::StringSet;
 use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_configuration::migrations::{PartialMigrationsConfiguration, SectionMarkers};
+use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
+use pgls_configuration::{PartialLinterConfiguration, PartialTypecheckConfiguration};
 use pgls_fs::{ConfigName, MemoryFileSystem, OsFileSystem};
 use pgls_lsp::LSPServer;
 use pgls_lsp::ServerFactory;
@@ -118,20 +122,9 @@ impl Server {
         P: Serialize,
         R: DeserializeOwned,
     {
-        self.service
-            .ready()
-            .await
-            .map_err(Error::msg)
-            .context("ready() returned an error")?
-            .call(
-                Request::build(method)
-                    .id(id)
-                    .params(to_value(&params).context("failed to serialize params")?)
-                    .finish(),
-            )
-            .await
-            .map_err(Error::msg)
-            .context("call() returned an error")?
+        self.send_request(method, id, params)
+            .await?
+            .await?
             .map(|res| {
                 let (_, body) = res.into_parts();
 
@@ -146,6 +139,43 @@ impl Server {
                 })
             })
             .transpose()
+    }
+
+    /// Sends a request and returns its response as a future, so that the client can send other
+    /// messages, like `$/cancelRequest`, before it awaits the response.
+    async fn send_request<P>(
+        &mut self,
+        method: &'static str,
+        id: &'static str,
+        params: P,
+    ) -> Result<BoxFuture<'static, Result<Option<Response>>>>
+    where
+        P: Serialize,
+    {
+        let response = self
+            .service
+            .ready()
+            .await
+            .map_err(Error::msg)
+            .context("ready() returned an error")?
+            .call(
+                Request::build(method)
+                    .id(id)
+                    .params(to_value(&params).context("failed to serialize params")?)
+                    .finish(),
+            );
+        Ok(async move {
+            response
+                .await
+                .map_err(Error::msg)
+                .context("call() returned an error")
+        }
+        .boxed())
+    }
+
+    /// Asks the server to cancel the request `id`.
+    async fn cancel_request(&mut self, id: &'static str) -> Result<()> {
+        self.notify("$/cancelRequest", json!({ "id": id })).await
     }
 
     /// Basic implementation of the `initialize` request for tests
@@ -1113,6 +1143,135 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
         bail!("expected semantic tokens, got {in_range:?}");
     };
     assert_eq!(in_range.data, tokens.data);
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// A request that the client cancels while the server works on it answers `RequestCancelled`,
+/// and the server answers the next requests.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn cancelled_requests_answer_request_cancelled(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute("create table people (id int, name text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        // Only the semantic tokens take long: the diagnostics that opening the file computes
+        // stay short.
+        linter: Some(PartialLinterConfiguration {
+            enabled: Some(false),
+            ..Default::default()
+        }),
+        typecheck: Some(PartialTypecheckConfiguration {
+            enabled: Some(false),
+            ..Default::default()
+        }),
+        plpgsql_check: Some(PartialPlPgSqlCheckConfiguration {
+            enabled: Some(false),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    // The semantic tokens of every statement of a long file take seconds the first time.
+    let statements = 2_000;
+    server
+        .open_document("select 1;\nselect name, now() from public.people;\n".repeat(statements / 2))
+        .await?;
+    let tokens_params = || lsp::SemanticTokensParams {
+        work_done_progress_params: WorkDoneProgressParams::default(),
+        partial_result_params: lsp::PartialResultParams::default(),
+        text_document: TextDocumentIdentifier {
+            uri: url!("document.sql"),
+        },
+    };
+
+    let request = tokio::spawn(
+        server
+            .send_request(
+                "textDocument/semanticTokens/full",
+                "cancelled",
+                tokens_params(),
+            )
+            .await?,
+    );
+    // Let the server start working on it: the test runs on one thread, so the spawned request
+    // only makes progress while this task yields. A timed wait would let a fast machine finish
+    // the request before it is cancelled.
+    for _ in 0..10 {
+        tokio::task::yield_now().await;
+    }
+    assert!(
+        !request.is_finished(),
+        "the request took less than the wait"
+    );
+    server.cancel_request("cancelled").await?;
+
+    let response = tokio::time::timeout(Duration::from_secs(5), request)
+        .await
+        .context("the cancelled request didn't answer")??
+        .context("the cancelled request")?
+        .context("a response to the cancelled request")?;
+    let (id, body) = response.into_parts();
+    assert_eq!(id, jsonrpc::Id::String("cancelled".into()));
+    let Err(error) = body else {
+        bail!("expected the request to be cancelled, got {body:?}");
+    };
+    assert_eq!(error.code, jsonrpc::ErrorCode::RequestCancelled);
+
+    // The server still answers, with the tokens of every statement.
+    let tokens: Option<lsp::SemanticTokensResult> = server
+        .request(
+            "textDocument/semanticTokens/full",
+            "semantic_tokens",
+            tokens_params(),
+        )
+        .await?;
+    let Some(lsp::SemanticTokensResult::Tokens(tokens)) = tokens else {
+        bail!("expected semantic tokens, got {tokens:?}");
+    };
+    // `name`, `now`, `public` and `people` in each query.
+    assert_eq!(tokens.data.len(), statements / 2 * 4);
 
     server.shutdown().await?;
     reader.abort();

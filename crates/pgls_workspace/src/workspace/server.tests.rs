@@ -5526,3 +5526,100 @@ fn requests_on_a_reopened_document_are_outdated() {
     open();
     assert!(workspace.is_outdated(&path, &doc));
 }
+
+/// A cancelled diagnostics request whose analysis is cached doesn't check the statements against
+/// the database.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_cancelled_database_diagnostics_stop(test_db: PgPool) {
+    test_db
+        .execute("create table cancelled_items (id int);")
+        .await
+        .expect("setup sql failed");
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "select id from cancelled_items where id = 'not a number';\n".repeat(20),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let diagnostics = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 1_000,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .len()
+    };
+
+    // EXPLAIN reports the invalid integer of each statement.
+    assert_eq!(diagnostics(), 20);
+    let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    assert_eq!(
+        crate::cancellation::with_cancellation(cancelled, diagnostics),
+        0
+    );
+}
+
+/// A cancelled formatting request stops formatting, and the next one formats the document.
+#[tokio::test]
+async fn test_cancelled_formatting_stops() {
+    let content = "SELECT   1;\n".repeat(200);
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        format: Some(PartialFormatConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let format = || {
+        workspace
+            .pull_file_formatting(PullFileFormattingParams {
+                project_key,
+                path: path.clone(),
+                range: None,
+            })
+            .expect("Unable to pull formatting")
+    };
+
+    let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let result = crate::cancellation::with_cancellation(cancelled, format);
+    assert_eq!(result.formatted, result.original);
+    assert!(result.statements.is_empty());
+    assert_eq!(format().formatted, "select 1;\n".repeat(200));
+}
