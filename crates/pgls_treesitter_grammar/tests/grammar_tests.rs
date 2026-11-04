@@ -267,3 +267,11 @@ fn privilege_names_as_role_names() {
         "grant usage, update on my_sequence to bob;",
     );
 }
+
+#[test]
+fn default_privileges_options_in_any_order() {
+    valid_snapshot(
+        "default_privileges_schema_before_role",
+        "alter default privileges in schema public for role admin grant select on tables to bob;",
+    );
+}
