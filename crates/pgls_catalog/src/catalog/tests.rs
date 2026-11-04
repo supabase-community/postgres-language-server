@@ -761,6 +761,33 @@ fn drop_expression_follows_attached_partitions_and_inheritance() {
 }
 
 #[test]
+fn children_with_own_columns_keep_dropped_columns() {
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create table parent (a int, b int);
+         create table plain_child () inherits (parent);
+         create table redeclaring (b int) inherits (parent);
+         create table other_parent (b int);
+         create table two_parents () inherits (parent, other_parent);
+         create table inheriting (a int, b int);
+         alter table inheriting inherit parent;
+         create table grandchild () inherits (inheriting);
+         create table partitioned (a int, b int) partition by range (a);
+         create table attached (a int, b int);
+         alter table partitioned attach partition attached for values from (0) to (10);
+         alter table parent drop column b;
+         alter table partitioned drop column b;",
+        &search_path,
+    );
+    let columns = |table| column_names(&catalog, None, table, &search_path);
+    assert_eq!(columns("plain_child").unwrap(), ["a"]);
+    assert_eq!(columns("attached").unwrap(), ["a"]);
+    for table in ["redeclaring", "two_parents", "inheriting", "grandchild"] {
+        assert_eq!(columns(table), None, "{table}");
+    }
+}
+
+#[test]
 fn circular_inheritance_is_ignored() {
     let search_path = path(&["public"]);
     // Postgres rejects the `INHERIT` statements. A dropped parent leaves a stale edge behind.

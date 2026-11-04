@@ -56,8 +56,11 @@ pub struct Catalog {
     types: FxHashMap<Key, Entry<TypeInfo>>,
     /// All overloads with a given name.
     functions: FxHashMap<Key, Entry<Vec<FunctionInfo>>>,
-    /// Inheritance children and partitions created by the file, by parent.
+    /// Inheritance children and partitions created or attached by the file, by parent.
     children: FxHashMap<Key, Vec<Key>>,
+    /// Inheritance children of [`Catalog::children`] whose inherited columns may also be their own,
+    /// or inherited from another parent. They keep a column their parent drops.
+    children_with_own_columns: FxHashSet<Key>,
     /// Set once the file changed the columns of a database table. Its partitions and
     /// inheritance children in the database changed too, but we don't know which they are.
     database_columns_changed: bool,
@@ -93,6 +96,7 @@ impl Catalog {
             types: FxHashMap::default(),
             functions: FxHashMap::default(),
             children: FxHashMap::default(),
+            children_with_own_columns: FxHashSet::default(),
             database_columns_changed: false,
             tainted: false,
             best_effort: false,
