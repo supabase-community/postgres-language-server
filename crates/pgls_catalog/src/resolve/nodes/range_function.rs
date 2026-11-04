@@ -2,14 +2,9 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{FuncCall, RangeFunction},
 };
+use pgls_query_ext::utils::{QualifiedName, qualified_name, string_value, string_values};
 
-use super::{
-    Resolver,
-    alias::apply_alias,
-    func_call::resolve_func_call,
-    resolve_node,
-    string::{string_value, string_values},
-};
+use super::{Resolver, alias::apply_alias, func_call::resolve_func_call, resolve_node};
 use crate::resolve::scope::{Columns, Item, Level};
 use crate::{
     lookup::Lookup,
@@ -206,12 +201,7 @@ fn unnest_entry(call: &FuncCall, arg: &Node) -> Node {
 
 /// The output columns of a function call in FROM, if all its overloads agree on them.
 fn return_columns(r: &Resolver, call: &FuncCall) -> Columns {
-    let names = string_values(&call.funcname)?;
-    let (name, schema) = match names.as_slice() {
-        [name] => (name, None),
-        [schema, name] => (name, Some(schema.as_str())),
-        _ => return None,
-    };
+    let QualifiedName { schema, name, .. } = qualified_name(&call.funcname)?;
     let Lookup::Found(overloads) = r.catalog.functions(schema, name, r.search_path) else {
         return None;
     };
@@ -239,12 +229,7 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
         let NodeEnum::FuncCall(call) = call else {
             return None;
         };
-        let name = string_values(&call.funcname)?;
-        let (name, schema) = match name.as_slice() {
-            [name] => (name.as_str(), None),
-            [schema, name] => (name.as_str(), Some(schema.as_str())),
-            _ => return None,
-        };
+        let QualifiedName { schema, name, .. } = qualified_name(&call.funcname)?;
         if call.agg_within_group {
             return None;
         }

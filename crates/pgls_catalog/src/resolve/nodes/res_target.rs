@@ -4,11 +4,9 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{ReturningClause, ReturningOptionKind},
 };
+use pgls_query_ext::utils::{string_value, string_values};
 
-use super::{
-    Resolver, resolve_list,
-    string::{string_value, string_values},
-};
+use super::{Resolver, resolve_list};
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,

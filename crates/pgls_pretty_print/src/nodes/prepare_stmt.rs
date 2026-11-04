@@ -31,6 +31,5 @@ pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
         super::emit_node(query, e);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

@@ -25,6 +25,5 @@ pub(super) fn emit_drop_role_stmt(e: &mut EventEmitter, n: &DropRoleStmt) {
         emit_comma_separated_list(e, &n.roles, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

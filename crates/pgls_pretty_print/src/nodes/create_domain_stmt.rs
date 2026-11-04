@@ -42,6 +42,5 @@ pub(super) fn emit_create_domain_stmt(e: &mut EventEmitter, n: &CreateDomainStmt
         e.indent_end();
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

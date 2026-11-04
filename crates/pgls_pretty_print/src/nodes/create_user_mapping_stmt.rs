@@ -47,7 +47,5 @@ pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUser
         });
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

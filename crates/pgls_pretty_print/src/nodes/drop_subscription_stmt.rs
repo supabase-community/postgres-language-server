@@ -38,6 +38,5 @@ pub(super) fn emit_drop_subscription_stmt(e: &mut EventEmitter, n: &DropSubscrip
         _ => {}
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
