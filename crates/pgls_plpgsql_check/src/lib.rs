@@ -1,3 +1,7 @@
+// plpgsql_check reports on functions from the client, so a panic on unexpected output takes down
+// the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 mod diagnostics;
 
 pub use diagnostics::PlPgSqlCheckDiagnostic;
@@ -227,6 +231,10 @@ pub async fn check_plpgsql(
 
     // make sure we run with "or replace"
     let sql_with_replace = if !create_fn.replace {
+        #[expect(
+            clippy::unwrap_used,
+            reason = "the pattern is a constant, which the tests of functions without `OR REPLACE` compile"
+        )]
         let re = Regex::new(r"(?i)\bCREATE\s+FUNCTION\b").unwrap();
         re.replace(params.sql, "CREATE OR REPLACE FUNCTION")
             .to_string()

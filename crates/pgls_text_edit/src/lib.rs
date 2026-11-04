@@ -7,6 +7,9 @@
     unused_lifetimes,
     semicolon_in_expressions_from_macros
 )]
+// Fixes and code actions build their edits from the client's SQL, so a panic on unexpected input
+// takes down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
 use std::{cmp::Ordering, num::NonZeroU32};
 
@@ -196,6 +199,10 @@ impl TextEditBuilder {
 
         match index {
             Ok(index) => {
+                #[expect(
+                    clippy::indexing_slicing,
+                    reason = "`binary_search_by` returns the index of an element in `Ok`"
+                )]
                 let range = self.index[index];
                 let len = value_len.min(range.len());
                 TextRange::at(range.start(), len)

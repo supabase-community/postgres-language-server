@@ -38,7 +38,7 @@ unindent                  = "0.2.4"
 doctest = false
 
 [features]
-schema = ["dep:schemars"]
+schema = ["dep:schemars", "pgls_text_size/schema"]
 
 [[bench]]
 harness = false
