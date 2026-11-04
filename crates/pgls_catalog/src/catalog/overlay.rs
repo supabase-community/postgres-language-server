@@ -4,6 +4,7 @@
 use crate::typing::TypeId;
 use crate::{FunctionArgumentMode, FunctionSignature, Generated, Identity};
 use pgls_query::{Node, NodeEnum, protobuf};
+use rustc_hash::FxHashSet;
 
 use super::{
     Catalog, Entry, Key, key,
@@ -171,11 +172,7 @@ impl Catalog {
         }
 
         let root = key(&relation.schema, &relation.name);
-        let mut pending = vec![root.clone()];
-        while let Some(key) = pending.pop() {
-            if let Some(children) = self.children.get(&key) {
-                pending.extend(children.iter().cloned());
-            }
+        for key in self.with_descendants(root.clone()) {
             let Some(mut relation) = self.relation_in(&key.0, &key.1).found() else {
                 continue;
             };
@@ -183,6 +180,24 @@ impl Catalog {
             relation.origin = Origin::File;
             self.define_relation(relation);
         }
+    }
+
+    /// A relation and its inheritance children and partitions created or attached by the file,
+    /// recursively, each once.
+    pub(super) fn with_descendants(&self, root: Key) -> Vec<Key> {
+        let mut seen = FxHashSet::default();
+        let mut pending = vec![root];
+        let mut keys = Vec::new();
+        while let Some(key) = pending.pop() {
+            if !seen.insert(key.clone()) {
+                continue;
+            }
+            if let Some(children) = self.children.get(&key) {
+                pending.extend(children.iter().cloned());
+            }
+            keys.push(key);
+        }
+        keys
     }
 
     /// Moves a relation to a new schema or name.

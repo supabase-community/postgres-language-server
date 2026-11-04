@@ -8,12 +8,13 @@ use crate::catalog::{
     names::{range_var_name, type_label},
     overlay::{column_info, identity_kind},
 };
-use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationKind};
+use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
 use crate::{Generated, Identity};
 
 /// `ALTER TABLE`, and `ALTER TYPE ... ADD/DROP/ALTER ATTRIBUTE` on composite types.
 /// Models the column changes of [`ATExecAddColumn`], [`ATExecDropColumn`],
-/// [`ATExecAlterColumnType`] and [`ATExecDropExpression`].
+/// [`ATExecAlterColumnType`] and [`ATExecDropExpression`], and which tables inherit from which
+/// (`ATTACH PARTITION`, `INHERIT`, ...).
 ///
 /// [`ATExecAddColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L7226
 /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
@@ -59,6 +60,19 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     else {
         return;
     };
+    apply_column_changes(c, &relation, &commands, search_path);
+    if n.objtype() == ObjectType::ObjectTable || n.objtype() == ObjectType::ObjectForeignTable {
+        apply_inheritance_changes(c, &relation, &commands, search_path);
+    }
+}
+
+/// The column changes of `ALTER TABLE`, which recurse to the inheritance children and partitions.
+fn apply_column_changes(
+    c: &mut Catalog,
+    relation: &RelationInfo,
+    commands: &[&AlterTableCmd],
+    search_path: &[String],
+) {
     let changes_columns = commands.iter().any(|command| {
         matches!(
             command.subtype(),
@@ -83,8 +97,8 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
             AlterTableType::AtDropColumn | AlterTableType::AtAlterColumnType
         )
     });
-    if changes_inherited && c.is_inheritance_child(&relation) {
-        c.change_columns(&relation, |columns, _| *columns = None);
+    if changes_inherited && c.is_inheritance_child(relation) {
+        c.change_columns(relation, |columns, _| *columns = None);
         return;
     }
     // Partitions follow the identity changes of their partitioned table on Postgres 17+.
@@ -95,14 +109,73 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     let partitions_follow_identity =
         relation.kind == RelationKind::PartitionedTable && c.partitions_inherit_identity();
     let catalog = c.clone();
-    c.change_columns(&relation, |columns, is_descendant| {
+    c.change_columns(relation, |columns, is_descendant| {
         if let Some(columns) = columns.as_mut() {
             let identity_follows = !is_descendant || partitions_follow_identity;
-            for command in &commands {
+            for command in commands {
                 apply_column_change(&catalog, columns, command, search_path, identity_follows);
             }
         }
     });
+}
+
+/// `ATTACH PARTITION` and `INHERIT` make a table a child of another, so that it follows the
+/// column changes of its parent from then on. `DETACH PARTITION` and `NO INHERIT` undo that; the
+/// table keeps its columns ([`ATExecAttachPartition`], [`ATExecAddInherit`],
+/// [`ATExecDetachPartition`], [`ATExecDropInherit`]). Postgres runs them after the column
+/// changes of the same statement, and decides to which children those recurse before.
+///
+/// [`ATExecAttachPartition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L20297
+/// [`ATExecAddInherit`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L17303
+/// [`ATExecDetachPartition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L20959
+/// [`ATExecDropInherit`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L17867
+fn apply_inheritance_changes(
+    c: &mut Catalog,
+    relation: &RelationInfo,
+    commands: &[&AlterTableCmd],
+    search_path: &[String],
+) {
+    let relation_key = key(&relation.schema, &relation.name);
+    for command in commands {
+        let def = command.def.as_deref().and_then(|def| def.node.as_ref());
+        let (other, relation_is_parent, attach) = match (command.subtype(), def) {
+            (AlterTableType::AtAttachPartition, Some(NodeEnum::PartitionCmd(partition))) => {
+                (partition.name.as_ref(), true, true)
+            }
+            (
+                AlterTableType::AtDetachPartition | AlterTableType::AtDetachPartitionFinalize,
+                Some(NodeEnum::PartitionCmd(partition)),
+            ) => (partition.name.as_ref(), true, false),
+            (AlterTableType::AtAddInherit, Some(NodeEnum::RangeVar(parent))) => {
+                (Some(parent), false, true)
+            }
+            (AlterTableType::AtDropInherit, Some(NodeEnum::RangeVar(parent))) => {
+                (Some(parent), false, false)
+            }
+            _ => continue,
+        };
+        let Some(other) = other.and_then(|other| c.relation_of(other, search_path).found()) else {
+            continue;
+        };
+        let other_key = key(&other.schema, &other.name);
+        let (parent, child) = if relation_is_parent {
+            (relation_key.clone(), other_key)
+        } else {
+            (other_key, relation_key.clone())
+        };
+        // Postgres rejects circular inheritance.
+        if attach && c.with_descendants(child.clone()).contains(&parent) {
+            continue;
+        }
+        let children = c.children.entry(parent).or_default();
+        if attach {
+            if !children.contains(&child) {
+                children.push(child);
+            }
+        } else {
+            children.retain(|existing| *existing != child);
+        }
+    }
 }
 
 /// Applies `ADD COLUMN`, `DROP COLUMN` and `ALTER COLUMN TYPE` (and their `ATTRIBUTE`
