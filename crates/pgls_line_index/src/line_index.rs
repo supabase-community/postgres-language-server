@@ -77,6 +77,11 @@ impl LineIndex {
         self.len
     }
 
+    /// The offset of the start of each line, starting with `0`.
+    pub fn line_starts(&self) -> &[TextSize] {
+        &self.newlines
+    }
+
     pub fn line_col(&self, offset: TextSize) -> Option<LineCol> {
         debug_assert!(
             self.is_char_boundary(offset),
