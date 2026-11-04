@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cmp::max};
+use std::borrow::Cow;
 
 use pgls_text_size::TextSize;
 
@@ -74,48 +74,44 @@ where
     'larger: 'smaller,
 {
     fn with_adjusted_sql(params: CompletionParams<'larger>) -> Self {
+        // the position is a byte offset: the text is walked by its bytes, not by its chars,
+        // or a multi-byte char before the cursor puts the token after it
         let cursor_pos: usize = params.position.into();
         let mut sql = String::new();
 
-        let mut sql_iter = params.text.chars();
-
-        let max = max(cursor_pos + 1, params.text.len());
-
         let has_uneven_quotes = params.text.chars().filter(|c| *c == '"').count() % 2 != 0;
         let mut opened_quote = false;
+        let mut inserted = false;
 
-        for idx in 0..max {
-            match sql_iter.next() {
-                Some(c) => {
-                    if c == '"' {
-                        opened_quote = !opened_quote;
-                    }
+        for (idx, c) in params.text.char_indices() {
+            if c == '"' {
+                opened_quote = !opened_quote;
+            }
 
-                    if idx == cursor_pos {
-                        if opened_quote && has_uneven_quotes {
-                            sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
-                            opened_quote = false;
-                        } else {
-                            sql.push_str(SANITIZED_TOKEN);
-                        }
-                    }
-
-                    sql.push(c);
+            if idx == cursor_pos {
+                if opened_quote && has_uneven_quotes {
+                    sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
+                    opened_quote = false;
+                } else {
+                    sql.push_str(SANITIZED_TOKEN);
                 }
-                None => {
-                    // the cursor is outside the statement,
-                    // we want to push spaces until we arrive at the cursor position.
-                    // we'll then add the SANITIZED_TOKEN
-                    if idx == cursor_pos {
-                        if opened_quote && has_uneven_quotes {
-                            sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
-                        } else {
-                            sql.push_str(SANITIZED_TOKEN);
-                        }
-                    } else {
-                        sql.push(' ');
-                    }
-                }
+                inserted = true;
+            }
+
+            sql.push(c);
+        }
+
+        if !inserted {
+            // the cursor is outside the statement,
+            // we want to push spaces until we arrive at the cursor position.
+            // we'll then add the SANITIZED_TOKEN
+            for _ in params.text.len()..cursor_pos {
+                sql.push(' ');
+            }
+            if opened_quote && has_uneven_quotes {
+                sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
+            } else {
+                sql.push_str(SANITIZED_TOKEN);
             }
         }
 
@@ -720,7 +716,7 @@ mod tests {
 
             assert_eq!(
                 sanitized.text,
-                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é; "#
+                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é;"#
             );
             assert_eq!(sanitized.position, TextSize::new(22)); // leaves cursor position as is
         }
