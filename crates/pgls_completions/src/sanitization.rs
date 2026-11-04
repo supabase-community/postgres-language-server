@@ -30,6 +30,15 @@ pub(crate) fn is_sanitized_token(node_under_cursor_txt: &str) -> bool {
         || is_sanitized_token_with_quote(node_under_cursor_txt)
 }
 
+/// Whether the node under the cursor is a quoted identifier that the user hasn't closed: the
+/// sanitized token with a quote closes it, as in `"MyREPLACED_TOKEN_WITH_QUOTE"`, or as just
+/// `"REPLACED_TOKEN_WITH_QUOTE"` right after the opening quote.
+pub(crate) fn is_unterminated_quote(node_under_cursor_txt: &str) -> bool {
+    node_under_cursor_txt.len() > 1
+        && node_under_cursor_txt.starts_with('"')
+        && node_under_cursor_txt.ends_with(SANITIZED_TOKEN_WITH_QUOTE)
+}
+
 pub(crate) fn is_sanitized_token_with_quote(node_under_cursor_txt: &str) -> bool {
     if node_under_cursor_txt.len() <= 1 {
         return false;
@@ -60,6 +69,7 @@ where
             || cursor_on_a_dot(&params.text, params.position)
             || cursor_between_parentheses(&params.text, params.position)
             || cursor_after_opened_quote(&params.text, params.position)
+            || cursor_in_unterminated_quote(&params.text, params.position)
         {
             SanitizedCompletionParams::with_adjusted_sql(params)
         } else {
@@ -295,6 +305,17 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
     head_of_list || end_of_list || between_list_items || after_and_keyword || after_eq_sign
 }
 
+/// Whether the cursor is inside a quoted identifier that isn't closed, like `select * from "My|`.
+/// The statement then gets the sanitized token with a closing quote at the cursor, as right after
+/// an opening quote.
+fn cursor_in_unterminated_quote(sql: &str, position: TextSize) -> bool {
+    let Some(before) = sql.get(..usize::from(position)) else {
+        return false;
+    };
+    let quotes = |text: &str| text.bytes().filter(|byte| *byte == b'"').count();
+    quotes(before) % 2 == 1 && quotes(sql) % 2 == 1
+}
+
 fn cursor_after_opened_quote(sql: &str, position: TextSize) -> bool {
     let position: usize = position.into();
     let mut opened_quote = false;
@@ -410,6 +431,25 @@ mod tests {
                 r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE""#
             );
         }
+    }
+
+    #[test]
+    fn should_sanitize_inside_an_unterminated_quote() {
+        // select * from "My|
+        let input = r#"select * from "My"#;
+        let sanitized = SanitizedCompletionParams::from(get_test_params(input, TextSize::new(17)));
+        assert_eq!(
+            sanitized.text,
+            r#"select * from "MyREPLACED_TOKEN_WITH_QUOTE""#
+        );
+
+        // select "I| from "MyTable"
+        let input = r#"select "I from "MyTable""#;
+        let sanitized = SanitizedCompletionParams::from(get_test_params(input, TextSize::new(9)));
+        assert_eq!(
+            sanitized.text,
+            r#"select "IREPLACED_TOKEN_WITH_QUOTE" from "MyTable""#
+        );
     }
 
     #[test]
@@ -661,7 +701,11 @@ mod tests {
 
             let sanitized = SanitizedCompletionParams::from(params);
 
-            assert_eq!(sanitized.text, r#"select * from "auth"."é;"#);
+            // The quote isn't closed, so the token closes it after the char.
+            assert_eq!(
+                sanitized.text,
+                r#"select * from "auth"."éREPLACED_TOKEN_WITH_QUOTE";"#
+            );
             assert_eq!(sanitized.position, TextSize::new(24)); // adjusts the cursor position to end of multibyte char
         }
 
