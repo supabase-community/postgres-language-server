@@ -2318,6 +2318,7 @@ dependencies = [
  "insta",
  "pgls_lexer",
  "pgls_query",
+ "pgls_query_ext",
  "pgls_test_utils",
  "pgls_text_size",
  "rustc-hash",
