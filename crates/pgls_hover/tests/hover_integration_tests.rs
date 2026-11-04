@@ -8,6 +8,17 @@ use pgls_text_size::TextSize;
 use sqlx::{Executor, PgPool};
 
 async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, test_db: &PgPool) {
+    test_hover_at_cursor_on(name, query, setup, test_db, None).await;
+}
+
+/// Like [`test_hover_at_cursor`], as if the server had the version `version_num`, like `180000`.
+async fn test_hover_at_cursor_on(
+    name: &str,
+    query: String,
+    setup: Option<&str>,
+    test_db: &PgPool,
+    version_num: Option<i64>,
+) {
     if let Some(setup) = setup {
         test_db
             .execute(setup)
@@ -15,11 +26,13 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
             .expect("Failed to setup test database");
     }
 
-    let snapshot = Arc::new(
-        Snapshot::load(test_db)
-            .await
-            .expect("Failed to load snapshot"),
-    );
+    let mut snapshot = Snapshot::load(test_db)
+        .await
+        .expect("Failed to load snapshot");
+    if version_num.is_some() {
+        snapshot.version.version_num = version_num;
+    }
+    let snapshot = Arc::new(snapshot);
 
     let (position, sql) = QueryWithCursorPosition::from(query).get_text_and_position();
 
@@ -918,6 +931,49 @@ async fn test_column_hover_on_last_part_of_quoted_name(test_db: PgPool) {
         query,
         Some(setup),
         &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_returning_old(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+    "#;
+
+    let query = format!(
+        "update hover_users set name = 'x' returning old.na{}me",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    // `old` and `new` exist since Postgres 18, and the test database can be older.
+    test_hover_at_cursor_on(
+        "column_returning_old",
+        query,
+        Some(setup),
+        &test_db,
+        Some(180000),
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_returning_with_alias(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+    "#;
+
+    let query = format!(
+        "delete from hover_users returning with (old as o) o.na{}me",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor_on(
+        "column_returning_with_alias",
+        query,
+        Some(setup),
+        &test_db,
+        Some(180000),
     )
     .await;
 }

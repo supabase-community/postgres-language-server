@@ -27,13 +27,21 @@ struct Fixture {
 }
 
 async fn fixture(test_db: &PgPool) -> Fixture {
+    fixture_on(test_db, None).await
+}
+
+/// The fixture as if the server had the version `version_num`, like `180000`.
+async fn fixture_on(test_db: &PgPool, version_num: Option<i64>) -> Fixture {
     test_db
         .execute(SETUP)
         .await
         .expect("Failed to setup test database");
-    let snapshot = Snapshot::load(test_db)
+    let mut snapshot = Snapshot::load(test_db)
         .await
         .expect("Failed to load snapshot");
+    if version_num.is_some() {
+        snapshot.version.version_num = version_num;
+    }
     Fixture {
         search_path: snapshot.expand_search_path(&["public".to_string()]),
         catalog: Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot))))),
@@ -80,6 +88,23 @@ async fn nested_calls_and_from_functions(test_db: PgPool) {
     assert_eq!(
         f.hinted("select * from make_point(1, public.make_point((1), 2 /* y */))"),
         "select * from make_point(x: 1, y: public.make_point(x: (1), y: 2 /* y */))"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn returning_old_and_new(test_db: PgPool) {
+    // `old` and `new` exist since Postgres 18, and the test database can be older. The calls
+    // only resolve when the types of their arguments are known.
+    let f = fixture_on(&test_db, Some(180000)).await;
+    assert_eq!(
+        f.hinted(
+            "update points set x = 1 returning make_point(old.y, new.x), make_point(old.x, 1)"
+        ),
+        "update points set x = 1 returning make_point(x: old.y, y: new.x), make_point(old.x, y: 1)"
+    );
+    assert_eq!(
+        f.hinted("delete from points returning with (old as o) make_point(o.y, o.x)"),
+        "delete from points returning with (old as o) make_point(x: o.y, y: o.x)"
     );
 }
 
