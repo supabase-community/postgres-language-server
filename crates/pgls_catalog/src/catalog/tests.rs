@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use rustc_hash::FxHashMap;
+
 use crate::Snapshot;
 
 use super::{Catalog, CatalogBase};
@@ -741,6 +743,145 @@ fn snapshot_excludes_dropped_objects() {
     assert_eq!(tables, ["people"]);
     assert_eq!(table_columns(&snapshot, "public", "people"), ["id", "name"]);
 }
+/// The snapshot of a file with many changes, one line per object with every field.
+#[test]
+fn snapshot_of_a_file_with_many_changes() {
+    let base = base();
+    let mut database = Snapshot::clone(base.snapshot());
+    for (i, (schema, name)) in [
+        ("pg_catalog", "int4"),
+        ("pg_catalog", "int8"),
+        ("pg_catalog", "text"),
+        ("pg_catalog", "date"),
+        ("public", "text"),
+        ("public", "status"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        database.types.push(crate::PostgresType {
+            id: 100 + i as i64,
+            schema: schema.into(),
+            name: name.into(),
+            ..Default::default()
+        });
+    }
+    database.indexes.push(crate::Index {
+        id: 200,
+        schema: "public".into(),
+        name: "users_name_idx".into(),
+        table_name: "users".into(),
+    });
+    database.sequences.push(crate::Sequence {
+        id: 300,
+        schema: "public".into(),
+        name: "users_id_seq".into(),
+    });
+    database.tables.push(crate::Table {
+        id: 2,
+        schema: "app".into(),
+        name: "settings".into(),
+        ..Default::default()
+    });
+
+    let mut sql = String::from(
+        "alter table users add column created_at date;
+         alter table users alter column name type int8;
+         drop type status;
+         create type mood as enum ('happy', 'sad');
+         create type point2 as (x int4, y int4);
+         drop function greet;
+         create function greet(int4) returns text language sql as 'select ''hi''';
+         drop sequence users_id_seq;
+         create sequence orders_seq;
+         create schema reporting;",
+    );
+    for i in 0..20 {
+        sql.push_str(&format!(
+            "create table t{i} (id int4, name text, mood mood);
+             create index t{i}_name_idx on t{i} (name);
+             create function f{i}(a int4, b text) returns int4 language sql as 'select a';
+             create view v{i} as select id, name from t{i};"
+        ));
+        match i % 4 {
+            0 => sql.push_str(&format!("drop table t{i} cascade;")),
+            1 => sql.push_str(&format!("alter table t{i} rename to renamed_t{i};")),
+            2 => sql.push_str(&format!(
+                "alter table t{i} drop column name, add column total int8;"
+            )),
+            _ => sql.push_str(&format!("alter table t{i} set schema reporting;")),
+        }
+    }
+    sql.push_str("drop table users; create table users (id text, point point2);");
+
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(database)))));
+    let search_path = path(&["public"]);
+    for stmt in pgls_query::parse(&sql).expect("valid sql").stmts() {
+        catalog.apply(stmt, &search_path);
+    }
+    let snapshot = catalog.snapshot().unwrap();
+
+    // The file's objects get their ids in the order of a hash map, which depends on the
+    // platform. The ids are written as the object they stand for, and the lines are sorted.
+    let mut labels: FxHashMap<i64, String> = FxHashMap::default();
+    for table in &snapshot.tables {
+        labels.insert(table.id, format!("<table {}.{}>", table.schema, table.name));
+    }
+    for type_ in &snapshot.types {
+        labels.insert(type_.id, format!("<type {}.{}>", type_.schema, type_.name));
+    }
+    fn label_ids(value: &mut serde_json::Value, labels: &FxHashMap<i64, String>) {
+        match value {
+            serde_json::Value::Number(number) => {
+                if let Some(id) = number.as_i64().filter(|id| *id < 0) {
+                    let label = labels.get(&id).map_or("<file id>", String::as_str);
+                    *value = label.into();
+                }
+            }
+            serde_json::Value::Array(values) => {
+                values.iter_mut().for_each(|value| label_ids(value, labels));
+            }
+            // In the order of the keys, also when another crate enables `preserve_order`.
+            serde_json::Value::Object(fields) => {
+                let mut entries: Vec<_> = std::mem::take(fields).into_iter().collect();
+                entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+                for (key, mut value) in entries {
+                    label_ids(&mut value, labels);
+                    fields.insert(key, value);
+                }
+            }
+            _ => {}
+        }
+    }
+    fn lines<T: serde::Serialize>(
+        name: &str,
+        objects: &[T],
+        labels: &FxHashMap<i64, String>,
+    ) -> String {
+        let mut lines: Vec<String> = objects
+            .iter()
+            .map(|object| {
+                let mut object = serde_json::to_value(object).unwrap();
+                label_ids(&mut object, labels);
+                format!("{name} {object}\n")
+            })
+            .collect();
+        lines.sort();
+        lines.concat()
+    }
+    let rendered = [
+        lines("schema", &snapshot.schemas, &labels),
+        lines("table", &snapshot.tables, &labels),
+        lines("column", &snapshot.columns, &labels),
+        lines("type", &snapshot.types, &labels),
+        lines("function", &snapshot.functions, &labels),
+        lines("index", &snapshot.indexes, &labels),
+        lines("sequence", &snapshot.sequences, &labels),
+    ]
+    .concat();
+    insta::assert_snapshot!(rendered);
+}
+
 #[cfg(feature = "db")]
 mod typing_overlay_tests {
     use super::path;
