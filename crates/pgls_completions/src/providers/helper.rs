@@ -95,11 +95,20 @@ pub(crate) fn with_schema_or_alias(
         let schema_or_als = schema_or_alias_name.unwrap();
 
         if single_leading_quote {
-            format!(r#"{}"."{}""#, schema_or_als.replace('"', ""), item_name)
+            format!(r#"{}"."{}""#, inside_quotes(schema_or_als), item_name)
         } else if with_quotes {
-            format!(r#"{}"."{}"#, schema_or_als.replace('"', ""), item_name)
+            format!(r#"{}"."{}"#, inside_quotes(schema_or_als), item_name)
         } else {
             format!("{schema_or_als}.{item_name}")
         }
     }
+}
+
+/// The text of `identifier` between its quotes, escaped quotes included: `a""b` for `"a""b"`.
+/// An unquoted identifier is returned without any quotes.
+fn inside_quotes(identifier: &str) -> String {
+    identifier
+        .strip_prefix('"')
+        .and_then(|it| it.strip_suffix('"'))
+        .map_or_else(|| identifier.replace('"', ""), str::to_string)
 }
