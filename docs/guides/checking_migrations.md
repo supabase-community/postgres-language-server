@@ -60,6 +60,8 @@ Some migration tools put the up and the down migration in the same file, separat
 | `"goose"` | `-- +goose Up`, `-- +goose Down` | `-- +goose NO TRANSACTION` (whole file) |
 | `"none"` (default) | | |
 
+In a dbmate project, `postgres-language-server init` sets both: it detects dbmate by a first migration in `db/migrations`, dbmate's default folder, that starts with `-- migrate:up`. goose has no default folder or configuration file, so `init` doesn't detect it.
+
 `tool` was called `sectionMarkers` before. `sectionMarkers` still works, with a deprecation warning, and `tool` wins if both are set.
 
 With a migration tool:
