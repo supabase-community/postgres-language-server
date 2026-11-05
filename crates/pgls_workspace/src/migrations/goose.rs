@@ -1,7 +1,12 @@
 //! goose: `-- +goose Up`, `-- +goose Down` and the other `-- +goose` annotations, see
 //! https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go
+//!
+//! goose has no configuration file and no migrations folder of its own: it runs the migrations
+//! in the folder of `-dir` or `GOOSE_MIGRATION_DIR`, `.` by default. So its projects aren't
+//! detected.
 
 use pgls_analyser::{Direction, MigrationSection};
+use pgls_configuration::migrations::SectionMarkers;
 use pgls_text_size::TextRange;
 
 use super::{
@@ -27,6 +32,14 @@ const SYNTAX: MarkerSyntax = MarkerSyntax {
 };
 
 impl MigrationTool for Goose {
+    fn name(&self) -> &'static str {
+        "goose"
+    }
+
+    fn section_markers(&self) -> SectionMarkers {
+        SectionMarkers::Goose
+    }
+
     fn sections(&self, text: &str) -> Vec<MigrationSection> {
         let mut sections = SectionsBuilder::new(text);
         let mut no_transaction = false;
@@ -119,7 +132,7 @@ mod tests {
     fn queries_sent_at_once() {
         let text = "-- +goose NO TRANSACTION\n-- +goose Up\nselect 1;\n-- +goose StatementBegin\nselect 2;\nselect 3;\n-- +goose StatementEnd\n-- +goose Down\nselect 4;\n";
         let queries = migration_tool(SectionMarkers::Goose)
-            .map_or_else(Vec::new, |tool| tool.sections(text))
+            .sections(text)
             .into_iter()
             .map(|section| {
                 section

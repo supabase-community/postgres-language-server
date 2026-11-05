@@ -60,6 +60,8 @@ Some migration tools put the up and the down migration in the same file, separat
 | `"goose"` | `-- +goose Up`, `-- +goose Down` | `-- +goose NO TRANSACTION` (whole file) |
 | `"none"` (default) | | |
 
+In a dbmate project, `postgres-language-server init` sets both: it detects dbmate by a first migration in `db/migrations`, dbmate's default folder, that starts with `-- migrate:up`. goose has no default folder or configuration file, so `init` doesn't detect it.
+
 With section markers:
 
 - The transaction, lock, and session state starts fresh in each section. A lock taken or a `lock_timeout` set in the up section doesn't carry over to the down section.

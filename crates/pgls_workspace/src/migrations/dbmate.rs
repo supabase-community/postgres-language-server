@@ -1,13 +1,24 @@
 //! dbmate: `-- migrate:up` and `-- migrate:down`, see
 //! https://github.com/amacneil/dbmate/blob/v2.37.0/pkg/dbmate/migration.go
+//!
+//! Its migrations are `<version>_<description>.sql` files in `db/migrations`, unless
+//! `--migrations-dir` says otherwise, see
+//! https://github.com/amacneil/dbmate/blob/v2.37.0/README.md#creating-migrations
 
 use pgls_analyser::{Direction, MigrationSection};
+use pgls_configuration::migrations::SectionMarkers;
+use pgls_fs::{FileSystem, OpenOptions};
 use pgls_text_size::TextRange;
 
 use super::{
     MigrationTool, SectionMarkerDiagnostic,
     markers::{self, MarkerSyntax, SectionsBuilder, lines},
+    project::{self, Project, Root},
 };
+
+/// The folder of dbmate in a project, and its migrations in it.
+const DBMATE_DIRECTORY: &str = "db";
+const DBMATE_MIGRATIONS_DIR: &str = "db/migrations";
 
 pub(super) struct Dbmate;
 
@@ -19,6 +30,38 @@ const SYNTAX: MarkerSyntax = MarkerSyntax {
 };
 
 impl MigrationTool for Dbmate {
+    fn name(&self) -> &'static str {
+        "dbmate"
+    }
+
+    fn section_markers(&self) -> SectionMarkers {
+        SectionMarkers::Dbmate
+    }
+
+    fn default_migrations_dir(&self) -> Option<&'static str> {
+        Some(DBMATE_MIGRATIONS_DIR)
+    }
+
+    /// A first migration in `db/migrations` with `-- migrate:up`, which dbmate requires in every
+    /// migration. dbmate has no configuration file, and reads the database from `DATABASE_URL`,
+    /// so the connection is left alone.
+    fn detect(&self, fs: &dyn FileSystem, root: &Root) -> Option<Project> {
+        let migrations_dir = root.path(DBMATE_MIGRATIONS_DIR);
+        let first = project::files(&migrations_dir)
+            .into_iter()
+            .find(|name| is_migration_file_name(name))?;
+        let mut contents = String::new();
+        fs.open_with_options(
+            &migrations_dir.join(first),
+            OpenOptions::default().read(true),
+        )
+        .and_then(|mut file| file.read_to_string(&mut contents))
+        .ok()?;
+        lines(&contents)
+            .any(|(_, line)| marker(line).is_some_and(|(direction, _)| direction == Direction::Up))
+            .then(|| Project::new(self, root, DBMATE_DIRECTORY))
+    }
+
     fn sections(&self, text: &str) -> Vec<MigrationSection> {
         let mut sections = SectionsBuilder::new(text);
         for (range, line) in lines(text) {
@@ -42,6 +85,12 @@ impl MigrationTool for Dbmate {
     ) -> Vec<SectionMarkerDiagnostic> {
         markers::marker_diagnostics(&SYNTAX, text, sections, statements)
     }
+}
+
+/// `<version>_<description>.sql`, where the version is all leading digits.
+fn is_migration_file_name(name: &str) -> bool {
+    let description = name.trim_start_matches(|c: char| c.is_ascii_digit());
+    description.len() < name.len() && description.starts_with('_') && name.ends_with(".sql")
 }
 
 /// `-- migrate:up` or `-- migrate:down` at the start of the line, with options like
@@ -77,6 +126,20 @@ mod tests {
         migration_tool,
         tests::{marker_problems, sections},
     };
+
+    #[test]
+    fn migration_file_names() {
+        assert!(super::is_migration_file_name(
+            "20151127184807_create_users.sql"
+        ));
+        assert!(super::is_migration_file_name("1_init.sql"));
+        assert!(!super::is_migration_file_name("_init.sql"));
+        assert!(!super::is_migration_file_name("20151127184807.sql"));
+        assert!(!super::is_migration_file_name(
+            "20151127184807_create_users.sql.bak"
+        ));
+        assert!(!super::is_migration_file_name("schema.sql"));
+    }
 
     #[test]
     fn dbmate_sections() {
@@ -123,7 +186,7 @@ mod tests {
         let text =
             "-- migrate:up transaction:false\nselect 1;\nselect 2;\n-- migrate:down\nselect 3;\n";
         let queries = migration_tool(SectionMarkers::Dbmate)
-            .map_or_else(Vec::new, |tool| tool.sections(text))
+            .sections(text)
             .into_iter()
             .map(|section| {
                 section

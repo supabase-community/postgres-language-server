@@ -7,6 +7,8 @@ use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
+#[cfg(test)]
+use crate::migrations::Plain;
 use crate::{migrations::MigrationTool, workspace::ProjectKey};
 
 use super::{
@@ -29,23 +31,23 @@ pub struct Document {
     /// The project whose settings apply to the document.
     project_key: ProjectKey,
     /// The migration tool that runs the file, from its settings. See [`Document::open`].
-    migration_tool: Option<&'static dyn MigrationTool>,
+    migration_tool: &'static dyn MigrationTool,
     /// The sections of the content for `migration_tool`.
     migration_sections: Vec<MigrationSection>,
 }
 
 impl Document {
-    /// A document without a project, and so without a migration tool.
+    /// A document without a project, and so without a migration tool: it is one migration.
     #[cfg(test)]
     pub fn new(content: String, version: i32) -> Document {
-        Self::open(ProjectKey::default(), None, content, version)
+        Self::open(ProjectKey::default(), &Plain, content, version)
     }
 
     /// A document of the project `project_key`, whose settings make `migration_tool` run the
     /// file. When the settings change, [`Document::set_migration_tool`] applies them.
     pub(crate) fn open(
         project_key: ProjectKey,
-        migration_tool: Option<&'static dyn MigrationTool>,
+        migration_tool: &'static dyn MigrationTool,
         content: String,
         version: i32,
     ) -> Document {
@@ -54,7 +56,7 @@ impl Document {
         let annotation_db = AnnotationStore::new();
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
         let suppressions = Suppressions::from(content.as_str()).with_statements(ranges.clone());
-        let migration_sections = sections_for(migration_tool, &content);
+        let migration_sections = migration_tool.sections(&content);
 
         Document {
             ranges,
@@ -74,7 +76,7 @@ impl Document {
     pub fn update_content(&mut self, content: String, version: i32) {
         self.content = content;
         self.version = version;
-        self.migration_sections = sections_for(self.migration_tool, &self.content);
+        self.migration_sections = self.migration_tool.sections(&self.content);
 
         let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
 
@@ -97,25 +99,22 @@ impl Document {
     }
 
     /// Applies the migration tool of changed settings.
-    pub(crate) fn set_migration_tool(
-        &mut self,
-        migration_tool: Option<&'static dyn MigrationTool>,
-    ) {
+    pub(crate) fn set_migration_tool(&mut self, migration_tool: &'static dyn MigrationTool) {
         self.migration_tool = migration_tool;
-        self.migration_sections = sections_for(migration_tool, &self.content);
+        self.migration_sections = migration_tool.sections(&self.content);
     }
 
     pub(crate) fn project_key(&self) -> ProjectKey {
         self.project_key
     }
 
-    /// The migration tool that runs the file, if its settings name one.
-    pub(crate) fn migration_tool(&self) -> Option<&'static dyn MigrationTool> {
+    /// The migration tool that runs the file, from its settings.
+    pub(crate) fn migration_tool(&self) -> &'static dyn MigrationTool {
         self.migration_tool
     }
 
     /// The migration sections of the document, like the up and down migrations of dbmate and
-    /// goose. Without a migration tool, there are none.
+    /// goose. A tool without section markers has none.
     pub fn migration_sections(&self) -> &[MigrationSection] {
         &self.migration_sections
     }
@@ -481,14 +480,6 @@ impl StatementFilter<'_> for IdFilter {
     fn predicate(&self, id: &StatementId, _range: &TextRange, _content: &str) -> bool {
         *id == self.id
     }
-}
-
-/// The migration sections of `content`, see [`MigrationTool::sections`].
-fn sections_for(
-    migration_tool: Option<&'static dyn MigrationTool>,
-    content: &str,
-) -> Vec<MigrationSection> {
-    migration_tool.map_or_else(Vec::new, |tool| tool.sections(content))
 }
 
 /// Helper function that wraps the statement splitter and returns the ranges with unified
