@@ -1,4 +1,6 @@
-use super::*;
+use super::infer_expr;
+use crate::resolve::{resolver::Resolver, utils::named};
+use crate::typing::Type;
 
 /// `AND`, `OR` and `NOT` are bool. Port of [`transformBoolExpr`].
 ///

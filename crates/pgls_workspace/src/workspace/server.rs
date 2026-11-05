@@ -72,9 +72,10 @@ use crate::{
 };
 
 use super::{
-    GetFileContentParams, IsPathIgnoredParams, NestedSettingsError, OpenFileParams, ProjectKey,
-    RegisterProjectFolderParams, ServerInfo, UnregisterProjectFolderParams,
-    UpdateNestedSettingsParams, UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
+    FindProjectParams, GetFileContentParams, IsPathIgnoredParams, NestedSettingsError,
+    OpenFileParams, ProjectKey, RegisterProjectFolderParams, ServerInfo,
+    UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
+    UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
@@ -86,9 +87,15 @@ mod async_helper;
 #[cfg(feature = "db")]
 mod connection_key;
 #[cfg(feature = "db")]
+use crate::settings::DatabaseSettings;
+#[cfg(feature = "db")]
+use connection_key::ConnectionKey;
+#[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
 mod expand_star;
+#[cfg(feature = "db")]
+mod last_used;
 mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
@@ -199,12 +206,24 @@ impl WorkspaceServer {
         self.snapshot.get()
     }
 
-    /// Register a new project in the current workspace
-    fn register_project(&self, path: PathBuf) -> ProjectKey {
-        let mut workspace = self.workspaces_mut();
-        let workspace_mut = workspace.as_mut();
-        workspace_mut.insert_project(path.clone())
+    /// Drops the pools, failures and snapshots of the connections that no settings of any project
+    /// use any more, after a configuration changed or a project was removed. Otherwise every
+    /// database a configuration ever pointed at would stay in memory until the server stops.
+    #[cfg(feature = "db")]
+    fn drop_unused_connections(&self) {
+        let used: std::collections::HashSet<ConnectionKey> = self
+            .workspaces()
+            .as_ref()
+            .every_settings()
+            .filter(|settings| settings.db.enable_connection)
+            .map(|settings| ConnectionKey::from(&settings.db))
+            .collect();
+        self.connection.retain(|key| used.contains(key));
+        self.snapshot.retain(|key| used.contains(key));
     }
+
+    #[cfg(not(feature = "db"))]
+    fn drop_unused_connections(&self) {}
 
     /// Check whether a file is ignored by the settings of its project that apply to it
     fn is_ignored(&self, project_key: ProjectKey, path: &Path) -> bool {
@@ -335,6 +354,7 @@ impl WorkspaceServer {
             file_kind: self.file_kind(settings, path.as_path()),
             sections,
             typecheck,
+            source: Some(doc.get_document_content().to_owned()),
         });
 
         (
@@ -795,16 +815,17 @@ impl WorkspaceServer {
                                     .await?;
 
                                     if let Some(diagnostic) = result {
-                                        let span = diagnostic
-                                            .location()
-                                            .span
-                                            .map(|span| span + range.start());
+                                        let span = database_span(
+                                            diagnostic.location().span,
+                                            id.content(),
+                                            range,
+                                        );
                                         diagnostics.push(
                                             diagnostic
                                                 .with_file_path(
                                                     path.as_path().display().to_string(),
                                                 )
-                                                .with_file_span(span.unwrap_or(range)),
+                                                .with_file_span(span),
                                         );
                                     }
                                 }
@@ -841,11 +862,11 @@ impl WorkspaceServer {
                                 }
 
                                 for diagnostic in results.unwrap_or_default() {
-                                    let span = diagnostic.span.map(|span| span + range.start());
+                                    let span = database_span(diagnostic.span, id.content(), range);
                                     diagnostics.push(
                                         diagnostic
                                             .with_file_path(path.as_path().display().to_string())
-                                            .with_file_span(span.unwrap_or(range)),
+                                            .with_file_span(span),
                                     );
                                 }
                             }
@@ -911,18 +932,34 @@ impl Workspace for WorkspaceServer {
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError> {
         let path = params.path.unwrap_or_default();
-        let existing = self.workspaces().as_ref().get_project_key(&path);
+        let mut workspace = self.workspaces_mut();
+        let workspace = workspace.as_mut();
+        let existing = workspace.get_project_key(&path);
         debug!("Register the project {:?}, known as {:?}", path, existing);
 
-        Ok(existing.unwrap_or_else(|| self.register_project(path)))
+        let key = existing.unwrap_or_else(|| workspace.insert_project(path));
+        workspace.set_real_path(key, params.real_path);
+        Ok(key)
+    }
+
+    fn find_project(
+        &self,
+        params: FindProjectParams,
+    ) -> Result<Option<ProjectKey>, WorkspaceError> {
+        Ok(self
+            .workspaces()
+            .as_ref()
+            .find_project(params.path.as_path()))
     }
 
     fn unregister_project_folder(
         &self,
         params: UnregisterProjectFolderParams,
     ) -> Result<(), WorkspaceError> {
-        let mut workspace = self.workspaces_mut();
-        workspace.as_mut().remove_project(params.path.as_path());
+        self.workspaces_mut()
+            .as_mut()
+            .remove_project(params.path.as_path());
+        self.drop_unused_connections();
         Ok(())
     }
 
@@ -934,17 +971,31 @@ impl Workspace for WorkspaceServer {
     #[tracing::instrument(level = "trace", skip(self), err)]
     fn update_settings(&self, params: UpdateSettingsParams) -> Result<(), WorkspaceError> {
         let mut workspace = self.workspaces_mut();
-
-        workspace
+        let settings = workspace
             .as_mut()
             .get_settings_mut(params.project_key)
-            .ok_or_else(WorkspaceError::no_project)?
-            .merge_with_configuration(
+            .ok_or_else(WorkspaceError::no_project)?;
+
+        if params.replace {
+            // A configuration that can't be applied leaves the settings as they were.
+            let mut replacement = Settings::default();
+            replacement.merge_with_configuration(
                 params.configuration,
                 params.workspace_directory,
                 params.vcs_base_path,
                 params.gitignore_matches.as_slice(),
             )?;
+            *settings = replacement;
+        } else {
+            settings.merge_with_configuration(
+                params.configuration,
+                params.workspace_directory,
+                params.vcs_base_path,
+                params.gitignore_matches.as_slice(),
+            )?;
+        }
+        drop(workspace);
+        self.drop_unused_connections();
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
 
@@ -1015,6 +1066,7 @@ impl Workspace for WorkspaceServer {
         self.workspaces_mut()
             .as_mut()
             .set_nested_settings(params.project_key, nested);
+        self.drop_unused_connections();
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
         Ok(result)
@@ -1776,29 +1828,78 @@ impl Workspace for WorkspaceServer {
         &self,
         params: CheckDatabaseConnectionParams,
     ) -> Result<CheckDatabaseConnectionResult, WorkspaceError> {
-        // Every configuration file of the project can have its own database, so check all of them.
-        let settings = self.workspaces();
-        for settings in settings.as_ref().get_all_settings(params.project_key) {
+        // Every configuration file of the project can have its own database, so check each of
+        // them once, with the folders that use it.
+        let mut connections: Vec<(DatabaseSettings, Vec<PathBuf>)> = Vec::new();
+        let mut errors = Vec::new();
+        for (folder, settings) in self
+            .workspaces()
+            .as_ref()
+            .get_all_settings(params.project_key)
+        {
+            // An invalid connection string disables the connection, so say why.
             if let Some(error) = &settings.db.connection_string_error {
-                return Ok(CheckDatabaseConnectionResult {
-                    error: Some(error.clone()),
-                });
+                if !errors.contains(error) {
+                    errors.push(error.clone());
+                }
+                continue;
             }
+            if !settings.db.enable_connection {
+                continue;
+            }
+            let existing = connections.iter_mut().find(|(db, _)| {
+                ConnectionKey::from(db) == ConnectionKey::from(&settings.db)
+                    && db.connection_string == settings.db.connection_string
+                    && db.password == settings.db.password
+                    && db.conn_timeout_secs == settings.db.conn_timeout_secs
+            });
+            match existing {
+                Some((_, folders)) => folders.push(folder.to_path_buf()),
+                None => connections.push((settings.db.clone(), vec![folder.to_path_buf()])),
+            }
+        }
 
-            let result = self
-                .connection
-                .try_with_pool(&settings.db, |pool| self.snapshot.load(pool).map(|_| ()));
+        // Concurrently, so that unreachable databases time out together rather than one after
+        // the other.
+        let results: Vec<_> = std::thread::scope(|scope| {
+            let checks: Vec<_> = connections
+                .iter()
+                .map(|(db, _)| {
+                    scope.spawn(|| {
+                        self.connection
+                            .try_with_pool(db, |pool| self.snapshot.load(pool).map(|_| ()))
+                    })
+                })
+                .collect();
+            checks
+                .into_iter()
+                .map(|check| check.join().expect("a connection check panicked"))
+                .collect()
+        });
+
+        for ((db, folders), result) in connections.iter().zip(results) {
             match result {
                 None | Some(Ok(())) => {}
                 Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
-                    return Ok(CheckDatabaseConnectionResult {
-                        error: Some(err.to_string()),
-                    });
+                    let folders: Vec<_> = folders
+                        .iter()
+                        .filter(|folder| !folder.as_os_str().is_empty())
+                        .map(|folder| folder.display().to_string())
+                        .collect();
+                    let used_by = if folders.is_empty() {
+                        String::new()
+                    } else {
+                        format!(", the database of {}", folders.join(", "))
+                    };
+                    errors.push(format!(
+                        "Could not connect to {}@{}:{}/{}{used_by}: {err}",
+                        db.username, db.host, db.port, db.database
+                    ));
                 }
                 Some(Err(err)) => return Err(err),
             }
         }
-        Ok(CheckDatabaseConnectionResult::default())
+        Ok(CheckDatabaseConnectionResult { errors })
     }
 
     #[cfg(not(feature = "db"))]
@@ -2153,8 +2254,9 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             }
             // Parameters belong to a function of the file.
             Reference::Parameter { .. } => false,
-            // The columns of a `*` can come from objects that the file changed.
-            Reference::Star { .. } => false,
+            // The columns of a `*` can come from objects that the file changed, and so can the
+            // relations behind CTEs and aliases.
+            Reference::Star { .. } | Reference::Cte { .. } | Reference::Alias { .. } => false,
         })
 }
 
@@ -2298,6 +2400,21 @@ fn restore_named_parameters(
     } else {
         None
     }
+}
+
+/// Moves the span of a diagnostic from the database, which is relative to the text of the
+/// statement at `range`, into the file. The span is computed from positions that the database
+/// reports, so it may not fit the statement as we have it, e.g. after the file changed. A span
+/// that isn't inside the statement or not on char boundaries of its text becomes the statement.
+#[cfg(feature = "db")]
+fn database_span(span: Option<TextRange>, statement: &str, range: TextRange) -> TextRange {
+    span.filter(|span| {
+        span.end() <= range.len()
+            && statement
+                .get(std::ops::Range::<usize>::from(*span))
+                .is_some()
+    })
+    .map_or(range, |span| span + range.start())
 }
 
 #[cfg(all(test, feature = "db"))]

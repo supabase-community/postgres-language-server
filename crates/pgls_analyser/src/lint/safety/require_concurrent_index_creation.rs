@@ -58,15 +58,14 @@ impl LinterRule for RequireConcurrentIndexCreation {
             return diagnostics;
         }
 
-        // Check if this table was created in the same transaction/file
-        let table_name = stmt
-            .relation
-            .as_ref()
-            .map(|r| r.relname.as_str())
-            .unwrap_or("");
-
-        // Skip if table name is empty or table was created in the same file
-        if table_name.is_empty() || is_table_created_in_file(ctx.file_context(), table_name) {
+        // An index on a table created earlier in the transaction doesn't block anyone.
+        let Some(relation) = &stmt.relation else {
+            return diagnostics;
+        };
+        if ctx
+            .session()
+            .has_created_object(&relation.schemaname, &relation.relname)
+        {
             return diagnostics;
         }
 
@@ -105,17 +104,4 @@ fn add_concurrently(
     let tokens = ctx.tokens()?;
     let index = tokens.find(Token::Index)?;
     fix::add_concurrently(ctx, &tokens, index)
-}
-
-fn is_table_created_in_file(file_context: &crate::AnalysedFileContext, table_name: &str) -> bool {
-    // Check all statements in the file to see if this table was created
-    for stmt in file_context.stmts {
-        if let pgls_query::NodeEnum::CreateStmt(create_stmt) = stmt
-            && let Some(relation) = &create_stmt.relation
-            && relation.relname == table_name
-        {
-            return true;
-        }
-    }
-    false
 }
