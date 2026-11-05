@@ -34,10 +34,17 @@ pub(crate) fn on_hover(
         }
 
         Err(e) => match e {
-            WorkspaceError::DatabaseConnectionError(_) => {
+            // Hover loads the schema of the database, which fails either because the database
+            // can't be reached or because one of its queries fails, e.g. for a missing permission.
+            WorkspaceError::DatabaseConnectionError(error) => {
+                let value = if error.is_connection_failure() {
+                    format!("Cannot connect to the database: {}", error.message())
+                } else {
+                    format!("Cannot load the database schema: {}", error.message())
+                };
                 Ok(Some(ls_types::HoverContents::Markup(MarkupContent {
                     kind: ls_types::MarkupKind::PlainText,
-                    value: "Cannot connect to database.".into(),
+                    value,
                 })))
             }
             _ => {

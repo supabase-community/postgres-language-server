@@ -73,8 +73,18 @@ impl ProtoAnalyzer {
     pub fn nodes(&self) -> Vec<Node> {
         let mut nodes = Vec::new();
 
+        // Only the message types of the `Node` oneof are nodes. The rest are results and their
+        // parts (`ParseResult`, `ScanToken`, `SummaryResult`, ...).
+        let node_types: HashSet<String> = self
+            .pool
+            .get_message_by_name(".pg_query.Node")
+            .expect("Node message not found")
+            .fields()
+            .map(|f| f.field_descriptor_proto().type_name().to_string())
+            .collect();
+
         for msg in self.pool.all_messages() {
-            if ["ParseResult", "ScanResult", "Node", "ScanToken"].contains(&msg.name()) {
+            if !node_types.contains(&format!(".{}", msg.full_name())) {
                 continue;
             }
             let fields = msg

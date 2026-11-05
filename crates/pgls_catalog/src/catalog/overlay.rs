@@ -4,10 +4,11 @@
 use crate::typing::TypeId;
 use crate::{FunctionArgumentMode, FunctionSignature};
 use pgls_query::{Node, protobuf};
+use pgls_query_ext::utils::string_value;
 
 use super::{
     Catalog, Entry, Key, key,
-    names::{QualifiedName, qualified_name, range_var_name, string_value, type_label},
+    names::{QualifiedName, qualified_name, range_var_name, type_label},
 };
 use crate::lookup::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
@@ -53,6 +54,24 @@ impl Catalog {
         }
         let key = self.creation_key(&name, search_path);
         (key.0 != "pg_catalog").then_some(key)
+    }
+
+    /// The relation that is already where `CREATE TABLE`, `CREATE TABLE AS` or `SELECT INTO`
+    /// would create `range_var`. With `IF NOT EXISTS`, Postgres skips the statement unless this
+    /// is [`Lookup::Missing`] ([`transformCreateStmt`], [`CreateTableAsRelExists`]).
+    ///
+    /// [`transformCreateStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L164
+    /// [`CreateTableAsRelExists`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/createas.c#L393
+    pub fn relation_at_creation(
+        &self,
+        range_var: &protobuf::RangeVar,
+        search_path: &[String],
+    ) -> Lookup<RelationInfo> {
+        match self.relation_creation_key(range_var, search_path) {
+            Some((schema, name)) => self.relation_in(&schema, &name),
+            // Postgres rejects new relations in `pg_catalog`.
+            None => Lookup::Unknown,
+        }
     }
 
     // ----- schemas -----
@@ -573,10 +592,7 @@ pub(super) fn column_info(
                 Some("smallserial") => "int2",
                 _ => return None,
             };
-            catalog
-                .type_(Some("pg_catalog"), internal_name, search_path)
-                .found()
-                .and_then(|ty| ty.id)
+            catalog.builtin_type(internal_name)
         });
     let type_name = column.type_name.as_ref().and_then(type_label);
     ColumnInfo {

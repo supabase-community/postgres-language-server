@@ -1,5 +1,5 @@
 use futures::TryStreamExt;
-use pgls_text_size::TextSize;
+use pgls_line_index::offset_of_char_position;
 use sqlx::{
     Column, Either, Executor, PgConnection, PgPool, Row, Statement, ValueRef,
     postgres::{PgColumn, PgDatabaseError, PgErrorPosition, PgRow},
@@ -132,16 +132,8 @@ async fn collect_result(
 }
 
 fn rejected(err: &PgDatabaseError, sql: &str) -> ExecuteStatementResult {
-    // Postgres counts the characters from 1, and points one past the end for an error at the end
-    // of the input.
     let position = match err.position() {
-        Some(PgErrorPosition::Original(position)) => position.checked_sub(1).and_then(|index| {
-            sql.char_indices()
-                .map(|(offset, _)| offset)
-                .chain([sql.len()])
-                .nth(index)
-                .and_then(|offset| TextSize::try_from(offset).ok())
-        }),
+        Some(PgErrorPosition::Original(position)) => offset_of_char_position(sql, position),
         _ => None,
     };
 
