@@ -1,7 +1,6 @@
 use std::cell::OnceCell;
 
 use pgls_analyse::{GroupCategory, RuleCategory, RuleGroup, RuleMetadata};
-use pgls_catalog::Snapshot;
 use pgls_catalog::{
     Catalog, Session,
     resolve::{FunctionContext, Resolution, ResolveParams, resolve},
@@ -30,7 +29,6 @@ pub enum FileKind {
 pub struct LinterRuleContext<'a, R: LinterRule> {
     stmt: &'a pgls_query::NodeEnum,
     options: &'a R::Options,
-    snapshot: Option<&'a Snapshot>,
     file_context: &'a AnalysedFileContext<'a>,
     statement: &'a StatementContext<'a>,
 }
@@ -42,14 +40,12 @@ where
     pub fn new(
         stmt: &'a pgls_query::NodeEnum,
         options: &'a R::Options,
-        snapshot: Option<&'a Snapshot>,
         file_context: &'a AnalysedFileContext,
         statement: &'a StatementContext<'a>,
     ) -> Self {
         Self {
             stmt,
             options,
-            snapshot,
             file_context,
             statement,
         }
@@ -77,10 +73,6 @@ where
     /// The text of the current statement, if the caller provided it.
     pub fn sql(&self) -> Option<&str> {
         self.statement.sql
-    }
-
-    pub fn snapshot(&self) -> Option<&Snapshot> {
-        self.snapshot
     }
 
     /// The catalog as it is before the current statement: the database snapshot plus the
