@@ -1,55 +1,54 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/portals.sql
-snapshot_kind: text
 ---
 begin;
 
-declare foo1 scroll cursor for select * from tenk1 order by unique2;;
+declare foo1 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo2 scroll cursor for select * from tenk2;;
+declare foo2 scroll cursor for select * from tenk2;
 
-declare foo3 scroll cursor for select * from tenk1 order by unique2;;
+declare foo3 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo4 scroll cursor for select * from tenk2;;
+declare foo4 scroll cursor for select * from tenk2;
 
-declare foo5 scroll cursor for select * from tenk1 order by unique2;;
+declare foo5 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo6 scroll cursor for select * from tenk2;;
+declare foo6 scroll cursor for select * from tenk2;
 
-declare foo7 scroll cursor for select * from tenk1 order by unique2;;
+declare foo7 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo8 scroll cursor for select * from tenk2;;
+declare foo8 scroll cursor for select * from tenk2;
 
-declare foo9 scroll cursor for select * from tenk1 order by unique2;;
+declare foo9 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo10 scroll cursor for select * from tenk2;;
+declare foo10 scroll cursor for select * from tenk2;
 
-declare foo11 scroll cursor for select * from tenk1 order by unique2;;
+declare foo11 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo12 scroll cursor for select * from tenk2;;
+declare foo12 scroll cursor for select * from tenk2;
 
-declare foo13 scroll cursor for select * from tenk1 order by unique2;;
+declare foo13 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo14 scroll cursor for select * from tenk2;;
+declare foo14 scroll cursor for select * from tenk2;
 
-declare foo15 scroll cursor for select * from tenk1 order by unique2;;
+declare foo15 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo16 scroll cursor for select * from tenk2;;
+declare foo16 scroll cursor for select * from tenk2;
 
-declare foo17 scroll cursor for select * from tenk1 order by unique2;;
+declare foo17 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo18 scroll cursor for select * from tenk2;;
+declare foo18 scroll cursor for select * from tenk2;
 
-declare foo19 scroll cursor for select * from tenk1 order by unique2;;
+declare foo19 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo20 scroll cursor for select * from tenk2;;
+declare foo20 scroll cursor for select * from tenk2;
 
-declare foo21 scroll cursor for select * from tenk1 order by unique2;;
+declare foo21 scroll cursor for select * from tenk1 order by unique2;
 
-declare foo22 scroll cursor for select * from tenk2;;
+declare foo22 scroll cursor for select * from tenk2;
 
-declare foo23 scroll cursor for select * from tenk1 order by unique2;;
+declare foo23 scroll cursor for select * from tenk1 order by unique2;
 
 fetch next from foo1;
 
@@ -175,7 +174,7 @@ select name, statement, is_holdable, is_binary, is_scrollable from pg_cursors;
 
 begin;
 
-declare foo24 no scroll cursor for select * from tenk1 order by unique2;;
+declare foo24 no scroll cursor for select * from tenk1 order by unique2;
 
 fetch next from foo24;
 
@@ -185,7 +184,7 @@ commit;
 
 begin;
 
-declare foo24 no scroll cursor for select * from tenk1 order by unique2;;
+declare foo24 no scroll cursor for select * from tenk1 order by unique2;
 
 fetch next from foo24;
 

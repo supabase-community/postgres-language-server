@@ -8,14 +8,6 @@ use crate::{
 use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 
 pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
-    emit_view_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_view_stmt_no_semicolon(e: &mut EventEmitter, n: &ViewStmt) {
-    emit_view_stmt_impl(e, n, false);
-}
-
-fn emit_view_stmt_impl(e: &mut EventEmitter, n: &ViewStmt, with_semicolon: bool) {
     e.group_start(GroupKind::ViewStmt);
 
     e.token(TokenKind::CREATE_KW);
@@ -79,11 +71,7 @@ fn emit_view_stmt_impl(e: &mut EventEmitter, n: &ViewStmt, with_semicolon: bool)
         e.token(TokenKind::AS_KW);
         e.space();
 
-        if let Some(pgls_query::NodeEnum::SelectStmt(stmt)) = query.node.as_ref() {
-            super::emit_select_stmt_no_semicolon(e, stmt);
-        } else {
-            super::emit_node(query, e);
-        }
+        super::emit_node(query, e);
     }
 
     // WITH CHECK OPTION
@@ -114,10 +102,6 @@ fn emit_view_stmt_impl(e: &mut EventEmitter, n: &ViewStmt, with_semicolon: bool)
         ViewCheckOption::Undefined => {
             // Undefined, don't emit
         }
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
     }
 
     e.group_end();

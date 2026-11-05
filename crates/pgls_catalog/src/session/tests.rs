@@ -26,6 +26,9 @@ fn range_var(schema: &str, name: &str) -> RangeVar {
 fn created(s: &Session, schema: &str, name: &str) -> bool {
     s.has_created_relation(&range_var(schema, name), &Catalog::new(None))
 }
+fn altered(s: &Session, schema: &str, name: &str) -> bool {
+    s.has_altered_table(&range_var(schema, name), &Catalog::new(None))
+}
 fn not_valid(s: &Session, table: &str, name: &str) -> bool {
     s.has_not_valid_constraint(&range_var("", table), name, &Catalog::new(None))
 }
@@ -85,6 +88,18 @@ fn names_are_compared_exactly() {
     assert!(not_valid(&s, "Things", "Things_fk"));
     assert!(!not_valid(&s, "things", "Things_fk"));
     assert!(!not_valid(&s, "Things", "things_fk"));
+}
+#[test]
+fn altered_tables_use_the_search_path_of_their_statement() {
+    let mut s = Session::new(vec!["public".into()]);
+    apply(&mut s, "ALTER TABLE things ADD COLUMN a int");
+    apply(&mut s, "SET search_path = app");
+    assert!(!altered(&s, "", "things"));
+    assert!(altered(&s, "public", "things"));
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "ALTER TABLE things ADD COLUMN b int");
+    apply(&mut s, "COMMIT");
+    assert!(altered(&s, "app", "things"));
 }
 #[test]
 fn not_valid_and_access_exclusive_are_tracked() {

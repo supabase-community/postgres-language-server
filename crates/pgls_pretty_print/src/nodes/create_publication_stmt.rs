@@ -90,7 +90,5 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
         emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

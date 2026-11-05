@@ -34,6 +34,8 @@ pub struct Session {
     settings: Settings,
     /// Lock, timeout, and constraint state of the current transaction.
     locks: Locks,
+    /// Tables (schema, name) that an `ALTER TABLE` changed, also in earlier transactions.
+    altered_tables: Vec<(String, String)>,
     /// Transaction nesting depth (0 = not in explicit transaction)
     transaction_depth: usize,
     transaction_mode: TransactionMode,
@@ -150,6 +152,14 @@ impl Session {
         self.locks
             .has_created_relation(relation, catalog, self.search_path())
     }
+    /// Returns true if an earlier `ALTER TABLE` changed the table. `catalog` resolves its name,
+    /// like in [`Session::has_created_relation`].
+    pub fn has_altered_table(&self, relation: &protobuf::RangeVar, catalog: &Catalog) -> bool {
+        let (schema, name) = catalog.relation_name_of(relation, self.search_path());
+        self.altered_tables
+            .iter()
+            .any(|(s, n)| *s == schema && *n == name)
+    }
     /// Returns true if the transaction is currently holding an ACCESS EXCLUSIVE lock
     pub fn is_holding_access_exclusive(&self) -> bool {
         self.locks.holding_access_exclusive
@@ -183,6 +193,13 @@ impl Session {
             NodeEnum::VariableSetStmt(stmt) => {
                 self.locks.apply_variable_set(stmt);
                 self.settings.apply_variable_set(stmt);
+            }
+            NodeEnum::AlterTableStmt(alter) => {
+                if let Some(relation) = &alter.relation {
+                    self.altered_tables
+                        .push(catalog.relation_name_of(relation, self.search_path()));
+                }
+                self.locks.apply(stmt, catalog, self.settings.search_path());
             }
             _ => self.locks.apply(stmt, catalog, self.settings.search_path()),
         }

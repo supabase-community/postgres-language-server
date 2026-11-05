@@ -39,7 +39,5 @@ pub(super) fn emit_truncate_stmt(e: &mut EventEmitter, n: &TruncateStmt) {
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
