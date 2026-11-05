@@ -20,8 +20,8 @@
 //!   We don't know which constraints have an index, so `RENAME CONSTRAINT` and
 //!   `DROP CONSTRAINT` make the index with the constraint's name unknown, and we don't know
 //!   which partition indexes are attached to an index, so dropping the index of a partitioned
-//!   table makes the indexes of all partitions unknown. `DROP COLUMN` doesn't drop the indexes
-//!   on the column.
+//!   table makes the indexes of all partitions unknown. We don't know the columns of the indexes
+//!   of the database, so `DROP COLUMN` makes those of the table and its children unknown.
 
 mod alter_function_stmt;
 mod alter_object_schema_stmt;

@@ -1,10 +1,10 @@
 use pgls_query::{
-    NodeEnum,
+    NodeEnum, NodeRef,
     protobuf::{AlterTableType, ConstrType, IndexStmt, Node, ObjectType},
 };
 
 use crate::catalog::{Catalog, Entry, key};
-use crate::lookup::{IndexInfo, Lookup, Origin, RelationKind};
+use crate::lookup::{IndexInfo, Lookup, Origin, RelationInfo, RelationKind};
 
 /// `CREATE INDEX`. Models where [`DefineIndex`] puts the index: in the schema of its table.
 ///
@@ -46,12 +46,14 @@ pub(super) fn apply_index_stmt(c: &mut Catalog, n: &IndexStmt, search_path: &[St
     if table.kind == RelationKind::PartitionedTable {
         c.indexes_incomplete = true;
     }
+    let columns = index_columns(n, &table);
     let entry = match taken {
         Lookup::Unknown => Entry::Unknown,
         _ => Entry::Defined(IndexInfo {
             schema: table.schema,
             name: n.idxname.clone(),
             table: table.name,
+            columns,
             origin: Origin::File,
         }),
     };
@@ -66,6 +68,70 @@ fn name_taken(c: &Catalog, schema: &str, name: &str) -> Lookup<()> {
         (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
         (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
     }
+}
+
+/// The columns an index uses: those of its keys and `INCLUDE` list, and those its expressions
+/// and predicate reference. [`index_create`] makes the index depend on each of them, so dropping
+/// one drops the index. `None` if an expression references the whole row, or a column we can't
+/// tell.
+///
+/// [`index_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L1132
+fn index_columns(n: &IndexStmt, table: &RelationInfo) -> Option<Vec<String>> {
+    let mut columns = Vec::new();
+    let mut expressions = Vec::new();
+    for element in n.index_params.iter().chain(&n.index_including_params) {
+        let NodeEnum::IndexElem(element) = element.node.as_ref()? else {
+            return None;
+        };
+        if element.name.is_empty() {
+            expressions.push(element.expr.as_deref()?.node.as_ref()?);
+        } else {
+            columns.push(element.name.clone());
+        }
+    }
+    expressions.extend(
+        n.where_clause
+            .as_deref()
+            .and_then(|clause| clause.node.as_ref()),
+    );
+    for expression in expressions {
+        for node in expression.iter() {
+            let NodeRef::ColumnRef(column) = node else {
+                continue;
+            };
+            columns.push(column_ref_column(&column.fields, table)?);
+        }
+    }
+    Some(columns)
+}
+
+/// The column of the table that a column reference in an index expression uses, like
+/// [`transformColumnRef`] resolves it with the table as the only relation in scope: `a` is the
+/// column `a`, or else the whole row of a table named `a`, and `a.b` is the column `b` of the
+/// table `a`, or else the field `b` of the column `a`. `None` for the whole row, and for names
+/// we don't resolve.
+///
+/// [`transformColumnRef`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L509
+fn column_ref_column(fields: &[Node], table: &RelationInfo) -> Option<String> {
+    let names = fields
+        .iter()
+        .map(|field| match field.node.as_ref()? {
+            NodeEnum::String(name) => Some(name.sval.as_str()),
+            _ => None,
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let column = match names.as_slice() {
+        [name] => name,
+        [qualifier, name] if *qualifier == table.name => name,
+        [column, _] => column,
+        _ => return None,
+    };
+    table
+        .columns
+        .as_ref()?
+        .iter()
+        .any(|known| known.name == *column)
+        .then(|| (*column).to_owned())
 }
 
 /// Whether a statement may create or rename indexes other than with `CREATE INDEX` and

@@ -198,6 +198,7 @@ impl CatalogBase {
                     schema: index.schema.clone(),
                     name: index.name.clone(),
                     table: index.table_name.clone(),
+                    columns: None,
                     origin: Origin::Database,
                 },
             );
