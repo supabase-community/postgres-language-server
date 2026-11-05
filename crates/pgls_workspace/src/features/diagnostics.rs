@@ -31,8 +31,8 @@ pub struct CheckDatabaseConnectionParams {
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct CheckDatabaseConnectionResult {
-    /// Why the configured database cannot be used, if it cannot.
-    pub error: Option<String>,
+    /// Why the configured databases cannot be used, one message per database that can't.
+    pub errors: Vec<String>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

@@ -34,7 +34,5 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
         e.indent_end();
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
