@@ -226,15 +226,14 @@ impl WorkspaceServer {
     }
 
     /// The migration tool of the settings that apply to the file.
-    fn migration_tool(
-        &self,
-        project_key: ProjectKey,
-        path: &Path,
-    ) -> Option<&'static dyn MigrationTool> {
-        self.workspaces()
+    fn migration_tool(&self, project_key: ProjectKey, path: &Path) -> &'static dyn MigrationTool {
+        let tool = self
+            .workspaces()
             .settings_for(project_key, path)
             .and_then(|settings| settings.migrations.as_ref())
-            .and_then(|migrations| migrations::migration_tool(migrations.tool))
+            .map(|migrations| migrations.tool)
+            .unwrap_or_default();
+        migrations::migration_tool(tool)
     }
 
     /// Applies the changed settings of a project to its open documents.
@@ -266,16 +265,16 @@ impl WorkspaceServer {
 
     /// Whether the file is a migration. Migration-only rules don't run on other files.
     fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
-        match settings
-            .migrations
-            .as_ref()
-            .and_then(|migrations| migrations.path.as_ref())
-        {
-            Some(migrations_dir) if migrations::is_in_migrations_dir(path, migrations_dir) => {
-                FileKind::Migration
-            }
-            Some(_) => FileKind::Other,
-            None => FileKind::Unknown,
+        let Some((tool, migrations_dir)) = settings.migrations.as_ref().and_then(|migrations| {
+            let tool = migrations::migration_tool(migrations.tool);
+            Some((tool, migrations.path.as_ref()?))
+        }) else {
+            return FileKind::Unknown;
+        };
+        if tool.is_migration(path, migrations_dir) {
+            FileKind::Migration
+        } else {
+            FileKind::Other
         }
     }
 
@@ -941,7 +940,8 @@ fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
         .and_then(|migration_settings| {
             let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let migration = migrations::get_migration(path, migrations_dir)?;
+            let migration = migrations::migration_tool(migration_settings.tool)
+                .migration(path, migrations_dir)?;
 
             Some(&migration.sequence_number <= ignore_before)
         })
@@ -1448,20 +1448,16 @@ impl Workspace for WorkspaceServer {
         let mut diagnostics: Vec<SDiagnostic> = doc.document_diagnostics().to_vec();
         let path = params.path.as_path().display().to_string();
 
-        if let Some(migration_tool) = doc.migration_tool() {
-            diagnostics.extend(
-                migration_tool
-                    .marker_diagnostics(
-                        doc.get_document_content(),
-                        doc.migration_sections(),
-                        doc.statement_ranges(),
-                    )
-                    .into_iter()
-                    .map(|diagnostic| {
-                        SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))
-                    }),
-            );
-        }
+        diagnostics.extend(
+            doc.migration_tool()
+                .marker_diagnostics(
+                    doc.get_document_content(),
+                    doc.migration_sections(),
+                    doc.statement_ranges(),
+                )
+                .into_iter()
+                .map(|diagnostic| SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))),
+        );
 
         let (analysis, syntax_diagnostics, disabled_rules, skipped_sections) = self
             .analyse_document(

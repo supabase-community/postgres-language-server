@@ -205,3 +205,48 @@ fn db_config(port: u16) -> Value {
         "database": "postgres",
     })
 }
+
+#[test]
+fn init_with_dbmate_project_sets_the_migrations_and_the_tool() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir_all(dir.path().join("db/migrations")).unwrap();
+    fs::write(
+        dir.path()
+            .join("db/migrations/20240101000000_create_users.sql"),
+        "-- migrate:up\ncreate table users (id int);\n\n-- migrate:down\ndrop table users;\n",
+    )
+    .unwrap();
+
+    let stdout = run_init(dir.path());
+
+    assert!(
+        stdout.contains("dbmate project detected in db: the migrations are set to db/migrations, and the migration tool to dbmate."),
+        "{stdout}"
+    );
+    let config = read_config(dir.path());
+    assert_eq!(config["migrations"]["migrationsDir"], "db/migrations");
+    assert_eq!(config["migrations"]["tool"], "dbmate");
+    // dbmate reads the database from `DATABASE_URL`, so the connection stays the default one.
+    assert_eq!(read_db_config(dir.path()), db_config(5432));
+}
+
+#[test]
+fn init_with_supabase_and_dbmate_projects_leaves_the_configuration_alone() {
+    let dir = tempfile::tempdir().unwrap();
+    write_supabase_config(dir.path(), "[db]\nport = 6543\n");
+    fs::create_dir_all(dir.path().join("db/migrations")).unwrap();
+    fs::write(
+        dir.path().join("db/migrations/1_init.sql"),
+        "-- migrate:up\n",
+    )
+    .unwrap();
+
+    let stdout = run_init(dir.path());
+
+    assert!(
+        stdout.contains("Found several migration projects (supabase: Supabase, db: dbmate)"),
+        "{stdout}"
+    );
+    assert_eq!(read_db_config(dir.path()), db_config(5432));
+    assert!(read_config(dir.path()).get("migrations").is_none());
+}

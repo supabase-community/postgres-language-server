@@ -1,5 +1,6 @@
-//! Which files are migrations, and their sequence numbers. The tools name the files the same way,
-//! so this is shared by all of them.
+//! Which files are migrations, and their sequence numbers: the defaults of
+//! [`super::MigrationTool::is_migration`] and [`super::MigrationTool::migration`]. Supabase,
+//! dbmate and goose name the files the same way, `<number>_<name>.sql`.
 
 use std::path::Path;
 
@@ -11,7 +12,7 @@ pub(crate) struct Migration {
 }
 
 /// Whether the path is inside the migrations directory.
-pub(crate) fn is_in_migrations_dir(path: &Path, migrations_dir: &Path) -> bool {
+pub(super) fn is_in_migrations_dir(path: &Path, migrations_dir: &Path) -> bool {
     if path.starts_with(migrations_dir) {
         return true;
     }
@@ -27,7 +28,7 @@ pub(crate) fn is_in_migrations_dir(path: &Path, migrations_dir: &Path) -> bool {
 }
 
 /// Get the migration associated with a path, if it is a migration file
-pub(crate) fn get_migration(path: &Path, migrations_dir: &Path) -> Option<Migration> {
+pub(super) fn get_migration(path: &Path, migrations_dir: &Path) -> Option<Migration> {
     if !is_in_migrations_dir(path, migrations_dir) {
         return None;
     }
