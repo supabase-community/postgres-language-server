@@ -1511,6 +1511,7 @@
   "semanticTokens": { "enabled": false }
 }
 </code></pre></div>
+<p>To keep the hints only where they help most, show parameter names for constant arguments only (<code>make_point(x: 1, y: 2)</code>, but not <code>make_point(a + 1, b)</code>) with <code>"inlayHints": { "parameterNames": "literals" }</code>. The other values are <code>"all"</code>, the default, and <code>"none"</code>.</p>
 <p>Without semantic tokens, your editor keeps the highlighting of its SQL grammar. Most editors can also turn these features off on their side, e.g. <code>editor.inlayHints.enabled</code> and <code>editor.semanticHighlighting.enabled</code> in VS Code.</p>
 <p>The language server asks the editor to request inlay hints and semantic tokens again when the configuration changes, when the schema cache is invalidated or a statement is executed, and when the database becomes reachable, if the editor supports these refreshes.</p>
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
