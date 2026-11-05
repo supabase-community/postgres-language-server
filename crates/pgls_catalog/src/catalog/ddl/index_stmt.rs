@@ -72,10 +72,12 @@ fn name_taken(c: &Catalog, schema: &str, name: &str) -> Lookup<()> {
 
 /// The columns an index uses: those of its keys and `INCLUDE` list, and those its expressions
 /// and predicate reference. [`index_create`] makes the index depend on each of them, so dropping
-/// one drops the index. `None` if an expression references the whole row, or a column we can't
-/// tell.
+/// one drops the index. A whole-row reference adds no column: [`find_expr_references_walker`]
+/// records none for it, so dropping a column keeps the index. `None` if an expression references
+/// a name we can't resolve.
 ///
 /// [`index_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L1132
+/// [`find_expr_references_walker`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/dependency.c#L1782
 fn index_columns(n: &IndexStmt, table: &RelationInfo) -> Option<Vec<String>> {
     let mut columns = Vec::new();
     let mut expressions = Vec::new();
@@ -99,39 +101,50 @@ fn index_columns(n: &IndexStmt, table: &RelationInfo) -> Option<Vec<String>> {
             let NodeRef::ColumnRef(column) = node else {
                 continue;
             };
-            columns.push(column_ref_column(&column.fields, table)?);
+            match column_ref(&column.fields, table)? {
+                ColumnUse::Column(name) => columns.push(name),
+                ColumnUse::WholeRow => {}
+            }
         }
     }
     Some(columns)
 }
 
-/// The column of the table that a column reference in an index expression uses, like
-/// [`transformColumnRef`] resolves it with the table as the only relation in scope: `a` is the
-/// column `a`, or else the whole row of a table named `a`, and `a.b` is the column `b` of the
-/// table `a`, or else the field `b` of the column `a`. `None` for the whole row, and for names
-/// we don't resolve.
+/// What a column reference in an index expression uses of the table.
+enum ColumnUse {
+    Column(String),
+    WholeRow,
+}
+
+/// What a column reference in an index expression uses, like [`transformColumnRef`] resolves it
+/// with the table as the only relation in scope: `a` is the column `a`, or else the whole row of
+/// a table named `a`, `t.*` is the whole row of the table `t`, and `a.b` is the column `b` of the
+/// table `a`, or else the field `b` of the column `a`. `None` for names we don't resolve.
 ///
 /// [`transformColumnRef`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L509
-fn column_ref_column(fields: &[Node], table: &RelationInfo) -> Option<String> {
+fn column_ref(fields: &[Node], table: &RelationInfo) -> Option<ColumnUse> {
+    // A name, or `None` for `*`.
     let names = fields
         .iter()
         .map(|field| match field.node.as_ref()? {
-            NodeEnum::String(name) => Some(name.sval.as_str()),
+            NodeEnum::String(name) => Some(Some(name.sval.as_str())),
+            NodeEnum::AStar(_) => Some(None),
             _ => None,
         })
         .collect::<Option<Vec<_>>>()?;
+    let columns = table.columns.as_ref()?;
+    let is_column = |name: &str| columns.iter().any(|column| column.name == name);
     let column = match names.as_slice() {
-        [name] => name,
-        [qualifier, name] if *qualifier == table.name => name,
-        [column, _] => column,
+        [Some(name)] if !is_column(name) && *name == table.name => {
+            return Some(ColumnUse::WholeRow);
+        }
+        [Some(name)] => name,
+        [Some(qualifier), None] if *qualifier == table.name => return Some(ColumnUse::WholeRow),
+        [Some(qualifier), Some(name)] if *qualifier == table.name => name,
+        [Some(column), Some(_)] => column,
         _ => return None,
     };
-    table
-        .columns
-        .as_ref()?
-        .iter()
-        .any(|known| known.name == *column)
-        .then(|| (*column).to_owned())
+    is_column(column).then(|| ColumnUse::Column((*column).to_owned()))
 }
 
 /// Whether a statement may create or rename indexes other than with `CREATE INDEX` and
