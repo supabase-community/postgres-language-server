@@ -74,7 +74,13 @@ pub struct UpdateSettingsParams {
     pub configuration: PartialConfiguration,
     pub vcs_base_path: Option<PathBuf>,
     pub gitignore_matches: Vec<String>,
+    /// The folder that relative paths and globs of the configuration are resolved against: the
+    /// folder of the configuration file.
     pub workspace_directory: Option<PathBuf>,
+    /// Whether the configuration replaces the root settings. Otherwise it is merged into them, and
+    /// the sections it doesn't set keep their values.
+    #[serde(default)]
+    pub replace: bool,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -101,6 +107,10 @@ pub struct ServerInfo {
 pub struct RegisterProjectFolderParams {
     /// The folder of the project. A project without a folder contains every path.
     pub path: Option<PathBuf>,
+    /// The folder with symlinks resolved, if that differs from `path`, e.g. for a folder opened
+    /// through a symlink. The paths below it belong to the project too.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub real_path: Option<PathBuf>,
 }
 
 /// The configuration file of a folder below the root of a project.
@@ -142,6 +152,13 @@ pub struct UpdateNestedSettingsResult {
 pub struct NestedSettingsError {
     pub directory: PathBuf,
     pub message: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct FindProjectParams {
+    pub path: PgLSPath,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -216,6 +233,11 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         &self,
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError>;
+
+    /// The project that the file at `path` belongs to: the one of the deepest folder that contains
+    /// it. A project without a folder contains every path. `None` if no project contains it.
+    fn find_project(&self, params: FindProjectParams)
+    -> Result<Option<ProjectKey>, WorkspaceError>;
 
     /// Unregister a project folder. Its settings, including the nested ones, are deleted.
     fn unregister_project_folder(

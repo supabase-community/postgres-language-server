@@ -16,7 +16,7 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
-use document::{Document, ExecuteStatementMapper, FormatStatementMapper};
+use document::{Document, ExecuteStatementMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 #[cfg(feature = "db")]
@@ -33,6 +33,7 @@ use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
+use pgls_configuration::inlay_hints::ParameterNameHints;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
@@ -58,34 +59,41 @@ use crate::{
             CheckDatabaseConnectionParams, CheckDatabaseConnectionResult, PullDiagnosticsResult,
             PullFileDiagnosticsParams,
         },
-        format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
+        format::{PullFileFormattingParams, PullFormattingResult},
         inlay_hints::{InlayHint, PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
         semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    workspace::{AnalyserDiagnosticsMapper, WithCSTandASTMapper},
+    workspace::{AnalyserDiagnosticsMapper, WithCSTMapper},
 };
 
 use super::{
-    GetFileContentParams, IsPathIgnoredParams, NestedSettingsError, OpenFileParams, ProjectKey,
-    RegisterProjectFolderParams, ServerInfo, UnregisterProjectFolderParams,
-    UpdateNestedSettingsParams, UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
+    FindProjectParams, GetFileContentParams, IsPathIgnoredParams, NestedSettingsError,
+    OpenFileParams, ProjectKey, RegisterProjectFolderParams, ServerInfo,
+    UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
+    UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
 
 mod analyser;
-mod annotation;
 #[cfg(feature = "db")]
 mod async_helper;
 #[cfg(feature = "db")]
 mod connection_key;
 #[cfg(feature = "db")]
+use crate::settings::DatabaseSettings;
+#[cfg(feature = "db")]
+use connection_key::ConnectionKey;
+#[cfg(feature = "db")]
 mod connection_manager;
 #[cfg(feature = "db")]
 pub(crate) use connection_manager::DatabasePools;
 pub(crate) mod document;
+mod formatting;
+#[cfg(feature = "db")]
+mod last_used;
 mod migration;
 mod pg_query;
 #[cfg(feature = "db")]
@@ -199,12 +207,24 @@ impl WorkspaceServer {
         self.snapshot.get()
     }
 
-    /// Register a new project in the current workspace
-    fn register_project(&self, path: PathBuf) -> ProjectKey {
-        let mut workspace = self.workspaces_mut();
-        let workspace_mut = workspace.as_mut();
-        workspace_mut.insert_project(path.clone())
+    /// Drops the pools, failures and snapshots of the connections that no settings of any project
+    /// use any more, after a configuration changed or a project was removed. Otherwise every
+    /// database a configuration ever pointed at would stay in memory until the server stops.
+    #[cfg(feature = "db")]
+    fn drop_unused_connections(&self) {
+        let used: std::collections::HashSet<ConnectionKey> = self
+            .workspaces()
+            .as_ref()
+            .every_settings()
+            .filter(|settings| settings.db.enable_connection)
+            .map(|settings| ConnectionKey::from(&settings.db))
+            .collect();
+        self.connection.retain(|key| used.contains(key));
+        self.snapshot.retain(|key| used.contains(key));
     }
+
+    #[cfg(not(feature = "db"))]
+    fn drop_unused_connections(&self) {}
 
     /// Check whether a file is ignored by the settings of its project that apply to it
     fn is_ignored(&self, project_key: ProjectKey, path: &Path) -> bool {
@@ -335,6 +355,7 @@ impl WorkspaceServer {
             file_kind: self.file_kind(settings, path.as_path()),
             sections,
             typecheck,
+            source: Some(doc.get_document_content().to_owned()),
         });
 
         (
@@ -488,7 +509,7 @@ impl WorkspaceServer {
             // Statements in the bodies of SQL functions are not executed.
             if stmt.function.is_none() {
                 catalog.apply(&stmt.root, session.search_path());
-                session.apply(&stmt.root);
+                session.apply(&stmt.root, &catalog);
             }
         }
         catalog
@@ -743,16 +764,17 @@ impl WorkspaceServer {
                                     .await?;
 
                                     if let Some(diagnostic) = result {
-                                        let span = diagnostic
-                                            .location()
-                                            .span
-                                            .map(|span| span + range.start());
+                                        let span = database_span(
+                                            diagnostic.location().span,
+                                            id.content(),
+                                            range,
+                                        );
                                         diagnostics.push(
                                             diagnostic
                                                 .with_file_path(
                                                     path.as_path().display().to_string(),
                                                 )
-                                                .with_file_span(span.unwrap_or(range)),
+                                                .with_file_span(span),
                                         );
                                     }
                                 }
@@ -789,11 +811,11 @@ impl WorkspaceServer {
                                 }
 
                                 for diagnostic in results.unwrap_or_default() {
-                                    let span = diagnostic.span.map(|span| span + range.start());
+                                    let span = database_span(diagnostic.span, id.content(), range);
                                     diagnostics.push(
                                         diagnostic
                                             .with_file_path(path.as_path().display().to_string())
-                                            .with_file_span(span.unwrap_or(range)),
+                                            .with_file_span(span),
                                     );
                                 }
                             }
@@ -859,18 +881,34 @@ impl Workspace for WorkspaceServer {
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError> {
         let path = params.path.unwrap_or_default();
-        let existing = self.workspaces().as_ref().get_project_key(&path);
+        let mut workspace = self.workspaces_mut();
+        let workspace = workspace.as_mut();
+        let existing = workspace.get_project_key(&path);
         debug!("Register the project {:?}, known as {:?}", path, existing);
 
-        Ok(existing.unwrap_or_else(|| self.register_project(path)))
+        let key = existing.unwrap_or_else(|| workspace.insert_project(path));
+        workspace.set_real_path(key, params.real_path);
+        Ok(key)
+    }
+
+    fn find_project(
+        &self,
+        params: FindProjectParams,
+    ) -> Result<Option<ProjectKey>, WorkspaceError> {
+        Ok(self
+            .workspaces()
+            .as_ref()
+            .find_project(params.path.as_path()))
     }
 
     fn unregister_project_folder(
         &self,
         params: UnregisterProjectFolderParams,
     ) -> Result<(), WorkspaceError> {
-        let mut workspace = self.workspaces_mut();
-        workspace.as_mut().remove_project(params.path.as_path());
+        self.workspaces_mut()
+            .as_mut()
+            .remove_project(params.path.as_path());
+        self.drop_unused_connections();
         Ok(())
     }
 
@@ -882,17 +920,31 @@ impl Workspace for WorkspaceServer {
     #[tracing::instrument(level = "trace", skip(self), err)]
     fn update_settings(&self, params: UpdateSettingsParams) -> Result<(), WorkspaceError> {
         let mut workspace = self.workspaces_mut();
-
-        workspace
+        let settings = workspace
             .as_mut()
             .get_settings_mut(params.project_key)
-            .ok_or_else(WorkspaceError::no_project)?
-            .merge_with_configuration(
+            .ok_or_else(WorkspaceError::no_project)?;
+
+        if params.replace {
+            // A configuration that can't be applied leaves the settings as they were.
+            let mut replacement = Settings::default();
+            replacement.merge_with_configuration(
                 params.configuration,
                 params.workspace_directory,
                 params.vcs_base_path,
                 params.gitignore_matches.as_slice(),
             )?;
+            *settings = replacement;
+        } else {
+            settings.merge_with_configuration(
+                params.configuration,
+                params.workspace_directory,
+                params.vcs_base_path,
+                params.gitignore_matches.as_slice(),
+            )?;
+        }
+        drop(workspace);
+        self.drop_unused_connections();
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
 
@@ -963,6 +1015,7 @@ impl Workspace for WorkspaceServer {
         self.workspaces_mut()
             .as_mut()
             .set_nested_settings(params.project_key, nested);
+        self.drop_unused_connections();
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
         Ok(result)
@@ -1501,199 +1554,12 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let config = pgls_pretty_print::FormatConfig {
-            line_width: settings.formatter.line_width as usize,
-            indent_size: settings.formatter.indent_size as usize,
-            indent_style: settings.formatter.indent_style.into(),
-            keyword_case: settings.formatter.keyword_case.into(),
-            constant_case: settings.formatter.constant_case.into(),
-            type_case: settings.formatter.type_case.into(),
-            comma_style: settings.formatter.comma_style.into(),
-            logical_operator_placement: settings.formatter.logical_operator_placement.into(),
-            layout: settings.formatter.layout.into(),
-            values_row_layout: settings.formatter.values_row_layout.into(),
-            cast_style: settings.formatter.cast_style.into(),
-            clause_body_style: settings.formatter.clause_body_style.into(),
-            isolate_semicolon: settings.formatter.isolate_semicolon,
-            function_argument_groups: settings
-                .formatter
-                .function_argument_groups
-                .iter()
-                .map(|(name, size)| (name.to_lowercase(), usize::from(size.get())))
-                .collect(),
-        };
-
-        let mut diagnostics = Vec::new();
-        let mut statements = Vec::new();
-        let mut formatted_output = String::new();
-        let path_str = params.path.as_path().display().to_string();
-
-        let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
-        let mut formatted_sql_fn_bodies = HashMap::new();
-
-        // Only format SQL function bodies if skip_fn_bodies is false. A body with several
-        // statements is left as written.
-        if !settings.formatter.skip_fn_bodies {
-            let mut statements_per_body: HashMap<StatementId, usize> = HashMap::new();
-            for (id, ..) in &format_candidates {
-                if let Some(parent_id) = id.parent() {
-                    *statements_per_body.entry(parent_id).or_default() += 1;
-                }
-            }
-            for (id, _stmt_range, text, ast_result) in &format_candidates {
-                if !id.is_child() {
-                    continue;
-                }
-
-                let Some(parent_id) = id.parent() else {
-                    continue;
-                };
-
-                if statements_per_body.get(&parent_id) != Some(&1) {
-                    continue;
-                }
-
-                let Ok(ast) = ast_result else {
-                    continue;
-                };
-
-                let Ok(result) = pgls_pretty_print::format_statement(ast, text, &config) else {
-                    continue;
-                };
-
-                let Some(formatted) = restore_named_parameters(text, &result.formatted, ast) else {
-                    continue;
-                };
-
-                formatted_sql_fn_bodies.insert(parent_id, formatted);
-            }
-        }
-
-        // Reconstruct the file by replacing each statement's source span with its
-        // formatted output while copying the gaps between statements (whitespace and
-        // standalone comments) verbatim. libpg_query drops comments from the AST, so
-        // anything that lives outside a statement's range would otherwise be lost.
-        let source = doc.get_document_content();
-        let mut last_end = 0usize;
-
-        // Formatting a range leaves everything outside its statements as written.
-        let collapses_blank_lines = params.range.is_none();
-
-        for (id, stmt_range, text, ast_result) in format_candidates {
-            if id.is_child() {
-                continue;
-            }
-
-            let stmt_start = usize::from(stmt_range.start());
-            let stmt_end = usize::from(stmt_range.end());
-
-            // Preserve the standalone comments that precede this statement, with at most one
-            // blank line between statements and none before the first.
-            let gap = &source[last_end..stmt_start];
-            if collapses_blank_lines {
-                let gap = collapse_blank_lines(gap);
-                formatted_output.push_str(if last_end == 0 {
-                    gap.trim_start()
-                } else {
-                    &gap
-                });
-            } else {
-                formatted_output.push_str(gap);
-            }
-            last_end = stmt_end;
-
-            // Leave statements outside the requested range untouched.
-            if let Some(filter_range) = params.range
-                && stmt_range.intersect(filter_range).is_none()
-            {
-                formatted_output.push_str(&text);
-                continue;
-            }
-
-            match ast_result {
-                Ok(ast) => {
-                    let mut ast = ast;
-                    if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
-                        sql_function::set_formatted_sql_fn_body(&mut ast, formatted_sql_fn_body);
-                    }
-
-                    match pgls_pretty_print::format_statement(&ast, &text, &config) {
-                        Ok(result) => {
-                            match restore_named_parameters(&text, &result.formatted, &ast) {
-                                Some(formatted) => {
-                                    if text != formatted {
-                                        statements.push(StatementFormatResult {
-                                            original: text.clone(),
-                                            formatted: formatted.clone(),
-                                            range: stmt_range,
-                                        });
-                                    }
-                                    formatted_output.push_str(&formatted);
-                                }
-                                None => {
-                                    diagnostics.push(SDiagnostic::new(
-                                        pgls_diagnostics::Error::from(
-                                            WorkspaceError::format_error(
-                                                "Named parameters could not be restored after \
-                                                 formatting, the statement was left untouched"
-                                                    .to_string(),
-                                            ),
-                                        )
-                                        .with_file_path(&path_str)
-                                        .with_file_span(stmt_range),
-                                    ));
-
-                                    formatted_output.push_str(&text);
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            diagnostics.push(SDiagnostic::new(
-                                pgls_diagnostics::Error::from(WorkspaceError::format_error(
-                                    err.to_string(),
-                                ))
-                                .with_file_path(&path_str)
-                                .with_file_span(stmt_range),
-                            ));
-
-                            formatted_output.push_str(&text);
-                        }
-                    }
-                }
-                Err(syntax_err) => {
-                    diagnostics.push(SDiagnostic::new(
-                        pgls_diagnostics::Error::from(syntax_err).with_file_path(&path_str),
-                    ));
-
-                    formatted_output.push_str(&text);
-                }
-            }
-        }
-
-        // Preserve any trailing text or comments after the last statement, without blank lines
-        // at the end of the file but with its final line break.
-        let rest = &source[last_end..];
-        if collapses_blank_lines {
-            let rest = collapse_blank_lines(rest);
-            let rest = if last_end == 0 {
-                rest.trim()
-            } else {
-                rest.trim_end()
-            };
-            formatted_output.push_str(rest);
-            if source.ends_with('\n') && !formatted_output.is_empty() {
-                formatted_output.push('\n');
-            }
-        } else {
-            formatted_output.push_str(rest);
-        }
-
-        Ok(PullFormattingResult {
-            original: doc.get_document_content().to_string(),
-            formatted: formatted_output,
-            statements,
-            diagnostics,
-        })
+        Ok(formatting::format_document(
+            doc,
+            &settings.formatter,
+            params.range,
+            &params.path.as_path().display().to_string(),
+        ))
     }
 
     #[cfg(feature = "db")]
@@ -1701,29 +1567,78 @@ impl Workspace for WorkspaceServer {
         &self,
         params: CheckDatabaseConnectionParams,
     ) -> Result<CheckDatabaseConnectionResult, WorkspaceError> {
-        // Every configuration file of the project can have its own database, so check all of them.
-        let settings = self.workspaces();
-        for settings in settings.as_ref().get_all_settings(params.project_key) {
+        // Every configuration file of the project can have its own database, so check each of
+        // them once, with the folders that use it.
+        let mut connections: Vec<(DatabaseSettings, Vec<PathBuf>)> = Vec::new();
+        let mut errors = Vec::new();
+        for (folder, settings) in self
+            .workspaces()
+            .as_ref()
+            .get_all_settings(params.project_key)
+        {
+            // An invalid connection string disables the connection, so say why.
             if let Some(error) = &settings.db.connection_string_error {
-                return Ok(CheckDatabaseConnectionResult {
-                    error: Some(error.clone()),
-                });
+                if !errors.contains(error) {
+                    errors.push(error.clone());
+                }
+                continue;
             }
+            if !settings.db.enable_connection {
+                continue;
+            }
+            let existing = connections.iter_mut().find(|(db, _)| {
+                ConnectionKey::from(db) == ConnectionKey::from(&settings.db)
+                    && db.connection_string == settings.db.connection_string
+                    && db.password == settings.db.password
+                    && db.conn_timeout_secs == settings.db.conn_timeout_secs
+            });
+            match existing {
+                Some((_, folders)) => folders.push(folder.to_path_buf()),
+                None => connections.push((settings.db.clone(), vec![folder.to_path_buf()])),
+            }
+        }
 
-            let result = self
-                .connection
-                .try_with_pool(&settings.db, |pool| self.snapshot.load(pool).map(|_| ()));
+        // Concurrently, so that unreachable databases time out together rather than one after
+        // the other.
+        let results: Vec<_> = std::thread::scope(|scope| {
+            let checks: Vec<_> = connections
+                .iter()
+                .map(|(db, _)| {
+                    scope.spawn(|| {
+                        self.connection
+                            .try_with_pool(db, |pool| self.snapshot.load(pool).map(|_| ()))
+                    })
+                })
+                .collect();
+            checks
+                .into_iter()
+                .map(|check| check.join().expect("a connection check panicked"))
+                .collect()
+        });
+
+        for ((db, folders), result) in connections.iter().zip(results) {
             match result {
                 None | Some(Ok(())) => {}
                 Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
-                    return Ok(CheckDatabaseConnectionResult {
-                        error: Some(err.to_string()),
-                    });
+                    let folders: Vec<_> = folders
+                        .iter()
+                        .filter(|folder| !folder.as_os_str().is_empty())
+                        .map(|folder| folder.display().to_string())
+                        .collect();
+                    let used_by = if folders.is_empty() {
+                        String::new()
+                    } else {
+                        format!(", the database of {}", folders.join(", "))
+                    };
+                    errors.push(format!(
+                        "Could not connect to {}@{}:{}/{}{used_by}: {err}",
+                        db.username, db.host, db.port, db.database
+                    ));
                 }
                 Some(Err(err)) => return Err(err),
             }
         }
-        Ok(CheckDatabaseConnectionResult::default())
+        Ok(CheckDatabaseConnectionResult { errors })
     }
 
     #[cfg(not(feature = "db"))]
@@ -1851,8 +1766,8 @@ impl Workspace for WorkspaceServer {
         };
 
         // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
-        match doc.iter_at(WithCSTandASTMapper, params.position).last() {
-            Some((stmt_id, range, ts_tree, maybe_ast)) => {
+        match doc.iter_at(WithCSTMapper, params.position).last() {
+            Some((stmt_id, range, ts_tree)) => {
                 let position_in_stmt = params.position - range.start();
                 let (references, snapshot) = self.hover_references(
                     settings,
@@ -1866,7 +1781,6 @@ impl Workspace for WorkspaceServer {
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,
                     snapshot: &snapshot,
-                    ast: maybe_ast.as_ref(),
                     position: position_in_stmt,
                     stmt_sql: stmt_id.content(),
                     references: &references,
@@ -1895,9 +1809,16 @@ impl Workspace for WorkspaceServer {
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
-        if !settings.is_none_or(|settings| settings.inlay_hints.enabled) {
-            return Ok(PullInlayHintsResult::default());
-        }
+        let parameter_names = match settings.map_or(Some(ParameterNameHints::All), |settings| {
+            settings
+                .inlay_hints
+                .enabled
+                .then_some(settings.inlay_hints.parameter_names)
+        }) {
+            Some(ParameterNameHints::All) => pgls_inlay_hints::ParameterNameHints::All,
+            Some(ParameterNameHints::Literals) => pgls_inlay_hints::ParameterNameHints::Literals,
+            Some(ParameterNameHints::None) | None => return Ok(PullInlayHintsResult::default()),
+        };
 
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
@@ -1937,6 +1858,7 @@ impl Workspace for WorkspaceServer {
                         catalog,
                         search_path: session.search_path(),
                         function: stmt.function.as_ref(),
+                        parameter_names,
                     })
                     .into_iter()
                     .map(|hint| InlayHint {
@@ -2070,8 +1992,9 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             }
             // Parameters belong to a function of the file.
             Reference::Parameter { .. } => false,
-            // The columns of a `*` can come from objects that the file changed.
-            Reference::Star { .. } => false,
+            // The columns of a `*` can come from objects that the file changed, and so can the
+            // relations behind CTEs and aliases.
+            Reference::Star { .. } | Reference::Cte { .. } | Reference::Alias { .. } => false,
         })
 }
 
@@ -2085,93 +2008,19 @@ fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSectio
         })
 }
 
-/// Returns `true` if `path` is a directory or
-/// if it is a symlink that resolves to a directory.
-/// Keeps at most one blank line in `text`, which only holds whitespace and comments.
-fn collapse_blank_lines(text: &str) -> String {
-    let mut result = String::with_capacity(text.len());
-    // Line breaks since the last text that is not whitespace. Two make a blank line.
-    let mut line_breaks = 0;
-    for line in text.split_inclusive('\n') {
-        let is_blank = line.trim().is_empty();
-        let ends_line = line.ends_with('\n');
-        if is_blank && ends_line {
-            line_breaks += 1;
-            if line_breaks <= 2 {
-                result.push('\n');
-            }
-            continue;
-        }
-
-        result.push_str(line);
-        if !is_blank {
-            line_breaks = usize::from(ends_line);
-        }
-    }
-    result
-}
-
-/// Put psql named parameters back where the formatter printed their placeholders.
-///
-/// The parser only ever sees placeholders, so the printed statement carries `$1` or a bare
-/// identifier instead of `:'agen_code'` or `:raw_data`. Substitution happens on the token stream
-/// so that a `$1` inside a string literal is left alone, and the result is proven by converting it
-/// back and comparing the normalized ASTs: a statement that does not survive that round trip is
-/// reported as unrestorable and kept as it was written.
-fn restore_named_parameters(
-    original: &str,
-    formatted: &str,
-    original_ast: &pgls_query::NodeEnum,
-) -> Option<String> {
-    use pgls_lexer::{SyntaxKind, lex};
-
-    let conversion = pgls_lexer::convert_to_positional_params_with_metadata(original);
-
-    if conversion.identifier_replacements.is_empty() && conversion.value_replacements.is_empty() {
-        return Some(formatted.to_string());
-    }
-
-    if !conversion.restorable {
-        return None;
-    }
-
-    let lexed = lex(formatted);
-    let mut restored = String::with_capacity(formatted.len());
-
-    for (idx, kind) in lexed.tokens().enumerate() {
-        if kind == SyntaxKind::EOF {
-            break;
-        }
-
-        let text = lexed.text(idx);
-
-        let replacement = match kind {
-            SyntaxKind::IDENT => conversion.identifier_replacements.get(text),
-            SyntaxKind::POSITIONAL_PARAM => text
-                .trim_start_matches('$')
-                .parse::<usize>()
-                .ok()
-                .and_then(|index| conversion.value_replacements.get(&index)),
-            _ => None,
-        };
-
-        match replacement {
-            Some(source_text) => restored.push_str(source_text),
-            None => restored.push_str(text),
-        }
-    }
-
-    let reparsed = pgls_query::parse(&pgls_lexer::convert_to_positional_params(&restored)).ok()?;
-    let mut restored_ast = reparsed.into_root()?;
-    let mut expected_ast = original_ast.clone();
-    pgls_pretty_print::normalize_ast(&mut restored_ast);
-    pgls_pretty_print::normalize_ast(&mut expected_ast);
-
-    if restored_ast == expected_ast {
-        Some(restored)
-    } else {
-        None
-    }
+/// Moves the span of a diagnostic from the database, which is relative to the text of the
+/// statement at `range`, into the file. The span is computed from positions that the database
+/// reports, so it may not fit the statement as we have it, e.g. after the file changed. A span
+/// that isn't inside the statement or not on char boundaries of its text becomes the statement.
+#[cfg(feature = "db")]
+fn database_span(span: Option<TextRange>, statement: &str, range: TextRange) -> TextRange {
+    span.filter(|span| {
+        span.end() <= range.len()
+            && statement
+                .get(std::ops::Range::<usize>::from(*span))
+                .is_some()
+    })
+    .map_or(range, |span| span + range.start())
 }
 
 #[cfg(all(test, feature = "db"))]

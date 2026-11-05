@@ -40,6 +40,5 @@ pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
         super::node_list::emit_dot_separated_list(e, &n.handler_name);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

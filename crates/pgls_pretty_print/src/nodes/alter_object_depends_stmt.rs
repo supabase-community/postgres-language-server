@@ -40,7 +40,5 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
         super::emit_identifier_maybe_quoted(e, &extname.sval);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use futures::{FutureExt, TryStreamExt, channel::oneshot, future};
+use pgls_line_index::offset_of_char_position;
 use pgls_query::NodeEnum;
-use pgls_text_size::TextSize;
 use sqlx::{
     Column, Either, Executor, PgConnection, Row, Statement, ValueRef,
     postgres::{PgColumn, PgDatabaseError, PgErrorPosition, PgRow},
@@ -306,18 +306,10 @@ async fn collect_result(
 /// The result for an error that Postgres raised. Its position counts the characters of the query,
 /// which has `offset` bytes of ASCII before `sql`.
 fn rejected(err: &PgDatabaseError, sql: &str, offset: usize) -> ExecuteStatementResult {
-    // Postgres counts the characters from 1, and points one past the end for an error at the end
-    // of the input.
     let position = match err.position() {
         Some(PgErrorPosition::Original(position)) => position
-            .checked_sub(1 + offset)
-            .and_then(|index| {
-                sql.char_indices()
-                    .map(|(offset, _)| offset)
-                    .chain([sql.len()])
-                    .nth(index)
-            })
-            .and_then(|offset| TextSize::try_from(offset).ok()),
+            .checked_sub(offset)
+            .and_then(|position| offset_of_char_position(sql, position)),
         _ => None,
     };
 
