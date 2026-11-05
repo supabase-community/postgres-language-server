@@ -52,8 +52,7 @@ impl LinterRule for DisallowUniqueConstraint {
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             // Check if this table was created earlier in the transaction
             let table_created_in_transaction = stmt.relation.as_ref().is_some_and(|relation| {
-                ctx.session()
-                    .has_created_object(&relation.schemaname, &relation.relname)
+                ctx.session().has_created_relation(relation, ctx.catalog())
             });
 
             if !table_created_in_transaction {

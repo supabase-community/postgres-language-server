@@ -560,7 +560,7 @@ impl WorkspaceServer {
             // Statements in the bodies of SQL functions are not executed.
             if stmt.function.is_none() {
                 catalog.apply(&stmt.root, session.search_path());
-                session.apply(&stmt.root);
+                session.apply(&stmt.root, &catalog);
             }
         }
         catalog

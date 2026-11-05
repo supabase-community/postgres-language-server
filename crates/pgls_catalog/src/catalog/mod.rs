@@ -71,6 +71,9 @@ pub struct Catalog {
     /// Set once the file ran a statement with effects the catalog can't model (`DO`, `CALL`,
     /// `CREATE EXTENSION` of a new extension, ...). From then on, nothing is known to be missing.
     tainted: bool,
+    /// Whether the last statement was a no-op because of `IF NOT EXISTS`: the object it would
+    /// create is known to exist. See [`Catalog::skipped_existing`].
+    skipped_existing: bool,
     /// Whether lookups ignore [`Catalog::tainted`], for editor features. See
     /// [`Catalog::best_effort`].
     best_effort: bool,
@@ -104,6 +107,7 @@ impl Catalog {
             indexes_incomplete: false,
             database_columns_changed: false,
             tainted: false,
+            skipped_existing: false,
             best_effort: false,
             casts_incomplete: false,
             operators_incomplete: false,
@@ -278,6 +282,53 @@ impl Catalog {
     ) -> Lookup<RelationInfo> {
         let name = names::range_var_name(range_var);
         self.relation(name.schema(), &name.name, search_path)
+    }
+
+    /// The schema and name of the relation a `RangeVar` names: the relation or index it resolves
+    /// to, or, if the catalog doesn't know one, where `CREATE TABLE` would create it.
+    pub fn relation_name_of(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        search_path: &[String],
+    ) -> (String, String) {
+        let name = names::range_var_name(range_var);
+        // Indexes are relations too, in their own map.
+        let in_schema = |schema: &str| match (
+            self.relation_in(schema, &name.name),
+            self.index_in(schema, &name.name),
+        ) {
+            (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(key(schema, &name.name)),
+            (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
+            (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
+        };
+        let found = match name.schema() {
+            Some(schema) => in_schema(schema),
+            None => self.search(relation_search_path(search_path), in_schema),
+        };
+        match found.found() {
+            Some(key) => key,
+            None if range_var.relpersistence == "t" => key("pg_temp", &range_var.relname),
+            None => self.creation_key(&name, search_path),
+        }
+    }
+
+    /// The schema and name of the relation that `CREATE TABLE` creates for a `RangeVar`. Unlike
+    /// [`Catalog::relation_name_of`], this doesn't depend on the relations that exist: a
+    /// temporary table with the name doesn't capture a new permanent table. `None` for system
+    /// catalogs, where Postgres rejects new relations.
+    pub fn relation_creation_name_of(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        search_path: &[String],
+    ) -> Option<(String, String)> {
+        self.relation_creation_key(range_var, search_path)
+    }
+
+    /// Whether the last statement applied was a no-op because of `IF NOT EXISTS`, like `CREATE
+    /// TABLE IF NOT EXISTS` of a table that is known to exist. If the catalog doesn't know
+    /// whether the object exists, the statement may have created it and this is `false`.
+    pub fn skipped_existing(&self) -> bool {
+        self.skipped_existing
     }
 
     /// Whether the relation a `RangeVar` names is known to be a partitioned table.
