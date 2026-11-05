@@ -21,7 +21,5 @@ pub(super) fn emit_alter_collation_stmt(e: &mut EventEmitter, n: &AlterCollation
     e.space();
     e.token(TokenKind::VERSION_KW);
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

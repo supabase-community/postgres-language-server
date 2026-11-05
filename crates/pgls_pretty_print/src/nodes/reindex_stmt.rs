@@ -56,7 +56,5 @@ pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
         super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

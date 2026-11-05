@@ -12,6 +12,10 @@ When you add a PRIMARY KEY constraint, Postgres needs to scan the entire table
 to verify uniqueness and build the underlying index. This requires an ACCESS EXCLUSIVE
 lock which blocks all reads and writes.
 
+Instead, create a unique index concurrently and add the primary key using that index. A
+temporal primary key (`WITHOUT OVERLAPS`, Postgres 18) needs a GiST index, which can't be
+unique, so it has no such alternative.
+
 ## Examples
 
 ### Invalid
