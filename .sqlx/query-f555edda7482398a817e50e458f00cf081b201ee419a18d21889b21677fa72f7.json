@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    c.oid::bigint as \"id!\",\n    n.nspname as \"schema!\",\n    c.relname as \"name!\",\n    t.relname as \"table_name!\",\n    -- The columns `DROP COLUMN` drops the index for: those of its keys and `INCLUDE` list, and\n    -- those its expressions and predicate depend on. The index of a constraint depends on the\n    -- constraint instead of its key columns, so these come from `indkey`.\n    array(\n        SELECT a.attname::text\n        FROM pg_catalog.pg_attribute a\n        WHERE a.attrelid = i.indrelid\n          AND a.attnum > 0\n          AND (\n            a.attnum = ANY (i.indkey)\n            OR EXISTS (\n              SELECT 1\n              FROM pg_catalog.pg_depend d\n              WHERE d.classid = 'pg_catalog.pg_class'::regclass\n                AND d.objid = i.indexrelid\n                AND d.refclassid = 'pg_catalog.pg_class'::regclass\n                AND d.refobjid = i.indrelid\n                AND d.refobjsubid = a.attnum\n            )\n          )\n        ORDER BY a.attnum\n    ) as \"columns?\"\nFROM pg_catalog.pg_class c\nJOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace\nJOIN pg_catalog.pg_index i ON i.indexrelid = c.oid\nJOIN pg_catalog.pg_class t ON t.oid = i.indrelid\n-- i: indexes, I: partitioned indexes\nWHERE c.relkind IN ('i', 'I')\n  AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "schema!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 3,
+        "name": "table_name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 4,
+        "name": "columns?",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "f555edda7482398a817e50e458f00cf081b201ee419a18d21889b21677fa72f7"
+}
