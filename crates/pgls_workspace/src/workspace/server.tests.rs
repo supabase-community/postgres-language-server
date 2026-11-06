@@ -1587,6 +1587,192 @@ fn format_content(content: &str) -> String {
         .formatted
 }
 
+fn template_configuration(modes: &str) -> PartialConfiguration {
+    use pgls_configuration::templating::PartialTemplatingConfiguration;
+    PartialConfiguration {
+        templating: Some(PartialTemplatingConfiguration {
+            syntax: Some(modes.parse().unwrap()),
+        }),
+        format: Some(PartialFormatConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        db: Some(PartialDatabaseConfiguration {
+            disable_connection: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    }
+}
+
+#[tokio::test]
+async fn template_configuration_reload_invalidates_the_open_document_parse() {
+    let (workspace, project_key) = get_test_workspace(Some(template_configuration(""))).unwrap();
+    let path = PgLSPath::new("template.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "SELECT * FROM %s;".into(),
+            version: 1,
+        })
+        .unwrap();
+    let format = || {
+        workspace
+            .pull_file_formatting(PullFileFormattingParams {
+                project_key,
+                path: path.clone(),
+                range: None,
+            })
+            .unwrap()
+    };
+    assert!(!format().diagnostics.is_empty());
+    for modes in ["go-printf,dollar-values", "", "go-printf"] {
+        workspace
+            .update_settings(UpdateSettingsParams {
+                project_key,
+                configuration: template_configuration(modes),
+                gitignore_matches: vec![],
+                vcs_base_path: None,
+                workspace_directory: None,
+                replace: true,
+            })
+            .unwrap();
+        let result = format();
+        assert_eq!(result.diagnostics.is_empty(), !modes.is_empty(), "{modes}");
+        assert!(result.formatted.contains("%s"));
+    }
+    // An incremental update keeps an unspecified syntax; a reload removes it.
+    for replace in [false, true] {
+        let mut configuration = template_configuration("");
+        configuration.templating = None;
+        workspace
+            .update_settings(UpdateSettingsParams {
+                project_key,
+                configuration,
+                replace,
+                gitignore_matches: vec![],
+                vcs_base_path: None,
+                workspace_directory: None,
+            })
+            .unwrap();
+        assert_eq!(format().diagnostics.is_empty(), !replace);
+    }
+}
+
+#[test]
+fn template_fix_guard_protects_bound_values_without_suppressing_static_edits() {
+    use super::{protected_template_ranges, template_fix_is_safe};
+    use pgls_analyser::RuleFix;
+    let source = "SELECT $1;";
+    let syntax = pgls_lexer::TemplateSyntax {
+        dollar_values: true,
+        ..Default::default()
+    };
+    let protected = protected_template_ranges(source, syntax).unwrap();
+    let fix = RuleFix::new("Replace parameter").replace(TextRange::new(7.into(), 9.into()), "1");
+    assert!(!template_fix_is_safe(source, syntax, &protected, &fix));
+    let static_edit = RuleFix::new("Explain").insert(0.into(), "EXPLAIN ");
+    assert!(template_fix_is_safe(
+        source,
+        syntax,
+        &protected,
+        &static_edit
+    ));
+}
+
+#[test]
+fn template_restoration_rejects_reordered_implicit_arguments() {
+    let syntax = pgls_lexer::TemplateSyntax {
+        go_printf: true,
+        ..Default::default()
+    };
+    let original = "SELECT * FROM t OFFSET %s LIMIT %s;";
+    let conversion = pgls_lexer::convert_template_parameters(original, syntax).unwrap();
+    let ast = pgls_query::parse(&conversion.sql)
+        .unwrap()
+        .into_root()
+        .unwrap();
+    // Both occurrences use the same parser proxy, but each printf call consumes a new argument.
+    let proxy = conversion.identifier_replacements.keys().next().unwrap();
+    let reordered = format!("SELECT * FROM t LIMIT {proxy} OFFSET {proxy};");
+    assert!(
+        super::formatting::restore_named_parameters(original, &reordered, &ast, syntax).is_none(),
+        "moving OFFSET after LIMIT would swap the runtime arguments"
+    );
+}
+
+#[tokio::test]
+async fn template_nested_configuration_reparses_only_its_files() {
+    use crate::workspace::NestedSettingsParams;
+    let workspace = WorkspaceServer::new();
+    let project_key = workspace
+        .register_project_folder(RegisterProjectFolderParams {
+            path: Some(PathBuf::from("/repo")),
+            real_path: None,
+        })
+        .unwrap();
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: template_configuration("go-printf"),
+            workspace_directory: Some(PathBuf::from("/repo")),
+            vcs_base_path: None,
+            gitignore_matches: vec![],
+            replace: true,
+        })
+        .unwrap();
+    let root_path = PgLSPath::new("/repo/root.sql");
+    let nested_path = PgLSPath::new("/repo/nested/file.sql");
+    for (path, content) in [
+        (&root_path, "SELECT * FROM %s;"),
+        (&nested_path, "SELECT * FROM {table};"),
+    ] {
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .unwrap();
+    }
+    let parses = |path: &PgLSPath| {
+        workspace
+            .pull_file_formatting(PullFileFormattingParams {
+                project_key,
+                path: path.clone(),
+                range: None,
+            })
+            .unwrap()
+            .diagnostics
+            .is_empty()
+    };
+    assert!(parses(&root_path));
+    assert!(!parses(&nested_path));
+    workspace
+        .update_nested_settings(UpdateNestedSettingsParams {
+            project_key,
+            nested: vec![NestedSettingsParams {
+                directory: PathBuf::from("/repo/nested"),
+                configuration: template_configuration("rust-fmt,dollar-values"),
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+            }],
+        })
+        .unwrap();
+    assert!(parses(&root_path));
+    assert!(parses(&nested_path));
+    workspace
+        .update_nested_settings(UpdateNestedSettingsParams {
+            project_key,
+            nested: vec![],
+        })
+        .unwrap();
+    assert!(parses(&root_path));
+    assert!(!parses(&nested_path));
+}
+
 #[tokio::test]
 async fn test_format_preserves_leading_comment() {
     let formatted = format_content("-- a header comment\nselect   1;");

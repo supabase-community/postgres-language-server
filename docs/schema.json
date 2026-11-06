@@ -132,6 +132,17 @@
         }
       ]
     },
+    "templating": {
+      "description": "The syntax of host-language placeholders in SQL",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TemplatingConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "typecheck": {
       "description": "The configuration for type checking",
       "anyOf": [
@@ -3241,6 +3252,34 @@
         "type": "string"
       },
       "uniqueItems": true
+    },
+    "TemplateSyntax": {
+      "description": "The syntax of host-language placeholders in SQL.",
+      "type": "string",
+      "enum": [
+        "go-printf",
+        "rust-fmt",
+        "dollar-values"
+      ]
+    },
+    "TemplatingConfiguration": {
+      "description": "SQL placeholders supplied by host languages or PostgreSQL bind parameters.",
+      "type": "object",
+      "properties": {
+        "syntax": {
+          "description": "Enabled syntaxes. CLI values are comma-separated; an empty array disables preprocessing.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TemplateSyntax"
+          },
+          "maxItems": 3,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
     },
     "TypecheckConfiguration": {
       "description": "The configuration for type checking.",

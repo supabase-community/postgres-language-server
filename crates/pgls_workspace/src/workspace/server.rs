@@ -16,20 +16,19 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
-use document::{Document, ExecuteStatementMapper};
+use document::{DefaultMapper, Document, ExecuteStatementMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
-#[cfg(feature = "db")]
-use pg_query::convert_to_positional_params_with_metadata;
 use pgls_analyse::{AnalysisFilter, RuleCategories, RuleCategoriesBuilder, RuleFilter};
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection,
+    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
+use pgls_lexer::{TemplateSyntax, convert_template_parameters, template_parameters};
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
@@ -144,6 +143,18 @@ impl Default for WorkspaceServer {
 }
 
 impl WorkspaceServer {
+    /// Reparse files of this project when a root or nested configuration changes its syntax.
+    fn refresh_template_syntax(&self, project_key: super::ProjectKey) {
+        let workspace = self.workspaces();
+        let mut documents = self.documents.write().unwrap();
+        for (path, document) in documents.iter_mut() {
+            if document.project_key == Some(project_key)
+                && let Some(settings) = workspace.settings_for(project_key, path.as_path())
+            {
+                document.set_template_syntax(settings.template_syntax);
+            }
+        }
+    }
     /// Create a new [Workspace]
     #[cfg(feature = "db")]
     pub fn new() -> Self {
@@ -340,6 +351,15 @@ impl WorkspaceServer {
             unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
         }
 
+        let source = if settings.template_syntax == TemplateSyntax::default() {
+            doc.get_document_content().to_owned()
+        } else {
+            convert_template_parameters(doc.get_document_content(), settings.template_syntax)
+                .map_or_else(
+                    |_| doc.get_document_content().to_owned(),
+                    |conversion| conversion.sql,
+                )
+        };
         let analysis = analyser.analyse(AnalyserParams {
             stmts: analysable_stmts,
             unparsable,
@@ -348,7 +368,7 @@ impl WorkspaceServer {
             file_kind: self.file_kind(settings, path.as_path()),
             sections,
             typecheck,
-            source: Some(doc.get_document_content().to_owned()),
+            source: Some(source),
         });
 
         (
@@ -414,10 +434,49 @@ impl WorkspaceServer {
             skip,
         );
         let suppressions = doc.suppressions();
+        let template_protection = (settings.template_syntax != TemplateSyntax::default()
+            && analysis
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.get_fix().is_some()))
+        .then(|| protected_template_ranges(doc.get_document_content(), settings.template_syntax));
         analysis
             .diagnostics
             .into_iter()
             .filter(|diagnostic| !suppressions.is_suppressed(diagnostic))
+            .map(|diagnostic| {
+                let unsafe_fix = template_protection.as_ref().is_some_and(|protection| {
+                    diagnostic.get_fix().is_some_and(|fix| {
+                        protection.as_ref().is_none_or(|conversion| {
+                            !template_fix_is_safe(
+                                doc.get_document_content(),
+                                settings.template_syntax,
+                                conversion,
+                                fix,
+                            )
+                            // Statement-local proxies can differ from whole-file proxies.
+                            || diagnostic.location().span.is_none_or(|span| {
+                                doc.iter_at(DefaultMapper, span.start()).any(|(_, _, sql)| {
+                                    convert_template_parameters(&sql, settings.template_syntax)
+                                        .map_or(true, |statement| {
+                                            fix.edits.iter().any(|edit| {
+                                                contains_template_proxy(
+                                                    &edit.replacement,
+                                                    &statement,
+                                                )
+                                            })
+                                        })
+                                })
+                            })
+                        })
+                    })
+                });
+                if unsafe_fix {
+                    diagnostic.maybe_fix(None)
+                } else {
+                    diagnostic
+                }
+            })
             .collect()
     }
 
@@ -696,6 +755,7 @@ impl WorkspaceServer {
     ) -> Result<(Vec<SDiagnostic>, Vec<TextRange>), WorkspaceError> {
         let typecheck_enabled = settings.typecheck.enabled;
         let plpgsql_check = settings.plpgsql_check.clone();
+        let template_syntax = settings.template_syntax;
         if !typecheck_enabled && !plpgsql_check.enabled {
             return Ok((Vec::new(), Vec::new()));
         }
@@ -740,40 +800,41 @@ impl WorkspaceServer {
                             let statement = statement.filter(|statement| {
                                 typecheck_enabled && statement.database_only && !id.is_child()
                             });
-                            if let Some(statement) = statement {
-                                let conversion =
-                                    convert_to_positional_params_with_metadata(id.content());
+                            if let Some(statement) = statement
+                                && let Ok(conversion) =
+                                    convert_template_parameters(id.content(), template_syntax)
+                                && !conversion.has_identifier_parameters
+                            {
+                                let result = pgls_typecheck::check_sql(TypecheckParams {
+                                    conn: &pool,
+                                    sql: conversion.sql.as_str(),
+                                    ast: &ast,
+                                    tree: &cst,
+                                    snapshot: snapshot.as_ref(),
+                                    search_path: &statement.search_path,
+                                    identifiers: Vec::new(),
+                                })
+                                .await?;
 
-                                if !conversion.has_identifier_parameters {
-                                    let result = pgls_typecheck::check_sql(TypecheckParams {
-                                        conn: &pool,
-                                        sql: conversion.sql.as_str(),
-                                        ast: &ast,
-                                        tree: &cst,
-                                        snapshot: snapshot.as_ref(),
-                                        search_path: &statement.search_path,
-                                        identifiers: Vec::new(),
-                                    })
-                                    .await?;
-
-                                    if let Some(diagnostic) = result {
-                                        let span = database_span(
-                                            diagnostic.location().span,
-                                            id.content(),
-                                            range,
-                                        );
-                                        diagnostics.push(
-                                            diagnostic
-                                                .with_file_path(
-                                                    path.as_path().display().to_string(),
-                                                )
-                                                .with_file_span(span),
-                                        );
-                                    }
+                                if let Some(diagnostic) = result {
+                                    let span = database_span(
+                                        diagnostic.location().span,
+                                        id.content(),
+                                        range,
+                                    );
+                                    diagnostics.push(
+                                        diagnostic
+                                            .with_file_path(path.as_path().display().to_string())
+                                            .with_file_span(span),
+                                    );
                                 }
                             }
 
-                            if plpgsql_check.enabled {
+                            if plpgsql_check.enabled
+                                && template_parameters(id.content(), template_syntax)
+                                    .next()
+                                    .is_none()
+                            {
                                 let results = pgls_plpgsql_check::check_plpgsql(
                                     pgls_plpgsql_check::PlPgSqlCheckParams {
                                         conn: &pool,
@@ -938,6 +999,7 @@ impl Workspace for WorkspaceServer {
         }
         drop(workspace);
         self.drop_unused_connections();
+        self.refresh_template_syntax(params.project_key);
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
 
@@ -1009,6 +1071,7 @@ impl Workspace for WorkspaceServer {
             .as_mut()
             .set_nested_settings(params.project_key, nested);
         self.drop_unused_connections();
+        self.refresh_template_syntax(params.project_key);
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
         Ok(result)
@@ -1018,10 +1081,19 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
+        let workspace = self.workspaces();
+        let syntax = workspace
+            .settings_for(params.project_key, params.path.as_path())
+            .map_or(TemplateSyntax::default(), |settings| {
+                settings.template_syntax
+            });
         let mut documents = self.documents.write().unwrap();
-        documents
-            .entry(params.path.clone())
-            .or_insert_with(|| Document::new(params.content, params.version));
+        documents.entry(params.path.clone()).or_insert_with(|| {
+            let mut document =
+                Document::with_template_syntax(params.content, params.version, syntax);
+            document.project_key = Some(params.project_key);
+            document
+        });
 
         Ok(())
     }
@@ -1044,16 +1116,26 @@ impl Workspace for WorkspaceServer {
     ), err)]
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
+        let workspace = self.workspaces();
+        let syntax = workspace
+            .settings_for(params.project_key, params.path.as_path())
+            .map_or(TemplateSyntax::default(), |settings| {
+                settings.template_syntax
+            });
         let mut documents = self.documents.write().unwrap();
 
         match documents.entry(params.path.clone()) {
             std::collections::hash_map::Entry::Occupied(mut entry) => {
-                entry
-                    .get_mut()
-                    .update_content(params.content, params.version);
+                let document = entry.get_mut();
+                document.set_template_syntax(syntax);
+                document.project_key = Some(params.project_key);
+                document.update_content(params.content, params.version);
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
-                entry.insert(Document::new(params.content, params.version));
+                let mut document =
+                    Document::with_template_syntax(params.content, params.version, syntax);
+                document.project_key = Some(params.project_key);
+                entry.insert(document);
             }
         }
 
@@ -1158,6 +1240,7 @@ impl Workspace for WorkspaceServer {
             &params.path,
             code,
             params.fix_file_mode,
+            settings.template_syntax,
             |doc| self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip),
         ))
     }
@@ -1503,6 +1586,7 @@ impl Workspace for WorkspaceServer {
         Ok(formatting::format_document(
             doc,
             &settings.formatter,
+            settings.template_syntax,
             params.range,
             &params.path.as_path().display().to_string(),
         ))
@@ -1967,6 +2051,91 @@ fn database_span(span: Option<TextRange>, statement: &str, range: TextRange) -> 
                 .is_some()
     })
     .map_or(range, |span| span + range.start())
+}
+
+fn protected_template_ranges(
+    content: &str,
+    syntax: TemplateSyntax,
+) -> Option<pgls_lexer::NamedParameterConversion> {
+    // Includes directives in strings and comments, which are opaque to parser conversion.
+    const PROTECTED_OCCURRENCES_MAX: usize = 1_048_576;
+    let mut conversion = convert_template_parameters(content, syntax).ok()?;
+    for parameter in template_parameters(content, syntax) {
+        if conversion.replacement_ranges.len() >= PROTECTED_OCCURRENCES_MAX {
+            tracing::warn!(
+                "Template fix protection exceeds {PROTECTED_OCCURRENCES_MAX} occurrences"
+            );
+            return None;
+        }
+        let start = parameter.as_ptr() as usize - content.as_ptr() as usize;
+        let end = start + parameter.len();
+        debug_assert!(content.is_char_boundary(start));
+        debug_assert!(content.is_char_boundary(end));
+        conversion
+            .replacement_ranges
+            .push(TextRange::new(start.try_into().ok()?, end.try_into().ok()?));
+    }
+    conversion
+        .replacement_ranges
+        .sort_by_key(|range| range.start());
+    let mut merged: Vec<TextRange> = Vec::new();
+    for range in conversion.replacement_ranges {
+        if let Some(previous) = merged.last_mut()
+            && previous.end() >= range.start()
+        {
+            *previous = previous.cover(range);
+        } else {
+            merged.push(range);
+        }
+    }
+    conversion.replacement_ranges = merged;
+    Some(conversion)
+}
+
+/// AST-derived edits must not touch a proxy or insert its generated identifier into real SQL.
+fn template_fix_is_safe(
+    content: &str,
+    syntax: TemplateSyntax,
+    conversion: &pgls_lexer::NamedParameterConversion,
+    fix: &RuleFix,
+) -> bool {
+    fix.edits.iter().all(|edit| {
+        let start = usize::from(edit.range.start());
+        let end = usize::from(edit.range.end());
+        if end > content.len() || !content.is_char_boundary(start) || !content.is_char_boundary(end)
+        {
+            return false;
+        }
+        debug_assert!(content.is_char_boundary(start));
+        debug_assert!(content.is_char_boundary(end));
+        let index = conversion
+            .replacement_ranges
+            .partition_point(|range| range.end() < edit.range.start());
+        if conversion
+            .replacement_ranges
+            .get(index)
+            .is_some_and(|range| range.start() <= edit.range.end())
+        {
+            return false;
+        }
+        if template_parameters(&edit.replacement, syntax)
+            .next()
+            .is_some()
+        {
+            return false;
+        }
+        !contains_template_proxy(&edit.replacement, conversion)
+    })
+}
+
+fn contains_template_proxy(text: &str, conversion: &pgls_lexer::NamedParameterConversion) -> bool {
+    let lexed = pgls_lexer::lex(text);
+    lexed.tokens().enumerate().any(|(index, kind)| {
+        kind == pgls_lexer::SyntaxKind::IDENT
+            && conversion
+                .identifier_replacements
+                .contains_key(lexed.text(index).trim_matches('"'))
+    })
 }
 
 #[cfg(all(test, feature = "db"))]

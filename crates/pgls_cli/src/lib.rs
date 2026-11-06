@@ -167,10 +167,18 @@ impl<'app> CliSession<'app> {
             PgLSCommand::Parse {
                 file,
                 stdin_file_path,
+                templating,
+                config_path,
             } => {
                 let path = file.or_else(|| stdin_file_path.as_deref().map(PathBuf::from));
+                let syntax = commands::parse::configured_syntax(
+                    self.fs(),
+                    config_path,
+                    path.as_deref(),
+                    templating,
+                )?;
                 let input = commands::parse::read_input(path.as_deref())?;
-                commands::parse::run_parse(&input, path.as_deref())
+                commands::parse::run_parse(&input, path.as_deref(), syntax)
             }
             PgLSCommand::Clean => commands::clean::clean(self),
             PgLSCommand::Start {
