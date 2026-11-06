@@ -31,7 +31,5 @@ pub(super) fn emit_create_range_stmt(e: &mut EventEmitter, n: &CreateRangeStmt) 
         e.token(TokenKind::R_PAREN);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

@@ -3,4 +3,5 @@
 #![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
 pub mod diagnostics;
+pub mod function_body;
 pub mod utils;

@@ -103,6 +103,5 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
 
     e.indent_end();
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

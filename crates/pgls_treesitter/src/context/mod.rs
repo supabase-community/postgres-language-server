@@ -735,6 +735,41 @@ mod tests {
     }
 
     #[test]
+    fn finds_the_quoted_table_of_an_alias() {
+        let test_cases = vec![
+            (
+                r#"select u.id from public."users" u where u.id = 1;"#,
+                "users",
+            ),
+            (
+                r#"select s.n from sales."Счета" as s where s.n = 1;"#,
+                "Счета",
+            ),
+            (r#"select u.id from users u where u.id = 1;"#, "users"),
+        ];
+
+        for (query, expected_table) in test_cases {
+            let tree = get_tree(query);
+
+            let params = TreeSitterContextParams {
+                position: 0.into(),
+                text: query,
+                tree: &tree,
+                server_version_num: None,
+            };
+
+            let ctx = TreesitterContext::new(params);
+            let alias = &query[7..8];
+
+            assert_eq!(
+                ctx.get_mentioned_table_for_alias(alias).map(String::as_str),
+                Some(expected_table),
+                "{query}"
+            );
+        }
+    }
+
+    #[test]
     fn identifies_schema() {
         let test_cases = vec![
             (
