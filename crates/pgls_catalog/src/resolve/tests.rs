@@ -128,6 +128,13 @@ fn database() -> Arc<CatalogBase> {
     Arc::new(CatalogBase::new(Arc::new(cache)))
 }
 
+/// [`database`] on a server of this version.
+fn database_of_version(version_num: i64) -> Arc<CatalogBase> {
+    let mut snapshot = database().snapshot().as_ref().clone();
+    snapshot.version.version_num = Some(version_num);
+    Arc::new(CatalogBase::new(Arc::new(snapshot)))
+}
+
 const SEARCH_PATH: &[&str] = &["public"];
 
 fn search_path() -> Vec<String> {
@@ -490,6 +497,32 @@ fn merge() {
         )),
         [unknown_column(None, "title")]
     );
+    // It hides only the top-level source: the items of a join without an alias stay reachable
+    // by name, but not for unqualified columns. A join alias hides them too.
+    let join = "merge into users u using posts p join posts p2 on p.id = p2.id on p.user_id = u.id";
+    assert_valid(&format!(
+        "{join} when not matched by source and p.id is null and p2.title is null then delete"
+    ));
+    assert_eq!(
+        findings(&format!(
+            "{join} when not matched by source and title is null then delete"
+        )),
+        [unknown_column(None, "title")]
+    );
+    let join = "merge into users u using (posts p join users x on p.user_id = x.id) j \
+                on j.user_id = u.id";
+    assert_eq!(
+        findings(&format!(
+            "{join} when not matched by source and j.title is null then delete"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "j".into() }]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{join} when not matched by source and p.title is null then delete"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "p".into() }]
+    );
     // A source subquery and a CTE.
     assert_valid(
         "with c as (select 1 as id) merge into users using c on c.id = users.id \
@@ -510,6 +543,38 @@ fn merge() {
         findings(&format!("{source} when matched then delete returning nope")),
         [unknown_column(None, "nope")]
     );
+}
+
+/// Before Postgres 17, `merge_action()` is an ordinary function call, of any type.
+#[test]
+fn merge_action_is_a_function_call_before_postgres_17() {
+    let search_path = search_path();
+    let stmt = pgls_query::parse("select merge_action()")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    let node = pgls_query::protobuf::Node { node: Some(stmt) };
+    for (version, typed) in [(150000, false), (160000, false), (170000, true)] {
+        let catalog = Catalog::new(Some(database_of_version(version)));
+        let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+        assert_eq!(columns[0].ty.is_some(), typed, "{version}");
+    }
+}
+
+#[test]
+fn merge_returning_star_expands_the_source_first() {
+    let search_path = search_path();
+    let catalog = Catalog::new(Some(database()));
+    let stmt = pgls_query::parse(
+        "merge into users u using posts p on p.user_id = u.id when matched then delete returning *",
+    )
+    .unwrap()
+    .into_root()
+    .unwrap();
+    let node = pgls_query::protobuf::Node { node: Some(stmt) };
+    let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+    let names = columns.iter().map(|c| c.name.as_str()).collect::<Vec<_>>();
+    assert_eq!(names, ["id", "user_id", "title", "id", "name"]);
 }
 
 #[test]

@@ -45,5 +45,5 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
     }
 
     let level = r.exit_level();
-    resolve_returning_clause(r, n.returning_clause.as_ref(), level)
+    resolve_returning_clause(r, n.returning_clause.as_ref(), &target, level)
 }
