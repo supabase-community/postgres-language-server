@@ -12,7 +12,7 @@ ALTER TABLE users ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || '
 # Diagnostics
 lint/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Adding a generated column requires a table rewrite.
+  × Adding a stored generated column requires a table rewrite.
   
   i This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.
   

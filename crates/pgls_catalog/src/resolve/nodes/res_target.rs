@@ -1,14 +1,16 @@
 //! Select lists, RETURNING lists, and the target columns of INSERT and UPDATE.
 
-use pgls_query::{Node, NodeEnum};
-
-use super::{
-    Resolver, resolve_list,
-    string::{string_value, string_values},
+use pgls_query::{
+    Node, NodeEnum,
+    protobuf::{ReturningClause, ReturningOptionKind},
 };
+use pgls_query_ext::utils::{string_value, string_values};
+
+use super::{Resolver, resolve_list};
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
+    expr::infer_expr,
     scope::{Columns, Item, Level, StarEntry, find_item},
 };
 
@@ -181,9 +183,16 @@ fn item_columns(item: &Item, qualifier: &[String]) -> Option<Vec<StarColumn>> {
     )
 }
 
-/// Resolves a RETURNING list against `level` and returns its columns.
-pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], mut level: Level) -> Columns {
-    add_old_and_new(r, &mut level);
+/// Resolves a RETURNING clause against `level` and returns its columns.
+pub(super) fn resolve_returning_clause(
+    r: &mut Resolver,
+    clause: Option<&ReturningClause>,
+    mut level: Level,
+) -> Columns {
+    let (options, list) = clause.map_or((&[][..], &[][..]), |clause| {
+        (clause.options.as_slice(), clause.exprs.as_slice())
+    });
+    add_old_and_new(r, options, &mut level);
     r.enter_level(level);
     resolve_list(r, list);
     record_star_references(r, list);
@@ -219,7 +228,7 @@ pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], mut level:
                 } else {
                     target.name.clone()
                 },
-                ty: super::super::expr::infer_expr(r, value),
+                ty: infer_expr(r, value),
             });
         }
         if typed.len() == names.len() {
@@ -256,14 +265,15 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
 }
 
 /// Since Postgres 18, `old` and `new` in a RETURNING list are the target row before and after
-/// the change. They are only reachable by name, and only added if no visible item, in this or an
-/// outer query, has that name. The first item of `level` is the target relation. Port of the
-/// defaults in [`transformReturningClause`] and of [`addNSItemForReturning`]; `RETURNING WITH
-/// (OLD AS ...)` needs a newer parser.
+/// the change. They are only reachable by name. `RETURNING WITH (OLD AS o, NEW AS n)` renames
+/// them; a name that is not given explicitly is only added if no visible item, in this or an
+/// outer query, has that name. The first item of `level` is the target relation. Port of
+/// [`transformReturningClause`] and of [`addNSItemForReturning`]; an alias given twice, or one
+/// that clashes with another item, is rejected by Postgres and not reported here.
 ///
 /// [`transformReturningClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2661
 /// [`addNSItemForReturning`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2621
-fn add_old_and_new(r: &Resolver, level: &mut Level) {
+fn add_old_and_new(r: &Resolver, options: &[Node], level: &mut Level) {
     if r.catalog
         .server_version_num()
         .is_some_and(|version| version < 180000)
@@ -273,15 +283,33 @@ fn add_old_and_new(r: &Resolver, level: &mut Level) {
     let Some(target) = level.items.first() else {
         return;
     };
+    let explicit = |kind: ReturningOptionKind| {
+        options
+            .iter()
+            .find_map(|option| match option.node.as_ref() {
+                Some(NodeEnum::ReturningOption(option)) if option.option() == kind => {
+                    Some(option.value.as_str())
+                }
+                _ => None,
+            })
+    };
     let mut aliases = Vec::new();
-    for name in ["old", "new"] {
-        // `refnameNamespaceItem` searches the outer queries too.
-        if level.item(name).is_none() && find_item(&r.levels, name).is_none() {
-            let mut item = target.clone();
-            item.name = Some(name.to_owned());
-            item.schema = None;
-            aliases.push(item);
-        }
+    for (kind, default) in [
+        (ReturningOptionKind::ReturningOptionOld, "old"),
+        (ReturningOptionKind::ReturningOptionNew, "new"),
+    ] {
+        let name = match explicit(kind) {
+            Some(name) => name,
+            // `refnameNamespaceItem` searches the outer queries too.
+            None if level.item(default).is_none() && find_item(&r.levels, default).is_none() => {
+                default
+            }
+            None => continue,
+        };
+        let mut item = target.clone();
+        item.name = Some(name.to_owned());
+        item.schema = None;
+        aliases.push(item);
     }
     level.qualified_only.extend(aliases);
 }

@@ -33,27 +33,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
         }
     } else if let Some(ref query) = n.query {
         e.token(TokenKind::L_PAREN);
-        // Use no-semicolon variant for DML queries in COPY statement
-        match &query.node {
-            Some(pgls_query::NodeEnum::SelectStmt(stmt)) => {
-                super::emit_select_stmt_no_semicolon(e, stmt);
-            }
-            Some(pgls_query::NodeEnum::InsertStmt(stmt)) => {
-                super::emit_insert_stmt_no_semicolon(e, stmt);
-            }
-            Some(pgls_query::NodeEnum::UpdateStmt(stmt)) => {
-                super::emit_update_stmt_no_semicolon(e, stmt);
-            }
-            Some(pgls_query::NodeEnum::DeleteStmt(stmt)) => {
-                super::emit_delete_stmt_no_semicolon(e, stmt);
-            }
-            Some(pgls_query::NodeEnum::MergeStmt(stmt)) => {
-                super::emit_merge_stmt_no_semicolon(e, stmt);
-            }
-            _ => {
-                super::emit_node(query, e);
-            }
-        }
+        super::emit_node(query, e);
         e.token(TokenKind::R_PAREN);
     }
 
@@ -103,8 +83,6 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
         e.token(TokenKind::WHERE_KW);
         super::emit_clause_condition(e, where_clause);
     }
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

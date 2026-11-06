@@ -321,6 +321,16 @@ fn ctes() {
     assert_valid(
         "with recursive c(n) as (select 1 union all select n + 1 from c where n < 2) search depth first by n set ord select ord from c",
     );
+    // The recursive term sees the columns of the non-recursive term.
+    assert_eq!(
+        findings(
+            "with recursive c(n) as (select 1 union all select nope from c where n < 2) select n from c"
+        ),
+        [unknown_column(None, "nope")]
+    );
+    assert_valid(
+        "with recursive c as (select 1 as n union all select n + 1 from c where n < 2) select n from c",
+    );
 }
 
 #[test]
@@ -363,6 +373,28 @@ fn types() {
         findings("select null::nope"),
         [FindingKind::UnknownType {
             schema: None,
+            name: "nope".into()
+        }]
+    );
+}
+
+#[test]
+fn catalog_qualified_names() {
+    // `catalog.schema.name`, where Postgres only accepts the current database as the catalog.
+    assert_valid("select db.pg_catalog.upper('a'), null::db.public.address");
+    assert_eq!(
+        findings("select db.public.nope()"),
+        [FindingKind::UnknownFunction {
+            schema: Some("public".into()),
+            name: "nope".into(),
+            arg_count: 0,
+            name_exists: false
+        }]
+    );
+    assert_eq!(
+        findings("select null::db.public.nope"),
+        [FindingKind::UnknownType {
+            schema: Some("public".into()),
             name: "nope".into()
         }]
     );
@@ -814,5 +846,115 @@ fn function_return_types() {
             "create function f() returns pair language sql as 'select 1, 2, 3'"
         ),
         mismatch("pair", 2, 3)
+    );
+}
+
+/// Typing a sublink resolved its subquery again, at every level of nesting, which took time
+/// exponential in the depth.
+#[test]
+fn nested_subqueries_are_resolved_a_bounded_number_of_times() {
+    for (open, close) in [
+        ("(select ", ")"),
+        ("(select 1 where ", ") = 1"),
+        ("(select 1 union select ", ")"),
+    ] {
+        let sql = |depth: usize| format!("select {}1{};", open.repeat(depth), close.repeat(depth));
+        // As deep as prost decodes.
+        let depth = (1..)
+            .take_while(|&depth| pgls_query::parse(&sql(depth)).is_ok())
+            .last()
+            .unwrap();
+        nodes::RESOLVED_QUERIES.with(|count| count.set(0));
+        assert_valid(&sql(depth));
+        let resolved = nodes::RESOLVED_QUERIES.with(std::cell::Cell::get);
+        assert!(
+            resolved <= 4 * (depth + 1),
+            "{open}: {resolved} for {depth} levels"
+        );
+    }
+}
+
+/// A subquery sees the columns of the enclosing query, so a correlated scalar subquery has their
+/// type, like in Postgres.
+#[test]
+fn correlated_scalar_subquery_has_the_type_of_the_outer_column() {
+    let search_path = search_path();
+    let catalog = Catalog::new(Some(database()));
+    let stmt = pgls_query::parse("select (select u.id) as id from users u")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    let node = pgls_query::protobuf::Node { node: Some(stmt) };
+    let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+    assert_eq!(columns.len(), 1);
+    assert_eq!(columns[0].name, "id");
+    // `users.id` is int8, oid 20.
+    assert_eq!(
+        columns[0].ty,
+        Some(crate::typing::Type::Named(crate::typing::TypeId::Snapshot(
+            20
+        )))
+    );
+}
+
+/// The names of the output columns of `sql`, if their types are known.
+fn typed_output_names(sql: &str) -> Option<Vec<String>> {
+    let catalog = Catalog::new(Some(database()));
+    let parsed = pgls_query::parse(sql).expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    query_output_types(&query, &catalog, &search_path())
+        .map(|columns| columns.into_iter().map(|column| column.name).collect())
+}
+
+#[test]
+fn alias_column_names_apply_to_typed_columns() {
+    assert_eq!(
+        typed_output_names("select * from users as u(a)"),
+        Some(vec!["a".into(), "name".into()])
+    );
+    assert_eq!(
+        typed_output_names("select * from (select 1 as x, 2 as y) as s(a)"),
+        Some(vec!["a".into(), "y".into()])
+    );
+    assert_eq!(
+        typed_output_names("select * from (users join posts on true) as j(a)")
+            .and_then(|names| names.first().cloned()),
+        Some("a".into())
+    );
+    // Postgres rejects more names than columns, so the columns are unknown, like the untyped
+    // ones.
+    assert_eq!(
+        typed_output_names("select * from users as u(a, b, c)"),
+        None
+    );
+    assert_eq!(
+        typed_output_names("select * from (select 1 as x) as s(a, b)"),
+        None
+    );
+}
+
+#[test]
+fn cte_column_lists_apply_to_typed_columns() {
+    assert_eq!(
+        typed_output_names("with c(x) as (select 1 as a, 2 as b) select * from c"),
+        Some(vec!["x".into(), "b".into()])
+    );
+    let catalog = Catalog::new(Some(database()));
+    let parsed =
+        pgls_query::parse("with c(x) as (select 1::int8 as a) select x from c").expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let columns = query_output_types(&query, &catalog, &search_path()).expect("known columns");
+    assert_eq!(
+        columns[0].ty,
+        catalog.builtin_type("int8").map(crate::typing::Type::Named)
+    );
+    // Postgres rejects more names than columns, so the columns are unknown.
+    assert_eq!(
+        typed_output_names("with c(x, y) as (select 1 as a) select * from c"),
+        None
     );
 }

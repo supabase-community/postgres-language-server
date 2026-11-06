@@ -8,6 +8,11 @@ alias t := test
 alias rg := reset-git
 alias qm := quick-modify
 
+# Prepares a fresh checkout or worktree: the libpg_query submodule and the JS dependencies
+setup:
+	git submodule update --init --recursive
+	bun install --frozen-lockfile
+
 # Installs the tools needed to develop
 install-tools:
 	cargo install cargo-binstall
@@ -71,11 +76,11 @@ record-regress major *args:
 
 # Run tests of all crates
 test:
-	cargo test run --no-fail-fast
+	cargo test --workspace --no-fail-fast
 
-# Run tests for the crate passed as argument e.g. just test-create pgls_cli
+# Run tests for the crate passed as argument e.g. just test-crate pgls_cli
 test-crate name:
-	cargo test run -p {{name}} --no-fail-fast
+	cargo test -p {{name}} --no-fail-fast
 
 # Run doc tests
 test-doc:
@@ -86,6 +91,39 @@ lint:
   cargo clippy
   cargo run -p rules_check
   bun oxlint packages/
+
+# Runs what CI's Rust jobs gate on: formatting, clippy with warnings as errors, and a clean codegen
+check:
+  just format-ci
+  cargo clippy --workspace --all-targets -- -D warnings
+  just check-codegen
+
+# Compares a snapshot of the working tree (tracked and untracked files) before and after, so it also works with uncommitted changes.
+# Fails if `just gen-lint` changes any file, like CI's "Check Codegen" job
+check-codegen:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  # Writes the working tree to a tree object through a throwaway copy of the index.
+  snapshot() {
+    local index
+    index=$(mktemp)
+    cp "$(git rev-parse --git-path index)" "$index"
+    GIT_INDEX_FILE="$index" git add -A
+    GIT_INDEX_FILE="$index" git write-tree
+    rm -f "$index"
+  }
+  before=$(snapshot)
+  just gen-lint
+  after=$(snapshot)
+  if [ "$before" != "$after" ]; then
+    echo "just gen-lint changed these files:"
+    git diff-tree -r --name-status "$before" "$after"
+    exit 1
+  fi
+
+# Lints the GitHub Actions workflows like CI's "Lint GitHub Actions" job
+lint-actions:
+  actionlint -color
 
 lint-fix:
   cargo clippy --fix
