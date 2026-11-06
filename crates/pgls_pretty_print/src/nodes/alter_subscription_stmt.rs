@@ -101,7 +101,5 @@ pub(super) fn emit_alter_subscription_stmt(e: &mut EventEmitter, n: &AlterSubscr
         emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

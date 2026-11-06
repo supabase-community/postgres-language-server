@@ -291,10 +291,10 @@ fn string_body(
         }
         let string = tokens.get(i + 1)?;
         match string.token() {
-            Token::Sconst => string_constant(&value, token_range(string)?, sql, None),
+            Token::Sconst => string_constant(value, token_range(string)?, sql, None),
             Token::Usconst => {
                 let escape = unicode_escape_character(tokens.get(i + 2..)?, sql)?;
-                string_constant(&value, token_range(string)?, sql, Some(escape))
+                string_constant(value, token_range(string)?, sql, Some(escape))
             }
             _ => None,
         }
