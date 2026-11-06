@@ -548,6 +548,16 @@ impl CompletionFilter<'_> {
             return None;
         }
 
+        let start_byte = ctx.node_under_cursor.start_byte();
+
+        // The grammar reads some keywords as names in some places, like `usage` in
+        // `grant usage to bob`. There, the keyword is a name and no keyword completion.
+        if goto_node_at_position(&tree, start_byte)
+            .is_some_and(|node| !node.kind().starts_with("keyword_"))
+        {
+            return None;
+        }
+
         if ctx.previous_clause.is_some_and(|n| n.kind() == "ERROR") {
             return Some(());
         }
@@ -565,8 +575,6 @@ impl CompletionFilter<'_> {
                 return None;
             }
         }
-
-        let start_byte = ctx.node_under_cursor.start_byte();
 
         if let Some(investigated_node) = goto_node_at_position(&tree, start_byte) {
             if !previous_sibling_completed(investigated_node) {

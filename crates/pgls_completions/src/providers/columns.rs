@@ -62,8 +62,12 @@ mod tests {
     use pgls_test_utils::QueryWithCursorPosition;
     use sqlx::{Executor, PgPool};
 
-    use crate::test_helper::{
-        CompletionAssertion, TestCompletionsCase, TestCompletionsSuite, assert_complete_results,
+    use crate::{
+        CompletionItemKind, complete,
+        test_helper::{
+            CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
+            assert_complete_results, get_test_deps, get_test_params,
+        },
     };
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -641,6 +645,36 @@ mod tests {
                 &pool,
             )
             .await;
+        }
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_a_column_named_period_in_a_key(pool: PgPool) {
+        pool.execute("create table public.t (period int);")
+            .await
+            .unwrap();
+
+        // `period` is an unreserved keyword that may come before the column of a temporal key,
+        // and here it is the column itself.
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        for (before, after) in [("per", "iod"), ("period", ""), ("", "period")] {
+            for query in [
+                format!("create table t (period int, primary key ({before}{cursor}{after}));"),
+                format!(
+                    "create table u (period int, foreign key (period) references t ({before}{cursor}{after}));"
+                ),
+            ] {
+                let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+                let items = complete(get_test_params(&tree, &snapshot, query.as_str().into()));
+
+                let item = items
+                    .iter()
+                    .find(|item| item.label == "period")
+                    .unwrap_or_else(|| panic!("no completion for `period` in {query}"));
+                assert_eq!(item.kind, CompletionItemKind::Column, "{query}");
+                assert_eq!(item.description, "public.t", "{query}");
+                assert_eq!(item.detail.as_deref(), Some("int4"), "{query}");
+            }
         }
     }
 }

@@ -120,6 +120,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("encoding"),
     SqlKeyword::new("encrypted"),
     SqlKeyword::new("end"),
+    SqlKeyword::new("enforced"),
     SqlKeyword::new("enum"),
     SqlKeyword::new("escape"),
     SqlKeyword::new("except"),
@@ -187,6 +188,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("jsonb"),
     SqlKeyword::new("key"),
     SqlKeyword::new("language"),
+    SqlKeyword::new("large"),
     SqlKeyword::new("last"),
     SqlKeyword::new("lateral"),
     SqlKeyword::new("leakproof"),
@@ -219,6 +221,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("null").require_prefix(),
     SqlKeyword::new("nulls"),
     SqlKeyword::new("numeric"),
+    SqlKeyword::new("objects"),
     SqlKeyword::new("of"),
     SqlKeyword::new("off"),
     SqlKeyword::new("offset"),
@@ -236,12 +239,14 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("out"),
     SqlKeyword::new("outer"),
     SqlKeyword::new("over"),
+    SqlKeyword::new("overlaps"),
     SqlKeyword::new("overriding"),
     SqlKeyword::new("owned"),
     SqlKeyword::new("owner"),
     SqlKeyword::new("parallel"),
     SqlKeyword::new("partition"),
     SqlKeyword::new("password"),
+    SqlKeyword::new("period"),
     SqlKeyword::new("permissive"),
     SqlKeyword::new("plain"),
     SqlKeyword::new("policy"),
@@ -286,9 +291,11 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("rows"),
     SqlKeyword::new("safe"),
     SqlKeyword::new("schema"),
+    SqlKeyword::new("schemas"),
     SqlKeyword::new("security"),
     SqlKeyword::new("select").starts_statement(),
     SqlKeyword::new("sequence"),
+    SqlKeyword::new("sequences"),
     SqlKeyword::new("serial"),
     SqlKeyword::new("serializable"),
     SqlKeyword::new("session"),
@@ -337,6 +344,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("true").require_prefix(),
     SqlKeyword::new("truncate").starts_statement(),
     SqlKeyword::new("type"),
+    SqlKeyword::new("types"),
     SqlKeyword::new("unbounded"),
     SqlKeyword::new("uncommitted"),
     SqlKeyword::new("union"),
@@ -345,6 +353,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("unsafe"),
     SqlKeyword::new("until"),
     SqlKeyword::new("update").starts_statement(),
+    SqlKeyword::new("usage"),
     SqlKeyword::new("user"),
     SqlKeyword::new("using"),
     SqlKeyword::new("uuid"),
@@ -358,6 +367,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("verbose"),
     SqlKeyword::new("version"),
     SqlKeyword::new("view"),
+    SqlKeyword::new("virtual"),
     SqlKeyword::new("volatile"),
     SqlKeyword::new("wal"),
     SqlKeyword::new("when"),
@@ -425,11 +435,11 @@ mod tests {
     use tree_sitter::Language;
 
     use crate::{
-        CompletionItemKind,
+        CompletionItemKind, complete,
         providers::keywords::ALL_KEYWORDS,
         test_helper::{
             CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
-            assert_complete_results, assert_no_complete_results,
+            assert_complete_results, assert_no_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -969,5 +979,131 @@ mod tests {
             &pool,
         )
         .await;
+    }
+
+    /// The keywords offered at the cursor, sorted.
+    async fn keywords_at(query: &str, pool: &PgPool) -> Vec<String> {
+        let (tree, snapshot) = get_test_deps(None, query.into(), pool).await;
+        let params = get_test_params(&tree, &snapshot, query.into());
+        let mut keywords = complete(params)
+            .into_iter()
+            .filter(|item| item.kind == CompletionItemKind::Keyword)
+            .map(|item| item.label)
+            .collect::<Vec<_>>();
+        keywords.sort_unstable();
+        keywords
+    }
+
+    #[sqlx::test]
+    async fn completes_default_privileges_targets(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges grant select on {cursor}"),
+                &pool
+            )
+            .await,
+            [
+                "functions",
+                "large",
+                "routines",
+                "schemas",
+                "sequences",
+                "tables",
+                "types"
+            ]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!(
+                    "alter default privileges in schema public grant select on large {cursor}"
+                ),
+                &pool
+            )
+            .await,
+            ["objects"]
+        );
+    }
+
+    #[sqlx::test]
+    async fn completes_default_privileges_options_in_any_order(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `in` needs a prefix.
+        assert_eq!(
+            keywords_at(&format!("alter default privileges {cursor}"), &pool).await,
+            ["for", "grant", "revoke"]
+        );
+        assert_eq!(
+            keywords_at(&format!("alter default privileges i{cursor}"), &pool).await,
+            ["in"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges for role admin i{cursor}"),
+                &pool
+            )
+            .await,
+            ["in"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges in schema public {cursor}"),
+                &pool
+            )
+            .await,
+            ["for", "grant", "revoke"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges in schema public for {cursor}"),
+                &pool
+            )
+            .await,
+            ["role", "user"]
+        );
+        // Postgres rejects an option given twice.
+        for options in [
+            "for role admin in schema public",
+            "in schema public for role admin",
+        ] {
+            assert_eq!(
+                keywords_at(
+                    &format!("alter default privileges {options} {cursor}"),
+                    &pool
+                )
+                .await,
+                ["grant", "revoke"],
+                "{options}"
+            );
+        }
+    }
+
+    #[sqlx::test]
+    async fn completes_constraint_attributes(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `not` needs a prefix.
+        assert_eq!(
+            keywords_at(&format!("alter table t alter constraint c {cursor}"), &pool).await,
+            ["deferrable", "enforced", "inherit", "initially", "no"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter table t alter constraint c not {cursor}"),
+                &pool
+            )
+            .await,
+            ["deferrable", "enforced"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter table t add constraint c check (a > 0) not {cursor}"),
+                &pool
+            )
+            .await,
+            ["deferrable", "enforced", "valid"]
+        );
     }
 }
