@@ -1,14 +1,12 @@
 use futures::TryStreamExt;
-use pgls_text_size::TextSize;
+use pgls_line_index::offset_of_char_position;
 use sqlx::{
     Column, Either, Executor, PgConnection, PgPool, Row, Statement, ValueRef,
     postgres::{PgColumn, PgDatabaseError, PgErrorPosition, PgRow},
 };
 
+use super::{EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementResult};
 use crate::diagnostics::is_connection_failure;
-use crate::features::code_actions::{
-    EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementResult,
-};
 
 /// Executes `sql` and collects the rows it returns, if any.
 ///
@@ -18,7 +16,7 @@ use crate::features::code_actions::{
 ///
 /// Each statement runs on its own: afterwards, the session is reset, so a `begin` or `set` does
 /// not carry over to the next statement on the connection.
-pub(super) async fn execute_statement(
+pub(crate) async fn execute_statement(
     pool: &PgPool,
     sql: &str,
 ) -> Result<ExecuteStatementResult, sqlx::Error> {
@@ -132,16 +130,8 @@ async fn collect_result(
 }
 
 fn rejected(err: &PgDatabaseError, sql: &str) -> ExecuteStatementResult {
-    // Postgres counts the characters from 1, and points one past the end for an error at the end
-    // of the input.
     let position = match err.position() {
-        Some(PgErrorPosition::Original(position)) => position.checked_sub(1).and_then(|index| {
-            sql.char_indices()
-                .map(|(offset, _)| offset)
-                .chain([sql.len()])
-                .nth(index)
-                .and_then(|offset| TextSize::try_from(offset).ok())
-        }),
+        Some(PgErrorPosition::Original(position)) => offset_of_char_position(sql, position),
         _ => None,
     };
 

@@ -281,7 +281,7 @@ fn format_statement_once(
     );
     emitter.set_comments_before_case_end(attached.before_case_end_by_location);
     emitter.set_truncated_identifiers(identifiers::truncated_identifiers(sql));
-    nodes::emit_node_enum(ast, &mut emitter);
+    nodes::emit_statement(&mut emitter, ast);
     let pending = emitter.pending_comments();
     if pending > 0 {
         return Err(FormatError::UnplaceableComment { count: pending });
