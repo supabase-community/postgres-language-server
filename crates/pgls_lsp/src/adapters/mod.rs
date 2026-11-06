@@ -111,6 +111,22 @@ mod tests {
     }
 
     #[test]
+    fn crlf_belongs_to_the_line_break() {
+        let line_index = LineIndex::new("ab\r\ncd");
+        let encoding = PositionEncoding::Wide(WideEncoding::Utf16);
+        // Past the end of the line: before the `\r`.
+        assert_eq!(
+            offset(&line_index, Position::new(0, 10), encoding).unwrap(),
+            TextSize::from(2)
+        );
+        // Between the `\r` and the `\n`: the end of the line.
+        assert_eq!(
+            position(&line_index, TextSize::from(3), encoding).unwrap(),
+            Position::new(0, 2)
+        );
+    }
+
+    #[test]
     fn positions_inside_a_character_are_its_start() {
         // `é` is 2 bytes and 1 UTF-16 unit, `😀` is 4 bytes and 2 UTF-16 units.
         let line_index = LineIndex::new("aé😀b");
