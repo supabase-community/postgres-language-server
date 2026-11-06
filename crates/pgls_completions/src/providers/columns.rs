@@ -1,4 +1,4 @@
-use pgls_catalog::{Column, Snapshot};
+use pgls_catalog::{Column, NamePosition, Snapshot, identifier_name};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::with_schema_or_alias;
+use super::helper::{Qualifier, with_schema_or_alias};
 
 pub fn complete_columns<'a>(
     ctx: &TreesitterContext<'a>,
@@ -36,12 +36,19 @@ pub fn complete_columns<'a>(
 
 fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText {
     // A `column_identifier` is a column name that can't be qualified, like the target of
-    // `SET col = ...` or a column of an INSERT column list.
+    // `SET col = ...` or a column of an INSERT column list. The alias is a name, which is quoted
+    // again if needed.
     let alias = (ctx.node_under_cursor.kind() != "column_identifier")
         .then(|| ctx.get_used_alias_for_table(col.table_name.as_str()))
-        .flatten();
+        .flatten()
+        .map(|alias| identifier_name(&alias));
 
-    let with_schema_or_alias = with_schema_or_alias(ctx, col.name.as_str(), alias.as_deref());
+    let with_schema_or_alias = with_schema_or_alias(
+        ctx,
+        col.name.as_str(),
+        alias.as_deref().map(Qualifier::Alias),
+        NamePosition::ColId,
+    );
 
     let range = get_range_to_replace(ctx);
 
