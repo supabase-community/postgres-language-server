@@ -16,6 +16,7 @@
 //!   as missing.
 //! - Renaming a schema makes the rest of the file unknown.
 
+mod alter_enum_stmt;
 mod alter_object_schema_stmt;
 mod alter_table_stmt;
 mod composite_type_stmt;
@@ -41,6 +42,7 @@ use pgls_query::NodeEnum;
 
 use super::Catalog;
 
+use alter_enum_stmt::apply_alter_enum_stmt;
 use alter_object_schema_stmt::apply_alter_object_schema_stmt;
 use alter_table_stmt::apply_alter_table_stmt;
 use composite_type_stmt::apply_composite_type_stmt;
@@ -82,6 +84,7 @@ impl Catalog {
             NodeEnum::DefineStmt(n) => apply_define_stmt(c, n, search_path),
             NodeEnum::CreateFunctionStmt(n) => apply_create_function_stmt(c, n, search_path),
             NodeEnum::AlterTableStmt(n) => apply_alter_table_stmt(c, n, search_path),
+            NodeEnum::AlterEnumStmt(n) => apply_alter_enum_stmt(c, n, search_path),
             NodeEnum::RenameStmt(n) => apply_rename_stmt(c, n, search_path),
             NodeEnum::AlterObjectSchemaStmt(n) => apply_alter_object_schema_stmt(c, n, search_path),
             NodeEnum::DropStmt(n) => apply_drop_stmt(c, n, search_path),
