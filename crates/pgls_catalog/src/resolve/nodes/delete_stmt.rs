@@ -27,7 +27,7 @@ fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Columns {
     };
     let target = resolve_target_relation(r, relation);
 
-    let mut level = Level::with_item(target);
+    let mut level = Level::with_item(target.clone());
     level.extend(resolve_from_clause(r, &n.using_clause));
     r.enter_level(level);
 
@@ -39,5 +39,5 @@ fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Columns {
     }
 
     let level = r.exit_level();
-    resolve_returning_clause(r, n.returning_clause.as_ref(), level)
+    resolve_returning_clause(r, n.returning_clause.as_ref(), &target, level)
 }

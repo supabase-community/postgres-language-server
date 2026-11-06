@@ -111,7 +111,12 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         resolve_on_conflict_clause(r, conflict, &target);
     }
 
-    resolve_returning_clause(r, n.returning_clause.as_ref(), Level::with_item(target))
+    resolve_returning_clause(
+        r,
+        n.returning_clause.as_ref(),
+        &target,
+        Level::with_item(target.clone()),
+    )
 }
 
 /// The type of each target column of an INSERT, in the order of the values. `None` for columns

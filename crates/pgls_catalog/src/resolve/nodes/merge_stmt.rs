@@ -41,11 +41,15 @@ fn resolve_merge(r: &mut Resolver, n: &MergeStmt) -> Columns {
     let target = resolve_target_relation(r, relation);
     // The source is transformed like a FROM list of one item, before the target is in the
     // namespace, so a LATERAL source can't see the target.
-    let source = match n.source_relation.as_deref() {
-        Some(source) => resolve_from_clause(r, std::slice::from_ref(source)),
+    let (source, source_by_name) = match n.source_relation.as_deref() {
+        Some(node) => {
+            let source = resolve_from_clause(r, std::slice::from_ref(node));
+            let by_name = source_by_name(node, &source);
+            (source, by_name)
+        }
         None => {
             r.depends_on_file();
-            Level::default()
+            (Level::default(), Level::default())
         }
     };
     let mut both = Level::with_item(target.clone());
@@ -53,7 +57,7 @@ fn resolve_merge(r: &mut Resolver, n: &MergeStmt) -> Columns {
 
     // The join condition sees the source and the target.
     if let Some(condition) = n.join_condition.as_deref() {
-        r.enter_level(both.clone());
+        r.enter_level(both);
         resolve_expr(r, condition);
         r.exit_level();
     }
@@ -61,31 +65,70 @@ fn resolve_merge(r: &mut Resolver, n: &MergeStmt) -> Columns {
     for clause in &n.merge_when_clauses {
         match clause.node.as_ref() {
             Some(NodeEnum::MergeWhenClause(clause)) => {
-                resolve_when_clause(r, clause, &target, &source);
+                resolve_when_clause(r, clause, &target, &source, &source_by_name);
             }
             _ => r.depends_on_file(),
         }
     }
 
     // RETURNING sees the source and the target, and `old` and `new` for the target row. The
-    // first item of the level is the target.
-    resolve_returning_clause(r, n.returning_clause.as_ref(), both)
+    // target is added to the namespace after the source, so `*` expands the source first.
+    let mut returning = source;
+    returning.extend(Level::with_item(target.clone()));
+    resolve_returning_clause(r, n.returning_clause.as_ref(), &target, returning)
+}
+
+/// What `NOT MATCHED BY SOURCE` sees of the source. [`setNamespaceForMergeWhen`] hides only the
+/// namespace item of the top-level source RTE. The items inside a join without an alias are
+/// namespace items of their own, reachable by name but not for unqualified columns
+/// ([`transformFromClauseItem`]), and stay so. A join with an alias hides them completely.
+///
+/// [`setNamespaceForMergeWhen`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L52
+/// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
+fn source_by_name(node: &Node, source: &Level) -> Level {
+    let Some(NodeEnum::JoinExpr(join)) = node.node.as_ref() else {
+        return Level::default();
+    };
+    if join.alias.is_some() {
+        return Level::default();
+    }
+    if join.join_using_alias.is_some() {
+        // The `USING` alias comes first in the namespace with the join's RTE, so Postgres hides
+        // it instead of the join, whose columns stay visible. Keep all of the source.
+        return source.clone();
+    }
+    Level {
+        qualified_only: source.items.clone(),
+        has_opaque_items: source.has_opaque_items,
+        ..Default::default()
+    }
 }
 
 /// A `WHEN [NOT] MATCHED` clause, with what its kind can see ([`setNamespaceForMergeWhen`]):
-/// `MATCHED` sees the source and the target, `NOT MATCHED BY SOURCE` only the target, and
-/// `NOT MATCHED [BY TARGET]` only the source. The INSERT target columns are those of the target
-/// anyway.
+/// `MATCHED` sees the source and the target, `NOT MATCHED BY SOURCE` the target and
+/// `source_by_name`, and `NOT MATCHED [BY TARGET]` only the source. The INSERT target columns
+/// are those of the target anyway.
 ///
 /// [`setNamespaceForMergeWhen`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L52
-fn resolve_when_clause(r: &mut Resolver, n: &MergeWhenClause, target: &Item, source: &Level) {
+fn resolve_when_clause(
+    r: &mut Resolver,
+    n: &MergeWhenClause,
+    target: &Item,
+    source: &Level,
+    source_by_name: &Level,
+) {
     let level = match n.match_kind() {
         MergeMatchKind::MergeWhenMatched => {
             let mut both = Level::with_item(target.clone());
             both.extend(source.clone());
             both
         }
-        MergeMatchKind::MergeWhenNotMatchedBySource => Level::with_item(target.clone()),
+        MergeMatchKind::MergeWhenNotMatchedBySource => {
+            let mut level = Level::with_item(target.clone());
+            level.extend(source_by_name.clone());
+            level.qualified_only = source_by_name.qualified_only.clone();
+            level
+        }
         MergeMatchKind::MergeWhenNotMatchedByTarget => source.clone(),
         MergeMatchKind::Undefined => {
             r.depends_on_file();
