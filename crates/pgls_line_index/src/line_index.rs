@@ -79,9 +79,25 @@ impl LineIndex {
         }
     }
 
+    /// The length of the text.
+    pub fn len(&self) -> TextSize {
+        self.len
+    }
+
+    /// The offset of the start of each line, starting with `0`.
+    pub fn line_starts(&self) -> &[TextSize] {
+        &self.newlines
+    }
+
     /// The line and UTF-8 column of `offset`. An offset between the `\r` and the `\n` of a line
-    /// break is the end of its line, and an offset past the end of the text is the end of the text.
+    /// break is the end of its line. Debug builds assert that `offset` is inside the text, release
+    /// builds turn an offset past the end of the text into the end of the text.
     pub fn line_col(&self, offset: TextSize) -> Option<LineCol> {
+        debug_assert!(
+            self.is_char_boundary(offset),
+            "offset {offset:?} is not on a char boundary of a text of length {:?}",
+            self.len
+        );
         let offset = offset.min(self.len);
         let offset = if self.crlf_newlines.binary_search(&offset).is_ok() {
             offset - TextSize::from(1)
@@ -113,7 +129,9 @@ impl LineIndex {
             return self.len;
         };
         let col = TextSize::from(line_col.col).min(self.line_end(line) - start);
-        start + self.floor_char_boundary(line_col.line, col)
+        let offset = start + self.floor_char_boundary(line_col.line, col);
+        debug_assert!(self.is_char_boundary(offset));
+        offset
     }
 
     /// The end of `line`: the start of its line break, or the end of the text.
@@ -127,6 +145,19 @@ impl LineIndex {
         } else {
             newline
         }
+    }
+
+    /// Whether `offset` lies inside the text and not inside a multi-byte character.
+    pub fn is_char_boundary(&self, offset: TextSize) -> bool {
+        if offset > self.len {
+            return false;
+        }
+        let line = self.newlines.partition_point(|&it| it <= offset) - 1;
+        let Some(start) = self.newlines.get(line) else {
+            return false;
+        };
+        let col = offset - start;
+        u32::try_from(line).is_ok_and(|line| self.floor_char_boundary(line, col) == col)
     }
 
     /// The start of the character that contains column `col` of `line`.

@@ -33,7 +33,6 @@ pub(super) fn emit_composite_type_stmt(e: &mut EventEmitter, n: &CompositeTypeSt
     }
 
     e.token(TokenKind::R_PAREN);
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

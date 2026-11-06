@@ -12,6 +12,9 @@ Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock, which blocks all r
 writes to the table. Instead, create a unique index concurrently and then add the
 constraint using that index.
 
+A temporal unique constraint (`WITHOUT OVERLAPS`, Postgres 18) needs a GiST index, which
+can't be unique, so it has no such alternative.
+
 ## Examples
 
 ### Invalid

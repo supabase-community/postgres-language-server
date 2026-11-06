@@ -1,7 +1,7 @@
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::WideEncoding::{Utf16, Utf32};
-use crate::{LineCol, LineIndex, WideLineCol, changed_range};
+use crate::{LineCol, LineIndex, WideLineCol, changed_range, offset_of_char_position};
 
 #[test]
 fn line_breaks_and_wide_characters() {
@@ -21,7 +21,6 @@ fn line_breaks_and_wide_characters() {
     assert_eq!(line_col(10), at(2, 2));
     assert_eq!(line_col(14), at(2, 6));
     assert_eq!(line_col(15), at(2, 7));
-    assert_eq!(line_col(100), at(2, 7));
 
     // Past the end of a line: the start of its line break. Past the last line: the end of the
     // text.
@@ -135,4 +134,25 @@ fn changed_range_keeps_crlf_whole() {
             );
         }
     }
+}
+
+#[test]
+fn character_positions_are_one_based() {
+    let text = "select 'prüfen', missing from t";
+    let missing = text.find("missing").unwrap();
+    let position = text[..missing].chars().count() + 1;
+    let chars = text.chars().count();
+
+    assert_eq!(
+        offset_of_char_position(text, position),
+        Some(TextSize::from(missing as u32))
+    );
+    assert_eq!(offset_of_char_position(text, 1), Some(TextSize::from(0)));
+    assert_eq!(
+        offset_of_char_position(text, chars + 1),
+        Some(TextSize::of(text))
+    );
+    assert_eq!(offset_of_char_position(text, 0), None);
+    assert_eq!(offset_of_char_position(text, chars + 2), None);
+    assert_eq!(offset_of_char_position("", 1), Some(TextSize::from(0)));
 }
