@@ -127,6 +127,49 @@ async fn ctes_and_aliases(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn roles_and_schemas(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted("grant usage on schema public, nope to anon, \"authenticated\", nobody"),
+        "grant usage on schema [public:namespace], nope \
+         to [anon:variable], [\"authenticated\":variable], nobody"
+    );
+    assert_eq!(
+        f.highlighted(
+            "grant select on all tables in schema /* c */ public to public, current_user"
+        ),
+        "grant select on all tables in schema /* c */ [public:namespace] to public, current_user"
+    );
+    assert_eq!(
+        f.highlighted("create schema if not exists public authorization owner"),
+        "create schema if not exists [public:namespace] authorization [owner:variable]"
+    );
+    assert_eq!(
+        f.highlighted("drop schema if exists nope, public cascade"),
+        "drop schema if exists nope, [public:namespace] cascade"
+    );
+    assert_eq!(
+        f.highlighted("set search_path to \"$user\", public, 'public'"),
+        "set search_path to \"$user\", [public:namespace], 'public'"
+    );
+    assert_eq!(f.highlighted("set role anon"), "set role [anon:variable]");
+    assert_eq!(
+        f.highlighted("alter table users set schema public"),
+        "alter table users set schema [public:namespace]"
+    );
+    assert_eq!(
+        f.highlighted("alter default privileges for role owner in schema public grant select on tables to anon"),
+        "alter default privileges for role [owner:variable] in schema [public:namespace] \
+         grant select on tables to [anon:variable]"
+    );
+    // A schema named like a column of the query is no schema.
+    assert_eq!(
+        f.highlighted("select schema, public from (select 1 as schema, 2 as public) s"),
+        "select [schema:property], [public:property] from (select 1 as schema, 2 as public) s"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn functions_and_types(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
