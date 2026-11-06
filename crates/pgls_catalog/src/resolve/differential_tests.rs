@@ -609,6 +609,32 @@ const MERGE_CASES: &[(&str, i32, Expect)] = &[
         Accept,
     ),
     (
+        "merge into logs l using (select 1::int8 as k, 'x'::text as t) s on s.k = l.item_id \
+         when matched then delete returning *",
+        170000,
+        Accept,
+    ),
+    (
+        "with changed as (merge into logs l using (select 1::int8 as k) s on s.k = l.item_id \
+         when matched then delete returning *) select * from changed",
+        170000,
+        Accept,
+    ),
+    // Target-first, `price` would get the `varchar` of `note`.
+    (
+        "with changed as (merge into logs l using (select 1::int8 as k) s on s.k = l.item_id \
+         when matched then delete returning *) \
+         insert into items (id, qty, price, name, created_at) select * from changed",
+        170000,
+        Accept,
+    ),
+    (
+        "merge into items i using logs l join logs l2 on l.id = l2.id on l.item_id = i.id \
+         when not matched by source and l.id is null and l2.note is null then delete",
+        170000,
+        Accept,
+    ),
+    (
         "merge into items i using logs l on l.item_id = i.id \
          when matched then update set qty = 1 returning old.qty, new.qty",
         180000,

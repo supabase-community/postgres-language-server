@@ -160,16 +160,18 @@ fn item_columns(item: &Item, qualifier: &[String]) -> Option<Vec<StarColumn>> {
     )
 }
 
-/// Resolves a RETURNING clause against `level` and returns its columns.
+/// Resolves a RETURNING clause of a statement on `target` against `level` and returns its
+/// columns.
 pub(super) fn resolve_returning_clause(
     r: &mut Resolver,
     clause: Option<&ReturningClause>,
+    target: &Item,
     mut level: Level,
 ) -> Columns {
     let (options, list) = clause.map_or((&[][..], &[][..]), |clause| {
         (clause.options.as_slice(), clause.exprs.as_slice())
     });
-    add_old_and_new(r, options, &mut level);
+    add_old_and_new(r, options, target, &mut level);
     r.enter_level(level);
     resolve_list(r, list);
     record_star_references(r, list);
@@ -278,22 +280,19 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
 /// Since Postgres 18, `old` and `new` in a RETURNING list are the target row before and after
 /// the change. They are only reachable by name. `RETURNING WITH (OLD AS o, NEW AS n)` renames
 /// them; a name that is not given explicitly is only added if no visible item, in this or an
-/// outer query, has that name. The first item of `level` is the target relation. Port of
+/// outer query, has that name. Port of
 /// [`transformReturningClause`] and of [`addNSItemForReturning`]; an alias given twice, or one
 /// that clashes with another item, is rejected by Postgres and not reported here.
 ///
 /// [`transformReturningClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2661
 /// [`addNSItemForReturning`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2621
-fn add_old_and_new(r: &Resolver, options: &[Node], level: &mut Level) {
+fn add_old_and_new(r: &Resolver, options: &[Node], target: &Item, level: &mut Level) {
     if r.catalog
         .server_version_num()
         .is_some_and(|version| version < 180000)
     {
         return;
     }
-    let Some(target) = level.items.first() else {
-        return;
-    };
     let explicit = |kind: ReturningOptionKind| {
         options
             .iter()
