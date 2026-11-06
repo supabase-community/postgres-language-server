@@ -918,6 +918,112 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
+/// A server with the database configuration `db`, with `document.sql` open.
+async fn server_with_database(
+    db: PartialDatabaseConfiguration,
+    text: &str,
+) -> Result<(Server, tokio::task::JoinHandle<Result<()>>)> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(db),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+    server.open_document(text).await?;
+
+    Ok((server, reader))
+}
+
+/// The plain text of the hover at `position` in `document.sql`.
+async fn hover_text(server: &mut Server, position: Position) -> Result<String> {
+    let hover: Option<lsp::Hover> = server
+        .request(
+            "textDocument/hover",
+            "hover",
+            lsp::HoverParams {
+                text_document_position_params: TextDocumentPositionParams {
+                    text_document: TextDocumentIdentifier {
+                        uri: url!("document.sql"),
+                    },
+                    position,
+                },
+                work_done_progress_params: WorkDoneProgressParams::default(),
+            },
+        )
+        .await?;
+    match hover.context("expected a hover")?.contents {
+        lsp::HoverContents::Markup(content) => Ok(content.value),
+        contents => bail!("expected plain text, got {contents:?}"),
+    }
+}
+
+/// A query that fails on a working connection isn't reported as a connection failure: hover says
+/// why the schema couldn't be loaded.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn hover_reports_why_the_schema_could_not_be_loaded(test_db: PgPool) -> Result<()> {
+    // The server's connections run as `test_login`, a role of the test migrations that isn't a
+    // superuser. Both settings belong to the test's own database, which is dropped afterwards, so
+    // no role or privilege outlives the test.
+    let database = test_db
+        .connect_options()
+        .get_database()
+        .unwrap()
+        .to_string();
+    test_db
+        .execute(
+            format!(
+                r#"
+                revoke select on pg_catalog.pg_proc from public;
+                alter database "{database}" set role = 'test_login';
+                "#
+            )
+            .as_str(),
+        )
+        .await?;
+
+    let (mut server, reader) = server_with_database(
+        PartialDatabaseConfiguration {
+            database: Some(database),
+            ..Default::default()
+        },
+        "select 1;\n",
+    )
+    .await?;
+
+    let text = hover_text(&mut server, Position::new(0, 7)).await?;
+    assert!(
+        text.starts_with("Cannot load the database schema: permission denied for table pg_proc"),
+        "unexpected hover: {text}"
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
