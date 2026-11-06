@@ -6,7 +6,7 @@
 //!
 //! Not modelled yet, so never reported: the columns of scalar functions in `FROM`, `NATURAL`
 //! joins, `XMLTABLE`/`JSON_TABLE` and `TABLESAMPLE`, the `ORDER BY` of set operations, recursive
-//! CTEs and `SEARCH`/`CYCLE`, and statements with psql identifier parameters (`:schema.table`).
+//! CTEs, and statements with psql identifier parameters (`:schema.table`).
 //!
 //! It also decides whether a statement is [`Resolution::database_only`]: whether everything it
 //! references comes unchanged from the database, so that checking it against the database gives
