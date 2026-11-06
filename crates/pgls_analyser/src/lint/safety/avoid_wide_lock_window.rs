@@ -53,7 +53,7 @@ impl LinterRule for AvoidWideLockWindow {
 
         let current_table = match ctx.stmt() {
             pgls_query::NodeEnum::AlterTableStmt(stmt) => {
-                tx_state.access_exclusive_table_for_alter(stmt)
+                tx_state.access_exclusive_table_for_alter(stmt, ctx.catalog())
             }
             _ => None,
         };

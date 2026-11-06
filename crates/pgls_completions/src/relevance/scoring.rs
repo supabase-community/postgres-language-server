@@ -57,7 +57,9 @@ impl CompletionScore<'_> {
             _ => ctx.get_node_under_cursor_content(),
         };
         let content = match content {
-            Some(c) if !sanitization::is_sanitized_token(c.as_str()) => c.replace('"', ""),
+            Some(c) if !sanitization::is_sanitized_token(c.as_str()) => {
+                sanitization::remove_sanitized_token(&c).replace('"', "")
+            }
             _ => {
                 return;
             }

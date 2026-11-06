@@ -25,7 +25,6 @@ pub struct OnHoverParams<'a> {
     pub position: TextSize,
     pub snapshot: &'a Snapshot,
     pub stmt_sql: &'a str,
-    pub ast: Option<&'a pgls_query::NodeEnum>,
     pub ts_tree: &'a tree_sitter::Tree,
     /// The references of [`pgls_catalog::resolve::resolve`] whose span contains the cursor.
     /// When one of them is of the hovered kind, hover shows the object it resolves to instead of
@@ -59,21 +58,12 @@ pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
         }
 
         let items: Vec<Hoverable> = match hovered_node {
-            HoveredNode::Table(node_identification) => match node_identification {
-                (None, n) => params
-                    .snapshot
-                    .find_tables(n.as_str(), None)
-                    .into_iter()
-                    .map(Hoverable::from)
-                    .collect(),
-
-                (Some(s), n) => params
-                    .snapshot
-                    .find_tables(n.as_str(), Some(&s))
-                    .into_iter()
-                    .map(Hoverable::from)
-                    .collect(),
-            },
+            HoveredNode::Table((schema, table_name)) => params
+                .snapshot
+                .find_tables(&table_name, schema.as_deref())
+                .into_iter()
+                .map(Hoverable::from)
+                .collect(),
 
             HoveredNode::Column(node_identification) => match node_identification {
                 (None, None, column_name) => params
@@ -133,23 +123,14 @@ pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
                 .map(|s| vec![s])
                 .unwrap_or_default(),
 
-            HoveredNode::PostgresType(node_identification) => match node_identification {
-                (None, type_name) => params
-                    .snapshot
-                    .find_type(&type_name, None)
-                    .map(Hoverable::from)
-                    .map(|s| vec![s])
-                    .unwrap_or_default(),
+            HoveredNode::PostgresType((schema, type_name)) => params
+                .snapshot
+                .find_type(&type_name, schema.as_deref())
+                .map(Hoverable::from)
+                .into_iter()
+                .collect(),
 
-                (Some(schema), type_name) => params
-                    .snapshot
-                    .find_type(&type_name, Some(schema.as_str()))
-                    .map(Hoverable::from)
-                    .map(|s| vec![s])
-                    .unwrap_or_default(),
-            },
-
-            HoveredNode::Policy(_) | HoveredNode::Trigger(_) => return None,
+            HoveredNode::Policy(_) => return None,
         };
 
         let markdown_blocks: Vec<String> = prioritize_by_context(items, &ctx)
@@ -161,7 +142,12 @@ pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
         (!markdown_blocks.is_empty()).then_some(markdown_blocks)
     } else {
         // The grammar doesn't cover every statement, like `CALL`, but the resolver may.
-        let item = resolved_function(params.references, params.snapshot)?;
+        let item = resolved_function(
+            params.references,
+            params.snapshot,
+            params.stmt_sql,
+            params.position,
+        )?;
         format_hover_markdown(&item, params.snapshot)
             .ok()
             .map(|markdown| vec![markdown])
@@ -190,7 +176,6 @@ mod tests {
             position: TextSize::new(position as u32),
             snapshot: &snapshot,
             stmt_sql: &sql,
-            ast: None,
             ts_tree: &tree,
             references: &[],
         });
@@ -233,7 +218,6 @@ mod tests {
             position: TextSize::new(position as u32),
             snapshot: &snapshot,
             stmt_sql: &sql,
-            ast: None,
             ts_tree: &tree,
             references: &[],
         })
