@@ -4820,6 +4820,7 @@ async fn test_sql_function_bodies(test_db: PgPool) {
             ("text", SemanticTokenKind::Type),
             ("name", SemanticTokenKind::Property),
             ("body_users", SemanticTokenKind::Class),
+            ("text", SemanticTokenKind::Type),
             ("name", SemanticTokenKind::Property),
             ("body_users", SemanticTokenKind::Class),
         ]
