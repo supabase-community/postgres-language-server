@@ -8,7 +8,6 @@ use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 use super::{
-    annotation::AnnotationStore,
     pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
@@ -21,8 +20,6 @@ pub struct Document {
     diagnostics: Vec<SDiagnostic>,
     ast_db: PgQueryStore,
     cst_db: TreeSitterStore,
-    #[allow(dead_code)]
-    annotation_db: AnnotationStore,
     suppressions: Suppressions,
 }
 
@@ -30,7 +27,6 @@ impl Document {
     pub fn new(content: String, version: i32) -> Document {
         let cst_db = TreeSitterStore::new();
         let ast_db = PgQueryStore::new();
-        let annotation_db = AnnotationStore::new();
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
         let suppressions = Suppressions::from(content.as_str()).with_statements(ranges.clone());
 
@@ -41,7 +37,6 @@ impl Document {
             version,
             ast_db,
             cst_db,
-            annotation_db,
             suppressions,
         }
     }
@@ -67,7 +62,6 @@ impl Document {
             |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
         self.ast_db.retain(is_present);
         self.cst_db.retain(is_present);
-        self.annotation_db.retain(is_present);
     }
 
     pub fn suppressions(&self) -> &Suppressions {
@@ -130,7 +124,6 @@ impl Document {
         }
     }
 
-    #[allow(dead_code)]
     pub fn count(&self) -> usize {
         self.iter(DefaultMapper).count()
     }
@@ -343,28 +336,6 @@ impl<'a> StatementMapper<'a> for WithCSTMapper {
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
         let tree = parser.cst_db.get_or_cache_tree(&id);
         (id.clone(), range, tree)
-    }
-}
-
-pub struct WithCSTandASTMapper;
-impl<'a> StatementMapper<'a> for WithCSTandASTMapper {
-    type Output = (
-        StatementId,
-        TextRange,
-        Arc<tree_sitter::Tree>,
-        Option<pgls_query::NodeEnum>,
-    );
-
-    fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
-        let tree = parser.cst_db.get_or_cache_tree(&id);
-        let ast_result = parser.ast_db.get_or_cache_ast(&id);
-
-        let ast_option = match &*ast_result {
-            Ok(node) => Some(node.clone()),
-            Err(_) => None,
-        };
-
-        (id.clone(), range, tree, ast_option)
     }
 }
 

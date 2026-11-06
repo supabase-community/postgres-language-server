@@ -46,7 +46,7 @@ as on insert to t1
 do
   nothing;
 
-prepare "primary" as select 1;;
+prepare "primary" as select 1;
 
 execute "primary";
 
