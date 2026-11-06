@@ -25,6 +25,9 @@ pub struct TypecheckParams<'a> {
     pub identifiers: Vec<TypedIdentifier>,
     /// The explicit search path of the session at this statement.
     pub search_path: &'a [String],
+    /// Set when `banDuplicateColumnAssignments` already reported the statement, so Postgres'
+    /// error for the same assignments, which covers the whole statement, is not reported again.
+    pub duplicate_assignments_reported: bool,
 }
 
 pub async fn check_sql(
@@ -82,6 +85,9 @@ pub async fn check_sql(
         Ok(_) => Ok(None),
         Err(sqlx::Error::Database(err)) => {
             let pg_err = err.downcast_ref::<PgDatabaseError>();
+            if params.duplicate_assignments_reported && is_multiple_assignments(pg_err) {
+                return Ok(None);
+            }
             Ok(Some(create_type_error(
                 pg_err,
                 tree,
@@ -91,6 +97,17 @@ pub async fn check_sql(
         }
         Err(err) => Err(err),
     }
+}
+
+/// The error of [`process_matched_tle`] for a column assigned twice. The rewriter raises it after
+/// parse analysis succeeded, so it hides no other error of the statement.
+///
+/// [`process_matched_tle`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L1081
+fn is_multiple_assignments(err: &PgDatabaseError) -> bool {
+    err.code() == "42601"
+        && err
+            .message()
+            .starts_with("multiple assignments to same column")
 }
 
 enum TypecheckTarget<'a> {

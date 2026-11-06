@@ -44,6 +44,7 @@ impl TestSetup<'_> {
             snapshot: &snapshot,
             identifiers: self.typed_identifiers,
             search_path: &[],
+            duplicate_assignments_reported: false,
         })
         .await;
 
@@ -461,4 +462,78 @@ async fn merge_is_not_executed(test_db: PgPool) {
         .await
         .expect("Failed to count the rows");
     assert_eq!(rows, 0, "the MERGE must not insert the row");
+}
+
+/// Postgres reports a column assigned twice without a position. Once
+/// `banDuplicateColumnAssignments` reported it, only the other errors of the statement remain.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn duplicate_assignments_are_reported_once(test_db: PgPool) {
+    test_db
+        .execute(
+            "create table public.users (id int8 primary key, name text);
+             create table public.imports (id int8, name text);",
+        )
+        .await
+        .expect("Failed to set up the tables");
+    let snapshot = pgls_catalog::Snapshot::load(&test_db)
+        .await
+        .expect("Failed to load snapshot");
+
+    for sql in [
+        "merge into users u using imports i on u.id = i.id \
+         when matched then update set name = i.name, name = 'again'",
+        "update users set name = 'a', name = 'b'",
+    ] {
+        let reported = check(&test_db, &snapshot, sql, false).await;
+        assert!(
+            reported
+                .as_deref()
+                .is_some_and(|message| message.contains("multiple assignments to same column")),
+            "{sql}: {reported:?}"
+        );
+        assert_eq!(check(&test_db, &snapshot, sql, true).await, None, "{sql}");
+    }
+    // Other errors of the statement are still reported.
+    let other = check(
+        &test_db,
+        &snapshot,
+        "merge into users u using imports i on u.id = i.id \
+         when matched then update set name = i.nope, name = 'again'",
+        true,
+    )
+    .await;
+    assert!(
+        other
+            .as_deref()
+            .is_some_and(|message| message.contains("i.nope")),
+        "{other:?}"
+    );
+}
+
+/// The message of the error of `sql`, if any.
+async fn check(
+    test_db: &PgPool,
+    snapshot: &pgls_catalog::Snapshot,
+    sql: &str,
+    duplicate_assignments_reported: bool,
+) -> Option<String> {
+    let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+        .unwrap();
+    let tree = parser.parse(sql, None).unwrap();
+    check_sql(TypecheckParams {
+        conn: test_db,
+        sql,
+        ast: &root,
+        tree: &tree,
+        snapshot,
+        identifiers: vec![],
+        search_path: &[],
+        duplicate_assignments_reported,
+    })
+    .await
+    .unwrap()
+    .map(|diagnostic| pgls_diagnostics::PrintDescription(&diagnostic).to_string())
 }
