@@ -2,6 +2,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, ConstrType, TypeName};
 
 declare_lint_rule! {
     /// Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.
@@ -10,6 +11,8 @@ declare_lint_rule! {
     ///
     /// Make new columns optional initially by omitting the NOT NULL constraint until all existing data and application code has been updated. Once no NULL values are written to or persisted in the database, set it to NOT NULL.
     /// Alternatively, if using Postgres version 11 or later, add a DEFAULT value that is not volatile. This allows the column to keep its NOT NULL constraint.
+    ///
+    /// Generated, identity and `serial` columns get their values from Postgres, so they are not reported.
     ///
     /// ## Invalid
     /// alter table test add column count int not null;
@@ -30,41 +33,100 @@ impl LinterRule for AddingRequiredField {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut diagnostics = vec![];
+        let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() else {
+            return vec![];
+        };
+        let commands: Vec<&AlterTableCmd> = stmt
+            .cmds
+            .iter()
+            .filter_map(|command| match &command.node {
+                Some(pgls_query::NodeEnum::AlterTableCmd(command)) => Some(command.as_ref()),
+                _ => None,
+            })
+            .collect();
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() {
-            // We are currently lacking a way to check if a `AtAddColumn` subtype sets a
-            // not null constraint – so we'll need to check the plain SQL.
-            let plain_sql = ctx.stmt().to_ref().deparse().unwrap().to_ascii_lowercase();
-            let is_nullable = !plain_sql.contains("not null");
-            let has_set_default = plain_sql.contains("default");
-            if is_nullable || has_set_default {
-                return diagnostics;
-            }
-
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(alter_table_cmd)) = &cmd.node
-                    && alter_table_cmd.subtype()
-                        == pgls_query::protobuf::AlterTableType::AtAddColumn
+        // Columns made NOT NULL by `ADD CONSTRAINT ... NOT NULL column` (Postgres 18) in the
+        // same statement.
+        let not_null_columns: Vec<&str> = commands
+            .iter()
+            .filter(|command| command.subtype() == AlterTableType::AtAddConstraint)
+            .filter_map(|command| match command.def.as_ref()?.node.as_ref()? {
+                pgls_query::NodeEnum::Constraint(constraint)
+                    if constraint.contype() == ConstrType::ConstrNotnull =>
                 {
-                    diagnostics.push(
-                            LinterDiagnostic::new(
-                                rule_category!(),
-                                None,
-                                markup! {
-                                    "Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required."
-                                },
-                            )
-                            .detail(
-                                None,
-                                "Make new columns optional initially by omitting the NOT NULL constraint until all existing data and application code has been updated. Once no NULL values are written to or persisted in the database, set it to NOT NULL. Alternatively, if using Postgres version 11 or later, add a DEFAULT value that is not volatile. This allows the column to keep its NOT NULL constraint.
-                                ",
-                        ),
-                    );
+                    Some(constraint)
                 }
-            }
-        }
+                _ => None,
+            })
+            .flat_map(|constraint| &constraint.keys)
+            .filter_map(|key| match &key.node {
+                Some(pgls_query::NodeEnum::String(name)) => Some(name.sval.as_str()),
+                _ => None,
+            })
+            .collect();
 
-        diagnostics
+        commands
+            .iter()
+            .filter(|command| command.subtype() == AlterTableType::AtAddColumn)
+            .filter_map(|command| match command.def.as_ref()?.node.as_ref()? {
+                pgls_query::NodeEnum::ColumnDef(column) => Some(column),
+                _ => None,
+            })
+            .filter(|column| is_required(column, &not_null_columns))
+            .map(|_| {
+                LinterDiagnostic::new(
+                    rule_category!(),
+                    None,
+                    markup! {
+                        "Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required."
+                    },
+                )
+                .detail(
+                    None,
+                    "Make new columns optional initially by omitting the NOT NULL constraint until all existing data and application code has been updated. Once no NULL values are written to or persisted in the database, set it to NOT NULL. Alternatively, if using Postgres version 11 or later, add a DEFAULT value that is not volatile. This allows the column to keep its NOT NULL constraint.",
+                )
+            })
+            .collect()
     }
+}
+
+/// Whether a new column is NOT NULL and gets no value from Postgres: no default, not generated,
+/// not an identity column, and not `serial`.
+fn is_required(column: &ColumnDef, not_null_columns: &[&str]) -> bool {
+    let constraint_types: Vec<ConstrType> = column
+        .constraints
+        .iter()
+        .filter_map(|constraint| match &constraint.node {
+            Some(pgls_query::NodeEnum::Constraint(constraint)) => Some(constraint.contype()),
+            _ => None,
+        })
+        .collect();
+    let is_not_null = constraint_types.contains(&ConstrType::ConstrNotnull)
+        || not_null_columns.contains(&column.colname.as_str());
+    let has_value = constraint_types.iter().any(|contype| {
+        matches!(
+            contype,
+            ConstrType::ConstrDefault | ConstrType::ConstrGenerated | ConstrType::ConstrIdentity
+        )
+    }) || column.type_name.as_ref().is_some_and(is_serial);
+    is_not_null && !has_value
+}
+
+/// `serial` types get a default from a sequence.
+fn is_serial(type_name: &TypeName) -> bool {
+    let name = match type_name.names.as_slice() {
+        [name] => name,
+        [schema, name] if matches!(&schema.node, Some(pgls_query::NodeEnum::String(schema)) if schema.sval == "pg_catalog") => {
+            name
+        }
+        _ => return false,
+    };
+    matches!(
+        &name.node,
+        Some(pgls_query::NodeEnum::String(name))
+            if matches!(
+                name.sval.as_str(),
+                "smallserial" | "serial" | "bigserial" | "serial2" | "serial4" | "serial8"
+            )
+    )
 }
