@@ -28,7 +28,5 @@ pub(super) fn emit_reassign_owned_stmt(e: &mut EventEmitter, n: &ReassignOwnedSt
         super::emit_role_spec(e, newrole);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

@@ -48,6 +48,34 @@ fn check_gitlab_reporter_snapshot() {
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
+fn check_github_reporter_verbose_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "github",
+        "--verbose",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_gitlab_reporter_verbose_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "gitlab",
+        "--verbose",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
 fn check_junit_reporter_snapshot() {
     assert_snapshot!(run_check(&[
         "--reporter",
@@ -536,6 +564,40 @@ fn check_uses_the_nearest_configuration_file() {
         stdout.contains(&annotation("error", "db2/schema/a.sql")),
         "{stdout}"
     );
+}
+
+/// Lines end at `\n` only, like in the LSP and in the diffs of `format`: a lone `\r` is a
+/// character of its line, in the header, the code frame and every reporter.
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_lone_carriage_return_does_not_end_a_line_snapshot() {
+    let root = write_tree(&[(
+        "migration.sql",
+        "select 1;\ralter tqjable t drop column id;\n",
+    )]);
+    let output = [
+        None,
+        Some("json"),
+        Some("gitlab"),
+        Some("junit"),
+        Some("github"),
+    ]
+    .map(|reporter| {
+        let mut args = vec!["--disable-db", "migration.sql"];
+        args.extend(
+            reporter
+                .iter()
+                .flat_map(|reporter| ["--reporter", reporter]),
+        );
+        let (_, output) = check_in(root.path(), &args, &[]);
+        let reporter = reporter.unwrap_or("default");
+        format!("{reporter}:\n{}", normalize_durations(&output))
+    })
+    .join("\n");
+    assert_snapshot!(output.replace('\r', "\\r"));
 }
 
 /// Writes `files` below a new temporary directory.
