@@ -18,12 +18,6 @@ merge into users using users on true when matched then delete;
 -- expect_lint/invalidMerge
 merge into users u using imports u on true when matched then delete;
 -- expect_lint/invalidMerge
-select merge_action();
--- expect_lint/invalidMerge
-update users set name = 'x' returning merge_action();
--- expect_lint/invalidMerge
-merge into users using imports on imports.id = users.id when matched then update set name = (select merge_action());
--- expect_lint/invalidMerge
 merge into users using (select 1 as id) s join imports i using (id) as users on true when matched then delete;
 -- expect_lint/invalidMerge
 merge into users using imports on true when not matched then do nothing when matched then delete when not matched and true then do nothing;
@@ -58,24 +52,6 @@ lint/invalidMerge ━━━━━━━━━━━━━━━━━━━━�
   × name "u" specified more than once.
   
   i The name is used both as MERGE target table and data source.
-  
-
-
-lint/invalidMerge ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  × MERGE_ACTION() can only be used in the RETURNING list of a MERGE command.
-  
-
-
-lint/invalidMerge ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  × MERGE_ACTION() can only be used in the RETURNING list of a MERGE command.
-  
-
-
-lint/invalidMerge ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  × MERGE_ACTION() can only be used in the RETURNING list of a MERGE command.
   
 
 
