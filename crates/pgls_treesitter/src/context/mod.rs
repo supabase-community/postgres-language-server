@@ -24,6 +24,8 @@ pub enum WrappingClause<'a> {
     },
     Update,
     Delete,
+    /// The RETURNING clause of INSERT, UPDATE, DELETE, or MERGE.
+    Returning,
     ColumnDefinitions,
     Insert,
     AlterTable,
@@ -58,6 +60,17 @@ struct TableAlias {
     table: String,
     /// The alias as written, like `"U"`.
     text: String,
+}
+
+/// `old` or `new` in a RETURNING list, or the name that `RETURNING WITH (...)` gives them. Since
+/// Postgres 18, they are the target row before and after the change.
+#[derive(Debug)]
+struct ReturningRowAlias {
+    /// The name of the target table.
+    table: String,
+    /// Whether `WITH (...)` gives the name. Postgres only adds the default names `old` and `new`
+    /// if no FROM item has that name.
+    explicit: bool,
 }
 
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
@@ -110,6 +123,10 @@ pub struct TreeSitterContextParams<'a> {
     pub position: TextSize,
     pub text: &'a str,
     pub tree: &'a tree_sitter::Tree,
+    /// The `server_version_num` of the database, like `180000`, if known. Syntax that is newer
+    /// than the server, like `old` and `new` in RETURNING, is only understood when it is
+    /// unknown or new enough.
+    pub server_version_num: Option<i64>,
 }
 
 #[derive(Debug)]
@@ -119,6 +136,8 @@ pub struct TreesitterContext<'a> {
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
     pub position: usize,
+    /// See [`TreeSitterContextParams::server_version_num`].
+    server_version_num: Option<i64>,
 
     /// Tuple containing up to two qualifiers for identifier-node under the cursor: (head, tail)
     ///
@@ -146,6 +165,9 @@ pub struct TreesitterContext<'a> {
     mentioned_relations: HashMap<Option<String>, HashSet<String>>,
     /// The table aliases of the statement, by the name of the alias.
     mentioned_table_aliases: HashMap<String, TableAlias>,
+    /// The names of the old and new row of the target table, by name, when the cursor is in a
+    /// RETURNING list.
+    returning_row_aliases: HashMap<String, ReturningRowAlias>,
     mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
 
     scope_tracker: ScopeTracker,
@@ -157,6 +179,7 @@ impl<'a> TreesitterContext<'a> {
             tree: params.tree,
             text: params.text,
             position: usize::from(params.position),
+            server_version_num: params.server_version_num,
             node_under_cursor: params.tree.root_node(),
             identifier_qualifiers: (None, None),
             wrapping_clause_type: None,
@@ -165,6 +188,7 @@ impl<'a> TreesitterContext<'a> {
             is_invocation: false,
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
+            returning_row_aliases: HashMap::new(),
             mentioned_columns: HashMap::new(),
             scope_tracker: ScopeTracker::new(),
 
@@ -190,9 +214,12 @@ impl<'a> TreesitterContext<'a> {
 
         executor.add_query_results::<queries::RelationMatch>();
         executor.add_query_results::<queries::TableAliasMatch>();
+        executor.add_query_results::<queries::ReturningAliasMatch>();
         executor.add_query_results::<queries::SelectColumnMatch>();
         executor.add_query_results::<queries::InsertColumnMatch>();
         executor.add_query_results::<queries::WhereColumnMatch>();
+
+        let mut returning_aliases = HashMap::new();
 
         for relation_match in executor.get_iter(stmt_range) {
             match relation_match {
@@ -217,6 +244,28 @@ impl<'a> TreesitterContext<'a> {
                             text,
                         },
                     );
+                }
+
+                // The names exist since Postgres 18, and only inside the RETURNING list.
+                QueryResult::ReturningAliases(m)
+                    if self
+                        .server_version_num
+                        .is_none_or(|version| version >= 180000)
+                        && (m.returning.start_byte()..=m.returning.end_byte())
+                            .contains(&self.position) =>
+                {
+                    if let Some(table) = m.get_table(sql) {
+                        let table = identifier_name(&table);
+                        for alias in m.get_aliases(sql) {
+                            returning_aliases.insert(
+                                identifier_name(&alias.text),
+                                ReturningRowAlias {
+                                    table: table.clone(),
+                                    explicit: alias.explicit,
+                                },
+                            );
+                        }
+                    }
                 }
 
                 QueryResult::SelectClauseColumns(c) => {
@@ -263,6 +312,8 @@ impl<'a> TreesitterContext<'a> {
                 _ => {}
             };
         }
+
+        self.returning_row_aliases = returning_aliases;
     }
 
     fn get_ts_node_content(&self, ts_node: &tree_sitter::Node<'a>) -> Option<String> {
@@ -407,6 +458,7 @@ impl<'a> TreesitterContext<'a> {
             "update" => Some(WrappingClause::Update),
             "select" => Some(WrappingClause::Select),
             "delete_statement" => Some(WrappingClause::Delete),
+            "returning" => Some(WrappingClause::Returning),
             "from" => Some(WrappingClause::From),
             "drop_table" => Some(WrappingClause::DropTable),
             "alter_role" => Some(WrappingClause::AlterRole),
@@ -512,9 +564,14 @@ impl<'a> TreesitterContext<'a> {
 
     /// The name of the table that the alias with the name `alias` stands for.
     pub fn get_mentioned_table_for_alias(&self, alias: &str) -> Option<&String> {
+        let returning = self.returning_row_aliases.get(alias);
+        if let Some(returning) = returning.filter(|returning| returning.explicit) {
+            return Some(&returning.table);
+        }
         self.mentioned_table_aliases
             .get(alias)
             .map(|alias| &alias.table)
+            .or(returning.map(|returning| &returning.table))
     }
 
     /// An alias of the table with the name `table_name`, as written.
@@ -662,6 +719,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -691,6 +749,7 @@ mod tests {
                 position: 0.into(),
                 text: query,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -745,6 +804,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -805,6 +865,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: text.as_str(),
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -835,6 +896,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -865,6 +927,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -886,6 +949,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -910,6 +974,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -934,6 +999,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -974,6 +1040,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         // should simply not panic
@@ -1021,6 +1088,7 @@ mod tests {
                 position: case.cursor_position.into(),
                 text: query,
                 tree: &tree,
+                server_version_num: None,
             };
 
             // should simply not panic

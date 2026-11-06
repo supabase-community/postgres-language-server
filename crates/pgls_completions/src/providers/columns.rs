@@ -648,6 +648,138 @@ mod tests {
         }
     }
 
+    /// The labels of the columns offered at the cursor, best first, on a Postgres 18 server.
+    async fn columns_at(query: &str, pool: &PgPool) -> Vec<String> {
+        columns_on(180000, query, pool).await
+    }
+
+    /// The labels of the columns offered at the cursor, best first, as if the server had the
+    /// version `version_num`. The test database can be older than the syntax under test.
+    async fn columns_on(version_num: i64, query: &str, pool: &PgPool) -> Vec<String> {
+        let (tree, mut snapshot) = get_test_deps(None, query.into(), pool).await;
+        snapshot.version.version_num = Some(version_num);
+        let params = get_test_params(&tree, &snapshot, query.into());
+        complete(params)
+            .into_iter()
+            .filter(|item| item.kind == CompletionItemKind::Column)
+            .map(|item| item.label)
+            .collect()
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_columns_of_old_and_new_in_returning(pool: PgPool) {
+        pool.execute(
+            r#"
+            create table public.users (id serial primary key, name text);
+            create table public.posts (post_id int, title text);
+            "#,
+        )
+        .await
+        .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        for sql in [
+            "update users set name = 'x' returning old.{}",
+            "update users set name = 'x' returning new.{}",
+            "insert into users (name) values ('x') returning new.{}",
+            "delete from users returning old.{}",
+            "merge into users u using posts p on u.id = p.post_id when matched then delete returning old.{}",
+            "with d as (delete from users returning old.{}) select * from d",
+            // `WITH (...)` renames them.
+            "update users set name = 'x' returning with (old as o, new as \"N\") \"N\".id, o.{}",
+            // A FROM item named `new` doesn't hide a name given in `WITH (...)`.
+            "update users set name = 'x' from posts as new returning with (new as new) new.{}",
+        ] {
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(columns_at(&query, &pool).await, ["id", "name"], "{sql}");
+        }
+
+        assert_eq!(
+            columns_at(
+                &format!("delete from users returning old.na{cursor}"),
+                &pool
+            )
+            .await,
+            ["name"]
+        );
+        // A FROM item named `old` hides the default name.
+        assert_eq!(
+            columns_at(
+                &format!("update users set name = 'x' from posts as old returning old.{cursor}"),
+                &pool
+            )
+            .await,
+            ["post_id", "title"]
+        );
+        // `old` is renamed, and outside RETURNING there is no `old`.
+        for sql in [
+            "update users set name = 'x' returning with (old as o) old.{}",
+            "update users set name = 'x' where old.{} returning old.id",
+        ] {
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(columns_at(&query, &pool).await, [""; 0], "{sql}");
+        }
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn no_old_and_new_before_postgres_18(pool: PgPool) {
+        pool.execute("create table public.users (id serial primary key, name text);")
+            .await
+            .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        for sql in [
+            "update users set name = 'x' returning old.{}",
+            "update users set name = 'x' returning with (old as o) o.{}",
+        ] {
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(columns_on(170000, &query, &pool).await, [""; 0], "{sql}");
+        }
+        // The target's columns are still offered.
+        let mut columns = columns_on(
+            170000,
+            &format!("update users set name = 'x' returning {cursor}"),
+            &pool,
+        )
+        .await;
+        columns.truncate(2);
+        columns.sort();
+        assert_eq!(columns, ["id", "name"]);
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_columns_in_returning(pool: PgPool) {
+        pool.execute(
+            r#"
+            create table public.users (id serial primary key, name text);
+            create table public.posts (post_id int, title text);
+            "#,
+        )
+        .await
+        .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // The columns of the target come first.
+        let mut columns = columns_at(
+            &format!("update users set name = 'x' returning {cursor}"),
+            &pool,
+        )
+        .await;
+        columns.truncate(2);
+        columns.sort();
+        assert_eq!(columns, ["id", "name"]);
+
+        // No columns while `WITH (...)` is typed.
+        for sql in [
+            "update users set name = 'x' returning with ({})",
+            "update users set name = 'x' returning with (old {})",
+            "update users set name = 'x' returning with (old as {})",
+        ] {
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(columns_at(&query, &pool).await, [""; 0], "{sql}");
+        }
+    }
+
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn completes_a_column_named_period_in_a_key(pool: PgPool) {
         pool.execute("create table public.t (period int);")

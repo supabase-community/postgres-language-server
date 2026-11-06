@@ -125,6 +125,7 @@ impl CompletionFilter<'_> {
                     | Some(WrappingClause::Join { .. })
                     | Some(WrappingClause::Update)
                     | Some(WrappingClause::Delete)
+                    | Some(WrappingClause::Returning)
                     | Some(WrappingClause::Insert)
                     | Some(WrappingClause::DropColumn)
                     | Some(WrappingClause::AlterColumn)
@@ -138,7 +139,9 @@ impl CompletionFilter<'_> {
         }
 
         if ctx.node_under_cursor.kind() == "any_identifier"
-            && ctx.history_ends_with(&["alias", "any_identifier"])
+            && (ctx.history_ends_with(&["alias", "any_identifier"])
+                // `o` in `returning with (old as o)` is a new name too.
+                || ctx.history_ends_with(&["returning_with_item", "any_identifier"]))
         {
             return None;
         }
@@ -298,6 +301,7 @@ impl CompletionFilter<'_> {
                             WrappingClause::Select
                             | WrappingClause::Update
                             | WrappingClause::Delete
+                            | WrappingClause::Returning
                             | WrappingClause::DropColumn => true,
 
                             WrappingClause::RenameColumn => ctx
@@ -342,6 +346,7 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Function(f) => match clause {
                         WrappingClause::From
                         | WrappingClause::Select
+                        | WrappingClause::Returning
                         | WrappingClause::Where
                         | WrappingClause::Join { .. } => true,
 
@@ -358,6 +363,7 @@ impl CompletionFilter<'_> {
 
                     CompletionRelevanceData::Schema(_) => match clause {
                         WrappingClause::Select
+                        | WrappingClause::Returning
                         | WrappingClause::Join { .. }
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
