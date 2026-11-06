@@ -10,6 +10,10 @@ declare_lint_rule! {
     /// to verify uniqueness and build the underlying index. This requires an ACCESS EXCLUSIVE
     /// lock which blocks all reads and writes.
     ///
+    /// Instead, create a unique index concurrently and add the primary key using that index. A
+    /// temporal primary key (`WITHOUT OVERLAPS`, Postgres 18) needs a GiST index, which can't be
+    /// unique, so it has no such alternative.
+    ///
     /// ## Examples
     ///
     /// ### Invalid
@@ -93,6 +97,12 @@ fn check_for_primary_key_constraint(
     if constraint.contype() == pgls_query::protobuf::ConstrType::ConstrPrimary
         && constraint.indexname.is_empty()
     {
+        // `USING INDEX` needs a unique B-tree index, but a temporal key needs a GiST index.
+        let note = if constraint.without_overlaps {
+            "There is no concurrent alternative for a temporal key (WITHOUT OVERLAPS). Use SET lock_timeout to limit the impact on concurrent operations."
+        } else {
+            "Add the PRIMARY KEY constraint USING an index."
+        };
         Some(
             LinterDiagnostic::new(
                 rule_category!(),
@@ -102,7 +112,7 @@ fn check_for_primary_key_constraint(
                 },
             )
             .detail(None, "Adding a PRIMARY KEY constraint requires an ACCESS EXCLUSIVE lock which blocks reads.")
-            .note("Add the PRIMARY KEY constraint USING an index."),
+            .note(note),
         )
     } else {
         None
