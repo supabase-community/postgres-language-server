@@ -1,7 +1,7 @@
 //! Implementation of the [FileSystem] and related traits for the underlying OS filesystem
 use super::{
     BoxedTraversal, ErrorKind, File, FileSystemDiagnostic, FindFiles, FoundFiles,
-    SKIPPED_DIRECTORIES, skips_directory,
+    NotAGitRepository, SKIPPED_DIRECTORIES, skips_directory,
 };
 use crate::fs::OpenOptions;
 use crate::{
@@ -535,10 +535,15 @@ impl From<FileType> for ErrorKind {
     }
 }
 
-/// The lines git printed, or the first line of its error if it failed, e.g. outside a repository
-/// or for an unknown base. An empty list would otherwise read as "no files".
+/// The lines git printed, or the first line of its error if it failed, e.g. for an unknown base.
+/// An empty list would otherwise read as "no files".
 fn git_output_lines(output: Output) -> io::Result<Vec<String>> {
     if !output.status.success() {
+        // Outside a repository, `git diff` compares files (`--no-index`) and complains about the
+        // options instead, e.g. "unknown option `staged'".
+        if !is_in_git_repository() {
+            return Err(io::Error::other(NotAGitRepository));
+        }
         let stderr = String::from_utf8_lossy(&output.stderr);
         let error = stderr.lines().find(|line| !line.trim().is_empty());
         return Err(io::Error::other(format!(
@@ -551,4 +556,11 @@ fn git_output_lines(output: Output) -> io::Result<Vec<String>> {
         .lines()
         .map(|l| l.to_string())
         .collect())
+}
+
+fn is_in_git_repository() -> bool {
+    Command::new("git")
+        .args(["rev-parse", "--git-dir"])
+        .output()
+        .is_ok_and(|output| output.status.success())
 }
