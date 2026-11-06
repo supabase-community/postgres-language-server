@@ -29,7 +29,5 @@ pub(super) fn emit_cluster_stmt(e: &mut EventEmitter, n: &ClusterStmt) {
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

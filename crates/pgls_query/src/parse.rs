@@ -139,6 +139,23 @@ impl ParseResult {
 mod tests {
     use crate::parse;
 
+    /// The libpg_query 17 branch failed on a comment right after a token that the parser
+    /// combines with the next one through lookahead.
+    #[test]
+    fn it_parses_comments_between_lookahead_tokens() {
+        for sql in [
+            "select U&\"d!0061t!+000061\" /* c */ UESCAPE '!' from t",
+            "select U&\"d!0061t!+000061\" -- c\n UESCAPE '!' from t",
+            "select U&'d!0061t!+000061' /* c */ UESCAPE '!'",
+            "select 1 where 1 not /* c */ in (2)",
+            "select 1 where 1 not /* c */ between 0 and 2",
+            "select * from t order by a nulls /* c */ first",
+            "select * from unnest(array[1]) with /* c */ ordinality",
+        ] {
+            assert!(parse(sql).is_ok(), "{sql}");
+        }
+    }
+
     #[test]
     fn it_parses_parameter_queries() {
         assert!(parse("select $0 + $1 + $2 + $3 + $4 + $5").is_ok());

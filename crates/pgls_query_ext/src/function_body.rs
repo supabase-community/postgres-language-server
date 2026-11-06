@@ -291,7 +291,7 @@ fn string_body(
         if as_token.token() != Token::As || string.token() != Token::Sconst {
             return None;
         }
-        string_constant(&value, token_range(string)?, sql)
+        string_constant(value, token_range(string)?, sql)
     })
 }
 

@@ -27,6 +27,10 @@ const SETUP: &str = r#"
     create procedure with_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
     create procedure with_inout(a int, out b int, inout c text) language plpgsql
         as $$ begin b := a; end $$;
+    create function db_same(a int, out b int, c int) language sql as 'select 1';
+    create procedure db_same(a int, b int, c int) language sql as 'select 1';
+    create function db_table(a int) returns table (b text) language sql as $$ select '1' $$;
+    create procedure db_table(a int, b int) language sql as 'select 1';
 "#;
 
 async fn catalog(test_db: &PgPool) -> (Catalog, Vec<String>) {
@@ -136,6 +140,8 @@ fn function_references_in(
                 Reference::EnumLiteral { type_info, .. } => {
                     format!("enum literal {}.{}", type_info.schema, type_info.name)
                 }
+                Reference::Cte { name, .. } => format!("cte {name}"),
+                Reference::Alias { name, .. } => format!("alias {name}"),
                 Reference::Star { columns, .. } => {
                     let columns = columns
                         .iter()
@@ -254,6 +260,45 @@ async fn procedure_call_references(test_db: PgPool) {
     );
     // `CALL` only calls procedures.
     assert_eq!(references(&catalog, &search_path, "call pick(1)"), [""; 0]);
+    // It matches the output arguments of functions with the same name too, in the order of all
+    // their arguments. Postgres: procedure db_same(integer, integer, integer) is not unique
+    assert_eq!(
+        references(&catalog, &search_path, "call db_same(1, 2, 3)"),
+        [""; 0]
+    );
+    // Postgres: db_table(integer, unknown) is not a procedure
+    assert_eq!(
+        references(&catalog, &search_path, "call db_table(1, 'x')"),
+        [""; 0]
+    );
+    assert_eq!(
+        references(&catalog, &search_path, "call db_table(1, 2)"),
+        ["db_table => function public.db_table(integer, integer) <- a, b"]
+    );
+    // Functions created in the file.
+    for create in [
+        "create function same_name(a int, out b int) language sql as 'select 1'",
+        "create procedure same_name(a int, b int) language sql as 'select 1'",
+        "create function same_type(a int, out b text) language sql as 'select 1'",
+        "create procedure same_type(a int, b int) language sql as 'select 1'",
+    ] {
+        let create = pgls_query::parse(create).unwrap().into_root().unwrap();
+        file_catalog.apply(&create, &search_path);
+    }
+    // Postgres: procedure same_name(integer, integer) is not unique
+    assert_eq!(
+        references(&file_catalog, &search_path, "call same_name(1, 2)"),
+        [""; 0]
+    );
+    // Postgres: same_type(integer, unknown) is not a procedure
+    assert_eq!(
+        references(&file_catalog, &search_path, "call same_type(1, 'x')"),
+        [""; 0]
+    );
+    assert_eq!(
+        references(&file_catalog, &search_path, "call same_type(1, 2)"),
+        ["same_type => function public.same_type(integer, integer) <- a, b"]
+    );
 }
 
 /// A best-effort catalog keeps resolving functions and enum literals after a statement whose
@@ -306,6 +351,7 @@ async fn column_references(test_db: PgPool) {
         [
             "public.users => relation public.users",
             "posts => relation public.posts",
+            "p => alias p",
             "p.user_id => column public.posts.user_id: bigint (int8)",
             "users.id => column public.users.id: bigint (int8)",
             "title => column public.posts.title: text (text)",
@@ -321,6 +367,7 @@ async fn column_references(test_db: PgPool) {
         ),
         [
             "users => relation public.users",
+            "u => alias u",
             "uid => column public.users.id: bigint (int8)",
             "u.name => column public.users.name: text (text)",
         ]
@@ -365,9 +412,12 @@ async fn cte_and_subquery_columns(test_db: PgPool) {
             "with c as (select id, name as n from users) select n, x.id from c x"
         ),
         [
+            "c => cte c",
             "users => relation public.users",
             "id => column public.users.id: bigint (int8)",
             "name => column public.users.name: text (text)",
+            "c => cte c",
+            "x => alias x",
             "n => column cte c.n: text (text)",
             "x.id => column cte c.id: bigint (int8)",
         ]
@@ -405,9 +455,40 @@ async fn relation_references(test_db: PgPool) {
         references(&catalog, &search_path, "delete from users u where u.id = 1"),
         [
             "users => relation public.users",
+            "u => alias u",
             "u.id => column public.users.id: bigint (int8)",
         ]
     );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn cte_and_alias_references(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let names = |sql| -> Vec<String> {
+        references(&catalog, &search_path, sql)
+            .into_iter()
+            .filter(|reference| reference.contains("=> cte ") || reference.contains("=> alias "))
+            .collect()
+    };
+    assert_eq!(
+        names("with c as (select 1 as x) select x from c as cc, users \"U\""),
+        [
+            "c => cte c",
+            "c => cte c",
+            "cc => alias cc",
+            "\"U\" => alias U",
+        ]
+    );
+    assert_eq!(
+        names("insert into users as u values (1, 'x'); "),
+        ["u => alias u"]
+    );
+    assert_eq!(
+        names("delete from users /* gone */ u where u.id = 1"),
+        ["u => alias u"]
+    );
+    // Without collecting references, nothing is recorded.
+    assert_eq!(names("select 1 from users"), [""; 0]);
 }
 
 /// The `*` references of `sql`.
@@ -591,6 +672,61 @@ async fn enum_literal_references(test_db: PgPool) {
             "text => type pg_catalog.text",
         ]
     );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn enum_literals_coerced_to_a_common_or_resolved_type(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    let enum_literals = |sql: &str| -> Vec<String> {
+        references(&catalog, &search_path, sql)
+            .into_iter()
+            .filter(|reference| reference.contains("enum literal"))
+            .collect()
+    };
+    // CASE and COALESCE coerce their values to the common type.
+    assert_eq!(
+        enum_literals(
+            "select case when id > 1 then 'happy' else current end, \
+             case current when 'sad' then 1 end, coalesce(current, 'happy', 'sad') from people"
+        ),
+        [
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+            "'happy' => enum literal public.mood",
+            "'sad' => enum literal public.mood",
+        ]
+    );
+    // An unknown array literal becomes an array of the enum.
+    assert_eq!(
+        enum_literals("select id from people where current = any('{happy,sad}')"),
+        ["'{happy,sad}' => enum literal public.mood"]
+    );
+    // Polymorphic parameters take the enum type of the other arguments.
+    assert_eq!(
+        enum_literals("select array_position(array[current], 'sad') from people"),
+        ["'sad' => enum literal public.mood"]
+    );
+    // The source of an INSERT keeps its unknown literals until they are assigned.
+    assert_eq!(
+        enum_literals("insert into people (id, current) select 1, 'happy'"),
+        ["'happy' => enum literal public.mood"]
+    );
+    // Without a common enum type, or where Postgres makes them text, they are no enum literals.
+    assert_eq!(
+        enum_literals(
+            "select case when id > 1 then 'happy' else 'sad' end, coalesce('happy', 'sad') \
+             from people"
+        ),
+        [""; 0]
+    );
+    for sql in [
+        "insert into people (current) select distinct 'happy'",
+        "insert into people (current) select 'happy' order by 1",
+        "insert into people (current) select 'happy' union select 'sad'",
+        "insert into people select *, 'happy' from people",
+    ] {
+        assert_eq!(enum_literals(sql), [""; 0], "{sql}");
+    }
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
