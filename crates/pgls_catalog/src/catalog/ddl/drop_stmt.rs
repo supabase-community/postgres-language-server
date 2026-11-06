@@ -7,6 +7,7 @@ use crate::catalog::{
     Catalog, Entry, key,
     names::{qualified_name, type_name},
 };
+use crate::lookup::{Lookup, RelationKind};
 
 /// `DROP TABLE`, `DROP TYPE`, `DROP FUNCTION`, and the other `DROP` statements. Models
 /// [`RemoveRelations`] and [`RemoveObjects`].
@@ -48,9 +49,21 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                 let NodeEnum::List(list) = object else {
                     continue;
                 };
-                if let Some(index) = c.index_of(&list.items, search_path).found() {
-                    c.indexes
-                        .insert(key(&index.schema, &index.name), Entry::Dropped);
+                match c.index_of(&list.items, search_path) {
+                    Lookup::Found(index) => {
+                        let is_partitioned = !matches!(
+                            c.index_table(&index),
+                            Lookup::Found(table) if table.kind != RelationKind::PartitionedTable
+                        );
+                        c.indexes
+                            .insert(key(&index.schema, &index.name), Entry::Dropped);
+                        if is_partitioned {
+                            c.drop_partition_indexes();
+                        }
+                    }
+                    // It may be the index of a partitioned table.
+                    Lookup::Unknown => c.drop_partition_indexes(),
+                    Lookup::Missing => {}
                 }
             }
             ObjectType::ObjectType | ObjectType::ObjectDomain => {
