@@ -635,6 +635,24 @@ fn invalid_merge() {
             "{sql}"
         );
     }
+    // Before Postgres 17, it is an ordinary function call, e.g. of `public.merge_action()`.
+    for version in [150000, 160000] {
+        let search_path = search_path();
+        let catalog = Catalog::new(Some(database_of_version(version)));
+        let stmt = pgls_query::parse("select merge_action()")
+            .unwrap()
+            .into_root()
+            .unwrap();
+        let resolution = resolve(ResolveParams {
+            stmt: &stmt,
+            catalog: &catalog,
+            search_path: &search_path,
+            function: None,
+            sql: None,
+            collect_references: false,
+        });
+        assert_eq!(resolution.findings, [], "{version}");
+    }
 }
 
 #[test]

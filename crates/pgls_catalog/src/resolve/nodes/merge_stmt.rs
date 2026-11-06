@@ -180,10 +180,16 @@ fn check_distinct_names(r: &mut Resolver, target: &pgls_query::protobuf::RangeVa
 }
 
 /// `merge_action()` is only allowed in the RETURNING list of MERGE, and in its subqueries
-/// ([`transformMergeSupportFunc`]).
+/// ([`transformMergeSupportFunc`]). Before Postgres 17, it is an ordinary function call.
 ///
 /// [`transformMergeSupportFunc`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1388
 pub(super) fn check_merge_action(r: &mut Resolver, n: &MergeSupportFunc) {
+    if r.catalog
+        .server_version_num()
+        .is_some_and(|version| version < 170000)
+    {
+        return;
+    }
     if !r.in_merge_returning {
         r.report(
             FindingKind::InvalidMerge(MergeError::MergeActionOutsideReturning),
