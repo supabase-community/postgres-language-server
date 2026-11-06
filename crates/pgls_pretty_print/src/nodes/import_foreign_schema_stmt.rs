@@ -65,6 +65,5 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
         });
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

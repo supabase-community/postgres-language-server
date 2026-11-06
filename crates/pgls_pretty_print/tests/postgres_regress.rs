@@ -10,7 +10,7 @@ use pgls_postgres_regress::Verdict;
 use pgls_pretty_print::{
     FormatConfig,
     emitter::EventEmitter,
-    nodes::emit_node_enum,
+    nodes::emit_statement,
     normalize::normalize_ast,
     renderer::{RenderConfig, Renderer},
 };
@@ -87,6 +87,13 @@ fn round_trip(sql: &str) -> Result<(), String> {
                 whitespace.join(", ")
             ));
         }
+        let empty_statements = common::empty_statements(&output);
+        if !empty_statements.is_empty() {
+            return Err(format!(
+                "{} at width {max_line_length}\n{output}",
+                empty_statements.join(", ")
+            ));
+        }
         let mut formatted = reparsed.clone();
         normalize_ast(&mut formatted);
         if formatted != expected {
@@ -110,7 +117,7 @@ fn round_trip(sql: &str) -> Result<(), String> {
 fn format(ast: &pgls_query::NodeEnum, max_line_length: usize) -> String {
     let config = FormatConfig::default();
     let mut emitter = EventEmitter::new(config.clone());
-    emit_node_enum(ast, &mut emitter);
+    emit_statement(&mut emitter, ast);
     let mut output = String::new();
     let config = RenderConfig {
         max_line_length,

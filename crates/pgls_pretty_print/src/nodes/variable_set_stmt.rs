@@ -47,17 +47,9 @@ fn emit_variable_name(e: &mut EventEmitter, name: &str) {
     }
 }
 
-/// Emit the SET/RESET statement body without a semicolon (for use in ALTER ROLE SET, etc.)
-pub(super) fn emit_variable_set_stmt_no_semicolon(e: &mut EventEmitter, n: &VariableSetStmt) {
-    e.group_start(GroupKind::VariableSetStmt);
-    emit_variable_set_stmt_inner(e, n);
-    e.group_end();
-}
-
 pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) {
     e.group_start(GroupKind::VariableSetStmt);
     emit_variable_set_stmt_inner(e, n);
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
 

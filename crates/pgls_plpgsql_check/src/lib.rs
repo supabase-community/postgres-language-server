@@ -7,6 +7,7 @@ mod diagnostics;
 pub use diagnostics::PlPgSqlCheckDiagnostic;
 use diagnostics::create_diagnostics_from_check_result;
 use pgls_query::protobuf::CreateFunctionStmt;
+use pgls_query_ext::utils::{QualifiedName, find_option_value, qualified_name};
 use regex::Regex;
 use serde::Deserialize;
 pub use sqlx::postgres::PgSeverity;
@@ -72,9 +73,7 @@ fn should_check_function<'a>(
         _ => return None,
     };
 
-    if pgls_query_ext::utils::find_option_value(create_fn, "language")
-        != Some("plpgsql".to_string())
-    {
+    if find_option_value(create_fn, "language") != Some("plpgsql") {
         return None;
     }
 
@@ -96,8 +95,12 @@ fn is_trigger_function(create_fn: &CreateFunctionStmt) -> bool {
         .as_ref()
         .map(|n| {
             matches!(
-                pgls_query_ext::utils::parse_name(&n.names),
-                Some((None, name)) if name == "trigger"
+                qualified_name(&n.names),
+                Some(QualifiedName {
+                    schema: None,
+                    name: "trigger",
+                    ..
+                })
             )
         })
         .unwrap_or(false)
@@ -106,7 +109,7 @@ fn is_trigger_function(create_fn: &CreateFunctionStmt) -> bool {
 /// build the function identifier string used by plpgsql_check
 fn build_function_identifier(
     create_fn: &CreateFunctionStmt,
-    fn_schema: &Option<String>,
+    fn_schema: Option<&str>,
     fn_name: &str,
 ) -> String {
     let args = create_fn
@@ -118,12 +121,13 @@ fn build_function_identifier(
                 _ => return None,
             };
             let type_name_node = node.arg_type.as_ref()?;
-            let type_name = match pgls_query_ext::utils::parse_name(&type_name_node.names) {
-                Some((schema, name)) => match schema {
-                    Some(s) => format!("{s}.{name}"),
-                    None => name,
-                },
-                None => return None,
+            let type_name = match qualified_name(&type_name_node.names)? {
+                QualifiedName {
+                    schema: Some(schema),
+                    name,
+                    ..
+                } => format!("{schema}.{name}"),
+                QualifiedName { name, .. } => name.to_owned(),
             };
 
             if !type_name_node.array_bounds.is_empty() {
@@ -204,18 +208,22 @@ pub async fn check_plpgsql(
         None => return Ok(None),
     };
 
-    let (fn_schema, fn_name) = match pgls_query_ext::utils::parse_name(&create_fn.funcname) {
-        Some(n) => n,
-        None => return Ok(None),
+    let Some(QualifiedName {
+        schema: fn_schema,
+        name: fn_name,
+        ..
+    }) = qualified_name(&create_fn.funcname)
+    else {
+        return Ok(None);
     };
 
-    let fn_identifier = build_function_identifier(create_fn, &fn_schema, &fn_name);
+    let fn_identifier = build_function_identifier(create_fn, fn_schema, fn_name);
 
-    let fn_body = pgls_query_ext::utils::find_option_value(create_fn, "as")
+    let fn_body = find_option_value(create_fn, "as")
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body".to_string()))?;
     let offset = params
         .sql
-        .find(&fn_body)
+        .find(fn_body)
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body in SQL".to_string()))?;
     let is_trigger = is_trigger_function(create_fn);
 
@@ -253,7 +261,7 @@ pub async fn check_plpgsql(
 
         for trigger in params.snapshot.triggers.iter() {
             if trigger.proc_name == fn_name
-                && (fn_schema.is_none() || fn_schema.as_deref() == Some(&trigger.proc_schema))
+                && (fn_schema.is_none() || fn_schema == Some(trigger.proc_schema.as_str()))
             {
                 let relation = format!("{}.{}", trigger.table_schema, trigger.table_name);
                 checked = true;
@@ -301,7 +309,7 @@ pub async fn check_plpgsql(
         })?;
 
         let mut result_diagnostics =
-            create_diagnostics_from_check_result(&check_result, &fn_body, offset, relation);
+            create_diagnostics_from_check_result(&check_result, fn_body, offset, relation);
         diagnostics.append(&mut result_diagnostics);
     }
 
