@@ -1,7 +1,8 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use pgls_completions::CompletionItem;
 use pgls_fs::PgLSPath;
+use pgls_query_ext::function_body::{OffsetMap, Quoting};
 use pgls_text_size::TextSize;
 
 use crate::workspace::{Document, DocumentStatement, GetCompletionsFilter, WithCSTMapper};
@@ -24,16 +25,56 @@ pub struct CompletionsResult {
 
 impl CompletionsResult {
     /// The completions of the statement `stmt`, whose ranges are relative to its text, with the
-    /// ranges in the document.
-    pub(crate) fn in_document(mut items: Vec<CompletionItem>, stmt: &DocumentStatement) -> Self {
-        for item in &mut items {
-            if let Some(text_edit) = &mut item.completion_text {
-                text_edit.range = stmt.document_range(text_edit.range);
-            }
-        }
+    /// ranges in the document. In the body of a function in a string constant, the text is
+    /// escaped like the body, see [`OffsetMap::escape`]. An item without a text edit, which the
+    /// client inserts as its label, is left out if its label would need escaping.
+    pub(crate) fn in_document(items: Vec<CompletionItem>, stmt: &DocumentStatement) -> Self {
+        let items = items
+            .into_iter()
+            .filter_map(|mut item| {
+                match &mut item.completion_text {
+                    Some(text_edit) => {
+                        text_edit.range = stmt.document_range(text_edit.range);
+                        if let Cow::Owned(escaped) =
+                            escape(&stmt.offsets, &text_edit.text, text_edit.is_snippet)
+                        {
+                            text_edit.text = escaped;
+                        }
+                    }
+                    None if stmt.offsets.escape(&item.label) != item.label => return None,
+                    None => {}
+                }
+                Some(item)
+            })
+            .collect();
 
         Self { items }
     }
+}
+
+/// `text` as it is written in the source of a statement with the offsets `offsets`. In a
+/// snippet, `$`, `{` and `}` are the snippet's syntax, and a backslash is written `\\`.
+fn escape<'a>(offsets: &OffsetMap, text: &'a str, is_snippet: bool) -> Cow<'a, str> {
+    if !is_snippet {
+        return offsets.escape(text);
+    }
+    if offsets.quoting() == Quoting::None {
+        return Cow::Borrowed(text);
+    }
+    let mut escaped = String::with_capacity(text.len() + 2);
+    for c in text.chars() {
+        if matches!(c, '$' | '{' | '}') {
+            escaped.push(c);
+            continue;
+        }
+        for c in offsets.escape(c.encode_utf8(&mut [0; 4])).chars() {
+            if c == '\\' {
+                escaped.push('\\');
+            }
+            escaped.push(c);
+        }
+    }
+    Cow::Owned(escaped)
 }
 
 impl IntoIterator for CompletionsResult {
@@ -91,11 +132,12 @@ pub(crate) fn get_statement_for_completions(
 
 #[cfg(test)]
 mod tests {
-    use pgls_text_size::TextSize;
+    use pgls_completions::{CompletionItem, CompletionItemKind, CompletionText};
+    use pgls_text_size::{TextRange, TextSize};
 
     use crate::workspace::Document;
 
-    use super::get_statement_for_completions;
+    use super::{CompletionsResult, get_statement_for_completions};
 
     use pgls_test_utils::QueryWithCursorPosition;
 
@@ -110,6 +152,116 @@ mod tests {
             Document::new(sql.replace(QueryWithCursorPosition::cursor_marker(), ""), 5),
             TextSize::new(pos),
         )
+    }
+
+    /// The completions of a statement in the body of `function` at the cursor, with their
+    /// text, and how they come out in the document.
+    fn completed(function: &str, texts: &[(&str, bool)]) -> Vec<(String, String)> {
+        let (doc, position) = get_doc_and_pos(function);
+        let (stmt, _) =
+            get_statement_for_completions(&doc, position).expect("a statement at the cursor");
+        assert!(stmt.id.is_child(), "the body of the function");
+        let at = stmt.statement_offset(position);
+        let items = texts
+            .iter()
+            .map(|(text, is_snippet)| CompletionItem {
+                label: (*text).to_string(),
+                description: String::new(),
+                preselected: false,
+                kind: CompletionItemKind::Column,
+                sort_text: String::new(),
+                detail: None,
+                completion_text: Some(CompletionText {
+                    text: (*text).to_string(),
+                    range: TextRange::empty(at),
+                    is_snippet: *is_snippet,
+                }),
+            })
+            .collect();
+        CompletionsResult::in_document(items, &stmt)
+            .into_iter()
+            .map(|item| {
+                let edit = item.completion_text.expect("a text edit");
+                assert_eq!(edit.range, TextRange::empty(position));
+                (item.label, edit.text)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn completions_in_quoted_bodies_are_escaped() {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        let texts = [
+            ("it's", false),
+            (r"a\b", false),
+            (r"f(${1:it's}, ${2:a\b})", true),
+        ];
+        assert_eq!(
+            completed(
+                &format!(
+                    "create function f() returns int language sql as 'select {cursor} from t'"
+                ),
+                &texts
+            ),
+            [
+                ("it's".into(), "it''s".into()),
+                (r"a\b".into(), r"a\b".into()),
+                (
+                    r"f(${1:it's}, ${2:a\b})".into(),
+                    r"f(${1:it''s}, ${2:a\\b})".into()
+                ),
+            ]
+        );
+        assert_eq!(
+            completed(
+                &format!(
+                    "create function f() returns int language sql as E'select {cursor} from t'"
+                ),
+                &texts
+            ),
+            [
+                ("it's".into(), "it''s".into()),
+                (r"a\b".into(), r"a\\b".into()),
+                (
+                    r"f(${1:it's}, ${2:a\b})".into(),
+                    r"f(${1:it''s}, ${2:a\\\\b})".into()
+                ),
+            ]
+        );
+        // A dollar-quoted body needs no escaping.
+        assert_eq!(
+            completed(
+                &format!(
+                    "create function f() returns int language sql as $$ select {cursor} from t $$"
+                ),
+                &texts
+            ),
+            texts.map(|(text, _)| (text.to_string(), text.to_string()))
+        );
+    }
+
+    #[test]
+    fn completions_without_an_edit_that_need_escaping_are_left_out() {
+        let (doc, position) = get_doc_and_pos(&format!(
+            "create function f() returns int language sql as 'select {} from t'",
+            QueryWithCursorPosition::cursor_marker()
+        ));
+        let (stmt, _) = get_statement_for_completions(&doc, position).expect("a statement");
+        let item = |label: &str| CompletionItem {
+            label: label.to_string(),
+            description: String::new(),
+            preselected: false,
+            kind: CompletionItemKind::Schema,
+            sort_text: String::new(),
+            detail: None,
+            completion_text: None,
+        };
+        let labels: Vec<String> =
+            CompletionsResult::in_document(vec![item("public"), item("it's")], &stmt)
+                .into_iter()
+                .map(|item| item.label)
+                .collect();
+        assert_eq!(labels, ["public"]);
     }
 
     #[test]
