@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/sysviews.sql
-snapshot_kind: text
 ---
 select count(*) >= 0 as ok from pg_available_extension_versions;
 
@@ -27,7 +26,7 @@ for select
   b
 from
   (values (repeat('a', 512 * 1024), 1), (repeat('b', 512), 2)) as v (a, b)
-order by v.a desc;;
+order by v.a desc;
 
 fetch next from cur;
 

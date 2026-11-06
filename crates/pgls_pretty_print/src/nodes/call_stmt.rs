@@ -16,6 +16,5 @@ pub(super) fn emit_call_stmt(e: &mut EventEmitter, n: &CallStmt) {
         super::emit_func_call(e, funccall);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
