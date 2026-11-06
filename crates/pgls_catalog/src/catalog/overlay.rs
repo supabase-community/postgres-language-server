@@ -4,13 +4,14 @@
 use crate::typing::TypeId;
 use crate::{FunctionArgumentMode, FunctionSignature};
 use pgls_query::{Node, protobuf};
+use pgls_query_ext::utils::string_value;
 
 use super::{
     Catalog, Entry, Key, key,
-    names::{QualifiedName, qualified_name, range_var_name, string_value, type_label},
+    names::{QualifiedName, qualified_name, range_var_name, type_label},
 };
 use crate::lookup::{
-    CatalogView, ColumnInfo, FunctionInfo, FunctionKind, Lookup, Origin, RelationInfo,
+    CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
     RelationKind, TypeInfo,
 };
 
@@ -55,6 +56,24 @@ impl Catalog {
         (key.0 != "pg_catalog").then_some(key)
     }
 
+    /// The relation that is already where `CREATE TABLE`, `CREATE TABLE AS` or `SELECT INTO`
+    /// would create `range_var`. With `IF NOT EXISTS`, Postgres skips the statement unless this
+    /// is [`Lookup::Missing`] ([`transformCreateStmt`], [`CreateTableAsRelExists`]).
+    ///
+    /// [`transformCreateStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L164
+    /// [`CreateTableAsRelExists`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/createas.c#L393
+    pub fn relation_at_creation(
+        &self,
+        range_var: &protobuf::RangeVar,
+        search_path: &[String],
+    ) -> Lookup<RelationInfo> {
+        match self.relation_creation_key(range_var, search_path) {
+            Some((schema, name)) => self.relation_in(&schema, &name),
+            // Postgres rejects new relations in `pg_catalog`.
+            None => Lookup::Unknown,
+        }
+    }
+
     // ----- schemas -----
 
     pub(super) fn drop_schema(&mut self, name: &str) {
@@ -63,18 +82,10 @@ impl Catalog {
         self.relations.retain(|(schema, _), _| schema != name);
         self.types.retain(|(schema, _), _| schema != name);
         self.functions.retain(|(schema, _), _| schema != name);
+        self.indexes.retain(|(schema, _), _| schema != name);
     }
 
     // ----- relations -----
-
-    pub(super) fn relation_of(
-        &self,
-        range_var: &protobuf::RangeVar,
-        search_path: &[String],
-    ) -> Lookup<RelationInfo> {
-        let name = range_var_name(range_var);
-        self.relation(name.schema(), &name.name, search_path)
-    }
 
     /// Stores a relation and its row type.
     pub(super) fn define_relation(&mut self, relation: RelationInfo) {
@@ -122,7 +133,10 @@ impl Catalog {
             return false;
         }
         match self.relation_in(&key.0, &key.1) {
-            Lookup::Found(_) => true,
+            Lookup::Found(_) => {
+                self.skipped_existing = true;
+                true
+            }
             Lookup::Unknown => {
                 self.mark_relation_unknown(key.clone());
                 true
@@ -222,7 +236,74 @@ impl Catalog {
             self.children
                 .insert(key(&relation.schema, &relation.name), children);
         }
+        // The indexes stay on the table, and in its schema.
+        for mut index in self.table_indexes(&old_key.0, &old_key.1) {
+            self.indexes
+                .insert(key(&index.schema, &index.name), Entry::Dropped);
+            index.schema = relation.schema.clone();
+            index.table = relation.name.clone();
+            index.origin = Origin::File;
+            self.indexes
+                .insert(key(&index.schema, &index.name), Entry::Defined(index));
+        }
         self.define_relation(relation);
+    }
+
+    // ----- indexes -----
+
+    /// The indexes known to be on a table.
+    fn table_indexes(&self, schema: &str, table: &str) -> Vec<IndexInfo> {
+        let mut indexes: Vec<IndexInfo> = self
+            .indexes
+            .values()
+            .filter_map(|entry| match entry {
+                Entry::Defined(index) if index.schema == schema && index.table == table => {
+                    Some(index.clone())
+                }
+                _ => None,
+            })
+            .collect();
+        if let Some(base) = self.base_for(schema) {
+            indexes.extend(
+                base.table_indexes(schema, table)
+                    .filter(|index| !self.indexes.contains_key(&key(&index.schema, &index.name)))
+                    .cloned(),
+            );
+        }
+        indexes
+    }
+
+    /// Drops the indexes on a table that is dropped.
+    pub(super) fn drop_table_indexes(&mut self, schema: &str, table: &str) {
+        for index in self.table_indexes(schema, table) {
+            self.indexes
+                .insert(key(&index.schema, &index.name), Entry::Dropped);
+        }
+    }
+
+    /// Renames an index. If we can't tell which index it is, we no longer know which indexes
+    /// are missing.
+    pub(super) fn rename_index(
+        &mut self,
+        range_var: &protobuf::RangeVar,
+        new_name: &str,
+        search_path: &[String],
+    ) {
+        let name = range_var_name(range_var);
+        let mut index = match self.index(name.schema(), &name.name, search_path) {
+            Lookup::Found(index) => index,
+            Lookup::Missing => return,
+            Lookup::Unknown => {
+                self.indexes_incomplete = true;
+                return;
+            }
+        };
+        self.indexes
+            .insert(key(&index.schema, &index.name), Entry::Dropped);
+        index.name = new_name.to_owned();
+        index.origin = Origin::File;
+        self.indexes
+            .insert(key(&index.schema, &index.name), Entry::Defined(index));
     }
 
     // ----- types -----
@@ -514,10 +595,7 @@ pub(super) fn column_info(
                 Some("smallserial") => "int2",
                 _ => return None,
             };
-            catalog
-                .type_(Some("pg_catalog"), internal_name, search_path)
-                .found()
-                .and_then(|ty| ty.id)
+            catalog.builtin_type(internal_name)
         });
     let type_name = column.type_name.as_ref().and_then(type_label);
     ColumnInfo {
@@ -542,6 +620,7 @@ pub(super) fn function_info(
         max_args,
         returns_set: false,
         return_columns: None,
+        volatility: None,
         origin: Origin::File,
         signature: None,
     }

@@ -12,7 +12,5 @@ pub(super) fn emit_listen_stmt(e: &mut EventEmitter, n: &ListenStmt) {
     e.space();
     super::emit_identifier_maybe_quoted(e, &n.conditionname);
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
