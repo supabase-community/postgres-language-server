@@ -126,6 +126,8 @@ impl Item {
 #[derive(Debug, Clone, Default)]
 pub(super) struct Level {
     pub items: Vec<Item>,
+    /// The order of the columns of `*`.
+    pub star_order: StarOrder,
     /// Columns merged by `JOIN ... USING`. An unqualified reference to them is not ambiguous.
     pub merged_columns: Vec<String>,
     /// Types of columns merged by USING, in USING-clause order.
@@ -145,6 +147,27 @@ pub(super) struct Level {
     pub qualified_only: Vec<Item>,
 }
 
+/// The order of the columns that `*` expands to.
+#[derive(Debug, Clone, Default)]
+pub(super) enum StarOrder {
+    /// The columns of each item, one item after the other, as without joins that merge columns.
+    #[default]
+    Items,
+    /// The order of a level with a join that merges columns.
+    Columns(Vec<StarEntry>),
+    /// Not known, because a join's columns can't be merged with certainty.
+    Unknown,
+}
+
+/// A column that `*` expands to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) enum StarEntry {
+    /// A column that `JOIN ... USING` or a `NATURAL` join merges, by its name.
+    Merged(String),
+    /// The column at `column` in the columns of the item at `item` of the level.
+    Item { item: usize, column: usize },
+}
+
 impl Level {
     pub fn with_item(item: Item) -> Self {
         Self {
@@ -154,6 +177,23 @@ impl Level {
     }
 
     pub fn extend(&mut self, other: Level) {
+        self.star_order = match (&self.star_order, &other.star_order) {
+            (StarOrder::Items, StarOrder::Items) => StarOrder::Items,
+            _ => match (self.star(), other.star()) {
+                (Some(mut columns), Some(other_columns)) => {
+                    let offset = self.items.len();
+                    columns.extend(other_columns.into_iter().map(|column| match column {
+                        StarEntry::Item { item, column } => StarEntry::Item {
+                            item: item + offset,
+                            column,
+                        },
+                        merged => merged,
+                    }));
+                    StarOrder::Columns(columns)
+                }
+                _ => StarOrder::Unknown,
+            },
+        };
         self.items.extend(other.items);
         self.merged_columns.extend(other.merged_columns);
         self.merged_typed_columns.extend(other.merged_typed_columns);
@@ -161,39 +201,84 @@ impl Level {
         self.has_opaque_items |= other.has_opaque_items;
     }
 
-    /// Typed columns of `SELECT *`, including columns merged by USING.
+    /// The columns that `*` expands to, in order, like [`ExpandAllTables`]. A join expands to the
+    /// columns it merges, then the other columns of its left side, then those of its right side
+    /// ([`transformFromClauseItem`]). `None` if they are not known.
+    ///
+    /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
+    /// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
+    pub fn star(&self) -> Option<Vec<StarEntry>> {
+        match &self.star_order {
+            StarOrder::Items => {
+                let mut columns = Vec::new();
+                for (item, entry) in self.items.iter().enumerate() {
+                    let count = entry.columns.as_ref()?.len();
+                    columns.extend((0..count).map(|column| StarEntry::Item { item, column }));
+                }
+                Some(columns)
+            }
+            StarOrder::Columns(columns) => Some(columns.clone()),
+            StarOrder::Unknown => None,
+        }
+    }
+
+    /// The name of a column of `*`.
+    pub fn star_column_name<'a>(&'a self, column: &'a StarEntry) -> Option<&'a str> {
+        match column {
+            StarEntry::Merged(name) => Some(name),
+            StarEntry::Item { item, column } => self
+                .items
+                .get(*item)?
+                .columns
+                .as_ref()?
+                .get(*column)
+                .map(String::as_str),
+        }
+    }
+
+    /// Typed columns of `SELECT *`, including merged columns. The type of a merged column is
+    /// unknown if a `NATURAL` join merges it, or if nested joins merge the same name again.
     pub fn star_typed_columns(&self) -> TypedColumns {
-        if self.has_natural_join || self.items.is_empty() {
+        if self.items.is_empty() {
             return None;
         }
-        let mut output = self.merged_typed_columns.clone();
-        for item in &self.items {
-            let columns = item.typed_columns.as_ref()?;
-            output.extend(
-                columns
-                    .iter()
-                    .filter(|column| !self.merged_columns.contains(&column.name))
+        self.star()?
+            .iter()
+            .map(|column| match column {
+                StarEntry::Merged(name) => {
+                    let mut merged = self
+                        .merged_typed_columns
+                        .iter()
+                        .filter(|typed| typed.name == *name);
+                    let ty = match (merged.next(), merged.next()) {
+                        (Some(typed), None) => typed.ty.clone(),
+                        _ => None,
+                    };
+                    Some(TypedColumn {
+                        name: name.clone(),
+                        ty,
+                    })
+                }
+                StarEntry::Item { item, column } => self
+                    .items
+                    .get(*item)?
+                    .typed_columns
+                    .as_ref()?
+                    .get(*column)
                     .cloned(),
-            );
-        }
-        Some(output)
+            })
+            .collect()
     }
 
     /// The columns of `SELECT *`, if known.
     pub fn star_columns(&self) -> Columns {
-        if self.has_natural_join || self.items.is_empty() {
+        if self.items.is_empty() {
             return None;
         }
-        let mut columns = self.merged_columns.clone();
-        for item in &self.items {
-            columns.extend(
-                item.columns
-                    .clone()?
-                    .into_iter()
-                    .filter(|column| !self.merged_columns.contains(column)),
-            );
-        }
-        Some(columns)
+        self.star()?
+            .iter()
+            .map(|column| self.star_column_name(column).map(str::to_owned))
+            .collect()
     }
 
     pub fn item(&self, name: &str) -> Option<&Item> {
