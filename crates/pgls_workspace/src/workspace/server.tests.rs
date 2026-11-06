@@ -3427,7 +3427,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     };
 
     // The columns of a table of the database and of one created in the file, qualified since
-    // there are two FROM items.
+    // there are two FROM items. After a dot, the keyword `select` needs no quotes.
     let actions = expand_actions("* from star_items");
     assert_eq!(actions.len(), 1, "{actions:?}");
     let (title, edit) = &actions[0];
@@ -3440,7 +3440,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         edit.edits,
         vec![TextEdit {
             range: range_of("*"),
-            new_text: r#"i.id, i."Label", t.id, t.item_id, t."select""#.into(),
+            new_text: r#"i.id, i."Label", t.id, t.item_id, t.select"#.into(),
         }]
     );
 
@@ -3452,7 +3452,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         actions[0].1.edits,
         vec![TextEdit {
             range: range_of("t.*"),
-            new_text: r#"t.id, t.item_id, t."select""#.into(),
+            new_text: r#"t.id, t.item_id, t.select"#.into(),
         }]
     );
 
@@ -4601,4 +4601,66 @@ fn database_spans_must_fit_the_statement() {
         database_span(Some(TextRange::new(at(15), at(40))), statement, range),
         range
     );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints_parameter_names_setting(test_db: PgPool) {
+    let path = PgLSPath::new("test.sql");
+    let content = "create function point(x int, y int) returns int language sql as 'select x + y';\n\
+        select point(1, 1 + 1), point(length('a'), null);\n";
+    let hints = |parameter_names| {
+        let mut conf = PartialConfiguration::init();
+        conf.merge_with(PartialConfiguration {
+            db: Some(PartialDatabaseConfiguration {
+                database: Some(
+                    test_db
+                        .connect_options()
+                        .get_database()
+                        .unwrap()
+                        .to_string(),
+                ),
+                ..Default::default()
+            }),
+            inlay_hints: Some(
+                pgls_configuration::inlay_hints::PartialInlayHintsConfiguration {
+                    parameter_names: Some(parameter_names),
+                    ..Default::default()
+                },
+            ),
+            ..Default::default()
+        });
+        let (workspace, project_key) =
+            get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        workspace
+            .pull_inlay_hints(PullInlayHintsParams {
+                project_key,
+                path: path.clone(),
+                range: TextRange::up_to(TextSize::of(content)),
+            })
+            .expect("Unable to pull inlay hints")
+            .hints
+            .into_iter()
+            .map(|hint| {
+                (
+                    &content[usize::from(hint.offset)..usize::from(hint.offset) + 1],
+                    hint.label,
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    use pgls_configuration::inlay_hints::ParameterNameHints;
+    assert_eq!(hints(ParameterNameHints::All).len(), 4);
+    assert_eq!(
+        hints(ParameterNameHints::Literals),
+        [("1", "x:".to_string()), ("n", "y:".to_string())]
+    );
+    assert!(hints(ParameterNameHints::None).is_empty());
 }

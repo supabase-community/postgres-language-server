@@ -10,6 +10,26 @@ use super::node_list::emit_parenthesized_list;
 use super::string::emit_identifier_maybe_quoted;
 
 pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
+    emit_constraint_of(e, n, Owner::Table);
+}
+
+/// A constraint of `ALTER DOMAIN ... ADD`.
+pub(super) fn emit_domain_constraint(e: &mut EventEmitter, n: &Constraint) {
+    emit_constraint_of(e, n, Owner::Domain);
+}
+
+/// What a constraint belongs to. The parse tree can't tell a domain's `NOT NULL` from a table's
+/// `NOT NULL value`: both have the keys `value`, so the statement around it decides.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Owner {
+    /// A table or column constraint, and the constraints of `CREATE DOMAIN`, which the parser
+    /// builds like column constraints.
+    Table,
+    /// `ALTER DOMAIN ... ADD`, the only place that builds a domain constraint.
+    Domain,
+}
+
+fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
     e.group_start(GroupKind::Constraint);
     // A broken constraint continues one level deeper than where it starts. The indent starts at
     // the first continuation line, so a column list on the first line breaks relative to it.
@@ -20,7 +40,6 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             e.token(TokenKind::NULL_KW);
         }
         x if x == ConstrType::ConstrNotnull as i32 => {
-            // For domain constraints: CONSTRAINT name NOT NULL
             if !n.conname.is_empty() {
                 e.token(TokenKind::CONSTRAINT_KW);
                 e.space();
@@ -30,11 +49,12 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             e.token(TokenKind::NOT_KW);
             e.space();
             e.token(TokenKind::NULL_KW);
-            // A table constraint names its column (since Postgres 18). The keys of a domain
-            // constraint are `value`, which is not written.
-            if let [key] = n.keys.as_slice()
+            // A table constraint names its column (since Postgres 18). The parser sets the keys of
+            // a domain constraint to `value`, which is not written (`DomainConstraintElem`,
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L4446).
+            if owner == Owner::Table
+                && let [key] = n.keys.as_slice()
                 && let Some(NodeEnum::String(column)) = &key.node
-                && column.sval != "value"
             {
                 e.space();
                 emit_identifier_maybe_quoted(e, &column.sval);

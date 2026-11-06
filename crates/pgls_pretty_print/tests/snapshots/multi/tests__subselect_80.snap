@@ -399,7 +399,7 @@ as select * from shipped where ttype = 'wt';
 create rule shipped_view_insert
 as on insert to shipped_view
 do instead
-  insert into shipped values ('wt', new.ordnum, new.partnum, new.value);;
+  insert into shipped values ('wt', new.ordnum, new.partnum, new.value);
 
 insert into parts (partnum, cost) values (1, 1234.56);
 
@@ -415,7 +415,7 @@ do instead
   set partnum = new.partnum,
   value = new.value
   where
-    ttype = new.ttype and ordnum = new.ordnum;;
+    ttype = new.ttype and ordnum = new.ordnum;
 
 update shipped_view
 set value = 11
@@ -1326,7 +1326,7 @@ begin;
 
 declare c1 scroll
 cursor
-for select * from generate_series(1, 4) as i where i <> all (values (2), (3));;
+for select * from generate_series(1, 4) as i where i <> all (values (2), (3));
 
 move forward all from c1;
 

@@ -3,13 +3,17 @@
 //!
 //! Lines end at `\n`, so a lone `\r` doesn't end a line. The `\r` of a `\r\n` belongs to the line
 //! break, like in the LSP: a position can't point between the `\r` and the `\n`.
+//!
+//! [`offset_of_char_position`] converts the character positions that Postgres reports.
 
+mod char_position;
 mod line_index;
 #[cfg(test)]
 mod tests;
 
 use pgls_text_size::TextSize;
 
+pub use char_position::offset_of_char_position;
 pub use line_index::LineIndex;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
