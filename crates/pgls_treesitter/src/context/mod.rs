@@ -452,9 +452,11 @@ impl<'a> TreesitterContext<'a> {
             }
         }
 
-        // We have arrived at the leaf node
-        if current_node.child_count() == 0
-            || current_node.first_child_for_byte(self.position).is_none()
+        // We have arrived at the leaf node. That's also the case if no child contains the
+        // cursor, like the word that tree-sitter skipped in the `ERROR` of `analyze (word)`.
+        if current_node
+            .first_child_for_byte(self.position)
+            .is_none_or(|child| child.start_byte() > self.position)
         {
             self.node_under_cursor = current_node;
             return;

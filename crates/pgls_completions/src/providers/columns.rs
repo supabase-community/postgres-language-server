@@ -670,6 +670,28 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_columns_after_opening_parenthesis(pool: PgPool) {
+        pool.execute("create table public.users (id serial primary key, name text);")
+            .await
+            .unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        for sql in [
+            "select ({}) from users",
+            "select * from users where ({})",
+            "insert into users ({})",
+            // Without the closing parenthesis.
+            "insert into users ({}",
+        ] {
+            let query = sql.replace("{}", &cursor.to_string());
+            let mut columns = columns_at(&query, &pool).await;
+            columns.truncate(2);
+            columns.sort();
+            assert_eq!(columns, ["id", "name"], "{sql}");
+        }
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn completes_columns_of_old_and_new_in_returning(pool: PgPool) {
         pool.execute(
             r#"

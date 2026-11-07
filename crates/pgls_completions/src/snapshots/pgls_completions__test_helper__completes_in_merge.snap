@@ -462,6 +462,16 @@ values - values (Keyword)
 --------------
 
 merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (|
+
+Results:
+id - public.users.id (Column)
+name - public.users.name (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
 merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (|)
 
 Results:

@@ -11,7 +11,7 @@ program [0..64] 'update t set a = 1 returning with (old as o, new as n) o.a, n.*
       update_target [7..8] 't'
         table_reference [7..8] 't' (@end)
           any_identifier [7..8] 't' (@table_reference_1of1)
-      update_set_values [9..18] 'set a = 1'
+      update_set_values [9..18] 'set a = 1' (@end)
         keyword_set [9..12] 'set'
         assignment [13..18] 'a = 1' (@end)
           column_identifier [13..14] 'a' (@left)

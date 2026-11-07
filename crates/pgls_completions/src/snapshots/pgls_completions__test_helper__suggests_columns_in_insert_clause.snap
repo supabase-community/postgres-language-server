@@ -75,6 +75,16 @@ values - values (Keyword)
 --------------
 
 insert into instruments (|
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
 insert into instruments (|)
 
 Results:
@@ -232,6 +242,16 @@ values - values (Keyword)
 --------------
 
 insert into instruments (|
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
 insert into instruments (|)
 
 Results:

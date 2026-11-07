@@ -2,7 +2,7 @@ use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 
 use pgls_treesitter::context::{TreesitterContext, WrappingClause};
 
-use crate::sanitization;
+use crate::{providers::helper::word_at_cursor, sanitization};
 
 use super::CompletionRelevanceData;
 
@@ -52,7 +52,11 @@ impl CompletionScore<'_> {
     }
 
     fn check_matches_query_input(&mut self, ctx: &TreesitterContext) {
-        let content = match ctx.get_node_under_cursor_content() {
+        let content = match self.data {
+            CompletionRelevanceData::Keyword(_) => Some(ctx.text[word_at_cursor(ctx)].to_string()),
+            _ => ctx.get_node_under_cursor_content(),
+        };
+        let content = match content {
             Some(c) if !sanitization::is_sanitized_token(c.as_str()) => {
                 sanitization::remove_sanitized_token(&c).replace('"', "")
             }
