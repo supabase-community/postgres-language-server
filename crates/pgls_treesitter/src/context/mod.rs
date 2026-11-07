@@ -26,6 +26,10 @@ pub enum WrappingClause<'a> {
     Delete,
     /// The RETURNING clause of INSERT, UPDATE, DELETE, or MERGE.
     Returning,
+    /// `MERGE INTO target USING source ON condition`.
+    Merge,
+    /// A `WHEN [NOT] MATCHED ... THEN` clause of MERGE.
+    MergeWhen,
     ColumnDefinitions,
     Insert,
     AlterTable,
@@ -459,6 +463,8 @@ impl<'a> TreesitterContext<'a> {
             "select" => Some(WrappingClause::Select),
             "delete_statement" => Some(WrappingClause::Delete),
             "returning" => Some(WrappingClause::Returning),
+            "merge" => Some(WrappingClause::Merge),
+            "when_clause" => Some(WrappingClause::MergeWhen),
             "from" => Some(WrappingClause::From),
             "drop_table" => Some(WrappingClause::DropTable),
             "alter_role" => Some(WrappingClause::AlterRole),

@@ -72,6 +72,6 @@ copy - copy (Keyword)
 create - create (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
-reset - reset (Keyword)
+merge - merge (Keyword)
 
 --------------

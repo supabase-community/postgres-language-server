@@ -11,7 +11,7 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
         (statement (insert (table_reference) @target) (returning) @returning)
         (statement (update (update_target (table_reference) @target)) (returning) @returning)
         (delete_statement (from (table_reference) @target) (returning) @returning)
-        (statement (keyword_merge) (keyword_into) . (table_reference) @target (returning) @returning)
+        (statement (merge (keyword_into) . (table_reference) @target) (returning) @returning)
     ]
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)

@@ -389,6 +389,8 @@ module.exports = grammar({
     keyword_external: (_) => make_keyword("external"),
     keyword_stored: (_) => make_keyword("stored"),
     keyword_virtual: (_) => make_keyword("virtual"),
+    keyword_source: (_) => make_keyword("source"),
+    keyword_target: (_) => make_keyword("target"),
     keyword_usage: (_) => make_keyword("usage"),
     keyword_enforced: (_) => make_keyword("enforced"),
     keyword_period: (_) => make_keyword("period"),
@@ -2425,7 +2427,10 @@ module.exports = grammar({
     _update_statement: ($) => seq($.update, optional($.returning)),
 
     _merge_statement: ($) =>
-      seq(
+      seq($.merge, repeat($.when_clause), optional($.returning)),
+
+    merge: ($) =>
+      partialSeq(
         $.keyword_merge,
         $.keyword_into,
         $.table_reference,
@@ -2434,51 +2439,54 @@ module.exports = grammar({
         choice($.subquery, $.table_reference),
         optional($.alias),
         $.keyword_on,
-        optional_parenthesis(field("predicate", $._expression)),
-        repeat1($.when_clause),
-        optional($.returning),
+        field("end", optional_parenthesis($._expression)),
       ),
 
     when_clause: ($) =>
-      seq(
+      partialSeq(
         $.keyword_when,
         optional($.keyword_not),
         $.keyword_matched,
         optional(
-          seq(
-            $.keyword_and,
-            optional_parenthesis(field("predicate", $._expression)),
-          ),
+          partialSeq($.keyword_by, choice($.keyword_source, $.keyword_target)),
+        ),
+        optional(
+          partialSeq($.keyword_and, optional_parenthesis($._expression)),
         ),
         $.keyword_then,
-        choice(
-          // merge_insert
-          seq(
-            $.keyword_insert,
-            optional(paren_list($.column_identifier, true)),
-            optional(
-              seq(
-                $.keyword_overriding,
-                choice($.keyword_system, $.keyword_user),
-                $.keyword_value,
-              ),
-            ),
-            choice(
-              seq($.keyword_default, $.keyword_values),
-              seq(
-                $.keyword_values,
-                paren_list(choice($._expression, $.keyword_default), true),
-              ),
-            ),
+        field(
+          "end",
+          choice(
+            $.merge_insert,
+            $.merge_update,
+            $.keyword_delete,
+            $.merge_do_nothing,
           ),
-          // merge_update
-          seq($.keyword_update, $._set_values),
-          // merge_delete
-          $.keyword_delete,
-
-          seq($.keyword_do, $.keyword_nothing),
         ),
       ),
+
+    merge_insert: ($) =>
+      partialSeq(
+        $.keyword_insert,
+        optional($.insert_columns),
+        optional(
+          seq(
+            $.keyword_overriding,
+            choice($.keyword_system, $.keyword_user),
+            $.keyword_value,
+          ),
+        ),
+        choice(
+          partialSeq($.keyword_default, field("end", $.keyword_values)),
+          field("end", $.insert_values),
+        ),
+      ),
+
+    merge_update: ($) =>
+      partialSeq($.keyword_update, field("end", $.update_set_values)),
+
+    merge_do_nothing: ($) =>
+      partialSeq($.keyword_do, field("end", $.keyword_nothing)),
 
     _vacuum_table: ($) =>
       seq(
