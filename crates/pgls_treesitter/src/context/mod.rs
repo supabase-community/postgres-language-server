@@ -77,6 +77,13 @@ struct ReturningRowAlias {
     explicit: bool,
 }
 
+/// The name of a table, see [`identifier_name`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RelationName {
+    schema: Option<String>,
+    name: String,
+}
+
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
 /// That gives us a lot of insight for completions.
 /// Other nodes, such as the "relation" node, gives us less but still
@@ -172,6 +179,9 @@ pub struct TreesitterContext<'a> {
     /// The names of the old and new row of the target table, by name, when the cursor is in a
     /// RETURNING list.
     returning_row_aliases: HashMap<String, ReturningRowAlias>,
+    /// The relation of MERGE, target or source, whose columns the `WHEN` clause under the cursor
+    /// can't reference.
+    hidden_merge_relation: Option<RelationName>,
     mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
 
     scope_tracker: ScopeTracker,
@@ -193,6 +203,7 @@ impl<'a> TreesitterContext<'a> {
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
             returning_row_aliases: HashMap::new(),
+            hidden_merge_relation: None,
             mentioned_columns: HashMap::new(),
             scope_tracker: ScopeTracker::new(),
 
@@ -203,6 +214,7 @@ impl<'a> TreesitterContext<'a> {
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
+        ctx.hidden_merge_relation = ctx.find_hidden_merge_relation();
         ctx.gather_possible_keywords_at_position();
         ctx.check_previous_clause();
         ctx.check_current_clause();
@@ -566,6 +578,71 @@ impl<'a> TreesitterContext<'a> {
     /// those without a schema for `None`.
     pub fn get_mentioned_relations(&self, schema: &Option<String>) -> Option<&HashSet<String>> {
         self.mentioned_relations.get(schema)
+    }
+
+    /// Which relation of MERGE the `WHEN` clause under the cursor can't see. Like Postgres'
+    /// `setNamespaceForMergeWhen`, `NOT MATCHED [BY TARGET]` only sees the source, and
+    /// `NOT MATCHED BY SOURCE` only the target. The target columns of `INSERT (...)` and
+    /// `UPDATE SET` are those of the target. If target and source are the same table, its
+    /// columns stay visible.
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L52
+    fn find_hidden_merge_relation(&self) -> Option<RelationName> {
+        let mut when_clause = Some(self.node_under_cursor);
+        while let Some(node) = when_clause.filter(|node| node.kind() != "when_clause") {
+            when_clause = node.parent();
+        }
+        let when_clause = when_clause?;
+        let merge = {
+            let parent = when_clause.parent()?;
+            let mut cursor = parent.walk();
+            parent
+                .children(&mut cursor)
+                .find(|child| child.kind() == "merge")?
+        };
+        let relation_after = |keyword: &str| {
+            let mut cursor = merge.walk();
+            let children: Vec<_> = merge.children(&mut cursor).collect();
+            let position = children.iter().position(|child| child.kind() == keyword)?;
+            let reference = children
+                .get(position + 1)
+                .filter(|child| child.kind() == "table_reference")?;
+            let (_, schema, name) = parts_of_reference_query(*reference, self.text)?;
+            Some(RelationName {
+                schema: schema
+                    .and_then(|schema| self.get_ts_node_content(&schema))
+                    .map(|schema| identifier_name(&schema)),
+                name: identifier_name(&self.get_ts_node_content(&name)?),
+            })
+        };
+        let target = relation_after("keyword_into");
+        let source = relation_after("keyword_using");
+        if target.is_some() && target == source {
+            return None;
+        }
+
+        let is_target_column = self.node_under_cursor.kind() == "column_identifier";
+        let mut cursor = when_clause.walk();
+        let kinds: Vec<&str> = when_clause
+            .children(&mut cursor)
+            .map(|child| child.kind())
+            .collect();
+        let not_matched = kinds.contains(&"keyword_not");
+        let by_source = kinds.contains(&"keyword_source");
+        if is_target_column || (not_matched && by_source) {
+            source
+        } else if not_matched {
+            target
+        } else {
+            None
+        }
+    }
+
+    /// Whether the cursor is in a `WHEN` clause of MERGE that can't see the columns of the table
+    /// `schema.table`. Both are names, see [`identifier_name`].
+    pub fn is_hidden_merge_relation(&self, schema: &str, table: &str) -> bool {
+        self.hidden_merge_relation.as_ref().is_some_and(|hidden| {
+            hidden.name == table && hidden.schema.as_deref().is_none_or(|s| s == schema)
+        })
     }
 
     /// The name of the table that the alias with the name `alias` stands for.
