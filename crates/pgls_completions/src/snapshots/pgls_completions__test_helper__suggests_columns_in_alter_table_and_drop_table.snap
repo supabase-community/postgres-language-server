@@ -24,6 +24,7 @@ analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
+vacuum - vacuum (Keyword)
 
 --------------
 
@@ -111,6 +112,7 @@ analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
+vacuum - vacuum (Keyword)
 
 --------------
 
@@ -222,6 +224,7 @@ analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
+vacuum - vacuum (Keyword)
 
 --------------
 
@@ -323,6 +326,7 @@ analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
+vacuum - vacuum (Keyword)
 
 --------------
 
@@ -402,6 +406,7 @@ analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
+vacuum - vacuum (Keyword)
 
 --------------
 
@@ -505,6 +510,7 @@ analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
+vacuum - vacuum (Keyword)
 
 --------------
 
@@ -570,6 +576,7 @@ analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
+vacuum - vacuum (Keyword)
 
 --------------
 
@@ -651,6 +658,7 @@ analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
+vacuum - vacuum (Keyword)
 
 --------------
 

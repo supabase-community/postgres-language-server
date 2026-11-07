@@ -53,6 +53,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("atomic"),
     SqlKeyword::new("attribute"),
     SqlKeyword::new("authorization"),
+    SqlKeyword::new("auto"),
     SqlKeyword::new("before"),
     SqlKeyword::new("begin").starts_statement(),
     SqlKeyword::new("between").require_prefix(),
@@ -111,6 +112,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("delete").starts_statement(),
     SqlKeyword::new("delimiter"),
     SqlKeyword::new("desc"),
+    SqlKeyword::new("disable_page_skipping"),
     SqlKeyword::new("distinct"),
     SqlKeyword::new("do").starts_statement(),
     SqlKeyword::new("double"),
@@ -168,6 +170,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("in").require_prefix(),
     SqlKeyword::new("increment"),
     SqlKeyword::new("index"),
+    SqlKeyword::new("index_cleanup"),
     SqlKeyword::new("inet"),
     SqlKeyword::new("inherit"),
     SqlKeyword::new("initially"),
@@ -231,6 +234,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("on"),
     SqlKeyword::new("on_error"),
     SqlKeyword::new("only").require_prefix(),
+    SqlKeyword::new("only_database_stats"),
     SqlKeyword::new("option"),
     SqlKeyword::new("or").require_prefix(),
     SqlKeyword::new("order"),
@@ -256,6 +260,8 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("privileges"),
     SqlKeyword::new("procedure"),
     SqlKeyword::new("procedures"),
+    SqlKeyword::new("process_main"),
+    SqlKeyword::new("process_toast"),
     SqlKeyword::new("program"),
     SqlKeyword::new("public"),
     SqlKeyword::new("quote"),
@@ -307,6 +313,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("show").starts_statement(),
     SqlKeyword::new("silent"),
     SqlKeyword::new("similar").require_prefix(),
+    SqlKeyword::new("skip_database_stats"),
     SqlKeyword::new("skip_locked"),
     SqlKeyword::new("smallint"),
     SqlKeyword::new("smallserial"),
@@ -1190,6 +1197,47 @@ mod tests {
         assert_eq!(
             verbose.completion_text.as_ref().map(|text| text.range),
             Some(pgls_text_size::TextRange::new(18.into(), 21.into()))
+        );
+    }
+
+    #[sqlx::test]
+    async fn completes_vacuum_options(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `analyze` needs a prefix.
+        let options = [
+            "buffer_usage_limit",
+            "disable_page_skipping",
+            "freeze",
+            "full",
+            "index_cleanup",
+            "only_database_stats",
+            "parallel",
+            "process_main",
+            "process_toast",
+            "skip_database_stats",
+            "skip_locked",
+            "truncate",
+            "verbose",
+        ];
+
+        for sql in ["vacuum ({})", "vacuum ({}", "vacuum (verbose, {})"] {
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(keywords_at(&query, &pool).await, options, "{sql}");
+        }
+
+        assert_eq!(
+            keywords_at(&format!("vacuum (index_cleanup {cursor})"), &pool).await,
+            ["auto", "off", "on"]
+        );
+        assert_eq!(
+            keywords_at(&format!("explain (format {cursor})"), &pool).await,
+            ["json", "text", "xml", "yaml"]
+        );
+        // The options from before the option list.
+        assert_eq!(
+            keywords_at(&format!("vacuum {cursor}"), &pool).await,
+            ["freeze", "full", "verbose"]
         );
     }
 

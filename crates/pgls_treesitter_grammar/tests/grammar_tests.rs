@@ -217,6 +217,19 @@ fn delete_target_alias_and_using() {
 }
 
 #[test]
+fn vacuum_options() {
+    valid_snapshot(
+        "vacuum_options",
+        "vacuum (full, freeze false, index_cleanup auto, parallel 4, buffer_usage_limit '256kB') only users *, posts (id);",
+    );
+    valid_snapshot(
+        "vacuum_legacy_options",
+        "vacuum full freeze verbose analyze users (id);",
+    );
+    valid_snapshot("unfinished_vacuum_options", "vacuum (verbose");
+}
+
+#[test]
 fn privilege_names_as_role_names() {
     // Without `ON`, Postgres grants and revokes roles, and reads privilege names as role names.
     valid_snapshot("grant_role_named_usage", "grant usage, update to bob;");

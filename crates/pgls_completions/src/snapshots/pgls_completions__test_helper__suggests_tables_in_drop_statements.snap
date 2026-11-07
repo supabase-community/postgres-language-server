@@ -114,3 +114,9 @@ posts - auth.posts (Table)
 --------------
 
 drop table if exists auth.posts |
+
+Results:
+cascade - cascade (Keyword)
+restrict - restrict (Keyword)
+
+--------------
