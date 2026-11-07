@@ -945,21 +945,43 @@ module.exports = grammar({
       ),
 
     delete_statement: ($) =>
-      seq(
+      partialSeq(
         $.keyword_delete,
         alias($._delete_from, $.from),
         optional($.returning),
       ),
 
     _delete_from: ($) =>
-      seq(
+      partialSeq(
         $.keyword_from,
         optional($.keyword_only),
-        $.table_reference,
-        optional($.where),
+        field("end", $.table_reference),
+        optional("*"),
+        optional($.alias),
+        optional($.delete_using),
+        optional(choice($.where, $.where_current_of)),
         optional($.order_by),
         optional($.limit),
         optional($.offset),
+      ),
+
+    delete_using: ($) =>
+      partialSeq(
+        $.keyword_using,
+        field(
+          "end",
+          seq(
+            comma_list($.relation, true),
+            repeat(
+              choice(
+                $.join,
+                $.cross_join,
+                $.lateral_join,
+                $.lateral_cross_join,
+              ),
+            ),
+          ),
+        ),
       ),
 
     _create_statement: ($) =>

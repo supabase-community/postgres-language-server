@@ -15,6 +15,23 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
                 (any_identifier) @alias
             )?
         )
+        ; The target of UPDATE and DELETE.
+        (update_target
+            (table_reference) @ref
+            (alias
+                (keyword_as)?
+                (any_identifier) @alias
+            )
+        )
+        (delete_statement
+            (from
+                (table_reference) @ref
+                (alias
+                    (keyword_as)?
+                    (any_identifier) @alias
+                )
+            )
+        )
         ; The target and the source of MERGE.
         (merge
             (table_reference) @ref
@@ -134,6 +151,41 @@ mod tests {
         assert_eq!(results[0].get_table(sql), "users");
         assert_eq!(results[0].get_alias(sql), "u");
         assert_eq!(results[0].get_schema(sql), None);
+    }
+
+    #[test]
+    fn finds_update_and_delete_target_aliases() {
+        let sql = r#"
+update auth.users u set email = 'x' from posts as p where p.user_id = u.id;
+delete from auth.users as d using comments c where c.user_id = d.id;
+"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<TableAliasMatch>();
+
+        let results: Vec<(String, String)> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .map(|m: &TableAliasMatch| (m.get_alias(sql), m.get_table(sql)))
+            .collect();
+
+        assert_eq!(
+            results,
+            [
+                ("u".to_string(), "users".to_string()),
+                ("p".to_string(), "posts".to_string()),
+                ("d".to_string(), "users".to_string()),
+                ("c".to_string(), "comments".to_string()),
+            ]
+        );
     }
 
     #[test]

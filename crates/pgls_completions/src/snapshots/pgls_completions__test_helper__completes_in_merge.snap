@@ -591,8 +591,8 @@ merge into users u using posts p on p.post_id = u.id when matched and p.title <>
 Results:
 copy - copy (Keyword)
 create - create (Keyword)
+delete - delete (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
-merge - merge (Keyword)
 
 --------------

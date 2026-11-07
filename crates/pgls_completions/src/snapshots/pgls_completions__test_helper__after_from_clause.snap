@@ -81,8 +81,8 @@ select email from users where id = 1; |
 Results:
 copy - copy (Keyword)
 create - create (Keyword)
+delete - delete (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
-merge - merge (Keyword)
 
 --------------

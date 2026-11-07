@@ -200,6 +200,23 @@ fn unfinished_option_lists() {
 }
 
 #[test]
+fn delete_target_alias_and_using() {
+    valid_snapshot(
+        "delete_alias_and_using",
+        "delete from only users as u using posts p join comments c on c.post_id = p.id where p.user_id = u.id returning u.id;",
+    );
+    // Postgres takes `ONLY` or `*`, not both.
+    valid_snapshot(
+        "delete_descendants_alias",
+        "delete from users * as u where u.id = 1;",
+    );
+    valid_snapshot(
+        "delete_where_current_of",
+        "delete from users u where current of users_cursor;",
+    );
+}
+
+#[test]
 fn privilege_names_as_role_names() {
     // Without `ON`, Postgres grants and revokes roles, and reads privilege names as role names.
     valid_snapshot("grant_role_named_usage", "grant usage, update to bob;");
