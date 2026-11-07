@@ -626,6 +626,22 @@ impl CompletionFilter<'_> {
             }
         }
 
+        // The grammar can't read the word at the cursor, like the sanitized token after a column
+        // type, so the clauses around it are an ERROR and say nothing. The keyword fits if
+        // every clause before it is finished in the tree with the keyword.
+        if ctx.node_under_cursor.kind() == "ERROR"
+            || ctx.current_clause.is_some_and(|n| n.kind() == "ERROR")
+        {
+            let mut node = goto_node_at_position(&tree, start_byte);
+            while let Some(investigated) = node {
+                if !previous_sibling_completed(investigated) {
+                    return None;
+                }
+                node = investigated.parent();
+            }
+            return Some(());
+        }
+
         if let Some(investigated_node) = goto_node_at_position(&tree, start_byte) {
             if !previous_sibling_completed(investigated_node) {
                 return None;

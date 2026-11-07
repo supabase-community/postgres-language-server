@@ -20,16 +20,30 @@ create table instruments (
 a|
 
 Results:
+alter - alter (Keyword)
 analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
-vacuum - vacuum (Keyword)
 
 --------------
 
 alter |
+
+Results:
+default - default (Keyword)
+table - table (Keyword)
+
+--------------
+
 alter t|
+
+Results:
+table - table (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table |
 
 Results:
@@ -61,7 +75,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+column - column (Keyword)
 
 --------------
 
@@ -69,10 +83,10 @@ alter table instruments drop c|
 
 Results:
 created_at - public.instruments.created_at (Column)
+column - column (Keyword)
+constraint - constraint (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
-castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -100,6 +114,13 @@ n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 alter table instruments drop column name |
 
+Results:
+cascade - cascade (Keyword)
+restrict - restrict (Keyword)
+
+--------------
+
+
 
 
 
@@ -108,16 +129,30 @@ alter table instruments drop column name |
 a|
 
 Results:
+alter - alter (Keyword)
 analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
-vacuum - vacuum (Keyword)
 
 --------------
 
 alter |
+
+Results:
+default - default (Keyword)
+table - table (Keyword)
+
+--------------
+
 alter t|
+
+Results:
+table - table (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table |
 
 Results:
@@ -149,7 +184,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+column - column (Keyword)
 
 --------------
 
@@ -157,10 +192,10 @@ alter table instruments drop c|
 
 Results:
 created_at - public.instruments.created_at (Column)
+column - column (Keyword)
+constraint - constraint (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
-castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -188,6 +223,12 @@ identity_increment - information_schema.columns.identity_increment (Column)
 
 alter table instruments drop column if |
 alter table instruments drop column if e|
+
+Results:
+exists - exists (Keyword)
+
+--------------
+
 alter table instruments drop column if exists |
 
 Results:
@@ -212,6 +253,13 @@ n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 alter table instruments drop column if exists name |
 
+Results:
+cascade - cascade (Keyword)
+restrict - restrict (Keyword)
+
+--------------
+
+
 
 
 
@@ -220,16 +268,30 @@ alter table instruments drop column if exists name |
 a|
 
 Results:
+alter - alter (Keyword)
 analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
-vacuum - vacuum (Keyword)
 
 --------------
 
 alter |
+
+Results:
+default - default (Keyword)
+table - table (Keyword)
+
+--------------
+
 alter t|
+
+Results:
+table - table (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table |
 
 Results:
@@ -299,9 +361,40 @@ n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 --------------
 
 alter table instruments alter column name |
+
+Results:
+drop - drop (Keyword)
+set - set (Keyword)
+type - type (Keyword)
+
+--------------
+
 alter table instruments alter column name s|
+
+Results:
+set - set (Keyword)
+
+--------------
+
 alter table instruments alter column name set |
+
+Results:
+compression - compression (Keyword)
+data - data (Keyword)
+default - default (Keyword)
+statistics - statistics (Keyword)
+storage - storage (Keyword)
+
+--------------
+
 alter table instruments alter column name set d|
+
+Results:
+data - data (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table instruments alter column name set default |
 
 Results:
@@ -322,16 +415,30 @@ instruments - public.instruments (Table)
 a|
 
 Results:
+alter - alter (Keyword)
 analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
-vacuum - vacuum (Keyword)
 
 --------------
 
 alter |
+
+Results:
+default - default (Keyword)
+table - table (Keyword)
+
+--------------
+
 alter t|
+
+Results:
+table - table (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table |
 
 Results:
@@ -379,9 +486,40 @@ n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
 --------------
 
 alter table instruments alter name |
+
+Results:
+drop - drop (Keyword)
+set - set (Keyword)
+type - type (Keyword)
+
+--------------
+
 alter table instruments alter name s|
+
+Results:
+set - set (Keyword)
+
+--------------
+
 alter table instruments alter name set |
+
+Results:
+compression - compression (Keyword)
+data - data (Keyword)
+default - default (Keyword)
+statistics - statistics (Keyword)
+storage - storage (Keyword)
+
+--------------
+
 alter table instruments alter name set d|
+
+Results:
+data - data (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table instruments alter name set default |
 
 Results:
@@ -402,16 +540,30 @@ instruments - public.instruments (Table)
 a|
 
 Results:
+alter - alter (Keyword)
 analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
-vacuum - vacuum (Keyword)
 
 --------------
 
 alter |
+
+Results:
+default - default (Keyword)
+table - table (Keyword)
+
+--------------
+
 alter t|
+
+Results:
+table - table (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table |
 
 Results:
@@ -498,6 +650,14 @@ n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 alter table public.instruments alter column name |
 
+Results:
+drop - drop (Keyword)
+set - set (Keyword)
+type - type (Keyword)
+
+--------------
+
+
 
 
 
@@ -506,16 +666,30 @@ alter table public.instruments alter column name |
 a|
 
 Results:
+alter - alter (Keyword)
 analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
-vacuum - vacuum (Keyword)
 
 --------------
 
 alter |
+
+Results:
+default - default (Keyword)
+table - table (Keyword)
+
+--------------
+
 alter t|
+
+Results:
+table - table (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table |
 
 Results:
@@ -564,6 +738,14 @@ n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
 
 alter table instruments alter name |
 
+Results:
+drop - drop (Keyword)
+set - set (Keyword)
+type - type (Keyword)
+
+--------------
+
+
 
 
 
@@ -572,16 +754,30 @@ alter table instruments alter name |
 a|
 
 Results:
+alter - alter (Keyword)
 analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
-vacuum - vacuum (Keyword)
 
 --------------
 
 alter |
+
+Results:
+default - default (Keyword)
+table - table (Keyword)
+
+--------------
+
 alter t|
+
+Results:
+table - table (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table |
 
 Results:
@@ -654,16 +850,30 @@ alter table instruments rename name to new_col |
 a|
 
 Results:
+alter - alter (Keyword)
 analyze - analyze (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
-vacuum - vacuum (Keyword)
 
 --------------
 
 alter |
+
+Results:
+default - default (Keyword)
+table - table (Keyword)
+
+--------------
+
 alter t|
+
+Results:
+table - table (Keyword)
+default - default (Keyword)
+
+--------------
+
 alter table |
 
 Results:

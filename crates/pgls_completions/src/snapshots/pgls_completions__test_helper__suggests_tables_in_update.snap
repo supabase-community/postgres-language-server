@@ -167,10 +167,10 @@ update public.coos set name = 'cool' where id = 5|
 update public.coos set name = 'cool' where id = 5; |
 
 Results:
+alter - alter (Keyword)
 copy - copy (Keyword)
 create - create (Keyword)
 delete - delete (Keyword)
 drop - drop (Keyword)
-insert - insert (Keyword)
 
 --------------
