@@ -1,0 +1,29 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+create table t (id int references teams (id) on
+-----------------------
+program [0..47] 'create table t (id int references teams (id) on'
+  statement [0..47] 'create table t (id int references teams (id) on'
+    create_table [0..47] 'create table t (id int references teams (id) on'
+      keyword_create [0..6] 'create'
+      keyword_table [7..12] 'table'
+      object_reference [13..14] 't'
+        any_identifier [13..14] 't' (@object_reference_1of1)
+      column_definitions [15..47] '(id int references teams (id) on' (@end)
+        ( [15..16] '('
+        column_definition [16..47] 'id int references teams (id) on'
+          any_identifier [16..18] 'id'
+          type [19..22] 'int' (@end)
+            int [19..22] 'int'
+              keyword_int [19..22] 'int'
+          column_constraint [23..47] 'references teams (id) on'
+            keyword_references [23..33] 'references'
+            table_reference [34..39] 'teams' (@end)
+              any_identifier [34..39] 'teams' (@table_reference_1of1)
+            ( [40..41] '('
+            column_identifier [41..43] 'id'
+            ) [43..44] ')' (@end)
+            referential_action [45..47] 'on'
+              keyword_on [45..47] 'on'

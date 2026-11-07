@@ -26,11 +26,12 @@ program [0..231] 'create table t (id int, valid_at tstzrange, constraint t_pk pr
               any_identifier [33..42] 'tstzrange' (@object_reference_1of1)
         , [42..43] ','
         constraint [44..103] 'constraint t_pk primary key (id, valid_at without overlaps)'
-          keyword_constraint [44..54] 'constraint'
-          any_identifier [55..59] 't_pk' (@name)
+          constraint_name [44..59] 'constraint t_pk'
+            keyword_constraint [44..54] 'constraint'
+            any_identifier [55..59] 't_pk' (@end)
           keyword_primary [60..67] 'primary'
           keyword_key [68..71] 'key'
-          ordered_columns [72..103] '(id, valid_at without overlaps)'
+          ordered_columns [72..103] '(id, valid_at without overlaps)' (@end)
             ( [72..73] '('
             column [73..75] 'id'
               column_identifier [73..75] 'id' (@name)
@@ -43,7 +44,7 @@ program [0..231] 'create table t (id int, valid_at tstzrange, constraint t_pk pr
         , [103..104] ','
         constraint [105..143] 'unique (id, valid_at without overlaps)'
           keyword_unique [105..111] 'unique'
-          ordered_columns [112..143] '(id, valid_at without overlaps)'
+          ordered_columns [112..143] '(id, valid_at without overlaps)' (@end)
             ( [112..113] '('
             column [113..115] 'id'
               column_identifier [113..115] 'id' (@name)
@@ -55,11 +56,12 @@ program [0..231] 'create table t (id int, valid_at tstzrange, constraint t_pk pr
             ) [142..143] ')' (@end)
         , [143..144] ','
         constraint [145..229] 'constraint t_fk foreign key (id, period valid_at) references u (id, period valid_at)'
-          keyword_constraint [145..155] 'constraint'
-          any_identifier [156..160] 't_fk' (@name)
+          constraint_name [145..160] 'constraint t_fk'
+            keyword_constraint [145..155] 'constraint'
+            any_identifier [156..160] 't_fk' (@end)
           keyword_foreign [161..168] 'foreign'
           keyword_key [169..172] 'key'
-          ordered_columns [173..194] '(id, period valid_at)'
+          ordered_columns [173..194] '(id, period valid_at)' (@end)
             ( [173..174] '('
             column [174..176] 'id'
               column_identifier [174..176] 'id' (@name)
@@ -68,14 +70,15 @@ program [0..231] 'create table t (id int, valid_at tstzrange, constraint t_pk pr
               keyword_period [178..184] 'period'
               column_identifier [185..193] 'valid_at' (@name)
             ) [193..194] ')' (@end)
-          keyword_references [195..205] 'references'
-          table_reference [206..207] 'u'
-            any_identifier [206..207] 'u' (@table_reference_1of1)
-          ( [208..209] '('
-          column_identifier [209..211] 'id'
-          , [211..212] ','
-          keyword_period [213..219] 'period'
-          column_identifier [220..228] 'valid_at'
-          ) [228..229] ')' (@end)
+          foreign_key_references [195..229] 'references u (id, period valid_at)'
+            keyword_references [195..205] 'references'
+            table_reference [206..207] 'u' (@end)
+              any_identifier [206..207] 'u' (@table_reference_1of1)
+            ( [208..209] '('
+            column_identifier [209..211] 'id'
+            , [211..212] ','
+            keyword_period [213..219] 'period'
+            column_identifier [220..228] 'valid_at'
+            ) [228..229] ')' (@end)
         ) [229..230] ')' (@end)
   ; [230..231] ';'
