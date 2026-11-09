@@ -1,5 +1,6 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::CatalogView;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -73,9 +74,9 @@ impl LinterRule for AddingNotNullField {
 
         // `NOT NULL ... NOT VALID` is new in Postgres 18.
         let supports_not_valid = ctx
-            .snapshot()
-            .and_then(|snapshot| snapshot.version.major_version)
-            .is_some_and(|major| major >= 18);
+            .catalog()
+            .server_version_num()
+            .is_some_and(|version| version >= 180000);
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {

@@ -143,6 +143,7 @@ fn server_version_catalog(query: &str) -> Option<Arc<pgls_catalog::CatalogBase>>
     })?;
     let snapshot = pgls_catalog::Snapshot {
         version: pgls_catalog::Version {
+            version_num: Some(major * 10000),
             major_version: Some(major),
             ..Default::default()
         },
