@@ -37,10 +37,7 @@ impl LinterRule for AssignmentTypeMismatch {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
-        resolution.findings.iter().filter_map(|finding| {
+        ctx.findings().filter_map(|finding| {
             let FindingKind::AssignmentMismatch { column, column_type, expr_type } = &finding.kind else { return None };
             let catalog = ctx.catalog();
             let (Some(column_type), Some(expr_type)) = (format_type(catalog, column_type), format_type(catalog, expr_type)) else { return None };

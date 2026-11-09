@@ -1,3 +1,4 @@
+use crate::utils::column_defs;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -58,33 +59,9 @@ impl LinterRule for PreferIdentity {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
-
-        match ctx.stmt() {
-            pgls_query::NodeEnum::CreateStmt(stmt) => {
-                for table_elt in &stmt.table_elts {
-                    if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = &table_elt.node {
-                        check_column_def(&mut diagnostics, col_def);
-                    }
-                }
-            }
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => {
-                for cmd in &stmt.cmds {
-                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                        && matches!(
-                            cmd.subtype(),
-                            pgls_query::protobuf::AlterTableType::AtAddColumn
-                                | pgls_query::protobuf::AlterTableType::AtAlterColumnType
-                        )
-                        && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                            &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                    {
-                        check_column_def(&mut diagnostics, col_def);
-                    }
-                }
-            }
-            _ => {}
+        for col_def in column_defs(ctx.stmt()) {
+            check_column_def(&mut diagnostics, col_def);
         }
-
         diagnostics
     }
 }

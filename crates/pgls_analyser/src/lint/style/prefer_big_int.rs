@@ -1,4 +1,4 @@
-use crate::linter_context::builtin_type_name;
+use crate::utils::{builtin_type_name, column_defs};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -76,31 +76,9 @@ impl LinterRule for PreferBigInt {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
-
-        match &ctx.stmt() {
-            pgls_query::NodeEnum::CreateStmt(stmt) => {
-                for table_elt in &stmt.table_elts {
-                    if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = &table_elt.node {
-                        check_column_def(&mut diagnostics, col_def, ctx.options());
-                    }
-                }
-            }
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => {
-                for cmd in &stmt.cmds {
-                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                        && (cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
-                            || cmd.subtype()
-                                == pgls_query::protobuf::AlterTableType::AtAlterColumnType)
-                        && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                            &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                    {
-                        check_column_def(&mut diagnostics, col_def, ctx.options());
-                    }
-                }
-            }
-            _ => {}
+        for col_def in column_defs(ctx.stmt()) {
+            check_column_def(&mut diagnostics, col_def, ctx.options());
         }
-
         diagnostics
     }
 }

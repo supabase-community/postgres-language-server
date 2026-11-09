@@ -26,5 +26,6 @@ pub(crate) fn create_test_context(query: QueryWithCursorPosition) -> TreesitterC
         position,
         text: leaked_sql,
         tree: leaked_tree,
+        server_version_num: None,
     })
 }

@@ -170,6 +170,12 @@ group - group (Keyword)
 ***Case 2:***
 
 s| from private.users "pr"
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from private.users "pr"
 
 Results:
@@ -222,6 +228,12 @@ select "email" | from private.users "pr"
 ***Case 3:***
 
 s| from private.users "pr"
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from private.users "pr"
 
 Results:
@@ -291,6 +303,12 @@ select pr."email" | from private.users "pr"
 ***Case 4:***
 
 s| from private.users "pr"
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from private.users "pr"
 
 Results:
@@ -382,6 +400,12 @@ select "pr"."email" | from private.users "pr"
 ***Case 5:***
 
 s| from private.users "pr"
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from private.users "pr"
 
 Results:
@@ -432,6 +456,12 @@ select pr.email | from private.users "pr"
 ***Case 6:***
 
 s| from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from private.users "pr" join public.names n on pr.id = n.uid;
 
 Results:

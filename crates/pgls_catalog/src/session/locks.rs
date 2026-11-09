@@ -7,6 +7,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{self, VariableSetKind},
 };
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 use crate::Catalog;
 
@@ -23,7 +24,7 @@ pub(super) struct Locks {
     /// Whether an ACCESS EXCLUSIVE lock is currently being held
     /// This is set when an ALTER TABLE is executed on an existing table
     pub(super) holding_access_exclusive: bool,
-    /// Constraints added with NOT VALID: (schema, table, constraint_name)
+    /// Constraints added with NOT VALID that can be validated later: (schema, table, constraint_name)
     not_valid_constraints: Vec<(String, String, String)>,
     /// Tables holding ACCESS EXCLUSIVE locks in this transaction (for wide lock window detection)
     pub(super) access_exclusive_tables: Vec<(String, String)>,
@@ -98,10 +99,8 @@ impl Locks {
     ) -> Option<(String, String)> {
         let relation = stmt.relation.as_ref()?;
         // Some subcommands take lighter locks.
-        let has_access_exclusive_cmd = stmt.cmds.iter().any(|cmd| {
-            matches!(&cmd.node, Some(NodeEnum::AlterTableCmd(c))
-                if c.subtype() != protobuf::AlterTableType::AtValidateConstraint)
-        });
+        let has_access_exclusive_cmd = alter_table_cmds(stmt)
+            .any(|cmd| cmd.subtype() != protobuf::AlterTableType::AtValidateConstraint);
         if !has_access_exclusive_cmd {
             return None;
         }
@@ -219,11 +218,18 @@ impl Locks {
         schema: &str,
         table: &str,
     ) {
-        for item in &stmt.cmds {
-            if let Some(NodeEnum::AlterTableCmd(c)) = &item.node
-                && c.subtype() == protobuf::AlterTableType::AtAddConstraint
-                && let Some(NodeEnum::Constraint(c)) = c.def.as_ref().and_then(|d| d.node.as_ref())
+        for cmd in alter_table_cmds(stmt) {
+            if cmd.subtype() == protobuf::AlterTableType::AtAddConstraint
+                && let Some(NodeEnum::Constraint(c)) = cmd_def(cmd)
                 && c.skip_validation
+                // A NOT ENFORCED constraint (Postgres 18) is NOT VALID too, but can't be validated.
+                // Only CHECK and FOREIGN KEY constraints can be NOT ENFORCED; the parser leaves
+                // `is_enforced` false for the others, e.g. NOT NULL ... NOT VALID.
+                && (c.is_enforced
+                    || !matches!(
+                        c.contype(),
+                        protobuf::ConstrType::ConstrCheck | protobuf::ConstrType::ConstrForeign
+                    ))
                 && !c.conname.is_empty()
             {
                 self.not_valid_constraints.push((
