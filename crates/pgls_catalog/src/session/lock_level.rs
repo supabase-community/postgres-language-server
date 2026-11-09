@@ -156,8 +156,9 @@ pub fn alter_table_cmd_lock(cmd: &AlterTableCmd) -> LockMode {
 /// The lock of `SET (...)` and `RESET (...)`: the strongest lock of the options, and `ACCESS
 /// EXCLUSIVE` without options. Port of [`AlterTableGetRelOptionsLockLevel`] with the lock
 /// modes of the built-in options in [`reloptions.c`], which are the same in Postgres 15 to 18.
-/// An option that isn't built in, from an extension or misspelled, adds no lock, like in
-/// Postgres.
+/// A misspelled option adds no lock, like in Postgres, which rejects it later. An option that an
+/// extension registers has the lock mode the extension gives it, which we don't know, so it adds
+/// no lock either.
 ///
 /// [`AlterTableGetRelOptionsLockLevel`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/common/reloptions.c#L2144
 /// [`reloptions.c`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/common/reloptions.c#L94
