@@ -1,0 +1,27 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+alter table t add constraint t_a_not_null not null a not valid;
+-----------------------
+program [0..63] 'alter table t add constraint t_a_not_null not null a not valid;'
+  statement [0..62] 'alter table t add constraint t_a_not_null not null a not valid'
+    alter_table [0..62] 'alter table t add constraint t_a_not_null not null a not valid'
+      keyword_alter [0..5] 'alter'
+      keyword_table [6..11] 'table'
+      table_reference [12..13] 't'
+        any_identifier [12..13] 't' (@table_reference_1of1)
+      add_constraint [14..62] 'add constraint t_a_not_null not null a not valid'
+        keyword_add [14..17] 'add'
+        constraint [18..62] 'constraint t_a_not_null not null a not valid' (@end)
+          constraint_name [18..41] 'constraint t_a_not_null'
+            keyword_constraint [18..28] 'constraint'
+            any_identifier [29..41] 't_a_not_null' (@end)
+          keyword_not [42..45] 'not'
+          keyword_null [46..50] 'null'
+          column_identifier [51..52] 'a' (@end)
+          constraint_attributes [53..62] 'not valid'
+            constraint_attribute [53..62] 'not valid' (@end)
+              keyword_not [53..56] 'not'
+              keyword_valid [57..62] 'valid' (@end)
+  ; [62..63] ';'

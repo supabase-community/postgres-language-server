@@ -1,0 +1,20 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+call app.hover_proc(1, 'x')
+      ↑ hovered here
+```
+
+# Hover Results
+### `app` - owned by postgres  
+```plain  
+  
+```  
+---    
+```plain  
+
+~0 bytes, 0 tables, 0 views, 1 functions  
+```

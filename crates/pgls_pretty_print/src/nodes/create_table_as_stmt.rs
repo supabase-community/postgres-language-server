@@ -5,10 +5,7 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
-use super::{
-    emit_node, node_list::emit_parenthesized_list, select_stmt::emit_select_stmt_no_semicolon,
-    string::emit_string,
-};
+use super::{emit_node, node_list::emit_parenthesized_list, string::emit_string};
 
 pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsStmt) {
     e.group_start(GroupKind::CreateTableAsStmt);
@@ -155,14 +152,8 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
     }
     super::emit_layout_break(e);
 
-    if let Some(ref query) = n.query
-        && let Some(ref inner) = query.node
-    {
-        match inner {
-            NodeEnum::SelectStmt(stmt) => emit_select_stmt_no_semicolon(e, stmt),
-            NodeEnum::ExecuteStmt(stmt) => super::emit_execute_stmt_no_semicolon(e, stmt),
-            _ => emit_node(query, e),
-        }
+    if let Some(ref query) = n.query {
+        emit_node(query, e);
     }
 
     if !expanded {
@@ -180,8 +171,6 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
         e.space();
         e.token(TokenKind::DATA_KW);
     }
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

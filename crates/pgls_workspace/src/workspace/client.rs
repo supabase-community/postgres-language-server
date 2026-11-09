@@ -8,8 +8,8 @@ use std::{
 };
 
 use super::{
-    CloseFileParams, GetFileContentParams, IsPathIgnoredParams, OpenFileParams, ProjectKey,
-    RegisterProjectFolderParams, UnregisterProjectFolderParams,
+    CloseFileParams, FindProjectParams, GetFileContentParams, IsPathIgnoredParams, OpenFileParams,
+    ProjectKey, RegisterProjectFolderParams, UnregisterProjectFolderParams,
 };
 
 pub struct WorkspaceClient<T> {
@@ -118,6 +118,13 @@ where
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError> {
         self.request("pgls/register_project_folder", params)
+    }
+
+    fn find_project(
+        &self,
+        params: FindProjectParams,
+    ) -> Result<Option<ProjectKey>, WorkspaceError> {
+        self.request("pgls/find_project", params)
     }
 
     fn unregister_project_folder(
