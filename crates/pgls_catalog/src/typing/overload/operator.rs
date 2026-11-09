@@ -4,7 +4,8 @@
 //! [`left_oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L518
 
 use super::candidates::visible_operators;
-use super::{Candidate, Pseudo, match_argtypes, resolve_result, select_candidate};
+use super::{Candidate, match_argtypes, resolve_result, select_candidate};
+use crate::typing::pseudo::PolymorphicIds;
 use crate::typing::types::base_type;
 use crate::typing::{Decision, ResolvedOperator, Selection, Type, TypeId};
 use crate::{CatalogView, OperatorInfo, OperatorKind};
@@ -42,7 +43,7 @@ pub fn select_operator(
     if !candidates.complete {
         return Selection::Unknown;
     }
-    let Decision::Known(pseudo) = Pseudo::load(c) else {
+    let Decision::Known(pseudo) = PolymorphicIds::try_load(c) else {
         return Selection::Unknown;
     };
 
@@ -122,7 +123,7 @@ pub(super) fn exact_operator(
 
 pub(super) fn resolve_operator(
     c: &dyn CatalogView,
-    pseudo: &Pseudo,
+    pseudo: &PolymorphicIds,
     candidate: Candidate<OperatorInfo>,
     inputs: &[Type],
 ) -> Selection<ResolvedOperator> {

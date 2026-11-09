@@ -6,11 +6,21 @@ use crate::{CatalogView, Lookup, TypeInfo, TypeKind};
 use pgls_query::protobuf;
 use pgls_query_ext::utils::{QualifiedName, qualified_name};
 
+/// The type with this identity. Unknown if it is missing too, as an identity always comes from
+/// the catalog.
 pub(super) fn info(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeInfo> {
     match c.type_by_id(id) {
         Lookup::Found(t) => Decision::Known(t),
         _ => Decision::Unknown,
     }
+}
+
+/// The identity of the builtin type `pg_catalog.<name>`, `None` if it certainly does not exist.
+/// Unlike [`CatalogView::builtin_type`], this tells a missing type from an unknown one.
+pub(super) fn lookup_builtin(c: &dyn CatalogView, name: &str) -> Decision<Option<TypeId>> {
+    c.type_(Some("pg_catalog"), name, &[])
+        .into_decision()
+        .map(|t| t.and_then(|t| t.id))
 }
 
 /// Port of [`getBaseType`]: the type a domain is based on, through nested domains.
@@ -108,11 +118,6 @@ pub fn normalize_type_name(
         id = info.array;
     }
     (id, name.setof)
-}
-
-/// Converts a snapshot type identity to the public typing representation.
-pub fn type_from_info(info: &TypeInfo) -> Option<crate::typing::Type> {
-    info.id.clone().map(crate::typing::Type::Named)
 }
 
 /// Displays a type like [`format_type_be`] does.

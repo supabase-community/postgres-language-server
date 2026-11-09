@@ -6,7 +6,9 @@ use super::{FunctionParam, expr::infer_expr, resolver::Resolver};
 use crate::{
     OperatorInfo, OperatorKind, TypeKind,
     lookup::Lookup,
-    typing::{Selection, Type, TypeId, TypedColumn, select_common_type, select_operator},
+    typing::{
+        Polymorphic, Selection, Type, TypeId, TypedColumn, select_common_type, select_operator,
+    },
 };
 
 /// The builtin type `pg_catalog.<name>`.
@@ -122,16 +124,6 @@ pub(super) fn check_operator(
     None
 }
 
-/// The polymorphic types that an operand of an unknown literal resolves to the type of the other
-/// operand, like `anyenum` in the comparison operators of enums.
-const POLYMORPHIC_SCALAR_TYPES: &[&str] = &[
-    "anyelement",
-    "anynonarray",
-    "anyenum",
-    "anycompatible",
-    "anycompatiblenonarray",
-];
-
 /// Records a string literal operand of `operator` that is coerced to the enum type of the other
 /// operand. Postgres first assumes that an unknown literal has the type of the other operand
 /// ([`binary_oper_exact`]), and the polymorphic operators of enums resolve it to that type
@@ -186,8 +178,10 @@ fn takes_type_of_other(r: &Resolver<'_>, declared: Option<&TypeId>, other: &Type
         return false;
     };
     declared == other
+        // An operand of an unknown literal resolves to the type of the other operand through
+        // the scalar polymorphic types, like `anyenum` in the comparison operators of enums.
         || r.catalog.type_by_id(declared).found().is_some_and(|info| {
-            info.schema == "pg_catalog" && POLYMORPHIC_SCALAR_TYPES.contains(&info.name.as_str())
+            Polymorphic::from_type(&info).is_some_and(Polymorphic::is_scalar)
         })
 }
 

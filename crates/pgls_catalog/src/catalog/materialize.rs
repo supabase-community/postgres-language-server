@@ -112,18 +112,6 @@ impl Catalog {
     }
 }
 
-fn type_kind_code(kind: TypeKind) -> char {
-    match kind {
-        TypeKind::Base => 'b',
-        TypeKind::Composite => 'c',
-        TypeKind::Domain => 'd',
-        TypeKind::Enum => 'e',
-        TypeKind::Pseudo => 'p',
-        TypeKind::Range => 'r',
-        TypeKind::Multirange => 'm',
-    }
-}
-
 struct Builder {
     snapshot: Snapshot,
     /// Ids of objects created by the file are negative, so they never collide with oids.
@@ -370,7 +358,7 @@ impl Builder {
         };
         type_.typtype = info
             .kind
-            .map(type_kind_code)
+            .map(TypeKind::typtype)
             .unwrap_or_default()
             .to_string();
         type_.typcategory = info.category.map(|c| c.to_string()).unwrap_or_default();

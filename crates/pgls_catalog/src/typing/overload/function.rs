@@ -3,7 +3,8 @@
 //! [`func_get_detail`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1450
 
 use super::candidates::expand_candidates;
-use super::{Pseudo, match_argtypes, resolve_result, select_candidate};
+use super::{match_argtypes, resolve_result, select_candidate};
+use crate::typing::pseudo::PolymorphicIds;
 use crate::typing::{CallArg, Decision, ResolvedFunction, Selection, Type};
 use crate::{CatalogView, Lookup, TypeKind};
 
@@ -49,7 +50,7 @@ pub fn select_function(
     if !candidates.complete {
         return Selection::Unknown;
     }
-    let Decision::Known(pseudo) = Pseudo::load(c) else {
+    let Decision::Known(pseudo) = PolymorphicIds::try_load(c) else {
         return Selection::Unknown;
     };
     let Some(expanded) = expand_candidates(

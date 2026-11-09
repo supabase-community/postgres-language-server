@@ -19,11 +19,13 @@
 mod coerce;
 mod model;
 mod overload;
+mod pseudo;
 mod types;
 mod unify;
 
 pub use coerce::*;
 pub use model::*;
 pub use overload::*;
+pub use pseudo::*;
 pub use types::*;
 pub use unify::*;

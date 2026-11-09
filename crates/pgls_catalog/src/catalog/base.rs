@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use crate::typing::{Type, TypeId};
+use crate::typing::{CoercionContext, Type, TypeId};
 use crate::{
-    CastContext, CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature,
-    OperatorInfo, OperatorKind, TypeKind,
+    CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature, OperatorInfo,
+    OperatorKind, TypeKind,
 };
 use crate::{ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -81,16 +81,7 @@ impl CatalogBase {
                     origin: Origin::Database,
 
                     id: Some(TypeId::Snapshot(type_.id)),
-                    kind: match type_.typtype.as_str() {
-                        "b" => Some(TypeKind::Base),
-                        "c" => Some(TypeKind::Composite),
-                        "d" => Some(TypeKind::Domain),
-                        "e" => Some(TypeKind::Enum),
-                        "p" => Some(TypeKind::Pseudo),
-                        "r" => Some(TypeKind::Range),
-                        "m" => Some(TypeKind::Multirange),
-                        _ => None,
-                    },
+                    kind: type_.typtype.parse().ok().and_then(TypeKind::from_typtype),
                     category: type_.typcategory.chars().next(),
                     preferred: Some(type_.typispreferred),
                     element: (type_.is_array && type_.typelem != 0)
@@ -337,9 +328,9 @@ impl CatalogBase {
                         source: TypeId::Snapshot(cast.source),
                         target: TypeId::Snapshot(cast.target),
                         context: match cast.context.as_str() {
-                            "i" => CastContext::Implicit,
-                            "a" => CastContext::Assignment,
-                            "e" => CastContext::Explicit,
+                            "i" => CoercionContext::Implicit,
+                            "a" => CoercionContext::Assignment,
+                            "e" => CoercionContext::Explicit,
                             _ => return None,
                         },
                         method: match cast.method.as_str() {

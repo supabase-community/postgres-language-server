@@ -14,25 +14,13 @@ use crate::TypeKind;
 use crate::lookup::Lookup;
 use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch, utils::named};
 use crate::typing::{
-    CoercionContext, Decision, Type, TypeId, can_coerce, format_type_with_search_path,
+    CoercionContext, Decision, Polymorphic, Type, TypeId, can_coerce, format_type_with_search_path,
     normalize_type_name,
 };
 
-/// Pseudo-types. Functions returning them have no fixed shape, and polymorphic arguments make
-/// Postgres skip the check of the body.
-const PSEUDO_TYPES: &[&str] = &[
-    "any",
-    "anyarray",
-    "anycompatible",
-    "anycompatiblearray",
-    "anycompatiblemultirange",
-    "anycompatiblenonarray",
-    "anycompatiblerange",
-    "anyelement",
-    "anyenum",
-    "anymultirange",
-    "anynonarray",
-    "anyrange",
+/// The pseudo-types besides [`Polymorphic`] ones. Functions returning a pseudo-type have no
+/// fixed shape, and polymorphic arguments make Postgres skip the check of the body.
+const OTHER_PSEUDO_TYPES: &[&str] = &[
     "cstring",
     "event_trigger",
     "fdw_handler",
@@ -327,7 +315,7 @@ fn declared_type(r: &Resolver, type_name: &TypeName) -> Option<Declared> {
     if builtin && !is_array && name == "void" {
         return Some(Declared::Void);
     }
-    if builtin && !is_array && PSEUDO_TYPES.contains(&name) {
+    if builtin && !is_array && is_pseudo_type_name(name) {
         return Some(Declared::Value {
             label,
             shape: None,
@@ -391,7 +379,11 @@ fn is_pseudo_type(type_name: &TypeName) -> bool {
     let Some(QualifiedName { schema, name, .. }) = qualified_name(&type_name.names) else {
         return true;
     };
-    schema.is_none_or(|schema| schema == "pg_catalog") && PSEUDO_TYPES.contains(&name)
+    schema.is_none_or(|schema| schema == "pg_catalog") && is_pseudo_type_name(name)
+}
+
+fn is_pseudo_type_name(name: &str) -> bool {
+    Polymorphic::from_name(name).is_some() || OTHER_PSEUDO_TYPES.contains(&name)
 }
 
 /// The types of the columns the final statement returns, if the columns are known with

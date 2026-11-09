@@ -2,18 +2,12 @@
 //! `VALUES` columns, and the actual types behind polymorphic arguments and results.
 
 use crate::typing::coerce::can_coerce;
-use crate::typing::types::{base_type, type_category};
+use crate::typing::pseudo::{Polymorphic, PolymorphicFamily, PolymorphicIds};
+use crate::typing::types::{array_element, base_type, type_category};
 use crate::typing::{CoercionContext, Decision, Selection, Type, TypeId};
 use crate::{CatalogView, Lookup};
 
 // ----- common type -----
-
-fn text_type(c: &dyn CatalogView) -> Decision<Type> {
-    match c.builtin_type("text") {
-        Some(id) => Decision::Known(Type::Named(id)),
-        None => Decision::Unknown,
-    }
-}
 
 /// The type `UNION`, `CASE`, `COALESCE`, `VALUES` and friends resolve their inputs to. Port of
 /// [`select_common_type`], including the implicit-coercibility checks of [`verify_common_type`]
@@ -85,34 +79,20 @@ pub fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type
         }
     }
 
-    let result = match selected {
-        Some(id) => Type::Named(id),
-        None => match text_type(c) {
-            Decision::Known(ty) => ty,
-            Decision::Unknown => return Selection::Unknown,
-        },
-    };
-    let Type::Named(target) = &result else {
+    let Some(target) = selected.or_else(|| c.builtin_type("text")) else {
         return Selection::Unknown;
     };
     for ty in types {
-        match can_coerce(c, ty, target, CoercionContext::Implicit) {
+        match can_coerce(c, ty, &target, CoercionContext::Implicit) {
             Decision::Known(true) => {}
             Decision::Known(false) => return Selection::NoMatch,
             Decision::Unknown => return Selection::Unknown,
         }
     }
-    Selection::Match(result)
+    Selection::Match(Type::Named(target))
 }
 
 // ----- polymorphic types -----
-
-fn poly_id(c: &dyn CatalogView, name: &str) -> Option<TypeId> {
-    c.builtin_type(name)
-}
-fn is(id: &Option<TypeId>, candidate: &TypeId) -> bool {
-    id.as_ref() == Some(candidate)
-}
 
 /// Whether the actual argument types fit the polymorphic declared types of a candidate. Port
 /// of [`check_generic_type_consistency`].
@@ -126,26 +106,13 @@ pub fn check_generic_type_consistency(
     if actual.len() != declared.len() {
         return Decision::Known(false);
     }
-    let names = [
-        "any",
-        "anyelement",
-        "anyarray",
-        "anynonarray",
-        "anyenum",
-        "anycompatible",
-        "anycompatiblearray",
-        "anycompatiblenonarray",
-        "anyrange",
-        "anycompatiblerange",
-        "anymultirange",
-        "anycompatiblemultirange",
-    ];
-    let ids: Vec<_> = names.iter().map(|name| poly_id(c, name)).collect();
+    let ids = PolymorphicIds::load(c);
     let mut elem = None;
     let mut array = None;
     let mut compatible = Vec::new();
     for (actual, declared) in actual.iter().zip(declared) {
-        if is(&ids[0], declared) {
+        let declared = ids.of(declared);
+        if declared == Some(Polymorphic::Any) {
             continue;
         }
         if matches!(actual, Type::UnknownLiteral) {
@@ -154,80 +121,93 @@ pub fn check_generic_type_consistency(
         let Type::Named(input) = actual else {
             return Decision::Unknown;
         };
-        if is(&ids[8], declared)
-            || is(&ids[9], declared)
-            || is(&ids[10], declared)
-            || is(&ids[11], declared)
-        {
-            // Range bindings aren't modelled, but an input that isn't a range (or multirange)
-            // can't match at all.
-            let expected = if is(&ids[10], declared) || is(&ids[11], declared) {
-                crate::TypeKind::Multirange
-            } else {
-                crate::TypeKind::Range
-            };
-            let base = match base_type(c, input) {
-                Decision::Known(base) => base,
-                Decision::Unknown => return Decision::Unknown,
-            };
-            return match c.type_by_id(&base) {
-                Lookup::Found(info) if info.kind == Some(expected) => Decision::Unknown,
-                Lookup::Found(info) if info.kind.is_some() => Decision::Known(false),
-                _ => Decision::Unknown,
-            };
-        }
-        if is(&ids[2], declared) || is(&ids[6], declared) {
-            let flattened = match base_type(c, input) {
-                Decision::Known(id) => id,
-                Decision::Unknown => return Decision::Unknown,
-            };
-            let element = match c.type_by_id(&flattened) {
-                Lookup::Found(info) => info.element,
-                _ => return Decision::Unknown,
-            };
-            let Some(element) = element else {
-                return Decision::Known(false);
-            };
-            if is(&ids[2], declared) {
-                if let Some(previous) = &array
-                    && previous != &flattened
+        let Some(declared) = declared else {
+            continue;
+        };
+        match declared {
+            Polymorphic::AnyRange
+            | Polymorphic::AnyMultirange
+            | Polymorphic::AnyCompatibleRange
+            | Polymorphic::AnyCompatibleMultirange => {
+                // Range bindings aren't modelled, but an input that isn't a range (or multirange)
+                // can't match at all.
+                let expected = match declared {
+                    Polymorphic::AnyMultirange | Polymorphic::AnyCompatibleMultirange => {
+                        crate::TypeKind::Multirange
+                    }
+                    _ => crate::TypeKind::Range,
+                };
+                let base = match base_type(c, input) {
+                    Decision::Known(base) => base,
+                    Decision::Unknown => return Decision::Unknown,
+                };
+                return match c.type_by_id(&base) {
+                    Lookup::Found(info) if info.kind == Some(expected) => Decision::Unknown,
+                    Lookup::Found(info) if info.kind.is_some() => Decision::Known(false),
+                    _ => Decision::Unknown,
+                };
+            }
+            Polymorphic::AnyArray | Polymorphic::AnyCompatibleArray => {
+                let flattened = match base_type(c, input) {
+                    Decision::Known(id) => id,
+                    Decision::Unknown => return Decision::Unknown,
+                };
+                let element = match c.type_by_id(&flattened) {
+                    Lookup::Found(info) => info.element,
+                    _ => return Decision::Unknown,
+                };
+                let Some(element) = element else {
+                    return Decision::Known(false);
+                };
+                if declared == Polymorphic::AnyArray {
+                    if let Some(previous) = &array
+                        && previous != &flattened
+                    {
+                        return Decision::Known(false);
+                    }
+                    array = Some(flattened);
+                } else {
+                    compatible.push(Type::Named(element));
+                }
+            }
+            Polymorphic::AnyCompatible | Polymorphic::AnyCompatibleNonArray => {
+                if declared == Polymorphic::AnyCompatibleNonArray {
+                    match c.type_by_id(input) {
+                        Lookup::Found(info) if info.element.is_some() => {
+                            return Decision::Known(false);
+                        }
+                        Lookup::Found(_) => {}
+                        _ => return Decision::Unknown,
+                    }
+                }
+                compatible.push(Type::Named(input.clone()));
+            }
+            Polymorphic::AnyElement | Polymorphic::AnyNonArray | Polymorphic::AnyEnum => {
+                if declared == Polymorphic::AnyEnum {
+                    match c.type_by_id(input) {
+                        Lookup::Found(info) if info.kind == Some(crate::TypeKind::Enum) => {}
+                        Lookup::Found(_) => return Decision::Known(false),
+                        _ => return Decision::Unknown,
+                    }
+                }
+                if declared == Polymorphic::AnyNonArray {
+                    match c.type_by_id(input) {
+                        Lookup::Found(info) if info.element.is_some() => {
+                            return Decision::Known(false);
+                        }
+                        Lookup::Found(_) => {}
+                        _ => return Decision::Unknown,
+                    }
+                }
+                if let Some(previous) = &elem
+                    && previous != input
                 {
                     return Decision::Known(false);
                 }
-                array = Some(flattened);
-            } else {
-                compatible.push(Type::Named(element));
+                elem = Some(input.clone());
             }
-        } else if is(&ids[5], declared) || is(&ids[7], declared) {
-            if is(&ids[7], declared) {
-                match c.type_by_id(input) {
-                    Lookup::Found(info) if info.element.is_some() => return Decision::Known(false),
-                    Lookup::Found(_) => {}
-                    _ => return Decision::Unknown,
-                }
-            }
-            compatible.push(Type::Named(input.clone()));
-        } else if is(&ids[1], declared) || is(&ids[3], declared) || is(&ids[4], declared) {
-            if is(&ids[4], declared) {
-                match c.type_by_id(input) {
-                    Lookup::Found(info) if info.kind == Some(crate::TypeKind::Enum) => {}
-                    Lookup::Found(_) => return Decision::Known(false),
-                    _ => return Decision::Unknown,
-                }
-            }
-            if is(&ids[3], declared) {
-                match c.type_by_id(input) {
-                    Lookup::Found(info) if info.element.is_some() => return Decision::Known(false),
-                    Lookup::Found(_) => {}
-                    _ => return Decision::Unknown,
-                }
-            }
-            if let Some(previous) = &elem
-                && previous != input
-            {
-                return Decision::Known(false);
-            }
-            elem = Some(input.clone());
+            // Skipped above.
+            Polymorphic::Any => {}
         }
     }
     if let (Some(element), Some(array)) = (&elem, &array) {
@@ -263,56 +243,18 @@ pub fn resolve_polymorphic_result(
     ) {
         return Decision::Unknown;
     }
-    let id = |name: &str| poly_id(c, name);
-    let [
-        any,
-        anyelement,
-        anyarray,
-        anynonarray,
-        anyenum,
-        anycompatible,
-        anycompatiblearray,
-        anycompatiblenonarray,
-    ] = [
-        "any",
-        "anyelement",
-        "anyarray",
-        "anynonarray",
-        "anyenum",
-        "anycompatible",
-        "anycompatiblearray",
-        "anycompatiblenonarray",
-    ]
-    .map(id);
-    let ranges = [
-        "anyrange",
-        "anymultirange",
-        "anycompatiblerange",
-        "anycompatiblemultirange",
-    ]
-    .map(id);
-    let element_family = [&anyelement, &anynonarray, &anyenum];
-    let compatible_family = [&anycompatible, &anycompatiblenonarray];
-    if is(&any, result) {
-        return Decision::Known(None);
-    }
-    if ranges.iter().any(|range| is(range, result)) {
-        return Decision::Unknown;
-    }
-    let polymorphic_result = element_family
-        .iter()
-        .chain(&compatible_family)
-        .any(|family| is(family, result))
-        || is(&anyarray, result)
-        || is(&anycompatiblearray, result);
-    if !polymorphic_result {
-        return Decision::Known(Some(Type::Named(result.clone())));
-    }
-
-    let element_of = |id: &TypeId| match c.type_by_id(id) {
-        Lookup::Found(info) => Decision::Known(info.element),
-        _ => Decision::Unknown,
+    let ids = PolymorphicIds::load(c);
+    let result = match ids.of(result) {
+        Some(Polymorphic::Any) => return Decision::Known(None),
+        Some(p) if p.is_range() => return Decision::Unknown,
+        Some(p) => p,
+        None => return Decision::Known(Some(Type::Named(result.clone()))),
     };
+    let is_element =
+        |p: Polymorphic| p.is_scalar() && p.family() == Some(PolymorphicFamily::Element);
+    let is_compatible =
+        |p: Polymorphic| p.is_scalar() && p.family() == Some(PolymorphicFamily::Compatible);
+
     let array_of = |id: &TypeId| match c.type_by_id(id) {
         Lookup::Found(info) => match info.array {
             Some(array) => Decision::Known(Some(Type::Named(array))),
@@ -326,28 +268,27 @@ pub fn resolve_polymorphic_result(
     let mut compatible: Vec<Type> = Vec::new();
     let mut has_compatible = false;
     for (actual, declared) in actual.iter().zip(declared) {
-        if ranges.iter().any(|range| is(range, declared)) {
+        let Some(declared) = ids.of(declared) else {
+            continue;
+        };
+        if declared.is_range() {
             return Decision::Unknown;
         }
-        let is_element = element_family.iter().any(|family| is(family, declared));
-        let is_array = is(&anyarray, declared);
-        let is_compatible = compatible_family.iter().any(|family| is(family, declared));
-        let is_compatible_array = is(&anycompatiblearray, declared);
-        if !(is_element || is_array || is_compatible || is_compatible_array) {
+        if declared == Polymorphic::Any {
             continue;
         }
-        has_compatible |= is_compatible || is_compatible_array;
+        has_compatible |= declared.family() == Some(PolymorphicFamily::Compatible);
         let input = match actual {
             Type::UnknownLiteral => continue,
             Type::Named(input) => input,
             Type::Record(_) => return Decision::Unknown,
         };
-        if is_element {
+        if is_element(declared) {
             if element.as_ref().is_some_and(|element| element != input) {
                 return Decision::Unknown;
             }
             element = Some(input.clone());
-        } else if is_array {
+        } else if declared == Polymorphic::AnyArray {
             let Decision::Known(input) = base_type(c, input) else {
                 return Decision::Unknown;
             };
@@ -355,13 +296,14 @@ pub fn resolve_polymorphic_result(
                 return Decision::Unknown;
             }
             array = Some(input);
-        } else if is_compatible {
+        } else if is_compatible(declared) {
             compatible.push(actual.clone());
         } else {
+            // `anycompatiblearray`
             let Decision::Known(input) = base_type(c, input) else {
                 return Decision::Unknown;
             };
-            match element_of(&input) {
+            match array_element(c, &input) {
                 Decision::Known(Some(element)) => compatible.push(Type::Named(element)),
                 _ => return Decision::Unknown,
             }
@@ -369,7 +311,7 @@ pub fn resolve_polymorphic_result(
     }
     // The element type follows from the array type.
     if let Some(array) = &array {
-        match element_of(array) {
+        match array_element(c, array) {
             Decision::Known(Some(array_element)) => match &element {
                 Some(element) if element != &array_element => return Decision::Unknown,
                 Some(_) => {}
@@ -379,13 +321,13 @@ pub fn resolve_polymorphic_result(
         }
     }
 
-    if element_family.iter().any(|family| is(family, result)) {
+    if is_element(result) {
         return match element {
             Some(element) => Decision::Known(Some(Type::Named(element))),
             None => Decision::Unknown,
         };
     }
-    if is(&anyarray, result) {
+    if result == Polymorphic::AnyArray {
         return match (array, element) {
             (Some(array), _) => Decision::Known(Some(Type::Named(array))),
             (None, Some(element)) => array_of(&element),
@@ -407,7 +349,7 @@ pub fn resolve_polymorphic_result(
             _ => return Decision::Unknown,
         }
     };
-    if is(&anycompatiblearray, result) {
+    if result == Polymorphic::AnyCompatibleArray {
         array_of(&common)
     } else {
         Decision::Known(Some(Type::Named(common)))
@@ -423,12 +365,12 @@ pub fn is_valid_polymorphic_signature(
     result: &TypeId,
     inputs: &[Option<TypeId>],
 ) -> Decision<bool> {
-    let Some(result) = polymorphic_name(c, result) else {
+    let Some(result) = polymorphic(c, result) else {
         return Decision::Unknown;
     };
     let Some(inputs) = inputs
         .iter()
-        .map(|input| polymorphic_name(c, input.as_ref()?))
+        .map(|input| polymorphic(c, input.as_ref()?))
         .collect::<Option<Vec<_>>>()
     else {
         return Decision::Unknown;
@@ -436,44 +378,19 @@ pub fn is_valid_polymorphic_signature(
     let Some(result) = result else {
         return Decision::Known(true);
     };
-    let family1 = |name: &str| {
-        matches!(
-            name,
-            "anyelement" | "anyarray" | "anynonarray" | "anyenum" | "anyrange" | "anymultirange"
-        )
+    // Any type of the family determines the result, but only a range or multirange determines
+    // a range or multirange result.
+    let accepts = |input: Polymorphic| {
+        input.family() == result.family() && (!result.is_range() || input.is_range())
     };
-    let accepts: &dyn Fn(&str) -> bool = match result {
-        "anyrange" | "anymultirange" => &|name| matches!(name, "anyrange" | "anymultirange"),
-        "anycompatiblerange" | "anycompatiblemultirange" => {
-            &|name| matches!(name, "anycompatiblerange" | "anycompatiblemultirange")
-        }
-        name if family1(name) => &family1,
-        _ => &|name: &str| name.starts_with("anycompatible"),
-    };
-    Decision::Known(inputs.iter().flatten().any(|input| accepts(input)))
+    Decision::Known(inputs.into_iter().flatten().any(accepts))
 }
 
-/// The name of a type if it is polymorphic, `Some(None)` if it is not, and `None` if the type
-/// is unknown.
-fn polymorphic_name(c: &dyn CatalogView, id: &TypeId) -> Option<Option<&'static str>> {
-    const POLYMORPHIC: &[&str] = &[
-        "anyelement",
-        "anyarray",
-        "anynonarray",
-        "anyenum",
-        "anyrange",
-        "anymultirange",
-        "anycompatible",
-        "anycompatiblearray",
-        "anycompatiblenonarray",
-        "anycompatiblerange",
-        "anycompatiblemultirange",
-    ];
+/// Which polymorphic type a type is, `Some(None)` if it is not polymorphic, and `None` if the
+/// type is unknown.
+fn polymorphic(c: &dyn CatalogView, id: &TypeId) -> Option<Option<Polymorphic>> {
     let info = c.type_by_id(id).found()?;
-    if info.schema != "pg_catalog" {
-        return Some(None);
-    }
-    Some(POLYMORPHIC.iter().copied().find(|name| *name == info.name))
+    Some(Polymorphic::from_type(&info).filter(|p| p.is_polymorphic()))
 }
 
 #[cfg(all(test, feature = "db"))]
