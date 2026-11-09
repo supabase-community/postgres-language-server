@@ -1,3 +1,4 @@
+use crate::utils::{alter_table_cmds, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -43,12 +44,10 @@ impl LinterRule for AvoidAddingExclusionConstraint {
         let mut diagnostics = vec![];
 
         match &ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => {
-                for cmd in &stmt.cmds {
-                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                        && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddConstraint
-                        && let Some(pgls_query::NodeEnum::Constraint(constraint)) =
-                            cmd.def.as_ref().and_then(|d| d.node.as_ref())
+            pgls_query::NodeEnum::AlterTableStmt(_) => {
+                for cmd in alter_table_cmds(ctx.stmt()) {
+                    if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddConstraint
+                        && let Some(pgls_query::NodeEnum::Constraint(constraint)) = cmd_def(cmd)
                         && constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
                     {
                         diagnostics.push(exclusion_diagnostic());
