@@ -128,6 +128,13 @@ fn database() -> Arc<CatalogBase> {
     Arc::new(CatalogBase::new(Arc::new(cache)))
 }
 
+/// [`database`] on a server of this version.
+fn database_of_version(version_num: i64) -> Arc<CatalogBase> {
+    let mut snapshot = database().snapshot().as_ref().clone();
+    snapshot.version.version_num = Some(version_num);
+    Arc::new(CatalogBase::new(Arc::new(snapshot)))
+}
+
 const SEARCH_PATH: &[&str] = &["public"];
 
 fn search_path() -> Vec<String> {
@@ -477,6 +484,87 @@ fn generated_columns() {
         spans("update items set (price, total) = (1, default)"),
         [] as [&str; 0]
     );
+    // The actions of MERGE.
+    assert_eq!(
+        spans(
+            "merge into items i using src s on s.price = i.price \
+             when matched then update set total = s.total \
+             when not matched then insert (price, total) values (s.price, s.total)"
+        ),
+        ["total", "total"]
+    );
+    assert_eq!(
+        spans(
+            "merge into items i using src s on s.price = i.price \
+             when not matched then insert values (s.price, s.total)"
+        ),
+        ["s.total"]
+    );
+    assert_eq!(
+        spans(
+            "merge into items i using src s on s.price = i.price \
+             when matched then update set total = default \
+             when not matched then insert values (s.price, default) \
+             when not matched by source then delete"
+        ),
+        [] as [&str; 0]
+    );
+}
+
+#[test]
+fn identity_columns_in_merge() {
+    let setup = "create table users (id int generated always as identity, name text);
+        create table src (id int, name text)";
+    let spans = |sql: &str| {
+        resolve_after(setup, sql, None)
+            .findings
+            .into_iter()
+            .map(|finding| {
+                assert!(matches!(
+                    finding.kind,
+                    FindingKind::GeneratedColumnAssignment { identity: true, .. }
+                ));
+                sql[finding.span.unwrap()].to_owned()
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert (id, name) values (s.id, s.name)"
+        ),
+        ["id"]
+    );
+    // `OVERRIDING` doesn't apply to the UPDATE action.
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when matched then update set id = s.id \
+             when not matched then insert (id, name) overriding system value values (s.id, s.name)"
+        ),
+        ["id"]
+    );
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert (id, name) overriding user value values (s.id, s.name)"
+        ),
+        [] as [&str; 0]
+    );
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert (id, name) values (default, s.name)"
+        ),
+        [] as [&str; 0]
+    );
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert default values"
+        ),
+        [] as [&str; 0]
+    );
 }
 
 #[test]
@@ -493,6 +581,160 @@ fn updates_and_deletes() {
         findings("delete from users where nope = 1"),
         [unknown_column(None, "nope")]
     );
+}
+
+#[test]
+fn merge() {
+    let source = "merge into users u using posts p on p.user_id = u.id";
+    assert_valid(&format!(
+        "{source} when matched and p.title <> u.name then update set name = p.title \
+         when matched then delete \
+         when not matched by source and u.id > 0 then update set name = u.name \
+         when not matched then insert (id, name) values (p.user_id, p.title) \
+         when not matched by target then do nothing"
+    ));
+    assert_valid(&format!(
+        "{source} when not matched then insert default values"
+    ));
+    assert_valid(&format!(
+        "{source} when not matched then insert values (p.user_id, default)"
+    ));
+    // The target and the join condition.
+    assert_eq!(
+        findings("merge into nope using posts on true when matched then delete"),
+        [FindingKind::UnknownRelation {
+            schema: None,
+            name: "nope".into()
+        }]
+    );
+    assert_eq!(
+        findings("merge into users u using posts p on p.nope = u.id when matched then delete"),
+        [unknown_column(Some("p"), "nope")]
+    );
+    assert_eq!(
+        findings("merge into users using posts on id = 1 when matched then delete"),
+        [FindingKind::AmbiguousColumn {
+            column: "id".into(),
+            candidates: vec!["users".into(), "posts".into()],
+        }]
+    );
+    // UPDATE and INSERT target columns of the target.
+    assert_eq!(
+        findings(&format!("{source} when matched then update set nope = 1")),
+        [unknown_column(Some("u"), "nope")]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched then insert (nope) values (1)"
+        )),
+        [unknown_column(Some("u"), "nope")]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched then insert (id) values (1, 'x')"
+        )),
+        [FindingKind::InsertColumnMismatch {
+            expected: 1,
+            found: 2
+        }]
+    );
+    // `NOT MATCHED [BY TARGET]` only sees the source, `NOT MATCHED BY SOURCE` only the target.
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched then insert (id) values (u.id)"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "u".into() }]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched by source and p.id = 1 then delete"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "p".into() }]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched by source then update set name = title"
+        )),
+        [unknown_column(None, "title")]
+    );
+    // It hides only the top-level source: the items of a join without an alias stay reachable
+    // by name, but not for unqualified columns. A join alias hides them too.
+    let join = "merge into users u using posts p join posts p2 on p.id = p2.id on p.user_id = u.id";
+    assert_valid(&format!(
+        "{join} when not matched by source and p.id is null and p2.title is null then delete"
+    ));
+    assert_eq!(
+        findings(&format!(
+            "{join} when not matched by source and title is null then delete"
+        )),
+        [unknown_column(None, "title")]
+    );
+    let join = "merge into users u using (posts p join users x on p.user_id = x.id) j \
+                on j.user_id = u.id";
+    assert_eq!(
+        findings(&format!(
+            "{join} when not matched by source and j.title is null then delete"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "j".into() }]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{join} when not matched by source and p.title is null then delete"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "p".into() }]
+    );
+    // A source subquery and a CTE.
+    assert_valid(
+        "with c as (select 1 as id) merge into users using c on c.id = users.id \
+         when not matched then insert (id) values (c.id)",
+    );
+    assert_eq!(
+        findings(
+            "merge into users using (select 1 as x) s on s.x = users.id \
+             when not matched then insert (id) values (s.nope)"
+        ),
+        [unknown_column(Some("s"), "nope")]
+    );
+    // RETURNING sees the source and the target, and `merge_action()`.
+    assert_valid(&format!(
+        "{source} when matched then delete returning merge_action(), p.title, u.name, old.id"
+    ));
+    assert_eq!(
+        findings(&format!("{source} when matched then delete returning nope")),
+        [unknown_column(None, "nope")]
+    );
+}
+
+/// Before Postgres 17, `merge_action()` is an ordinary function call, of any type.
+#[test]
+fn merge_action_is_a_function_call_before_postgres_17() {
+    let search_path = search_path();
+    let stmt = pgls_query::parse("select merge_action()")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    let node = pgls_query::protobuf::Node { node: Some(stmt) };
+    for (version, typed) in [(150000, false), (160000, false), (170000, true)] {
+        let catalog = Catalog::new(Some(database_of_version(version)));
+        let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+        assert_eq!(columns[0].ty.is_some(), typed, "{version}");
+    }
+}
+
+#[test]
+fn merge_returning_star_expands_the_source_first() {
+    let search_path = search_path();
+    let catalog = Catalog::new(Some(database()));
+    let stmt = pgls_query::parse(
+        "merge into users u using posts p on p.user_id = u.id when matched then delete returning *",
+    )
+    .unwrap()
+    .into_root()
+    .unwrap();
+    let node = pgls_query::protobuf::Node { node: Some(stmt) };
+    let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+    let names = columns.iter().map(|c| c.name.as_str()).collect::<Vec<_>>();
+    assert_eq!(names, ["id", "user_id", "title", "id", "name"]);
 }
 
 #[test]

@@ -2,18 +2,20 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_17_11: 43838 statements and 391 in SQL function bodies, 1773 findings on statements Postgres rejected
+REL_17_11: 43838 statements and 391 in SQL function bodies, 1782 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
+ambiguousColumn 42712: 2
+ambiguousColumn 42P01: 1
 banDuplicateColumnAssignments 42601: 1
 banDuplicateColumnAssignments 42701: 2
 functionArgumentMismatch 42725: 5
 functionArgumentMismatch 42883: 4
 functionReturnTypeMismatch 42P13: 5
-generatedColumnAssignment 428C9: 12
+generatedColumnAssignment 428C9: 13
 insertColumnMismatch 42601: 6
 invalidCast 42846: 2
-missingFromClauseEntry 42P01: 15
+missingFromClauseEntry 42P01: 20
 operatorTypeMismatch 42725: 1
 operatorTypeMismatch 42883: 12
 unknownColumn 42703: 40
@@ -612,6 +614,7 @@ identity.sql:64:1 428C9 generatedColumnAssignment
 identity.sql:107:1 428C9 generatedColumnAssignment
 identity.sql:124:1 428C9 generatedColumnAssignment
 identity.sql:158:1 42P01 unknownRelation
+identity.sql:490:1 428C9 generatedColumnAssignment
 incremental_sort.sql:3:1 42P01 unknownRelation
 incremental_sort.sql:10:1 42P01 unknownRelation
 incremental_sort.sql:244:1 42P01 unknownRelation
@@ -981,6 +984,14 @@ memoize.sql:208:1 42P01 unknownRelation
 memoize.sql:208:1 42P01 unknownRelation
 memoize.sql:214:1 42P01 unknownRelation
 memoize.sql:214:1 42P01 unknownRelation
+merge.sql:99:1 42712 ambiguousColumn
+merge.sql:99:1 42712 ambiguousColumn
+merge.sql:166:1 42P01 missingFromClauseEntry
+merge.sql:432:1 42P01 missingFromClauseEntry
+merge.sql:440:1 42P01 missingFromClauseEntry
+merge.sql:513:1 42P01 missingFromClauseEntry
+merge.sql:527:1 42P01 missingFromClauseEntry
+merge.sql:873:1 42P01 ambiguousColumn
 misc_functions.sql:36:1 42883 unknownFunction
 misc_functions.sql:37:1 42883 unknownFunction
 multirangetypes.sql:8:1 42704 unknownType

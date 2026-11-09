@@ -663,14 +663,208 @@ fn kind(finding: &FindingKind) -> Option<Kind> {
     }
 }
 
+/// MERGE cases, with the Postgres version that introduced their syntax, as in
+/// `server_version_num`. Older servers skip them.
+const MERGE_CASES: &[(&str, i32, Expect)] = &[
+    (
+        "merge into items i using logs l on l.item_id = i.id \
+         when matched and l.note <> i.name then update set qty = i.qty + 1, name = l.note \
+         when matched then delete \
+         when not matched then insert (id, name) values (l.item_id, l.note)",
+        150000,
+        Accept,
+    ),
+    (
+        "with c as (select 1::int8 as id) merge into items using c on c.id = items.id \
+         when not matched then insert values (c.id, 'x', default)",
+        150000,
+        Accept,
+    ),
+    (
+        "merge into items using (select 1 as id) s on s.id = items.id \
+         when not matched then insert default values when matched then do nothing",
+        150000,
+        Accept,
+    ),
+    (
+        "merge into items i using logs l on l.item_id = i.id \
+         when not matched by source and qty > 0 then update set qty = 0 \
+         when not matched by target then insert (id, name) values (item_id, note)",
+        170000,
+        Accept,
+    ),
+    (
+        "merge into items i using logs l on l.item_id = i.id when matched then delete \
+         returning merge_action(), i.name, l.note, i.qty + 1",
+        170000,
+        Accept,
+    ),
+    (
+        "merge into logs l using (select 1::int8 as k, 'x'::text as t) s on s.k = l.item_id \
+         when matched then delete returning *",
+        170000,
+        Accept,
+    ),
+    (
+        "with changed as (merge into logs l using (select 1::int8 as k) s on s.k = l.item_id \
+         when matched then delete returning *) select * from changed",
+        170000,
+        Accept,
+    ),
+    // Target-first, `price` would get the `varchar` of `note`.
+    (
+        "with changed as (merge into logs l using (select 1::int8 as k) s on s.k = l.item_id \
+         when matched then delete returning *) \
+         insert into items (id, qty, price, name, created_at) select * from changed",
+        170000,
+        Accept,
+    ),
+    (
+        "merge into items i using logs l join logs l2 on l.id = l2.id on l.item_id = i.id \
+         when not matched by source and l.id is null and l2.note is null then delete",
+        170000,
+        Accept,
+    ),
+    (
+        "merge into items i using logs l on l.item_id = i.id \
+         when matched then update set qty = 1 returning old.qty, new.qty",
+        180000,
+        Accept,
+    ),
+    (
+        "merge into items i using logs l on l.item_id = i.name when matched then delete",
+        150000,
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "merge into items i using logs l on l.item_id = i.id \
+         when matched and i.name + 1 > 0 then delete",
+        150000,
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "merge into items i using logs l on l.item_id = i.id \
+         when matched then update set qty = l.at",
+        150000,
+        Detect("42804", Kind::Assignment),
+    ),
+    (
+        "merge into items i using logs l on l.item_id = i.id \
+         when not matched then insert (id, qty) values (l.item_id, l.at)",
+        150000,
+        Detect("42804", Kind::Assignment),
+    ),
+    (
+        "merge into items i using logs l on l.item_id = i.id \
+         when matched then delete returning i.name + 1",
+        170000,
+        Detect("42883", Kind::Operator),
+    ), // Generated and identity columns: `RewriteQuery` checks the target list of each action
+    // like that of INSERT and UPDATE.
+    (
+        "merge into totals t using (select 1 as p) s on s.p = t.price \
+         when matched then update set qty = 2, total = default \
+         when not matched then insert (price, total) values (s.p, default)",
+        150000,
+        Accept,
+    ),
+    (
+        "merge into accounts a using (select 1 as i) s on s.i = a.id \
+         when matched then update set legacy = 1, id = default \
+         when not matched then insert default values",
+        150000,
+        Accept,
+    ),
+    (
+        "merge into accounts a using (select 1 as i) s on s.i = a.id \
+         when not matched then insert (id, name) overriding system value values (s.i, 'a')",
+        150000,
+        Accept,
+    ),
+    (
+        "merge into accounts a using (select 1 as i) s on s.i = a.id \
+         when not matched then insert (id, name) overriding user value values (s.i, 'a')",
+        150000,
+        Accept,
+    ),
+    (
+        "merge into accounts a using (select 1 as i) s on s.i = a.id \
+         when not matched then insert (legacy, name) values (s.i, 'a')",
+        150000,
+        Accept,
+    ),
+    (
+        "merge into totals t using (select 1 as p) s on s.p = t.price \
+         when matched then update set total = 1",
+        150000,
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "merge into totals t using (select 1 as p) s on s.p = t.price \
+         when matched then update set (price, total) = (1, 2)",
+        150000,
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "merge into totals t using (select 1 as p) s on s.p = t.price \
+         when not matched then insert (price, total) values (s.p, 2)",
+        150000,
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "merge into totals t using (select 1 as p) s on s.p = t.price \
+         when not matched then insert values (s.p, 1, 2)",
+        150000,
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "merge into totals t using (select 1 as p) s on s.p = t.price \
+         when not matched then insert (price, total) overriding system value values (s.p, 2)",
+        150000,
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "merge into accounts a using (select 1 as i) s on s.i = a.id \
+         when matched then update set id = 1",
+        150000,
+        Detect("428C9", Kind::Generated),
+    ),
+    (
+        "merge into accounts a using (select 1 as i) s on s.i = a.id \
+         when not matched then insert (id, name) values (s.i, 'a')",
+        150000,
+        Detect("428C9", Kind::Generated),
+    ),
+];
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn agrees_with_postgres(pool: PgPool) {
+    check_cases(&pool, CASES).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn merge_agrees_with_postgres(pool: PgPool) {
+    let (version,): (String,) = sqlx::query_as("select current_setting('server_version_num')")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let version: i32 = version.parse().unwrap();
+    let cases: Vec<(&str, Expect)> = MERGE_CASES
+        .iter()
+        .filter(|(_, since, _)| *since <= version)
+        .map(|(sql, _, expect)| (*sql, *expect))
+        .collect();
+    check_cases(&pool, &cases).await;
+}
+
+/// Checks each case against Postgres and against the static analysis.
+async fn check_cases(pool: &PgPool, cases: &[(&str, Expect)]) {
     let before = Arc::new(CatalogBase::new(Arc::new(
-        Snapshot::load(&pool).await.unwrap(),
+        Snapshot::load(pool).await.unwrap(),
     )));
     pool.execute(SETUP).await.unwrap();
     let after = Arc::new(CatalogBase::new(Arc::new(
-        Snapshot::load(&pool).await.unwrap(),
+        Snapshot::load(pool).await.unwrap(),
     )));
 
     let search_path = vec!["public".to_owned()];
@@ -682,8 +876,8 @@ async fn agrees_with_postgres(pool: PgPool) {
 
     let mut failures = Vec::new();
     let (mut typed, mut columns) = (0, 0);
-    for (sql, expect) in CASES {
-        let outcome = postgres(&pool, sql).await;
+    for (sql, expect) in cases {
+        let outcome = postgres(pool, sql).await;
         match (expect, &outcome) {
             (Accept, Ok(_)) => {}
             (Detect(code, _) | Miss(code), Err(actual)) if code == actual => {}

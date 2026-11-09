@@ -10,8 +10,9 @@ use super::{Resolver, resolve_list};
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
-    expr::infer_expr,
+    expr::{check_assignment, infer_expr},
     scope::{Columns, DefaultOnly, Item, Level, StarEntry, find_item},
+    utils::node_location,
 };
 
 /// The output columns of a select list or RETURNING list, whose `*` expands to the FROM items
@@ -183,16 +184,18 @@ fn item_columns(item: &Item, qualifier: &[String]) -> Option<Vec<StarColumn>> {
     )
 }
 
-/// Resolves a RETURNING clause against `level` and returns its columns.
+/// Resolves a RETURNING clause of a statement on `target` against `level` and returns its
+/// columns.
 pub(super) fn resolve_returning_clause(
     r: &mut Resolver,
     clause: Option<&ReturningClause>,
+    target: &Item,
     mut level: Level,
 ) -> Columns {
     let (options, list) = clause.map_or((&[][..], &[][..]), |clause| {
         (clause.options.as_slice(), clause.exprs.as_slice())
     });
-    add_old_and_new(r, options, &mut level);
+    add_old_and_new(r, options, target, &mut level);
     r.enter_level(level);
     resolve_list(r, list);
     record_star_references(r, list);
@@ -247,6 +250,42 @@ pub(super) fn resolve_returning_clause(
     columns
 }
 
+/// Resolves the `SET` list of UPDATE, `ON CONFLICT DO UPDATE`, or `MERGE ... UPDATE`: each
+/// target column must exist, each value must be assignable to it, and generated columns can
+/// only be set to `DEFAULT` ([`check_generated_update`]). Port of
+/// [`transformUpdateTargetList`].
+///
+/// [`transformUpdateTargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2546
+pub(super) fn resolve_set_clause(r: &mut Resolver, target: &Item, assignments: &[Node]) {
+    check_generated_update(r, target, assignments);
+    for assignment in assignments {
+        if let Some(NodeEnum::ResTarget(assignment)) = &assignment.node {
+            check_target_column(r, target, &assignment.name, assignment.location);
+            // Assignments to subscripts or fields, like `a[1]` or `c.f`, aren't checked.
+            if let (true, Some(column_type), Some(expr)) = (
+                assignment.indirection.is_empty(),
+                target.type_of(&assignment.name).flatten(),
+                assignment.val.as_deref().and_then(|v| v.node.as_ref()),
+            ) {
+                let expr_type = infer_expr(r, expr);
+                check_assignment(
+                    r,
+                    &assignment.name,
+                    column_type,
+                    Some(expr),
+                    expr_type,
+                    assignment
+                        .val
+                        .as_deref()
+                        .and_then(node_location)
+                        .unwrap_or(assignment.location),
+                );
+            }
+        }
+        super::resolve_node(r, assignment);
+    }
+}
+
 /// Reports a column of the target relation of INSERT or UPDATE that doesn't exist, like
 /// [`checkInsertTargets`] and [`transformUpdateTargetList`].
 ///
@@ -264,14 +303,16 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
     }
 }
 
-/// Reports an UPDATE or `ON CONFLICT DO UPDATE` that sets a generated column or a
-/// `GENERATED ALWAYS` identity column to anything but `DEFAULT`. Port of the checks of
-/// [`rewriteTargetListIU`] for `CMD_UPDATE`, which no `OVERRIDING` clause affects.
+/// Reports an UPDATE, `ON CONFLICT DO UPDATE` or `MERGE ... UPDATE` that sets a generated
+/// column or a `GENERATED ALWAYS` identity column to anything but `DEFAULT`. Port of the checks
+/// of [`rewriteTargetListIU`] for `CMD_UPDATE`, which no `OVERRIDING` clause affects.
+/// [`RewriteQuery`] applies them to the UPDATE action of MERGE too.
 ///
 /// Assignments to subscripts or fields of a column, like `g[1]`, are not checked.
 ///
 /// [`rewriteTargetListIU`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L808
-pub(super) fn check_generated_update(r: &mut Resolver, target: &Item, assignments: &[Node]) {
+/// [`RewriteQuery`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L4162
+fn check_generated_update(r: &mut Resolver, target: &Item, assignments: &[Node]) {
     if target.default_only_columns.is_empty() {
         return;
     }
@@ -325,22 +366,19 @@ pub(super) fn check_generated_update(r: &mut Resolver, target: &Item, assignment
 /// Since Postgres 18, `old` and `new` in a RETURNING list are the target row before and after
 /// the change. They are only reachable by name. `RETURNING WITH (OLD AS o, NEW AS n)` renames
 /// them; a name that is not given explicitly is only added if no visible item, in this or an
-/// outer query, has that name. The first item of `level` is the target relation. Port of
+/// outer query, has that name. Port of
 /// [`transformReturningClause`] and of [`addNSItemForReturning`]; an alias given twice, or one
 /// that clashes with another item, is rejected by Postgres and not reported here.
 ///
 /// [`transformReturningClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2661
 /// [`addNSItemForReturning`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2621
-fn add_old_and_new(r: &Resolver, options: &[Node], level: &mut Level) {
+fn add_old_and_new(r: &Resolver, options: &[Node], target: &Item, level: &mut Level) {
     if r.catalog
         .server_version_num()
         .is_some_and(|version| version < 180000)
     {
         return;
     }
-    let Some(target) = level.items.first() else {
-        return;
-    };
     let explicit = |kind: ReturningOptionKind| {
         options
             .iter()
