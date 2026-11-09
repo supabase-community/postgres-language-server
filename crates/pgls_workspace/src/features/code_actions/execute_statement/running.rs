@@ -6,6 +6,11 @@ use futures::channel::oneshot;
 
 use super::ExecuteStatementParams;
 
+/// The most statements that run at once. Each execution holds a blocking thread and waits for a
+/// connection of the statement pool, which has 10 by default, so a client that sends more than
+/// this is stuck or misbehaving; the registry stays small enough to scan on every cancel.
+pub(crate) const RUNNING_STATEMENTS_MAX: usize = 32;
+
 /// The statements that are being executed. An execution registers with [`Self::start`] for as
 /// long as it runs, and [`Self::cancel`] cancels it.
 #[derive(Default)]
@@ -28,13 +33,20 @@ struct RunningStatement {
 
 impl RunningStatements {
     /// Registers an execution of the statement of `params` until the returned guard is dropped.
-    /// The receiver fires when [`Self::cancel`] cancels the execution.
+    /// The receiver fires when [`Self::cancel`] cancels the execution. `None` if
+    /// [`RUNNING_STATEMENTS_MAX`] statements are already running.
     pub(crate) fn start(
         &self,
         params: &ExecuteStatementParams,
-    ) -> (RunningStatementGuard<'_>, oneshot::Receiver<()>) {
-        let (cancel, cancelled) = oneshot::channel();
+    ) -> Option<(RunningStatementGuard<'_>, oneshot::Receiver<()>)> {
         let mut registry = self.lock();
+        if registry.running.len() >= RUNNING_STATEMENTS_MAX {
+            tracing::warn!(
+                "Refusing to execute a statement: {RUNNING_STATEMENTS_MAX} statements are already running."
+            );
+            return None;
+        }
+        let (cancel, cancelled) = oneshot::channel();
         let id = registry.next_id;
         registry.next_id += 1;
         registry.running.push(RunningStatement {
@@ -42,13 +54,13 @@ impl RunningStatements {
             params: params.clone(),
             cancel,
         });
-        (
+        Some((
             RunningStatementGuard {
                 statements: self,
                 id,
             },
             cancelled,
-        )
+        ))
     }
 
     /// Cancels the executions of the statement of `params`, if any are running.
@@ -99,7 +111,7 @@ impl Drop for RunningStatementGuard<'_> {
 mod tests {
     use pgls_fs::PgLSPath;
 
-    use super::RunningStatements;
+    use super::{RUNNING_STATEMENTS_MAX, RunningStatements};
     use crate::features::code_actions::ExecuteStatementParams;
     use crate::workspace::{ProjectKey, StatementId};
 
@@ -114,9 +126,9 @@ mod tests {
     #[test]
     fn cancels_the_executions_of_the_statement() {
         let statements = RunningStatements::default();
-        let (_first, mut first) = statements.start(&params("select 1"));
-        let (_second, mut second) = statements.start(&params("select 1"));
-        let (_other, mut other) = statements.start(&params("select 2"));
+        let (_first, mut first) = statements.start(&params("select 1")).unwrap();
+        let (_second, mut second) = statements.start(&params("select 1")).unwrap();
+        let (_other, mut other) = statements.start(&params("select 2")).unwrap();
 
         statements.cancel(&params("select 1"));
 
@@ -128,8 +140,8 @@ mod tests {
     #[test]
     fn the_guard_removes_the_execution() {
         let statements = RunningStatements::default();
-        let (first, _) = statements.start(&params("select 1"));
-        let (second, _) = statements.start(&params("select 1"));
+        let (first, _) = statements.start(&params("select 1")).unwrap();
+        let (second, _) = statements.start(&params("select 1")).unwrap();
 
         drop(first);
         assert!(!statements.is_empty());
@@ -138,5 +150,17 @@ mod tests {
 
         // Cancelling a statement that doesn't run does nothing.
         statements.cancel(&params("select 1"));
+    }
+
+    #[test]
+    fn refuses_executions_beyond_the_limit() {
+        let statements = RunningStatements::default();
+        let running: Vec<_> = (0..RUNNING_STATEMENTS_MAX)
+            .map(|_| statements.start(&params("select 1")).unwrap())
+            .collect();
+
+        assert!(statements.start(&params("select 1")).is_none());
+        drop(running);
+        assert!(statements.start(&params("select 1")).is_some());
     }
 }

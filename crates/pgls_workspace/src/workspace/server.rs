@@ -8,7 +8,10 @@ use std::{
 };
 
 #[cfg(feature = "db")]
-use crate::features::code_actions::execute_statement::{execution, running::RunningStatements};
+use crate::features::code_actions::execute_statement::{
+    execution,
+    running::{RUNNING_STATEMENTS_MAX, RunningStatements},
+};
 use analyser::AnalyserVisitorBuilder;
 #[cfg(feature = "db")]
 use async_helper::run_async;
@@ -1234,7 +1237,14 @@ impl Workspace for WorkspaceServer {
             is_query: execution::is_query(&ast),
             timeout: db.statement_timeout,
         };
-        let (_running, cancelled) = self.running_statements.start(&params);
+        let Some((_running, cancelled)) = self.running_statements.start(&params) else {
+            return Ok(ExecuteStatementResult {
+                message: format!(
+                    "{RUNNING_STATEMENTS_MAX} statements are already running. Wait for one to finish, or cancel it."
+                ),
+                ..Default::default()
+            });
+        };
 
         let result = self.connection.with_pools(&db, |pools| {
             let statement_pools = pools.clone();
