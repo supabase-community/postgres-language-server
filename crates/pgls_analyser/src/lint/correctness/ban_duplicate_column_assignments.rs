@@ -5,9 +5,11 @@ use pgls_catalog::resolve::figure_column_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{
-    AlterTableType, CreateTableAsStmt, Node, RangeVar, ResTarget, SelectStmt, SetOperation, Token,
+    AlterTableStmt, AlterTableType, CreateTableAsStmt, Node, RangeVar, ResTarget, SelectStmt,
+    SetOperation, Token,
 };
 use pgls_query::{NodeEnum, NodeRef};
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 use pgls_text_size::TextRange;
 
 declare_lint_rule! {
@@ -92,7 +94,7 @@ impl LinterRule for BanDuplicateColumnAssignments {
                     &mut diagnostics,
                 ),
                 NodeRef::AlterTableStmt(stmt) => report_definitions(
-                    added_columns(&stmt.cmds, tokens),
+                    added_columns(stmt, tokens),
                     Definition::AddedColumn,
                     &mut diagnostics,
                 ),
@@ -326,18 +328,13 @@ fn column_definitions(elements: &[Node], tokens: Option<StatementTokens>) -> Vec
 
 /// The columns added by `ADD COLUMN`. Postgres skips an `ADD COLUMN IF NOT EXISTS` of a column
 /// that an earlier command added, so only the other ones count as duplicates.
-fn added_columns(cmds: &[Node], tokens: Option<StatementTokens>) -> Vec<Column> {
+fn added_columns(stmt: &AlterTableStmt, tokens: Option<StatementTokens>) -> Vec<Column> {
     let mut columns = Vec::new();
-    for cmd in cmds {
-        let Some(NodeEnum::AlterTableCmd(cmd)) = &cmd.node else {
-            continue;
-        };
+    for cmd in alter_table_cmds(stmt) {
         if cmd.subtype() != AlterTableType::AtAddColumn {
             continue;
         }
-        let Some(NodeEnum::ColumnDef(column)) =
-            cmd.def.as_deref().and_then(|def| def.node.as_ref())
-        else {
+        let Some(NodeEnum::ColumnDef(column)) = cmd_def(cmd) else {
             continue;
         };
         let added = columns
