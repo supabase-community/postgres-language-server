@@ -34,8 +34,6 @@ pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensi
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
 

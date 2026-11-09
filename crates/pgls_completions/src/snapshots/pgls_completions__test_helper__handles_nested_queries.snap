@@ -30,11 +30,23 @@ select * from (
 ) as subquery
 join public.users u
 on u.id = subquery.id;
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select * from (
     s| from private.audio_books
 ) as subquery
 join public.users u
 on u.id = subquery.id;
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select * from (
     select | from private.audio_books
 ) as subquery

@@ -7,11 +7,12 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParameterMode as Mode, TypeName},
 };
+use pgls_query_ext::utils::{QualifiedName, find_option_value, qualified_name};
 
-use super::{Resolver, resolve_node_enum, string::string_values};
+use super::{Resolver, resolve_node_enum};
 use crate::TypeKind;
 use crate::lookup::Lookup;
-use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch};
+use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch, utils::named};
 use crate::typing::{
     CoercionContext, Decision, Type, TypeId, can_coerce, format_type_with_search_path,
     normalize_type_name,
@@ -112,10 +113,10 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
         // The type of a `RETURN` expression is not checked.
         NodeEnum::ReturnStmt(_) => return,
         NodeEnum::SelectStmt(_) => true,
-        NodeEnum::InsertStmt(insert) => !insert.returning_list.is_empty(),
-        NodeEnum::UpdateStmt(update) => !update.returning_list.is_empty(),
-        NodeEnum::DeleteStmt(delete) => !delete.returning_list.is_empty(),
-        NodeEnum::MergeStmt(merge) => !merge.returning_list.is_empty(),
+        NodeEnum::InsertStmt(insert) => insert.returning_clause.is_some(),
+        NodeEnum::UpdateStmt(update) => update.returning_clause.is_some(),
+        NodeEnum::DeleteStmt(delete) => delete.returning_clause.is_some(),
+        NodeEnum::MergeStmt(merge) => merge.returning_clause.is_some(),
         _ => false,
     };
     if !returns_rows {
@@ -230,16 +231,16 @@ impl FunctionContext {
                 continue;
             }
             let type_name = param.arg_type.as_ref()?;
-            let mut names = string_values(&type_name.names)?;
+            let type_ = qualified_name(&type_name.names)?;
             params.push(FunctionParam {
                 name: (!param.name.is_empty()).then(|| param.name.clone()),
-                type_name: names.pop()?,
-                type_schema: names.pop(),
+                type_name: type_.name.to_owned(),
+                type_schema: type_.schema.map(str::to_owned),
                 is_array: !type_name.array_bounds.is_empty(),
             });
         }
         Some(FunctionContext {
-            function_name: string_values(&n.funcname)?.pop()?,
+            function_name: qualified_name(&n.funcname)?.name.to_owned(),
             params,
         })
     }
@@ -248,30 +249,8 @@ impl FunctionContext {
 fn is_sql_function(n: &CreateFunctionStmt) -> bool {
     // `BEGIN ATOMIC` and `RETURN` bodies only exist for SQL functions.
     n.sql_body.is_some()
-        || option_string(n, "language").is_some_and(|language| language.eq_ignore_ascii_case("sql"))
-}
-
-/// The string value of a function option, like `language` or `as`.
-fn option_string<'a>(n: &'a CreateFunctionStmt, name: &str) -> Option<&'a str> {
-    n.options.iter().find_map(|option| {
-        let Some(NodeEnum::DefElem(option)) = &option.node else {
-            return None;
-        };
-        if option.defname != name {
-            return None;
-        }
-        match option.arg.as_deref()?.node.as_ref()? {
-            NodeEnum::String(value) => Some(value.sval.as_str()),
-            NodeEnum::List(list) => match list.items.as_slice() {
-                [item] => match item.node.as_ref()? {
-                    NodeEnum::String(value) => Some(value.sval.as_str()),
-                    _ => None,
-                },
-                _ => None,
-            },
-            _ => None,
-        }
-    })
+        || find_option_value(n, "language")
+            .is_some_and(|language| language.eq_ignore_ascii_case("sql"))
 }
 
 /// The statements of the body. `None` if it can't be read, and for `RETURN expression`
@@ -291,7 +270,7 @@ fn body_statements(n: &CreateFunctionStmt) -> Option<Vec<NodeEnum>> {
             .map(|statement| statement.node.clone())
             .collect();
     }
-    let body = option_string(n, "as")?;
+    let body = find_option_value(n, "as")?;
     let parsed = pgls_query::parse(body).ok()?;
     Some(parsed.stmts().into_iter().cloned().collect())
 }
@@ -319,7 +298,7 @@ fn declared_result(
         [first, ..] => Some(Declared::Value {
             label: "record".into(),
             shape: Some(Shape::Row {
-                row: type_id(r, "record"),
+                row: r.catalog.builtin_type("record"),
                 attributes: outputs
                     .iter()
                     .map(|output| normalize_type_name(r.catalog, output, r.search_path).0)
@@ -331,12 +310,7 @@ fn declared_result(
 }
 
 fn declared_type(r: &Resolver, type_name: &TypeName) -> Option<Declared> {
-    let names = string_values(&type_name.names)?;
-    let (schema, name) = match names.as_slice() {
-        [name] => (None, name.as_str()),
-        [schema, name] => (Some(schema.as_str()), name.as_str()),
-        _ => return None,
-    };
+    let QualifiedName { schema, name, .. } = qualified_name(&type_name.names)?;
     let is_array = !type_name.array_bounds.is_empty();
     let builtin = schema.is_none_or(|schema| schema == "pg_catalog");
     let mut label = match schema {
@@ -414,21 +388,10 @@ fn declared_type(r: &Resolver, type_name: &TypeName) -> Option<Declared> {
 }
 
 fn is_pseudo_type(type_name: &TypeName) -> bool {
-    let Some(names) = string_values(&type_name.names) else {
+    let Some(QualifiedName { schema, name, .. }) = qualified_name(&type_name.names) else {
         return true;
     };
-    match names.as_slice() {
-        [name] => PSEUDO_TYPES.contains(&name.as_str()),
-        [schema, name] => schema == "pg_catalog" && PSEUDO_TYPES.contains(&name.as_str()),
-        _ => false,
-    }
-}
-
-fn type_id(r: &Resolver, name: &str) -> Option<TypeId> {
-    match r.catalog.type_(Some("pg_catalog"), name, r.search_path) {
-        Lookup::Found(info) => info.id,
-        _ => None,
-    }
+    schema.is_none_or(|schema| schema == "pg_catalog") && PSEUDO_TYPES.contains(&name)
 }
 
 /// The types of the columns the final statement returns, if the columns are known with
@@ -451,7 +414,7 @@ fn output_columns(
         }
         _ => vec![None; columns.len()],
     };
-    let text = type_id(r, "text").map(Type::Named);
+    let text = named(r, "text");
     Some(
         types
             .into_iter()

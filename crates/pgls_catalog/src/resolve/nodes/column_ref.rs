@@ -1,6 +1,7 @@
 use pgls_query::{NodeEnum, protobuf::ColumnRef};
+use pgls_query_ext::utils::string_values;
 
-use super::{Resolver, string::string_values};
+use super::Resolver;
 use crate::lookup::Lookup;
 use crate::resolve::{
     FindingKind, Reference,

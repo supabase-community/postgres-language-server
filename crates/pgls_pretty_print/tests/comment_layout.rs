@@ -207,3 +207,136 @@ fn a_comment_before_on_in_a_grant_stays_before_on() {
         "grant r1 /* c */ to u;"
     );
 }
+
+fn assert_comment_tokens(sql: &str, expected: &[&str]) {
+    for output in format_both_layouts(sql) {
+        let scan = pgls_query::scan(&output).unwrap();
+        let tokens: Vec<_> = scan
+            .tokens
+            .iter()
+            .map(|token| output[token.start as usize..token.end as usize].trim_end())
+            .collect();
+        assert!(
+            tokens
+                .windows(expected.len())
+                .any(|window| window == expected),
+            "expected consecutive tokens {expected:?} in:\n{output}"
+        );
+    }
+}
+
+#[test]
+fn consecutive_comments_stay_in_order_before_case_keywords() {
+    for (comments, first, second) in [
+        ("/* first */ /* second */", "/* first */", "/* second */"),
+        ("/* first */ -- second\n", "/* first */", "-- second"),
+        ("-- first\n/* second */", "-- first", "/* second */"),
+        ("\n-- first\n-- second\n", "-- first", "-- second"),
+    ] {
+        assert_comment_tokens(
+            &format!("select case when a then 1 {comments} else 2 end from t"),
+            &["1", first, second, "else", "2"],
+        );
+        assert_comment_tokens(
+            &format!("select case when a {comments} then 1 else 2 end from t"),
+            &["a", first, second, "then", "1"],
+        );
+        assert_comment_tokens(
+            &format!("select case when a then 1 else 2 {comments} end from t"),
+            &["2", first, second, "end"],
+        );
+    }
+}
+
+#[test]
+fn consecutive_comments_stay_in_order_before_grant_and_revoke_keywords() {
+    for (comments, first, second) in [
+        ("/* first */ /* second */", "/* first */", "/* second */"),
+        ("/* first */ -- second\n", "/* first */", "-- second"),
+        ("-- first\n/* second */", "-- first", "/* second */"),
+        ("\n-- first\n-- second\n", "-- first", "-- second"),
+    ] {
+        for (sql, previous, keyword) in [
+            (format!("grant select {comments} on t to u"), "select", "on"),
+            (format!("grant select on t {comments} to u"), "t", "to"),
+            (
+                format!("revoke select {comments} on t from u"),
+                "select",
+                "on",
+            ),
+            (format!("revoke select on t {comments} from u"), "t", "from"),
+            (format!("grant r1 {comments} to u"), "r1", "to"),
+            (format!("revoke r1 {comments} from u"), "r1", "from"),
+        ] {
+            assert_comment_tokens(&sql, &[previous, first, second, keyword]);
+        }
+    }
+}
+
+#[test]
+fn comments_before_end_follow_the_complete_branch_expression() {
+    for (expression, last_token) in [
+        ("f(2)", ")"),
+        ("array[1, 2]", "]"),
+        ("2::integer", ")"),
+        ("(select 2)", ")"),
+    ] {
+        for comments in ["/* last */", "\n-- last\n"] {
+            let comment = comments.trim();
+            for branch in ["then", "else"] {
+                let sql = if branch == "then" {
+                    format!("select case when a then {expression} {comments} end from t")
+                } else {
+                    format!("select case when a then 1 else {expression} {comments} end from t")
+                };
+                assert_comment_tokens(&sql, &[last_token, comment, "end"]);
+            }
+        }
+    }
+}
+
+#[test]
+fn comments_before_end_stay_with_the_case_they_close() {
+    for branch in ["then", "else"] {
+        let prefix = if branch == "then" {
+            "select case when a then"
+        } else {
+            "select case when a then 1 else"
+        };
+        for (inner, outer) in [
+            ("/* inner */", "/* outer */"),
+            ("\n-- inner\n", "\n-- outer\n"),
+        ] {
+            let sql = format!(
+                "{prefix} case when b then 'case end' else 3 {inner} end {outer} end from t"
+            );
+            assert_comment_tokens(&sql, &["3", inner.trim(), "end", outer.trim(), "end"]);
+        }
+    }
+}
+
+#[test]
+fn consecutive_comments_before_end_stay_after_the_inner_case() {
+    assert_comment_tokens(
+        "select case when a then 1 else case when b then 2 else 3 end \
+         /* first */ /* second */ end from t",
+        &["end", "/* first */", "/* second */", "end"],
+    );
+}
+
+#[test]
+fn keyword_names_do_not_change_case_end_ownership() {
+    for (expression, last_token) in [
+        ("t.end", "\"end\""),
+        ("t.case", "\"case\""),
+        ("(select 2 end)", ")"),
+        ("(select 2 as end)", ")"),
+        ("(select 2 case)", ")"),
+        ("(select 2 as case)", ")"),
+    ] {
+        assert_comment_tokens(
+            &format!("select case when a then {expression} /* last */ end from t"),
+            &[last_token, "/* last */", "end"],
+        );
+    }
+}
