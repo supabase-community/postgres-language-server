@@ -1450,7 +1450,7 @@
 <tr>
 <td>Schema</td>
 <td><code>namespace</code></td>
-<td><code>public</code> in <code>public.users</code></td>
+<td><code>public</code> in <code>public.users</code>, <code>create schema app</code>, <code>set search_path to app</code></td>
 </tr>
 <tr>
 <td>Table, view, or other relation</td>
@@ -1466,6 +1466,11 @@
 <td>Alias of a table or CTE</td>
 <td><code>variable</code></td>
 <td><code>u</code> in <code>from users u</code> and in <code>u.name</code></td>
+</tr>
+<tr>
+<td>Role</td>
+<td><code>variable</code></td>
+<td><code>reader</code> in <code>grant select on users to reader</code></td>
 </tr>
 <tr>
 <td>Column</td>

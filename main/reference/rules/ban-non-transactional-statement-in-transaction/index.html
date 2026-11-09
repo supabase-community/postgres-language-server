@@ -1246,10 +1246,10 @@
 <p><code>VACUUM</code>, <code>CREATE DATABASE</code>, <code>DROP DATABASE</code>, <code>ALTER DATABASE ... SET TABLESPACE</code>,
 <code>CREATE TABLESPACE</code>, <code>DROP TABLESPACE</code>, <code>ALTER SYSTEM</code>, <code>CLUSTER</code> without a table or on a
 partitioned table, <code>REINDEX SCHEMA</code>, <code>REINDEX SYSTEM</code>, <code>REINDEX DATABASE</code>, <code>REINDEX TABLE</code>
-on a partitioned table, <code>DISCARD ALL</code>, <code>COMMIT PREPARED</code>, <code>ROLLBACK PREPARED</code>,
-<code>CREATE SUBSCRIPTION</code> that creates a replication slot, and
-<code>ALTER SUBSCRIPTION ... REFRESH PUBLICATION</code> fail in a transaction block and in the body
-of a function. The statements with <code>CONCURRENTLY</code> are covered by
+on a partitioned table, <code>REINDEX INDEX</code> on a partitioned index, <code>DISCARD ALL</code>,
+<code>COMMIT PREPARED</code>, <code>ROLLBACK PREPARED</code>, <code>CREATE SUBSCRIPTION</code> that creates a replication
+slot, and <code>ALTER SUBSCRIPTION ... REFRESH PUBLICATION</code> fail in a transaction block and in
+the body of a function. The statements with <code>CONCURRENTLY</code> are covered by
 <code>banConcurrentIndexCreationInTransaction</code>.</p>
 <p>The rule only reports statements that surely run in a transaction block: between <code>BEGIN</code>
 and <code>COMMIT</code>, in a function body, or in a migration section that runs in a transaction
