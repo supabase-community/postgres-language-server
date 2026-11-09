@@ -1,6 +1,7 @@
 use globset::Glob;
 use pgls_configuration::StringSet;
 use pgls_diagnostics::Category;
+use pgls_migrations::ToolId;
 #[cfg(feature = "db")]
 use std::str::FromStr;
 use std::{
@@ -23,7 +24,9 @@ use pgls_configuration::{
         Layout, LogicalOperatorPlacement,
     },
     inlay_hints::InlayHintsConfiguration,
-    migrations::{MigrationTool, MigrationsConfiguration, PartialMigrationsConfiguration},
+    migrations::{
+        MigrationTool, MigrationVersion, MigrationsConfiguration, PartialMigrationsConfiguration,
+    },
     pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
     semantic_tokens::SemanticTokensConfiguration,
@@ -1085,7 +1088,7 @@ pub struct FilesSettings {
 #[derive(Debug)]
 pub struct MigrationSettings {
     pub path: Option<PathBuf>,
-    pub after: Option<u64>,
+    pub after: Option<MigrationVersion>,
     pub tool: MigrationTool,
     pub lint_down: bool,
 }
@@ -1110,6 +1113,41 @@ impl From<PartialMigrationsConfiguration> for MigrationSettings {
             lint_down: value.lint_down.unwrap_or(true),
         }
     }
+}
+
+/// The tool that the workspace runs files with for `migrations.tool`.
+pub(crate) fn migration_tool(tool: MigrationTool) -> &'static dyn pgls_migrations::MigrationTool {
+    match tool {
+        MigrationTool::None => ToolId::Plain,
+        MigrationTool::Supabase => ToolId::Supabase,
+        MigrationTool::Dbmate => ToolId::Dbmate,
+        MigrationTool::Goose => ToolId::Goose,
+    }
+    .tool()
+}
+
+/// What is wrong with the migrations settings of a configuration that it can still apply, like an
+/// `after` that isn't a version of the migration tool.
+pub(crate) fn migrations_problems(configuration: &PartialConfiguration) -> Vec<String> {
+    let Some(migrations) = &configuration.migrations else {
+        return Vec::new();
+    };
+    let tool = migration_tool(migrations.migration_tool());
+    // `0`, the default, ignores nothing.
+    migrations
+        .after
+        .as_ref()
+        .filter(|after| **after != MigrationVersion::default())
+        .map(MigrationVersion::text)
+        .filter(|after| tool.version(after).is_none())
+        .map(|after| {
+            format!(
+                "`migrations.after` is `{after}`, which is not a version of {} migrations, so no migration is ignored. Use the number that the file names start with, like `20250301120000`.",
+                tool.name()
+            )
+        })
+        .into_iter()
+        .collect()
 }
 
 fn to_migration_settings(
@@ -1193,8 +1231,23 @@ mod tests {
     use pgls_configuration::StringSet;
     use pgls_configuration::database::PartialDatabaseConfiguration;
 
-    use super::{DatabaseSettings, Settings, WorkspaceSettings};
+    use super::{DatabaseSettings, Settings, WorkspaceSettings, migrations_problems};
     use crate::workspace::ProjectKey;
+
+    #[test]
+    fn reports_an_after_that_is_not_a_version_of_the_tool() {
+        let problems = |json: &str| migrations_problems(&serde_json::from_str(json).unwrap());
+        assert!(problems(r#"{ "migrations": { "after": 20250301120000 } }"#).is_empty());
+        assert!(problems(r#"{ "migrations": { "after": "0042" } }"#).is_empty());
+        assert!(problems(r#"{ "migrations": { "after": 0 } }"#).is_empty());
+        assert!(problems(r#"{ "migrations": { "migrationsDir": "migrations" } }"#).is_empty());
+        assert_eq!(
+            problems(r#"{ "migrations": { "tool": "goose", "after": "v1" } }"#),
+            [
+                "`migrations.after` is `v1`, which is not a version of goose migrations, so no migration is ignored. Use the number that the file names start with, like `20250301120000`."
+            ]
+        );
+    }
 
     fn with_linter(enabled: bool) -> Settings {
         let mut settings = Settings::default();

@@ -34,12 +34,11 @@ use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
 use pgls_configuration::inlay_hints::ParameterNameHints;
-use pgls_configuration::migrations::MigrationTool as MigrationToolSetting;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-use pgls_migrations::{Direction, MigrationTool, Role, ToolId, Unit, Version};
+use pgls_migrations::{Direction, MigrationTool, Role, Unit};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
@@ -66,7 +65,10 @@ use crate::{
         on_hover::{OnHoverParams, OnHoverResult},
         semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
-    settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
+    settings::{
+        Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut,
+        migration_tool,
+    },
     workspace::{AnalyserDiagnosticsMapper, WithCSTMapper},
 };
 
@@ -244,7 +246,7 @@ impl WorkspaceServer {
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.tool)
             .unwrap_or_default();
-        tool_of_setting(tool)
+        migration_tool(tool)
     }
 
     /// Applies the changed settings of a project to its open documents.
@@ -277,7 +279,7 @@ impl WorkspaceServer {
     /// Whether the file is a migration. Migration-only rules don't run on other files.
     fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
         let Some((tool, migrations_dir)) = settings.migrations.as_ref().and_then(|migrations| {
-            let tool = tool_of_setting(migrations.tool);
+            let tool = migration_tool(migrations.tool);
             Some((tool, migrations.path.as_ref()?))
         }) else {
             return FileKind::Unknown;
@@ -888,30 +890,19 @@ impl WorkspaceServer {
     }
 }
 
-/// The tool that the workspace runs files with for `migrations.tool`.
-fn tool_of_setting(tool: MigrationToolSetting) -> &'static dyn MigrationTool {
-    match tool {
-        MigrationToolSetting::None => ToolId::Plain,
-        MigrationToolSetting::Supabase => ToolId::Supabase,
-        MigrationToolSetting::Dbmate => ToolId::Dbmate,
-        MigrationToolSetting::Goose => ToolId::Goose,
-    }
-    .tool()
-}
-
-/// Check whether a file is a migration before `migrations.after`
+/// Check whether a file is a migration up to `migrations.after`. Both versions are read in the
+/// format of the migration tool; an `after` that isn't one ignores nothing.
 fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
     settings
         .migrations
         .as_ref()
         .and_then(|migration_settings| {
-            let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let version = tool_of_setting(migration_settings.tool)
-                .file(path, migrations_dir)
-                .version?;
+            let tool = migration_tool(migration_settings.tool);
+            let after = tool.version(&migration_settings.after.as_ref()?.text())?;
+            let version = tool.file(path, migrations_dir).version?;
 
-            Some(version <= Version::Number(*ignore_before))
+            Some(version <= after)
         })
         .unwrap_or(false)
 }

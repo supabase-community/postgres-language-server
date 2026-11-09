@@ -4704,6 +4704,33 @@ ALTER TABLE users DROP COLUMN email;
     assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
 }
 
+/// `after` is a number or a string, read like the versions of the migration files: the number
+/// their names start with, without leading zeros. One that isn't a version ignores nothing.
+#[test]
+fn migrations_after_is_a_number_or_a_string() {
+    let ignored = |after: &str, path: &str| {
+        let mut fs = MemoryFileSystem::default();
+        fs.insert(
+            Path::new("/repo").join(ConfigName::pgls_jsonc()),
+            format!(r#"{{ "migrations": {{ "migrationsDir": "migrations", "after": {after} }} }}"#),
+        );
+        let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+        TestProject::without_nested_configurations(&fs, Path::new("/repo")).is_ignored(path)
+    };
+    for after in ["20240101000000", r#""20240101000000""#] {
+        assert!(ignored(after, "/repo/migrations/20230101000000_old.sql"));
+        assert!(ignored(after, "/repo/migrations/20240101000000_same.sql"));
+        assert!(!ignored(after, "/repo/migrations/20250101000000_new.sql"));
+    }
+    // Leading zeros don't count, in `after` and in the file names.
+    for after in ["2", r#""0002""#] {
+        assert!(ignored(after, "/repo/migrations/0001_a.sql"));
+        assert!(ignored(after, "/repo/migrations/02_b.sql"));
+        assert!(!ignored(after, "/repo/migrations/0003_c.sql"));
+    }
+    assert!(!ignored(r#""v1""#, "/repo/migrations/0001_a.sql"));
+}
+
 /// When no configuration points at a database any more, its pool and snapshot are dropped, so that
 /// a reload or a removed folder doesn't keep every database ever configured in memory.
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

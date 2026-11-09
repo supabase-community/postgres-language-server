@@ -712,9 +712,9 @@ export interface PartialLinterConfiguration {
  */
 export interface PartialMigrationsConfiguration {
   /**
-   * Ignore any migrations before this timestamp
+   * Ignore the migrations up to this version, in the version format of the migration tool: a number like `20250301120000`, or a string like `"0042"`. The version of a migration is the number its file name starts with.
    */
-  after?: number;
+  after?: MigrationVersion;
   /**
    * If `false`, the down sections of migration files are not linted. Default: `true`.
    */
@@ -1265,6 +1265,10 @@ export interface LinterRules {
    */
   unknownType?: RuleConfiguration_for_Null;
 }
+/**
+ * The version of a migration, as the configuration writes it: a number, or a string that the migration tool reads in its own format.
+ */
+export type MigrationVersion = number | string;
 /**
  * The migration tool that runs the migration files.
  */

@@ -1875,18 +1875,33 @@
         }
       ]
     },
+    "MigrationVersion": {
+      "description": "The version of a migration, as the configuration writes it: a number, or a string that the migration tool reads in its own format.",
+      "anyOf": [
+        {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
     "MigrationsConfiguration": {
       "description": "The configuration of the filesystem",
       "type": "object",
       "properties": {
         "after": {
-          "description": "Ignore any migrations before this timestamp",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint64",
-          "minimum": 0.0
+          "description": "Ignore the migrations up to this version, in the version format of the migration tool: a number like `20250301120000`, or a string like `\"0042\"`. The version of a migration is the number its file name starts with.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MigrationVersion"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "lintDown": {
           "description": "If `false`, the down sections of migration files are not linted. Default: `true`.",

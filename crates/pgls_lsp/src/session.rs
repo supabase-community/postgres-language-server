@@ -1001,6 +1001,11 @@ impl Session {
                     )
                     .await;
             }
+            ConfigurationNotice::InvalidSettings(problems) => {
+                self.client
+                    .show_message(MessageType::WARNING, problems.join("\n"))
+                    .await;
+            }
         }
     }
 

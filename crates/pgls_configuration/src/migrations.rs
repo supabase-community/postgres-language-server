@@ -14,9 +14,11 @@ pub struct MigrationsConfiguration {
     #[partial(bpaf(long("migrations-dir")))]
     pub migrations_dir: String,
 
-    /// Ignore any migrations before this timestamp
-    #[partial(bpaf(long("after")))]
-    pub after: u64,
+    /// Ignore the migrations up to this version, in the version format of the migration tool: a
+    /// number like `20250301120000`, or a string like `"0042"`. The version of a migration is the
+    /// number its file name starts with.
+    #[partial(bpaf(long("after"), argument("VERSION")))]
+    pub after: MigrationVersion,
 
     /// The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none".
     /// The marker comments of the tool split a migration file into up and down sections, which
@@ -39,7 +41,7 @@ impl Default for MigrationsConfiguration {
     fn default() -> Self {
         Self {
             migrations_dir: String::new(),
-            after: 0,
+            after: MigrationVersion::default(),
             tool: None,
             section_markers: None,
             lint_down: true,
@@ -95,6 +97,41 @@ impl FromStr for MigrationTool {
     }
 }
 
+/// The version of a migration, as the configuration writes it: a number, or a string that the
+/// migration tool reads in its own format.
+#[derive(Clone, Debug, Deserialize, Eq, Merge, PartialEq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(untagged)]
+pub enum MigrationVersion {
+    Number(u64),
+    Text(String),
+}
+
+impl Default for MigrationVersion {
+    fn default() -> Self {
+        Self::Number(0)
+    }
+}
+
+impl MigrationVersion {
+    /// The version as text, like a migration file writes it.
+    pub fn text(&self) -> String {
+        match self {
+            Self::Number(number) => number.to_string(),
+            Self::Text(text) => text.clone(),
+        }
+    }
+}
+
+impl FromStr for MigrationVersion {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(s.parse()
+            .map_or_else(|_| Self::Text(s.to_string()), Self::Number))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,6 +152,34 @@ mod tests {
         let config = MigrationsConfiguration::from(PartialMigrationsConfiguration::default());
         assert_eq!(config.migration_tool(), MigrationTool::None);
         assert!(config.lint_down);
+    }
+
+    #[test]
+    fn after_is_a_number_or_a_string() {
+        let after = |json: &str| {
+            serde_json::from_str::<PartialMigrationsConfiguration>(json)
+                .expect("migrations configuration should deserialize")
+                .after
+        };
+        assert_eq!(
+            after(r#"{ "after": 20250301120000 }"#),
+            Some(MigrationVersion::Number(20250301120000))
+        );
+        assert_eq!(
+            after(r#"{ "after": "0042" }"#),
+            Some(MigrationVersion::Text("0042".into()))
+        );
+        assert_eq!(
+            "0042".parse::<MigrationVersion>(),
+            Ok(MigrationVersion::Number(42))
+        );
+        assert_eq!(
+            "v1".parse::<MigrationVersion>(),
+            Ok(MigrationVersion::Text("v1".into()))
+        );
+        assert!(
+            serde_json::from_str::<PartialMigrationsConfiguration>(r#"{ "after": -1 }"#).is_err()
+        );
     }
 
     #[test]

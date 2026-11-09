@@ -294,6 +294,13 @@ impl<'app> CliSession<'app> {
                     });
                 }
             }
+            ConfigurationNotice::InvalidSettings(problems) => {
+                for problem in problems {
+                    self.console().log(markup! {
+                        <Warn>"Warning: "</Warn>{problem}"\n"
+                    });
+                }
+            }
             // `check` reports it when it checks the database connection.
             ConfigurationNotice::InvalidConnectionString(_) => {}
         }
