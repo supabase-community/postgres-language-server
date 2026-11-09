@@ -278,7 +278,10 @@ impl Workspace {
             });
         self.project_key = self
             .inner
-            .register_project_folder(RegisterProjectFolderParams { path: None })
+            .register_project_folder(RegisterProjectFolderParams {
+                path: None,
+                real_path: None,
+            })
             .map_err(|e| WasmError::Internal(format!("Failed to register the project: {e}")))?;
         self.inner
             .update_settings(UpdateSettingsParams {
@@ -287,6 +290,7 @@ impl Workspace {
                 vcs_base_path: None,
                 gitignore_matches: vec![],
                 workspace_directory: None,
+                replace: true,
             })
             .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?;
         self.configuration = configuration;
