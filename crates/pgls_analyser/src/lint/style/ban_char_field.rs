@@ -1,5 +1,5 @@
 use crate::fix::{StatementTokens, in_case_of};
-use crate::linter_context::builtin_type_name;
+use crate::utils::{builtin_type_name, column_defs};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -48,37 +48,9 @@ impl LinterRule for BanCharField {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut diagnostics = Vec::new();
-
-        if let pgls_query::NodeEnum::CreateStmt(stmt) = &ctx.stmt() {
-            for table_elt in &stmt.table_elts {
-                if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = &table_elt.node
-                    && let Some(diagnostic) = check_column_for_char_type(col_def, ctx.tokens())
-                {
-                    diagnostics.push(diagnostic);
-                }
-            }
-        }
-
-        // Also check ALTER TABLE ADD COLUMN and ALTER COLUMN TYPE
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && matches!(
-                        cmd.subtype(),
-                        pgls_query::protobuf::AlterTableType::AtAddColumn
-                            | pgls_query::protobuf::AlterTableType::AtAlterColumnType
-                    )
-                    && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                        &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                    && let Some(diagnostic) = check_column_for_char_type(col_def, ctx.tokens())
-                {
-                    diagnostics.push(diagnostic);
-                }
-            }
-        }
-
-        diagnostics
+        column_defs(ctx.stmt())
+            .filter_map(|col_def| check_column_for_char_type(col_def, ctx.tokens()))
+            .collect()
     }
 }
 
