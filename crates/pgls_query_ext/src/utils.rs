@@ -1,11 +1,11 @@
-//! Helpers to read names and options out of the parse tree.
+//! Helpers to read names, options and `ALTER TABLE` subcommands out of the parse tree.
 //!
 //! Name lists like `funcname` or `TypeName::names` only ever hold `String` nodes. A list with
 //! any other node is not a name, and the helpers return `None` for it.
 
 use pgls_query::{
     NodeEnum,
-    protobuf::{CreateFunctionStmt, Node},
+    protobuf::{AlterTableCmd, AlterTableStmt, CreateFunctionStmt, Node},
 };
 
 /// The value of a `String` node.
@@ -54,6 +54,20 @@ pub fn qualified_name(nodes: &[Node]) -> Option<QualifiedName<'_>> {
         schema,
         name,
     })
+}
+
+/// The subcommands of an `ALTER TABLE` statement, e.g. `ADD COLUMN` and `DROP CONSTRAINT`.
+pub fn alter_table_cmds(stmt: &AlterTableStmt) -> impl Iterator<Item = &AlterTableCmd> {
+    stmt.cmds.iter().filter_map(|cmd| match cmd.node.as_ref()? {
+        NodeEnum::AlterTableCmd(cmd) => Some(cmd.as_ref()),
+        _ => None,
+    })
+}
+
+/// The definition of an `ALTER TABLE` subcommand, e.g. the column of `ADD COLUMN` or the
+/// constraint of `ADD CONSTRAINT`.
+pub fn cmd_def(cmd: &AlterTableCmd) -> Option<&NodeEnum> {
+    cmd.def.as_ref()?.node.as_ref()
 }
 
 /// The string value of a `CREATE FUNCTION` option, like `language`, or `as` with the body.
