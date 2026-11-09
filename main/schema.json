@@ -1439,7 +1439,7 @@
           ]
         },
         "generatedColumnAssignment": {
-          "description": "An INSERT or UPDATE assigns a value to a generated column.",
+          "description": "An INSERT or UPDATE assigns a value to a generated column or a GENERATED ALWAYS identity column.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
