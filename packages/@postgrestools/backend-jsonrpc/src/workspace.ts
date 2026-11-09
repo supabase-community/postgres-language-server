@@ -126,6 +126,7 @@ export type Category =
   | "lint/disallowUniqueConstraint"
   | "lint/functionArgumentMismatch"
   | "lint/functionReturnTypeMismatch"
+  | "lint/generatedColumnAssignment"
   | "lint/identifierTooLong"
   | "lint/insertColumnMismatch"
   | "lint/invalidCast"
@@ -1116,6 +1117,10 @@ export interface LinterRules {
    * The final statement of a SQL function doesn't return what the function is declared to return.
    */
   functionReturnTypeMismatch?: RuleConfiguration_for_Null;
+  /**
+   * An INSERT or UPDATE assigns a value to a generated column.
+   */
+  generatedColumnAssignment?: RuleConfiguration_for_Null;
   /**
    * Identifiers longer than 63 bytes are silently truncated.
    */

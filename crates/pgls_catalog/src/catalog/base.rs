@@ -5,7 +5,7 @@ use crate::{
     CastContext, CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature,
     OperatorInfo, OperatorKind, TypeKind,
 };
-use crate::{ProcKind, Snapshot, TableKind};
+use crate::{Generated, ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{Key, key};
@@ -59,13 +59,14 @@ impl CatalogBase {
                     .attributes
                     .attrs
                     .iter()
-                    .map(|attribute| ColumnInfo {
-                        name: attribute.name.clone(),
-                        type_name: types_by_id.get(&attribute.type_id).map(|t| t.name.clone()),
-
-                        ty: types_by_id
-                            .contains_key(&attribute.type_id)
-                            .then_some(Type::Named(TypeId::Snapshot(attribute.type_id))),
+                    .map(|attribute| {
+                        ColumnInfo::new(
+                            attribute.name.clone(),
+                            types_by_id.get(&attribute.type_id).map(|t| t.name.clone()),
+                            types_by_id
+                                .contains_key(&attribute.type_id)
+                                .then_some(Type::Named(TypeId::Snapshot(attribute.type_id))),
+                        )
                     })
                     .collect()
             })
@@ -114,12 +115,14 @@ impl CatalogBase {
                 .entry(column.table_oid)
                 .or_default()
                 .push(ColumnInfo {
-                    name: column.name.clone(),
-                    type_name: column.type_name.clone(),
-
-                    ty: types_by_id
-                        .contains_key(&column.type_id)
-                        .then_some(Type::Named(TypeId::Snapshot(column.type_id))),
+                    generated: column.generated,
+                    ..ColumnInfo::new(
+                        column.name.clone(),
+                        column.type_name.clone(),
+                        types_by_id
+                            .contains_key(&column.type_id)
+                            .then_some(Type::Named(TypeId::Snapshot(column.type_id))),
+                    )
                 });
         }
 
@@ -133,15 +136,22 @@ impl CatalogBase {
         let mut relations = FxHashMap::default();
         for table in &snapshot.tables {
             let key = key(&table.schema, &table.name);
+            let table_columns = columns_by_table.get(&table.id);
             let columns = types
                 .get(&key)
                 .and_then(|row_type: &TypeInfo| row_type.attributes.clone())
-                .or_else(|| {
-                    columns_by_table
-                        .get(&table.id)
-                        .filter(|columns| !columns.is_empty())
-                        .cloned()
-                });
+                .map(|mut columns| {
+                    // The row type doesn't know which columns are generated.
+                    for column in &mut columns {
+                        column.generated = table_columns
+                            .and_then(|table_columns| {
+                                table_columns.iter().find(|c| c.name == column.name)
+                            })
+                            .map_or(Generated::No, |c| c.generated);
+                    }
+                    columns
+                })
+                .or_else(|| table_columns.filter(|columns| !columns.is_empty()).cloned());
             relations.insert(
                 key,
                 RelationInfo {
@@ -237,12 +247,14 @@ impl CatalogBase {
             let outputs: Vec<ColumnInfo> = args
                 .iter()
                 .filter(|arg| matches!(arg.mode.as_str(), "out" | "inout" | "table"))
-                .map(|arg| ColumnInfo {
-                    name: arg.name.clone(),
-                    type_name: types_by_id.get(&arg.type_id).map(|t| t.name.clone()),
-                    ty: types_by_id
-                        .contains_key(&arg.type_id)
-                        .then_some(Type::Named(TypeId::Snapshot(arg.type_id))),
+                .map(|arg| {
+                    ColumnInfo::new(
+                        arg.name.clone(),
+                        types_by_id.get(&arg.type_id).map(|t| t.name.clone()),
+                        types_by_id
+                            .contains_key(&arg.type_id)
+                            .then_some(Type::Named(TypeId::Snapshot(arg.type_id))),
+                    )
                 })
                 .collect();
             let return_columns = if outputs.is_empty() {
@@ -522,13 +534,15 @@ pub(super) fn sequence_columns(types: &FxHashMap<i64, &crate::PostgresType>) -> 
         ("is_called", "bool"),
     ]
     .into_iter()
-    .map(|(name, type_name)| ColumnInfo {
-        name: name.into(),
-        type_name: Some(type_name.into()),
-        ty: types
-            .values()
-            .find(|type_| type_.name == type_name && type_.schema == "pg_catalog")
-            .map(|type_| Type::Named(TypeId::Snapshot(type_.id))),
+    .map(|(name, type_name)| {
+        ColumnInfo::new(
+            name,
+            Some(type_name.into()),
+            types
+                .values()
+                .find(|type_| type_.name == type_name && type_.schema == "pg_catalog")
+                .map(|type_| Type::Named(TypeId::Snapshot(type_.id))),
+        )
     })
     .collect()
 }

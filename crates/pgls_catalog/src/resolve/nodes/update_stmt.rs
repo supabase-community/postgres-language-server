@@ -4,7 +4,7 @@ use super::{
     Resolver,
     from_clause::resolve_from_clause,
     range_var::resolve_target_relation,
-    res_target::{check_target_column, resolve_returning_clause},
+    res_target::{check_generated_update, check_target_column, resolve_returning_clause},
     resolve_node,
     with_clause::resolve_with_clause,
 };
@@ -35,6 +35,8 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
         return None;
     };
     let target = resolve_target_relation(r, relation);
+
+    check_generated_update(r, &target, &n.target_list);
 
     let mut level = Level::with_item(target.clone());
     level.extend(resolve_from_clause(r, &n.from_clause));

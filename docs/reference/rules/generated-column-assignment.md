@@ -1,0 +1,89 @@
+# generatedColumnAssignment
+
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `Unreleased`  
+**Diagnostic** `lint/generatedColumnAssignment` · **Postgres error** `428C9`
+
+## Description
+An `INSERT` or `UPDATE` assigns a value to a generated column.
+
+Postgres computes the value of a generated column (`GENERATED ALWAYS AS (...) STORED`, or
+`VIRTUAL` on Postgres 18) itself. `INSERT` can only give it `DEFAULT`, in every row of a
+`VALUES` list, and `UPDATE` or `ON CONFLICT DO UPDATE` can only set it to `DEFAULT`.
+
+Postgres raises `428C9 generated_always` for these statements.
+
+## Examples
+
+### Invalid
+
+```sql
+create table items (price int, quantity int, total int generated always as (price * quantity) stored);
+insert into items (price, quantity, total) values (2, 3, 6);
+```
+
+```sh
+code-block.sql:2:37 lint/generatedColumnAssignment ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Cannot insert a non-DEFAULT value into column total.
+  
+    1 │ create table items (price int, quantity int, total int generated always as (price * quantity) stored);
+  > 2 │ insert into items (price, quantity, total) values (2, 3, 6);
+      │                                     ^^^^^
+    3 │ 
+  
+  i Column total is a generated column.
+  
+  i Omit the column, or set it to DEFAULT.
+  
+
+```
+
+```sql
+create table items (price int, quantity int, total int generated always as (price * quantity) stored);
+update items set total = 0;
+```
+
+```sh
+code-block.sql:2:18 lint/generatedColumnAssignment ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column total can only be updated to DEFAULT.
+  
+    1 │ create table items (price int, quantity int, total int generated always as (price * quantity) stored);
+  > 2 │ update items set total = 0;
+      │                  ^^^^^
+    3 │ 
+  
+  i Column total is a generated column.
+  
+  i Omit the column, or set it to DEFAULT.
+  
+
+```
+
+### Valid
+
+```sql
+create table items (price int, quantity int, total int generated always as (price * quantity) stored);
+insert into items (price, quantity) values (2, 3);
+insert into items (price, quantity, total) values (2, 3, default);
+```
+
+## How to configure
+```json
+
+{
+  "linter": {
+    "rules": {
+      "generatedColumnAssignment": "error"
+    }
+  }
+}
+
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore generatedColumnAssignment
+```

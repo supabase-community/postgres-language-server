@@ -1,6 +1,6 @@
 use pgls_query::{
     NodeEnum,
-    protobuf::{InsertStmt, SelectStmt, SetOperation},
+    protobuf::{InsertStmt, ResTarget, SelectStmt, SetOperation},
 };
 
 use super::{
@@ -14,10 +14,11 @@ use super::{
 use crate::resolve::{
     FindingKind,
     expr::{check_assignment, infer_expr},
-    scope::{Columns, Level},
+    scope::{Columns, Item, Level},
     utils::node_location,
 };
 use crate::typing::{Type, TypedColumn};
+use pgls_text_size::TextRange;
 
 /// Resolves an INSERT and returns the columns of its RETURNING list. Port of
 /// [`transformInsertStmt`]: the target columns ([`checkInsertTargets`]), the number of
@@ -43,22 +44,22 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     };
     let target = resolve_target_relation(r, relation);
 
-    let mut target_columns = Vec::new();
-    // Targets with subscripts or fields, like `a[1]` or `c.f`, assign to part of a column.
-    let mut partial_targets = Vec::new();
+    let mut target_columns: Vec<&ResTarget> = Vec::new();
     for column in &n.cols {
         let Some(NodeEnum::ResTarget(column)) = &column.node else {
             r.depends_on_file();
             continue;
         };
         check_target_column(r, &target, &column.name, column.location);
-        target_columns.push(column.name.clone());
-        partial_targets.push(!column.indirection.is_empty());
+        target_columns.push(column);
     }
 
+    // The number of columns of the source query, if known.
+    let mut source_width = None;
     if let Some(source) = n.select_stmt.as_deref() {
         resolve_node(r, source);
         let source_types = r.output.clone();
+        source_width = source_types.as_ref().map(Vec::len);
 
         // The type of each target column, in the order of the values.
         let targets = target.typed_columns.as_deref().unwrap_or_default();
@@ -67,10 +68,13 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         } else {
             target_columns
                 .iter()
-                .zip(&partial_targets)
-                .map(|(name, partial)| {
-                    (!partial)
-                        .then(|| targets.iter().find(|column| column.name == *name))
+                .map(|target| {
+                    // Targets with subscripts or fields, like `a[1]` or `c.f`, assign to part of
+                    // a column.
+                    target
+                        .indirection
+                        .is_empty()
+                        .then(|| targets.iter().find(|column| column.name == target.name))
                         .flatten()
                 })
                 .collect()
@@ -135,11 +139,99 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         }
     }
 
+    check_generated_insert(r, &target, &target_columns, n, source_width);
+
     if let Some(conflict) = &n.on_conflict_clause {
         resolve_on_conflict_clause(r, conflict, &target);
     }
 
     resolve_returning_clause(r, n.returning_clause.as_ref(), Level::with_item(target))
+}
+
+/// Reports an INSERT that assigns anything but `DEFAULT` to a generated column. Port of the check
+/// of [`rewriteTargetListIU`] for `CMD_INSERT`: in a VALUES list, every row must have `DEFAULT`
+/// for the column, and a SELECT can't assign it at all.
+///
+/// Targets with subscripts or fields, like `g[1]`, are not checked. Without a column list, a
+/// SELECT whose `*` expands to unknown columns isn't either.
+///
+/// [`rewriteTargetListIU`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L808
+fn check_generated_insert(
+    r: &mut Resolver,
+    target: &Item,
+    target_columns: &[&ResTarget],
+    n: &InsertStmt,
+    source_width: Option<usize>,
+) {
+    if target.generated_columns.is_empty() {
+        return;
+    }
+    // `DEFAULT VALUES` assigns nothing.
+    let Some(source) = n.select_stmt.as_deref() else {
+        return;
+    };
+    let rows = values_rows(source);
+
+    // The assigned columns and the location of each in the column list.
+    let targets: Vec<(&str, Option<i32>)> = if target_columns.is_empty() {
+        // Without a column list, the values go to the first columns of the table.
+        let width = match (&rows, &source.node) {
+            (Some(rows), _) => rows.first().map(|row| row.len()),
+            (None, Some(NodeEnum::SelectStmt(select))) => select_width(select).or(source_width),
+            _ => None,
+        };
+        let (Some(width), Some(columns)) = (width, target.columns.as_ref()) else {
+            return;
+        };
+        columns
+            .iter()
+            .take(width)
+            .map(|column| (column.as_str(), None))
+            .collect()
+    } else {
+        target_columns
+            .iter()
+            .map(|column| {
+                if column.indirection.is_empty() {
+                    (column.name.as_str(), Some(column.location))
+                } else {
+                    // Not checked: an empty name is never a generated column.
+                    ("", None)
+                }
+            })
+            .collect()
+    };
+
+    for (index, (column, column_location)) in targets.into_iter().enumerate() {
+        if !target.generated_columns.iter().any(|name| name == column) {
+            continue;
+        }
+        let span = match &rows {
+            Some(rows) => {
+                let value = rows.iter().find_map(|row| {
+                    row.get(index)
+                        .filter(|value| !matches!(value.node, Some(NodeEnum::SetToDefault(_))))
+                });
+                match value {
+                    Some(value) => column_location
+                        .or_else(|| node_location(value))
+                        .and_then(|location| r.name_span(location)),
+                    None => continue,
+                }
+            }
+            None => match column_location {
+                Some(location) => r.name_span(location),
+                None => select_target_span(r, source, index, source_width),
+            },
+        };
+        r.report_with_span(
+            FindingKind::GeneratedColumnAssignment {
+                column: column.to_owned(),
+                insert: true,
+            },
+            span,
+        );
+    }
 }
 
 fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32> {
@@ -156,6 +248,52 @@ fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32
         return None;
     };
     node_location(target.val.as_deref()?)
+}
+
+/// The span of the select list entry that produces the column at `index` of a SELECT with
+/// `width` columns: the `*` or `t.*` it is part of, if any. With several `*`, it's not known which
+/// one expands to the column.
+fn select_target_span(
+    r: &Resolver,
+    source: &pgls_query::Node,
+    index: usize,
+    width: Option<usize>,
+) -> Option<TextRange> {
+    let NodeEnum::SelectStmt(select) = source.node.as_ref()? else {
+        return None;
+    };
+    let values: Vec<&NodeEnum> = select
+        .target_list
+        .iter()
+        .map(|target| match target.node.as_ref()? {
+            NodeEnum::ResTarget(target) => target.val.as_deref()?.node.as_ref(),
+            _ => None,
+        })
+        .collect::<Option<_>>()?;
+    let mut stars = (0..values.len()).filter(|&entry| expands_to_columns(values[entry]));
+    let Some(star) = stars.next() else {
+        return r.name_span(select_target_location(source, index)?);
+    };
+    if stars.next().is_some() {
+        return None;
+    }
+    // The `*` expands to the columns the other entries don't produce.
+    let star_width = (width? + 1).checked_sub(values.len())?;
+    if (star..star + star_width).contains(&index) {
+        let NodeEnum::ColumnRef(column) = values[star] else {
+            return None;
+        };
+        return r.star_span(column.location);
+    }
+    let entry = if index < star {
+        index
+    } else {
+        index + 1 - star_width
+    };
+    let NodeEnum::ResTarget(target) = select.target_list.get(entry)?.node.as_ref()? else {
+        return None;
+    };
+    r.name_span(node_location(target.val.as_deref()?)?)
 }
 
 /// The value of the select list entry at `index` of a plain SELECT. Postgres doesn't resolve

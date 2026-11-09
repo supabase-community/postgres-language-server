@@ -2,9 +2,10 @@
 //! functions, and schemas in the overlay.
 
 use crate::typing::TypeId;
-use crate::{FunctionArgumentMode, FunctionSignature};
-use pgls_query::{Node, protobuf};
+use crate::{FunctionArgumentMode, FunctionSignature, Generated};
+use pgls_query::{Node, NodeEnum, protobuf};
 use pgls_query_ext::utils::string_value;
+use rustc_hash::FxHashSet;
 
 use super::{
     Catalog, Entry, Key, key,
@@ -172,11 +173,7 @@ impl Catalog {
             self.database_columns_changed = true;
         }
 
-        let mut pending = vec![key(&relation.schema, &relation.name)];
-        while let Some(key) = pending.pop() {
-            if let Some(children) = self.children.get(&key) {
-                pending.extend(children.iter().cloned());
-            }
+        for key in self.with_descendants(key(&relation.schema, &relation.name)) {
             let Some(mut relation) = self.relation_in(&key.0, &key.1).found() else {
                 continue;
             };
@@ -184,6 +181,24 @@ impl Catalog {
             relation.origin = Origin::File;
             self.define_relation(relation);
         }
+    }
+
+    /// A relation and its inheritance children and partitions created or attached by the file,
+    /// recursively, each once.
+    pub(super) fn with_descendants(&self, root: Key) -> Vec<Key> {
+        let mut seen = FxHashSet::default();
+        let mut pending = vec![root];
+        let mut keys = Vec::new();
+        while let Some(key) = pending.pop() {
+            if !seen.insert(key.clone()) {
+                continue;
+            }
+            if let Some(children) = self.children.get(&key) {
+                pending.extend(children.iter().cloned());
+            }
+            keys.push(key);
+        }
+        keys
     }
 
     /// Moves a relation to a new schema or name.
@@ -637,10 +652,32 @@ pub(super) fn column_info(
         });
     let type_name = column.type_name.as_ref().and_then(type_label);
     ColumnInfo {
-        name: column.colname.clone(),
-        type_name,
-        ty: type_id.map(crate::typing::Type::Named),
+        generated: column_generated(column),
+        ..ColumnInfo::new(
+            column.colname.clone(),
+            type_name,
+            type_id.map(crate::typing::Type::Named),
+        )
     }
+}
+
+/// Whether a column definition has a `GENERATED ALWAYS AS (...)` clause, like
+/// [`transformColumnDefinition`].
+///
+/// [`transformColumnDefinition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L591
+fn column_generated(column: &protobuf::ColumnDef) -> Generated {
+    column
+        .constraints
+        .iter()
+        .find_map(|constraint| match &constraint.node {
+            Some(NodeEnum::Constraint(constraint))
+                if constraint.contype() == protobuf::ConstrType::ConstrGenerated =>
+            {
+                Some(Generated::from_code(&constraint.generated_kind))
+            }
+            _ => None,
+        })
+        .unwrap_or_default()
 }
 
 pub(super) fn function_info(

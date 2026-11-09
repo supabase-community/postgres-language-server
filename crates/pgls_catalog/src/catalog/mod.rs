@@ -58,8 +58,11 @@ pub struct Catalog {
     types: FxHashMap<Key, Entry<TypeInfo>>,
     /// All overloads with a given name.
     functions: FxHashMap<Key, Entry<Vec<FunctionInfo>>>,
-    /// Inheritance children and partitions created by the file, by parent.
+    /// Inheritance children and partitions created or attached by the file, by parent.
     children: FxHashMap<Key, Vec<Key>>,
+    /// Inheritance children of [`Catalog::children`] whose inherited columns may also be their own,
+    /// or inherited from another parent. They keep a column their parent drops.
+    children_with_own_columns: FxHashSet<Key>,
     indexes: FxHashMap<Key, Entry<IndexInfo>>,
     /// Set once the file may have created an index whose name we don't know: one with a
     /// generated name, or one that comes with a constraint or a partition. From then on, no
@@ -103,6 +106,7 @@ impl Catalog {
             types: FxHashMap::default(),
             functions: FxHashMap::default(),
             children: FxHashMap::default(),
+            children_with_own_columns: FxHashSet::default(),
             indexes: FxHashMap::default(),
             indexes_incomplete: false,
             database_columns_changed: false,

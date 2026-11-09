@@ -1,6 +1,10 @@
 use pgls_query::{NodeEnum, protobuf::OnConflictClause};
 
-use super::{Resolver, res_target::check_target_column, resolve_node};
+use super::{
+    Resolver,
+    res_target::{check_generated_update, check_target_column},
+    resolve_node,
+};
 use crate::resolve::{
     expr::{check_assignment, infer_expr},
     scope::{Item, Level},
@@ -26,6 +30,8 @@ pub(super) fn resolve_on_conflict_clause(r: &mut Resolver, n: &OnConflictClause,
         resolve_node(r, where_clause);
         r.exit_level();
     }
+
+    check_generated_update(r, target, &n.target_list);
 
     let excluded = Item::named(Some("excluded".into()), target.columns.clone());
     r.enter_level(Level {

@@ -210,6 +210,7 @@ mod tests {
             is_primary_key: false,
             is_unique: false,
             default_expr: None,
+            generated: pgls_catalog::Generated::No,
             varchar_length: None,
             comment: None,
         });
