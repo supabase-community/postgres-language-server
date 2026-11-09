@@ -51,7 +51,7 @@ fn function(name: &str, kind: ProcKind, modes: &[&str], defaults: usize) -> Func
 }
 
 /// A database with a few builtins, the tables `users (id, name)` and `posts (id, user_id,
-/// title)`, and the composite type `address (street, city)`.
+/// title)`, the composite type `address (street, city)`, and the enum `mood`.
 fn database() -> Arc<CatalogBase> {
     const INT8: i64 = 20;
     const TEXT: i64 = 25;
@@ -89,6 +89,7 @@ fn database() -> Arc<CatalogBase> {
         "address",
         &[("street", TEXT), ("city", TEXT)],
     ));
+    types.push(type_(9004, "public", "mood", &[]));
 
     let tables = [(1, "users"), (2, "posts")]
         .into_iter()
@@ -590,8 +591,8 @@ fn merge() {
         "{source} when matched and p.title <> u.name then update set name = p.title \
          when matched then delete \
          when not matched by source and u.id > 0 then update set name = u.name \
-         when not matched then insert (id, name) values (p.user_id, p.title) \
-         when not matched by target then do nothing"
+         when not matched by target and p.title is null then do nothing \
+         when not matched then insert (id, name) values (p.user_id, p.title)"
     ));
     assert_valid(&format!(
         "{source} when not matched then insert default values"
@@ -735,6 +736,84 @@ fn merge_returning_star_expands_the_source_first() {
     let columns = query_output_types(&node, &catalog, &search_path).unwrap();
     let names = columns.iter().map(|c| c.name.as_str()).collect::<Vec<_>>();
     assert_eq!(names, ["id", "user_id", "title", "id", "name"]);
+}
+
+#[test]
+fn invalid_merge() {
+    let invalid = |error| [FindingKind::InvalidMerge(error)];
+    assert_eq!(
+        findings(
+            "with recursive c as (select 1 as id) merge into users using c on c.id = users.id \
+             when matched then delete"
+        ),
+        invalid(MergeError::RecursiveWith)
+    );
+    // Only the first unreachable clause, and only after one of the same kind.
+    assert_eq!(
+        findings(
+            "merge into users using posts on posts.user_id = users.id \
+             when not matched then do nothing when matched then delete \
+             when not matched and true then do nothing when matched then delete"
+        ),
+        invalid(MergeError::UnreachableWhen)
+    );
+    assert_valid(
+        "merge into users using posts on posts.user_id = users.id \
+         when matched and posts.id > 0 then delete when matched then do nothing \
+         when not matched by source then delete when not matched then do nothing",
+    );
+    // The names of the target and the source, aliased or not.
+    for sql in [
+        "merge into users using users on true when matched then delete",
+        "merge into users u using posts u on true when matched then delete",
+        "merge into users using (select 1 as id) users on true when matched then delete",
+        "merge into users using posts join posts p using (id) as users on true when matched then delete",
+        "merge into users using (posts join posts p using (id)) as users on true when matched then delete",
+    ] {
+        let name = if sql.contains(" u ") { "u" } else { "users" };
+        assert_eq!(
+            findings(sql),
+            invalid(MergeError::DuplicateName { name: name.into() }),
+            "{sql}"
+        );
+    }
+    assert_valid("merge into users u using users on true when matched then delete");
+    assert_valid("merge into users using (select 1 as id) on true when matched then delete");
+    // `merge_action()` is only allowed in the RETURNING list of MERGE and its subqueries.
+    assert_valid(
+        "merge into users using posts on true when matched then delete \
+         returning merge_action(), (select merge_action())",
+    );
+    for sql in [
+        "select merge_action()",
+        "update users set name = 'x' returning merge_action()",
+        "merge into users using posts on true when matched and merge_action() = 'x' then delete",
+        "merge into users using posts on true when matched then update set name = merge_action()",
+    ] {
+        assert_eq!(
+            findings(sql),
+            invalid(MergeError::MergeActionOutsideReturning),
+            "{sql}"
+        );
+    }
+    // Before Postgres 17, it is an ordinary function call, e.g. of `public.merge_action()`.
+    for version in [150000, 160000] {
+        let search_path = search_path();
+        let catalog = Catalog::new(Some(database_of_version(version)));
+        let stmt = pgls_query::parse("select merge_action()")
+            .unwrap()
+            .into_root()
+            .unwrap();
+        let resolution = resolve(ResolveParams {
+            stmt: &stmt,
+            catalog: &catalog,
+            search_path: &search_path,
+            function: None,
+            sql: None,
+            collect_references: false,
+        });
+        assert_eq!(resolution.findings, [], "{version}");
+    }
 }
 
 #[test]
@@ -1095,6 +1174,10 @@ fn database_only() {
     assert!(database_only("", "create view v as select id from users"));
     assert!(database_only(
         "",
+        "merge into users using posts on posts.user_id = users.id when matched then delete"
+    ));
+    assert!(database_only(
+        "",
         "select count(*) from users join posts using (id)"
     ));
 
@@ -1119,6 +1202,21 @@ fn database_only() {
     assert!(!database_only(
         "do $$ begin end $$",
         "select * from anything"
+    ));
+    // The database doesn't know the labels that the file adds to an enum or renames.
+    assert!(database_only("", "select 'happy'::mood"));
+    assert!(!database_only(
+        "alter type mood add value 'sad'",
+        "select 'sad'::mood"
+    ));
+    assert!(!database_only(
+        "alter type mood rename value 'happy' to 'glad'",
+        "select 'glad'::mood"
+    ));
+    assert!(!database_only(
+        "alter type mood add value 'sad'",
+        "merge into users u using posts p on u.id = p.user_id \
+         when matched then update set name = 'sad'::mood::text"
     ));
 }
 
