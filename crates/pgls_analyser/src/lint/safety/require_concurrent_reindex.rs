@@ -1,8 +1,6 @@
-use crate::{
-    LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix,
-    linter_context::is_reindex_concurrent,
-};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
+use pgls_catalog::is_reindex_concurrent;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 

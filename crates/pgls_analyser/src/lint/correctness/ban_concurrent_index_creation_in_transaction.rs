@@ -1,7 +1,7 @@
-use crate::{
-    LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::is_reindex_concurrent,
-};
+use crate::utils::{alter_table_cmds, cmd_def};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::is_reindex_concurrent;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -91,14 +91,11 @@ fn concurrent_statement(stmt: &pgls_query::NodeEnum) -> Option<&'static str> {
         NodeEnum::IndexStmt(stmt) if stmt.concurrent => Some("CREATE INDEX CONCURRENTLY"),
         NodeEnum::DropStmt(stmt) if stmt.concurrent => Some("DROP INDEX CONCURRENTLY"),
         NodeEnum::ReindexStmt(stmt) if is_reindex_concurrent(stmt) => Some("REINDEX CONCURRENTLY"),
-        NodeEnum::AlterTableStmt(stmt)
-            if stmt.cmds.iter().any(|cmd| {
+        NodeEnum::AlterTableStmt(_)
+            if alter_table_cmds(stmt).any(|cmd| {
                 matches!(
-                    &cmd.node,
-                    Some(NodeEnum::AlterTableCmd(cmd)) if matches!(
-                        cmd.def.as_ref().and_then(|def| def.node.as_ref()),
-                        Some(NodeEnum::PartitionCmd(partition)) if partition.concurrent
-                    )
+                    cmd_def(cmd),
+                    Some(NodeEnum::PartitionCmd(partition)) if partition.concurrent
                 )
             }) =>
         {

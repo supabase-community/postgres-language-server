@@ -1,3 +1,4 @@
+use crate::utils::{alter_table_cmds, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::CatalogView;
@@ -78,46 +79,39 @@ impl LinterRule for AddingNotNullField {
             .server_version_num()
             .is_some_and(|version| version >= 180000);
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node else {
-                    continue;
-                };
-                let note = match cmd.subtype() {
-                    pgls_query::protobuf::AlterTableType::AtSetNotNull => {
-                        if supports_not_valid {
-                            NOT_VALID_NOTE
-                        } else {
-                            CHECK_NOTE
-                        }
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            let note = match cmd.subtype() {
+                pgls_query::protobuf::AlterTableType::AtSetNotNull => {
+                    if supports_not_valid {
+                        NOT_VALID_NOTE
+                    } else {
+                        CHECK_NOTE
                     }
-                    // `ADD CONSTRAINT ... NOT NULL column`, which only parses on Postgres 18.
-                    pgls_query::protobuf::AlterTableType::AtAddConstraint => {
-                        match cmd.def.as_ref().and_then(|d| d.node.as_ref()) {
-                            Some(pgls_query::NodeEnum::Constraint(constraint))
-                                if constraint.contype()
-                                    == pgls_query::protobuf::ConstrType::ConstrNotnull
-                                    && !constraint.skip_validation =>
-                            {
-                                NOT_VALID_NOTE
-                            }
-                            _ => continue,
-                        }
+                }
+                // `ADD CONSTRAINT ... NOT NULL column`, which only parses on Postgres 18.
+                pgls_query::protobuf::AlterTableType::AtAddConstraint => match cmd_def(cmd) {
+                    Some(pgls_query::NodeEnum::Constraint(constraint))
+                        if constraint.contype()
+                            == pgls_query::protobuf::ConstrType::ConstrNotnull
+                            && !constraint.skip_validation =>
+                    {
+                        NOT_VALID_NOTE
                     }
                     _ => continue,
-                };
-                diagnostics.push(
-                    LinterDiagnostic::new(
-                        rule_category!(),
-                        None,
-                        markup! {
-                            "Setting a column NOT NULL blocks reads while the table is scanned."
-                        },
-                    )
-                    .detail(None, "This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.")
-                    .note(note),
-                );
-            }
+                },
+                _ => continue,
+            };
+            diagnostics.push(
+                LinterDiagnostic::new(
+                    rule_category!(),
+                    None,
+                    markup! {
+                        "Setting a column NOT NULL blocks reads while the table is scanned."
+                    },
+                )
+                .detail(None, "This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.")
+                .note(note),
+            );
         }
 
         diagnostics
