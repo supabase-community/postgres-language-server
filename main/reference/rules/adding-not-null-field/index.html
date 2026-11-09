@@ -1245,10 +1245,15 @@
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>Setting a column NOT NULL blocks reads while the table is scanned.</p>
 <p>Setting NOT NULL on an existing column scans the table under an ACCESS EXCLUSIVE lock,
-blocking reads and writes. On PostgreSQL 12+, a validated CHECK (column IS NOT NULL)
-constraint allows PostgreSQL to skip this scan.</p>
-<p>Instead of using SET NOT NULL, consider using a CHECK constraint with NOT VALID, then
-validating it in a separate transaction. This allows reads and writes to continue.</p>
+blocking reads and writes. This applies to <code>ALTER COLUMN ... SET NOT NULL</code> and, on
+Postgres 18, to adding a NOT NULL constraint with <code>ADD CONSTRAINT ... NOT NULL</code> without
+<code>NOT VALID</code>.</p>
+<p>On Postgres 18, add the NOT NULL constraint as NOT VALID, then validate it in a separate
+transaction. Validating only takes a SHARE UPDATE EXCLUSIVE lock, so reads and writes can
+continue.</p>
+<p>Before Postgres 18, a validated CHECK (column IS NOT NULL) constraint lets SET NOT NULL
+skip the scan (Postgres 12+). Add the CHECK constraint as NOT VALID and validate it in a
+separate transaction first.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="ss">"core_recipe"</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="ss">"foo"</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
@@ -1265,7 +1270,28 @@ validating it in a separate transaction. This allows reads and writes to continu
 
 <span class="w">  </span>i<span class="w"> </span>On<span class="w"> </span>PostgreSQL<span class="w"> </span><span class="m">12</span>+,<span class="w"> </span>a<span class="w"> </span>validated<span class="w"> </span>CHECK<span class="w"> </span><span class="o">(</span>column<span class="w"> </span>IS<span class="w"> </span>NOT<span class="w"> </span>NULL<span class="o">)</span><span class="w"> </span>constraint<span class="w"> </span>lets<span class="w"> </span>PostgreSQL<span class="w"> </span>skip<span class="w"> </span>the<span class="w"> </span>scan.
 </code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="ss">"core_recipe"</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">CONSTRAINT</span><span class="w"> </span><span class="n">foo_not_null</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="ss">"foo"</span><span class="p">;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/addingNotNullField<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<span class="w">  </span>!<span class="w"> </span>Setting<span class="w"> </span>a<span class="w"> </span>column<span class="w"> </span>NOT<span class="w"> </span>NULL<span class="w"> </span>blocks<span class="w"> </span>reads<span class="w"> </span><span class="k">while</span><span class="w"> </span>the<span class="w"> </span>table<span class="w"> </span>is<span class="w"> </span>scanned.
+
+<span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>ALTER<span class="w"> </span>TABLE<span class="w"> </span><span class="s2">"core_recipe"</span><span class="w"> </span>ADD<span class="w"> </span>CONSTRAINT<span class="w"> </span>foo_not_null<span class="w"> </span>NOT<span class="w"> </span>NULL<span class="w"> </span><span class="s2">"foo"</span><span class="p">;</span>
+<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
+
+<span class="w">  </span>i<span class="w"> </span>This<span class="w"> </span>operation<span class="w"> </span>requires<span class="w"> </span>an<span class="w"> </span>ACCESS<span class="w"> </span>EXCLUSIVE<span class="w"> </span>lock<span class="w"> </span>and<span class="w"> </span>a<span class="w"> </span>full<span class="w"> </span>table<span class="w"> </span>scan<span class="w"> </span>to<span class="w"> </span>verify<span class="w"> </span>all<span class="w"> </span>rows.
+
+<span class="w">  </span>i<span class="w"> </span>Add<span class="w"> </span>the<span class="w"> </span>constraint<span class="w"> </span>with<span class="w"> </span>ADD<span class="w"> </span>CONSTRAINT<span class="w"> </span>...<span class="w"> </span>NOT<span class="w"> </span>NULL<span class="w"> </span>...<span class="w"> </span>NOT<span class="w"> </span>VALID,<span class="w"> </span><span class="k">then</span><span class="w"> </span>VALIDATE<span class="w"> </span>it<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>separate<span class="w"> </span>transaction.
+</code></pre></div>
 <h3 id="valid">Valid<a class="headerlink" href="#valid" title="Permanent link">&para;</a></h3>
+<p>On Postgres 18:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- First add the NOT NULL constraint as NOT VALID</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="ss">"core_recipe"</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">CONSTRAINT</span><span class="w"> </span><span class="n">foo_not_null</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="ss">"foo"</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">VALID</span><span class="p">;</span>
+<span class="c1">-- Then validate it in a separate transaction</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="ss">"core_recipe"</span><span class="w"> </span><span class="n">VALIDATE</span><span class="w"> </span><span class="k">CONSTRAINT</span><span class="w"> </span><span class="n">foo_not_null</span><span class="p">;</span>
+</code></pre></div>
+<p>Before Postgres 18:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- First add a CHECK constraint as NOT VALID</span>
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="ss">"core_recipe"</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">CONSTRAINT</span><span class="w"> </span><span class="n">foo_not_null</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">foo</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">VALID</span><span class="p">;</span>
 <span class="c1">-- Then validate it in a separate transaction</span>

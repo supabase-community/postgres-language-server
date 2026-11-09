@@ -1249,6 +1249,9 @@ verifying the constraint. Postgres needs to check that all existing values in th
 column exist in the referenced table.</p>
 <p>Instead, add the constraint as NOT VALID in one transaction, then VALIDATE it in another transaction.
 This approach only takes a SHARE UPDATE EXCLUSIVE lock when validating, allowing concurrent writes.</p>
+<p>A <code>NOT ENFORCED</code> foreign key (Postgres 18) isn't checked, so adding one doesn't scan the table.
+Making it <code>ENFORCED</code> later with <code>ALTER CONSTRAINT</code> checks all rows while holding an ACCESS EXCLUSIVE
+lock, and can't be split into NOT VALID and VALIDATE.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="ss">"email"</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">CONSTRAINT</span><span class="w"> </span><span class="ss">"fk_user"</span><span class="w"> </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="ss">"user_id"</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="ss">"user"</span><span class="w"> </span><span class="p">(</span><span class="ss">"id"</span><span class="p">);</span>
@@ -1278,6 +1281,20 @@ This approach only takes a SHARE UPDATE EXCLUSIVE lock when validating, allowing
 <span class="w">  </span>i<span class="w"> </span>Using<span class="w"> </span>REFERENCES<span class="w"> </span>when<span class="w"> </span>adding<span class="w"> </span>a<span class="w"> </span>column<span class="w"> </span>will<span class="w"> </span>block<span class="w"> </span>writes<span class="w"> </span><span class="k">while</span><span class="w"> </span>verifying<span class="w"> </span>the<span class="w"> </span>constraint.
 
 <span class="w">  </span>i<span class="w"> </span>Add<span class="w"> </span>the<span class="w"> </span>column<span class="w"> </span>without<span class="w"> </span>the<span class="w"> </span>constraint<span class="w"> </span>first,<span class="w"> </span><span class="k">then</span><span class="w"> </span>add<span class="w"> </span>the<span class="w"> </span>constraint<span class="w"> </span>as<span class="w"> </span>NOT<span class="w"> </span>VALID<span class="w"> </span>and<span class="w"> </span>VALIDATE<span class="w"> </span>it<span class="w"> </span>separately.
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="ss">"email"</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="k">CONSTRAINT</span><span class="w"> </span><span class="ss">"fk_user"</span><span class="w"> </span><span class="n">ENFORCED</span><span class="p">;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>code-block.sql:1:1<span class="w"> </span>lint/addingForeignKeyConstraint<span class="w"> </span>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<span class="w">  </span>!<span class="w"> </span>Enforcing<span class="w"> </span>foreign<span class="w"> </span>key<span class="w"> </span>constraint<span class="w"> </span>fk_user<span class="w"> </span>checks<span class="w"> </span>all<span class="w"> </span>rows<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>table.
+
+<span class="w">  </span>&gt;<span class="w"> </span><span class="m">1</span><span class="w"> </span>│<span class="w"> </span>ALTER<span class="w"> </span>TABLE<span class="w"> </span><span class="s2">"email"</span><span class="w"> </span>ALTER<span class="w"> </span>CONSTRAINT<span class="w"> </span><span class="s2">"fk_user"</span><span class="w"> </span>ENFORCED<span class="p">;</span>
+<span class="w">      </span>│<span class="w"> </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<span class="w">    </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>
+
+<span class="w">  </span>i<span class="w"> </span>This<span class="w"> </span>holds<span class="w"> </span>an<span class="w"> </span>ACCESS<span class="w"> </span>EXCLUSIVE<span class="w"> </span>lock<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>table<span class="w"> </span><span class="k">while</span><span class="w"> </span>Postgres<span class="w"> </span>verifies<span class="w"> </span>the<span class="w"> </span>constraint.
+
+<span class="w">  </span>i<span class="w"> </span>Drop<span class="w"> </span>the<span class="w"> </span>constraint<span class="w"> </span>and<span class="w"> </span>add<span class="w"> </span>it<span class="w"> </span>again<span class="w"> </span>as<span class="w"> </span>NOT<span class="w"> </span>VALID,<span class="w"> </span><span class="k">then</span><span class="w"> </span>VALIDATE<span class="w"> </span>it<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>separate<span class="w"> </span>transaction.
 </code></pre></div>
 <h3 id="valid">Valid<a class="headerlink" href="#valid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- First add the constraint as NOT VALID</span>
