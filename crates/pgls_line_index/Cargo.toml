@@ -1,7 +1,7 @@
 [package]
 authors.workspace    = true
 categories.workspace = true
-description          = "Converts between byte offsets and line/column positions in UTF-8, UTF-16 or UTF-32"
+description          = "Converts byte offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back, and Postgres character positions to byte offsets"
 edition.workspace    = true
 homepage.workspace   = true
 keywords.workspace   = true

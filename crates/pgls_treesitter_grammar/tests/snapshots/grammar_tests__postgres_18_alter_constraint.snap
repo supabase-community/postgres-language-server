@@ -1,0 +1,42 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+alter table t alter constraint t_fk not enforced, alter constraint t_check no inherit, alter constraint t_fk deferrable initially deferred;
+-----------------------
+program [0..139] 'alter table t alter constraint t_fk not enforced, alter constraint t_check no inherit, alter constraint t_fk deferrable initially deferred;'
+  statement [0..138] 'alter table t alter constraint t_fk not enforced, alter constraint t_check no inherit, alter constraint t_fk deferrable initially deferred'
+    alter_table [0..138] 'alter table t alter constraint t_fk not enforced, alter constraint t_check no inherit, alter constraint t_fk deferrable initially deferred'
+      keyword_alter [0..5] 'alter'
+      keyword_table [6..11] 'table'
+      table_reference [12..13] 't'
+        any_identifier [12..13] 't' (@table_reference_1of1)
+      alter_constraint [14..48] 'alter constraint t_fk not enforced'
+        keyword_alter [14..19] 'alter'
+        keyword_constraint [20..30] 'constraint'
+        any_identifier [31..35] 't_fk'
+        constraint_attributes [36..48] 'not enforced' (@end)
+          constraint_attribute [36..48] 'not enforced' (@end)
+            keyword_not [36..39] 'not'
+            keyword_enforced [40..48] 'enforced' (@end)
+      , [48..49] ','
+      alter_constraint [50..85] 'alter constraint t_check no inherit'
+        keyword_alter [50..55] 'alter'
+        keyword_constraint [56..66] 'constraint'
+        any_identifier [67..74] 't_check'
+        constraint_attributes [75..85] 'no inherit' (@end)
+          constraint_attribute [75..85] 'no inherit' (@end)
+            keyword_no [75..77] 'no'
+            keyword_inherit [78..85] 'inherit' (@end)
+      , [85..86] ','
+      alter_constraint [87..138] 'alter constraint t_fk deferrable initially deferred'
+        keyword_alter [87..92] 'alter'
+        keyword_constraint [93..103] 'constraint'
+        any_identifier [104..108] 't_fk'
+        constraint_attributes [109..138] 'deferrable initially deferred' (@end)
+          constraint_attribute [109..119] 'deferrable' (@end)
+            keyword_deferrable [109..119] 'deferrable' (@end)
+          constraint_attribute [120..138] 'initially deferred' (@end)
+            keyword_initially [120..129] 'initially'
+            keyword_deferred [130..138] 'deferred' (@end)
+  ; [138..139] ';'

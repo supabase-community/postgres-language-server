@@ -9,12 +9,9 @@ use crate::{CatalogView, Lookup};
 // ----- common type -----
 
 fn text_type(c: &dyn CatalogView) -> Decision<Type> {
-    match c.type_(Some("pg_catalog"), "text", &[]) {
-        Lookup::Found(info) => match info.id {
-            Some(id) => Decision::Known(Type::Named(id)),
-            None => Decision::Unknown,
-        },
-        Lookup::Missing | Lookup::Unknown => Decision::Unknown,
+    match c.builtin_type("text") {
+        Some(id) => Decision::Known(Type::Named(id)),
+        None => Decision::Unknown,
     }
 }
 
@@ -111,10 +108,7 @@ pub fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type
 // ----- polymorphic types -----
 
 fn poly_id(c: &dyn CatalogView, name: &str) -> Option<TypeId> {
-    match c.type_(Some("pg_catalog"), name, &[]) {
-        Lookup::Found(info) => info.id,
-        _ => None,
-    }
+    c.builtin_type(name)
 }
 fn is(id: &Option<TypeId>, candidate: &TypeId) -> bool {
     id.as_ref() == Some(candidate)
@@ -403,12 +397,9 @@ pub fn resolve_polymorphic_result(
         if !has_compatible {
             return Decision::Unknown;
         }
-        match c.type_(Some("pg_catalog"), "text", &[]) {
-            Lookup::Found(info) => match info.id {
-                Some(text) => text,
-                None => return Decision::Unknown,
-            },
-            _ => return Decision::Unknown,
+        match c.builtin_type("text") {
+            Some(text) => text,
+            None => return Decision::Unknown,
         }
     } else {
         match select_common_type(c, &compatible) {
