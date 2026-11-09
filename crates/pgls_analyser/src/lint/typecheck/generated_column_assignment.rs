@@ -47,13 +47,7 @@ impl LinterRule for GeneratedColumnAssignment {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
-
-        resolution
-            .findings
-            .iter()
+        ctx.findings()
             .filter_map(|finding| match &finding.kind {
                 FindingKind::GeneratedColumnAssignment { column, insert } => {
                     let diagnostic = if *insert {
