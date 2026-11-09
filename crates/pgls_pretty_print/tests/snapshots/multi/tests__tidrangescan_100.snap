@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tidrangescan.sql
-snapshot_kind: text
 ---
 set enable_seqscan = off;
 
@@ -92,11 +91,11 @@ where
   t.ctid < '(1,0)';
 
 explain (costs 'off')
-declare c scroll cursor for select ctid from tidrangescan where ctid < '(1,0)';;
+declare c scroll cursor for select ctid from tidrangescan where ctid < '(1,0)';
 
 begin;
 
-declare c scroll cursor for select ctid from tidrangescan where ctid < '(1,0)';;
+declare c scroll cursor for select ctid from tidrangescan where ctid < '(1,0)';
 
 fetch next from c;
 

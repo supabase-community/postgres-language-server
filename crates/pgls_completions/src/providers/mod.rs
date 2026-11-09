@@ -1,6 +1,6 @@
 mod columns;
 mod functions;
-mod helper;
+pub(crate) mod helper;
 mod keywords;
 mod policies;
 mod roles;

@@ -4,7 +4,7 @@ use pgls_query::{
 };
 
 use crate::catalog::{
-    Catalog, Entry,
+    Catalog, Entry, key,
     names::{qualified_name, type_name},
 };
 
@@ -39,8 +39,18 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                     .relation_key(name.schema(), &name.name, search_path)
                     .filter(|key| key.0 != "pg_catalog")
                 {
+                    c.drop_table_indexes(&key.0, &key.1);
                     c.types.insert(key.clone(), Entry::Dropped);
                     c.relations.insert(key, Entry::Dropped);
+                }
+            }
+            ObjectType::ObjectIndex => {
+                let NodeEnum::List(list) = object else {
+                    continue;
+                };
+                if let Some(index) = c.index_of(&list.items, search_path).found() {
+                    c.indexes
+                        .insert(key(&index.schema, &index.name), Entry::Dropped);
                 }
             }
             ObjectType::ObjectType | ObjectType::ObjectDomain => {

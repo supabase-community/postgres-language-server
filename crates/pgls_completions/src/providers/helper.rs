@@ -1,7 +1,10 @@
+use std::ops::Range;
+
+use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_text_size::TextRange;
 use pgls_treesitter::TreesitterContext;
 
-use crate::{is_sanitized_token_with_quote, remove_sanitized_token};
+use crate::{is_unterminated_quote, remove_sanitized_token};
 
 pub(crate) fn node_text_surrounded_by_quotes(ctx: &TreesitterContext) -> bool {
     ctx.get_node_under_cursor_content()
@@ -19,10 +22,12 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     let mut start = node.start_byte();
     let mut end = start + length;
 
-    if sanitized.starts_with('"') && sanitized.ends_with('"') {
+    // Only the text inside the quotes is replaced. A quote the user hasn't closed yet has no
+    // closing quote here.
+    if sanitized.starts_with('"') {
         start += 1;
 
-        if sanitized.len() > 1 {
+        if sanitized.len() > 1 && sanitized.ends_with('"') {
             end -= 1;
         }
     }
@@ -30,37 +35,235 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     TextRange::new(start.try_into().unwrap(), end.try_into().unwrap())
 }
 
-pub(crate) fn only_leading_quote(ctx: &TreesitterContext) -> bool {
-    let node_under_cursor_txt = ctx.get_node_under_cursor_content().unwrap_or("".into());
-    let node_under_cursor_txt = node_under_cursor_txt.as_str();
-    is_sanitized_token_with_quote(node_under_cursor_txt)
+/// The bytes of the word at the cursor, like `ver` in `explain (analyze, ver|)`, or the
+/// sanitized token if the cursor is on one. A keyword completion replaces this word.
+///
+/// It isn't always the node under the cursor: where the grammar expects no identifier, as in
+/// option lists, tree-sitter puts the word into an `ERROR` together with the tokens before it,
+/// like `, ver`, or skips it, so that the node under the cursor is the `)` after it.
+pub(crate) fn word_at_cursor(ctx: &TreesitterContext) -> Range<usize> {
+    let bytes = ctx.text.as_bytes();
+    let is_word = |b: &u8| b.is_ascii_alphanumeric() || *b == b'_';
+
+    if !bytes.get(ctx.position).is_some_and(is_word) {
+        return ctx.node_under_cursor.byte_range();
+    }
+
+    let start = bytes[..ctx.position]
+        .iter()
+        .rposition(|b| !is_word(b))
+        .map_or(0, |i| i + 1);
+    let end = bytes[ctx.position..]
+        .iter()
+        .position(|b| !is_word(b))
+        .map_or(bytes.len(), |i| ctx.position + i);
+
+    start..end
 }
 
+/// The range a keyword completion replaces: the [`word_at_cursor`] without the sanitized token.
+pub(crate) fn get_keyword_range_to_replace(ctx: &TreesitterContext) -> TextRange {
+    let word = word_at_cursor(ctx);
+    let typed = remove_sanitized_token(&ctx.text[word.clone()]);
+
+    TextRange::at(
+        word.start.try_into().unwrap(),
+        typed.len().try_into().unwrap(),
+    )
+}
+
+/// Whether the cursor is in a quoted identifier without a closing quote, so the completion has to
+/// add it.
+pub(crate) fn only_leading_quote(ctx: &TreesitterContext) -> bool {
+    let node_under_cursor_txt = ctx.get_node_under_cursor_content().unwrap_or("".into());
+    is_unterminated_quote(node_under_cursor_txt.as_str())
+}
+
+/// The name that qualifies a completed item.
+pub(crate) enum Qualifier<'a> {
+    /// The schema of a table or function, left out if it is `public`.
+    Schema(&'a str),
+    /// The alias of the table of a column, also if it is named `public`.
+    Alias(&'a str),
+}
+
+/// The text to insert for `item_name`, prefixed with its qualifier unless that is the `public`
+/// schema or the user already wrote a qualifier. Names are quoted where Postgres would read
+/// another name unquoted. `position` is where an unqualified `item_name` stands.
 pub(crate) fn with_schema_or_alias(
     ctx: &TreesitterContext,
     item_name: &str,
-    schema_or_alias_name: Option<&str>,
+    qualifier: Option<Qualifier>,
+    position: NamePosition,
 ) -> String {
     let is_already_prefixed_with_schema_name = ctx.has_any_qualifier();
+
+    let prefix = match qualifier {
+        Some(Qualifier::Schema("public")) | None => None,
+        Some(Qualifier::Schema(name) | Qualifier::Alias(name)) => Some(name),
+    };
 
     let with_quotes = node_text_surrounded_by_quotes(ctx);
     let single_leading_quote = only_leading_quote(ctx);
 
-    if schema_or_alias_name.is_none_or(|s| s == "public") || is_already_prefixed_with_schema_name {
-        if single_leading_quote {
-            format!(r#"{item_name}""#)
-        } else {
-            item_name.to_string()
-        }
-    } else {
-        let schema_or_als = schema_or_alias_name.unwrap();
+    // Inside quotes the user already typed, a name only needs its `"` escaped.
+    let escaped = |name: &str| name.replace('"', r#""""#);
 
-        if single_leading_quote {
-            format!(r#"{}"."{}""#, schema_or_als.replace('"', ""), item_name)
-        } else if with_quotes {
-            format!(r#"{}"."{}"#, schema_or_als.replace('"', ""), item_name)
-        } else {
-            format!("{schema_or_als}.{item_name}")
+    match prefix {
+        Some(prefix) if !is_already_prefixed_with_schema_name => {
+            if single_leading_quote {
+                format!(r#"{}"."{}""#, escaped(prefix), escaped(item_name))
+            } else if with_quotes {
+                format!(r#"{}"."{}"#, escaped(prefix), escaped(item_name))
+            } else {
+                format!(
+                    "{}.{}",
+                    quote_identifier(prefix, NamePosition::ColId),
+                    quote_identifier(item_name, NamePosition::ColLabel)
+                )
+            }
+        }
+        _ => {
+            if single_leading_quote {
+                format!(r#"{}""#, escaped(item_name))
+            } else if with_quotes {
+                escaped(item_name)
+            } else if is_already_prefixed_with_schema_name {
+                quote_identifier(item_name, NamePosition::ColLabel).into_owned()
+            } else {
+                quote_identifier(item_name, position).into_owned()
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pgls_test_utils::QueryWithCursorPosition;
+    use pgls_text_size::TextRange;
+    use sqlx::{Executor, PgPool};
+
+    use crate::{
+        CompletionItem, complete,
+        test_helper::{get_test_deps, get_test_params},
+    };
+
+    /// The completion item `label` at `{c}` in `query`.
+    async fn item(pool: &PgPool, query: &str, label: &str) -> Option<CompletionItem> {
+        let query = query.replace("{c}", &QueryWithCursorPosition::cursor_marker().to_string());
+        let (tree, cache) = get_test_deps(None, query.as_str().into(), pool).await;
+        let params = get_test_params(&tree, &cache, query.as_str().into());
+        complete(params)
+            .into_iter()
+            .find(|item| item.label == label)
+    }
+
+    /// The text inserted for the completion item `label` at `{c}` in `query`.
+    async fn inserted(pool: &PgPool, query: &str, label: &str) -> Option<String> {
+        item(pool, query, label)
+            .await
+            .map(|item| item.completion_text.map_or(item.label, |text| text.text))
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn quotes_names_that_need_it(pool: PgPool) {
+        pool.execute(
+            r#"
+            create schema "My Schema";
+            create table "MyTable" ("Id" int, "select" int, plain int);
+            create table "My Schema"."Other" (x int);
+            create function "MyFunc"() returns int language sql as 'select 1';
+            create function "My Schema".helper() returns int language sql as 'select 1';
+            create function "operator"() returns int language sql as 'select 1';
+            create policy "My Policy" on "MyTable" using (true);
+            create policy plain_policy on "MyTable" using (true);
+            "#,
+        )
+        .await
+        .unwrap();
+
+        for (query, label, expected) in [
+            // Tables and schemas.
+            ("select * from {c}", "MyTable", r#""MyTable""#),
+            ("select * from {c}", "My Schema", r#""My Schema""#),
+            ("select * from {c}", "Other", r#""My Schema"."Other""#),
+            (r#"select * from "My Schema".{c}"#, "Other", r#""Other""#),
+            // After an opening quote, only the closing one is missing.
+            (r#"select * from "{c}"#, "MyTable", r#"MyTable""#),
+            (r#"select * from "{c}"#, "Other", r#"My Schema"."Other""#),
+            // Columns. A keyword needs quotes on its own, but not after a dot.
+            (r#"select {c} from "MyTable""#, "Id", r#""Id""#),
+            (r#"select {c} from "MyTable""#, "select", r#""select""#),
+            (r#"select {c} from "MyTable""#, "plain", "plain"),
+            (r#"select t.{c} from "MyTable" t"#, "select", "select"),
+            (r#"select t.{c} from "MyTable" t"#, "Id", r#""Id""#),
+            // An alias named `public` still qualifies its columns.
+            (
+                r#"select {c} from "MyTable" "public""#,
+                "plain",
+                "public.plain",
+            ),
+            (
+                r#"select {c} from "MyTable" PUBLIC"#,
+                "plain",
+                "public.plain",
+            ),
+            // Inside a quote the user hasn't closed yet.
+            (r#"select * from "My{c}"#, "MyTable", r#"MyTable""#),
+            (
+                r#"select * from "My{c} where true"#,
+                "MyTable",
+                r#"MyTable""#,
+            ),
+            (r#"select "I{c} from "MyTable""#, "Id", r#"Id""#),
+            // Policies and roles.
+            (
+                r#"alter policy {c} on "MyTable""#,
+                "My Policy",
+                r#""My Policy""#,
+            ),
+            (
+                r#"alter policy {c} on "MyTable""#,
+                "plain_policy",
+                "plain_policy",
+            ),
+            (r#"alter policy "My{c}"#, "My Policy", r#"My Policy""#),
+            // Roles are global, so the test uses one that needs no quotes.
+            (r#"grant select on "MyTable" to {c}"#, "anon", "anon"),
+            (r#"grant select on "MyTable" to "an{c}"#, "anon", r#"anon""#),
+            // Functions. `operator(` would start an operator.
+            ("select {c}", "MyFunc", r#""MyFunc"()"#),
+            ("select {c}", "helper", r#""My Schema".helper()"#),
+            ("select {c}", "operator", r#""operator"()"#),
+        ] {
+            assert_eq!(
+                inserted(&pool, query, label).await.as_deref(),
+                Some(expected),
+                "{query} → {label}"
+            );
+        }
+    }
+
+    /// The range to replace is in bytes, like the cursor, also after multibyte characters.
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn replaces_at_the_cursor_after_multibyte_characters(pool: PgPool) {
+        pool.execute("create schema private; create table people (name text);")
+            .await
+            .unwrap();
+
+        for (query, label) in [
+            ("select 'é' from {c}  ;", "private"),
+            ("select 'é' from {c}", "private"),
+            ("select 'é', {c} from people", "name"),
+        ] {
+            let cursor = query.find("{c}").unwrap() as u32;
+            let item = item(&pool, query, label).await;
+            assert_eq!(
+                item.and_then(|item| item.completion_text)
+                    .map(|text| text.range),
+                Some(TextRange::empty(cursor.into())),
+                "{query} → {label}"
+            );
         }
     }
 }

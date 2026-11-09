@@ -36,8 +36,6 @@ pub(super) fn emit_create_role_stmt(e: &mut EventEmitter, n: &CreateRoleStmt) {
         e.indent_end();
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
 

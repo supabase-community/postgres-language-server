@@ -62,7 +62,6 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
         position,
         snapshot: &snapshot,
         stmt_sql: &sql,
-        ast: ast.as_ref(),
         ts_tree: &tree,
         references: &references,
     })
@@ -854,6 +853,21 @@ async fn test_procedure_hover_in_call(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_schema_hover_in_call(test_db: PgPool) {
+    let setup = r#"
+        create schema app;
+        create procedure app.hover_proc(a int, b text) language sql as 'select 1';
+    "#;
+
+    let query = format!(
+        "call a{}pp.hover_proc(1, 'x')",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("schema_in_call", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_procedure_hover_in_call_with_output_parameters(test_db: PgPool) {
     let setup = r#"
         create procedure hover_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
@@ -905,4 +919,18 @@ async fn test_column_hover_on_last_part_of_quoted_name(test_db: PgPool) {
         &test_db,
     )
     .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_column_hover_cte_column_list(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+    "#;
+
+    let query = format!(
+        "with c(label) as (select name from hover_users) select lab{}el from c",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("column_cte_column_list", query, Some(setup), &test_db).await;
 }
