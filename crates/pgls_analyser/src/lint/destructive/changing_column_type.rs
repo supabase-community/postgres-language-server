@@ -1,7 +1,7 @@
 use crate::linter_context::builtin_type_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_catalog::{CatalogView, Generated};
+use pgls_catalog::Generated;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -95,9 +95,8 @@ fn is_virtual_column(
     let Some(relation) = relation else {
         return false;
     };
-    let schema = Some(relation.schemaname.as_str()).filter(|schema| !schema.is_empty());
     ctx.catalog()
-        .relation(schema, &relation.relname, ctx.session().search_path())
+        .relation_of(relation, ctx.session().search_path())
         .found()
         .and_then(|relation| relation.columns)
         .is_some_and(|columns| {
