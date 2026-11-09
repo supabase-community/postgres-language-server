@@ -459,7 +459,10 @@ pub(crate) fn resolve_unknown_outputs(
 fn supports_database_check(stmt: &NodeEnum) -> bool {
     match stmt {
         NodeEnum::SelectStmt(select) => select.into_clause.is_none(),
-        NodeEnum::InsertStmt(_) | NodeEnum::UpdateStmt(_) | NodeEnum::DeleteStmt(_) => true,
+        NodeEnum::InsertStmt(_)
+        | NodeEnum::UpdateStmt(_)
+        | NodeEnum::DeleteStmt(_)
+        | NodeEnum::MergeStmt(_) => true,
         NodeEnum::CreateTableAsStmt(stmt) => matches!(
             stmt.query.as_deref().and_then(|query| query.node.as_ref()),
             Some(NodeEnum::SelectStmt(_))

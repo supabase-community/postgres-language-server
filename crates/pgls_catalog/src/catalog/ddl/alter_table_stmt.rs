@@ -5,11 +5,11 @@ use pgls_query::{
 use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 use crate::catalog::{
-    Catalog, Entry, Key, key,
+    Catalog, Key, key,
     names::{range_var_name, type_label},
     overlay::column_info,
 };
-use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
+use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};
 use crate::{Generated, Identity};
 
 /// `ALTER TABLE`, and `ALTER TYPE ... ADD/DROP/ALTER ATTRIBUTE` on composite types.
@@ -28,21 +28,13 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     let commands: Vec<&AlterTableCmd> = alter_table_cmds(n).collect();
 
     if n.objtype() == ObjectType::ObjectType {
-        let name = range_var_name(range_var);
-        if let Some(mut type_info) = c
-            .type_(name.schema(), &name.name, search_path)
-            .found()
-            .filter(|type_info| type_info.schema != "pg_catalog")
-        {
+        c.change_type(&range_var_name(range_var), search_path, |c, type_info| {
             if let Some(attributes) = type_info.attributes.as_mut() {
                 for command in &commands {
                     apply_column_change(c, attributes, command, search_path, IdentityChange::Apply);
                 }
             }
-            type_info.origin = Origin::File;
-            let key = key(&type_info.schema, &type_info.name);
-            c.types.insert(key, Entry::Defined(type_info));
-        }
+        });
         return;
     }
 
