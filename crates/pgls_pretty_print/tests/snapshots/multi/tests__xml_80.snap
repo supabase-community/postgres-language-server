@@ -343,7 +343,7 @@ select xmlpi(name ":::_xml_abc135.%-&_");
 
 select xmlpi(name "123");
 
-prepare foo (xml) as select xmlconcat('<foo/>', $1);;
+prepare foo (xml) as select xmlconcat('<foo/>', $1);
 
 set xmloption = 'DOCUMENT';
 
@@ -859,7 +859,7 @@ from
       size double precision path 'SIZE',
       unit text path 'SIZE/@unit',
       premier_name text path 'PREMIER_NAME' default 'not specified'
-  );;
+  );
 
 execute pp;
 

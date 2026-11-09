@@ -3,7 +3,6 @@
 use pgls_query::protobuf;
 
 use super::Catalog;
-use crate::Generated;
 use crate::lookup::ColumnInfo;
 
 impl Catalog {
@@ -25,12 +24,7 @@ impl Catalog {
         Some(
             columns
                 .into_iter()
-                .map(|column| ColumnInfo {
-                    name: column.name,
-                    type_name: None,
-                    ty: column.ty,
-                    generated: Generated::No,
-                })
+                .map(|column| ColumnInfo::new(column.name, None, column.ty))
                 .collect(),
         )
     }

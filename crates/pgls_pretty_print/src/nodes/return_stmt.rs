@@ -15,7 +15,5 @@ pub(super) fn emit_return_stmt(e: &mut EventEmitter, n: &ReturnStmt) {
         super::emit_node(value, e);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

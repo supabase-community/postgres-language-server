@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_15_19: 39967 statements and 357 in SQL function bodies, 1595 findings on statements Postgres rejected
+REL_15_19: 39967 statements and 381 in SQL function bodies, 1602 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 banDuplicateColumnAssignments 42601: 1
@@ -13,9 +13,9 @@ functionReturnTypeMismatch 42P13: 5
 generatedColumnAssignment 428C9: 6
 insertColumnMismatch 42601: 6
 invalidCast 42846: 2
-missingFromClauseEntry 42P01: 13
+missingFromClauseEntry 42P01: 15
 operatorTypeMismatch 42725: 1
-operatorTypeMismatch 42883: 9
+operatorTypeMismatch 42883: 12
 unknownColumn 42703: 36
 unknownColumn 42P01: 3
 unknownFunction 42704: 4
@@ -24,7 +24,7 @@ unknownFunction 42P01: 18
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
 unknownRelation 42501: 1
-unknownRelation 42P01: 1287
+unknownRelation 42P01: 1289
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -229,6 +229,7 @@ create_am.sql:59:1 42P01 unknownRelation
 create_am.sql:61:1 42P01 unknownRelation
 create_am.sql:63:1 42P01 unknownRelation
 create_cast.sql:28:1 42883 functionArgumentMismatch
+create_function_sql.sql:203:1 (body) 42883 operatorTypeMismatch
 create_function_sql.sql:409:1 42P13 functionReturnTypeMismatch
 create_index_spgist.sql:5:1 42P01 unknownRelation
 create_index_spgist.sql:19:1 42P01 unknownRelation
@@ -786,7 +787,9 @@ int8.sql:174:1 42P01 unknownRelation
 int8.sql:180:1 42P01 unknownRelation
 int8.sql:181:1 42P01 unknownRelation
 join.sql:82:1 42702 ambiguousColumn
+join.sql:132:1 42P01 missingFromClauseEntry
 join.sql:134:1 42703 unknownColumn
+join.sql:135:1 42P01 missingFromClauseEntry
 join.sql:216:1 42P01 unknownRelation
 join.sql:216:1 42P01 unknownRelation
 join.sql:216:1 42P01 unknownRelation
@@ -1570,7 +1573,9 @@ window.sql:381:1 42P01 unknownRelation
 window.sql:385:1 42P01 unknownRelation
 window.sql:389:1 42P01 unknownRelation
 window.sql:393:1 42P01 unknownRelation
+window.sql:506:1 (body) 42P01 unknownRelation
 window.sql:514:1 (body) 42P01 unknownRelation
+window.sql:526:1 (body) 42P01 unknownRelation
 window.sql:534:1 (body) 42P01 unknownRelation
 window.sql:552:1 42P01 unknownRelation
 window.sql:556:1 42P01 unknownRelation
@@ -1600,6 +1605,8 @@ window.sql:985:1 42P01 unknownRelation
 window.sql:987:1 42P01 unknownRelation
 window.sql:1425:1 42P01 unknownRelation
 window.sql:1428:1 42P01 unknownRelation
+with.sql:91:1 42883 operatorTypeMismatch
+with.sql:91:1 42883 operatorTypeMismatch
 with.sql:233:1 42P01 unknownRelation
 with.sql:381:1 42P01 unknownRelation
 with.sql:390:1 42P01 unknownRelation
