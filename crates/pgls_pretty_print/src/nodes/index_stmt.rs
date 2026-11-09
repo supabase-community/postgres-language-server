@@ -7,14 +7,6 @@ use crate::{
 };
 
 pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
-    emit_index_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_index_stmt_no_semicolon(e: &mut EventEmitter, n: &IndexStmt) {
-    emit_index_stmt_impl(e, n, false);
-}
-
-fn emit_index_stmt_impl(e: &mut EventEmitter, n: &IndexStmt, with_semicolon: bool) {
     e.group_start(GroupKind::IndexStmt);
 
     // The head, up to the opening parenthesis of the columns, stays on one line when it fits. The
@@ -120,8 +112,5 @@ fn emit_index_stmt_impl(e: &mut EventEmitter, n: &IndexStmt, with_semicolon: boo
         e.group_end();
     }
 
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
-    }
     e.group_end();
 }

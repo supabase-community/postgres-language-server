@@ -15,6 +15,7 @@ use crate::resolve::{
     FindingKind,
     expr::{check_assignment, infer_expr},
     scope::{Columns, Item, Level},
+    utils::node_location,
 };
 use crate::typing::{Type, TypedColumn};
 use pgls_text_size::TextRange;
@@ -327,30 +328,6 @@ fn select_value(source: &pgls_query::Node, index: usize) -> Option<&NodeEnum> {
         }
     }
     values.next()?
-}
-
-pub(super) fn node_location(node: &pgls_query::Node) -> Option<i32> {
-    Some(match node.node.as_ref()? {
-        NodeEnum::AConst(n) => n.location,
-        NodeEnum::ColumnRef(n) => n.location,
-        NodeEnum::AExpr(n) => n.location,
-        NodeEnum::FuncCall(n) => n.location,
-        NodeEnum::TypeCast(n) => n.location,
-        NodeEnum::ParamRef(n) => n.location,
-        NodeEnum::CaseExpr(n) => n.location,
-        NodeEnum::CoalesceExpr(n) => n.location,
-        NodeEnum::MinMaxExpr(n) => n.location,
-        NodeEnum::AArrayExpr(n) => n.location,
-        NodeEnum::BoolExpr(n) => n.location,
-        NodeEnum::NullTest(n) => n.location,
-        NodeEnum::BooleanTest(n) => n.location,
-        NodeEnum::SubLink(n) => n.location,
-        NodeEnum::RowExpr(n) => n.location,
-        NodeEnum::SqlvalueFunction(n) => n.location,
-        NodeEnum::CollateClause(n) => n.location,
-        NodeEnum::AIndirection(_) => return None,
-        _ => return None,
-    })
 }
 
 /// The rows of a plain `VALUES` list.

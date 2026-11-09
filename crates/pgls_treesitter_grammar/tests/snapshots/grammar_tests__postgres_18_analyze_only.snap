@@ -1,0 +1,24 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+analyze only t (a), only u;
+-----------------------
+program [0..27] 'analyze only t (a), only u;'
+  statement [0..26] 'analyze only t (a), only u'
+    analyze_statement [0..26] 'analyze only t (a), only u'
+      keyword_analyze [0..7] 'analyze' (@end)
+      table_and_columns [8..18] 'only t (a)'
+        keyword_only [8..12] 'only'
+        table_reference [13..14] 't' (@end)
+          any_identifier [13..14] 't' (@table_reference_1of1)
+        table_columns [15..18] '(a)'
+          ( [15..16] '('
+          column_identifier [16..17] 'a'
+          ) [17..18] ')' (@end)
+      , [18..19] ','
+      table_and_columns [20..26] 'only u'
+        keyword_only [20..24] 'only'
+        table_reference [25..26] 'u' (@end)
+          any_identifier [25..26] 'u' (@table_reference_1of1)
+  ; [26..27] ';'

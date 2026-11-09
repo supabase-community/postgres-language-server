@@ -1,4 +1,6 @@
-use super::*;
+use super::infer_expr;
+use crate::resolve::resolver::Resolver;
+use crate::typing::{CoercionContext, Decision, Type, can_coerce, normalize_type_name};
 
 /// The target type of a cast, and a finding when no explicit coercion exists. Port of
 /// [`transformTypeCast`], which coerces with [`can_coerce_type`] in the explicit context.
