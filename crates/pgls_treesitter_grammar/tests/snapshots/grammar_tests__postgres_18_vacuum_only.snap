@@ -1,0 +1,24 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+vacuum only t, only u (a);
+-----------------------
+program [0..26] 'vacuum only t, only u (a);'
+  statement [0..25] 'vacuum only t, only u (a)'
+    vacuum_statement [0..25] 'vacuum only t, only u (a)'
+      keyword_vacuum [0..6] 'vacuum' (@end)
+      table_and_columns [7..13] 'only t'
+        keyword_only [7..11] 'only'
+        table_reference [12..13] 't' (@end)
+          any_identifier [12..13] 't' (@table_reference_1of1)
+      , [13..14] ','
+      table_and_columns [15..25] 'only u (a)'
+        keyword_only [15..19] 'only'
+        table_reference [20..21] 'u' (@end)
+          any_identifier [20..21] 'u' (@table_reference_1of1)
+        table_columns [22..25] '(a)'
+          ( [22..23] '('
+          column_identifier [23..24] 'a'
+          ) [24..25] ')' (@end)
+  ; [25..26] ';'

@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use pgls_completions::CompletionItem;
 use pgls_fs::PgLSPath;
-use pgls_text_size::{TextRange, TextSize};
+use pgls_text_size::TextSize;
 
-use crate::workspace::{Document, GetCompletionsFilter, StatementId, WithCSTMapper};
+use crate::workspace::{Document, DocumentStatement, GetCompletionsFilter, WithCSTMapper};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -23,10 +23,12 @@ pub struct CompletionsResult {
 }
 
 impl CompletionsResult {
-    pub fn with_offset(mut items: Vec<CompletionItem>, offset: TextSize) -> Self {
+    /// The completions of the statement `stmt`, whose ranges are relative to its text, with the
+    /// ranges in the document.
+    pub(crate) fn in_document(mut items: Vec<CompletionItem>, stmt: &DocumentStatement) -> Self {
         for item in &mut items {
             if let Some(text_edit) = &mut item.completion_text {
-                text_edit.range += offset;
+                text_edit.range = stmt.document_range(text_edit.range);
             }
         }
 
@@ -45,7 +47,7 @@ impl IntoIterator for CompletionsResult {
 pub(crate) fn get_statement_for_completions(
     doc: &Document,
     position: TextSize,
-) -> Option<(StatementId, TextRange, Arc<tree_sitter::Tree>)> {
+) -> Option<(DocumentStatement, Arc<tree_sitter::Tree>)> {
     let count = doc.count();
     // no arms no cookies
     if count == 0 {
@@ -62,7 +64,7 @@ pub(crate) fn get_statement_for_completions(
     if count == 1 {
         eligible_statements.next()
     } else {
-        let mut prev_stmt: Option<(StatementId, TextRange, Arc<tree_sitter::Tree>)> = None;
+        let mut prev_stmt: Option<(DocumentStatement, Arc<tree_sitter::Tree>)> = None;
 
         for current_stmt in eligible_statements {
             /*
@@ -74,8 +76,8 @@ pub(crate) fn get_statement_for_completions(
              * This is however ok if the current statement is a child of the previous one,
              * such as in CREATE FUNCTION bodies.
              */
-            if prev_stmt.is_some_and(|prev| {
-                current_stmt.1.contains(position) && !current_stmt.0.is_child_of(&prev.0)
+            if prev_stmt.is_some_and(|(prev, _)| {
+                current_stmt.0.range.contains(position) && !current_stmt.0.id.is_child_of(&prev.id)
             }) {
                 return None;
             }
@@ -125,10 +127,9 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (stmt, _, _) =
-            get_statement_for_completions(&doc, position).expect("Expected Statement");
+        let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.content(), "update users set email = 'myemail@com';")
+        assert_eq!(stmt.id.content(), "update users set email = 'myemail@com';")
     }
 
     #[test]
@@ -164,10 +165,9 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (stmt, _, _) =
-            get_statement_for_completions(&doc, position).expect("Expected Statement");
+        let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.content(), "select * from          ;")
+        assert_eq!(stmt.id.content(), "select * from          ;")
     }
 
     #[test]
@@ -176,10 +176,9 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (stmt, _, _) =
-            get_statement_for_completions(&doc, position).expect("Expected Statement");
+        let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.content(), "select * from")
+        assert_eq!(stmt.id.content(), "select * from")
     }
 
     #[test]
@@ -200,10 +199,9 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql);
 
-        let (stmt, _, _) =
-            get_statement_for_completions(&doc, position).expect("Expected Statement");
+        let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.content().trim(), "select  from cool;")
+        assert_eq!(stmt.id.content().trim(), "select  from cool;")
     }
 
     #[test]

@@ -225,7 +225,10 @@ impl Workspace {
 
         // Register a project without a folder, which every file belongs to
         let project_key = inner
-            .register_project_folder(RegisterProjectFolderParams { path: None })
+            .register_project_folder(RegisterProjectFolderParams {
+                path: None,
+                real_path: None,
+            })
             .unwrap_or_default();
 
         Self {
@@ -499,6 +502,8 @@ impl Workspace {
                 vcs_base_path: None,
                 gitignore_matches: vec![],
                 workspace_directory: None,
+                // Only the formatter settings change, the others keep their values.
+                replace: false,
             })
             .map_err(|e| {
                 WasmError::InvalidOptions(format!("Failed to apply format options: {e}"))
