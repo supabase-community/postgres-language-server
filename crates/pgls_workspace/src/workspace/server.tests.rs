@@ -2858,9 +2858,11 @@ fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
         FixFileMode::SafeAndUnsafeFixes,
         &[],
     );
+    // The table is created in the same transaction, so the CHECK constraint doesn't need
+    // NOT VALID.
     assert_eq!(
         once,
-        "create table if not exists t (a text[], b timestamptz /* local */, c jsonb, d text /* name */);\nalter table t add constraint t_a check (a is not null) not valid;\n"
+        "create table if not exists t (a text[], b timestamptz /* local */, c jsonb, d text /* name */);\nalter table t add constraint t_a check (a is not null);\n"
     );
     assert!(pgls_query::parse(&once).is_ok());
     assert_eq!(
