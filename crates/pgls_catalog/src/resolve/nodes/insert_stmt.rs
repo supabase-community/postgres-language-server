@@ -14,7 +14,7 @@ use super::{
 use crate::resolve::{
     FindingKind,
     expr::{check_assignment, infer_expr},
-    scope::{Columns, Item, Level},
+    scope::{Columns, DefaultOnly, Item, Level},
     utils::node_location,
 };
 use crate::typing::{Type, TypedColumn};
@@ -168,9 +168,7 @@ fn check_generated_insert(
         n.r#override(),
         OverridingKind::OverridingSystemValue | OverridingKind::OverridingUserValue
     );
-    if target.generated_columns.is_empty()
-        && (overriding || target.identity_always_columns.is_empty())
-    {
+    if target.default_only_columns.is_empty() {
         return;
     }
     // `DEFAULT VALUES` assigns nothing.
@@ -210,7 +208,7 @@ fn check_generated_insert(
     };
 
     for (index, (column, column_location)) in targets.into_iter().enumerate() {
-        let Some(identity) = target.default_only(column, overriding) else {
+        let Some(kind) = target.default_only(column, overriding) else {
             continue;
         };
         let span = match &rows {
@@ -235,7 +233,7 @@ fn check_generated_insert(
             FindingKind::GeneratedColumnAssignment {
                 column: column.to_owned(),
                 insert: true,
-                identity,
+                identity: kind == DefaultOnly::IdentityAlways,
             },
             span,
         );

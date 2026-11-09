@@ -87,13 +87,21 @@ pub enum Identity {
     ByDefault,
 }
 
-impl From<String> for Identity {
-    fn from(value: String) -> Self {
-        match value.as_str() {
+impl Identity {
+    /// From a `pg_attribute.attidentity` or `Constraint.generated_when` code
+    /// (`ATTRIBUTE_IDENTITY_ALWAYS` or `_BY_DEFAULT`): `a` or `d`.
+    pub fn from_code(code: &str) -> Self {
+        match code {
             "a" => Identity::Always,
             "d" => Identity::ByDefault,
             _ => Identity::No,
         }
+    }
+}
+
+impl From<String> for Identity {
+    fn from(value: String) -> Self {
+        Identity::from_code(&value)
     }
 }
 

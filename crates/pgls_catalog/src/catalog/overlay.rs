@@ -625,9 +625,10 @@ pub(super) fn column_info(
             catalog.builtin_type(internal_name)
         });
     let type_name = column.type_name.as_ref().and_then(type_label);
+    let (generated, identity) = column_kinds(column);
     ColumnInfo {
-        generated: column_generated(column),
-        identity: column_identity(column),
+        generated,
+        identity,
         ..ColumnInfo::new(
             column.colname.clone(),
             type_name,
@@ -636,51 +637,27 @@ pub(super) fn column_info(
     }
 }
 
-/// Whether a column definition has a `GENERATED ALWAYS AS (...)` clause, like
-/// [`transformColumnDefinition`].
+/// Whether a column definition has a `GENERATED ALWAYS AS (...)` clause and whether it has a
+/// `GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY` clause, like [`transformColumnDefinition`].
 ///
 /// [`transformColumnDefinition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L591
-fn column_generated(column: &protobuf::ColumnDef) -> Generated {
-    column
-        .constraints
-        .iter()
-        .find_map(|constraint| match &constraint.node {
-            Some(NodeEnum::Constraint(constraint))
-                if constraint.contype() == protobuf::ConstrType::ConstrGenerated =>
-            {
-                Some(Generated::from_code(&constraint.generated_kind))
+fn column_kinds(column: &protobuf::ColumnDef) -> (Generated, Identity) {
+    let mut kinds = (Generated::No, Identity::No);
+    for constraint in &column.constraints {
+        let Some(NodeEnum::Constraint(constraint)) = &constraint.node else {
+            continue;
+        };
+        match constraint.contype() {
+            protobuf::ConstrType::ConstrGenerated => {
+                kinds.0 = Generated::from_code(&constraint.generated_kind);
             }
-            _ => None,
-        })
-        .unwrap_or_default()
-}
-
-/// Whether a column definition has a `GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY` clause, like
-/// [`transformColumnDefinition`].
-///
-/// [`transformColumnDefinition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L591
-fn column_identity(column: &protobuf::ColumnDef) -> Identity {
-    column
-        .constraints
-        .iter()
-        .find_map(|constraint| match &constraint.node {
-            Some(NodeEnum::Constraint(constraint))
-                if constraint.contype() == protobuf::ConstrType::ConstrIdentity =>
-            {
-                Some(identity_kind(&constraint.generated_when))
+            protobuf::ConstrType::ConstrIdentity => {
+                kinds.1 = Identity::from_code(&constraint.generated_when);
             }
-            _ => None,
-        })
-        .unwrap_or_default()
-}
-
-/// The identity kind of `generated_when` (`ATTRIBUTE_IDENTITY_ALWAYS` or `_BY_DEFAULT`).
-pub(super) fn identity_kind(generated_when: &str) -> Identity {
-    match generated_when {
-        "a" => Identity::Always,
-        "d" => Identity::ByDefault,
-        _ => Identity::No,
+            _ => {}
+        }
     }
+    kinds
 }
 
 pub(super) fn function_info(

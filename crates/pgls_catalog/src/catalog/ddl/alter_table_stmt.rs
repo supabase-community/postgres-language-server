@@ -6,7 +6,7 @@ use pgls_query::{
 use crate::catalog::{
     Catalog, Entry, Key, key,
     names::{range_var_name, type_label},
-    overlay::{column_info, identity_kind},
+    overlay::column_info,
 };
 use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
 use crate::{Generated, Identity};
@@ -355,7 +355,7 @@ fn apply_column_change(
             if let Some(NodeEnum::Constraint(constraint)) =
                 command.def.as_deref().and_then(|def| def.node.as_ref())
             {
-                set_identity(columns, identity_kind(&constraint.generated_when));
+                set_identity(columns, Identity::from_code(&constraint.generated_when));
             }
         }
         // `SET GENERATED { ALWAYS | BY DEFAULT }` among the sequence options.
@@ -375,7 +375,10 @@ fn apply_column_change(
                 _ => None,
             };
             if let Some(generated) = generated {
-                set_identity(columns, identity_kind(&char::from(generated).to_string()));
+                set_identity(
+                    columns,
+                    Identity::from_code(&char::from(generated).to_string()),
+                );
             }
         }
         AlterTableType::AtDropIdentity => set_identity(columns, Identity::No),

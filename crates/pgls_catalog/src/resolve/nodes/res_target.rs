@@ -11,7 +11,7 @@ use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
     expr::infer_expr,
-    scope::{Columns, Item, Level, StarEntry, find_item},
+    scope::{Columns, DefaultOnly, Item, Level, StarEntry, find_item},
 };
 
 /// The output columns of a select list or RETURNING list, whose `*` expands to the FROM items
@@ -272,7 +272,7 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
 ///
 /// [`rewriteTargetListIU`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L808
 pub(super) fn check_generated_update(r: &mut Resolver, target: &Item, assignments: &[Node]) {
-    if target.generated_columns.is_empty() && target.identity_always_columns.is_empty() {
+    if target.default_only_columns.is_empty() {
         return;
     }
     for assignment in assignments {
@@ -282,7 +282,7 @@ pub(super) fn check_generated_update(r: &mut Resolver, target: &Item, assignment
         if !assignment.indirection.is_empty() {
             continue;
         }
-        let Some(identity) = target.default_only(&assignment.name, false) else {
+        let Some(kind) = target.default_only(&assignment.name, false) else {
             continue;
         };
         let value = assignment
@@ -314,7 +314,7 @@ pub(super) fn check_generated_update(r: &mut Resolver, target: &Item, assignment
                 FindingKind::GeneratedColumnAssignment {
                     column: assignment.name.clone(),
                     insert: false,
-                    identity,
+                    identity: kind == DefaultOnly::IdentityAlways,
                 },
                 assignment.location,
             );
