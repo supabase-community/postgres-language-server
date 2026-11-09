@@ -313,6 +313,9 @@
         <loc>https://pg-language-server.com/main/reference/rules/invalid-drop-type-signature/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/reference/rules/invalid-merge/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/reference/rules/lock-timeout-warning/</loc>
       </url>
       <url>
