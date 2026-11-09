@@ -1,3 +1,4 @@
+use crate::utils::{alter_table_cmds, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -34,24 +35,14 @@ impl LinterRule for AddingRequiredField {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() else {
-            return vec![];
-        };
-        let commands: Vec<&AlterTableCmd> = stmt
-            .cmds
-            .iter()
-            .filter_map(|command| match &command.node {
-                Some(pgls_query::NodeEnum::AlterTableCmd(command)) => Some(command.as_ref()),
-                _ => None,
-            })
-            .collect();
+        let commands: Vec<&AlterTableCmd> = alter_table_cmds(ctx.stmt()).collect();
 
         // Columns made NOT NULL by `ADD CONSTRAINT ... NOT NULL column` (Postgres 18) in the
         // same statement.
         let not_null_columns: Vec<&str> = commands
             .iter()
             .filter(|command| command.subtype() == AlterTableType::AtAddConstraint)
-            .filter_map(|command| match command.def.as_ref()?.node.as_ref()? {
+            .filter_map(|command| match cmd_def(command)? {
                 pgls_query::NodeEnum::Constraint(constraint)
                     if constraint.contype() == ConstrType::ConstrNotnull =>
                 {
@@ -66,7 +57,7 @@ impl LinterRule for AddingRequiredField {
         commands
             .iter()
             .filter(|command| command.subtype() == AlterTableType::AtAddColumn)
-            .filter_map(|command| match command.def.as_ref()?.node.as_ref()? {
+            .filter_map(|command| match cmd_def(command)? {
                 pgls_query::NodeEnum::ColumnDef(column) => Some(column),
                 _ => None,
             })
