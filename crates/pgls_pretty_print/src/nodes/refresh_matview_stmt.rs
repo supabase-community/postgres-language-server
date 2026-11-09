@@ -33,7 +33,5 @@ pub(super) fn emit_refresh_matview_stmt(e: &mut EventEmitter, n: &RefreshMatView
         e.token(TokenKind::DATA_KW);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

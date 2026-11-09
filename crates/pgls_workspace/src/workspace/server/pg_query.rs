@@ -1,8 +1,10 @@
 use std::sync::{Arc, LazyLock, Mutex};
 
 pub use pgls_lexer::{convert_to_positional_params, convert_to_positional_params_with_metadata};
-use pgls_query_ext::diagnostics::*;
-use pgls_text_size::TextRange;
+use pgls_query_ext::{
+    diagnostics::*,
+    function_body::{EmbeddedStatement, function_body_location, sql_function_body},
+};
 use regex::Regex;
 use rustc_hash::FxHashMap;
 
@@ -13,6 +15,8 @@ use super::statement_identifier::StatementId;
 pub struct PgQueryStore {
     ast_db: Mutex<FxHashMap<StatementId, Arc<Result<pgls_query::NodeEnum, SyntaxDiagnostic>>>>,
     plpgsql_db: Mutex<FxHashMap<StatementId, Result<(), SyntaxDiagnostic>>>,
+    /// The statements embedded in each top-level statement, like those of a SQL function body.
+    embedded_db: Mutex<FxHashMap<StatementId, Arc<[EmbeddedStatement]>>>,
 }
 
 impl PgQueryStore {
@@ -20,6 +24,7 @@ impl PgQueryStore {
         PgQueryStore {
             ast_db: Mutex::default(),
             plpgsql_db: Mutex::default(),
+            embedded_db: Mutex::default(),
         }
     }
 
@@ -27,6 +32,25 @@ impl PgQueryStore {
     pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
         self.ast_db.lock().unwrap().retain(|id, _| keep(id));
         self.plpgsql_db.lock().unwrap().retain(|id, _| keep(id));
+        self.embedded_db.lock().unwrap().retain(|id, _| keep(id));
+    }
+
+    /// The statements embedded in the top-level statement `statement`, in order: the statements
+    /// of the body of a SQL function. Empty if it doesn't parse.
+    pub fn get_or_cache_embedded(&self, statement: &StatementId) -> Arc<[EmbeddedStatement]> {
+        debug_assert!(statement.is_root());
+        if let Some(existing) = self.embedded_db.lock().unwrap().get(statement) {
+            return Arc::clone(existing);
+        }
+        let embedded: Arc<[EmbeddedStatement]> = match self.get_or_cache_ast(statement).as_ref() {
+            Ok(ast) => sql_function_body(ast, statement.content()).into(),
+            Err(_) => Arc::default(),
+        };
+        self.embedded_db
+            .lock()
+            .unwrap()
+            .insert(statement.clone(), Arc::clone(&embedded));
+        embedded
     }
 
     pub fn get_or_cache_ast(
@@ -75,12 +99,9 @@ impl PgQueryStore {
             return Some(existing.clone());
         }
 
-        let sql_body = pgls_query_ext::utils::find_option_value(create_fn, "as")?;
-
-        let start = statement.content().find(&sql_body)?;
-        let end = start + sql_body.len();
-
-        let range = TextRange::new(start.try_into().unwrap(), end.try_into().unwrap());
+        // The error has no location, so it covers the body, or the whole statement if the body
+        // can't be found.
+        let range = function_body_location(create_fn, statement.content()).map(|(range, _)| range);
 
         let r = pgls_query::parse_plpgsql(statement.content())
             .or_else(|e| match &e {
@@ -89,7 +110,7 @@ impl PgQueryStore {
                 pgls_query::Error::Parse(err) if is_composite_type_error(err) => Ok(()),
                 _ => Err(e),
             })
-            .map_err(|e| SyntaxDiagnostic::new(e.to_string(), Some(range)));
+            .map_err(|e| SyntaxDiagnostic::new(e.to_string(), range));
 
         cache.insert(statement.clone(), r.clone());
 
@@ -182,6 +203,36 @@ $$;
         let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
 
         assert!(matches!(res, Some(Err(_))));
+    }
+
+    #[test]
+    fn plpgsql_syntax_errors_cover_quoted_bodies() {
+        // A default with the same text as the body comes first, and the body has `''`.
+        for (input, body) in [
+            (
+                "create function f(t text default 'delare x') returns void language plpgsql as 'delare x'",
+                "'delare x'",
+            ),
+            (
+                "create function f() returns void language plpgsql as 'begin raise notice ''x''; ende'",
+                "'begin raise notice ''x''; ende'",
+            ),
+        ] {
+            let store = PgQueryStore::new();
+            let Some(Err(diagnostic)) = store.get_or_cache_plpgsql_parse(&StatementId::new(input))
+            else {
+                panic!("expected a syntax error for {input}");
+            };
+            let span = pgls_diagnostics::Diagnostic::location(&diagnostic)
+                .span
+                .expect("a span");
+            let start = input.rfind(body).unwrap() + 1;
+            assert_eq!(
+                std::ops::Range::<usize>::from(span),
+                start..start + body.len() - 2,
+                "{input}"
+            );
+        }
     }
 
     #[test]
