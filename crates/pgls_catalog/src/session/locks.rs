@@ -7,7 +7,10 @@ use pgls_query::{
     NodeEnum,
     protobuf::{self, VariableSetKind},
 };
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
+use pgls_query_ext::{
+    options::{is_reindex_concurrent, is_vacuum_full},
+    utils::{alter_table_cmds, cmd_def},
+};
 
 use crate::Catalog;
 
@@ -231,35 +234,5 @@ impl Locks {
                 ));
             }
         }
-    }
-}
-
-pub fn is_vacuum_full(stmt: &protobuf::VacuumStmt) -> bool {
-    stmt.options.iter().any(
-        |opt| matches!(&opt.node, Some(NodeEnum::DefElem(def)) if def_elem_is_enabled(def, "full")),
-    )
-}
-
-pub fn is_reindex_concurrent(stmt: &protobuf::ReindexStmt) -> bool {
-    stmt.params.iter().any(|param| {
-        matches!(&param.node, Some(NodeEnum::DefElem(def)) if def_elem_is_enabled(def, "concurrently"))
-    })
-}
-
-fn def_elem_is_enabled(def: &protobuf::DefElem, name: &str) -> bool {
-    if !def.defname.eq_ignore_ascii_case(name) {
-        return false;
-    }
-    match &def.arg {
-        Some(arg) => match &arg.node {
-            Some(NodeEnum::Integer(i)) => i.ival != 0,
-            Some(NodeEnum::Boolean(b)) => b.boolval,
-            // `(CONCURRENTLY false)`, like [`defGetBoolean`](https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/define.c#L94).
-            Some(NodeEnum::String(s)) => !["false", "off"]
-                .iter()
-                .any(|value| s.sval.eq_ignore_ascii_case(value)),
-            _ => true,
-        },
-        None => true,
     }
 }

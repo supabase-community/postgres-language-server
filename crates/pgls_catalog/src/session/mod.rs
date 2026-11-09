@@ -11,7 +11,6 @@ use pgls_query::{NodeEnum, protobuf};
 use crate::Catalog;
 
 use locks::Locks;
-pub use locks::{is_reindex_concurrent, is_vacuum_full};
 use settings::Settings;
 
 /// Whether the migration tool runs the statements outside `BEGIN` and `COMMIT` in a
