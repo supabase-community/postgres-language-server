@@ -58,7 +58,10 @@ Some migration tools put the up and the down migration in the same file, separat
 | --- | --- | --- |
 | `"dbmate"` | `-- migrate:up`, `-- migrate:down` | `-- migrate:up transaction:false` (per section) |
 | `"goose"` | `-- +goose Up`, `-- +goose Down` | `-- +goose NO TRANSACTION` (whole file) |
+| `"supabase"` | | |
 | `"none"` (default) | | |
+
+The Supabase CLI runs every file as one migration, so `"supabase"` checks files like `"none"`.
 
 In a dbmate project, `postgres-language-server init` sets both: it detects dbmate by a first migration in `db/migrations`, dbmate's default folder, that starts with `-- migrate:up`. goose has no default folder or configuration file, so `init` doesn't detect it.
 

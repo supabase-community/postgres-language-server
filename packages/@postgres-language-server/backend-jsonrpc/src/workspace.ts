@@ -728,7 +728,7 @@ export interface PartialMigrationsConfiguration {
    */
   sectionMarkers?: MigrationTool;
   /**
-   * The migration tool that runs the migration files: "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. Default: "none", every file is one migration.
+   * The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
    */
   tool?: MigrationTool;
 }
@@ -1266,9 +1266,9 @@ export interface LinterRules {
   unknownType?: RuleConfiguration_for_Null;
 }
 /**
- * A migration tool that puts the up and the down migration in the same file.
+ * The migration tool that runs the migration files.
  */
-export type MigrationTool = "none" | "dbmate" | "goose";
+export type MigrationTool = "none" | "supabase" | "dbmate" | "goose";
 export interface PglinterRules {
   /**
    * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
