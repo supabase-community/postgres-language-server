@@ -1,9 +1,13 @@
 use crate::{CliDiagnostic, CliSession};
 use pgls_configuration::PartialConfiguration;
+use pgls_configuration::migrations::{MigrationTool, PartialMigrationsConfiguration};
 use pgls_console::{ConsoleExt, markup};
 use pgls_fs::ConfigName;
+use pgls_migrations::{
+    Detected, ToolId,
+    detect::{configuration_directory, find_projects},
+};
 use pgls_workspace::configuration::create_config;
-use pgls_workspace::migrations::project::{Project, configuration_directory, find_projects};
 
 pub(crate) fn init(mut session: CliSession) -> Result<(), CliDiagnostic> {
     let fs = &mut session.app.fs;
@@ -16,7 +20,7 @@ pub(crate) fn init(mut session: CliSession) -> Result<(), CliDiagnostic> {
         (None, projects)
     };
     if let Some(project) = &project {
-        project.configure(config);
+        configure(project, config);
     }
     create_config(fs, project_directory, config)?;
     let file_created = project_directory
@@ -39,7 +43,7 @@ Welcome to the Postgres Language Server! Let's get you started...
                 <Warn>{warning}</Warn>
             });
         }
-        let tool = project.tool;
+        let tool = project.tool.tool().name();
         let directory = &project.directory;
         let settings = configured_settings(&project);
         session.app.console.log(markup! {
@@ -49,6 +53,7 @@ Welcome to the Postgres Language Server! Let's get you started...
     } else if !ambiguous.is_empty() {
         let first = ambiguous[0].tool;
         let projects = if ambiguous.iter().all(|project| project.tool == first) {
+            let first = first.tool().name();
             let directories: Vec<&str> = ambiguous
                 .iter()
                 .map(|project| project.directory.as_str())
@@ -57,7 +62,7 @@ Welcome to the Postgres Language Server! Let's get you started...
         } else {
             let directories: Vec<String> = ambiguous
                 .iter()
-                .map(|project| format!("{}: {}", project.directory, project.tool))
+                .map(|project| format!("{}: {}", project.directory, project.tool.tool().name()))
                 .collect();
             format!("several migration projects ({})", directories.join(", "))
         };
@@ -68,9 +73,41 @@ Welcome to the Postgres Language Server! Let's get you started...
     Ok(())
 }
 
+/// The value of `migrations.tool` for the tool, if it isn't the default.
+fn tool_setting(tool: ToolId) -> Option<MigrationTool> {
+    match tool {
+        ToolId::Plain => None,
+        ToolId::Supabase => Some(MigrationTool::Supabase),
+        ToolId::Dbmate => Some(MigrationTool::Dbmate),
+        ToolId::Goose => Some(MigrationTool::Goose),
+    }
+}
+
+/// Points the database connection at the local database of the project, and the migrations at
+/// the migrations of the project.
+fn configure(project: &Detected, config: &mut PartialConfiguration) {
+    if let Some(database) = &project.database {
+        let db = config.db.get_or_insert_with(Default::default);
+        db.host = Some(database.host.to_string());
+        db.port = Some(database.port);
+        db.username = Some(database.username.to_string());
+        db.password = Some(database.password.to_string());
+        db.database = Some(database.database.to_string());
+        // Statement execution stays off: enabling it is the user's call.
+    }
+    let tool = tool_setting(project.tool);
+    if project.migrations_dir.is_some() || tool.is_some() {
+        config.migrations = Some(PartialMigrationsConfiguration {
+            migrations_dir: project.migrations_dir.clone(),
+            tool,
+            ..Default::default()
+        });
+    }
+}
+
 /// The settings that `init` took from the project, like "the database connection is set to the
 /// local Supabase database at 127.0.0.1:54322, and the migrations to supabase/migrations".
-fn configured_settings(project: &Project) -> String {
+fn configured_settings(project: &Detected) -> String {
     let mut settings = Vec::new();
     if let Some(database) = &project.database {
         settings.push((
@@ -78,15 +115,21 @@ fn configured_settings(project: &Project) -> String {
             "is",
             format!(
                 "the local {} database at {}:{}",
-                project.tool, database.host, database.port
+                project.tool.tool().name(),
+                database.host,
+                database.port
             ),
         ));
     }
     if let Some(migrations_dir) = &project.migrations_dir {
         settings.push(("the migrations", "are", migrations_dir.clone()));
     }
-    if project.setting.is_some() {
-        settings.push(("the migration tool", "is", project.tool.to_string()));
+    if tool_setting(project.tool).is_some() {
+        settings.push((
+            "the migration tool",
+            "is",
+            project.tool.tool().name().to_string(),
+        ));
     }
     let mut text = String::new();
     for (index, (setting, verb, value)) in settings.iter().enumerate() {

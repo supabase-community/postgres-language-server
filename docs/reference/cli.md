@@ -134,7 +134,7 @@ Lints your database schema.
 - **`    --after`**=_`ARG`_ &mdash; 
   Ignore any migrations before this timestamp
 - **`    --migration-tool`**=_`ARG`_ &mdash; 
-  The migration tool that runs the migration files: "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. Default: "none", every file is one migration.
+  The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
 - **`    --line-width`**=_`NUMBER`_ &mdash; 
@@ -261,7 +261,7 @@ Runs everything to the requested files.
 - **`    --after`**=_`ARG`_ &mdash; 
   Ignore any migrations before this timestamp
 - **`    --migration-tool`**=_`ARG`_ &mdash; 
-  The migration tool that runs the migration files: "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. Default: "none", every file is one migration.
+  The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
 - **`    --line-width`**=_`NUMBER`_ &mdash; 
@@ -414,7 +414,7 @@ Formats the requested files.
 - **`    --after`**=_`ARG`_ &mdash; 
   Ignore any migrations before this timestamp
 - **`    --migration-tool`**=_`ARG`_ &mdash; 
-  The migration tool that runs the migration files: "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. Default: "none", every file is one migration.
+  The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
 - **`    --line-width`**=_`NUMBER`_ &mdash; 

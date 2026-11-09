@@ -22,10 +22,12 @@ use pgls_fs::{ConfigName, FileSystem, FindFiles, MemoryFileSystem, PgLSPath};
 use pgls_text_size::{TextRange, TextSize};
 use sqlx::{Executor, PgPool, Row};
 
+use crate::features::code_actions::execute_statement::PLACEHOLDER_EXECUTION_DISABLED;
 use crate::{
     DynRef, Workspace, WorkspaceError,
     configuration::{
-        IncompleteSearch, NestedConfigurationSearch, apply_nested_configurations,
+        ConfigurationLayers, ConfigureProjectParams, IncompleteSearch, NestedConfigurationSearch,
+        VcsIntegration, apply_nested_configurations, configure_project,
         is_searched_for_configuration, load_configuration,
     },
     features::code_actions::{
@@ -39,9 +41,9 @@ use crate::{
     features::semantic_tokens::{PullSemanticTokensParams, SemanticTokenKind},
     settings::FilesSettings,
     workspace::{
-        IsPathIgnoredParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams, StatementId,
-        UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
-        server::{PLACEHOLDER_EXECUTION_DISABLED, WorkspaceServer},
+        FindProjectParams, IsPathIgnoredParams, OpenFileParams, ProjectKey,
+        RegisterProjectFolderParams, StatementId, UnregisterProjectFolderParams,
+        UpdateNestedSettingsParams, UpdateSettingsParams, server::WorkspaceServer,
     },
 };
 
@@ -51,8 +53,10 @@ fn get_test_workspace(
 ) -> Result<(WorkspaceServer, ProjectKey), WorkspaceError> {
     let workspace = WorkspaceServer::new();
 
-    let project_key =
-        workspace.register_project_folder(RegisterProjectFolderParams { path: None })?;
+    let project_key = workspace.register_project_folder(RegisterProjectFolderParams {
+        path: None,
+        real_path: None,
+    })?;
 
     workspace.update_settings(UpdateSettingsParams {
         project_key,
@@ -60,6 +64,7 @@ fn get_test_workspace(
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     })?;
 
     Ok((workspace, project_key))
@@ -320,6 +325,7 @@ fn the_migration_tool_follows_settings_changes() {
                 gitignore_matches: vec![],
                 vcs_base_path: None,
                 workspace_directory: None,
+                replace: true,
             })
             .expect("Unable to update the settings");
     };
@@ -572,6 +578,55 @@ async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
                 .into()
         ))
     );
+}
+
+/// A comment between two tokens the parser combines through lookahead (`U&"..." UESCAPE`,
+/// `NOT IN`, `NOT BETWEEN`, `NULLS FIRST`, `WITH ORDINALITY`) used to break parsing in the
+/// libpg_query 17 branch.
+#[tokio::test]
+async fn comments_between_lookahead_tokens_are_no_syntax_error() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("lookahead-comments.sql");
+    let content = r#"select U&"d!0061t!+000061" /* c */ UESCAPE '!' from t;
+select 1 where 1 not /* c */ in (2);
+select 1 where 1 not /* c */ between 0 and 2;
+select * from t order by a nulls /* c */ first;
+select * from unnest(array[1]) with -- c
+ordinality;
+"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let syntax_errors = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "syntax")
+        })
+        .map(|diagnostic| diagnostic.location().span)
+        .collect::<Vec<_>>();
+    assert_eq!(syntax_errors, vec![]);
 }
 
 #[tokio::test]
@@ -828,7 +883,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
             result _fetch_cycle_continuation_data := null;
         begin
             result.next_id := 0;
-            result.next_state := '{}'::jsonb
+            result.next_state := '{}'::jsonb;
 
             return result;
         end;
@@ -998,6 +1053,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     });
 
     let diagnostics = workspace
@@ -1093,6 +1149,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     });
 
     let diagnostics = workspace
@@ -1708,6 +1765,31 @@ async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     assert_eq!(format_content(&formatted), formatted);
 }
 
+#[tokio::test]
+async fn test_format_sql_function_bodies_with_quotes_and_atomic_bodies() {
+    let content = "create function f() returns text language sql as 'SELECT   ''a''';";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns text\nlanguage sql\nas $$\nselect 'a';\n$$;"
+    );
+    let content = "create function f(p int) returns int language sql begin atomic select p; select p + 1; end;";
+    let formatted = format_content(content);
+    assert_eq!(format_content(&formatted), formatted);
+}
+
+#[tokio::test]
+async fn test_format_continued_string_body_is_idempotent() {
+    // The two strings are one, `'select 1'`.
+    let content = "create function f() returns int language sql as 'select   1'\n'';";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $$\nselect 1;\n$$;"
+    );
+    assert_eq!(format_content(&formatted), formatted);
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -1960,6 +2042,60 @@ select * from auth.users;
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn completions_after_the_end_of_an_unterminated_statement(test_db: PgPool) {
+    test_db
+        .execute("create table completed_table (id int);")
+        .await
+        .expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+
+    // The statement ends before the space, and the cursor is after it.
+    let content = "select * from ";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let completions = workspace
+        .get_completions(crate::workspace::GetCompletionsParams {
+            project_key,
+            path: path.clone(),
+            position: TextSize::of(content),
+        })
+        .expect("Unable to request completions");
+
+    assert!(
+        completions
+            .items
+            .iter()
+            .any(|item| item.label == "completed_table"),
+        "{:?}",
+        completions.items
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
     test_db
         .execute("create schema auth; create table auth.users (id serial primary key);")
@@ -2194,6 +2330,7 @@ async fn execute_statement_refuses_goose_envsub_expansions(test_db: PgPool) {
             gitignore_matches: vec![],
             vcs_base_path: None,
             workspace_directory: None,
+            replace: false,
         })
         .expect("Unable to update the settings");
 
@@ -2799,6 +2936,25 @@ fn test_concurrently_fix_is_unsafe_without_section_markers() {
     );
 }
 
+/// Statements with psql variables get fixes: the fixed statement is checked with the variables
+/// read as parameters, like the statement itself, and they stay as written.
+#[test]
+fn test_fix_file_fixes_statements_with_psql_variables() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_tenant_idx on :\"schema\".users (email) where tenant = :'tenant' and plan = $plan;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        "create index concurrently users_tenant_idx on :\"schema\".users (email) where tenant = :'tenant' and plan = $plan;\n"
+    );
+}
+
 #[test]
 fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
     let mut conf = PartialConfiguration::init();
@@ -3012,14 +3168,19 @@ async fn test_semantic_tokens(test_db: PgPool) {
             .collect::<Vec<_>>()
     };
 
-    // The table and the enum created in the file, and the body of the SQL function.
+    // The table and the enum created in the file, the types of the DDL, and the body of the SQL
+    // function.
     assert_eq!(
         tokens(None),
         vec![
+            ("int", SemanticTokenKind::Type),
+            ("file_mood", SemanticTokenKind::Type),
             ("id", SemanticTokenKind::Property),
             ("file_items", SemanticTokenKind::Class),
             ("mood", SemanticTokenKind::Property),
             ("'up'", SemanticTokenKind::EnumMember),
+            ("int", SemanticTokenKind::Type),
+            ("text", SemanticTokenKind::Type),
             ("label", SemanticTokenKind::Property),
             ("public", SemanticTokenKind::Namespace),
             ("db_items", SemanticTokenKind::Class),
@@ -3461,7 +3622,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     };
 
     // The columns of a table of the database and of one created in the file, qualified since
-    // there are two FROM items.
+    // there are two FROM items. After a dot, the keyword `select` needs no quotes.
     let actions = expand_actions("* from star_items");
     assert_eq!(actions.len(), 1, "{actions:?}");
     let (title, edit) = &actions[0];
@@ -3474,7 +3635,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         edit.edits,
         vec![TextEdit {
             range: range_of("*"),
-            new_text: r#"i.id, i."Label", t.id, t.item_id, t."select""#.into(),
+            new_text: r#"i.id, i."Label", t.id, t.item_id, t.select"#.into(),
         }]
     );
 
@@ -3486,7 +3647,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         actions[0].1.edits,
         vec![TextEdit {
             range: range_of("t.*"),
-            new_text: r#"t.id, t.item_id, t."select""#.into(),
+            new_text: r#"t.id, t.item_id, t.select"#.into(),
         }]
     );
 
@@ -3752,6 +3913,7 @@ impl TestProject {
         let project_key = workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: Some(root.to_path_buf()),
+                real_path: None,
             })
             .unwrap();
         workspace
@@ -3766,6 +3928,7 @@ impl TestProject {
                 gitignore_matches: vec![],
                 vcs_base_path: None,
                 workspace_directory: Some(root.to_path_buf()),
+                replace: false,
             })
             .unwrap();
 
@@ -3787,8 +3950,7 @@ impl TestProject {
             fs,
             self.project_key,
             search,
-            None,
-            |c| c,
+            &ConfigurationLayers::default(),
         )
         .unwrap();
         let directories = nested
@@ -3818,8 +3980,7 @@ impl TestProject {
             fs,
             self.project_key,
             NestedConfigurationSearch::new(root),
-            None,
-            |configuration| configuration,
+            &ConfigurationLayers::default(),
         )
         .unwrap()
         .configurations
@@ -3945,7 +4106,104 @@ fn files_use_the_nearest_configuration_file() {
     );
     // A relative path is relative to the root of the project, like the paths of the CLI.
     assert_eq!(project.severities("db2/a.sql"), [Severity::Error]);
+    // `..` leaves the folder it follows.
+    assert_eq!(
+        project.severities("/repo/db1/../db2/sub/a.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(project.severities("db2/nested/../a.sql"), [Severity::Error]);
     assert!(project.is_ignored("/repo/legacy/a.sql"));
+}
+
+/// Updating the root settings with `replace` resets what the configuration doesn't set, while a
+/// merge keeps it, which the wasm `format` call relies on.
+#[test]
+fn updating_the_settings_replaces_or_merges_them() {
+    let fs = file_system_with_configurations(&[(
+        "/repo",
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+    assert_eq!(project.severities("/repo/a.sql"), [Severity::Error]);
+
+    let update = |replace: bool| {
+        project
+            .workspace
+            .update_settings(UpdateSettingsParams {
+                project_key: project.project_key,
+                configuration: PartialConfiguration::default(),
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+                workspace_directory: Some(PathBuf::from("/repo")),
+                replace,
+            })
+            .unwrap();
+    };
+    update(false);
+    assert_eq!(project.severities("/repo/b.sql"), [Severity::Error]);
+    update(true);
+    assert_eq!(project.severities("/repo/c.sql"), [Severity::Warning]);
+}
+
+/// A file opened by its real path belongs to a folder that was opened through a symlink, and gets
+/// its settings. `configure_project` resolves the symlink through the file system.
+#[test]
+fn files_below_the_real_path_of_a_symlinked_folder_use_its_settings() {
+    let mut fs = MemoryFileSystem::default();
+    fs.insert_symlink("/home/a/link", "/data/repo");
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+
+    let workspace = WorkspaceServer::new();
+    let project_key = configure_project(
+        &workspace,
+        &fs,
+        ConfigureProjectParams {
+            hint: ConfigurationPathHint::FromWorkspace(PathBuf::from("/home/a/link")),
+            layers: &ConfigurationLayers::default(),
+            vcs: VcsIntegration::Enabled,
+        },
+    )
+    .unwrap()
+    .project_key;
+    workspace
+        .update_nested_settings(UpdateNestedSettingsParams {
+            project_key,
+            nested: vec![crate::workspace::NestedSettingsParams {
+                directory: PathBuf::from("/home/a/link/db1"),
+                configuration: serde_json::from_str(
+                    r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+                )
+                .unwrap(),
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+            }],
+        })
+        .unwrap();
+    let find = |path: &str| {
+        workspace
+            .find_project(FindProjectParams {
+                path: PgLSPath::new(path),
+            })
+            .unwrap()
+    };
+    assert_eq!(find("/data/repo/db1/b.sql"), Some(project_key));
+    assert_eq!(find("/data/other/../repo/c.sql"), Some(project_key));
+    assert_eq!(find("/data/other/c.sql"), None);
+
+    let project = TestProject {
+        workspace: Rc::new(workspace),
+        project_key,
+    };
+    assert_eq!(
+        project.severities("/home/a/link/db1/a.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(
+        project.severities("/data/repo/db1/b.sql"),
+        [Severity::Error]
+    );
+    assert_eq!(project.severities("/data/repo/c.sql"), [Severity::Warning]);
 }
 
 /// The search doesn't descend into the folders that the root configuration ignores, except below
@@ -4160,8 +4418,7 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
         &fs,
         project.project_key,
         NestedConfigurationSearch::new("/repo"),
-        None,
-        |configuration| configuration,
+        &ConfigurationLayers::default(),
     )
     .unwrap()
     .configurations;
@@ -4189,6 +4446,46 @@ fn a_nested_configuration_that_cannot_be_applied_uses_the_defaults() {
     );
 }
 
+/// A file belongs to the project of the deepest folder that contains it, and a project without a
+/// folder contains every path.
+#[test]
+fn files_belong_to_the_project_of_the_deepest_folder() {
+    let workspace = WorkspaceServer::new();
+    let register = |path: Option<&str>| {
+        workspace
+            .register_project_folder(RegisterProjectFolderParams {
+                path: path.map(PathBuf::from),
+                real_path: None,
+            })
+            .unwrap()
+    };
+    let find = |path: &str| {
+        workspace
+            .find_project(FindProjectParams {
+                path: PgLSPath::new(path),
+            })
+            .unwrap()
+    };
+    let outer = register(Some("/outer"));
+    let inner = register(Some("/outer/inner"));
+
+    assert_eq!(find("/outer/a.sql"), Some(outer));
+    assert_eq!(find("/outer/inner/a.sql"), Some(inner));
+    assert_eq!(find("/outer/innermost/a.sql"), Some(outer));
+    assert_eq!(find("/elsewhere/a.sql"), None);
+
+    let folderless = register(None);
+    assert_eq!(find("/elsewhere/a.sql"), Some(folderless));
+    assert_eq!(find("/outer/inner/a.sql"), Some(inner));
+
+    workspace
+        .unregister_project_folder(UnregisterProjectFolderParams {
+            path: PgLSPath::new("/outer/inner"),
+        })
+        .unwrap();
+    assert_eq!(find("/outer/inner/a.sql"), Some(outer));
+}
+
 /// Each project has its own nested settings, even when the folder of one is below the other, as
 /// with nested workspace folders. Unregistering a project removes its nested settings with it.
 #[test]
@@ -4206,6 +4503,7 @@ fn projects_have_their_own_nested_settings() {
             .workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: Some(PathBuf::from("/outer/inner")),
+                real_path: None,
             })
             .unwrap(),
     );
@@ -4220,6 +4518,7 @@ fn projects_have_their_own_nested_settings() {
             gitignore_matches: vec![],
             vcs_base_path: None,
             workspace_directory: None,
+            replace: false,
         })
         .unwrap();
 
@@ -4253,6 +4552,7 @@ fn registering_a_project_folder_again_reuses_its_project() {
         workspace
             .register_project_folder(RegisterProjectFolderParams {
                 path: Some(PathBuf::from(path)),
+                real_path: None,
             })
             .unwrap()
     };
@@ -4272,6 +4572,7 @@ fn updating_the_settings_of_an_unknown_project_fails() {
         gitignore_matches: vec![],
         vcs_base_path: None,
         workspace_directory: None,
+        replace: false,
     });
     assert!(matches!(result, Err(WorkspaceError::NoProject(_))));
 }
@@ -4403,6 +4704,289 @@ ALTER TABLE users DROP COLUMN email;
     assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
 }
 
+/// When no configuration points at a database any more, its pool and snapshot are dropped, so that
+/// a reload or a removed folder doesn't keep every database ever configured in memory.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
+    let workspace = WorkspaceServer::new();
+    let project_key = workspace
+        .register_project_folder(RegisterProjectFolderParams {
+            path: Some(PathBuf::from("/repo")),
+            real_path: None,
+        })
+        .unwrap();
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: serde_json::from_str(r#"{ "db": { "disableConnection": true } }"#)
+                .unwrap(),
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: Some(PathBuf::from("/repo")),
+            replace: true,
+        })
+        .unwrap();
+    let options = test_db.connect_options();
+    let nested = |databases: &[&str]| UpdateNestedSettingsParams {
+        project_key,
+        nested: databases
+            .iter()
+            .map(|database| crate::workspace::NestedSettingsParams {
+                directory: PathBuf::from("/repo").join(database),
+                configuration: PartialConfiguration {
+                    db: Some(PartialDatabaseConfiguration {
+                        host: Some(options.get_host().to_string()),
+                        port: Some(options.get_port()),
+                        database: Some(options.get_database().unwrap().to_string()),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+            })
+            .collect(),
+    };
+
+    workspace.update_nested_settings(nested(&["db1"])).unwrap();
+    let result = workspace
+        .check_database_connection(
+            crate::features::diagnostics::CheckDatabaseConnectionParams { project_key },
+        )
+        .unwrap();
+    assert_eq!(result.errors, Vec::<String>::new());
+    assert_eq!(workspace.connection.pool_count(), 1);
+    assert_eq!(workspace.snapshot.connection_count(), 1);
+    let pools = workspace.connection.cached_pools();
+
+    // Another folder with the same database keeps it.
+    workspace.update_nested_settings(nested(&["db2"])).unwrap();
+    assert_eq!(workspace.connection.pool_count(), 1);
+    assert_eq!(workspace.snapshot.connection_count(), 1);
+
+    workspace.update_nested_settings(nested(&[])).unwrap();
+    assert_eq!(workspace.connection.pool_count(), 0);
+    assert_eq!(workspace.snapshot.connection_count(), 0);
+    // Both pools of the database are closed, also the one for executed statements.
+    for pools in pools {
+        assert!(pools.pool.is_closed());
+        assert!(pools.statement_pool.is_closed());
+    }
+}
+
+#[test]
+fn database_spans_must_fit_the_statement() {
+    use super::database_span;
+
+    let at = |offset: u32| TextSize::from(offset);
+    let statement = "select 'é' from t";
+    let range = TextRange::new(at(100), at(100) + TextSize::of(statement));
+    // `'é'` is at 7..11.
+    assert_eq!(
+        database_span(Some(TextRange::new(at(7), at(11))), statement, range),
+        TextRange::new(at(107), at(111))
+    );
+    assert_eq!(database_span(None, statement, range), range);
+    // Inside `é`, or after the end of the statement.
+    assert_eq!(
+        database_span(Some(TextRange::new(at(9), at(11))), statement, range),
+        range
+    );
+    assert_eq!(
+        database_span(Some(TextRange::new(at(15), at(40))), statement, range),
+        range
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints_parameter_names_setting(test_db: PgPool) {
+    let path = PgLSPath::new("test.sql");
+    let content = "create function point(x int, y int) returns int language sql as 'select x + y';\n\
+        select point(1, 1 + 1), point(length('a'), null);\n";
+    let hints = |parameter_names| {
+        let mut conf = PartialConfiguration::init();
+        conf.merge_with(PartialConfiguration {
+            db: Some(PartialDatabaseConfiguration {
+                database: Some(
+                    test_db
+                        .connect_options()
+                        .get_database()
+                        .unwrap()
+                        .to_string(),
+                ),
+                ..Default::default()
+            }),
+            inlay_hints: Some(
+                pgls_configuration::inlay_hints::PartialInlayHintsConfiguration {
+                    parameter_names: Some(parameter_names),
+                    ..Default::default()
+                },
+            ),
+            ..Default::default()
+        });
+        let (workspace, project_key) =
+            get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        workspace
+            .pull_inlay_hints(PullInlayHintsParams {
+                project_key,
+                path: path.clone(),
+                range: TextRange::up_to(TextSize::of(content)),
+            })
+            .expect("Unable to pull inlay hints")
+            .hints
+            .into_iter()
+            .map(|hint| {
+                (
+                    &content[usize::from(hint.offset)..usize::from(hint.offset) + 1],
+                    hint.label,
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    use pgls_configuration::inlay_hints::ParameterNameHints;
+    assert_eq!(hints(ParameterNameHints::All).len(), 4);
+    assert_eq!(
+        hints(ParameterNameHints::Literals),
+        [("1", "x:".to_string()), ("n", "y:".to_string())]
+    );
+    assert!(hints(ParameterNameHints::None).is_empty());
+}
+
+/// Statements in `BEGIN ATOMIC` and `RETURN` bodies, and in `'...'` and `E'...'` bodies with
+/// escapes, get tokens, hover, and diagnostics at the right place in the file.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_sql_function_bodies(test_db: PgPool) {
+    test_db
+        .execute("create table body_users (id int, name text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create function atomic_fn(p int) returns int language sql\n\
+        begin atomic select p + id from body_users; end;\n\
+        create function return_fn(p int) returns int return p + 1;\n\
+        create function quoted_fn(p text) returns text language sql\n\
+        as 'select name || ''x'' || p from body_users where name = ''y'' and nope = 1';\n\
+        create function escaped_fn() returns text language sql\n\
+        as E'select \\'\\u00e9\\' || name from body_users where gone = 1';\n\
+        create function unicode_fn() returns text language sql\n\
+        as U&'select ''\\00e9'' || name from body_users where missing = 1';\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let tokens = workspace
+        .pull_semantic_tokens(PullSemanticTokensParams {
+            project_key,
+            path: path.clone(),
+            range: None,
+        })
+        .expect("Unable to pull semantic tokens")
+        .tokens
+        .into_iter()
+        .map(|token| (&content[token.range], token.kind))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        tokens,
+        vec![
+            ("int", SemanticTokenKind::Type),
+            ("int", SemanticTokenKind::Type),
+            ("p", SemanticTokenKind::Parameter),
+            ("id", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+            ("int", SemanticTokenKind::Type),
+            ("int", SemanticTokenKind::Type),
+            ("p", SemanticTokenKind::Parameter),
+            ("text", SemanticTokenKind::Type),
+            ("text", SemanticTokenKind::Type),
+            ("name", SemanticTokenKind::Property),
+            ("p", SemanticTokenKind::Parameter),
+            ("body_users", SemanticTokenKind::Class),
+            ("name", SemanticTokenKind::Property),
+            ("text", SemanticTokenKind::Type),
+            ("name", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+            ("text", SemanticTokenKind::Type),
+            ("name", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+        ]
+    );
+
+    let hover = |needle: &str| {
+        let offset = content.find(needle).expect("needle in content") + 1;
+        workspace
+            .on_hover(OnHoverParams {
+                project_key,
+                path: path.clone(),
+                position: u32::try_from(offset).unwrap().into(),
+            })
+            .expect("Unable to hover")
+            .markdown_blocks
+    };
+    let blocks = hover("id from body_users; end");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.body_users.id"), "{blocks:?}");
+    let blocks = hover("name = ''y''");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.body_users.name"), "{blocks:?}");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+    let unknown_columns = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "lint/unknownColumn")
+        })
+        .map(|diagnostic| &content[diagnostic.location().span.expect("a span")])
+        .collect::<Vec<_>>();
+    assert_eq!(
+        unknown_columns,
+        ["nope", "gone", "missing"],
+        "{diagnostics:#?}"
+    );
+}
+
 const GOOSE_ENVSUB: &str = "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SCHEMA}.events (id bigint, at timestamp);\ndrop table ${SCHEMA:-public}.old_events;\n-- +goose ENVSUB OFF\nselect ${NOT_SUBSTITUTED};\n";
 
 #[test]
@@ -4485,6 +5069,7 @@ fn test_goose_envsub_follows_settings_changes() {
             gitignore_matches: vec![],
             vcs_base_path: None,
             workspace_directory: None,
+            replace: false,
         })
         .expect("Unable to update the settings");
     // Only the expansion after `ENVSUB OFF` is left.
@@ -4523,11 +5108,10 @@ fn test_goose_envsub_expansions_stay_as_written() {
         })
         .expect("Unable to fix file")
         .code;
-    // The expansion stays as written. A fix is only offered if the fixed statement parses, and
-    // a statement with an expansion doesn't as written, so only the other statement is fixed.
+    // The statement with the expansion is fixed around it, and the expansion stays as written.
     assert_eq!(
         fixed.to_lowercase(),
-        "-- +goose up\n-- +goose envsub on\ncreate table ${schema}.events (id bigint, at timestamp);\ncreate table if not exists logs (at timestamptz);\n"
+        "-- +goose up\n-- +goose envsub on\ncreate table if not exists ${schema}.events (id bigint, at timestamptz);\ncreate table if not exists logs (at timestamptz);\n"
     );
 
     // The formatter leaves the statement alone.
@@ -4558,7 +5142,8 @@ fn test_no_fix_inside_a_goose_envsub_expansion() {
     );
     let (workspace, project_key) =
         get_test_workspace(Some(conf)).expect("Unable to create test workspace");
-    // `NOT VALID` would go after the last token of the constraint, inside `${PARENT}`.
+    // `NOT VALID` goes after the last token of the constraint, the whole `${PARENT}`, and not
+    // inside it.
     let content = "-- +goose Up\n-- +goose ENVSUB ON\nalter table orders add constraint orders_parent_fk foreign key (parent_id) references ${PARENT};\n";
     let path = PgLSPath::new("test.sql");
     workspace
@@ -4579,7 +5164,10 @@ fn test_no_fix_inside_a_goose_envsub_expansion() {
         })
         .expect("Unable to fix file")
         .code;
-    assert_eq!(fixed, content);
+    assert_eq!(
+        fixed,
+        "-- +goose Up\n-- +goose ENVSUB ON\nalter table orders add constraint orders_parent_fk foreign key (parent_id) references ${PARENT} not valid;\n"
+    );
 }
 
 /// The diagnostics of a goose migration with `ENVSUB` on for `sql`.

@@ -48,7 +48,5 @@ pub(super) fn emit_create_plang_stmt(e: &mut EventEmitter, n: &CreatePLangStmt) 
         emit_dot_separated_list(e, &n.plvalidator);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

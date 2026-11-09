@@ -58,7 +58,10 @@ Some migration tools put the up and the down migration in the same file, separat
 | --- | --- | --- |
 | `"dbmate"` | `-- migrate:up`, `-- migrate:down` | `-- migrate:up transaction:false` (per section) |
 | `"goose"` | `-- +goose Up`, `-- +goose Down` | `-- +goose NO TRANSACTION` (whole file) |
+| `"supabase"` | | |
 | `"none"` (default) | | |
+
+The Supabase CLI runs every file as one migration, so `"supabase"` checks files like `"none"`.
 
 In a dbmate project, `postgres-language-server init` sets both: it detects dbmate by a first migration in `db/migrations`, dbmate's default folder, that starts with `-- migrate:up`. goose has no default folder or configuration file, so `init` doesn't detect it.
 
@@ -72,7 +75,7 @@ With a migration tool:
 - A down section sees the objects of the up sections before it, because it only runs after them. Its own changes don't carry over to the sections after it. For example, `drop table posts` in the down section knows `posts` from the up section.
 - Statements before the first marker are checked like a file without markers, and reported, because both tools reject them. Lines that look like markers but that the tool reads as plain comments, like `-- Migrate:Up` or an indented `  -- migrate:up`, are reported too, and so are indented goose annotations, which goose rejects.
 - goose's `-- +goose StatementBegin` and `-- +goose StatementEnd` need no setup: statements, including function bodies, are split by their SQL syntax.
-- Between goose's `-- +goose ENVSUB ON` and `-- +goose ENVSUB OFF`, goose replaces `${NAME}`, `$NAME` (and `${NAME:-default}` and the other forms of [interpolate](https://github.com/mfridman/interpolate)) with environment variables. We don't know their values, so an identifier with an expansion, like `${SCHEMA}`, `${PREFIX}_events` or `"${SCHEMA}"`, is analysed like a psql variable: as an identifier after keywords like `TABLE`, `FROM` or `REFERENCES` and before a `.`, and as a value elsewhere. Statements with an expansion in an identifier aren't typechecked. Expansions in string literals and comments stay as written, and a statement with an expansion in a string literal isn't typechecked either, since its value is unknown. The statements after it still are. A line that goose can't interpolate, like one with `${NAME:?}`, is analysed as written too. Statements with an expansion get no fixes, can't be executed from the editor, and the formatter leaves them as they are, so the expansions stay as written. This needs `"tool": "goose"`.
+- Between goose's `-- +goose ENVSUB ON` and `-- +goose ENVSUB OFF`, goose replaces `${NAME}`, `$NAME` (and `${NAME:-default}` and the other forms of [interpolate](https://github.com/mfridman/interpolate)) with environment variables. We don't know their values, so an identifier with an expansion, like `${SCHEMA}`, `${PREFIX}_events` or `"${SCHEMA}"`, is analysed like a psql variable: as an identifier after keywords like `TABLE`, `FROM` or `REFERENCES` and before a `.`, and as a value elsewhere. Statements with an expansion in an identifier aren't typechecked. Expansions in string literals and comments stay as written, and a statement with an expansion in a string literal isn't typechecked either, since its value is unknown. The statements after it still are. A line that goose can't interpolate, like one with `${NAME:?}`, is analysed as written too. Fixes that would edit an expansion are left out, statements with an expansion can't be executed from the editor, and the formatter leaves them as they are, so the expansions stay as written. This needs `"tool": "goose"`.
 
 Down sections are checked by default, since they run when you roll back. To only check the up sections, set `lintDown` to `false`. Syntax errors in down sections are still reported.
 
