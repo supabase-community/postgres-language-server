@@ -157,7 +157,11 @@
             this.pendingRequests.set(id, { resolve, reject, responses: [] });
             this.worker.postMessage({ type: "message", message, id });
 
-            // Timeout for safety
+            // A notification may have no response, so it resolves with what it got after a
+            // while. A request waits for its response, which takes longer on a busy machine.
+            if (message.id !== undefined) {
+              return;
+            }
             setTimeout(() => {
               const pending = this.pendingRequests.get(id);
               if (pending) {
@@ -209,15 +213,74 @@
             params: { capabilities: {} },
           });
 
-          setStatus("Ready", "ready");
-
           // Set up diagnostics on content change using the worker LSP
+          const uri = "file:///test.sql";
           let debounceTimer;
           let documentVersion = 0;
+          let requestId = 1000;
+
+          // Code actions: Monaco asks for them for the lightbulb, the quick fix menu and
+          // "Fix All", and applies the edits of the one the user picks.
+          const toLspRange = (range) => ({
+            start: { line: range.startLineNumber - 1, character: range.startColumn - 1 },
+            end: { line: range.endLineNumber - 1, character: range.endColumn - 1 },
+          });
+          monaco.languages.registerCodeActionProvider(
+            "sql",
+            {
+              async provideCodeActions(model, range, context) {
+                const id = ++requestId;
+                const messages = await lspClient.sendMessage({
+                  jsonrpc: "2.0",
+                  id,
+                  method: "textDocument/codeAction",
+                  params: {
+                    textDocument: { uri },
+                    range: toLspRange(range),
+                    context: {
+                      diagnostics: context.markers.map((marker) => ({
+                        range: toLspRange(marker),
+                        message: marker.message,
+                        code: marker.code,
+                        source: marker.source,
+                      })),
+                      only: context.only ? [context.only] : undefined,
+                    },
+                  },
+                });
+                const actions = messages.find((m) => m.id === id)?.result ?? [];
+                return {
+                  actions: actions.map((action) => ({
+                    title: action.title,
+                    kind: action.kind,
+                    isPreferred: action.isPreferred,
+                    edit: {
+                      edits: (action.edit?.changes?.[uri] ?? []).map((edit) => ({
+                        resource: model.uri,
+                        versionId: undefined,
+                        textEdit: {
+                          range: {
+                            startLineNumber: edit.range.start.line + 1,
+                            startColumn: edit.range.start.character + 1,
+                            endLineNumber: edit.range.end.line + 1,
+                            endColumn: edit.range.end.character + 1,
+                          },
+                          text: edit.newText,
+                        },
+                      })),
+                    },
+                  })),
+                  dispose() {},
+                };
+              },
+            },
+            { providedCodeActionKinds: ["quickfix", "source.fixAll.pgls"] },
+          );
+
+          setStatus("Ready", "ready");
 
           const updateDiagnostics = async () => {
             const content = editor.getValue();
-            const uri = "file:///test.sql";
             documentVersion++;
 
             // Send didOpen/didChange via LSP worker
@@ -259,6 +322,8 @@
                     ? monaco.MarkerSeverity.Warning
                     : monaco.MarkerSeverity.Info,
               message: d.message,
+              code: d.code,
+              source: d.source,
               startLineNumber: d.range.start.line + 1,
               startColumn: d.range.start.character + 1,
               endLineNumber: d.range.end.line + 1,
