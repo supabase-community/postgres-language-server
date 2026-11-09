@@ -14,6 +14,11 @@ const SKIPPED_DIRECTORIES: &[&str] = &["node_modules", "target", "supabase"];
 pub struct Detected {
     /// The tool.
     pub tool: ToolId,
+    /// The folder of the configuration file, relative to the working directory: `..` when
+    /// `init` runs in the folder of the tool inside a project, like `supabase`, so that the
+    /// configuration applies to the whole project like the tool's does, and the editor finds it
+    /// when it opens the project. The other paths are relative to it.
+    pub configuration_directory: &'static Path,
     /// The folder of the tool in the project, like `supabase` or `apps/web/supabase`, relative to
     /// the folder of the configuration file, with `/` as the separator.
     pub directory: String,
@@ -41,6 +46,7 @@ impl Detected {
     pub(crate) fn new(tool: &dyn MigrationTool, root: &Root, directory: &str) -> Self {
         Self {
             tool: tool.id(),
+            configuration_directory: Path::new(""),
             directory: root.relative(directory),
             migrations_dir: tool
                 .default_dir()
@@ -70,35 +76,22 @@ impl Root {
     pub(crate) fn relative(&self, relative: &str) -> String {
         format!("{}{relative}", self.prefix)
     }
-}
 
-/// The folder of the configuration, relative to the working directory: the folder above it if
-/// the working directory is the folder of a tool inside a project, like `supabase`, so that the
-/// configuration applies to the whole project like the tool's does, and the editor finds it
-/// when it opens the project.
-pub fn configuration_directory(fs: &dyn FileSystem) -> &'static Path {
-    let working_directory = fs.working_directory().unwrap_or_default();
-    if TOOLS
-        .iter()
-        .any(|tool| tool.is_tool_directory(fs, &working_directory))
-    {
-        Path::new("..")
-    } else {
-        Path::new("")
+    /// Whether the folder is the working directory, where `init` runs.
+    pub(crate) fn is_working_directory(&self) -> bool {
+        self.prefix.is_empty()
     }
 }
 
-/// The projects of the migration tools for the configuration in `configuration_directory`,
-/// relative to the working directory: the ones in it, or else, if it is the working directory,
-/// the ones in the folders one or two levels below it, as in a monorepo (`supabase/`,
-/// `db/supabase/`, `apps/web/supabase/`).
-pub fn find_projects(fs: &dyn FileSystem, configuration_directory: &Path) -> Vec<Detected> {
+/// The projects of the migration tools for `init`: the ones in the working directory, or the
+/// one whose tool's folder it is (see [`Detected::configuration_directory`]), or else the ones in
+/// the folders one or two levels below it, as in a monorepo (`supabase/`, `db/supabase/`,
+/// `apps/web/supabase/`).
+pub fn find_projects(fs: &dyn FileSystem) -> Vec<Detected> {
     let working_directory = fs.working_directory().unwrap_or_default();
     let detect = |relative: &str| {
         let root = Root {
-            path: working_directory
-                .join(configuration_directory)
-                .join(relative),
+            path: working_directory.join(relative),
             prefix: if relative.is_empty() {
                 String::new()
             } else {
@@ -111,7 +104,7 @@ pub fn find_projects(fs: &dyn FileSystem, configuration_directory: &Path) -> Vec
             .collect::<Vec<_>>()
     };
     let found = detect("");
-    if !found.is_empty() || !configuration_directory.as_os_str().is_empty() {
+    if !found.is_empty() {
         return found;
     }
     let mut found = Vec::new();
@@ -169,7 +162,7 @@ mod tests {
 
     fn find(dir: &TempDir) -> Vec<(String, &'static str, Option<String>)> {
         let fs = OsFileSystem::new(dir.path().to_path_buf());
-        find_projects(&fs, Path::new(""))
+        find_projects(&fs)
             .into_iter()
             .map(|project| {
                 (
@@ -192,8 +185,9 @@ mod tests {
         let dir = TempDir::new().unwrap();
         write(&dir, "supabase/config.toml", "[db]\nport = 6543\n");
         let fs = OsFileSystem::new(dir.path().to_path_buf());
-        let [project] = find_projects(&fs, Path::new("")).try_into().unwrap();
+        let [project] = find_projects(&fs).try_into().unwrap();
         assert_eq!(project.tool, ToolId::Supabase);
+        assert_eq!(project.configuration_directory, Path::new(""));
         assert_eq!(project.directory, "supabase");
         assert_eq!(
             project.migrations_dir.as_deref(),
@@ -212,7 +206,7 @@ mod tests {
             "-- migrate:up\ncreate table users (id int);\n\n-- migrate:down\ndrop table users;\n",
         );
         let fs = OsFileSystem::new(dir.path().to_path_buf());
-        let [project] = find_projects(&fs, Path::new("")).try_into().unwrap();
+        let [project] = find_projects(&fs).try_into().unwrap();
         assert_eq!(project.tool, ToolId::Dbmate);
         assert_eq!(project.directory, "db");
         assert_eq!(project.migrations_dir.as_deref(), Some("db/migrations"));
@@ -280,9 +274,23 @@ mod tests {
     fn configures_the_project_above_the_supabase_folder() {
         let dir = TempDir::new().unwrap();
         write(&dir, "supabase/config.toml", "[db]\nport = 6543\n");
+        // dbmate's project above it doesn't count: `init` configures the Supabase project.
+        write(&dir, "db/migrations/1_init.sql", "-- migrate:up\n");
         let fs = OsFileSystem::new(dir.path().join("supabase"));
-        assert_eq!(configuration_directory(&fs), Path::new(".."));
-        let fs = OsFileSystem::new(dir.path().to_path_buf());
-        assert_eq!(configuration_directory(&fs), Path::new(""));
+        let [project] = find_projects(&fs).try_into().unwrap();
+        assert_eq!(project.tool, ToolId::Supabase);
+        assert_eq!(project.configuration_directory, Path::new(".."));
+        assert_eq!(project.directory, "supabase");
+        assert_eq!(
+            project.migrations_dir.as_deref(),
+            Some("supabase/migrations")
+        );
+        assert_eq!(project.database.map(|database| database.port), Some(6543));
+
+        // A folder named `supabase` without a `[db]` section is no project of its own.
+        let other = TempDir::new().unwrap();
+        write(&other, "supabase/config.toml", "project_id = \"test\"\n");
+        let fs = OsFileSystem::new(other.path().join("supabase"));
+        assert!(find_projects(&fs).is_empty());
     }
 }

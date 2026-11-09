@@ -3,17 +3,18 @@ use pgls_configuration::PartialConfiguration;
 use pgls_configuration::migrations::{MigrationTool, PartialMigrationsConfiguration};
 use pgls_console::{ConsoleExt, markup};
 use pgls_fs::ConfigName;
-use pgls_migrations::{
-    Detected, ToolId,
-    detect::{configuration_directory, find_projects},
-};
+use pgls_migrations::{Detected, ToolId, detect::find_projects};
 use pgls_workspace::configuration::create_config;
+use std::path::Path;
 
 pub(crate) fn init(mut session: CliSession) -> Result<(), CliDiagnostic> {
     let fs = &mut session.app.fs;
     let config = &mut PartialConfiguration::init();
-    let project_directory = configuration_directory(&**fs);
-    let mut projects = find_projects(&**fs, project_directory);
+    let mut projects = find_projects(&**fs);
+    // Inside the folder of a tool, like `supabase`, the configuration goes into the project.
+    let project_directory = projects
+        .first()
+        .map_or(Path::new(""), |project| project.configuration_directory);
     let (project, ambiguous) = if projects.len() == 1 {
         (projects.pop(), Vec::new())
     } else {
