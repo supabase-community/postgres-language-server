@@ -76,6 +76,7 @@ pub type CreatingEnum = <lint::style::creating_enum::CreatingEnum as crate::Lint
 pub type DisallowUniqueConstraint = < lint :: safety :: disallow_unique_constraint :: DisallowUniqueConstraint as crate :: LinterRule > :: Options ;
 pub type FunctionArgumentMismatch = < lint :: typecheck :: function_argument_mismatch :: FunctionArgumentMismatch as crate :: LinterRule > :: Options ;
 pub type FunctionReturnTypeMismatch = < lint :: typecheck :: function_return_type_mismatch :: FunctionReturnTypeMismatch as crate :: LinterRule > :: Options ;
+pub type GeneratedColumnAssignment = < lint :: typecheck :: generated_column_assignment :: GeneratedColumnAssignment as crate :: LinterRule > :: Options ;
 pub type IdentifierTooLong =
     <lint::correctness::identifier_too_long::IdentifierTooLong as crate::LinterRule>::Options;
 pub type InsertColumnMismatch =

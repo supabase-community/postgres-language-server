@@ -8,6 +8,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 - [banNonTransactionalStatementInTransaction](./rules/ban-non-transactional-statement-in-transaction.md) 
 - [functionArgumentMismatch](./rules/function-argument-mismatch.md) 
 - [functionReturnTypeMismatch](./rules/function-return-type-mismatch.md) 
+- [generatedColumnAssignment](./rules/generated-column-assignment.md) 
 - [insertColumnMismatch](./rules/insert-column-mismatch.md) 
 - [invalidCast](./rules/invalid-cast.md) 
 - [invalidDropTypeSignature](./rules/invalid-drop-type-signature.md) 

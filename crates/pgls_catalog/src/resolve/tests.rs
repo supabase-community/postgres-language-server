@@ -440,6 +440,134 @@ fn inserts() {
 }
 
 #[test]
+fn generated_columns() {
+    let setup = "create table items (price int, total int generated always as (price * 2) stored);
+        create table src (price int, total int);
+        create table one (price int)";
+    let spans = |sql: &str| {
+        resolve_after(setup, sql, None)
+            .findings
+            .into_iter()
+            .map(|finding| {
+                assert!(matches!(
+                    finding.kind,
+                    FindingKind::GeneratedColumnAssignment { .. }
+                ));
+                sql[finding.span.unwrap()].to_owned()
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        spans("insert into items (price, total) values (1, 2)"),
+        ["total"]
+    );
+    assert_eq!(spans("insert into items values (1, 2)"), ["2"]);
+    assert_eq!(spans("insert into items select 1, 2"), ["2"]);
+    // A `*` assigns the columns it expands to.
+    assert_eq!(spans("insert into items select * from src"), ["*"]);
+    assert_eq!(spans("insert into items select src.* from src"), ["src.*"]);
+    assert_eq!(spans("insert into items select *, 2 from one"), ["2"]);
+    assert_eq!(
+        spans("insert into items select 1, one.* from one"),
+        ["one.*"]
+    );
+    assert_eq!(
+        spans("insert into items select * from one"),
+        [] as [&str; 0]
+    );
+    assert_eq!(spans("update items set price = 1, total = 2"), ["total"]);
+    assert_eq!(
+        spans("insert into items (total[1]) values (2)"),
+        [] as [&str; 0]
+    );
+    assert_eq!(
+        spans("update items set (price, total) = (1, default)"),
+        [] as [&str; 0]
+    );
+    // The actions of MERGE.
+    assert_eq!(
+        spans(
+            "merge into items i using src s on s.price = i.price \
+             when matched then update set total = s.total \
+             when not matched then insert (price, total) values (s.price, s.total)"
+        ),
+        ["total", "total"]
+    );
+    assert_eq!(
+        spans(
+            "merge into items i using src s on s.price = i.price \
+             when not matched then insert values (s.price, s.total)"
+        ),
+        ["s.total"]
+    );
+    assert_eq!(
+        spans(
+            "merge into items i using src s on s.price = i.price \
+             when matched then update set total = default \
+             when not matched then insert values (s.price, default) \
+             when not matched by source then delete"
+        ),
+        [] as [&str; 0]
+    );
+}
+
+#[test]
+fn identity_columns_in_merge() {
+    let setup = "create table users (id int generated always as identity, name text);
+        create table src (id int, name text)";
+    let spans = |sql: &str| {
+        resolve_after(setup, sql, None)
+            .findings
+            .into_iter()
+            .map(|finding| {
+                assert!(matches!(
+                    finding.kind,
+                    FindingKind::GeneratedColumnAssignment { identity: true, .. }
+                ));
+                sql[finding.span.unwrap()].to_owned()
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert (id, name) values (s.id, s.name)"
+        ),
+        ["id"]
+    );
+    // `OVERRIDING` doesn't apply to the UPDATE action.
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when matched then update set id = s.id \
+             when not matched then insert (id, name) overriding system value values (s.id, s.name)"
+        ),
+        ["id"]
+    );
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert (id, name) overriding user value values (s.id, s.name)"
+        ),
+        [] as [&str; 0]
+    );
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert (id, name) values (default, s.name)"
+        ),
+        [] as [&str; 0]
+    );
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert default values"
+        ),
+        [] as [&str; 0]
+    );
+}
+
+#[test]
 fn updates_and_deletes() {
     assert_valid(
         "update users set name = posts.title from posts where posts.user_id = users.id returning users.*",

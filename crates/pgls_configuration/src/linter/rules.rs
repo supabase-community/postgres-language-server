@@ -313,6 +313,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Error,
     },
     LinterRuleMetadata {
+        group: "typecheck",
+        name: "generatedColumnAssignment",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
         group: "correctness",
         name: "identifierTooLong",
         recommended: true,
@@ -715,6 +721,10 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_return_type_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::FunctionReturnTypeMismatch>>,
+    #[doc = "An INSERT or UPDATE assigns a value to a generated column or a GENERATED ALWAYS identity column."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub generated_column_assignment:
+        Option<RuleConfiguration<pgls_analyser::options::GeneratedColumnAssignment>>,
     #[doc = "Identifiers longer than 63 bytes are silently truncated."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identifier_too_long: Option<RuleConfiguration<pgls_analyser::options::IdentifierTooLong>>,
@@ -997,6 +1007,10 @@ impl Rules {
                 .map(RuleConfiguration::level),
             "functionReturnTypeMismatch" => self
                 .function_return_type_mismatch
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "generatedColumnAssignment" => self
+                .generated_column_assignment
                 .as_ref()
                 .map(RuleConfiguration::level),
             "identifierTooLong" => self
@@ -1300,6 +1314,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "functionReturnTypeMismatch" => self
                 .function_return_type_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "generatedColumnAssignment" => self
+                .generated_column_assignment
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "identifierTooLong" => self

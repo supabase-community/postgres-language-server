@@ -11,7 +11,7 @@ use super::{
 use crate::lookup::{Lookup, RelationKind};
 use crate::resolve::{
     ColumnSource, FindingKind, Reference,
-    scope::{Columns, Item, ItemSource},
+    scope::{Columns, DefaultOnly, Item, ItemSource},
     utils::ref_name,
 };
 
@@ -75,6 +75,7 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
         columns: apply_alias(relation.columns, alias),
         typed_columns: apply_typed_alias(relation.typed_columns, alias),
         has_system_columns: relation.has_system_columns,
+        default_only_columns: relation.default_only_columns,
         source: relation.source,
     }
 }
@@ -86,6 +87,8 @@ pub(super) struct ResolvedRelation {
     pub columns: Columns,
     pub typed_columns: Option<Vec<crate::typing::TypedColumn>>,
     pub has_system_columns: bool,
+    /// The columns of a table that INSERT and UPDATE can only set to `DEFAULT`.
+    pub default_only_columns: Vec<(String, DefaultOnly)>,
     /// Only set when references are collected.
     pub source: Option<Rc<ItemSource>>,
 }
@@ -127,6 +130,17 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
                     relation: relation.clone(),
                 });
             }
+            let default_only_columns = match relation.kind {
+                RelationKind::Table
+                | RelationKind::PartitionedTable
+                | RelationKind::ForeignTable => relation
+                    .columns
+                    .iter()
+                    .flatten()
+                    .filter_map(|column| Some((column.name.clone(), DefaultOnly::of(column)?)))
+                    .collect(),
+                _ => Vec::new(),
+            };
             ResolvedRelation {
                 schema: Some(relation.schema),
                 columns: relation
@@ -143,6 +157,7 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
                         .collect()
                 }),
                 has_system_columns: relation.kind != RelationKind::View,
+                default_only_columns,
                 source,
             }
         }
