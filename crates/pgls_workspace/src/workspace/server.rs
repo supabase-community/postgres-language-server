@@ -25,8 +25,8 @@ use pgls_analyse::{AnalysisFilter, RuleCategories, RuleCategoriesBuilder, RuleFi
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection,
+    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, FileKind, LinterDiagnostic,
+    LinterOptions, transaction_mode,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
@@ -34,10 +34,12 @@ use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
 use pgls_configuration::inlay_hints::ParameterNameHints;
+use pgls_configuration::migrations::SectionMarkers;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
+use pgls_migrations::{Direction, MigrationTool, Role, ToolId, Unit, Version};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
@@ -64,7 +66,6 @@ use crate::{
         on_hover::{OnHoverParams, OnHoverResult},
         semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
-    migrations::{self, MigrationTool},
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
     workspace::{AnalyserDiagnosticsMapper, WithCSTMapper},
 };
@@ -243,7 +244,7 @@ impl WorkspaceServer {
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.section_markers)
             .unwrap_or_default();
-        migrations::migration_tool(section_markers)
+        tool_of_section_markers(section_markers)
     }
 
     /// Applies the changed settings of a project to its open documents.
@@ -276,15 +277,14 @@ impl WorkspaceServer {
     /// Whether the file is a migration. Migration-only rules don't run on other files.
     fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
         let Some((tool, migrations_dir)) = settings.migrations.as_ref().and_then(|migrations| {
-            let tool = migrations::migration_tool(migrations.section_markers);
+            let tool = tool_of_section_markers(migrations.section_markers);
             Some((tool, migrations.path.as_ref()?))
         }) else {
             return FileKind::Unknown;
         };
-        if tool.is_migration(path, migrations_dir) {
-            FileKind::Migration
-        } else {
-            FileKind::Other
+        match tool.file(path, migrations_dir).role {
+            Role::Migration => FileKind::Migration,
+            Role::Other => FileKind::Other,
         }
     }
 
@@ -478,17 +478,16 @@ impl WorkspaceServer {
             .unwrap_or_default();
         let sections = doc.migration_sections();
         let search_path = snapshot.expand_search_path(&search_path);
-        let new_session = |section: Option<&MigrationSection>| {
-            Session::new(search_path.clone()).with_transaction_mode(
-                section.map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-            )
+        let new_session = |section: Option<&Unit>| {
+            Session::new(search_path.clone())
+                .with_transaction_mode(section.map_or(TransactionMode::Unknown, transaction_mode))
         };
 
         // Editor features show what names most likely refer to, so a `DO` block or a statement
         // that doesn't parse doesn't turn them off for the rest of the file.
         let mut catalog = Catalog::new(Some(self.catalog_base(snapshot))).best_effort();
         let mut session = new_session(None);
-        let mut section: Option<&MigrationSection> = None;
+        let mut section: Option<&Unit> = None;
         // The catalog after the up sections so far, while walking a down section.
         let mut up_catalog: Option<Catalog> = None;
         for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
@@ -889,6 +888,17 @@ impl WorkspaceServer {
     }
 }
 
+/// The tool that the workspace runs files with for `migrations.sectionMarkers`. Supabase runs
+/// every file as one migration, so its projects use plain SQL.
+fn tool_of_section_markers(markers: SectionMarkers) -> &'static dyn MigrationTool {
+    match markers {
+        SectionMarkers::None => ToolId::Plain,
+        SectionMarkers::Dbmate => ToolId::Dbmate,
+        SectionMarkers::Goose => ToolId::Goose,
+    }
+    .tool()
+}
+
 /// Check whether a file is a migration before `migrations.after`
 fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
     settings
@@ -897,10 +907,11 @@ fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
         .and_then(|migration_settings| {
             let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let migration = migrations::migration_tool(migration_settings.section_markers)
-                .migration(path, migrations_dir)?;
+            let version = tool_of_section_markers(migration_settings.section_markers)
+                .file(path, migrations_dir)
+                .version?;
 
-            Some(&migration.sequence_number <= ignore_before)
+            Some(version <= Version::Number(*ignore_before))
         })
         .unwrap_or(false)
 }
@@ -1346,12 +1357,8 @@ impl Workspace for WorkspaceServer {
         let path = params.path.as_path().display().to_string();
 
         diagnostics.extend(
-            doc.migration_tool()
-                .marker_diagnostics(
-                    doc.get_document_content(),
-                    doc.migration_sections(),
-                    doc.statement_ranges(),
-                )
+            doc.migration_script()
+                .marker_diagnostics(doc.statement_ranges())
                 .into_iter()
                 .map(|diagnostic| SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))),
         );

@@ -7,7 +7,6 @@ pub mod configuration;
 pub mod diagnostics;
 pub mod dome;
 pub mod features;
-pub mod migrations;
 pub mod settings;
 pub mod workspace;
 

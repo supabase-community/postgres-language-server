@@ -4,12 +4,10 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use pgls_configuration::migrations::SectionMarkers;
 use pgls_fs::{FileSystem, OpenOptions};
 
-use super::{
-    MigrationTool,
-    project::{LocalDatabase, Project, Root},
+use crate::{
+    Detected, FileInfo, LocalDatabase, MigrationTool, Root, Script, ToolId, Version, naming,
 };
 
 /// The folder of a project managed by the Supabase CLI, and its configuration file in it.
@@ -19,23 +17,23 @@ const SUPABASE_CONFIG_FILE: &str = "config.toml";
 /// The port of the local Supabase database if `[db] port` is not set.
 const SUPABASE_DEFAULT_DB_PORT: u16 = 54322;
 
-pub(super) struct Supabase;
+pub struct Supabase;
 
 impl MigrationTool for Supabase {
+    fn id(&self) -> ToolId {
+        ToolId::Supabase
+    }
+
     fn name(&self) -> &'static str {
         "Supabase"
     }
 
-    fn section_markers(&self) -> SectionMarkers {
-        SectionMarkers::None
-    }
-
-    fn default_migrations_dir(&self) -> Option<&'static str> {
+    fn default_dir(&self) -> Option<&'static str> {
         Some("supabase/migrations")
     }
 
     /// A `supabase` folder with a `config.toml`, and the local database of `supabase status`.
-    fn detect(&self, fs: &dyn FileSystem, root: &Root) -> Option<Project> {
+    fn detect(&self, fs: &dyn FileSystem, root: &Root) -> Option<Detected> {
         let path = root.path(SUPABASE_DIRECTORY).join(SUPABASE_CONFIG_FILE);
         if !fs.path_is_file(&path) {
             return None;
@@ -46,7 +44,7 @@ impl MigrationTool for Supabase {
             .and_then(|mut file| file.read_to_string(&mut contents))
             .ok()
             .and_then(|_| supabase_db_port(&contents));
-        let mut project = Project::new(self, root, SUPABASE_DIRECTORY);
+        let mut project = Detected::new(self, root, SUPABASE_DIRECTORY);
         if port.is_none() {
             project.warning = Some(format!(
                 "Could not read the database port from {}/{SUPABASE_CONFIG_FILE}, using the default port {SUPABASE_DEFAULT_DB_PORT}.",
@@ -78,6 +76,19 @@ impl MigrationTool for Supabase {
                 .parse::<toml::Table>()
                 .is_ok_and(|config| config.get("db").is_some_and(toml::Value::is_table))
     }
+
+    fn file(&self, path: &Path, migrations_dir: &Path) -> FileInfo {
+        naming::numbered(path, migrations_dir, |text| self.version(text))
+    }
+
+    fn version(&self, text: &str) -> Option<Version> {
+        naming::number(text)
+    }
+
+    /// The Supabase CLI runs every migration file as one migration.
+    fn read(&self, _text: &str) -> Script {
+        Script::default()
+    }
 }
 
 /// Returns `[db] port` of a Supabase configuration, or the default port if it is not set.
@@ -99,6 +110,14 @@ fn supabase_db_port(contents: &str) -> Option<u16> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{ToolId, tests::marker_problems};
+
+    #[test]
+    fn supabase_files_are_one_migration() {
+        let text = "-- migrate:up\nselect 1;\n-- +goose Down\n";
+        assert!(Supabase.read(text).units.is_empty());
+        assert!(marker_problems(text, ToolId::Supabase).is_empty());
+    }
 
     #[test]
     fn reads_the_port_from_the_db_section() {

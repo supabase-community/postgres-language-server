@@ -5,49 +5,42 @@
 //! `--migrations-dir` says otherwise, see
 //! https://github.com/amacneil/dbmate/blob/v2.37.0/README.md#creating-migrations
 
-use pgls_analyser::{Direction, MigrationSection};
-use pgls_configuration::migrations::SectionMarkers;
-use pgls_fs::{FileSystem, OpenOptions};
-use pgls_text_size::TextRange;
+use std::path::Path;
 
-use super::{
-    MigrationTool, SectionMarkerDiagnostic,
-    markers::{self, MarkerSyntax, SectionsBuilder, lines},
-    project::{self, Project, Root},
+use pgls_fs::{FileSystem, OpenOptions};
+
+use crate::{
+    Detected, Direction, FileInfo, MigrationTool, Root, Script, ToolId, Version, detect,
+    directives::{self, lines},
+    naming,
+    units::UnitsBuilder,
 };
 
 /// The folder of dbmate in a project, and its migrations in it.
 const DBMATE_DIRECTORY: &str = "db";
 const DBMATE_MIGRATIONS_DIR: &str = "db/migrations";
 
-pub(super) struct Dbmate;
-
-const SYNTAX: MarkerSyntax = MarkerSyntax {
-    tool: "dbmate",
-    first_marker: "-- migrate:up",
-    is_marker: |line| marker(line).is_some(),
-    look_alike_message: |_| "dbmate only reads `-- migrate:up` and `-- migrate:down` in lowercase and at the start of the line, so this line is a plain comment.",
-};
+pub struct Dbmate;
 
 impl MigrationTool for Dbmate {
+    fn id(&self) -> ToolId {
+        ToolId::Dbmate
+    }
+
     fn name(&self) -> &'static str {
         "dbmate"
     }
 
-    fn section_markers(&self) -> SectionMarkers {
-        SectionMarkers::Dbmate
-    }
-
-    fn default_migrations_dir(&self) -> Option<&'static str> {
+    fn default_dir(&self) -> Option<&'static str> {
         Some(DBMATE_MIGRATIONS_DIR)
     }
 
     /// A first migration in `db/migrations` with `-- migrate:up`, which dbmate requires in every
     /// migration. dbmate has no configuration file, and reads the database from `DATABASE_URL`,
     /// so the connection is left alone.
-    fn detect(&self, fs: &dyn FileSystem, root: &Root) -> Option<Project> {
+    fn detect(&self, fs: &dyn FileSystem, root: &Root) -> Option<Detected> {
         let migrations_dir = root.path(DBMATE_MIGRATIONS_DIR);
-        let first = project::files(&migrations_dir)
+        let first = detect::files(&migrations_dir)
             .into_iter()
             .find(|name| is_migration_file_name(name))?;
         let mut contents = String::new();
@@ -59,31 +52,46 @@ impl MigrationTool for Dbmate {
         .ok()?;
         lines(&contents)
             .any(|(_, line)| marker(line).is_some_and(|(direction, _)| direction == Direction::Up))
-            .then(|| Project::new(self, root, DBMATE_DIRECTORY))
+            .then(|| Detected::new(self, root, DBMATE_DIRECTORY))
     }
 
-    fn sections(&self, text: &str) -> Vec<MigrationSection> {
-        let mut sections = SectionsBuilder::new(text);
+    /// dbmate has no folder of its own to run `init` in.
+    fn is_tool_directory(&self, _fs: &dyn FileSystem, _directory: &Path) -> bool {
+        false
+    }
+
+    fn file(&self, path: &Path, migrations_dir: &Path) -> FileInfo {
+        naming::numbered(path, migrations_dir, |text| self.version(text))
+    }
+
+    fn version(&self, text: &str) -> Option<Version> {
+        naming::number(text)
+    }
+
+    fn read(&self, text: &str) -> Script {
+        let mut units = UnitsBuilder::new(text);
         for (range, line) in lines(text) {
             if let Some((direction, transaction)) = marker(line) {
-                sections.start(range.start(), direction, transaction);
+                units.start(range.start(), direction, transaction);
             }
         }
-        let mut sections = sections.finish();
+        let mut units = units.finish();
         // dbmate sends each section to Postgres as one query.
-        for section in &mut sections {
-            section.queries = vec![section.range];
+        for unit in &mut units {
+            unit.queries = vec![unit.range];
         }
-        sections
-    }
-
-    fn marker_diagnostics(
-        &self,
-        text: &str,
-        sections: &[MigrationSection],
-        statements: &[TextRange],
-    ) -> Vec<SectionMarkerDiagnostic> {
-        markers::marker_diagnostics(&SYNTAX, text, sections, statements)
+        Script {
+            units,
+            look_alikes: directives::look_alikes(
+                text,
+                |line| marker(line).is_some(),
+                |_| "dbmate only reads `-- migrate:up` and `-- migrate:down` in lowercase and at the start of the line, so this line is a plain comment.",
+            ),
+            before_first_unit: Some(
+                "dbmate rejects a migration with statements before the first `-- migrate:up`."
+                    .to_string(),
+            ),
+        }
     }
 }
 
@@ -119,11 +127,8 @@ fn marker(line: &str) -> Option<(Direction, bool)> {
 
 #[cfg(test)]
 mod tests {
-    use pgls_analyser::Direction;
-    use pgls_configuration::migrations::SectionMarkers;
-
-    use crate::migrations::{
-        migration_tool,
+    use crate::{
+        Direction, ToolId,
         tests::{marker_problems, sections},
     };
 
@@ -145,7 +150,7 @@ mod tests {
     fn dbmate_sections() {
         let text = "-- migrate:up\ncreate table t (id int);\n\n-- migrate:down transaction:false\ndrop table t;\n";
         assert_eq!(
-            sections(text, SectionMarkers::Dbmate),
+            sections(text, ToolId::Dbmate),
             vec![
                 (
                     "-- migrate:up\ncreate table t (id int);\n\n",
@@ -164,7 +169,7 @@ mod tests {
     #[test]
     fn dbmate_options_and_spacing() {
         let directions = |text| {
-            sections(text, SectionMarkers::Dbmate)
+            sections(text, ToolId::Dbmate)
                 .into_iter()
                 .map(|(_, direction, transaction)| (direction, transaction))
                 .collect::<Vec<_>>()
@@ -185,8 +190,10 @@ mod tests {
     fn queries_sent_at_once() {
         let text =
             "-- migrate:up transaction:false\nselect 1;\nselect 2;\n-- migrate:down\nselect 3;\n";
-        let queries = migration_tool(SectionMarkers::Dbmate)
-            .sections(text)
+        let queries = ToolId::Dbmate
+            .tool()
+            .read(text)
+            .units
             .into_iter()
             .map(|section| {
                 section
@@ -211,7 +218,7 @@ mod tests {
         let text =
             "create table t (id int);\n-- migrate:up\nselect 1;\n-- migrate:down\nselect 2;\n";
         assert_eq!(
-            marker_problems(text, SectionMarkers::Dbmate),
+            marker_problems(text, ToolId::Dbmate),
             vec![(
                 "create table t (id int);",
                 "dbmate rejects a migration with statements before the first `-- migrate:up`."
@@ -219,13 +226,13 @@ mod tests {
             )]
         );
         // Without markers, the file is one migration.
-        assert!(marker_problems("select 1;\n", SectionMarkers::Dbmate).is_empty());
+        assert!(marker_problems("select 1;\n", ToolId::Dbmate).is_empty());
     }
 
     #[test]
     fn lines_that_look_like_markers() {
         let text = "-- migrate:up\nselect 1;\n-- Migrate:Down\n  -- migrate:down\nselect 2;\n-- migrate:upgrade\n";
-        let problems = marker_problems(text, SectionMarkers::Dbmate);
+        let problems = marker_problems(text, ToolId::Dbmate);
         assert_eq!(
             problems.iter().map(|(line, _)| *line).collect::<Vec<_>>(),
             ["-- Migrate:Down", "  -- migrate:down"]

@@ -9,11 +9,12 @@ use std::{
 
 use pgls_analyse::{AnalysisFilter, Applicability, RuleFilter};
 use pgls_analyser::{
-    AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, Direction, LinterDiagnostic,
-    LinterOptions, MigrationSection, RuleFix, UnparsableStatement,
+    AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterDiagnostic, LinterOptions,
+    RuleFix, UnparsableStatement,
 };
 use pgls_console::StdDisplay;
 use pgls_diagnostics::PrintDiagnostic;
+use pgls_migrations::{Direction, Unit};
 use pgls_text_size::{TextRange, TextSize};
 
 static TYPECHECK_CATALOG: OnceLock<Arc<pgls_catalog::CatalogBase>> = OnceLock::new();
@@ -229,8 +230,8 @@ fn sql_function_body(
 /// The migration sections of the file, each starting at a `-- section: up` or
 /// `-- section: down transaction:false` line. Like dbmate, each section is sent to Postgres as
 /// one query, unless `queries:separate` follows, like goose without `StatementBegin`.
-fn migration_sections(query: &str) -> Vec<MigrationSection> {
-    let mut sections: Vec<MigrationSection> = Vec::new();
+fn migration_sections(query: &str) -> Vec<Unit> {
+    let mut sections: Vec<Unit> = Vec::new();
     let mut one_query = Vec::new();
     let mut offset = 0;
     for line in query.split_inclusive('\n') {
@@ -257,7 +258,7 @@ fn migration_sections(query: &str) -> Vec<MigrationSection> {
         if let Some(previous) = sections.last_mut() {
             previous.range = TextRange::new(previous.range.start(), start);
         }
-        sections.push(MigrationSection {
+        sections.push(Unit {
             range: TextRange::new(start, TextSize::from(query.len() as u32)),
             direction,
             transaction,

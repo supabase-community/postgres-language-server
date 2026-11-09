@@ -2293,6 +2293,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "pgls_lexer",
+ "pgls_migrations",
  "pgls_postgres_regress",
  "pgls_query",
  "pgls_query_ext",
@@ -2352,6 +2353,7 @@ dependencies = [
  "pgls_fs",
  "pgls_lexer",
  "pgls_lsp",
+ "pgls_migrations",
  "pgls_query",
  "pgls_test_utils",
  "pgls_text_edit",
@@ -2618,6 +2620,18 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "rustc-hash",
+]
+
+[[package]]
+name = "pgls_migrations"
+version = "0.0.0"
+dependencies = [
+ "pgls_diagnostics",
+ "pgls_fs",
+ "pgls_statement_splitter",
+ "pgls_text_size",
+ "tempfile",
+ "toml",
 ]
 
 [[package]]
@@ -2930,6 +2944,7 @@ dependencies = [
  "pgls_lexer",
  "pgls_line_index",
  "pgls_matcher",
+ "pgls_migrations",
  "pgls_pglinter",
  "pgls_plpgsql_check",
  "pgls_pretty_print",
@@ -2956,7 +2971,6 @@ dependencies = [
  "strum",
  "tempfile",
  "tokio",
- "toml",
  "tracing",
  "tree-sitter",
  "url",

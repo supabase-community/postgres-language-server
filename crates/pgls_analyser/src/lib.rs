@@ -6,6 +6,7 @@ use std::{
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode, resolve::FunctionContext};
 use pgls_diagnostics::DiagnosticTags;
+use pgls_migrations::{Direction, Unit};
 use pgls_query_ext::function_body::{EmbeddedStatement, OffsetMap};
 use pgls_text_size::{TextRange, TextSize};
 pub use registry::visit_registry;
@@ -16,7 +17,6 @@ mod linter_context;
 mod linter_options;
 mod linter_registry;
 mod linter_rule;
-mod migration;
 pub mod options;
 mod registry;
 
@@ -27,7 +27,6 @@ pub use linter_registry::{
     LinterRegistryRuleParams, LinterRuleRegistry, LinterRuleRegistryBuilder,
 };
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
-pub use migration::{Direction, MigrationSection};
 
 // For convenience in macros and rule files - keep these shorter names
 pub use LinterDiagnostic as RuleDiagnostic;
@@ -166,7 +165,7 @@ pub struct AnalyserParams {
     pub file_kind: FileKind,
     /// The sections of a migration file, like dbmate's up and down migrations. Each section is
     /// analysed as a migration of its own. Without sections, the whole file is one migration.
-    pub sections: Vec<MigrationSection>,
+    pub sections: Vec<Unit>,
     /// Whether the rules of the typecheck group run.
     pub typecheck: bool,
     /// The text of the file. Fixes that also edit after their statement, like the `COMMIT` that
@@ -269,7 +268,7 @@ impl<'a> Analyser<'a> {
             // Each section runs in a session and transaction of its own.
             let session = Session::new(params.search_path.clone()).with_transaction_mode(
                 unit.section
-                    .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
+                    .map_or(TransactionMode::Unknown, transaction_mode),
             );
             let stmts = &params.stmts[unit.stmts.clone()];
             // The last statement of the unit, including those that don't parse. The statements
@@ -520,9 +519,18 @@ fn debug_assert_in_statement(diagnostic: &LinterDiagnostic, stmt: &AnalysableSta
     }
 }
 
+/// The transaction mode that a migration section starts in.
+pub fn transaction_mode(section: &Unit) -> TransactionMode {
+    if section.transaction {
+        TransactionMode::Transaction
+    } else {
+        TransactionMode::Autocommit
+    }
+}
+
 /// Statements that run together: those before the first section marker, then each section.
 struct MigrationUnit<'a> {
-    section: Option<&'a MigrationSection>,
+    section: Option<&'a Unit>,
     /// The indices of the statements.
     stmts: Range<usize>,
     range: TextRange,
@@ -530,7 +538,7 @@ struct MigrationUnit<'a> {
 
 fn migration_units<'a>(
     stmts: &[AnalysableStatement],
-    sections: &'a [MigrationSection],
+    sections: &'a [Unit],
 ) -> Vec<MigrationUnit<'a>> {
     let before_sections = sections
         .first()

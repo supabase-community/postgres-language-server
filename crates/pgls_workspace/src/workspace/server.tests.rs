@@ -324,6 +324,7 @@ fn section_markers_follow_settings_changes() {
                 gitignore_matches: vec![],
                 vcs_base_path: None,
                 workspace_directory: None,
+                replace: true,
             })
             .expect("Unable to update the settings");
     };

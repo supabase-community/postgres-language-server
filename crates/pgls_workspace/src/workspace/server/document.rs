@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pgls_analyser::{AnalysableStatement, MigrationSection, UnparsableStatement};
+use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::OffsetMap};
 use pgls_suppressions::Suppressions;
@@ -8,8 +8,10 @@ use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 #[cfg(test)]
-use crate::migrations::Plain;
-use crate::{migrations::MigrationTool, workspace::ProjectKey};
+use pgls_migrations::Plain;
+use pgls_migrations::{MigrationTool, Script, Unit};
+
+use crate::workspace::ProjectKey;
 
 use super::{
     pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
@@ -29,8 +31,8 @@ pub struct Document {
     project_key: ProjectKey,
     /// The migration tool that runs the file, from its settings. See [`Document::open`].
     migration_tool: &'static dyn MigrationTool,
-    /// The sections of the content for `migration_tool`.
-    migration_sections: Vec<MigrationSection>,
+    /// How `migration_tool` runs the content.
+    migration_script: Script,
 }
 
 impl Document {
@@ -52,7 +54,7 @@ impl Document {
         let ast_db = PgQueryStore::new();
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
         let suppressions = Suppressions::from(content.as_str()).with_statements(ranges.clone());
-        let migration_sections = migration_tool.sections(&content);
+        let migration_script = migration_tool.read(&content);
 
         Document {
             ranges,
@@ -64,14 +66,14 @@ impl Document {
             suppressions,
             project_key,
             migration_tool,
-            migration_sections,
+            migration_script,
         }
     }
 
     pub fn update_content(&mut self, content: String, version: i32) {
         self.content = content;
         self.version = version;
-        self.migration_sections = self.migration_tool.sections(&self.content);
+        self.migration_script = self.migration_tool.read(&self.content);
 
         let (ranges, diagnostics) = split_with_diagnostics(&self.content, None);
 
@@ -95,7 +97,7 @@ impl Document {
     /// Applies the migration tool of changed settings.
     pub(crate) fn set_migration_tool(&mut self, migration_tool: &'static dyn MigrationTool) {
         self.migration_tool = migration_tool;
-        self.migration_sections = migration_tool.sections(&self.content);
+        self.migration_script = migration_tool.read(&self.content);
     }
 
     pub(crate) fn project_key(&self) -> ProjectKey {
@@ -107,10 +109,15 @@ impl Document {
         self.migration_tool
     }
 
+    /// How the migration tool runs the document.
+    pub(crate) fn migration_script(&self) -> &Script {
+        &self.migration_script
+    }
+
     /// The migration sections of the document, like the up and down migrations of dbmate and
     /// goose. A tool without section markers has none.
-    pub fn migration_sections(&self) -> &[MigrationSection] {
-        &self.migration_sections
+    pub fn migration_sections(&self) -> &[Unit] {
+        &self.migration_script.units
     }
 
     pub fn suppressions(&self) -> &Suppressions {

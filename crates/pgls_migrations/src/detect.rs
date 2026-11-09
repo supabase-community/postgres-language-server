@@ -2,27 +2,23 @@
 
 use std::path::{Path, PathBuf};
 
-use pgls_configuration::PartialConfiguration;
-use pgls_configuration::migrations::{PartialMigrationsConfiguration, SectionMarkers};
 use pgls_fs::FileSystem;
 
-use super::{MigrationTool, TOOLS};
+use crate::{MigrationTool, TOOLS, ToolId};
 
 /// Folders that never hold the project of a migration tool in a monorepo.
 const SKIPPED_DIRECTORIES: &[&str] = &["node_modules", "target", "supabase"];
 
 /// A project of a migration tool, and the settings it tells.
 #[derive(Debug)]
-pub struct Project {
-    /// The name of the tool.
-    pub tool: &'static str,
+pub struct Detected {
+    /// The tool.
+    pub tool: ToolId,
     /// The folder of the tool in the project, like `supabase` or `apps/web/supabase`, relative to
     /// the folder of the configuration file, with `/` as the separator.
     pub directory: String,
     /// The folder of the migrations, relative to the folder of the configuration file.
     pub migrations_dir: Option<String>,
-    /// The section markers of the tool's migration files, if it has any.
-    pub section_markers: Option<SectionMarkers>,
     /// The local database of the project, if the tool runs one.
     pub database: Option<LocalDatabase>,
     /// A problem with the project that doesn't stop `init`, like a port it couldn't read.
@@ -39,47 +35,24 @@ pub struct LocalDatabase {
     pub database: &'static str,
 }
 
-impl Project {
+impl Detected {
     /// A project of `tool` with the tool's folder `directory` in `root`, and the tool's default
     /// migrations folder.
-    pub(super) fn new(tool: &dyn MigrationTool, root: &Root, directory: &str) -> Self {
+    pub(crate) fn new(tool: &dyn MigrationTool, root: &Root, directory: &str) -> Self {
         Self {
-            tool: tool.name(),
+            tool: tool.id(),
             directory: root.relative(directory),
             migrations_dir: tool
-                .default_migrations_dir()
+                .default_dir()
                 .map(|migrations_dir| root.relative(migrations_dir)),
-            section_markers: Some(tool.section_markers())
-                .filter(|markers| *markers != SectionMarkers::None),
             database: None,
             warning: None,
-        }
-    }
-
-    /// Points the database connection at the local database of the project, and the migrations
-    /// at the migrations of the project.
-    pub fn configure(&self, config: &mut PartialConfiguration) {
-        if let Some(database) = &self.database {
-            let db = config.db.get_or_insert_with(Default::default);
-            db.host = Some(database.host.to_string());
-            db.port = Some(database.port);
-            db.username = Some(database.username.to_string());
-            db.password = Some(database.password.to_string());
-            db.database = Some(database.database.to_string());
-            // Statement execution stays off: enabling it is the user's call.
-        }
-        if self.migrations_dir.is_some() || self.section_markers.is_some() {
-            config.migrations = Some(PartialMigrationsConfiguration {
-                migrations_dir: self.migrations_dir.clone(),
-                section_markers: self.section_markers,
-                ..Default::default()
-            });
         }
     }
 }
 
 /// A folder that may hold the project of a migration tool.
-pub(crate) struct Root {
+pub struct Root {
     /// The folder, for the file system.
     path: PathBuf,
     /// The folder relative to the folder of the configuration file, with `/` as the separator and
@@ -89,12 +62,12 @@ pub(crate) struct Root {
 
 impl Root {
     /// A path in the folder, for the file system.
-    pub(super) fn path(&self, relative: &str) -> PathBuf {
+    pub(crate) fn path(&self, relative: &str) -> PathBuf {
         self.path.join(relative)
     }
 
     /// A path in the folder, relative to the folder of the configuration file.
-    pub(super) fn relative(&self, relative: &str) -> String {
+    pub(crate) fn relative(&self, relative: &str) -> String {
         format!("{}{relative}", self.prefix)
     }
 }
@@ -119,7 +92,7 @@ pub fn configuration_directory(fs: &dyn FileSystem) -> &'static Path {
 /// relative to the working directory: the ones in it, or else, if it is the working directory,
 /// the ones in the folders one or two levels below it, as in a monorepo (`supabase/`,
 /// `db/supabase/`, `apps/web/supabase/`).
-pub fn find_projects(fs: &dyn FileSystem, configuration_directory: &Path) -> Vec<Project> {
+pub fn find_projects(fs: &dyn FileSystem, configuration_directory: &Path) -> Vec<Detected> {
     let working_directory = fs.working_directory().unwrap_or_default();
     let detect = |relative: &str| {
         let root = Root {
@@ -164,7 +137,7 @@ fn subdirectories(directory: &Path) -> Vec<String> {
 }
 
 /// The names of the files in `directory`, sorted.
-pub(super) fn files(directory: &Path) -> Vec<String> {
+pub(crate) fn files(directory: &Path) -> Vec<String> {
     entries(directory, false)
 }
 
@@ -198,7 +171,13 @@ mod tests {
         let fs = OsFileSystem::new(dir.path().to_path_buf());
         find_projects(&fs, Path::new(""))
             .into_iter()
-            .map(|project| (project.directory, project.tool, project.migrations_dir))
+            .map(|project| {
+                (
+                    project.directory,
+                    project.tool.tool().name(),
+                    project.migrations_dir,
+                )
+            })
             .collect()
     }
 
@@ -214,13 +193,12 @@ mod tests {
         write(&dir, "supabase/config.toml", "[db]\nport = 6543\n");
         let fs = OsFileSystem::new(dir.path().to_path_buf());
         let [project] = find_projects(&fs, Path::new("")).try_into().unwrap();
-        assert_eq!(project.tool, "Supabase");
+        assert_eq!(project.tool, ToolId::Supabase);
         assert_eq!(project.directory, "supabase");
         assert_eq!(
             project.migrations_dir.as_deref(),
             Some("supabase/migrations")
         );
-        assert_eq!(project.section_markers, None);
         assert_eq!(project.database.map(|database| database.port), Some(6543));
         assert!(project.warning.is_none());
     }
@@ -235,18 +213,10 @@ mod tests {
         );
         let fs = OsFileSystem::new(dir.path().to_path_buf());
         let [project] = find_projects(&fs, Path::new("")).try_into().unwrap();
-        assert_eq!(project.tool, "dbmate");
+        assert_eq!(project.tool, ToolId::Dbmate);
         assert_eq!(project.directory, "db");
         assert_eq!(project.migrations_dir.as_deref(), Some("db/migrations"));
-        assert_eq!(project.section_markers, Some(SectionMarkers::Dbmate));
         assert!(project.database.is_none());
-
-        let mut config = PartialConfiguration::default();
-        project.configure(&mut config);
-        let migrations = config.migrations.unwrap();
-        assert_eq!(migrations.migrations_dir.as_deref(), Some("db/migrations"));
-        assert_eq!(migrations.section_markers, Some(SectionMarkers::Dbmate));
-        assert!(config.db.is_none());
     }
 
     #[test]

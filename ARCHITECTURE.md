@@ -101,6 +101,10 @@ The fallback type check against the database (via `EXPLAIN`), for statements tha
 
 Handles `-- pgls-ignore` style rule suppression comments.
 
+##### `crates/pgls_migrations`
+
+What the language server knows about migration tools (Supabase, dbmate, goose, and plain SQL files). Every tool implements every method of one `MigrationTool` trait, and calls shared helpers for what it does like other tools: which files are migrations and their versions, how a file splits into up and down sections with their transaction mode, the diagnostics for misplaced markers, and how `init` finds the tool's projects. The workspace keeps what the tool of a file's settings says about its text, and the analyser runs each section on its own.
+
 #### Feature crates
 
 ##### `crates/pgls_completions`, `crates/pgls_hover`

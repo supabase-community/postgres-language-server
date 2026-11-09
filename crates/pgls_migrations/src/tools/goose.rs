@@ -5,43 +5,52 @@
 //! in the folder of `-dir` or `GOOSE_MIGRATION_DIR`, `.` by default. So its projects aren't
 //! detected.
 
-use pgls_analyser::{Direction, MigrationSection};
-use pgls_configuration::migrations::SectionMarkers;
+use std::path::Path;
+
+use pgls_fs::FileSystem;
 use pgls_text_size::TextRange;
 
-use super::{
-    MigrationTool, SectionMarkerDiagnostic,
-    markers::{self, MarkerSyntax, SectionsBuilder, lines},
+use crate::{
+    Detected, Direction, FileInfo, MigrationTool, Root, Script, ToolId, Version,
+    directives::{self, lines},
+    naming,
+    units::UnitsBuilder,
 };
 
-pub(super) struct Goose;
-
-const SYNTAX: MarkerSyntax = MarkerSyntax {
-    tool: "goose",
-    first_marker: "-- +goose Up",
-    is_marker: |line| annotation(line).is_some(),
-    look_alike_message: |line| {
-        // goose fails on an annotation with leading whitespace instead of ignoring it, see
-        // https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L321
-        if line.contains("+goose") {
-            "goose rejects a migration with an annotation that doesn't start at the beginning of the line."
-        } else {
-            "goose only reads `-- +goose` annotations with `+goose` in lowercase, so this line is a plain comment."
-        }
-    },
-};
+pub struct Goose;
 
 impl MigrationTool for Goose {
+    fn id(&self) -> ToolId {
+        ToolId::Goose
+    }
+
     fn name(&self) -> &'static str {
         "goose"
     }
 
-    fn section_markers(&self) -> SectionMarkers {
-        SectionMarkers::Goose
+    /// goose has no sign of its projects, see above.
+    fn detect(&self, _fs: &dyn FileSystem, _root: &Root) -> Option<Detected> {
+        None
     }
 
-    fn sections(&self, text: &str) -> Vec<MigrationSection> {
-        let mut sections = SectionsBuilder::new(text);
+    fn is_tool_directory(&self, _fs: &dyn FileSystem, _directory: &Path) -> bool {
+        false
+    }
+
+    fn default_dir(&self) -> Option<&'static str> {
+        None
+    }
+
+    fn file(&self, path: &Path, migrations_dir: &Path) -> FileInfo {
+        naming::numbered(path, migrations_dir, |text| self.version(text))
+    }
+
+    fn version(&self, text: &str) -> Option<Version> {
+        naming::number(text)
+    }
+
+    fn read(&self, text: &str) -> Script {
+        let mut sections = UnitsBuilder::new(text);
         let mut no_transaction = false;
         // The start of the open `StatementBegin` block.
         let mut statement_begin = None;
@@ -72,23 +81,34 @@ impl MigrationTool for Goose {
             }
         }
 
-        let mut sections = sections.finish();
+        let mut units = sections.finish();
         // goose runs both directions of the file without a transaction.
         if no_transaction {
-            for section in &mut sections {
-                section.transaction = false;
+            for unit in &mut units {
+                unit.transaction = false;
             }
         }
-        sections
-    }
-
-    fn marker_diagnostics(
-        &self,
-        text: &str,
-        sections: &[MigrationSection],
-        statements: &[TextRange],
-    ) -> Vec<SectionMarkerDiagnostic> {
-        markers::marker_diagnostics(&SYNTAX, text, sections, statements)
+        Script {
+            units,
+            look_alikes: directives::look_alikes(
+                text,
+                |line| annotation(line).is_some(),
+                |line| {
+                    // goose fails on an annotation with leading whitespace instead of ignoring
+                    // it, see
+                    // https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L321
+                    if line.contains("+goose") {
+                        "goose rejects a migration with an annotation that doesn't start at the beginning of the line."
+                    } else {
+                        "goose only reads `-- +goose` annotations with `+goose` in lowercase, so this line is a plain comment."
+                    }
+                },
+            ),
+            before_first_unit: Some(
+                "goose rejects a migration with statements before the first `-- +goose Up`."
+                    .to_string(),
+            ),
+        }
     }
 }
 
@@ -104,11 +124,8 @@ fn annotation(line: &str) -> Option<&str> {
 
 #[cfg(test)]
 mod tests {
-    use pgls_analyser::Direction;
-    use pgls_configuration::migrations::SectionMarkers;
-
-    use crate::migrations::{
-        migration_tool,
+    use crate::{
+        Direction, ToolId,
         tests::{marker_problems, sections},
     };
 
@@ -116,7 +133,7 @@ mod tests {
     fn goose_sections() {
         let text = "-- +goose Up\n-- +goose StatementBegin\nselect 1;\n-- +goose StatementEnd\n-- +goose down\nselect 2;";
         assert_eq!(
-            sections(text, SectionMarkers::Goose),
+            sections(text, ToolId::Goose),
             vec![
                 (
                     "-- +goose Up\n-- +goose StatementBegin\nselect 1;\n-- +goose StatementEnd\n",
@@ -131,8 +148,10 @@ mod tests {
     #[test]
     fn queries_sent_at_once() {
         let text = "-- +goose NO TRANSACTION\n-- +goose Up\nselect 1;\n-- +goose StatementBegin\nselect 2;\nselect 3;\n-- +goose StatementEnd\n-- +goose Down\nselect 4;\n";
-        let queries = migration_tool(SectionMarkers::Goose)
-            .sections(text)
+        let queries = ToolId::Goose
+            .tool()
+            .read(text)
+            .units
             .into_iter()
             .map(|section| {
                 section
@@ -155,14 +174,14 @@ mod tests {
     #[test]
     fn statements_before_the_first_marker() {
         let text = "select 1;\n-- +goose Up\nselect 2;\n";
-        assert_eq!(marker_problems(text, SectionMarkers::Goose).len(), 1);
+        assert_eq!(marker_problems(text, ToolId::Goose).len(), 1);
     }
 
     #[test]
     fn lines_that_look_like_markers() {
         let text =
             "-- +goose Up\nselect 1;\n-- +Goose Down\n  -- +goose StatementBegin\nselect 2;\n";
-        let problems = marker_problems(text, SectionMarkers::Goose);
+        let problems = marker_problems(text, ToolId::Goose);
         assert_eq!(
             problems.iter().map(|(line, _)| *line).collect::<Vec<_>>(),
             ["-- +Goose Down", "  -- +goose StatementBegin"]
@@ -175,7 +194,7 @@ mod tests {
     fn goose_no_transaction_applies_to_the_whole_file() {
         let text = "-- +goose Up\nselect 1;\n-- +goose Down\nselect 2;\n-- +goose NO TRANSACTION\n";
         assert!(
-            sections(text, SectionMarkers::Goose)
+            sections(text, ToolId::Goose)
                 .iter()
                 .all(|(_, _, transaction)| !transaction)
         );
