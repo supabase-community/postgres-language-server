@@ -1,6 +1,6 @@
 use pgls_query::{
     Node, NodeEnum,
-    protobuf::{InsertStmt, SelectStmt, SetOperation},
+    protobuf::{InsertStmt, OverridingKind, ResTarget, SelectStmt, SetOperation},
 };
 
 use super::{
@@ -14,10 +14,11 @@ use super::{
 use crate::resolve::{
     FindingKind,
     expr::{check_assignment, infer_expr},
-    scope::{Columns, Item, Level},
+    scope::{Columns, DefaultOnly, Item, Level},
     utils::node_location,
 };
 use crate::typing::{Type, TypedColumn};
+use pgls_text_size::TextRange;
 
 /// Resolves an INSERT and returns the columns of its RETURNING list. Port of
 /// [`transformInsertStmt`]: the target columns ([`checkInsertTargets`]), the number of
@@ -43,13 +44,16 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     };
     let target = resolve_target_relation(r, relation);
 
-    let (target_columns, partial_targets) = insert_target_columns(r, &target, &n.cols);
+    let target_columns = insert_target_columns(r, &target, &n.cols);
 
+    // The number of columns of the source query, if known.
+    let mut source_width = None;
     if let Some(source) = n.select_stmt.as_deref() {
         resolve_node(r, source);
         let source_types = r.output.clone();
+        source_width = source_types.as_ref().map(Vec::len);
 
-        let target_types = insert_target_types(&target, &target_columns, &partial_targets);
+        let target_types = insert_target_types(&target, &target_columns);
         let check = |r: &mut Resolver,
                      expr: Option<&NodeEnum>,
                      value: Option<Type>,
@@ -97,6 +101,18 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         }
     }
 
+    // `DEFAULT VALUES` assigns nothing.
+    if let Some(source) = n.select_stmt.as_deref() {
+        let values = match values_rows(source) {
+            Some(rows) => InsertValues::Rows(rows),
+            None => InsertValues::Query {
+                source,
+                width: source_width,
+            },
+        };
+        check_generated_insert(r, &target, &target_columns, n.r#override(), values);
+    }
+
     if let Some(conflict) = &n.on_conflict_clause {
         resolve_on_conflict_clause(r, conflict, &target);
     }
@@ -109,28 +125,25 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     )
 }
 
-/// The names in the column list of an INSERT, each checked against `target`
-/// ([`checkInsertTargets`]), and for each whether it assigns to part of a column, like `a[1]` or
-/// `c.f`.
+/// The entries of the column list of an INSERT, each checked against `target`
+/// ([`checkInsertTargets`]).
 ///
 /// [`checkInsertTargets`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1018
-pub(super) fn insert_target_columns(
+pub(super) fn insert_target_columns<'a>(
     r: &mut Resolver,
     target: &Item,
-    columns: &[Node],
-) -> (Vec<String>, Vec<bool>) {
-    let mut names = Vec::new();
-    let mut partial = Vec::new();
+    columns: &'a [Node],
+) -> Vec<&'a ResTarget> {
+    let mut targets = Vec::new();
     for column in columns {
         let Some(NodeEnum::ResTarget(column)) = &column.node else {
             r.depends_on_file();
             continue;
         };
         check_target_column(r, target, &column.name, column.location);
-        names.push(column.name.clone());
-        partial.push(!column.indirection.is_empty());
+        targets.push(column.as_ref());
     }
-    (names, partial)
+    targets
 }
 
 /// The type of each target column of an INSERT, in the order of the values. `None` for columns
@@ -138,8 +151,7 @@ pub(super) fn insert_target_columns(
 /// assign to part of a column.
 pub(super) fn insert_target_types<'a>(
     target: &'a Item,
-    target_columns: &[String],
-    partial_targets: &[bool],
+    target_columns: &[&ResTarget],
 ) -> Vec<Option<&'a TypedColumn>> {
     let targets = target.typed_columns.as_deref().unwrap_or_default();
     if target_columns.is_empty() {
@@ -147,10 +159,11 @@ pub(super) fn insert_target_types<'a>(
     } else {
         target_columns
             .iter()
-            .zip(partial_targets)
-            .map(|(name, partial)| {
-                (!partial)
-                    .then(|| targets.iter().find(|column| column.name == *name))
+            .map(|target| {
+                target
+                    .indirection
+                    .is_empty()
+                    .then(|| targets.iter().find(|column| column.name == target.name))
                     .flatten()
             })
             .collect()
@@ -164,7 +177,7 @@ pub(super) fn insert_target_types<'a>(
 pub(super) fn check_insert_width(
     r: &mut Resolver,
     target: &Item,
-    target_columns: &[String],
+    target_columns: &[&ResTarget],
     found: usize,
 ) {
     let expected = if target_columns.is_empty() {
@@ -186,6 +199,110 @@ pub(super) fn check_insert_width(
     }
 }
 
+/// The values of an INSERT, or of the INSERT action of MERGE.
+pub(super) enum InsertValues<'a> {
+    /// The rows of a plain `VALUES` list, or the one row of a MERGE action.
+    Rows(Vec<&'a [Node]>),
+    /// Any other query, with the number of columns it produces, if known.
+    Query {
+        source: &'a Node,
+        width: Option<usize>,
+    },
+}
+
+/// Reports an INSERT that assigns anything but `DEFAULT` to a generated column, or to a
+/// `GENERATED ALWAYS` identity column without `OVERRIDING SYSTEM VALUE` or `OVERRIDING USER
+/// VALUE`. Port of the checks of [`rewriteTargetListIU`] for `CMD_INSERT`: in a VALUES list,
+/// every row must have `DEFAULT` for the column, and a SELECT can't assign it at all.
+/// [`RewriteQuery`] applies them to the INSERT action of MERGE too, with the action's
+/// `OVERRIDING` clause ([`transformMergeStmt`]).
+///
+/// Targets with subscripts or fields, like `g[1]`, are not checked. Without a column list, a
+/// SELECT whose `*` expands to unknown columns isn't either.
+///
+/// [`rewriteTargetListIU`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L808
+/// [`RewriteQuery`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L4162
+/// [`transformMergeStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L317
+pub(super) fn check_generated_insert(
+    r: &mut Resolver,
+    target: &Item,
+    target_columns: &[&ResTarget],
+    overriding: OverridingKind,
+    values: InsertValues,
+) {
+    let overriding = matches!(
+        overriding,
+        OverridingKind::OverridingSystemValue | OverridingKind::OverridingUserValue
+    );
+    if target.default_only_columns.is_empty() {
+        return;
+    }
+
+    // The assigned columns and the location of each in the column list.
+    let targets: Vec<(&str, Option<i32>)> = if target_columns.is_empty() {
+        // Without a column list, the values go to the first columns of the table.
+        let width = match &values {
+            InsertValues::Rows(rows) => rows.first().map(|row| row.len()),
+            InsertValues::Query { source, width } => match &source.node {
+                Some(NodeEnum::SelectStmt(select)) => select_width(select).or(*width),
+                _ => None,
+            },
+        };
+        let (Some(width), Some(columns)) = (width, target.columns.as_ref()) else {
+            return;
+        };
+        columns
+            .iter()
+            .take(width)
+            .map(|column| (column.as_str(), None))
+            .collect()
+    } else {
+        target_columns
+            .iter()
+            .map(|column| {
+                if column.indirection.is_empty() {
+                    (column.name.as_str(), Some(column.location))
+                } else {
+                    // Not checked: an empty name is never a generated column.
+                    ("", None)
+                }
+            })
+            .collect()
+    };
+
+    for (index, (column, column_location)) in targets.into_iter().enumerate() {
+        let Some(kind) = target.default_only(column, overriding) else {
+            continue;
+        };
+        let span = match &values {
+            InsertValues::Rows(rows) => {
+                let value = rows.iter().find_map(|row| {
+                    row.get(index)
+                        .filter(|value| !matches!(value.node, Some(NodeEnum::SetToDefault(_))))
+                });
+                match value {
+                    Some(value) => column_location
+                        .or_else(|| node_location(value))
+                        .and_then(|location| r.name_span(location)),
+                    None => continue,
+                }
+            }
+            InsertValues::Query { source, width } => match column_location {
+                Some(location) => r.name_span(location),
+                None => select_target_span(r, source, index, *width),
+            },
+        };
+        r.report_with_span(
+            FindingKind::GeneratedColumnAssignment {
+                column: column.to_owned(),
+                insert: true,
+                identity: kind == DefaultOnly::IdentityAlways,
+            },
+            span,
+        );
+    }
+}
+
 fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32> {
     let NodeEnum::SelectStmt(select) = source.node.as_ref()? else {
         return None;
@@ -200,6 +317,52 @@ fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32
         return None;
     };
     node_location(target.val.as_deref()?)
+}
+
+/// The span of the select list entry that produces the column at `index` of a SELECT with
+/// `width` columns: the `*` or `t.*` it is part of, if any. With several `*`, it's not known which
+/// one expands to the column.
+fn select_target_span(
+    r: &Resolver,
+    source: &pgls_query::Node,
+    index: usize,
+    width: Option<usize>,
+) -> Option<TextRange> {
+    let NodeEnum::SelectStmt(select) = source.node.as_ref()? else {
+        return None;
+    };
+    let values: Vec<&NodeEnum> = select
+        .target_list
+        .iter()
+        .map(|target| match target.node.as_ref()? {
+            NodeEnum::ResTarget(target) => target.val.as_deref()?.node.as_ref(),
+            _ => None,
+        })
+        .collect::<Option<_>>()?;
+    let mut stars = (0..values.len()).filter(|&entry| expands_to_columns(values[entry]));
+    let Some(star) = stars.next() else {
+        return r.name_span(select_target_location(source, index)?);
+    };
+    if stars.next().is_some() {
+        return None;
+    }
+    // The `*` expands to the columns the other entries don't produce.
+    let star_width = (width? + 1).checked_sub(values.len())?;
+    if (star..star + star_width).contains(&index) {
+        let NodeEnum::ColumnRef(column) = values[star] else {
+            return None;
+        };
+        return r.star_span(column.location);
+    }
+    let entry = if index < star {
+        index
+    } else {
+        index + 1 - star_width
+    };
+    let NodeEnum::ResTarget(target) = select.target_list.get(entry)?.node.as_ref()? else {
+        return None;
+    };
+    r.name_span(node_location(target.val.as_deref()?)?)
 }
 
 /// The value of the select list entry at `index` of a plain SELECT. Postgres doesn't resolve

@@ -6,7 +6,10 @@ use pgls_query::{
 use super::{
     Resolver,
     from_clause::resolve_from_clause,
-    insert_stmt::{check_insert_width, insert_target_columns, insert_target_types},
+    insert_stmt::{
+        InsertValues, check_generated_insert, check_insert_width, insert_target_columns,
+        insert_target_types,
+    },
     range_var::resolve_target_relation,
     res_target::{resolve_returning_clause, resolve_set_clause},
     resolve_node,
@@ -236,21 +239,22 @@ fn resolve_when_clause(
     r.exit_level();
 }
 
-/// `INSERT [(columns)] VALUES (...)` or `INSERT DEFAULT VALUES`, like the single-row case of
-/// [`transformInsertStmt`]: the target columns ([`checkInsertTargets`]), the number of values,
-/// and the assignment of each value ([`transformInsertRow`]).
+/// `INSERT [(columns)] [OVERRIDING ...] VALUES (...)` or `INSERT DEFAULT VALUES`, like the
+/// single-row case of [`transformInsertStmt`]: the target columns ([`checkInsertTargets`]), the
+/// number of values, the assignment of each value ([`transformInsertRow`]), and the values of
+/// generated and identity columns ([`check_generated_insert`]).
 ///
 /// [`transformInsertStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L633
 /// [`checkInsertTargets`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1018
 /// [`transformInsertRow`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1060
 fn resolve_insert_action(r: &mut Resolver, n: &MergeWhenClause, target: &Item) {
-    let (target_columns, partial_targets) = insert_target_columns(r, target, &n.target_list);
+    let target_columns = insert_target_columns(r, target, &n.target_list);
 
     // `DEFAULT VALUES` has no values.
     if n.values.is_empty() {
         return;
     }
-    let target_types = insert_target_types(target, &target_columns, &partial_targets);
+    let target_types = insert_target_types(target, &target_columns);
     for (index, value) in n.values.iter().enumerate() {
         resolve_node(r, value);
         let Some(expr) = value.node.as_ref() else {
@@ -272,4 +276,11 @@ fn resolve_insert_action(r: &mut Resolver, n: &MergeWhenClause, target: &Item) {
         }
     }
     check_insert_width(r, target, &target_columns, n.values.len());
+    check_generated_insert(
+        r,
+        target,
+        &target_columns,
+        n.r#override(),
+        InsertValues::Rows(vec![n.values.as_slice()]),
+    );
 }
