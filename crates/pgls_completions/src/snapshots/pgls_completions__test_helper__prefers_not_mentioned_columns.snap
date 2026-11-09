@@ -27,6 +27,12 @@ create table public.two (
 ***Case 1:***
 
 s| from public.one o join public.two on o.id = t.id;
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from public.one o join public.two on o.id = t.id;
 
 Results:
@@ -186,6 +192,12 @@ select o.id, a, b, c, d, e, z | from public.one o join public.two on o.id = t.id
 ***Case 2:***
 
 s| from public.one o join public.two on o.id = t.id;
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from public.one o join public.two on o.id = t.id;
 
 Results:
