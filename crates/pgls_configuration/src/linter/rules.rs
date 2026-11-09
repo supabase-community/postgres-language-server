@@ -715,7 +715,7 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_return_type_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::FunctionReturnTypeMismatch>>,
-    #[doc = "An INSERT or UPDATE assigns a value to a generated column."]
+    #[doc = "An INSERT or UPDATE assigns a value to a generated column or a GENERATED ALWAYS identity column."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub generated_column_assignment:
         Option<RuleConfiguration<pgls_analyser::options::GeneratedColumnAssignment>>,

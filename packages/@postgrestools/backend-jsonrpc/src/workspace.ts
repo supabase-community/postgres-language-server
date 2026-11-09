@@ -1118,7 +1118,7 @@ export interface LinterRules {
    */
   functionReturnTypeMismatch?: RuleConfiguration_for_Null;
   /**
-   * An INSERT or UPDATE assigns a value to a generated column.
+   * An INSERT or UPDATE assigns a value to a generated column or a GENERATED ALWAYS identity column.
    */
   generatedColumnAssignment?: RuleConfiguration_for_Null;
   /**

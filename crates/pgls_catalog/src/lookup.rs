@@ -7,8 +7,8 @@
 use std::borrow::Cow;
 
 use crate::Behavior;
-use crate::Generated;
 use crate::typing::{Type, TypeId};
+use crate::{Generated, Identity};
 
 /// The result of a catalog lookup.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -72,6 +72,9 @@ pub struct ColumnInfo {
     /// Whether the column of a table is a generated column. [`Generated::No`] also when that is
     /// not known, and for the columns of anything but tables.
     pub generated: Generated,
+    /// Whether the column of a table is an identity column. [`Identity::No`] also when that is
+    /// not known, and for the columns of anything but tables.
+    pub identity: Identity,
 }
 
 impl ColumnInfo {
@@ -83,6 +86,7 @@ impl ColumnInfo {
             type_name,
             ty,
             generated: Generated::No,
+            identity: Identity::No,
         }
     }
 }

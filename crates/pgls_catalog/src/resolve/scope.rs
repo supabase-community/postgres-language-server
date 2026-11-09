@@ -31,8 +31,8 @@ pub(super) struct Item {
     pub typed_columns: TypedColumns,
     /// Whether the item has system columns (`ctid`, `xmin`, ...).
     pub has_system_columns: bool,
-    /// The generated columns of a table, which INSERT and UPDATE can only set to `DEFAULT`.
-    pub generated_columns: Vec<String>,
+    /// The columns of a table that INSERT and UPDATE can only set to `DEFAULT`.
+    pub default_only_columns: Vec<(String, DefaultOnly)>,
     /// What the columns come from. Only set when references are collected.
     pub source: Option<Rc<ItemSource>>,
 }
@@ -70,6 +70,27 @@ impl ItemSource {
     }
 }
 
+/// Why INSERT and UPDATE can only set a column of a table to `DEFAULT`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum DefaultOnly {
+    /// A generated column.
+    Generated,
+    /// A `GENERATED ALWAYS` identity column. INSERT can set it with an `OVERRIDING` clause.
+    IdentityAlways,
+}
+
+impl DefaultOnly {
+    pub fn of(column: &ColumnInfo) -> Option<Self> {
+        if column.generated.is_generated() {
+            Some(DefaultOnly::Generated)
+        } else if column.identity == crate::Identity::Always {
+            Some(DefaultOnly::IdentityAlways)
+        } else {
+            None
+        }
+    }
+}
+
 impl Item {
     pub fn named(name: Option<String>, columns: Columns) -> Self {
         Self {
@@ -78,7 +99,7 @@ impl Item {
             columns,
             typed_columns: None,
             has_system_columns: false,
-            generated_columns: Vec::new(),
+            default_only_columns: Vec::new(),
             source: None,
         }
     }
@@ -109,6 +130,16 @@ impl Item {
             .iter()
             .find(|c| c.name == column)
             .map(|c| c.ty.clone())
+    }
+
+    /// Why a value for the column can only be `DEFAULT`, if it can. An INSERT with an
+    /// `OVERRIDING` clause (`overriding`) can set `GENERATED ALWAYS` identity columns.
+    pub fn default_only(&self, column: &str, overriding: bool) -> Option<DefaultOnly> {
+        self.default_only_columns
+            .iter()
+            .find(|(name, _)| name == column)
+            .map(|(_, kind)| *kind)
+            .filter(|kind| !(overriding && *kind == DefaultOnly::IdentityAlways))
     }
 
     pub fn has_column(&self, column: &str) -> Option<bool> {

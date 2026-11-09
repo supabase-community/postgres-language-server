@@ -5,7 +5,7 @@ use crate::{
     CastContext, CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature,
     OperatorInfo, OperatorKind, TypeKind,
 };
-use crate::{Generated, ProcKind, Snapshot, TableKind};
+use crate::{Generated, Identity, ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{Key, key};
@@ -116,6 +116,7 @@ impl CatalogBase {
                 .or_default()
                 .push(ColumnInfo {
                     generated: column.generated,
+                    identity: column.identity,
                     ..ColumnInfo::new(
                         column.name.clone(),
                         column.type_name.clone(),
@@ -141,13 +142,13 @@ impl CatalogBase {
                 .get(&key)
                 .and_then(|row_type: &TypeInfo| row_type.attributes.clone())
                 .map(|mut columns| {
-                    // The row type doesn't know which columns are generated.
+                    // The row type doesn't know which columns are generated or identity columns.
                     for column in &mut columns {
-                        column.generated = table_columns
-                            .and_then(|table_columns| {
-                                table_columns.iter().find(|c| c.name == column.name)
-                            })
-                            .map_or(Generated::No, |c| c.generated);
+                        let table_column = table_columns.and_then(|table_columns| {
+                            table_columns.iter().find(|c| c.name == column.name)
+                        });
+                        column.generated = table_column.map_or(Generated::No, |c| c.generated);
+                        column.identity = table_column.map_or(Identity::No, |c| c.identity);
                     }
                     columns
                 })

@@ -116,11 +116,14 @@ pub enum FindingKind {
         expected: usize,
         found: usize,
     },
-    /// A value other than `DEFAULT` is assigned to a generated column.
+    /// A value other than `DEFAULT` is assigned to a generated column or to a
+    /// `GENERATED ALWAYS` identity column.
     GeneratedColumnAssignment {
         column: String,
         /// Whether INSERT assigns it, rather than UPDATE or `ON CONFLICT DO UPDATE`.
         insert: bool,
+        /// Whether the column is an identity column, rather than a generated column.
+        identity: bool,
     },
     UnknownType {
         schema: Option<String>,

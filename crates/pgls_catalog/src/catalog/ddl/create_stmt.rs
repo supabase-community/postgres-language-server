@@ -3,9 +3,9 @@ use pgls_query::{
     protobuf::{CreateStmt, TableLikeOption},
 };
 
-use crate::Generated;
 use crate::catalog::{Catalog, key, names::type_name, overlay::column_info};
 use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
+use crate::{Generated, Identity};
 
 /// The bit of `INCLUDING GENERATED` in `TableLikeClause.options`. The protobuf enum numbers the
 /// options of [`TableLikeOption`] from 1, after `Undefined`, while Postgres uses them as bits from
@@ -14,6 +14,8 @@ use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind}
 /// [`TableLikeOption`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/nodes/parsenodes.h#L785
 const CREATE_TABLE_LIKE_GENERATED: u32 =
     1 << (TableLikeOption::CreateTableLikeGenerated as u32 - 1);
+/// The bit of `INCLUDING IDENTITY`, like [`CREATE_TABLE_LIKE_GENERATED`].
+const CREATE_TABLE_LIKE_IDENTITY: u32 = 1 << (TableLikeOption::CreateTableLikeIdentity as u32 - 1);
 
 /// `CREATE TABLE`. Models [`DefineRelation`], which merges inherited columns with
 /// [`MergeAttributes`], and the columns copied by `LIKE` ([`transformTableLikeClause`]).
@@ -74,7 +76,9 @@ pub(super) fn create_table(
     }
 
     // Inherited columns (`INHERITS`, `PARTITION OF`) come first. A column inherited from a
-    // generated column is generated too.
+    // generated column is generated too. Only partitions inherit identity, since Postgres 17.
+    // When the server version isn't known, a partition's identity is unknown.
+    let inherits_identity = n.partbound.is_some() && c.partitions_inherit_identity() == Some(true);
     let mut parents = Vec::new();
     for parent in &n.inh_relations {
         let parent = match parent.node.as_ref() {
@@ -84,7 +88,13 @@ pub(super) fn create_table(
         if let Some(parent) = &parent {
             parents.push(key(&parent.schema, &parent.name));
         }
-        add_columns(parent.and_then(|parent| parent.columns));
+        let mut columns = parent.and_then(|parent| parent.columns);
+        if !inherits_identity {
+            for column in columns.iter_mut().flatten() {
+                column.identity = Identity::No;
+            }
+        }
+        add_columns(columns);
     }
 
     for element in &n.table_elts {
@@ -98,10 +108,16 @@ pub(super) fn create_table(
                     .as_ref()
                     .and_then(|source| c.relation_of(source, search_path).found());
                 let mut columns = source.and_then(|source| source.columns);
-                // Columns copied by `LIKE` are only generated with `INCLUDING GENERATED`.
-                if like.options & CREATE_TABLE_LIKE_GENERATED == 0 {
-                    for column in columns.iter_mut().flatten() {
+                // Columns copied by `LIKE` are only generated with `INCLUDING GENERATED`, and
+                // only identity columns with `INCLUDING IDENTITY`, which foreign tables ignore.
+                let copies_identity = like.options & CREATE_TABLE_LIKE_IDENTITY != 0
+                    && kind != RelationKind::ForeignTable;
+                for column in columns.iter_mut().flatten() {
+                    if like.options & CREATE_TABLE_LIKE_GENERATED == 0 {
                         column.generated = Generated::No;
+                    }
+                    if !copies_identity {
+                        column.identity = Identity::No;
                     }
                 }
                 add_columns(columns);
@@ -143,10 +159,16 @@ pub(super) fn create_table(
 /// another kind, on Postgres 16+ a generation expression for an ordinary parent column, and
 /// parents that disagree) fail the `CREATE TABLE`, so they don't matter.
 ///
+/// The identity is the one the table declares: inheritance children don't inherit identity, and
+/// partitions, which do, can't declare one.
+///
 /// [`MergeChildAttribute`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L3255
 /// [`MergeInheritedAttribute`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L3425
 fn merge_column(existing: &mut ColumnInfo, column: &ColumnInfo) {
     if existing.generated == Generated::No {
         existing.generated = column.generated;
+    }
+    if column.identity != Identity::No {
+        existing.identity = column.identity;
     }
 }
