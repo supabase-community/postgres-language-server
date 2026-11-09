@@ -1062,6 +1062,44 @@ fn relative_path_arguments_are_relative_to_the_working_directory() {
     );
 }
 
+/// `--after` is read like `after` in the configuration file: as a version of the migration tool,
+/// with a warning if it isn't one. The file's own `after` is replaced, so it isn't reported.
+#[test]
+fn after_argument_that_is_no_version_is_reported() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "migrations": { "migrationsDir": "migrations", "after": "v0" } }"#,
+        ),
+        (
+            "migrations/0009_later.sql",
+            "alter table users drop column name;\n",
+        ),
+    ]);
+    let migration = Path::new("migrations").join("0009_later.sql");
+
+    let (_, output) = check_in(
+        root.path(),
+        &["--after", "v1", migration.to_str().unwrap()],
+        &[],
+    );
+    assert!(
+        output
+            .contains("`migrations.after` is `v1`, which is not a version of plain SQL migrations"),
+        "{output}"
+    );
+    // The file is checked, since `v1` ignores nothing.
+    assert!(output.contains("lint/banDropColumn"), "{output}");
+
+    let (_, output) = check_in(
+        root.path(),
+        &["--after", "0010", migration.to_str().unwrap()],
+        &[],
+    );
+    assert!(!output.contains("`migrations.after` is `0010`"), "{output}");
+    assert!(!output.contains("lint/banDropColumn"), "{output}");
+}
+
 /// Runs `check` with the database settings given in `args` only, without the connection
 /// settings of the environment running the tests.
 #[cfg(target_os = "linux")]

@@ -21,7 +21,7 @@ use pgls_workspace::configuration::{
     ConfigurationLayers, ConfigurationNotice, ConfigureProjectParams, NestedConfiguration,
     NestedConfigurationSearch, apply_nested_configurations, configure_project,
 };
-use pgls_workspace::settings::FilesSettings;
+use pgls_workspace::settings::{FilesSettings, migrations_problems};
 use pgls_workspace::workspace::ProjectKey;
 use pgls_workspace::{App, DynRef, Workspace, WorkspaceRef};
 
@@ -270,6 +270,19 @@ impl<'app> CliSession<'app> {
             self.print_configuration_notice(notice);
         }
         let applied = project.result?;
+        // The notices are about the configuration file. An `--after` argument replaces its
+        // `after`, so it's checked against the configuration as applied, with the tool of the
+        // file or of `--migration-tool`.
+        let after_argument = self
+            .layers
+            .overrides
+            .as_ref()
+            .and_then(|overrides| overrides.migrations.as_ref())
+            .is_some_and(|migrations| migrations.after.is_some());
+        if after_argument {
+            let problems = migrations_problems(&applied.configuration);
+            self.print_configuration_notice(&ConfigurationNotice::InvalidSettings(problems));
+        }
         self.project_key = project.project_key;
         self.root_files = Some(applied.files);
         Ok(applied.configuration)

@@ -1128,7 +1128,7 @@ pub(crate) fn migration_tool(tool: MigrationTool) -> &'static dyn pgls_migration
 
 /// What is wrong with the migrations settings of a configuration that it can still apply, like an
 /// `after` that isn't a version of the migration tool.
-pub(crate) fn migrations_problems(configuration: &PartialConfiguration) -> Vec<String> {
+pub fn migrations_problems(configuration: &PartialConfiguration) -> Vec<String> {
     let Some(migrations) = &configuration.migrations else {
         return Vec::new();
     };
