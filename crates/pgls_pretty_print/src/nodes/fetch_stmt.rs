@@ -91,7 +91,5 @@ pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
         super::emit_identifier_maybe_quoted(e, &n.portalname);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

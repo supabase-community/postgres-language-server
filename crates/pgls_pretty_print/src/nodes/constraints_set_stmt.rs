@@ -26,7 +26,5 @@ pub(super) fn emit_constraints_set_stmt(e: &mut EventEmitter, n: &ConstraintsSet
         e.token(TokenKind::IMMEDIATE_KW);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

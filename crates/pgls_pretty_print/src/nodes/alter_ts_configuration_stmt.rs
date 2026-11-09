@@ -68,8 +68,6 @@ pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTs
         emit_comma_separated_list(e, &n.dicts, emit_dictionary);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
 

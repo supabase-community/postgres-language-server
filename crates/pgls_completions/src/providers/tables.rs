@@ -1,4 +1,4 @@
-use pgls_catalog::{Snapshot, Table};
+use pgls_catalog::{NamePosition, Snapshot, Table};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::with_schema_or_alias;
+use super::helper::{Qualifier, with_schema_or_alias};
 
 pub fn complete_tables<'a>(
     ctx: &'a TreesitterContext,
@@ -42,7 +42,12 @@ pub fn complete_tables<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, table: &Table) -> CompletionText {
-    let text = with_schema_or_alias(ctx, table.name.as_str(), Some(table.schema.as_str()));
+    let text = with_schema_or_alias(
+        ctx,
+        table.name.as_str(),
+        Some(Qualifier::Schema(table.schema.as_str())),
+        NamePosition::ColId,
+    );
 
     let range = get_range_to_replace(ctx);
 
@@ -63,7 +68,7 @@ mod tests {
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
             CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
-            assert_complete_results, assert_no_complete_results, get_test_deps, get_test_params,
+            assert_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -275,6 +280,32 @@ mod tests {
             .await;
     }
 
+    #[sqlx::test]
+    async fn suggests_tables_in_inherits_and_references(pool: PgPool) {
+        pool.execute("create table public.parents (id int primary key);")
+            .await
+            .unwrap();
+
+        for sql in [
+            "create table t (a int) inherits ({})",
+            "create table t (a int) inherits (parents, {})",
+            "create table t (a int references {})",
+            "create table t (a int, foreign key (a) references {})",
+        ] {
+            let query = sql.replace("{}", &QueryWithCursorPosition::cursor_marker().to_string());
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::LabelAndKind(
+                    "parents".into(),
+                    CompletionItemKind::Table,
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+    }
+
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn suggests_tables_in_delete(pool: PgPool) {
         let setup = r#"
@@ -286,8 +317,12 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(
+        assert_complete_results(
             format!("delete {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("from".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
+            ],
             None,
             &pool,
         )
