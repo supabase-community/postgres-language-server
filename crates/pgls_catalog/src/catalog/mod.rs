@@ -285,7 +285,7 @@ impl Catalog {
 
     /// Looks up the relation a `RangeVar` names. An unqualified name is looked up in the search
     /// path.
-    pub(crate) fn relation_of(
+    pub fn relation_of(
         &self,
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
