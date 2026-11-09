@@ -762,6 +762,72 @@ fn snapshot_includes_the_changes_of_the_file() {
     );
 }
 
+#[test]
+fn sequence_columns_have_types() {
+    use crate::typing::{Type, TypeId};
+
+    let builtin = |id: i64, name: &str| crate::PostgresType {
+        id,
+        schema: "pg_catalog".into(),
+        name: name.into(),
+        typtype: "b".into(),
+        ..Default::default()
+    };
+    let snapshot = Snapshot {
+        schemas: vec![schema("public"), schema("pg_catalog")],
+        types: vec![builtin(16, "bool"), builtin(20, "int8")],
+        sequences: vec![crate::Sequence {
+            id: 3,
+            schema: "public".into(),
+            name: "database_seq".into(),
+        }],
+        typing_metadata: true,
+        ..Default::default()
+    };
+    let search_path = path(&["public"]);
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    let parsed = pgls_query::parse("create sequence file_seq;").expect("valid sql");
+    for stmt in parsed.stmts() {
+        catalog.apply(stmt, &search_path);
+    }
+
+    let int8 = Some(Type::Named(TypeId::Snapshot(20)));
+    let bool = Some(Type::Named(TypeId::Snapshot(16)));
+    for sequence in ["database_seq", "file_seq"] {
+        let columns: Vec<_> = catalog
+            .relation(None, sequence, &search_path)
+            .found()
+            .and_then(|relation| relation.columns)
+            .unwrap_or_else(|| panic!("columns of {sequence}"))
+            .into_iter()
+            .map(|column| (column.name, column.ty))
+            .collect();
+        assert_eq!(
+            columns,
+            [
+                ("last_value".to_owned(), int8.clone()),
+                ("log_cnt".to_owned(), int8.clone()),
+                ("is_called".to_owned(), bool.clone()),
+            ],
+            "{sequence}"
+        );
+
+        let query = pgls_query::parse(&format!("select last_value from {sequence}"))
+            .expect("valid sql")
+            .stmts()
+            .first()
+            .map(|node| (**node).clone());
+        let output = crate::resolve::query_output_types(
+            &pgls_query::protobuf::Node { node: query },
+            &catalog,
+            &search_path,
+        )
+        .unwrap_or_else(|| panic!("output of {sequence}"));
+        assert_eq!(output.len(), 1);
+        assert_eq!(output[0].ty, int8, "{sequence}");
+    }
+}
+
 /// The table of an index, or `None` if the index is not found.
 fn index_table(
     catalog: &Catalog,
