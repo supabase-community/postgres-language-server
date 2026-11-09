@@ -415,6 +415,28 @@ impl Catalog {
         );
     }
 
+    /// Applies `change` to a type and marks it as changed by the file, so that its uses are no
+    /// longer checked against the database. Postgres rejects changes to the types of system
+    /// catalogs, which are left as they are.
+    pub(super) fn change_type(
+        &mut self,
+        name: &QualifiedName,
+        search_path: &[String],
+        change: impl FnOnce(&Self, &mut TypeInfo),
+    ) {
+        let Some(mut type_info) = self
+            .type_(name.schema(), &name.name, search_path)
+            .found()
+            .filter(|type_info| type_info.schema != "pg_catalog")
+        else {
+            return;
+        };
+        change(self, &mut type_info);
+        type_info.origin = Origin::File;
+        let key = key(&type_info.schema, &type_info.name);
+        self.types.insert(key, Entry::Defined(type_info));
+    }
+
     /// Moves a type to a new schema or name.
     pub(super) fn move_type(
         &mut self,

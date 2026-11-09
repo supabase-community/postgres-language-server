@@ -1,7 +1,6 @@
 use pgls_query::protobuf::AlterEnumStmt;
 
-use crate::catalog::{Catalog, Entry, key, names::qualified_name};
-use crate::lookup::{CatalogView, Origin};
+use crate::catalog::{Catalog, names::qualified_name};
 
 /// `ALTER TYPE ... ADD VALUE` and `ALTER TYPE ... RENAME VALUE` ([`AlterEnum`]). The labels of an
 /// enum are not modelled, so the enum only becomes one that the file changed, whose uses are no
@@ -12,9 +11,5 @@ pub(super) fn apply_alter_enum_stmt(c: &mut Catalog, n: &AlterEnumStmt, search_p
     let Some(name) = qualified_name(&n.type_name) else {
         return;
     };
-    if let Some(mut type_info) = c.type_(name.schema(), &name.name, search_path).found() {
-        type_info.origin = Origin::File;
-        let key = key(&type_info.schema, &type_info.name);
-        c.types.insert(key, Entry::Defined(type_info));
-    }
+    c.change_type(&name, search_path, |_, _| {});
 }
