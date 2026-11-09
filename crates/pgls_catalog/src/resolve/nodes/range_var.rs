@@ -135,15 +135,9 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
                     .columns
                     .as_ref()
                     .map(|columns| columns.iter().map(|column| column.name.clone()).collect()),
-                typed_columns: relation.columns.map(|columns| {
-                    columns
-                        .into_iter()
-                        .map(|column| crate::typing::TypedColumn {
-                            name: column.name,
-                            ty: column.ty,
-                        })
-                        .collect()
-                }),
+                typed_columns: relation
+                    .columns
+                    .map(|columns| columns.into_iter().map(Into::into).collect()),
                 has_system_columns: relation.kind != RelationKind::View,
                 source,
             }

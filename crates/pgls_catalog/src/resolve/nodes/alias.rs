@@ -33,7 +33,7 @@ pub(super) fn rename_typed_columns(columns: TypedColumns, names: &[Node]) -> Typ
 /// are more names than columns, which Postgres rejects.
 ///
 /// [`buildRelationAliases`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L1224
-fn rename<T>(
+pub(crate) fn rename<T>(
     columns: Option<Vec<T>>,
     names: &[Node],
     set_name: impl Fn(&mut T, String),

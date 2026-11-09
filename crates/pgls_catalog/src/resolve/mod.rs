@@ -35,6 +35,7 @@ use pgls_text_size::TextRange;
 
 use crate::lookup::CatalogView;
 use crate::typing::{QueryColumns, Type};
+pub(crate) use nodes::rename;
 use resolver::Resolver;
 
 /// A parameter of the SQL function whose body is being resolved.

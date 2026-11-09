@@ -167,6 +167,30 @@ async fn infers_array_subscripts(test_db: PgPool) {
     );
 }
 
+/// A field of a domain over a composite type has the type of the attribute, like for the
+/// composite type itself ([`get_expr_result_type`]).
+///
+/// [`get_expr_result_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/fmgr/funcapi.c#L299
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn infers_fields_of_domains_over_composite_types(test_db: PgPool) {
+    let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    assert_eq!(
+        output_types(
+            &mut catalog,
+            "create type typed_pair as (a int4, b text); \
+             create domain typed_pair_domain as typed_pair; \
+             create table typed_pairs (p typed_pair, d typed_pair_domain);",
+            "select (p).a, (d).a, (d).b from typed_pairs"
+        ),
+        [
+            Some("integer".into()),
+            Some("integer".into()),
+            Some("text".into())
+        ]
+    );
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn infers_array_agg_result(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());

@@ -1,12 +1,9 @@
 //! The changes that statements are made of: defining, moving, and dropping relations, types,
 //! functions, and schemas in the overlay.
 
-use crate::typing::TypeId;
-use crate::{FunctionArgumentMode, FunctionSignature};
+use crate::FunctionSignature;
 use pgls_query::{Node, protobuf};
-use pgls_query_ext::utils::{
-    QualifiedName, qualified_name, range_var_name, string_value, type_name,
-};
+use pgls_query_ext::utils::{QualifiedName, qualified_name, range_var_name, type_name};
 
 use super::{Catalog, Entry, Key, key};
 use crate::lookup::{
@@ -449,9 +446,17 @@ impl Catalog {
             Lookup::Found(mut overloads) => {
                 // `CREATE OR REPLACE` replaces the overload with the same input types. When
                 // the types are not all known, we can't tell, so the overload is added.
-                let replaced = input_types(function.signature.as_ref()).and_then(|types| {
+                let input_types = function
+                    .signature
+                    .as_ref()
+                    .and_then(FunctionSignature::input_types);
+                let replaced = input_types.and_then(|types| {
                     overloads.iter().position(|existing| {
-                        input_types(existing.signature.as_ref()).as_ref() == Some(&types)
+                        let existing = existing
+                            .signature
+                            .as_ref()
+                            .and_then(FunctionSignature::input_types);
+                        existing.as_ref() == Some(&types)
                     })
                 });
                 match replaced {
@@ -497,7 +502,10 @@ impl Catalog {
             .flatten();
         let typed_position = argument_types.as_ref().and_then(|arguments| {
             let mut candidates = overloads.iter().enumerate().filter(|(_, overload)| {
-                input_types(overload.signature.as_ref())
+                overload
+                    .signature
+                    .as_ref()
+                    .and_then(FunctionSignature::input_types)
                     .is_some_and(|types| types.iter().copied().eq(arguments.iter()))
             });
             match (candidates.next(), candidates.next()) {
@@ -637,29 +645,5 @@ pub(super) fn rename_columns(
     columns: Option<Vec<ColumnInfo>>,
     names: &[Node],
 ) -> Option<Vec<ColumnInfo>> {
-    let mut columns = columns?;
-    if names.len() > columns.len() {
-        return None;
-    }
-    for (column, name) in columns.iter_mut().zip(names) {
-        column.name = string_value(name)?.to_owned();
-    }
-    Some(columns)
-}
-
-/// The input argument types of a function, or `None` if any of them is unknown.
-fn input_types(signature: Option<&FunctionSignature>) -> Option<Vec<&TypeId>> {
-    signature?
-        .arguments
-        .iter()
-        .filter(|arg| {
-            matches!(
-                arg.mode,
-                FunctionArgumentMode::In
-                    | FunctionArgumentMode::InOut
-                    | FunctionArgumentMode::Variadic
-            )
-        })
-        .map(|arg| arg.ty.as_ref())
-        .collect()
+    crate::resolve::rename(columns, names, |column, name| column.name = name)
 }

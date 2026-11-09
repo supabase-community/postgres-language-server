@@ -12,7 +12,9 @@ use pgls_query_ext::utils::{QualifiedName, find_option_value, qualified_name};
 use super::{Resolver, resolve_node_enum};
 use crate::TypeKind;
 use crate::lookup::Lookup;
-use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch, utils::named};
+use crate::resolve::{
+    FindingKind, FunctionContext, FunctionParam, ReturnMismatch, resolve_unknown_outputs,
+};
 use crate::typing::{
     CoercionContext, Decision, Type, TypeId, can_coerce, format_type_with_search_path,
     normalize_type_name,
@@ -408,20 +410,13 @@ fn output_columns(
     if !body.findings.is_empty() {
         return None;
     }
-    let types: Vec<Option<Type>> = match body.output.take() {
-        Some(output) if output.len() == columns.len() => {
-            output.into_iter().map(|column| column.ty).collect()
-        }
-        _ => vec![None; columns.len()],
-    };
-    let text = named(r, "text");
-    Some(
-        types
-            .into_iter()
-            .map(|ty| match ty {
-                Some(Type::UnknownLiteral) => text.clone(),
-                ty => ty,
-            })
-            .collect(),
-    )
+    match body.output.take() {
+        Some(output) if output.len() == columns.len() => Some(
+            resolve_unknown_outputs(r.catalog, Some(output))?
+                .into_iter()
+                .map(|column| column.ty)
+                .collect(),
+        ),
+        _ => Some(vec![None; columns.len()]),
+    }
 }

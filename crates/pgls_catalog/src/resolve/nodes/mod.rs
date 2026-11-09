@@ -29,6 +29,7 @@ use pgls_query::{Node, NodeEnum};
 
 use super::{resolver::Resolver, scope::Columns};
 
+pub(crate) use alias::rename;
 use column_ref::resolve_column_ref;
 use copy_stmt::resolve_copy_stmt;
 use create_function_stmt::resolve_create_function_stmt;

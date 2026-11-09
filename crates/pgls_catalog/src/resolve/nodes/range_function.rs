@@ -13,7 +13,7 @@ use super::{
 use crate::resolve::{
     expr::call_args,
     scope::{Columns, Item, Level},
-    utils::named,
+    utils::{named, row_columns},
 };
 use crate::{
     lookup::Lookup,
@@ -243,19 +243,13 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
             // A single output parameter of a composite type expands to its attributes.
             Some(columns) if columns.len() == 1 => {
                 let column = columns.into_iter().next()?;
-                match composite_attributes(r, column.ty.as_ref()?)? {
+                match row_columns(r, column.ty.as_ref()?)? {
                     Some(attributes) => output.extend(attributes),
-                    None => output.push(TypedColumn {
-                        name: column.name,
-                        ty: column.ty,
-                    }),
+                    None => output.push(column.into()),
                 }
             }
-            Some(columns) => output.extend(columns.into_iter().map(|column| TypedColumn {
-                name: column.name,
-                ty: column.ty,
-            })),
-            None => match composite_attributes(r, selected.result.as_ref()?)? {
+            Some(columns) => output.extend(columns.into_iter().map(TypedColumn::from)),
+            None => match row_columns(r, selected.result.as_ref()?)? {
                 Some(attributes) => output.extend(attributes),
                 // A scalar function yields one column, named by `chooseScalarFunctionAlias`.
                 None => output.push(TypedColumn {
@@ -280,33 +274,6 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
         }
     }
     Some(output)
-}
-
-/// The attributes of a composite type, or of a domain over one, as `get_expr_result_type`
-/// expands them; `Some(None)` for a scalar type and `None` when it is unknown.
-fn composite_attributes(r: &Resolver, ty: &Type) -> Option<Option<Vec<TypedColumn>>> {
-    let Type::Named(id) = ty else {
-        return None;
-    };
-    let id = match crate::typing::base_type(r.catalog, id) {
-        crate::typing::Decision::Known(id) => id,
-        crate::typing::Decision::Unknown => return None,
-    };
-    let info = r.catalog.type_by_id(&id).found()?;
-    match info.kind? {
-        crate::TypeKind::Composite => Some(Some(
-            info.attributes?
-                .into_iter()
-                .map(|attribute| TypedColumn {
-                    name: attribute.name,
-                    ty: attribute.ty,
-                })
-                .collect(),
-        )),
-        // `record` and other pseudo types need a column definition list.
-        crate::TypeKind::Pseudo => None,
-        _ => Some(None),
-    }
 }
 
 fn column_definition_names(definitions: &[Node]) -> Columns {

@@ -7,7 +7,7 @@
 use std::borrow::Cow;
 
 use crate::Behavior;
-use crate::typing::{Type, TypeId};
+use crate::typing::{Type, TypeId, TypedColumn};
 
 /// The result of a catalog lookup.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,6 +68,15 @@ pub struct ColumnInfo {
     pub type_name: Option<String>,
     /// Resolved type identity, when available.
     pub ty: Option<Type>,
+}
+
+impl From<ColumnInfo> for TypedColumn {
+    fn from(column: ColumnInfo) -> Self {
+        TypedColumn {
+            name: column.name,
+            ty: column.ty,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -298,6 +307,22 @@ impl FunctionSignature {
             all.insert((*position).min(all.len()), argument.clone());
         }
         Cow::Owned(all)
+    }
+
+    /// The types of the input arguments, or `None` if any of them is unknown.
+    pub(crate) fn input_types(&self) -> Option<Vec<&TypeId>> {
+        self.arguments
+            .iter()
+            .filter(|arg| {
+                matches!(
+                    arg.mode,
+                    FunctionArgumentMode::In
+                        | FunctionArgumentMode::InOut
+                        | FunctionArgumentMode::Variadic
+                )
+            })
+            .map(|arg| arg.ty.as_ref())
+            .collect()
     }
 }
 
