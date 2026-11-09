@@ -70,6 +70,7 @@ fn init_with_supabase_project_sets_the_migrations_dir() {
 
     let config = read_config(dir.path());
     assert_eq!(config["migrations"]["migrationsDir"], "supabase/migrations");
+    assert_eq!(config["migrations"]["tool"], "supabase");
     // Executing statements stays opt-in.
     assert!(
         config["db"]["allowStatementExecutionsAgainst"]

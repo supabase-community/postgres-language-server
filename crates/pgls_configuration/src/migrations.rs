@@ -18,10 +18,11 @@ pub struct MigrationsConfiguration {
     #[partial(bpaf(long("after")))]
     pub after: u64,
 
-    /// The migration tool that runs the migration files: "dbmate", "goose" or "none". The marker
-    /// comments of the tool split a migration file into up and down sections, which are analysed
-    /// as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up`
-    /// and `-- +goose Down` of goose. Default: "none", every file is one migration.
+    /// The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none".
+    /// The marker comments of the tool split a migration file into up and down sections, which
+    /// are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate,
+    /// `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one
+    /// migration. Default: "none", every file is one migration.
     #[partial(bpaf(long("migration-tool")))]
     pub tool: Option<MigrationTool>,
 
@@ -60,7 +61,7 @@ impl PartialMigrationsConfiguration {
     }
 }
 
-/// A migration tool that puts the up and the down migration in the same file.
+/// The migration tool that runs the migration files.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
@@ -68,6 +69,8 @@ pub enum MigrationTool {
     /// The whole file is one migration (default).
     #[default]
     None,
+    /// The Supabase CLI. Every file is one migration.
+    Supabase,
     /// `-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section
     /// without a transaction, but still as one query.
     Dbmate,
@@ -82,11 +85,12 @@ impl FromStr for MigrationTool {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "none" => Ok(Self::None),
+            "supabase" => Ok(Self::Supabase),
             "dbmate" => Ok(Self::Dbmate),
             "goose" => Ok(Self::Goose),
-            _ => {
-                Err("Value not supported for the migration tool. Use 'none', 'dbmate' or 'goose'.")
-            }
+            _ => Err(
+                "Value not supported for the migration tool. Use 'none', 'supabase', 'dbmate' or 'goose'.",
+            ),
         }
     }
 }
@@ -102,6 +106,11 @@ mod tests {
                 .expect("migrations configuration should deserialize");
         assert_eq!(config.migration_tool(), MigrationTool::Goose);
         assert_eq!(config.lint_down, Some(false));
+
+        let config: PartialMigrationsConfiguration =
+            serde_json::from_str(r#"{ "tool": "supabase" }"#)
+                .expect("migrations configuration should deserialize");
+        assert_eq!(config.migration_tool(), MigrationTool::Supabase);
 
         let config = MigrationsConfiguration::from(PartialMigrationsConfiguration::default());
         assert_eq!(config.migration_tool(), MigrationTool::None);

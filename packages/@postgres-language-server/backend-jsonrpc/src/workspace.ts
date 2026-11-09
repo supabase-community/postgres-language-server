@@ -32,6 +32,10 @@ export interface RegisterProjectFolderParams {
    * The folder of the project. A project without a folder contains every path.
    */
   path?: string;
+  /**
+   * The folder with symlinks resolved, if that differs from `path`, e.g. for a folder opened through a symlink. The paths below it belong to the project too.
+   */
+  realPath?: string;
 }
 export interface GetFileContentParams {
   path: PgLSPath;
@@ -465,7 +469,14 @@ export interface UpdateSettingsParams {
    * The project whose root settings are updated.
    */
   project_key: ProjectKey;
+  /**
+   * Whether the configuration replaces the root settings. Otherwise it is merged into them, and the sections it doesn't set keep their values.
+   */
+  replace?: boolean;
   vcs_base_path?: string;
+  /**
+   * The folder that relative paths and globs of the configuration are resolved against: the folder of the configuration file.
+   */
   workspace_directory?: string;
 }
 /**
@@ -669,6 +680,10 @@ export interface PartialInlayHintsConfiguration {
    * if `false`, the language server sends no inlay hints. `true` by default
    */
   enabled?: boolean;
+  /**
+   * Which arguments of function calls show the name of their parameter: "all", "literals" (only constants like `1`, `'a'`, `true` or `null`) or "none". Default: "all".
+   */
+  parameterNames?: ParameterNameHints;
 }
 export interface PartialLinterConfiguration {
   /**
@@ -871,6 +886,10 @@ export type Layout = "fit" | "expanded";
  * Where a boolean operator sits when a condition breaks across lines.
  */
 export type LogicalOperatorPlacement = "trailing" | "leading";
+/**
+ * Which arguments of function calls show the name of their parameter.
+ */
+export type ParameterNameHints = "all" | "literals" | "none";
 /**
  * The level of all rules of a group, unless a rule is configured individually.
  */
@@ -1629,6 +1648,18 @@ Each pattern should be in the format `schema.object_name`, for example: - `"publ
 	 */
   ignore?: string[];
 }
+export interface CheckDatabaseConnectionParams {
+  /**
+   * The project whose databases are checked: the one of its root settings and of every nested configuration file.
+   */
+  project_key: ProjectKey;
+}
+export interface CheckDatabaseConnectionResult {
+  /**
+   * Why the configured databases cannot be used, one message per database that can't.
+   */
+  errors: string[];
+}
 export interface OpenFileParams {
   content: string;
   path: PgLSPath;
@@ -1655,6 +1686,9 @@ export interface Workspace {
   fixFile(params: FixFileParams): Promise<FixFileResult>;
   getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
   updateSettings(params: UpdateSettingsParams): Promise<void>;
+  checkDatabaseConnection(
+    params: CheckDatabaseConnectionParams,
+  ): Promise<CheckDatabaseConnectionResult>;
   openFile(params: OpenFileParams): Promise<void>;
   changeFile(params: ChangeFileParams): Promise<void>;
   closeFile(params: CloseFileParams): Promise<void>;
@@ -1685,6 +1719,9 @@ export function createWorkspace(transport: Transport): Workspace {
     },
     updateSettings(params) {
       return transport.request("pgls/update_settings", params);
+    },
+    checkDatabaseConnection(params) {
+      return transport.request("pgls/check_database_connection", params);
     },
     openFile(params) {
       return transport.request("pgls/open_file", params);

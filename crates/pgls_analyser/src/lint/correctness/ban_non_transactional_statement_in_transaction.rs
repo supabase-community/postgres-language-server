@@ -2,7 +2,6 @@ use crate::{
     LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::is_reindex_concurrent,
 };
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::{CatalogView, RelationKind};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::{NodeEnum, protobuf};
@@ -107,6 +106,10 @@ fn non_transactional_statement(
 ) -> Option<&'static str> {
     use protobuf::{AlterSubscriptionType, DiscardMode, ReindexObjectType, TransactionStmtKind};
 
+    let is_partitioned_table = |relation: &protobuf::RangeVar| {
+        ctx.catalog()
+            .is_partitioned_table(relation, ctx.session().search_path())
+    };
     match ctx.stmt() {
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/vacuum.c#L523
         NodeEnum::VacuumStmt(stmt) if stmt.is_vacuumcmd => Some("VACUUM"),
@@ -127,7 +130,7 @@ fn non_transactional_statement(
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/cluster.c#L210
         NodeEnum::ClusterStmt(stmt) => match &stmt.relation {
             None => Some("CLUSTER"),
-            Some(relation) if !stmt.indexname.is_empty() && is_partitioned(ctx, relation) => {
+            Some(relation) if !stmt.indexname.is_empty() && is_partitioned_table(relation) => {
                 Some("CLUSTER")
             }
             Some(_) => None,
@@ -142,7 +145,7 @@ fn non_transactional_statement(
                 if stmt
                     .relation
                     .as_ref()
-                    .is_some_and(|relation| is_partitioned(ctx, relation)) =>
+                    .is_some_and(is_partitioned_table) =>
             {
                 Some("REINDEX TABLE")
             }
@@ -173,18 +176,6 @@ fn non_transactional_statement(
         }
         _ => None,
     }
-}
-
-/// Whether the catalog knows the relation as a partitioned table.
-fn is_partitioned(
-    ctx: &LinterRuleContext<BanNonTransactionalStatementInTransaction>,
-    relation: &protobuf::RangeVar,
-) -> bool {
-    let schema = Some(relation.schemaname.as_str()).filter(|schema| !schema.is_empty());
-    ctx.catalog()
-        .relation(schema, &relation.relname, ctx.session().search_path())
-        .found()
-        .is_some_and(|relation| relation.kind == RelationKind::PartitionedTable)
 }
 
 /// The value of a boolean option, like [`defGetBoolean`], if it is set. An option without a

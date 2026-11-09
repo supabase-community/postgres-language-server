@@ -68,6 +68,5 @@ pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorSt
         super::emit_node(query, e);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

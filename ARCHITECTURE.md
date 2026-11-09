@@ -101,6 +101,10 @@ The fallback type check against the database (via `EXPLAIN`), for statements tha
 
 Handles `-- pgls-ignore` style rule suppression comments.
 
+##### `crates/pgls_migrations`
+
+What the language server knows about migration tools (Supabase, dbmate, goose, and plain SQL files). Every tool implements every method of one `MigrationTool` trait, and calls shared helpers for what it does like other tools: which files are migrations and their versions, how a file splits into up and down sections with their transaction mode, the diagnostics for misplaced markers, and how `init` finds the tool's projects. The workspace keeps what the tool of a file's settings says about its text, and the analyser runs each section on its own.
+
 #### Feature crates
 
 ##### `crates/pgls_completions`, `crates/pgls_hover`
@@ -116,6 +120,7 @@ Inlay hints and semantic tokens of a single statement, built from the references
 - `crates/pgls_diagnostics` (+ `_categories`, `_macros`) — error and warning reporting model.
 - `crates/pgls_console` / `pgls_markup` — terminal output and markup.
 - `crates/pgls_text_edit`, `pgls_text_size` — text manipulation and byte/char range types.
+- `crates/pgls_line_index` — converts offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back, for the language server and the WASM bindings, and the character positions that Postgres reports to offsets. Positions are converted with it, not by hand.
 - `crates/pgls_matcher` — Unix shell style pattern matching (glob).
 - `crates/pgls_test_utils`, `pgls_test_macros` — shared test helpers.
 - `crates/pgls_wasm` — WASM bindings for browser/editor integrations.
