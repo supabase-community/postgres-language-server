@@ -78,7 +78,7 @@ as
 
 drop table as_select1;
 
-prepare select1 as select 1 as a;;
+prepare select1 as select 1 as a;
 
 create table as_select1 as execute select1;
 

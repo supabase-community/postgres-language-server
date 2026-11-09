@@ -1,0 +1,24 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- Unqualified tables are in the first schema of the search path: app.users is new, app.orders
+-- is not.
+-- expect_lint/lockTimeoutWarning
+SET search_path = app, public;
+CREATE TABLE users (id bigint);
+ALTER TABLE users ADD COLUMN email text;
+ALTER TABLE orders ADD COLUMN note text;
+
+```
+
+# Diagnostics
+lint/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes ACCESS EXCLUSIVE lock on app.orders without lock timeout set.
+  
+  i This can block all operations on the table indefinitely if another transaction holds a conflicting lock.
+  
+  i Run 'SET LOCAL lock_timeout = '2s';' before this statement and retry the migration if it times out.
