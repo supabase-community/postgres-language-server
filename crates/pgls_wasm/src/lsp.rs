@@ -1032,9 +1032,11 @@ mod tests {
         assert_eq!(actions.len(), 1, "{actions:#?}");
         let edit = &actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap()
             [&Uri::from_str("file:///test.sql").unwrap()][0];
+        let line_index = LineIndex::new(text);
         let mut applied = text.to_string();
         applied.replace_range(
-            position_to_offset(text, edit.range.start)..position_to_offset(text, edit.range.end),
+            position_to_offset(&line_index, edit.range.start)
+                ..position_to_offset(&line_index, edit.range.end),
             &edit.new_text,
         );
         applied.to_lowercase()
