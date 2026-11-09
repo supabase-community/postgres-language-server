@@ -52,9 +52,10 @@ impl LinterRule for MultipleAlterTable {
             && let Some(relation) = &stmt.relation
         {
             let session = ctx.session();
-            if session.has_altered_table(&relation.schemaname, &relation.relname) {
-                let schema = session.object_schema(&relation.schemaname);
-                let table = &relation.relname;
+            if session.has_altered_table(relation, ctx.catalog()) {
+                let (schema, table) = ctx
+                    .catalog()
+                    .relation_name_of(relation, session.search_path());
 
                 diagnostics.push(
                         LinterDiagnostic::new(

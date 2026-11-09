@@ -68,7 +68,7 @@ mod tests {
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
             CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
-            assert_complete_results, assert_no_complete_results, get_test_deps, get_test_params,
+            assert_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -280,6 +280,32 @@ mod tests {
             .await;
     }
 
+    #[sqlx::test]
+    async fn suggests_tables_in_inherits_and_references(pool: PgPool) {
+        pool.execute("create table public.parents (id int primary key);")
+            .await
+            .unwrap();
+
+        for sql in [
+            "create table t (a int) inherits ({})",
+            "create table t (a int) inherits (parents, {})",
+            "create table t (a int references {})",
+            "create table t (a int, foreign key (a) references {})",
+        ] {
+            let query = sql.replace("{}", &QueryWithCursorPosition::cursor_marker().to_string());
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::LabelAndKind(
+                    "parents".into(),
+                    CompletionItemKind::Table,
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+    }
+
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn suggests_tables_in_delete(pool: PgPool) {
         let setup = r#"
@@ -291,8 +317,12 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(
+        assert_complete_results(
             format!("delete {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("from".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
+            ],
             None,
             &pool,
         )

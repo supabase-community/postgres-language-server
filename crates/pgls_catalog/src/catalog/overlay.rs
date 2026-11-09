@@ -133,7 +133,10 @@ impl Catalog {
             return false;
         }
         match self.relation_in(&key.0, &key.1) {
-            Lookup::Found(_) => true,
+            Lookup::Found(_) => {
+                self.skipped_existing = true;
+                true
+            }
             Lookup::Unknown => {
                 self.mark_relation_unknown(key.clone());
                 true

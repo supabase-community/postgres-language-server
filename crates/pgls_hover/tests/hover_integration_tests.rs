@@ -62,7 +62,6 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
         position,
         snapshot: &snapshot,
         stmt_sql: &sql,
-        ast: ast.as_ref(),
         ts_tree: &tree,
         references: &references,
     })

@@ -39,6 +39,7 @@ pub(super) fn apply_index_stmt(c: &mut Catalog, n: &IndexStmt, search_path: &[St
         Lookup::Missing
     };
     if let Lookup::Found(()) = taken {
+        c.skipped_existing = true;
         return;
     }
     // On a partitioned table, Postgres also creates an index with a generated name on each

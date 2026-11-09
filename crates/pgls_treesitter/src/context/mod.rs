@@ -24,7 +24,15 @@ pub enum WrappingClause<'a> {
     },
     Update,
     Delete,
+    /// The RETURNING clause of INSERT, UPDATE, DELETE, or MERGE.
+    Returning,
+    /// `MERGE INTO target USING source ON condition`.
+    Merge,
+    /// A `WHEN [NOT] MATCHED ... THEN` clause of MERGE.
+    MergeWhen,
     ColumnDefinitions,
+    /// `INHERITS (...)` of CREATE TABLE.
+    TableInherits,
     Insert,
     AlterTable,
     DropTable,
@@ -36,6 +44,7 @@ pub enum WrappingClause<'a> {
     DropRole,
     RevokeStatement,
     GrantStatement,
+    AlterDefaultPrivileges,
 
     CreatePolicy,
     AlterPolicy,
@@ -53,10 +62,30 @@ pub struct MentionedColumn {
 /// A table alias of the statement.
 #[derive(Debug)]
 struct TableAlias {
+    /// The name of the schema, if the table is qualified with one.
+    schema: Option<String>,
     /// The name of the table.
     table: String,
     /// The alias as written, like `"U"`.
     text: String,
+}
+
+/// `old` or `new` in a RETURNING list, or the name that `RETURNING WITH (...)` gives them. Since
+/// Postgres 18, they are the target row before and after the change.
+#[derive(Debug)]
+struct ReturningRowAlias {
+    /// The name of the target table.
+    table: String,
+    /// Whether `WITH (...)` gives the name. Postgres only adds the default names `old` and `new`
+    /// if no FROM item has that name.
+    explicit: bool,
+}
+
+/// The name of a table, see [`identifier_name`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RelationName {
+    schema: Option<String>,
+    name: String,
 }
 
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
@@ -109,6 +138,10 @@ pub struct TreeSitterContextParams<'a> {
     pub position: TextSize,
     pub text: &'a str,
     pub tree: &'a tree_sitter::Tree,
+    /// The `server_version_num` of the database, like `180000`, if known. Syntax that is newer
+    /// than the server, like `old` and `new` in RETURNING, is only understood when it is
+    /// unknown or new enough.
+    pub server_version_num: Option<i64>,
 }
 
 #[derive(Debug)]
@@ -118,6 +151,8 @@ pub struct TreesitterContext<'a> {
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
     pub position: usize,
+    /// See [`TreeSitterContextParams::server_version_num`].
+    server_version_num: Option<i64>,
 
     /// Tuple containing up to two qualifiers for identifier-node under the cursor: (head, tail)
     ///
@@ -145,6 +180,12 @@ pub struct TreesitterContext<'a> {
     mentioned_relations: HashMap<Option<String>, HashSet<String>>,
     /// The table aliases of the statement, by the name of the alias.
     mentioned_table_aliases: HashMap<String, TableAlias>,
+    /// The names of the old and new row of the target table, by name, when the cursor is in a
+    /// RETURNING list.
+    returning_row_aliases: HashMap<String, ReturningRowAlias>,
+    /// The relation of MERGE, target or source, whose columns the `WHEN` clause under the cursor
+    /// can't reference.
+    hidden_merge_relation: Option<RelationName>,
     mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
 
     scope_tracker: ScopeTracker,
@@ -156,6 +197,7 @@ impl<'a> TreesitterContext<'a> {
             tree: params.tree,
             text: params.text,
             position: usize::from(params.position),
+            server_version_num: params.server_version_num,
             node_under_cursor: params.tree.root_node(),
             identifier_qualifiers: (None, None),
             wrapping_clause_type: None,
@@ -164,6 +206,8 @@ impl<'a> TreesitterContext<'a> {
             is_invocation: false,
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
+            returning_row_aliases: HashMap::new(),
+            hidden_merge_relation: None,
             mentioned_columns: HashMap::new(),
             scope_tracker: ScopeTracker::new(),
 
@@ -174,6 +218,7 @@ impl<'a> TreesitterContext<'a> {
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
+        ctx.hidden_merge_relation = ctx.find_hidden_merge_relation();
         ctx.gather_possible_keywords_at_position();
         ctx.check_previous_clause();
         ctx.check_current_clause();
@@ -189,9 +234,12 @@ impl<'a> TreesitterContext<'a> {
 
         executor.add_query_results::<queries::RelationMatch>();
         executor.add_query_results::<queries::TableAliasMatch>();
+        executor.add_query_results::<queries::ReturningAliasMatch>();
         executor.add_query_results::<queries::SelectColumnMatch>();
         executor.add_query_results::<queries::InsertColumnMatch>();
         executor.add_query_results::<queries::WhereColumnMatch>();
+
+        let mut returning_aliases = HashMap::new();
 
         for relation_match in executor.get_iter(stmt_range) {
             match relation_match {
@@ -212,10 +260,36 @@ impl<'a> TreesitterContext<'a> {
                     self.mentioned_table_aliases.insert(
                         identifier_name(&text),
                         TableAlias {
+                            schema: table_alias_match
+                                .get_schema(sql)
+                                .as_deref()
+                                .map(identifier_name),
                             table: identifier_name(&table_alias_match.get_table(sql)),
                             text,
                         },
                     );
+                }
+
+                // The names exist since Postgres 18, and only inside the RETURNING list.
+                QueryResult::ReturningAliases(m)
+                    if self
+                        .server_version_num
+                        .is_none_or(|version| version >= 180000)
+                        && (m.returning.start_byte()..=m.returning.end_byte())
+                            .contains(&self.position) =>
+                {
+                    if let Some(table) = m.get_table(sql) {
+                        let table = identifier_name(&table);
+                        for alias in m.get_aliases(sql) {
+                            returning_aliases.insert(
+                                identifier_name(&alias.text),
+                                ReturningRowAlias {
+                                    table: table.clone(),
+                                    explicit: alias.explicit,
+                                },
+                            );
+                        }
+                    }
                 }
 
                 QueryResult::SelectClauseColumns(c) => {
@@ -262,6 +336,8 @@ impl<'a> TreesitterContext<'a> {
                 _ => {}
             };
         }
+
+        self.returning_row_aliases = returning_aliases;
     }
 
     fn get_ts_node_content(&self, ts_node: &tree_sitter::Node<'a>) -> Option<String> {
@@ -384,9 +460,11 @@ impl<'a> TreesitterContext<'a> {
             }
         }
 
-        // We have arrived at the leaf node
-        if current_node.child_count() == 0
-            || current_node.first_child_for_byte(self.position).is_none()
+        // We have arrived at the leaf node. That's also the case if no child contains the
+        // cursor, like the word that tree-sitter skipped in the `ERROR` of `analyze (word)`.
+        if current_node
+            .first_child_for_byte(self.position)
+            .is_none_or(|child| child.start_byte() > self.position)
         {
             self.node_under_cursor = current_node;
             return;
@@ -406,6 +484,9 @@ impl<'a> TreesitterContext<'a> {
             "update" => Some(WrappingClause::Update),
             "select" => Some(WrappingClause::Select),
             "delete_statement" => Some(WrappingClause::Delete),
+            "returning" => Some(WrappingClause::Returning),
+            "merge" => Some(WrappingClause::Merge),
+            "when_clause" => Some(WrappingClause::MergeWhen),
             "from" => Some(WrappingClause::From),
             "drop_table" => Some(WrappingClause::DropTable),
             "alter_role" => Some(WrappingClause::AlterRole),
@@ -417,7 +498,9 @@ impl<'a> TreesitterContext<'a> {
             "set_statement" => Some(WrappingClause::SetStatement),
             "revoke_statement" => Some(WrappingClause::RevokeStatement),
             "grant_statement" => Some(WrappingClause::GrantStatement),
+            "alter_default_privileges" => Some(WrappingClause::AlterDefaultPrivileges),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
+            "table_inherits" => Some(WrappingClause::TableInherits),
             "create_policy" => Some(WrappingClause::CreatePolicy),
             "alter_policy" => Some(WrappingClause::AlterPolicy),
             "drop_policy" => Some(WrappingClause::DropPolicy),
@@ -508,18 +591,94 @@ impl<'a> TreesitterContext<'a> {
         self.mentioned_relations.get(schema)
     }
 
+    /// Which relation of MERGE the `WHEN` clause under the cursor can't see. Like Postgres'
+    /// `setNamespaceForMergeWhen`, `NOT MATCHED [BY TARGET]` only sees the source, and
+    /// `NOT MATCHED BY SOURCE` only the target. The target columns of `INSERT (...)` and
+    /// `UPDATE SET` are those of the target. If target and source are the same table, its
+    /// columns stay visible.
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L52
+    fn find_hidden_merge_relation(&self) -> Option<RelationName> {
+        let mut when_clause = Some(self.node_under_cursor);
+        while let Some(node) = when_clause.filter(|node| node.kind() != "when_clause") {
+            when_clause = node.parent();
+        }
+        let when_clause = when_clause?;
+        let merge = {
+            let parent = when_clause.parent()?;
+            let mut cursor = parent.walk();
+            parent
+                .children(&mut cursor)
+                .find(|child| child.kind() == "merge")?
+        };
+        let relation_after = |keyword: &str| {
+            let mut cursor = merge.walk();
+            let children: Vec<_> = merge.children(&mut cursor).collect();
+            let position = children.iter().position(|child| child.kind() == keyword)?;
+            let reference = children
+                .get(position + 1)
+                .filter(|child| child.kind() == "table_reference")?;
+            let (_, schema, name) = parts_of_reference_query(*reference, self.text)?;
+            Some(RelationName {
+                schema: schema
+                    .and_then(|schema| self.get_ts_node_content(&schema))
+                    .map(|schema| identifier_name(&schema)),
+                name: identifier_name(&self.get_ts_node_content(&name)?),
+            })
+        };
+        let target = relation_after("keyword_into");
+        let source = relation_after("keyword_using");
+        if target.is_some() && target == source {
+            return None;
+        }
+
+        let is_target_column = self.node_under_cursor.kind() == "column_identifier";
+        let mut cursor = when_clause.walk();
+        let kinds: Vec<&str> = when_clause
+            .children(&mut cursor)
+            .map(|child| child.kind())
+            .collect();
+        let not_matched = kinds.contains(&"keyword_not");
+        let by_source = kinds.contains(&"keyword_source");
+        if is_target_column || (not_matched && by_source) {
+            source
+        } else if not_matched {
+            target
+        } else {
+            None
+        }
+    }
+
+    /// Whether the cursor is in a `WHEN` clause of MERGE that can't see the columns of the table
+    /// `schema.table`. Both are names, see [`identifier_name`].
+    pub fn is_hidden_merge_relation(&self, schema: &str, table: &str) -> bool {
+        self.hidden_merge_relation.as_ref().is_some_and(|hidden| {
+            hidden.name == table && hidden.schema.as_deref().is_none_or(|s| s == schema)
+        })
+    }
+
     /// The name of the table that the alias with the name `alias` stands for.
     pub fn get_mentioned_table_for_alias(&self, alias: &str) -> Option<&String> {
+        let returning = self.returning_row_aliases.get(alias);
+        if let Some(returning) = returning.filter(|returning| returning.explicit) {
+            return Some(&returning.table);
+        }
         self.mentioned_table_aliases
             .get(alias)
             .map(|alias| &alias.table)
+            .or(returning.map(|returning| &returning.table))
     }
 
-    /// An alias of the table with the name `table_name`, as written.
-    pub fn get_used_alias_for_table(&self, table_name: &str) -> Option<String> {
-        self.mentioned_table_aliases
-            .values()
-            .find(|alias| alias.table == table_name)
+    /// An alias of the table `schema_name.table_name`, as written. An alias of a table that
+    /// names the same schema comes first, then one of a table without a schema.
+    pub fn get_used_alias_for_table(&self, schema_name: &str, table_name: &str) -> Option<String> {
+        let aliases = || {
+            self.mentioned_table_aliases
+                .values()
+                .filter(|alias| alias.table == table_name)
+        };
+        aliases()
+            .find(|alias| alias.schema.as_deref() == Some(schema_name))
+            .or_else(|| aliases().find(|alias| alias.schema.is_none()))
             .map(|alias| alias.text.clone())
     }
 
@@ -660,6 +819,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -689,6 +849,7 @@ mod tests {
                 position: 0.into(),
                 text: query,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -743,6 +904,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -803,6 +965,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: text.as_str(),
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -833,6 +996,7 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
+                server_version_num: None,
             };
 
             let ctx = TreesitterContext::new(params);
@@ -863,6 +1027,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -884,6 +1049,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -908,6 +1074,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -932,6 +1099,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         let ctx = TreesitterContext::new(params);
@@ -972,6 +1140,7 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
+            server_version_num: None,
         };
 
         // should simply not panic
@@ -1019,6 +1188,7 @@ mod tests {
                 position: case.cursor_position.into(),
                 text: query,
                 tree: &tree,
+                server_version_num: None,
             };
 
             // should simply not panic

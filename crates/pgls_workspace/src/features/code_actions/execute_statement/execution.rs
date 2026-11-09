@@ -5,10 +5,8 @@ use sqlx::{
     postgres::{PgColumn, PgDatabaseError, PgErrorPosition, PgRow},
 };
 
+use super::{EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementResult};
 use crate::diagnostics::is_connection_failure;
-use crate::features::code_actions::{
-    EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementResult,
-};
 
 /// Executes `sql` and collects the rows it returns, if any.
 ///
@@ -18,7 +16,7 @@ use crate::features::code_actions::{
 ///
 /// Each statement runs on its own: afterwards, the session is reset, so a `begin` or `set` does
 /// not carry over to the next statement on the connection.
-pub(super) async fn execute_statement(
+pub(crate) async fn execute_statement(
     pool: &PgPool,
     sql: &str,
 ) -> Result<ExecuteStatementResult, sqlx::Error> {

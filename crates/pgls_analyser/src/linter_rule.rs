@@ -10,6 +10,7 @@ use pgls_text_size::{TextRange, TextSize};
 use std::fmt::Debug;
 use std::ops::Range;
 
+use crate::AnalysableStatement;
 use crate::linter_context::LinterRuleContext;
 
 /// Trait implemented by all AST-based linter rules
@@ -246,14 +247,14 @@ impl LinterDiagnostic {
 
     /// Moves the spans of the diagnostic, which are relative to the statement while the rule
     /// runs, into the file. A diagnostic without a span points at the whole statement.
-    pub(crate) fn move_into_file(&mut self, statement: TextRange) {
+    pub(crate) fn move_into_file(&mut self, statement: &AnalysableStatement) {
         self.span = Some(match self.span {
-            Some(span) => span + statement.start(),
-            None => statement,
+            Some(span) => statement.document_range(span),
+            None => statement.range,
         });
         for detail in &mut self.rule_advice.details {
             if let Some(range) = &mut detail.range {
-                *range += statement.start();
+                *range = statement.document_range(*range);
             }
         }
     }
