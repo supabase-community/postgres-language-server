@@ -18,7 +18,6 @@ ignore                            = { workspace = true }
 json-strip-comments               = { workspace = true }
 pgls_analyse                      = { workspace = true, features = ["serde"] }
 pgls_analyser                     = { workspace = true }
-pgls_migrations                   = { workspace = true }
 pgls_catalog                      = { workspace = true }
 pgls_completions                  = { workspace = true }
 pgls_configuration                = { workspace = true }
@@ -30,6 +29,7 @@ pgls_hover                        = { workspace = true }
 pgls_inlay_hints                  = { workspace = true }
 pgls_lexer                        = { workspace = true }
 pgls_matcher                      = { workspace = true }
+pgls_migrations                   = { workspace = true }
 pgls_pretty_print                 = { workspace = true }
 pgls_query                        = { workspace = true }
 pgls_query_ext                    = { workspace = true }
