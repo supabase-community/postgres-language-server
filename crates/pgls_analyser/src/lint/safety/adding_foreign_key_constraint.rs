@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, cmd_def};
+use crate::utils::{ConstraintSite, added_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -49,34 +49,11 @@ impl LinterRule for AddingForeignKeyConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut diagnostics = Vec::new();
-
-        for cmd in alter_table_cmds(ctx.stmt()) {
-            match cmd.subtype() {
-                pgls_query::protobuf::AlterTableType::AtAddConstraint => {
-                    if let Some(pgls_query::NodeEnum::Constraint(constraint)) = cmd_def(cmd)
-                        && let Some(diagnostic) = check_foreign_key_constraint(constraint, false)
-                    {
-                        diagnostics.push(diagnostic);
-                    }
-                }
-                pgls_query::protobuf::AlterTableType::AtAddColumn => {
-                    if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd) {
-                        // check constraints on the column
-                        for constraint in &col_def.constraints {
-                            if let Some(pgls_query::NodeEnum::Constraint(constr)) = &constraint.node
-                                && let Some(diagnostic) = check_foreign_key_constraint(constr, true)
-                            {
-                                diagnostics.push(diagnostic);
-                            }
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        diagnostics
+        added_constraints(ctx.stmt())
+            .filter_map(|(constraint, site)| {
+                check_foreign_key_constraint(constraint, site == ConstraintSite::Column)
+            })
+            .collect()
     }
 }
 

@@ -261,8 +261,14 @@ impl<'a> AnalysedFileContext<'a> {
         self
     }
 
+    /// The statements before the current one.
     pub fn previous_stmts(&self) -> &[pgls_query::NodeEnum] {
-        &self.stmts[0..self.pos]
+        self.stmts.get(..self.pos).unwrap_or(self.stmts)
+    }
+
+    /// The statements after the current one.
+    pub fn later_stmts(&self) -> &[pgls_query::NodeEnum] {
+        self.stmts.get(self.pos + 1..).unwrap_or_default()
     }
 
     /// The number of statements that the file runs, including those that don't parse.

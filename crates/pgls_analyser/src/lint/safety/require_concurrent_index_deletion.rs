@@ -85,7 +85,5 @@ fn add_concurrently(
     {
         return None;
     }
-    let tokens = ctx.tokens()?;
-    let index = tokens.find(Token::Index)?;
-    fix::add_concurrently(ctx, &tokens, index)
+    fix::add_concurrently(ctx, &[Token::Index])
 }
