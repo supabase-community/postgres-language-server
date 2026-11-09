@@ -30,14 +30,6 @@ fn emit_typed_table_column_override(e: &mut EventEmitter, item: &pgls_query::pro
 }
 
 pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
-    emit_create_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_create_stmt_no_semicolon(e: &mut EventEmitter, n: &CreateStmt) {
-    emit_create_stmt_impl(e, n, false);
-}
-
-fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: bool) {
     e.group_start(GroupKind::CreateStmt);
 
     e.token(TokenKind::CREATE_KW);
@@ -304,10 +296,6 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
         super::emit_identifier_maybe_quoted(e, &n.tablespacename);
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
     }
 
     e.group_end();
