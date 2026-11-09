@@ -637,6 +637,10 @@ export interface LinterRules {
    */
   functionReturnTypeMismatch?: RuleConfiguration_for_Null;
   /**
+   * An INSERT or UPDATE assigns a value to a generated column or a GENERATED ALWAYS identity column.
+   */
+  generatedColumnAssignment?: RuleConfiguration_for_Null;
+  /**
    * Identifiers longer than 63 bytes are silently truncated.
    */
   identifierTooLong?: RuleConfiguration_for_Null;

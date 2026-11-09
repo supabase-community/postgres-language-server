@@ -11,7 +11,7 @@ use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
     expr::{check_assignment, infer_expr},
-    scope::{Columns, Item, Level, StarEntry, find_item},
+    scope::{Columns, DefaultOnly, Item, Level, StarEntry, find_item},
     utils::node_location,
 };
 
@@ -251,11 +251,13 @@ pub(super) fn resolve_returning_clause(
 }
 
 /// Resolves the `SET` list of UPDATE, `ON CONFLICT DO UPDATE`, or `MERGE ... UPDATE`: each
-/// target column must exist, and each value must be assignable to it. Port of
+/// target column must exist, each value must be assignable to it, and generated columns can
+/// only be set to `DEFAULT` ([`check_generated_update`]). Port of
 /// [`transformUpdateTargetList`].
 ///
 /// [`transformUpdateTargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2546
 pub(super) fn resolve_set_clause(r: &mut Resolver, target: &Item, assignments: &[Node]) {
+    check_generated_update(r, target, assignments);
     for assignment in assignments {
         if let Some(NodeEnum::ResTarget(assignment)) = &assignment.node {
             check_target_column(r, target, &assignment.name, assignment.location);
@@ -298,6 +300,66 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
             },
             location,
         );
+    }
+}
+
+/// Reports an UPDATE, `ON CONFLICT DO UPDATE` or `MERGE ... UPDATE` that sets a generated
+/// column or a `GENERATED ALWAYS` identity column to anything but `DEFAULT`. Port of the checks
+/// of [`rewriteTargetListIU`] for `CMD_UPDATE`, which no `OVERRIDING` clause affects.
+/// [`RewriteQuery`] applies them to the UPDATE action of MERGE too.
+///
+/// Assignments to subscripts or fields of a column, like `g[1]`, are not checked.
+///
+/// [`rewriteTargetListIU`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L808
+/// [`RewriteQuery`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/rewrite/rewriteHandler.c#L4162
+fn check_generated_update(r: &mut Resolver, target: &Item, assignments: &[Node]) {
+    if target.default_only_columns.is_empty() {
+        return;
+    }
+    for assignment in assignments {
+        let Some(NodeEnum::ResTarget(assignment)) = &assignment.node else {
+            continue;
+        };
+        if !assignment.indirection.is_empty() {
+            continue;
+        }
+        let Some(kind) = target.default_only(&assignment.name, false) else {
+            continue;
+        };
+        let value = assignment
+            .val
+            .as_deref()
+            .and_then(|value| value.node.as_ref());
+        let is_default = match value {
+            Some(NodeEnum::SetToDefault(_)) => Some(true),
+            // `SET (a, g) = (1, DEFAULT)` and `SET (a, g) = (select ...)`.
+            Some(NodeEnum::MultiAssignRef(multi)) => {
+                match multi
+                    .source
+                    .as_deref()
+                    .and_then(|source| source.node.as_ref())
+                {
+                    Some(NodeEnum::RowExpr(row)) => usize::try_from(multi.colno - 1)
+                        .ok()
+                        .and_then(|index| row.args.get(index))
+                        .map(|value| matches!(value.node, Some(NodeEnum::SetToDefault(_)))),
+                    Some(NodeEnum::SubLink(_)) => Some(false),
+                    _ => None,
+                }
+            }
+            Some(_) => Some(false),
+            None => None,
+        };
+        if is_default == Some(false) {
+            r.report(
+                FindingKind::GeneratedColumnAssignment {
+                    column: assignment.name.clone(),
+                    insert: false,
+                    identity: kind == DefaultOnly::IdentityAlways,
+                },
+                assignment.location,
+            );
+        }
     }
 }
 
