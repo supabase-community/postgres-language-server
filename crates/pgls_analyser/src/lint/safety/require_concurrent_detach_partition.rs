@@ -1,3 +1,4 @@
+use crate::utils::{alter_table_cmds, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -40,29 +41,26 @@ impl LinterRule for RequireConcurrentDetachPartition {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDetachPartition
-                    && !matches!(
-                        cmd.def.as_ref().and_then(|d| d.node.as_ref()),
-                        Some(pgls_query::NodeEnum::PartitionCmd(p)) if p.concurrent
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDetachPartition
+                && !matches!(
+                    cmd_def(cmd),
+                    Some(pgls_query::NodeEnum::PartitionCmd(p)) if p.concurrent
+                )
+            {
+                diagnostics.push(
+                    LinterDiagnostic::new(
+                        rule_category!(),
+                        None,
+                        markup! {
+                            "Detaching a partition without "<Emphasis>"CONCURRENTLY"</Emphasis>" blocks all table access."
+                        },
                     )
-                {
-                    diagnostics.push(
-                        LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Detaching a partition without "<Emphasis>"CONCURRENTLY"</Emphasis>" blocks all table access."
-                            },
-                        )
-                        .detail(
-                            None,
-                            "Use DETACH PARTITION ... CONCURRENTLY (Postgres 14+) to avoid blocking reads and writes.",
-                        ),
-                    );
-                }
+                    .detail(
+                        None,
+                        "Use DETACH PARTITION ... CONCURRENTLY (Postgres 14+) to avoid blocking reads and writes.",
+                    ),
+                );
             }
         }
 

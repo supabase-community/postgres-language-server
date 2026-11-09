@@ -37,11 +37,8 @@ impl LinterRule for OperatorTypeMismatch {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
         let mut diagnostics = Vec::new();
-        for finding in &resolution.findings {
+        for finding in ctx.findings() {
             let FindingKind::OperatorMismatch {
                 operator,
                 left,

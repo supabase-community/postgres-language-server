@@ -1,3 +1,4 @@
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -46,18 +47,9 @@ impl LinterRule for BanDropDefault {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let defaults: Vec<(&str, &str)> = match ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => stmt
-                .cmds
-                .iter()
-                .filter_map(|cmd| match &cmd.node {
-                    Some(pgls_query::NodeEnum::AlterTableCmd(cmd))
-                        if cmd.subtype() == AlterTableType::AtColumnDefault
-                            && cmd.def.is_none() =>
-                    {
-                        Some(("column", cmd.name.as_str()))
-                    }
-                    _ => None,
-                })
+            pgls_query::NodeEnum::AlterTableStmt(_) => alter_table_cmds(ctx.stmt())
+                .filter(|cmd| cmd.subtype() == AlterTableType::AtColumnDefault && cmd.def.is_none())
+                .map(|cmd| ("column", cmd.name.as_str()))
                 .collect(),
             // 'T' is `SET DEFAULT` or, without a default, `DROP DEFAULT`.
             pgls_query::NodeEnum::AlterDomainStmt(stmt)

@@ -2,6 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, ObjectType},
 };
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 use crate::catalog::{
     Catalog, Entry, Key, key,
@@ -24,14 +25,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     let Some(range_var) = &n.relation else {
         return;
     };
-    let commands: Vec<&AlterTableCmd> = n
-        .cmds
-        .iter()
-        .filter_map(|command| match &command.node {
-            Some(NodeEnum::AlterTableCmd(command)) => Some(command.as_ref()),
-            _ => None,
-        })
-        .collect();
+    let commands: Vec<&AlterTableCmd> = alter_table_cmds(n).collect();
 
     if n.objtype() == ObjectType::ObjectType {
         let name = range_var_name(range_var);
@@ -385,8 +379,7 @@ fn apply_column_change(
     };
     match command.subtype() {
         AlterTableType::AtAddColumn => {
-            if let Some(NodeEnum::ColumnDef(column)) =
-                command.def.as_deref().and_then(|def| def.node.as_ref())
+            if let Some(NodeEnum::ColumnDef(column)) = cmd_def(command)
                 && !columns.iter().any(|c| c.name == column.colname)
             {
                 let mut column = column_info(c, column, search_path);
@@ -438,7 +431,7 @@ fn apply_column_change(
         }
         AlterTableType::AtAlterColumnType => {
             if let (Some(NodeEnum::ColumnDef(definition)), Some(column)) = (
-                command.def.as_deref().and_then(|def| def.node.as_ref()),
+                cmd_def(command),
                 columns
                     .iter_mut()
                     .find(|column| column.name == command.name),
