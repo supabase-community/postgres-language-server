@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use pgls_catalog::{Column, Generated, Snapshot};
+use pgls_catalog::{Column, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
@@ -59,12 +59,7 @@ impl ToHoverMarkdown for pgls_catalog::Column {
         writer: &mut W,
         _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
-        let generated = match self.generated {
-            Generated::No => None,
-            Generated::Stored => Some("STORED"),
-            Generated::Virtual => Some("VIRTUAL"),
-        };
-        let footer = match (generated, &self.default_expr) {
+        let footer = match (self.generated.keyword(), &self.default_expr) {
             // The expression of a generated column is its generation expression, not a default.
             (Some(kind), Some(expression)) => format!("Generated: {expression} {kind}"),
             // Columns that the file creates have no expression.
@@ -135,6 +130,7 @@ mod tests {
     };
 
     use super::*;
+    use pgls_catalog::Generated;
 
     fn create_test_column(schema: &str, table: &str, name: &str, is_pk: bool) -> Column {
         Column {
