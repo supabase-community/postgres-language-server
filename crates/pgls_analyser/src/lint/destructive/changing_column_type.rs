@@ -95,14 +95,9 @@ fn is_virtual_column(
         return false;
     };
     ctx.catalog()
-        .relation_of(relation, ctx.session().search_path())
+        .column_of(relation, column, ctx.session().search_path())
         .found()
-        .and_then(|relation| relation.columns)
-        .is_some_and(|columns| {
-            columns.iter().any(|candidate| {
-                candidate.name == column && candidate.generated == Generated::Virtual
-            })
-        })
+        .is_some_and(|column| column.generated == Generated::Virtual)
 }
 
 fn is_safe_type_widening(col_def: &pgls_query::protobuf::ColumnDef) -> bool {

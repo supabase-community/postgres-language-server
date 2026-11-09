@@ -23,7 +23,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::Candidates;
 use crate::lookup::{
-    CatalogView, FunctionInfo, IndexInfo, Lookup, RelationInfo, RelationKind, TypeInfo,
+    CatalogView, ColumnInfo, FunctionInfo, IndexInfo, Lookup, RelationInfo, RelationKind, TypeInfo,
 };
 use crate::typing::TypeId;
 use crate::{CastInfo, OperatorInfo, OperatorKind};
@@ -286,6 +286,21 @@ impl Catalog {
     ) -> Lookup<RelationInfo> {
         let name = names::range_var_name(range_var);
         self.relation(name.schema(), &name.name, search_path)
+    }
+
+    /// Looks up a column of the relation a `RangeVar` names, see [`Catalog::relation_of`].
+    /// [`Lookup::Missing`] if the relation or the column doesn't exist.
+    pub fn column_of(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        column: &str,
+        search_path: &[String],
+    ) -> Lookup<ColumnInfo> {
+        match self.relation_of(range_var, search_path) {
+            Lookup::Found(relation) => relation.column(column).map(ColumnInfo::clone),
+            Lookup::Missing => Lookup::Missing,
+            Lookup::Unknown => Lookup::Unknown,
+        }
     }
 
     /// The schema and name of the relation a `RangeVar` names: the relation or index it resolves

@@ -97,6 +97,19 @@ pub struct RelationInfo {
     pub origin: Origin,
 }
 
+impl RelationInfo {
+    /// The column with the name. [`Lookup::Unknown`] if the columns of the relation aren't known.
+    pub fn column(&self, name: &str) -> Lookup<&ColumnInfo> {
+        let Some(columns) = &self.columns else {
+            return Lookup::Unknown;
+        };
+        match columns.iter().find(|column| column.name == name) {
+            Some(column) => Lookup::Found(column),
+            None => Lookup::Missing,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IndexInfo {
     /// The schema of the index, which is always the schema of its table.
