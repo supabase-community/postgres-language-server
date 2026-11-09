@@ -8,7 +8,10 @@ use super::{
     resolve_node,
     with_clause::resolve_with_clause,
 };
-use crate::resolve::scope::{Columns, Level};
+use crate::resolve::{
+    expr::infer_expr,
+    scope::{Columns, Level},
+};
 
 /// Resolves an UPDATE and returns the columns of its RETURNING list. Port of
 /// [`transformUpdateStmt`] and [`transformUpdateTargetList`].
@@ -40,7 +43,7 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
     if let Some(where_clause) = n.where_clause.as_deref() {
         resolve_node(r, where_clause);
         if let Some(expr) = where_clause.node.as_ref() {
-            super::super::expr::infer_expr(r, expr);
+            infer_expr(r, expr);
         }
     }
 

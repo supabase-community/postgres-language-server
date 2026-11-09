@@ -6,7 +6,7 @@ use pgls_query::{
 use super::{
     Resolver,
     from_clause::resolve_from_clause,
-    insert_stmt::{check_insert_width, insert_target_types, node_location},
+    insert_stmt::{check_insert_width, insert_target_types},
     range_var::resolve_target_relation,
     res_target::{check_target_column, resolve_returning_clause, resolve_set_clause},
     resolve_node,
@@ -15,6 +15,7 @@ use super::{
 use crate::resolve::{
     expr::{check_assignment, infer_expr},
     scope::{Columns, Item, Level},
+    utils::node_location,
 };
 
 /// Resolves a MERGE and returns the columns of its RETURNING list. Port of

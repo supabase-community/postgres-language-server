@@ -1,0 +1,77 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+create table t (a int, b int generated always as (a * 2) virtual, c int generated always as (a + 1), d int generated always as (a) stored);
+-----------------------
+program [0..139] 'create table t (a int, b int generated always as (a * 2) virtual, c int generated always as (a + 1), d int generated always as (a) stored);'
+  statement [0..138] 'create table t (a int, b int generated always as (a * 2) virtual, c int generated always as (a + 1), d int generated always as (a) stored)'
+    create_table [0..138] 'create table t (a int, b int generated always as (a * 2) virtual, c int generated always as (a + 1), d int generated always as (a) stored)'
+      keyword_create [0..6] 'create'
+      keyword_table [7..12] 'table'
+      object_reference [13..14] 't'
+        any_identifier [13..14] 't' (@object_reference_1of1)
+      column_definitions [15..138] '(a int, b int generated always as (a * 2) virtual, c int generated always as (a + 1), d int generated always as (a) stored)' (@end)
+        ( [15..16] '('
+        column_definition [16..21] 'a int'
+          any_identifier [16..17] 'a'
+          type [18..21] 'int' (@end)
+            int [18..21] 'int'
+              keyword_int [18..21] 'int'
+        , [21..22] ','
+        column_definition [23..64] 'b int generated always as (a * 2) virtual'
+          any_identifier [23..24] 'b'
+          type [25..28] 'int' (@end)
+            int [25..28] 'int'
+              keyword_int [25..28] 'int'
+          column_constraint [29..56] 'generated always as (a * 2)'
+            keyword_generated [29..38] 'generated'
+            keyword_always [39..45] 'always'
+            keyword_as [46..48] 'as'
+            parenthesized_expression [49..56] '(a * 2)' (@end)
+              ( [49..50] '('
+              binary_expression [50..55] 'a * 2'
+                object_reference [50..51] 'a' (@binary_expr_left)
+                  any_identifier [50..51] 'a' (@object_reference_1of1)
+                * [52..53] '*' (@binary_expr_operator)
+                literal [54..55] '2' (@end)
+              ) [55..56] ')' (@end)
+          column_constraint [57..64] 'virtual'
+            keyword_virtual [57..64] 'virtual' (@end)
+        , [64..65] ','
+        column_definition [66..99] 'c int generated always as (a + 1)'
+          any_identifier [66..67] 'c'
+          type [68..71] 'int' (@end)
+            int [68..71] 'int'
+              keyword_int [68..71] 'int'
+          column_constraint [72..99] 'generated always as (a + 1)'
+            keyword_generated [72..81] 'generated'
+            keyword_always [82..88] 'always'
+            keyword_as [89..91] 'as'
+            parenthesized_expression [92..99] '(a + 1)' (@end)
+              ( [92..93] '('
+              binary_expression [93..98] 'a + 1'
+                object_reference [93..94] 'a' (@binary_expr_left)
+                  any_identifier [93..94] 'a' (@object_reference_1of1)
+                + [95..96] '+' (@binary_expr_operator)
+                literal [97..98] '1' (@end)
+              ) [98..99] ')' (@end)
+        , [99..100] ','
+        column_definition [101..137] 'd int generated always as (a) stored'
+          any_identifier [101..102] 'd'
+          type [103..106] 'int' (@end)
+            int [103..106] 'int'
+              keyword_int [103..106] 'int'
+          column_constraint [107..130] 'generated always as (a)'
+            keyword_generated [107..116] 'generated'
+            keyword_always [117..123] 'always'
+            keyword_as [124..126] 'as'
+            parenthesized_expression [127..130] '(a)' (@end)
+              ( [127..128] '('
+              object_reference [128..129] 'a'
+                any_identifier [128..129] 'a' (@object_reference_1of1)
+              ) [129..130] ')' (@end)
+          column_constraint [131..137] 'stored'
+            keyword_stored [131..137] 'stored' (@end)
+        ) [137..138] ')' (@end)
+  ; [138..139] ';'

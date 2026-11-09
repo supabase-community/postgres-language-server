@@ -1,0 +1,28 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+copy t from stdin with (format csv, on_error ignore, reject_limit 10, log_verbosity silent);
+-----------------------
+program [0..92] 'copy t from stdin with (format csv, on_error ignore, reject_limit 10, log_verbosity silent);'
+  copy_data_stream [0..92] 'copy t from stdin with (format csv, on_error ignore, reject_limit 10, log_verbosity silent);'
+    keyword_copy [0..4] 'copy'
+    table_reference [5..6] 't'
+      any_identifier [5..6] 't' (@table_reference_1of1)
+    keyword_from [7..11] 'from'
+    keyword_stdin [12..17] 'stdin' (@end)
+    copy_stmt_options [18..91] 'with (format csv, on_error ignore, reject_limit 10, log_verbosity silent)'
+      keyword_with [18..22] 'with'
+      ( [23..24] '('
+      keyword_format [24..30] 'format'
+      keyword_csv [31..34] 'csv'
+      , [34..35] ','
+      keyword_on_error [36..44] 'on_error'
+      keyword_ignore [45..51] 'ignore'
+      , [51..52] ','
+      keyword_reject_limit [53..65] 'reject_limit'
+      , [68..69] ','
+      keyword_log_verbosity [70..83] 'log_verbosity'
+      keyword_silent [84..90] 'silent'
+      ) [90..91] ')' (@end)
+    ; [91..92] ';'

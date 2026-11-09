@@ -1,6 +1,6 @@
 use pgls_query::NodeEnum;
 
-use super::super::resolver::Resolver;
+use crate::resolve::resolver::Resolver;
 use crate::typing::{CoercionContext, Decision, Type, can_coerce};
 
 /// Reports a value that can't be assigned to a column of INSERT or UPDATE, like

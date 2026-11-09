@@ -2,6 +2,7 @@
 
 use pgls_analyse::{ActionCategory, Applicability, RefactorKind};
 use pgls_catalog::resolve::{Reference, StarColumn};
+use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::TextSize;
 
@@ -9,7 +10,7 @@ use crate::features::code_actions::{CodeAction, CodeActionKind, EditAction, Text
 
 /// The action that replaces the `*` or `t.*` of `reference` with its columns. `content` is the
 /// text of the file, and the statement of the reference starts at `stmt_start`.
-pub(super) fn expand_star_action(
+pub(crate) fn expand_star_action(
     reference: &Reference,
     content: &str,
     stmt_start: TextSize,
@@ -44,7 +45,7 @@ pub(super) fn expand_star_action(
 /// `select *` or `select u.*`. The line of the cursor is scanned on its own: `*` in comments
 /// and strings, `count(*)`, and multiplications don't count. If the line doesn't scan, like
 /// a line inside a multi-line string, any `*` on it counts.
-pub(super) fn is_at_star(content: &str, position: TextSize) -> bool {
+pub(crate) fn is_at_star(content: &str, position: TextSize) -> bool {
     let offset = usize::from(position).min(content.len());
     let line_start = content[..offset].rfind('\n').map_or(0, |i| i + 1);
     let line_end = content[offset..]
@@ -125,7 +126,8 @@ fn is_name(token: &ScanToken) -> bool {
         || token.keyword_kind() != KeywordKind::NoKeyword
 }
 
-/// The columns as a select list, e.g. `u.id, u."Name"`.
+/// The columns as a select list, e.g. `u.id, u."Name"`. The first name of each column is a
+/// `ColId`, and the names after a dot are labels, which can be any keyword.
 fn column_list(columns: &[StarColumn]) -> String {
     columns
         .iter()
@@ -134,7 +136,15 @@ fn column_list(columns: &[StarColumn]) -> String {
                 .qualifier
                 .iter()
                 .chain(std::iter::once(&column.name))
-                .map(|name| quote_identifier(name))
+                .enumerate()
+                .map(|(i, name)| {
+                    let position = if i == 0 {
+                        NamePosition::ColId
+                    } else {
+                        NamePosition::ColLabel
+                    };
+                    quote_identifier(name, position)
+                })
                 .collect::<Vec<_>>()
                 .join(".")
         })
@@ -142,60 +152,11 @@ fn column_list(columns: &[StarColumn]) -> String {
         .join(", ")
 }
 
-/// `name`, quoted unless it reads as the same name without quotes: no upper case ASCII letters,
-/// and not a keyword other than an unreserved one. Like Postgres' lexer, any character that isn't
-/// ASCII can be part of an unquoted name, and isn't folded to lower case ([`scan.l`]).
-///
-/// [`scan.l`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332
-fn quote_identifier(name: &str) -> String {
-    let plain = name
-        .chars()
-        .next()
-        .is_some_and(|first| first.is_ascii_lowercase() || first == '_' || !first.is_ascii())
-        && name.chars().all(|c| {
-            c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '_' | '$') || !c.is_ascii()
-        });
-    let keyword = || {
-        pgls_query::scan(name).map_or(true, |scan| {
-            scan.tokens.first().is_none_or(|token| {
-                !matches!(
-                    token.keyword_kind(),
-                    KeywordKind::NoKeyword | KeywordKind::UnreservedKeyword
-                )
-            })
-        })
-    };
-    if plain && !keyword() {
-        name.to_owned()
-    } else {
-        format!("\"{}\"", name.replace('"', "\"\""))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use pgls_text_size::TextSize;
 
-    use super::{StarColumn, column_list, quote_identifier};
-
-    #[test]
-    fn quotes_names_that_need_it() {
-        assert_eq!(quote_identifier("user_id"), "user_id");
-        assert_eq!(quote_identifier("_x$1"), "_x$1");
-        // Unreserved keywords can be column names.
-        assert_eq!(quote_identifier("name"), "name");
-        assert_eq!(quote_identifier("Name"), "\"Name\"");
-        assert_eq!(quote_identifier("1st"), "\"1st\"");
-        assert_eq!(quote_identifier("my col"), "\"my col\"");
-        assert_eq!(quote_identifier("a\"b"), "\"a\"\"b\"");
-        assert_eq!(quote_identifier("select"), "\"select\"");
-        assert_eq!(quote_identifier("between"), "\"between\"");
-        assert_eq!(quote_identifier("left"), "\"left\"");
-        // Characters that aren't ASCII need no quotes, and aren't folded.
-        assert_eq!(quote_identifier("größe"), "größe");
-        assert_eq!(quote_identifier("Ölstand"), "Ölstand");
-        assert_eq!(quote_identifier("Café"), "\"Café\"");
-    }
+    use super::{StarColumn, column_list};
 
     #[test]
     fn only_stars_of_select_lists_count() {
@@ -245,9 +206,33 @@ mod tests {
                 name: "title".into(),
             },
         ];
+        assert_eq!(column_list(&columns), r#"u.id, public."Posts".user, title"#);
+    }
+
+    #[test]
+    fn quotes_names_where_postgres_needs_it() {
+        let column = |qualifier: &[&str], name: &str| StarColumn {
+            qualifier: qualifier.iter().map(|part| part.to_string()).collect(),
+            name: name.into(),
+        };
+        // Postgres reads a column name keyword (`between`) as a column, but not a reserved
+        // keyword (`select`) or a type or function name keyword (`left`). After a dot, any
+        // keyword is a column.
+        let columns = [
+            column(&[], "between"),
+            column(&[], "select"),
+            column(&[], "left"),
+            column(&["t"], "select"),
+            column(&["left"], "id"),
+            column(&[], "Name"),
+            column(&[], "my col"),
+            column(&[], "a\"b"),
+            column(&[], "größe"),
+            column(&[], "Café"),
+        ];
         assert_eq!(
             column_list(&columns),
-            r#"u.id, public."Posts"."user", title"#
+            r#"between, "select", "left", t.select, "left".id, "Name", "my col", "a""b", größe, "Café""#
         );
     }
 }

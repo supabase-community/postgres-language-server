@@ -1,0 +1,57 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+merge into t using s on t.id = s.id when matched then update set a = s.a returning old.a, new.*;
+-----------------------
+program [0..96] 'merge into t using s on t.id = s.id when matched then update set a = s.a returning old.a, new.*;'
+  statement [0..95] 'merge into t using s on t.id = s.id when matched then update set a = s.a returning old.a, new.*'
+    merge [0..35] 'merge into t using s on t.id = s.id'
+      keyword_merge [0..5] 'merge'
+      keyword_into [6..10] 'into'
+      table_reference [11..12] 't'
+        any_identifier [11..12] 't' (@table_reference_1of1)
+      keyword_using [13..18] 'using'
+      table_reference [19..20] 's'
+        any_identifier [19..20] 's' (@table_reference_1of1)
+      keyword_on [21..23] 'on'
+      binary_expression [24..35] 't.id = s.id' (@end)
+        object_reference [24..28] 't.id' (@binary_expr_left)
+          any_identifier [24..25] 't' (@object_reference_1of2)
+          . [25..26] '.'
+          any_identifier [26..28] 'id' (@object_reference_2of2)
+        = [29..30] '=' (@binary_expr_operator)
+        object_reference [31..35] 's.id' (@end)
+          any_identifier [31..32] 's' (@object_reference_1of2)
+          . [32..33] '.'
+          any_identifier [33..35] 'id' (@object_reference_2of2)
+    when_clause [36..72] 'when matched then update set a = s.a'
+      keyword_when [36..40] 'when'
+      keyword_matched [41..48] 'matched'
+      keyword_then [49..53] 'then'
+      merge_update [54..72] 'update set a = s.a' (@end)
+        keyword_update [54..60] 'update'
+        update_set_values [61..72] 'set a = s.a' (@end)
+          keyword_set [61..64] 'set'
+          assignment [65..72] 'a = s.a' (@end)
+            column_identifier [65..66] 'a' (@left)
+            = [67..68] '='
+            object_reference [69..72] 's.a' (@end)
+              any_identifier [69..70] 's' (@object_reference_1of2)
+              . [70..71] '.'
+              any_identifier [71..72] 'a' (@object_reference_2of2)
+    returning [73..95] 'returning old.a, new.*'
+      keyword_returning [73..82] 'returning'
+      select_expression [83..95] 'old.a, new.*' (@end)
+        term [83..88] 'old.a' (@end)
+          object_reference [83..88] 'old.a' (@end)
+            any_identifier [83..86] 'old' (@object_reference_1of2)
+            . [86..87] '.'
+            any_identifier [87..88] 'a' (@object_reference_2of2)
+        , [88..89] ',' (@end)
+        term [90..95] 'new.*' (@end)
+          all_fields [90..95] 'new.*' (@end)
+            table_identifier [90..93] 'new'
+            . [93..94] '.'
+            * [94..95] '*' (@end)
+  ; [95..96] ';'
