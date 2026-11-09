@@ -6,6 +6,7 @@ use std::{
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode, resolve::FunctionContext};
 use pgls_diagnostics::DiagnosticTags;
+use pgls_query_ext::function_body::{EmbeddedStatement, OffsetMap};
 use pgls_text_size::{TextRange, TextSize};
 pub use registry::visit_registry;
 
@@ -88,6 +89,9 @@ pub struct AnalysableStatement {
     /// Set when identifiers of the statement are client-side parameters, like psql's
     /// `:schema.table`. The parsed names are placeholders, so the statement isn't typechecked.
     pub has_identifier_parameters: bool,
+    /// Where the text of the statement is in the file, when it is embedded in another statement
+    /// and its text is not the source text, like a function body with escaped quotes.
+    pub offsets: OffsetMap,
 }
 
 impl AnalysableStatement {
@@ -98,7 +102,39 @@ impl AnalysableStatement {
             sql: None,
             function: None,
             has_identifier_parameters: false,
+            offsets: OffsetMap::default(),
         }
+    }
+
+    /// The statement `embedded`, like a statement of a SQL function body, in the statement that
+    /// starts at `parent_start` in the file. `root` is the parsed `embedded.sql`.
+    pub fn embedded(
+        root: pgls_query::NodeEnum,
+        parent_start: TextSize,
+        embedded: &EmbeddedStatement,
+    ) -> Self {
+        Self {
+            offsets: embedded.offsets.clone(),
+            ..Self::new(root, embedded.range + parent_start).with_sql(embedded.sql.as_str())
+        }
+    }
+
+    /// The range in the file of `range` in the statement text.
+    pub fn document_range(&self, range: TextRange) -> TextRange {
+        self.offsets.range_to_source(range) + self.range.start()
+    }
+
+    /// The offset in the file of `offset` in the statement text.
+    pub fn document_offset(&self, offset: TextSize) -> TextSize {
+        self.offsets.to_source(offset) + self.range.start()
+    }
+
+    /// The offset in the statement text of `offset` in the file, which is in the statement's
+    /// range.
+    pub fn statement_offset(&self, offset: TextSize) -> TextSize {
+        debug_assert!(self.range.contains_inclusive(offset));
+        self.offsets
+            .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())
     }
 
     pub fn with_sql(mut self, sql: impl Into<String>) -> Self {
@@ -347,12 +383,13 @@ impl<'a> Analyser<'a> {
                         .diagnostics
                         .extend(diagnostics.into_iter().map(|mut diagnostic| {
                             debug_assert_in_statement(&diagnostic, stmt);
-                            diagnostic.move_into_file(stmt.range);
+                            diagnostic.move_into_file(stmt);
                             // Fixes are computed on the statement text, which only matches the
-                            // source if it has the length of the statement range. A fix must
-                            // keep the statement valid.
+                            // source if it is the source as written. A fix must keep the statement
+                            // valid.
                             let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
-                                TextSize::of(sql.as_str()) == stmt.range.len()
+                                stmt.offsets.is_verbatim()
+                                    && TextSize::of(sql.as_str()) == stmt.range.len()
                                     && diagnostic.fix.as_ref().is_none_or(|fix| {
                                         keeps_sql_valid(fix, sql, stmt.range.start(), file.as_ref())
                                     })
@@ -687,7 +724,10 @@ mod tests {
     #[test]
     fn diagnostics_move_into_the_file() {
         let at = |offset: u32| pgls_text_size::TextSize::from(offset);
-        let statement = TextRange::new(at(10), at(30));
+        let statement = AnalysableStatement::new(
+            pgls_query::parse("select 1").unwrap().into_root().unwrap(),
+            TextRange::new(at(10), at(30)),
+        );
         let mut diagnostic = LinterDiagnostic::new(
             category!("lint/banDropColumn"),
             Some(TextRange::new(at(2), at(4))),
@@ -695,7 +735,7 @@ mod tests {
         )
         .detail(Some(TextRange::new(at(5), at(7))), "here")
         .detail(None, "no span");
-        diagnostic.move_into_file(statement);
+        diagnostic.move_into_file(&statement);
         assert_eq!(diagnostic.span, Some(TextRange::new(at(12), at(14))));
         let details: Vec<_> = diagnostic
             .rule_advice
@@ -707,8 +747,8 @@ mod tests {
 
         // Without a span, the diagnostic points at the statement.
         let mut diagnostic = LinterDiagnostic::new(category!("lint/banDropColumn"), None, "");
-        diagnostic.move_into_file(statement);
-        assert_eq!(diagnostic.span, Some(statement));
+        diagnostic.move_into_file(&statement);
+        assert_eq!(diagnostic.span, Some(statement.range));
     }
 
     /// Placeholders are converted to parameters before the fixed statement is parsed, like

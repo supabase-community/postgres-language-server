@@ -43,8 +43,12 @@ pub fn complete_roles<'a>(
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::test_helper::{
-        CompletionAssertion, TestCompletionsCase, TestCompletionsSuite, assert_complete_results,
+    use crate::{
+        CompletionItemKind, complete,
+        test_helper::{
+            CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
+            assert_complete_results, get_test_deps, get_test_params,
+        },
     };
 
     use pgls_test_utils::QueryWithCursorPosition;
@@ -410,6 +414,63 @@ mod tests {
             )
             .as_str(),
             expected,
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_alter_default_privileges(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        for query in [
+            "alter default privileges grant select on tables to {}",
+            "alter default privileges grant select on tables to owner, {}",
+            "alter default privileges revoke select on tables from {}",
+            "alter default privileges in schema public grant select on tables to {}",
+            "alter default privileges for role owner in schema public revoke select on tables from {}",
+            "alter default privileges for role {}",
+            "alter default privileges for user owner, {}",
+            "alter default privileges in schema public for role {}",
+        ] {
+            let query = query.replace("{}", &cursor.to_string());
+            let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+            let items = complete(get_test_params(&tree, &snapshot, query.as_str().into()));
+
+            for role in [
+                "anon",
+                "authenticated",
+                "owner",
+                "service_role",
+                "test_login",
+                "test_nologin",
+            ] {
+                assert!(
+                    items
+                        .iter()
+                        .any(|item| item.label == role && item.kind == CompletionItemKind::Role),
+                    "no role {role} in {query}"
+                );
+            }
+            assert!(
+                items.iter().all(|item| matches!(
+                    item.kind,
+                    CompletionItemKind::Role | CompletionItemKind::Keyword
+                )),
+                "{query}"
+            );
+        }
+
+        // A prefix narrows the roles down.
+        assert_complete_results(
+            format!("alter default privileges grant select on tables to ow{cursor}").as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "owner".into(),
+                CompletionItemKind::Role,
+            )],
             None,
             &pool,
         )
