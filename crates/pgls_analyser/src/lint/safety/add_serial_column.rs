@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, cmd_def, column_constraints, dotted_name};
+use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints, dotted_name};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -44,6 +44,11 @@ impl LinterRule for AddSerialColumn {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        // Other transactions can't see a table created earlier in the transaction, so its
+        // rewrite blocks no one.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
+        }
         let mut diagnostics = Vec::new();
 
         for cmd in alter_table_cmds(ctx.stmt()) {

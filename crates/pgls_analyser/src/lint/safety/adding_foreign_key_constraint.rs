@@ -1,4 +1,4 @@
-use crate::utils::{ConstraintSite, added_constraints};
+use crate::utils::{ConstraintSite, added_constraints, altered_relation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -49,6 +49,12 @@ impl LinterRule for AddingForeignKeyConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        // Other transactions can't see a table created earlier in the transaction, so the scan
+        // blocks no one. The referenced table is locked until the end of the transaction, like
+        // by `CREATE TABLE ... REFERENCES`, and NOT VALID wouldn't change that.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
+        }
         added_constraints(ctx.stmt())
             .filter_map(|(constraint, site)| {
                 check_foreign_key_constraint(constraint, site == ConstraintSite::Column)

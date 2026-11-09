@@ -1,4 +1,4 @@
-use crate::utils::alter_table_cmds;
+use crate::utils::{alter_table_cmds, altered_relation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -31,6 +31,10 @@ impl LinterRule for AddingRequiredField {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        // No other transaction has written to a table created earlier in the transaction.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
+        }
         let mut diagnostics = vec![];
 
         if let pgls_query::NodeEnum::AlterTableStmt(_) = ctx.stmt() {

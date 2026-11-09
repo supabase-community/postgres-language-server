@@ -63,7 +63,7 @@ impl LinterRule for LockTimeoutWarning {
             pgls_query::NodeEnum::AlterTableStmt(stmt) => {
                 if let Some(relation) = &stmt.relation {
                     // Only warn if the table wasn't created in this transaction
-                    if !tx_state.has_created_relation(relation, ctx.catalog()) {
+                    if !ctx.is_new_relation(relation) {
                         let (schema, table) = ctx
                             .catalog()
                             .relation_name_of(relation, tx_state.search_path());
@@ -89,7 +89,7 @@ impl LinterRule for LockTimeoutWarning {
                     && let Some(relation) = &stmt.relation
                 {
                     // Only warn if the table wasn't created in this transaction
-                    if !tx_state.has_created_relation(relation, ctx.catalog()) {
+                    if !ctx.is_new_relation(relation) {
                         let (schema, table) = ctx
                             .catalog()
                             .relation_name_of(relation, tx_state.search_path());
