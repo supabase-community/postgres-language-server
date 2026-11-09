@@ -13,6 +13,8 @@ pub enum WasmError {
     ParseError(String),
     /// Invalid options JSON.
     InvalidOptions(String),
+    /// Invalid configuration.
+    InvalidConfiguration(String),
     /// Internal error.
     Internal(String),
 }
@@ -24,6 +26,7 @@ impl fmt::Display for WasmError {
             WasmError::InvalidSchema(msg) => write!(f, "Invalid schema: {msg}"),
             WasmError::ParseError(msg) => write!(f, "Parse error: {msg}"),
             WasmError::InvalidOptions(msg) => write!(f, "Invalid options: {msg}"),
+            WasmError::InvalidConfiguration(msg) => write!(f, "Invalid configuration: {msg}"),
             WasmError::Internal(msg) => write!(f, "Internal error: {msg}"),
         }
     }

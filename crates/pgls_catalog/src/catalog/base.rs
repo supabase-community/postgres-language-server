@@ -18,6 +18,7 @@ use crate::lookup::{
 pub struct CatalogBase {
     snapshot: Arc<Snapshot>,
     schemas: FxHashSet<String>,
+    roles: FxHashSet<String>,
     relations: FxHashMap<Key, RelationInfo>,
     /// Names that may be relations the snapshot doesn't list: foreign tables, relations the
     /// user has no privileges on, and composite types. Lookups of them are unknown, not missing.
@@ -40,6 +41,11 @@ impl CatalogBase {
             .schemas
             .iter()
             .map(|schema| schema.name.clone())
+            .collect();
+        let roles = snapshot
+            .roles
+            .iter()
+            .map(|role| role.name.clone())
             .collect();
 
         let types_by_id: FxHashMap<i64, &crate::PostgresType> =
@@ -383,6 +389,7 @@ impl CatalogBase {
         Self {
             snapshot,
             schemas,
+            roles,
             relations,
             possible_relations,
             inheritance_children,
@@ -421,6 +428,10 @@ impl CatalogBase {
         &self.snapshot
     }
 
+    pub(super) fn has_role(&self, name: &str) -> bool {
+        self.roles.contains(name)
+    }
+
     pub(super) fn has_schema(&self, name: &str) -> bool {
         self.schemas.contains(name)
     }
@@ -431,6 +442,11 @@ impl CatalogBase {
 
     pub(super) fn is_inheritance_child(&self, schema: &str, name: &str) -> bool {
         self.inheritance_children.contains(&key(schema, name))
+    }
+
+    /// The partitions and inheritance children of the snapshot.
+    pub(super) fn inheritance_children(&self) -> impl Iterator<Item = &Key> {
+        self.inheritance_children.iter()
     }
 
     pub(super) fn may_have_relation(&self, schema: &str, name: &str) -> bool {

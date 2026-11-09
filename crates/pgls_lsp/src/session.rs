@@ -15,8 +15,8 @@ use pgls_line_index::WideEncoding;
 use pgls_workspace::Workspace;
 use pgls_workspace::configuration::{
     ConfigurationLayers, ConfigurationNotice, ConfigureProjectParams, ConfiguredProject,
-    NestedConfiguration, NestedConfigurationSearch, OverrideMode, VcsIntegration,
-    apply_nested_configurations, configure_project, is_searched_for_configuration,
+    NestedConfiguration, NestedConfigurationSearch, VcsIntegration, apply_nested_configurations,
+    configure_project, is_searched_for_configuration,
 };
 use pgls_workspace::features;
 use pgls_workspace::settings::FilesSettings;
@@ -939,7 +939,6 @@ impl Session {
         ConfigurationLayers {
             environment: self.environment.clone(),
             overrides: self.client_overrides.read().clone(),
-            override_mode: OverrideMode::Replace,
         }
     }
 

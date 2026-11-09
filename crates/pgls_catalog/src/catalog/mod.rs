@@ -374,6 +374,12 @@ impl Catalog {
         self.relation_in(&index.schema, &index.table)
     }
 
+    /// Whether an index is on a partitioned table, which makes it a partitioned index.
+    pub fn index_is_partitioned(&self, index: &IndexInfo) -> Lookup<bool> {
+        self.index_table(index)
+            .map(|table| table.kind == RelationKind::PartitionedTable)
+    }
+
     /// Whether the index that a name list names is known to be on a partitioned table, which
     /// makes it a partitioned index.
     pub fn is_partitioned_index(
@@ -381,10 +387,24 @@ impl Catalog {
         names: &[pgls_query::protobuf::Node],
         search_path: &[String],
     ) -> bool {
-        self.index_of(names, search_path)
+        self.is_partitioned(self.index_of(names, search_path))
+    }
+
+    /// Whether the index a `RangeVar` names, like the index of `REINDEX INDEX`, is known to be a
+    /// partitioned index.
+    pub fn is_partitioned_index_of(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        search_path: &[String],
+    ) -> bool {
+        let name = names::range_var_name(range_var);
+        self.is_partitioned(self.index(name.schema(), &name.name, search_path))
+    }
+
+    fn is_partitioned(&self, index: Lookup<IndexInfo>) -> bool {
+        index
             .found()
-            .and_then(|index| self.index_table(&index).found())
-            .is_some_and(|table| table.kind == RelationKind::PartitionedTable)
+            .is_some_and(|index| self.index_is_partitioned(&index) == Lookup::Found(true))
     }
 
     /// Finds the schema of a relation, if the relation is known to exist.
@@ -470,6 +490,14 @@ impl CatalogView for Catalog {
             None => self.search(relation_search_path(search_path), |schema| {
                 self.relation_in(schema, name)
             }),
+        }
+    }
+
+    fn role(&self, name: &str) -> Lookup<()> {
+        // The file can create and drop roles, which the catalog doesn't follow.
+        match &self.base {
+            Some(base) if base.has_role(name) => Lookup::Found(()),
+            _ => Lookup::Unknown,
         }
     }
 
