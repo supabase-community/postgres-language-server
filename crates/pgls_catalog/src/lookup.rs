@@ -219,6 +219,14 @@ pub trait CatalogView {
     fn server_version_num(&self) -> Option<i64> {
         None
     }
+
+    /// Whether the server runs Postgres `major` or later, like `server_version_at_least(12)`.
+    /// `None` when the version is not known. Since Postgres 10, `server_version_num` is the major
+    /// version times 10000 plus the minor version.
+    fn server_version_at_least(&self, major: i64) -> Option<bool> {
+        self.server_version_num()
+            .map(|version| version >= major * 10_000)
+    }
 }
 
 // ----- facts for typing -----

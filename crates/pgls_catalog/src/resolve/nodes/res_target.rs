@@ -274,10 +274,7 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
 /// [`transformReturningClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2661
 /// [`addNSItemForReturning`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2621
 fn add_old_and_new(r: &Resolver, options: &[Node], level: &mut Level) {
-    if r.catalog
-        .server_version_num()
-        .is_some_and(|version| version < 180000)
-    {
+    if r.catalog.server_version_at_least(18) == Some(false) {
         return;
     }
     let Some(target) = level.items.first() else {

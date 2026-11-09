@@ -29,6 +29,8 @@ mod tests;
 #[cfg(all(test, feature = "db"))]
 mod type_tests;
 mod utils;
+mod volatility;
+pub use volatility::contains_volatile_functions;
 
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;

@@ -114,8 +114,9 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
         filter,
     });
     let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
+    let catalog = spec_catalog(&query, is_typecheck);
 
-    let results = analyse(&analyser, &query, is_typecheck);
+    let results = analyse(&analyser, &query, is_typecheck, catalog.clone());
 
     let mut snapshot = String::new();
     write_snapshot(&mut snapshot, query.as_str(), results.as_slice());
@@ -130,10 +131,40 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     let expectation = Expectation::from_file(&query);
     expectation.assert(results.as_slice());
 
-    assert_fixes_converge(&analyser, &query, is_typecheck);
+    assert_fixes_converge(&analyser, &query, is_typecheck, catalog);
 }
 
-fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDiagnostic> {
+/// The catalog of a spec: the built-in catalog of the test database for typecheck specs and for
+/// specs with a `-- catalog: builtin` line. A `-- server_version_num: 110000` line makes it the
+/// catalog of that server version, since the test database can be of any version.
+fn spec_catalog(query: &str, is_typecheck: bool) -> Option<Arc<pgls_catalog::CatalogBase>> {
+    let directive = |name: &str| {
+        query
+            .lines()
+            .find_map(|line| line.trim().strip_prefix(name).map(str::trim))
+    };
+    if !is_typecheck && directive("-- catalog:") != Some("builtin") {
+        return None;
+    }
+    let catalog = typecheck_catalog();
+    let Some(version) = directive("-- server_version_num:") else {
+        return Some(catalog);
+    };
+    let version_num: i64 = version
+        .parse()
+        .unwrap_or_else(|_| panic!("Invalid server_version_num `{version}`"));
+    let mut snapshot = pgls_catalog::Snapshot::clone(catalog.snapshot());
+    snapshot.version.version_num = Some(version_num);
+    snapshot.version.major_version = Some(version_num / 10_000);
+    Some(Arc::new(pgls_catalog::CatalogBase::new(Arc::new(snapshot))))
+}
+
+fn analyse(
+    analyser: &Analyser,
+    query: &str,
+    is_typecheck: bool,
+    catalog: Option<Arc<pgls_catalog::CatalogBase>>,
+) -> Vec<LinterDiagnostic> {
     let split = pgls_statement_splitter::split(query);
 
     // Statements that don't parse are passed on as such, like the workspace does. Like there,
@@ -166,7 +197,7 @@ fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDi
     analyser.run(AnalyserParams {
         stmts,
         unparsable,
-        catalog_base: is_typecheck.then(typecheck_catalog),
+        catalog_base: catalog,
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
         sections: migration_sections(query),
@@ -177,10 +208,15 @@ fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDi
 
 /// Applies all fixes, safe and unsafe, until none is left, like `check --fix --unsafe`. That must
 /// end: a fixed statement must not get the same fix again.
-fn assert_fixes_converge(analyser: &Analyser, query: &str, is_typecheck: bool) {
+fn assert_fixes_converge(
+    analyser: &Analyser,
+    query: &str,
+    is_typecheck: bool,
+    catalog: Option<Arc<pgls_catalog::CatalogBase>>,
+) {
     let mut code = query.to_string();
     for _ in 0..10 {
-        let diagnostics = analyse(analyser, &code, is_typecheck);
+        let diagnostics = analyse(analyser, &code, is_typecheck, catalog.clone());
         let mut fixes: Vec<&RuleFix> = diagnostics
             .iter()
             .filter_map(LinterDiagnostic::get_fix)
