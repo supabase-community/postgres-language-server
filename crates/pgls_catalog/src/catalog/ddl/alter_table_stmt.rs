@@ -8,7 +8,7 @@ use crate::catalog::{
     names::{range_var_name, type_label},
     overlay::column_info,
 };
-use crate::lookup::{CatalogView, ColumnInfo, Origin};
+use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
 
 /// `ALTER TABLE`, and `ALTER TYPE ... ADD/DROP/ALTER ATTRIBUTE` on composite types.
 /// Models the column changes of [`ATExecAddColumn`], [`ATExecDropColumn`] and
@@ -57,6 +57,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     else {
         return;
     };
+    apply_index_changes(c, &relation, &commands);
     let changes_columns = commands.iter().any(|command| {
         matches!(
             command.subtype(),
@@ -89,6 +90,51 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
             }
         }
     });
+}
+
+/// The changes of `ALTER TABLE` to the indexes of the table:
+/// - `ADD CONSTRAINT ... USING INDEX` renames the index, which must be on the table and in its
+///   schema, to the name of the constraint ([`transformIndexConstraint`],
+///   [`ATExecAddIndexConstraint`]).
+/// - `DROP CONSTRAINT` drops the index of a primary key, unique or exclusion constraint, and on a
+///   partitioned table also the constraints and indexes of the partitions
+///   ([`dropconstraint_internal`]). We don't know which constraints have an index, so the index
+///   with the name of the constraint becomes unknown.
+///
+/// [`transformIndexConstraint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L2406
+/// [`ATExecAddIndexConstraint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9715
+/// [`dropconstraint_internal`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L14098
+fn apply_index_changes(c: &mut Catalog, table: &RelationInfo, commands: &[&AlterTableCmd]) {
+    for command in commands {
+        match command.subtype() {
+            AlterTableType::AtAddConstraint => {
+                let Some(NodeEnum::Constraint(constraint)) =
+                    command.def.as_deref().and_then(|def| def.node.as_ref())
+                else {
+                    continue;
+                };
+                if constraint.indexname.is_empty() || constraint.conname.is_empty() {
+                    continue;
+                }
+                // Postgres rejects an index that is missing or on another table. If the index
+                // is unknown, so is the new name, see `creates_implicit_indexes`.
+                if let Some(index) = c
+                    .index_in(&table.schema, &constraint.indexname)
+                    .found()
+                    .filter(|index| index.table == table.name)
+                {
+                    c.move_index(index, &constraint.conname);
+                }
+            }
+            AlterTableType::AtDropConstraint => {
+                c.mark_index_unknown(&table.schema, &command.name);
+                if table.kind == RelationKind::PartitionedTable {
+                    c.drop_partition_indexes();
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 /// Applies `ADD COLUMN`, `DROP COLUMN` and `ALTER COLUMN TYPE` (and their `ATTRIBUTE`

@@ -374,6 +374,12 @@ impl Catalog {
         self.relation_in(&index.schema, &index.table)
     }
 
+    /// Whether an index is on a partitioned table, which makes it a partitioned index.
+    pub fn index_is_partitioned(&self, index: &IndexInfo) -> Lookup<bool> {
+        self.index_table(index)
+            .map(|table| table.kind == RelationKind::PartitionedTable)
+    }
+
     /// Whether the index that a name list names is known to be on a partitioned table, which
     /// makes it a partitioned index.
     pub fn is_partitioned_index(
@@ -398,8 +404,7 @@ impl Catalog {
     fn is_partitioned(&self, index: Lookup<IndexInfo>) -> bool {
         index
             .found()
-            .and_then(|index| self.index_table(&index).found())
-            .is_some_and(|table| table.kind == RelationKind::PartitionedTable)
+            .is_some_and(|index| self.index_is_partitioned(&index) == Lookup::Found(true))
     }
 
     /// Finds the schema of a relation, if the relation is known to exist.
