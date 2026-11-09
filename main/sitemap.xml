@@ -298,6 +298,9 @@
         <loc>https://pg-language-server.com/main/reference/rules/function-return-type-mismatch/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/reference/rules/generated-column-assignment/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/reference/rules/identifier-too-long/</loc>
       </url>
       <url>
