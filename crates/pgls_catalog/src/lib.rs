@@ -34,6 +34,9 @@ pub use lookup::{
     FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
     OperatorInfo, OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
-pub use session::{Session, TransactionMode, is_reindex_concurrent, is_vacuum_full};
+pub use session::{
+    LockMode, Session, TableLock, TransactionMode, alter_table_cmd_lock, alter_table_lock,
+    is_reindex_concurrent, is_vacuum_full, relation_locks,
+};
 pub use snapshot::*;
 pub use typing::*;

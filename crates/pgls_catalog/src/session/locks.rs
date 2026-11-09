@@ -9,6 +9,7 @@ use pgls_query::{
 };
 use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
+use super::lock_level::{LockMode, TableLock, relation_locks};
 use crate::Catalog;
 
 #[derive(Debug, Default, Clone)]
@@ -21,8 +22,8 @@ pub(super) struct Locks {
     pub(super) idle_in_transaction_timeout_set: bool,
     /// Objects (schema, name) created in this transaction, in the schema Postgres created them in
     created_objects: Vec<(String, String)>,
-    /// Whether an ACCESS EXCLUSIVE lock is currently being held
-    /// This is set when an ALTER TABLE is executed on an existing table
+    /// Whether an ACCESS EXCLUSIVE lock is currently being held, set by an `ALTER TABLE` that
+    /// takes one on an existing table
     pub(super) holding_access_exclusive: bool,
     /// Constraints added with NOT VALID: (schema, table, constraint_name)
     not_valid_constraints: Vec<(String, String, String)>,
@@ -68,14 +69,11 @@ impl Locks {
         catalog: &Catalog,
         search_path: &[String],
     ) -> bool {
-        let is_new = |relation: &protobuf::RangeVar| {
-            self.has_created_relation(relation, catalog, search_path)
-        };
         match stmt {
-            NodeEnum::AlterTableStmt(s) => s.relation.as_ref().is_none_or(|r| !is_new(r)),
-            NodeEnum::IndexStmt(s) => {
-                !s.concurrent && s.relation.as_ref().is_none_or(|r| !is_new(r))
-            }
+            NodeEnum::AlterTableStmt(_) | NodeEnum::IndexStmt(_) => self
+                .table_locks(stmt, catalog, search_path)
+                .iter()
+                .any(|lock| lock.mode.blocks_writes()),
             NodeEnum::DropStmt(s) => matches!(
                 s.remove_type(),
                 protobuf::ObjectType::ObjectTable
@@ -91,24 +89,25 @@ impl Locks {
         }
     }
 
-    pub(super) fn access_exclusive_table_for_alter(
+    /// The locks that the statement takes on tables that this transaction didn't create, see
+    /// [`relation_locks`].
+    pub(super) fn table_locks(
         &self,
-        stmt: &protobuf::AlterTableStmt,
+        stmt: &NodeEnum,
         catalog: &Catalog,
         search_path: &[String],
-    ) -> Option<(String, String)> {
-        let relation = stmt.relation.as_ref()?;
-        // Some subcommands take lighter locks.
-        let has_access_exclusive_cmd = alter_table_cmds(stmt)
-            .any(|cmd| cmd.subtype() != protobuf::AlterTableType::AtValidateConstraint);
-        if !has_access_exclusive_cmd {
-            return None;
-        }
-        let (schema, name) = catalog.relation_name_of(relation, search_path);
-        if self.has_created_object(&schema, &name) {
-            return None;
-        }
-        Some((schema, name))
+    ) -> Vec<TableLock> {
+        relation_locks(stmt)
+            .into_iter()
+            .filter_map(|(mode, relation)| {
+                let (schema, name) = catalog.relation_name_of(relation, search_path);
+                (!self.has_created_object(&schema, &name)).then_some(TableLock {
+                    mode,
+                    schema,
+                    name,
+                })
+            })
+            .collect()
     }
 
     /// Forgets the state of the transaction that ended.
@@ -195,16 +194,17 @@ impl Locks {
                     let (schema, table) = name_of(r);
                     self.add_not_valid_constraints(s, &schema, &table);
                 }
-                if let Some((schema, name)) =
-                    self.access_exclusive_table_for_alter(s, catalog, search_path)
-                {
+                for lock in self.table_locks(stmt, catalog, search_path) {
+                    if lock.mode != LockMode::AccessExclusive {
+                        continue;
+                    }
                     self.holding_access_exclusive = true;
                     if !self
                         .access_exclusive_tables
                         .iter()
-                        .any(|(a, b)| a == &schema && b == &name)
+                        .any(|(schema, name)| *schema == lock.schema && *name == lock.name)
                     {
-                        self.access_exclusive_tables.push((schema, name));
+                        self.access_exclusive_tables.push((lock.schema, lock.name));
                     }
                 }
             }

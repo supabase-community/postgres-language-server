@@ -1010,7 +1010,7 @@
           ]
         },
         "avoidAttachingPartition": {
-          "description": "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.",
+          "description": "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the partition.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
