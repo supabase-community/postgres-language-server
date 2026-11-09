@@ -10,7 +10,8 @@ use std::path::Path;
 use pgls_fs::{FileSystem, OpenOptions};
 
 use crate::{
-    Detected, Direction, FileInfo, MigrationTool, Root, Script, ToolId, Version, detect,
+    Database, Detected, Direction, FileInfo, History, MigrationTool, Root, Script, ToolId, Version,
+    detect,
     directives::{self, lines},
     naming,
     units::UnitsBuilder,
@@ -55,9 +56,11 @@ impl MigrationTool for Dbmate {
             .then(|| Detected::new(self, root, DBMATE_DIRECTORY))
     }
 
-    /// dbmate has no folder of its own to run `init` in.
-    fn is_tool_directory(&self, _fs: &dyn FileSystem, _directory: &Path) -> bool {
-        false
+    /// The default of `--migrations-table`.
+    fn database(&self) -> Database {
+        Database {
+            history: Some(History::Table("schema_migrations")),
+        }
     }
 
     fn file(&self, path: &Path, migrations_dir: &Path) -> FileInfo {

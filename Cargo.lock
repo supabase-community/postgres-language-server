@@ -2383,6 +2383,7 @@ dependencies = [
  "fuzzy-matcher",
  "insta",
  "pgls_catalog",
+ "pgls_migrations",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter",

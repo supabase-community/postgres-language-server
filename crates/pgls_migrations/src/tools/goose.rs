@@ -11,7 +11,7 @@ use pgls_fs::FileSystem;
 use pgls_text_size::TextRange;
 
 use crate::{
-    Detected, Direction, FileInfo, MigrationTool, Root, Script, ToolId, Version,
+    Database, Detected, Direction, FileInfo, History, MigrationTool, Root, Script, ToolId, Version,
     directives::{self, lines},
     naming,
     units::UnitsBuilder,
@@ -33,8 +33,10 @@ impl MigrationTool for Goose {
         None
     }
 
-    fn is_tool_directory(&self, _fs: &dyn FileSystem, _directory: &Path) -> bool {
-        false
+    fn database(&self) -> Database {
+        Database {
+            history: Some(History::Table("goose_db_version")),
+        }
     }
 
     fn default_dir(&self) -> Option<&'static str> {
