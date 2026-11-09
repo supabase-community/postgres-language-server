@@ -133,6 +133,25 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     assert_fixes_converge(&analyser, &query, is_typecheck);
 }
 
+/// A spec of a lint rule can set the server version with a `-- server_version: <major>` line.
+/// Its rules then see an otherwise empty database snapshot of that version.
+fn server_version_catalog(query: &str) -> Option<Arc<pgls_catalog::CatalogBase>> {
+    let major = query.lines().find_map(|line| {
+        line.trim()
+            .strip_prefix("-- server_version:")
+            .map(|major| major.trim().parse().expect("a major version"))
+    })?;
+    let snapshot = pgls_catalog::Snapshot {
+        version: pgls_catalog::Version {
+            version_num: Some(major * 10000),
+            major_version: Some(major),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    Some(Arc::new(pgls_catalog::CatalogBase::new(Arc::new(snapshot))))
+}
+
 fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDiagnostic> {
     let split = pgls_statement_splitter::split(query);
 
@@ -163,10 +182,15 @@ fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDi
     }
 
     // Typecheck rules use the test database's built-in catalog; user schemas are filtered out.
+    let catalog_base = if is_typecheck {
+        Some(typecheck_catalog())
+    } else {
+        server_version_catalog(query)
+    };
     analyser.run(AnalyserParams {
         stmts,
         unparsable,
-        catalog_base: is_typecheck.then(typecheck_catalog),
+        catalog_base,
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
         sections: migration_sections(query),
