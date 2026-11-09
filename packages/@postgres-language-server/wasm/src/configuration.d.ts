@@ -653,6 +653,10 @@ export interface LinterRules {
    */
   invalidDropTypeSignature?: RuleConfiguration_for_Null;
   /**
+   * A MERGE, or merge_action(), that Postgres rejects.
+   */
+  invalidMerge?: RuleConfiguration_for_Null;
+  /**
    * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
    */
   lockTimeoutWarning?: RuleConfiguration_for_Null;
