@@ -66,6 +66,7 @@ impl Fixture {
                 SemanticTokenKind::Type => "type",
                 SemanticTokenKind::Parameter => "parameter",
                 SemanticTokenKind::EnumMember => "enumMember",
+                SemanticTokenKind::Variable => "variable",
             };
             let builtin = if token.default_library { "+" } else { "" };
             result.insert_str(
@@ -83,8 +84,8 @@ async fn relations_and_columns(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
         f.highlighted("select u.name, title from public.users u join posts on true"),
-        "select u.[name:property], [title:property] \
-         from [public:namespace].[users:class] u join [posts:class] on true"
+        "select [u:variable].[name:property], [title:property] \
+         from [public:namespace].[users:class] [u:variable] join [posts:class] on true"
     );
     assert_eq!(
         f.highlighted("select users.id from users"),
@@ -102,6 +103,30 @@ async fn relations_and_columns(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn ctes_and_aliases(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted(
+            "with recent as (select id from posts) \
+             select r.id, recent.id, u.name from recent r, recent, users as u"
+        ),
+        "with [recent:class] as (select [id:property] from [posts:class]) \
+         select [r:variable].[id:property], [recent:class].[id:property], [u:variable].[name:property] \
+         from [recent:class] [r:variable], [recent:class], [users:class] as [u:variable]"
+    );
+    assert_eq!(
+        f.highlighted("update users \"U\" set name = 'x' where \"U\".id = 1"),
+        "update [users:class] [\"U\":variable] set name = 'x' \
+         where [\"U\":variable].[id:property] = 1"
+    );
+    // The alias of a subquery has no reference where it is defined.
+    assert_eq!(
+        f.highlighted("select s.id from (select id from users) s"),
+        "select [s:variable].[id:property] from (select [id:property] from [users:class]) s"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn functions_and_types(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -113,6 +138,35 @@ async fn functions_and_types(test_db: PgPool) {
     assert_eq!(
         f.highlighted("select amb('1', '2'), nope(1)"),
         "select amb('1', '2'), nope(1)"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn types_in_ddl(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted(
+            "create table t (id int8 primary key, m public.mood, n numeric(10, 2), \
+             at timestamp with time zone default now(), x nope)"
+        ),
+        "create table t (id [int8:type+] primary key, m [public:namespace].[mood:type], \
+         n [numeric:type+](10, 2), \
+         at [timestamp:type+] [with:type+] [time:type+] [zone:type+] default now(), x nope)"
+    );
+    assert_eq!(
+        f.highlighted("alter table users add column c mood, alter column name type varchar(20)"),
+        "alter table users add column c [mood:type], alter column name type [varchar:type+](20)"
+    );
+    assert_eq!(
+        f.highlighted(
+            "create function f(a mood, out b int) returns setof record language sql as 'select 1'"
+        ),
+        "create function f(a [mood:type], out b [int:type+]) returns setof [record:type+] \
+         language sql as 'select 1'"
+    );
+    assert_eq!(
+        f.highlighted("drop function make_point(int, integer)"),
+        "drop function make_point([int:type+], [integer:type+])"
     );
 }
 
@@ -158,7 +212,7 @@ async fn comments_inside_qualified_names(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
         f.highlighted("select u.name from public /* c */ . users u"),
-        "select u.[name:property] from [public:namespace] /* c */ . [users:class] u"
+        "select [u:variable].[name:property] from [public:namespace] /* c */ . [users:class] [u:variable]"
     );
     assert_eq!(
         f.highlighted("select users -- c\n .id from users"),

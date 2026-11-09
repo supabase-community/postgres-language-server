@@ -1,6 +1,5 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::{CatalogView, RelationKind};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::Token;
@@ -62,10 +61,7 @@ impl LinterRule for RequireConcurrentIndexCreation {
         let Some(relation) = &stmt.relation else {
             return diagnostics;
         };
-        if ctx
-            .session()
-            .has_created_object(&relation.schemaname, &relation.relname)
-        {
+        if ctx.session().has_created_relation(relation, ctx.catalog()) {
             return diagnostics;
         }
 
@@ -92,13 +88,10 @@ fn add_concurrently(
     stmt: &pgls_query::protobuf::IndexStmt,
 ) -> Option<RuleFix> {
     let relation = stmt.relation.as_ref()?;
-    let schema = Some(relation.schemaname.as_str()).filter(|schema| !schema.is_empty());
-    let is_partitioned = ctx
+    if ctx
         .catalog()
-        .relation(schema, &relation.relname, ctx.session().search_path())
-        .found()
-        .is_some_and(|relation| relation.kind == RelationKind::PartitionedTable);
-    if is_partitioned {
+        .is_partitioned_table(relation, ctx.session().search_path())
+    {
         return None;
     }
     let tokens = ctx.tokens()?;

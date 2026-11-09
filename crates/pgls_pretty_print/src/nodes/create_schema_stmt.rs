@@ -1,7 +1,4 @@
-use pgls_query::{
-    NodeEnum,
-    protobuf::{CreateSchemaStmt, Node},
-};
+use pgls_query::protobuf::CreateSchemaStmt;
 
 use crate::{
     TokenKind,
@@ -43,27 +40,13 @@ pub(super) fn emit_create_schema_stmt(e: &mut EventEmitter, n: &CreateSchemaStmt
     // Schema elements (nested CREATE statements).
     //
     // Per the PostgreSQL grammar (`OptSchemaEltList: OptSchemaEltList schema_stmt`),
-    // elements are space-separated and the child statements must not carry their
-    // own terminating `;` — only the outer `CREATE SCHEMA` does.
+    // elements are space-separated. No statement writes a `;`, so neither do they.
     if !n.schema_elts.is_empty() {
         // Soft line so the renderer can wrap when the schema name and the
         // first element don't fit on one line.
         e.line(LineType::SoftOrSpace);
-        emit_space_separated_list(e, &n.schema_elts, emit_schema_element);
+        emit_space_separated_list(e, &n.schema_elts, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
-}
-
-fn emit_schema_element(node: &Node, e: &mut EventEmitter) {
-    super::emit_node_with(node, e, |node, e| match node {
-        NodeEnum::CreateStmt(n) => super::emit_create_stmt_no_semicolon(e, n),
-        NodeEnum::ViewStmt(n) => super::emit_view_stmt_no_semicolon(e, n),
-        NodeEnum::IndexStmt(n) => super::emit_index_stmt_no_semicolon(e, n),
-        NodeEnum::CreateSeqStmt(n) => super::emit_create_seq_stmt_no_semicolon(e, n),
-        NodeEnum::CreateTrigStmt(n) => super::emit_create_trig_stmt_no_semicolon(e, n),
-        NodeEnum::GrantStmt(n) => super::emit_grant_stmt_no_semicolon(e, n),
-        _ => super::emit_node_enum(node, e),
-    });
 }

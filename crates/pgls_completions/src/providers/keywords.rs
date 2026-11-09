@@ -3,7 +3,7 @@ use pgls_treesitter::TreesitterContext;
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    providers::helper::get_range_to_replace,
+    providers::helper::get_keyword_range_to_replace,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
@@ -53,6 +53,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("atomic"),
     SqlKeyword::new("attribute"),
     SqlKeyword::new("authorization"),
+    SqlKeyword::new("auto"),
     SqlKeyword::new("before"),
     SqlKeyword::new("begin").starts_statement(),
     SqlKeyword::new("between").require_prefix(),
@@ -111,6 +112,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("delete").starts_statement(),
     SqlKeyword::new("delimiter"),
     SqlKeyword::new("desc"),
+    SqlKeyword::new("disable_page_skipping"),
     SqlKeyword::new("distinct"),
     SqlKeyword::new("do").starts_statement(),
     SqlKeyword::new("double"),
@@ -120,6 +122,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("encoding"),
     SqlKeyword::new("encrypted"),
     SqlKeyword::new("end"),
+    SqlKeyword::new("enforced"),
     SqlKeyword::new("enum"),
     SqlKeyword::new("escape"),
     SqlKeyword::new("except"),
@@ -167,8 +170,10 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("in").require_prefix(),
     SqlKeyword::new("increment"),
     SqlKeyword::new("index"),
+    SqlKeyword::new("index_cleanup"),
     SqlKeyword::new("inet"),
     SqlKeyword::new("inherit"),
+    SqlKeyword::new("inherits"),
     SqlKeyword::new("initially"),
     SqlKeyword::new("inner"),
     SqlKeyword::new("inout"),
@@ -187,6 +192,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("jsonb"),
     SqlKeyword::new("key"),
     SqlKeyword::new("language"),
+    SqlKeyword::new("large"),
     SqlKeyword::new("last"),
     SqlKeyword::new("lateral"),
     SqlKeyword::new("leakproof"),
@@ -219,6 +225,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("null").require_prefix(),
     SqlKeyword::new("nulls"),
     SqlKeyword::new("numeric"),
+    SqlKeyword::new("objects"),
     SqlKeyword::new("of"),
     SqlKeyword::new("off"),
     SqlKeyword::new("offset"),
@@ -228,6 +235,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("on"),
     SqlKeyword::new("on_error"),
     SqlKeyword::new("only").require_prefix(),
+    SqlKeyword::new("only_database_stats"),
     SqlKeyword::new("option"),
     SqlKeyword::new("or").require_prefix(),
     SqlKeyword::new("order"),
@@ -236,12 +244,14 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("out"),
     SqlKeyword::new("outer"),
     SqlKeyword::new("over"),
+    SqlKeyword::new("overlaps"),
     SqlKeyword::new("overriding"),
     SqlKeyword::new("owned"),
     SqlKeyword::new("owner"),
     SqlKeyword::new("parallel"),
     SqlKeyword::new("partition"),
     SqlKeyword::new("password"),
+    SqlKeyword::new("period"),
     SqlKeyword::new("permissive"),
     SqlKeyword::new("plain"),
     SqlKeyword::new("policy"),
@@ -251,6 +261,8 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("privileges"),
     SqlKeyword::new("procedure"),
     SqlKeyword::new("procedures"),
+    SqlKeyword::new("process_main"),
+    SqlKeyword::new("process_toast"),
     SqlKeyword::new("program"),
     SqlKeyword::new("public"),
     SqlKeyword::new("quote"),
@@ -286,9 +298,11 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("rows"),
     SqlKeyword::new("safe"),
     SqlKeyword::new("schema"),
+    SqlKeyword::new("schemas"),
     SqlKeyword::new("security"),
     SqlKeyword::new("select").starts_statement(),
     SqlKeyword::new("sequence"),
+    SqlKeyword::new("sequences"),
     SqlKeyword::new("serial"),
     SqlKeyword::new("serializable"),
     SqlKeyword::new("session"),
@@ -300,11 +314,13 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("show").starts_statement(),
     SqlKeyword::new("silent"),
     SqlKeyword::new("similar").require_prefix(),
+    SqlKeyword::new("skip_database_stats"),
     SqlKeyword::new("skip_locked"),
     SqlKeyword::new("smallint"),
     SqlKeyword::new("smallserial"),
     SqlKeyword::new("snapshot"),
     SqlKeyword::new("some"),
+    SqlKeyword::new("source"),
     SqlKeyword::new("spgist"),
     SqlKeyword::new("stable"),
     SqlKeyword::new("start"),
@@ -322,6 +338,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("table"),
     SqlKeyword::new("tables"),
     SqlKeyword::new("tablespace"),
+    SqlKeyword::new("target"),
     SqlKeyword::new("temp"),
     SqlKeyword::new("temporary"),
     SqlKeyword::new("text"),
@@ -337,6 +354,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("true").require_prefix(),
     SqlKeyword::new("truncate").starts_statement(),
     SqlKeyword::new("type"),
+    SqlKeyword::new("types"),
     SqlKeyword::new("unbounded"),
     SqlKeyword::new("uncommitted"),
     SqlKeyword::new("union"),
@@ -345,6 +363,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("unsafe"),
     SqlKeyword::new("until"),
     SqlKeyword::new("update").starts_statement(),
+    SqlKeyword::new("usage"),
     SqlKeyword::new("user"),
     SqlKeyword::new("using"),
     SqlKeyword::new("uuid"),
@@ -358,6 +377,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("verbose"),
     SqlKeyword::new("version"),
     SqlKeyword::new("view"),
+    SqlKeyword::new("virtual"),
     SqlKeyword::new("volatile"),
     SqlKeyword::new("wal"),
     SqlKeyword::new("when"),
@@ -405,7 +425,7 @@ pub fn complete_keywords<'a>(
             kind: CompletionItemKind::Keyword,
             completion_text: Some(CompletionText {
                 text: label,
-                range: get_range_to_replace(ctx),
+                range: get_keyword_range_to_replace(ctx),
                 is_snippet: false,
             }),
             detail: None,
@@ -425,11 +445,11 @@ mod tests {
     use tree_sitter::Language;
 
     use crate::{
-        CompletionItemKind,
+        CompletionItemKind, complete,
         providers::keywords::ALL_KEYWORDS,
         test_helper::{
             CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
-            assert_complete_results, assert_no_complete_results,
+            assert_complete_results, assert_no_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -518,6 +538,10 @@ mod tests {
             query.as_str(),
             vec![
                 CompletionAssertion::LabelAndKind(
+                    "alter".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
                     "copy".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
@@ -526,7 +550,15 @@ mod tests {
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
+                    "delete".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
                     "drop".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "merge".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
@@ -969,5 +1001,336 @@ mod tests {
             &pool,
         )
         .await;
+    }
+
+    /// The keywords offered at the cursor, sorted.
+    async fn keywords_at(query: &str, pool: &PgPool) -> Vec<String> {
+        let (tree, snapshot) = get_test_deps(None, query.into(), pool).await;
+        let params = get_test_params(&tree, &snapshot, query.into());
+        let mut keywords = complete(params)
+            .into_iter()
+            .filter(|item| item.kind == CompletionItemKind::Keyword)
+            .map(|item| item.label)
+            .collect::<Vec<_>>();
+        keywords.sort_unstable();
+        keywords
+    }
+
+    #[sqlx::test]
+    async fn completes_default_privileges_targets(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges grant select on {cursor}"),
+                &pool
+            )
+            .await,
+            [
+                "functions",
+                "large",
+                "routines",
+                "schemas",
+                "sequences",
+                "tables",
+                "types"
+            ]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!(
+                    "alter default privileges in schema public grant select on large {cursor}"
+                ),
+                &pool
+            )
+            .await,
+            ["objects"]
+        );
+    }
+
+    #[sqlx::test]
+    async fn completes_default_privileges_options_in_any_order(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `in` needs a prefix.
+        assert_eq!(
+            keywords_at(&format!("alter default privileges {cursor}"), &pool).await,
+            ["for", "grant", "revoke"]
+        );
+        assert_eq!(
+            keywords_at(&format!("alter default privileges i{cursor}"), &pool).await,
+            ["in"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges for role admin i{cursor}"),
+                &pool
+            )
+            .await,
+            ["in"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges in schema public {cursor}"),
+                &pool
+            )
+            .await,
+            ["for", "grant", "revoke"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter default privileges in schema public for {cursor}"),
+                &pool
+            )
+            .await,
+            ["role", "user"]
+        );
+        // Postgres rejects an option given twice.
+        for options in [
+            "for role admin in schema public",
+            "in schema public for role admin",
+        ] {
+            assert_eq!(
+                keywords_at(
+                    &format!("alter default privileges {options} {cursor}"),
+                    &pool
+                )
+                .await,
+                ["grant", "revoke"],
+                "{options}"
+            );
+        }
+    }
+
+    #[sqlx::test]
+    async fn completes_constraint_attributes(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `not` needs a prefix.
+        assert_eq!(
+            keywords_at(&format!("alter table t alter constraint c {cursor}"), &pool).await,
+            ["deferrable", "enforced", "inherit", "initially", "no"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter table t alter constraint c not {cursor}"),
+                &pool
+            )
+            .await,
+            ["deferrable", "enforced"]
+        );
+        assert_eq!(
+            keywords_at(
+                &format!("alter table t add constraint c check (a > 0) not {cursor}"),
+                &pool
+            )
+            .await,
+            ["deferrable", "enforced", "valid"]
+        );
+    }
+
+    #[sqlx::test]
+    async fn completes_options_after_opening_parenthesis(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `analyze` needs a prefix.
+        let explain = [
+            "buffers",
+            "costs",
+            "format",
+            "generic_plan",
+            "memory",
+            "serializable",
+            "settings",
+            "summary",
+            "timing",
+            "verbose",
+            "wal",
+        ];
+        let analyze = ["buffer_usage_limit", "skip_locked", "verbose"];
+        // `null` needs a prefix.
+        let copy = [
+            "default",
+            "delimiter",
+            "encoding",
+            "escape",
+            "force_not_null",
+            "force_null",
+            "force_quote",
+            "format",
+            "freeze",
+            "header",
+            "log_verbosity",
+            "on_error",
+            "quote",
+            "reject_limit",
+        ];
+        let returning_with = ["new", "old"];
+
+        let cases: [(&str, &[&str]); 13] = [
+            ("explain ({})", &[explain.as_slice(), &["select"]].concat()),
+            ("explain ({}", &explain),
+            ("explain (analyze, {})", &explain),
+            ("analyze ({})", &analyze),
+            ("analyze ({}", &analyze),
+            ("analyze (verbose, {})", &analyze),
+            ("copy t from stdin with ({})", &copy),
+            ("copy t from stdin with ({}", &copy),
+            ("copy t to stdout (format csv, {})", &copy),
+            ("update t set a = 1 returning with ({})", &returning_with),
+            ("update t set a = 1 returning with ({}", &returning_with),
+            (
+                "update t set a = 1 returning with (old as o, {})",
+                &returning_with,
+            ),
+            ("delete from t returning with ({})", &returning_with),
+        ];
+
+        for (sql, expected) in cases {
+            let mut expected = expected.to_vec();
+            expected.sort_unstable();
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(keywords_at(&query, &pool).await, expected, "{sql}");
+        }
+
+        // The keyword replaces only what was typed after the comma.
+        let query = format!("explain (analyze, ver{cursor})");
+        let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+        let params = get_test_params(&tree, &snapshot, query.as_str().into());
+        let items = complete(params);
+        let verbose = items.iter().find(|item| item.label == "verbose").unwrap();
+        assert_eq!(
+            verbose.completion_text.as_ref().map(|text| text.range),
+            Some(pgls_text_size::TextRange::new(18.into(), 21.into()))
+        );
+    }
+
+    #[sqlx::test]
+    async fn completes_vacuum_options(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `analyze` needs a prefix.
+        let options = [
+            "buffer_usage_limit",
+            "disable_page_skipping",
+            "freeze",
+            "full",
+            "index_cleanup",
+            "only_database_stats",
+            "parallel",
+            "process_main",
+            "process_toast",
+            "skip_database_stats",
+            "skip_locked",
+            "truncate",
+            "verbose",
+        ];
+
+        for sql in ["vacuum ({})", "vacuum ({}", "vacuum (verbose, {})"] {
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(keywords_at(&query, &pool).await, options, "{sql}");
+        }
+
+        assert_eq!(
+            keywords_at(&format!("vacuum (index_cleanup {cursor})"), &pool).await,
+            ["auto", "off", "on"]
+        );
+        assert_eq!(
+            keywords_at(&format!("explain (format {cursor})"), &pool).await,
+            ["json", "text", "xml", "yaml"]
+        );
+        // The options from before the option list.
+        assert_eq!(
+            keywords_at(&format!("vacuum {cursor}"), &pool).await,
+            ["freeze", "full", "verbose"]
+        );
+    }
+
+    #[sqlx::test]
+    async fn completes_keywords_in_create_and_alter_table(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // `not`, `null` and `as` need a prefix.
+        let cases: [(&str, &[&str]); 15] = [
+            (
+                "create table t (id int {})",
+                &[
+                    "asc",
+                    "check",
+                    "collate",
+                    "comment",
+                    "constraint",
+                    "default",
+                    "desc",
+                    "enforced",
+                    "generated",
+                    "no",
+                    "primary",
+                    "references",
+                    "stored",
+                    "unique",
+                    "virtual",
+                ],
+            ),
+            ("create table t (id int primary {})", &["key"]),
+            ("create table t (id int generated {})", &["always", "by"]),
+            ("create table t (id int generated by {})", &["default"]),
+            // `as` follows `by default`, not `by`.
+            ("create table t (id int generated by a{})", &["default"]),
+            ("create table t (id int generated by default a{})", &["as"]),
+            (
+                "create table t (id int references u (id) on {})",
+                &["delete", "update"],
+            ),
+            (
+                "create table t (id int references u (id) on delete {})",
+                &["cascade", "no", "restrict", "set"],
+            ),
+            (
+                "create table t (id int, constraint c {})",
+                &["check", "foreign", "index", "key", "primary", "unique"],
+            ),
+            ("create table t (id int, foreign {})", &["key"]),
+            (
+                "create table t (id int, unique {})",
+                &["index", "key", "nulls"],
+            ),
+            (
+                "create table t (id int) {}",
+                &["default", "inherits", "partition", "with"],
+            ),
+            ("alter table t alter column a {}", &["drop", "set", "type"]),
+            (
+                "alter table t alter column a set {}",
+                &["compression", "data", "default", "statistics", "storage"],
+            ),
+            ("alter table t drop column a {}", &["cascade", "restrict"]),
+        ];
+
+        for (sql, expected) in cases {
+            let query = sql.replace("{}", &cursor.to_string());
+            assert_eq!(keywords_at(&query, &pool).await, expected, "{sql}");
+        }
+    }
+
+    #[sqlx::test]
+    async fn completes_options_after_opening_parenthesis_with_multibyte_text(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // The cursor is a byte offset; a multi-byte char before it must not move the edit.
+        for sql in ["explain /*é*/ ({}", "copy café from stdin with ({}"] {
+            let query = sql.replace("{}", &cursor.to_string());
+            let source = sql.replace("{}", "");
+            let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+            let params = get_test_params(&tree, &snapshot, query.as_str().into());
+            let items = complete(params);
+
+            assert!(!items.is_empty(), "{sql}");
+            for item in &items {
+                let range = item.completion_text.as_ref().map(|text| text.range);
+                let cursor_range = pgls_text_size::TextRange::empty((source.len() as u32).into());
+                assert_eq!(range, Some(cursor_range), "{sql}: {}", item.label);
+            }
+        }
     }
 }

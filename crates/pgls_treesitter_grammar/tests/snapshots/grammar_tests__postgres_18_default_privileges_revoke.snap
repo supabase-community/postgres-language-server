@@ -1,0 +1,29 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+alter default privileges revoke grant option for all privileges on large objects from public cascade;
+-----------------------
+program [0..101] 'alter default privileges revoke grant option for all privileges on large objects from public cascade;'
+  statement [0..100] 'alter default privileges revoke grant option for all privileges on large objects from public cascade'
+    alter_default_privileges [0..100] 'alter default privileges revoke grant option for all privileges on large objects from public cascade'
+      keyword_alter [0..5] 'alter'
+      keyword_default [6..13] 'default'
+      keyword_privileges [14..24] 'privileges'
+      default_privileges_revoke [25..100] 'revoke grant option for all privileges on large objects from public cascade' (@end)
+        keyword_revoke [25..31] 'revoke'
+        keyword_grant [32..37] 'grant'
+        keyword_option [38..44] 'option'
+        keyword_for [45..48] 'for'
+        grantable [49..63] 'all privileges'
+          keyword_all [49..52] 'all'
+          keyword_privileges [53..63] 'privileges' (@end)
+        default_privileges_target [64..80] 'on large objects'
+          keyword_on [64..66] 'on'
+          keyword_large [67..72] 'large'
+          keyword_objects [73..80] 'objects' (@end)
+        keyword_from [81..85] 'from'
+        role_specification [86..92] 'public' (@end)
+          keyword_public [86..92] 'public' (@end)
+        keyword_cascade [93..100] 'cascade'
+  ; [100..101] ';'

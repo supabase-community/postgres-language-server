@@ -7,14 +7,6 @@ use crate::{
 };
 
 pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
-    emit_grant_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_grant_stmt_no_semicolon(e: &mut EventEmitter, n: &GrantStmt) {
-    emit_grant_stmt_impl(e, n, false);
-}
-
-fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: bool) {
     e.group_start(GroupKind::GrantStmt);
 
     // GRANT or REVOKE
@@ -110,6 +102,12 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
             }
             ObjectType::ObjectSchema => {
                 e.token(TokenKind::SCHEMAS_KW);
+            }
+            // Since Postgres 18
+            ObjectType::ObjectLargeobject => {
+                e.token(TokenKind::LARGE_KW);
+                e.space();
+                e.token(TokenKind::OBJECTS_KW);
             }
             _ => {}
         }
@@ -236,10 +234,6 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
     }
 
     e.indent_end();
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
-    }
 
     e.group_end();
 }
