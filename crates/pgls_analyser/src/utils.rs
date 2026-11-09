@@ -4,8 +4,8 @@ use pgls_query::NodeEnum;
 use pgls_query::protobuf::{
     AlterDomainStmt, AlterTableCmd, AlterTableType, ColumnDef, Constraint, Node, TypeName,
 };
-pub(crate) use pgls_query_ext::utils::cmd_def;
 use pgls_query_ext::utils::{QualifiedName, string_value};
+pub(crate) use pgls_query_ext::utils::{cmd_def, detaches_concurrently};
 
 /// The subcommands of an `ALTER TABLE` statement. Other statements have none.
 pub(crate) fn alter_table_cmds(stmt: &NodeEnum) -> impl Iterator<Item = &AlterTableCmd> {
@@ -87,12 +87,6 @@ pub(crate) fn added_constraints(
             .map(|constraint| (constraint, ConstraintSite::Column));
         table.into_iter().chain(column)
     })
-}
-
-/// Whether the subcommand is `DETACH PARTITION ... CONCURRENTLY`, the only subcommand that
-/// Postgres can run concurrently.
-pub(crate) fn detaches_concurrently(cmd: &AlterTableCmd) -> bool {
-    matches!(cmd_def(cmd), Some(NodeEnum::PartitionCmd(partition)) if partition.concurrent)
 }
 
 /// What an `ALTER DOMAIN` does. The parser stores it as a letter in `subtype`, see

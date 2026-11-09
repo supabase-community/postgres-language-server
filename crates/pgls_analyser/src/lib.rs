@@ -19,6 +19,7 @@ mod linter_rule;
 mod migration;
 pub mod options;
 mod registry;
+mod transaction_block;
 mod utils;
 
 // Re-export linter-specific types

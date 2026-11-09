@@ -40,9 +40,9 @@ fn transaction_boundaries_reset_state_and_timeouts() {
     apply(&mut s, "CREATE TABLE made (id int)");
     assert!(s.has_lock_timeout() && created(&s, "", "made"));
     apply(&mut s, "BEGIN");
-    assert_eq!(s.transaction_depth(), 1);
+    assert!(s.in_explicit_transaction());
     apply(&mut s, "COMMIT");
-    assert_eq!(s.transaction_depth(), 0);
+    assert!(!s.in_explicit_transaction());
     assert!(!s.has_lock_timeout() && !created(&s, "", "made"));
     apply(&mut s, "SET statement_timeout='1s'");
     apply(&mut s, "ROLLBACK");
@@ -252,6 +252,59 @@ fn check_function_bodies() {
     apply(&mut s, "SET check_function_bodies = off");
     apply(&mut s, "RESET ALL");
     assert!(s.check_function_bodies());
+}
+
+#[test]
+fn transaction_blocks_follow_postgres() {
+    let mut s =
+        Session::new(vec!["public".into()]).with_transaction_mode(TransactionMode::Autocommit);
+    let opens = |s: &Session, q: &str| {
+        s.opens_transaction_block(&pgls_query::parse(q).unwrap().into_root().unwrap())
+    };
+    // A `BEGIN` in a transaction block only warns, and one `COMMIT` ends the block.
+    assert!(opens(&s, "BEGIN"));
+    apply(&mut s, "BEGIN");
+    assert!(!opens(&s, "BEGIN"));
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "COMMIT");
+    assert_eq!(s.in_transaction(), Some(false));
+
+    // Savepoints don't open or end the block.
+    apply(&mut s, "SAVEPOINT a");
+    assert_eq!(s.in_transaction(), Some(false));
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "SAVEPOINT a");
+    apply(&mut s, "RELEASE SAVEPOINT a");
+    assert_eq!(s.in_transaction(), Some(true));
+    apply(&mut s, "SAVEPOINT b");
+    apply(&mut s, "COMMIT");
+    assert_eq!(s.in_transaction(), Some(false));
+
+    // `AND CHAIN` ends the transaction and opens the next block right away.
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "ALTER TABLE users ADD COLUMN name text");
+    apply(&mut s, "SET LOCAL search_path = other");
+    assert!(opens(&s, "COMMIT AND CHAIN") && opens(&s, "ROLLBACK AND CHAIN"));
+    assert!(!opens(&s, "COMMIT"));
+    apply(&mut s, "COMMIT AND CHAIN");
+    assert_eq!(s.in_transaction(), Some(true));
+    assert!(!s.is_holding_access_exclusive());
+    assert_eq!(s.search_path(), ["public"]);
+    apply(&mut s, "SET search_path = other");
+    apply(&mut s, "ROLLBACK AND CHAIN");
+    assert_eq!(s.in_transaction(), Some(true));
+    assert_eq!(s.search_path(), ["public"]);
+
+    // `PREPARE TRANSACTION` ends the block and keeps its settings, like `COMMIT`.
+    apply(&mut s, "SET search_path = other");
+    apply(&mut s, "PREPARE TRANSACTION 'tx'");
+    assert_eq!(s.in_transaction(), Some(false));
+    assert_eq!(s.search_path(), ["other"]);
+
+    // Outside of a transaction block, Postgres rejects `AND CHAIN`.
+    assert!(!opens(&s, "COMMIT AND CHAIN"));
+    apply(&mut s, "COMMIT AND CHAIN");
+    assert_eq!(s.in_transaction(), Some(false));
 }
 
 #[test]

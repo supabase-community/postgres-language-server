@@ -34,6 +34,9 @@ pub use lookup::{
     FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
     OperatorInfo, OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
-pub use session::{Session, TransactionMode, is_reindex_concurrent, is_vacuum_full};
+pub use session::{
+    NonTransactional, Session, TransactionMode, ends_transaction_block, is_reindex_concurrent,
+    is_vacuum_full, prevents_transaction_block,
+};
 pub use snapshot::*;
 pub use typing::*;
