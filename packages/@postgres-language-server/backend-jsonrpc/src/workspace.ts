@@ -131,6 +131,7 @@ export type Category =
   | "lint/insertColumnMismatch"
   | "lint/invalidCast"
   | "lint/invalidDropTypeSignature"
+  | "lint/invalidMerge"
   | "lint/lockTimeoutWarning"
   | "lint/missingFromClauseEntry"
   | "lint/multipleAlterTable"
@@ -1137,6 +1138,10 @@ export interface LinterRules {
    * DROP TYPE and DROP DOMAIN don't take a parameter list.
    */
   invalidDropTypeSignature?: RuleConfiguration_for_Null;
+  /**
+   * A MERGE, or merge_action(), that Postgres rejects.
+   */
+  invalidMerge?: RuleConfiguration_for_Null;
   /**
    * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
    */

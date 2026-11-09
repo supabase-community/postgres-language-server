@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_18_6: 47289 statements and 402 in SQL function bodies, 1902 findings on statements Postgres rejected
+REL_18_6: 47289 statements and 402 in SQL function bodies, 1907 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 ambiguousColumn 42712: 2
@@ -15,6 +15,9 @@ functionReturnTypeMismatch 42P13: 5
 generatedColumnAssignment 428C9: 18
 insertColumnMismatch 42601: 6
 invalidCast 42846: 2
+invalidMerge 42601: 2
+invalidMerge 42712: 1
+invalidMerge 42P01: 2
 missingFromClauseEntry 42P01: 20
 operatorTypeMismatch 42725: 1
 operatorTypeMismatch 42883: 12
@@ -1025,12 +1028,16 @@ memoize.sql:239:1 42P01 unknownRelation
 memoize.sql:239:1 42P01 unknownRelation
 merge.sql:99:1 42712 ambiguousColumn
 merge.sql:99:1 42712 ambiguousColumn
+merge.sql:99:1 42712 invalidMerge
 merge.sql:166:1 42P01 missingFromClauseEntry
 merge.sql:432:1 42P01 missingFromClauseEntry
 merge.sql:440:1 42P01 missingFromClauseEntry
+merge.sql:462:1 42601 invalidMerge
 merge.sql:513:1 42P01 missingFromClauseEntry
 merge.sql:527:1 42P01 missingFromClauseEntry
 merge.sql:873:1 42P01 ambiguousColumn
+merge.sql:944:1 42P01 invalidMerge
+merge.sql:945:1 42P01 invalidMerge
 misc_functions.sql:77:1 42883 unknownFunction
 misc_functions.sql:78:1 42883 unknownFunction
 multirangetypes.sql:8:1 42704 unknownType
@@ -1931,6 +1938,7 @@ with.sql:534:1 42P01 unknownRelation
 with.sql:545:1 42P01 unknownRelation
 with.sql:555:1 42P01 unknownRelation
 with.sql:1342:2 42P01 missingFromClauseEntry
+with.sql:1510:1 42601 invalidMerge
 write_parallel.sql:17:1 42P01 unknownRelation
 write_parallel.sql:19:1 42P01 unknownRelation
 write_parallel.sql:23:1 42P01 unknownRelation

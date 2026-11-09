@@ -132,6 +132,8 @@ pub enum FindingKind {
     MissingFromClauseEntry {
         name: String,
     },
+    /// A MERGE, or `merge_action()`, that Postgres rejects while parsing it.
+    InvalidMerge(MergeError),
     /// The final statement of a SQL function doesn't return what the function is declared to
     /// return.
     FunctionReturnMismatch {
@@ -139,6 +141,25 @@ pub enum FindingKind {
         declared: String,
         mismatch: ReturnMismatch,
     },
+}
+
+/// What makes a MERGE invalid, from [`transformMergeStmt`] and [`transformMergeSupportFunc`].
+/// Postgres raises `42601 syntax_error` for all of them but `DuplicateName`, which raises
+/// `42712 duplicate_alias`.
+///
+/// [`transformMergeStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L107
+/// [`transformMergeSupportFunc`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1388
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MergeError {
+    /// `WITH RECURSIVE` before MERGE.
+    RecursiveWith,
+    /// A `WHEN` clause after a `WHEN` clause of the same kind without condition, which matches
+    /// every row first.
+    UnreachableWhen,
+    /// The target and the source have the same name.
+    DuplicateName { name: String },
+    /// `merge_action()` outside the RETURNING list of MERGE.
+    MergeActionOutsideReturning,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

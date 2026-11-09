@@ -41,6 +41,9 @@ pub(super) struct Resolver<'a> {
     /// subquery's node, so that typing a sublink doesn't resolve its subquery again. Resolving
     /// it again at every level of nested subqueries took time exponential in their depth.
     subquery_outputs: FxHashMap<usize, crate::typing::QueryColumns>,
+    /// Set while resolving the RETURNING list of MERGE, including its subqueries, where
+    /// `merge_action()` is allowed.
+    pub in_merge_returning: bool,
 }
 
 impl<'a> Resolver<'a> {
@@ -63,6 +66,7 @@ impl<'a> Resolver<'a> {
             references: None,
             recorded: FxHashSet::default(),
             subquery_outputs: FxHashMap::default(),
+            in_merge_returning: false,
         }
     }
 
