@@ -6,10 +6,12 @@ use std::sync::Arc;
 use rustc_hash::FxHashMap;
 
 use super::{Catalog, Entry, Key};
-use crate::lookup::{FunctionInfo, FunctionKind, Origin, RelationInfo, RelationKind, TypeInfo};
+use crate::lookup::{
+    FunctionInfo, FunctionKind, IndexInfo, Origin, RelationInfo, RelationKind, TypeInfo,
+};
 use crate::snapshot::{
-    Column, ColumnClassKind, Function, PostgresType, PostgresTypeAttribute, ProcKind, Schema,
-    Sequence, Snapshot, Table, TableKind, TypeAttributes,
+    Column, ColumnClassKind, Function, Index, PostgresType, PostgresTypeAttribute, ProcKind,
+    Schema, Sequence, Snapshot, Table, TableKind, TypeAttributes,
 };
 use crate::typing::{Type, TypeId};
 use crate::{FunctionArgumentMode, TypeKind};
@@ -26,6 +28,7 @@ impl Catalog {
             && self.relations.is_empty()
             && self.types.is_empty()
             && self.functions.is_empty()
+            && self.indexes.is_empty()
         {
             return Some(Arc::clone(base.snapshot()));
         }
@@ -89,6 +92,19 @@ impl Catalog {
                     .functions
                     .retain(|function| (&function.schema, &function.name) != (&key.0, &key.1)),
                 Entry::Unknown => {}
+            }
+        }
+
+        for ((schema, name), entry) in &self.indexes {
+            match entry {
+                Entry::Defined(index) if index.origin == Origin::File => {
+                    builder.define_index(index)
+                }
+                Entry::Dropped => builder
+                    .snapshot
+                    .indexes
+                    .retain(|index| (&index.schema, &index.name) != (schema, name)),
+                _ => {}
             }
         }
 
@@ -181,6 +197,19 @@ impl Builder {
         snapshot
             .triggers
             .retain(|trigger| !is_relation(&trigger.table_schema, &trigger.table_name));
+    }
+
+    fn define_index(&mut self, index: &IndexInfo) {
+        self.snapshot
+            .indexes
+            .retain(|existing| (&existing.schema, &existing.name) != (&index.schema, &index.name));
+        let id = self.next_id();
+        self.snapshot.indexes.push(Index {
+            id,
+            schema: index.schema.clone(),
+            name: index.name.clone(),
+            table_name: index.table.clone(),
+        });
     }
 
     fn define_relation(&mut self, relation: &RelationInfo) {
@@ -419,6 +448,7 @@ impl Builder {
                 .and_then(|s| s.return_type.as_ref())
                 .and_then(|id| self.id_for(id)),
             args: crate::snapshot::FunctionArgs { args },
+            behavior: info.volatility.unwrap_or_default(),
             ..Default::default()
         });
     }

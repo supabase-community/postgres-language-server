@@ -1,15 +1,17 @@
 //! Select lists, RETURNING lists, and the target columns of INSERT and UPDATE.
 
-use pgls_query::{Node, NodeEnum};
-
-use super::{
-    Resolver, resolve_list,
-    string::{string_value, string_values},
+use pgls_query::{
+    Node, NodeEnum,
+    protobuf::{ReturningClause, ReturningOptionKind},
 };
+use pgls_query_ext::utils::{string_value, string_values};
+
+use super::{Resolver, resolve_list};
 use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
-    scope::{Columns, Item, Level, find_item},
+    expr::infer_expr,
+    scope::{Columns, Item, Level, StarEntry, find_item},
 };
 
 /// The output columns of a select list or RETURNING list, whose `*` expands to the FROM items
@@ -100,37 +102,61 @@ pub(super) fn record_star_references(r: &mut Resolver, targets: &[Node]) {
     }
 }
 
-/// The columns of `*`, like [`ExpandAllTables`]. A column is qualified with the name of its FROM
-/// item when there are several. `None` if a column is not known, or if a column name doesn't
-/// reference the column with certainty.
-///
-/// Columns merged by `JOIN ... USING` and `NATURAL` joins are not supported: they come first in
-/// the output of their join, which the level doesn't record, and the bare name of a merged
-/// column can be ambiguous.
+/// The columns of `*`, like [`ExpandAllTables`], in the order of [`Level::star`]. A column is
+/// qualified with the name of its FROM item when there are several, and a column merged by
+/// `JOIN ... USING` or a `NATURAL` join is referenced by its bare name. `None` if a column is not
+/// known, or if a name doesn't reference the column with certainty.
 ///
 /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
 fn star_columns(level: &Level) -> Option<Vec<StarColumn>> {
-    if level.items.is_empty()
-        || level.has_natural_join
-        || level.has_opaque_items
-        || !level.merged_columns.is_empty()
-    {
+    if level.items.is_empty() || level.has_opaque_items {
         return None;
     }
+    let entries = level.star()?;
     if let [item] = level.items.as_slice() {
         return item_columns(item, &[]);
     }
+    let names = entries
+        .iter()
+        .map(|entry| level.star_column_name(entry))
+        .collect::<Option<Vec<_>>>()?;
     let mut columns = Vec::new();
-    for (i, item) in level.items.iter().enumerate() {
-        let name = item.name.as_ref()?;
-        // The qualifier must reference only this item.
-        if level.items[..i]
-            .iter()
-            .any(|other| other.name.as_ref() == Some(name))
-        {
-            return None;
-        }
-        columns.extend(item_columns(item, std::slice::from_ref(name))?);
+    for (entry, name) in entries.iter().zip(&names) {
+        let qualifier = match entry {
+            // The bare name must reference only the merged column.
+            StarEntry::Merged(_) => {
+                if names.iter().filter(|other| *other == name).count() != 1 {
+                    return None;
+                }
+                Vec::new()
+            }
+            StarEntry::Item { item, .. } => {
+                let item = level.items.get(*item)?;
+                let item_name = item.name.as_ref()?;
+                // The qualifier must reference only this item, and the name only this column.
+                if level
+                    .items
+                    .iter()
+                    .filter(|other| other.name.as_ref() == Some(item_name))
+                    .count()
+                    != 1
+                    || item
+                        .columns
+                        .as_ref()?
+                        .iter()
+                        .filter(|column| column == name)
+                        .count()
+                        != 1
+                {
+                    return None;
+                }
+                vec![item_name.clone()]
+            }
+        };
+        columns.push(StarColumn {
+            qualifier,
+            name: (*name).to_owned(),
+        });
     }
     Some(columns)
 }
@@ -157,9 +183,16 @@ fn item_columns(item: &Item, qualifier: &[String]) -> Option<Vec<StarColumn>> {
     )
 }
 
-/// Resolves a RETURNING list against `level` and returns its columns.
-pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], mut level: Level) -> Columns {
-    add_old_and_new(r, &mut level);
+/// Resolves a RETURNING clause against `level` and returns its columns.
+pub(super) fn resolve_returning_clause(
+    r: &mut Resolver,
+    clause: Option<&ReturningClause>,
+    mut level: Level,
+) -> Columns {
+    let (options, list) = clause.map_or((&[][..], &[][..]), |clause| {
+        (clause.options.as_slice(), clause.exprs.as_slice())
+    });
+    add_old_and_new(r, options, &mut level);
     r.enter_level(level);
     resolve_list(r, list);
     record_star_references(r, list);
@@ -195,7 +228,7 @@ pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], mut level:
                 } else {
                     target.name.clone()
                 },
-                ty: super::super::expr::infer_expr(r, value),
+                ty: infer_expr(r, value),
             });
         }
         if typed.len() == names.len() {
@@ -232,14 +265,15 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
 }
 
 /// Since Postgres 18, `old` and `new` in a RETURNING list are the target row before and after
-/// the change. They are only reachable by name, and only added if no visible item, in this or an
-/// outer query, has that name. The first item of `level` is the target relation. Port of the
-/// defaults in [`transformReturningClause`] and of [`addNSItemForReturning`]; `RETURNING WITH
-/// (OLD AS ...)` needs a newer parser.
+/// the change. They are only reachable by name. `RETURNING WITH (OLD AS o, NEW AS n)` renames
+/// them; a name that is not given explicitly is only added if no visible item, in this or an
+/// outer query, has that name. The first item of `level` is the target relation. Port of
+/// [`transformReturningClause`] and of [`addNSItemForReturning`]; an alias given twice, or one
+/// that clashes with another item, is rejected by Postgres and not reported here.
 ///
 /// [`transformReturningClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2661
 /// [`addNSItemForReturning`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2621
-fn add_old_and_new(r: &Resolver, level: &mut Level) {
+fn add_old_and_new(r: &Resolver, options: &[Node], level: &mut Level) {
     if r.catalog
         .server_version_num()
         .is_some_and(|version| version < 180000)
@@ -249,15 +283,33 @@ fn add_old_and_new(r: &Resolver, level: &mut Level) {
     let Some(target) = level.items.first() else {
         return;
     };
+    let explicit = |kind: ReturningOptionKind| {
+        options
+            .iter()
+            .find_map(|option| match option.node.as_ref() {
+                Some(NodeEnum::ReturningOption(option)) if option.option() == kind => {
+                    Some(option.value.as_str())
+                }
+                _ => None,
+            })
+    };
     let mut aliases = Vec::new();
-    for name in ["old", "new"] {
-        // `refnameNamespaceItem` searches the outer queries too.
-        if level.item(name).is_none() && find_item(&r.levels, name).is_none() {
-            let mut item = target.clone();
-            item.name = Some(name.to_owned());
-            item.schema = None;
-            aliases.push(item);
-        }
+    for (kind, default) in [
+        (ReturningOptionKind::ReturningOptionOld, "old"),
+        (ReturningOptionKind::ReturningOptionNew, "new"),
+    ] {
+        let name = match explicit(kind) {
+            Some(name) => name,
+            // `refnameNamespaceItem` searches the outer queries too.
+            None if level.item(default).is_none() && find_item(&r.levels, default).is_none() => {
+                default
+            }
+            None => continue,
+        };
+        let mut item = target.clone();
+        item.name = Some(name.to_owned());
+        item.schema = None;
+        aliases.push(item);
     }
     level.qualified_only.extend(aliases);
 }

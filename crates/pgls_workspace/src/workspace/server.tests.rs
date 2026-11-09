@@ -519,6 +519,55 @@ async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
     );
 }
 
+/// A comment between two tokens the parser combines through lookahead (`U&"..." UESCAPE`,
+/// `NOT IN`, `NOT BETWEEN`, `NULLS FIRST`, `WITH ORDINALITY`) used to break parsing in the
+/// libpg_query 17 branch.
+#[tokio::test]
+async fn comments_between_lookahead_tokens_are_no_syntax_error() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("lookahead-comments.sql");
+    let content = r#"select U&"d!0061t!+000061" /* c */ UESCAPE '!' from t;
+select 1 where 1 not /* c */ in (2);
+select 1 where 1 not /* c */ between 0 and 2;
+select * from t order by a nulls /* c */ first;
+select * from unnest(array[1]) with -- c
+ordinality;
+"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let syntax_errors = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "syntax")
+        })
+        .map(|diagnostic| diagnostic.location().span)
+        .collect::<Vec<_>>();
+    assert_eq!(syntax_errors, vec![]);
+}
+
 #[tokio::test]
 async fn format_preserves_named_parameters() {
     let mut conf = PartialConfiguration::init();
@@ -773,7 +822,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
             result _fetch_cycle_continuation_data := null;
         begin
             result.next_id := 0;
-            result.next_state := '{}'::jsonb
+            result.next_state := '{}'::jsonb;
 
             return result;
         end;
@@ -1655,6 +1704,31 @@ async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     assert_eq!(format_content(&formatted), formatted);
 }
 
+#[tokio::test]
+async fn test_format_sql_function_bodies_with_quotes_and_atomic_bodies() {
+    let content = "create function f() returns text language sql as 'SELECT   ''a''';";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns text\nlanguage sql\nas $$\nselect 'a';\n$$;"
+    );
+    let content = "create function f(p int) returns int language sql begin atomic select p; select p + 1; end;";
+    let formatted = format_content(content);
+    assert_eq!(format_content(&formatted), formatted);
+}
+
+#[tokio::test]
+async fn test_format_continued_string_body_is_idempotent() {
+    // The two strings are one, `'select 1'`.
+    let content = "create function f() returns int language sql as 'select   1'\n'';";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $$\nselect 1;\n$$;"
+    );
+    assert_eq!(format_content(&formatted), formatted);
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -1903,6 +1977,60 @@ select * from auth.users;
         completions.items[0].completion_text.as_ref().unwrap().range,
         TextRange::new(position, position),
         "Expected no syntax diagnostic"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn completions_after_the_end_of_an_unterminated_statement(test_db: PgPool) {
+    test_db
+        .execute("create table completed_table (id int);")
+        .await
+        .expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+
+    // The statement ends before the space, and the cursor is after it.
+    let content = "select * from ";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let completions = workspace
+        .get_completions(crate::workspace::GetCompletionsParams {
+            project_key,
+            path: path.clone(),
+            position: TextSize::of(content),
+        })
+        .expect("Unable to request completions");
+
+    assert!(
+        completions
+            .items
+            .iter()
+            .any(|item| item.label == "completed_table"),
+        "{:?}",
+        completions.items
     );
 }
 
@@ -2692,6 +2820,25 @@ fn test_concurrently_fix_is_unsafe_without_section_markers() {
     );
 }
 
+/// Statements with psql variables get fixes: the fixed statement is checked with the variables
+/// read as parameters, like the statement itself, and they stay as written.
+#[test]
+fn test_fix_file_fixes_statements_with_psql_variables() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_tenant_idx on :\"schema\".users (email) where tenant = :'tenant' and plan = $plan;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        "create index concurrently users_tenant_idx on :\"schema\".users (email) where tenant = :'tenant' and plan = $plan;\n"
+    );
+}
+
 #[test]
 fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
     let mut conf = PartialConfiguration::init();
@@ -2905,14 +3052,19 @@ async fn test_semantic_tokens(test_db: PgPool) {
             .collect::<Vec<_>>()
     };
 
-    // The table and the enum created in the file, and the body of the SQL function.
+    // The table and the enum created in the file, the types of the DDL, and the body of the SQL
+    // function.
     assert_eq!(
         tokens(None),
         vec![
+            ("int", SemanticTokenKind::Type),
+            ("file_mood", SemanticTokenKind::Type),
             ("id", SemanticTokenKind::Property),
             ("file_items", SemanticTokenKind::Class),
             ("mood", SemanticTokenKind::Property),
             ("'up'", SemanticTokenKind::EnumMember),
+            ("int", SemanticTokenKind::Type),
+            ("text", SemanticTokenKind::Type),
             ("label", SemanticTokenKind::Property),
             ("public", SemanticTokenKind::Namespace),
             ("db_items", SemanticTokenKind::Class),
@@ -3354,7 +3506,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     };
 
     // The columns of a table of the database and of one created in the file, qualified since
-    // there are two FROM items.
+    // there are two FROM items. After a dot, the keyword `select` needs no quotes.
     let actions = expand_actions("* from star_items");
     assert_eq!(actions.len(), 1, "{actions:?}");
     let (title, edit) = &actions[0];
@@ -3367,7 +3519,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         edit.edits,
         vec![TextEdit {
             range: range_of("*"),
-            new_text: r#"i.id, i."Label", t.id, t.item_id, t."select""#.into(),
+            new_text: r#"i.id, i."Label", t.id, t.item_id, t.select"#.into(),
         }]
     );
 
@@ -3379,7 +3531,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         actions[0].1.edits,
         vec![TextEdit {
             range: range_of("t.*"),
-            new_text: r#"t.id, t.item_id, t."select""#.into(),
+            new_text: r#"t.id, t.item_id, t.select"#.into(),
         }]
     );
 
@@ -4504,4 +4656,217 @@ async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
         assert!(pools.pool.is_closed());
         assert!(pools.statement_pool.is_closed());
     }
+}
+
+#[test]
+fn database_spans_must_fit_the_statement() {
+    use super::database_span;
+
+    let at = |offset: u32| TextSize::from(offset);
+    let statement = "select 'é' from t";
+    let range = TextRange::new(at(100), at(100) + TextSize::of(statement));
+    // `'é'` is at 7..11.
+    assert_eq!(
+        database_span(Some(TextRange::new(at(7), at(11))), statement, range),
+        TextRange::new(at(107), at(111))
+    );
+    assert_eq!(database_span(None, statement, range), range);
+    // Inside `é`, or after the end of the statement.
+    assert_eq!(
+        database_span(Some(TextRange::new(at(9), at(11))), statement, range),
+        range
+    );
+    assert_eq!(
+        database_span(Some(TextRange::new(at(15), at(40))), statement, range),
+        range
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints_parameter_names_setting(test_db: PgPool) {
+    let path = PgLSPath::new("test.sql");
+    let content = "create function point(x int, y int) returns int language sql as 'select x + y';\n\
+        select point(1, 1 + 1), point(length('a'), null);\n";
+    let hints = |parameter_names| {
+        let mut conf = PartialConfiguration::init();
+        conf.merge_with(PartialConfiguration {
+            db: Some(PartialDatabaseConfiguration {
+                database: Some(
+                    test_db
+                        .connect_options()
+                        .get_database()
+                        .unwrap()
+                        .to_string(),
+                ),
+                ..Default::default()
+            }),
+            inlay_hints: Some(
+                pgls_configuration::inlay_hints::PartialInlayHintsConfiguration {
+                    parameter_names: Some(parameter_names),
+                    ..Default::default()
+                },
+            ),
+            ..Default::default()
+        });
+        let (workspace, project_key) =
+            get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        workspace
+            .pull_inlay_hints(PullInlayHintsParams {
+                project_key,
+                path: path.clone(),
+                range: TextRange::up_to(TextSize::of(content)),
+            })
+            .expect("Unable to pull inlay hints")
+            .hints
+            .into_iter()
+            .map(|hint| {
+                (
+                    &content[usize::from(hint.offset)..usize::from(hint.offset) + 1],
+                    hint.label,
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    use pgls_configuration::inlay_hints::ParameterNameHints;
+    assert_eq!(hints(ParameterNameHints::All).len(), 4);
+    assert_eq!(
+        hints(ParameterNameHints::Literals),
+        [("1", "x:".to_string()), ("n", "y:".to_string())]
+    );
+    assert!(hints(ParameterNameHints::None).is_empty());
+}
+
+/// Statements in `BEGIN ATOMIC` and `RETURN` bodies, and in `'...'` and `E'...'` bodies with
+/// escapes, get tokens, hover, and diagnostics at the right place in the file.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_sql_function_bodies(test_db: PgPool) {
+    test_db
+        .execute("create table body_users (id int, name text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create function atomic_fn(p int) returns int language sql\n\
+        begin atomic select p + id from body_users; end;\n\
+        create function return_fn(p int) returns int return p + 1;\n\
+        create function quoted_fn(p text) returns text language sql\n\
+        as 'select name || ''x'' || p from body_users where name = ''y'' and nope = 1';\n\
+        create function escaped_fn() returns text language sql\n\
+        as E'select \\'\\u00e9\\' || name from body_users where gone = 1';\n\
+        create function unicode_fn() returns text language sql\n\
+        as U&'select ''\\00e9'' || name from body_users where missing = 1';\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let tokens = workspace
+        .pull_semantic_tokens(PullSemanticTokensParams {
+            project_key,
+            path: path.clone(),
+            range: None,
+        })
+        .expect("Unable to pull semantic tokens")
+        .tokens
+        .into_iter()
+        .map(|token| (&content[token.range], token.kind))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        tokens,
+        vec![
+            ("int", SemanticTokenKind::Type),
+            ("int", SemanticTokenKind::Type),
+            ("p", SemanticTokenKind::Parameter),
+            ("id", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+            ("int", SemanticTokenKind::Type),
+            ("int", SemanticTokenKind::Type),
+            ("p", SemanticTokenKind::Parameter),
+            ("text", SemanticTokenKind::Type),
+            ("text", SemanticTokenKind::Type),
+            ("name", SemanticTokenKind::Property),
+            ("p", SemanticTokenKind::Parameter),
+            ("body_users", SemanticTokenKind::Class),
+            ("name", SemanticTokenKind::Property),
+            ("text", SemanticTokenKind::Type),
+            ("name", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+            ("text", SemanticTokenKind::Type),
+            ("name", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+        ]
+    );
+
+    let hover = |needle: &str| {
+        let offset = content.find(needle).expect("needle in content") + 1;
+        workspace
+            .on_hover(OnHoverParams {
+                project_key,
+                path: path.clone(),
+                position: u32::try_from(offset).unwrap().into(),
+            })
+            .expect("Unable to hover")
+            .markdown_blocks
+    };
+    let blocks = hover("id from body_users; end");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.body_users.id"), "{blocks:?}");
+    let blocks = hover("name = ''y''");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.body_users.name"), "{blocks:?}");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+    let unknown_columns = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "lint/unknownColumn")
+        })
+        .map(|diagnostic| &content[diagnostic.location().span.expect("a span")])
+        .collect::<Vec<_>>();
+    assert_eq!(
+        unknown_columns,
+        ["nope", "gone", "missing"],
+        "{diagnostics:#?}"
+    );
 }

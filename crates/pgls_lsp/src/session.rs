@@ -1,4 +1,4 @@
-use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
+use crate::adapters::{PositionEncoding, negotiated_encoding};
 use crate::diagnostics::LspError;
 use crate::documents::Document;
 use crate::utils;
@@ -11,6 +11,7 @@ use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, PgLSPath};
+use pgls_line_index::WideEncoding;
 use pgls_workspace::Workspace;
 use pgls_workspace::configuration::{
     ConfigurationLayers, ConfigurationNotice, ConfigureProjectParams, ConfiguredProject,
@@ -54,16 +55,6 @@ const DIAGNOSTIC_DEBOUNCE: Duration = Duration::from_millis(300);
 /// How long the server waits after a configuration file changed before it reloads the
 /// configuration, so that a burst of changes causes one reload.
 const CONFIGURATION_RELOAD_DEBOUNCE: Duration = Duration::from_millis(200);
-
-pub(crate) struct ClientInformation {
-    #[allow(dead_code)]
-    /// The name of the client
-    pub(crate) name: String,
-
-    #[allow(dead_code)]
-    /// The version of the client
-    pub(crate) version: Option<String>,
-}
 
 /// Key, uniquely identifying a LSP session.
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
@@ -172,11 +163,7 @@ pub(crate) struct Session {
 struct InitializeParams {
     /// The capabilities provided by the client as part of [`ls_types::InitializeParams`]
     client_capabilities: ls_types::ClientCapabilities,
-    #[allow(dead_code)]
-    client_information: Option<ClientInformation>,
     root_uri: Option<Uri>,
-    #[allow(unused)]
-    workspace_folders: Option<Vec<WorkspaceFolder>>,
 }
 
 #[repr(u8)]
@@ -288,7 +275,6 @@ impl Session {
     pub(crate) fn initialize(
         &self,
         client_capabilities: ls_types::ClientCapabilities,
-        client_information: Option<ClientInformation>,
         root_uri: Option<Uri>,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
     ) {
@@ -309,9 +295,7 @@ impl Session {
         });
         let result = self.initialize_params.set(InitializeParams {
             client_capabilities,
-            client_information,
             root_uri,
-            workspace_folders,
         });
 
         if let Err(err) = result {

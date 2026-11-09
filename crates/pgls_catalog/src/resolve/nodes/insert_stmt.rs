@@ -7,7 +7,7 @@ use super::{
     Resolver,
     on_conflict_clause::resolve_on_conflict_clause,
     range_var::resolve_target_relation,
-    res_target::{check_target_column, resolve_returning_list},
+    res_target::{check_target_column, resolve_returning_clause},
     resolve_node,
     with_clause::resolve_with_clause,
 };
@@ -15,6 +15,7 @@ use crate::resolve::{
     FindingKind,
     expr::{check_assignment, infer_expr},
     scope::{Columns, Level},
+    utils::node_location,
 };
 use crate::typing::{Type, TypedColumn};
 
@@ -138,7 +139,7 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         resolve_on_conflict_clause(r, conflict, &target);
     }
 
-    resolve_returning_list(r, &n.returning_list, Level::with_item(target))
+    resolve_returning_clause(r, n.returning_clause.as_ref(), Level::with_item(target))
 }
 
 fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32> {
@@ -191,30 +192,6 @@ fn select_value(source: &pgls_query::Node, index: usize) -> Option<&NodeEnum> {
         }
     }
     values.next()?
-}
-
-pub(super) fn node_location(node: &pgls_query::Node) -> Option<i32> {
-    Some(match node.node.as_ref()? {
-        NodeEnum::AConst(n) => n.location,
-        NodeEnum::ColumnRef(n) => n.location,
-        NodeEnum::AExpr(n) => n.location,
-        NodeEnum::FuncCall(n) => n.location,
-        NodeEnum::TypeCast(n) => n.location,
-        NodeEnum::ParamRef(n) => n.location,
-        NodeEnum::CaseExpr(n) => n.location,
-        NodeEnum::CoalesceExpr(n) => n.location,
-        NodeEnum::MinMaxExpr(n) => n.location,
-        NodeEnum::AArrayExpr(n) => n.location,
-        NodeEnum::BoolExpr(n) => n.location,
-        NodeEnum::NullTest(n) => n.location,
-        NodeEnum::BooleanTest(n) => n.location,
-        NodeEnum::SubLink(n) => n.location,
-        NodeEnum::RowExpr(n) => n.location,
-        NodeEnum::SqlvalueFunction(n) => n.location,
-        NodeEnum::CollateClause(n) => n.location,
-        NodeEnum::AIndirection(_) => return None,
-        _ => return None,
-    })
 }
 
 /// The rows of a plain `VALUES` list.
