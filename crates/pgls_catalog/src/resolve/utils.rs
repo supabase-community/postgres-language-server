@@ -2,12 +2,21 @@
 
 use pgls_query::{Node, NodeEnum};
 
-use super::{FunctionParam, expr::infer_expr, resolver::Resolver};
+use super::{FunctionParam, expr::infer_expr, nodes::resolve_node, resolver::Resolver};
 use crate::{
     OperatorInfo, OperatorKind, TypeKind,
     lookup::Lookup,
     typing::{Selection, Type, TypeId, TypedColumn, select_common_type, select_operator},
 };
+
+/// Resolves the names of an expression, like a condition, and types it, which reports its
+/// operators and functions.
+pub(super) fn resolve_expr(r: &mut Resolver<'_>, node: &Node) {
+    resolve_node(r, node);
+    if let Some(expr) = node.node.as_ref() {
+        infer_expr(r, expr);
+    }
+}
 
 /// The builtin type `pg_catalog.<name>`.
 pub(super) fn named(r: &Resolver<'_>, name: &str) -> Option<Type> {

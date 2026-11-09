@@ -6,16 +6,16 @@ use pgls_query::{
 use super::{
     Resolver,
     from_clause::resolve_from_clause,
-    insert_stmt::{check_insert_width, insert_target_types},
+    insert_stmt::{check_insert_width, insert_target_columns, insert_target_types},
     range_var::resolve_target_relation,
-    res_target::{check_target_column, resolve_returning_clause, resolve_set_clause},
+    res_target::{resolve_returning_clause, resolve_set_clause},
     resolve_node,
     with_clause::resolve_with_clause,
 };
 use crate::resolve::{
     expr::{check_assignment, infer_expr},
     scope::{Columns, Item, Level},
-    utils::node_location,
+    utils::{node_location, resolve_expr},
 };
 
 /// Resolves a MERGE and returns the columns of its RETURNING list. Port of
@@ -159,17 +159,7 @@ fn resolve_when_clause(
 /// [`checkInsertTargets`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1018
 /// [`transformInsertRow`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1060
 fn resolve_insert_action(r: &mut Resolver, n: &MergeWhenClause, target: &Item) {
-    let mut target_columns = Vec::new();
-    let mut partial_targets = Vec::new();
-    for column in &n.target_list {
-        let Some(NodeEnum::ResTarget(column)) = &column.node else {
-            r.depends_on_file();
-            continue;
-        };
-        check_target_column(r, target, &column.name, column.location);
-        target_columns.push(column.name.clone());
-        partial_targets.push(!column.indirection.is_empty());
-    }
+    let (target_columns, partial_targets) = insert_target_columns(r, target, &n.target_list);
 
     // `DEFAULT VALUES` has no values.
     if n.values.is_empty() {
@@ -197,12 +187,4 @@ fn resolve_insert_action(r: &mut Resolver, n: &MergeWhenClause, target: &Item) {
         }
     }
     check_insert_width(r, target, &target_columns, n.values.len());
-}
-
-/// Resolves the names of a condition and types it, which reports its operators and functions.
-fn resolve_expr(r: &mut Resolver, node: &Node) {
-    resolve_node(r, node);
-    if let Some(expr) = node.node.as_ref() {
-        infer_expr(r, expr);
-    }
 }

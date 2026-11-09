@@ -1,5 +1,5 @@
 use pgls_query::{
-    NodeEnum,
+    Node, NodeEnum,
     protobuf::{InsertStmt, SelectStmt, SetOperation},
 };
 
@@ -43,18 +43,7 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     };
     let target = resolve_target_relation(r, relation);
 
-    let mut target_columns = Vec::new();
-    // Targets with subscripts or fields, like `a[1]` or `c.f`, assign to part of a column.
-    let mut partial_targets = Vec::new();
-    for column in &n.cols {
-        let Some(NodeEnum::ResTarget(column)) = &column.node else {
-            r.depends_on_file();
-            continue;
-        };
-        check_target_column(r, &target, &column.name, column.location);
-        target_columns.push(column.name.clone());
-        partial_targets.push(!column.indirection.is_empty());
-    }
+    let (target_columns, partial_targets) = insert_target_columns(r, &target, &n.cols);
 
     if let Some(source) = n.select_stmt.as_deref() {
         resolve_node(r, source);
@@ -118,6 +107,30 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         &target,
         Level::with_item(target.clone()),
     )
+}
+
+/// The names in the column list of an INSERT, each checked against `target`
+/// ([`checkInsertTargets`]), and for each whether it assigns to part of a column, like `a[1]` or
+/// `c.f`.
+///
+/// [`checkInsertTargets`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1018
+pub(super) fn insert_target_columns(
+    r: &mut Resolver,
+    target: &Item,
+    columns: &[Node],
+) -> (Vec<String>, Vec<bool>) {
+    let mut names = Vec::new();
+    let mut partial = Vec::new();
+    for column in columns {
+        let Some(NodeEnum::ResTarget(column)) = &column.node else {
+            r.depends_on_file();
+            continue;
+        };
+        check_target_column(r, target, &column.name, column.location);
+        names.push(column.name.clone());
+        partial.push(!column.indirection.is_empty());
+    }
+    (names, partial)
 }
 
 /// The type of each target column of an INSERT, in the order of the values. `None` for columns

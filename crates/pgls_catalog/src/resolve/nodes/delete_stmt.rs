@@ -2,11 +2,11 @@ use pgls_query::protobuf::DeleteStmt;
 
 use super::{
     Resolver, from_clause::resolve_from_clause, range_var::resolve_target_relation,
-    res_target::resolve_returning_clause, resolve_node, with_clause::resolve_with_clause,
+    res_target::resolve_returning_clause, with_clause::resolve_with_clause,
 };
 use crate::resolve::{
-    expr::infer_expr,
     scope::{Columns, Level},
+    utils::resolve_expr,
 };
 
 /// Resolves a DELETE and returns the columns of its RETURNING list. Port of
@@ -35,10 +35,7 @@ fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Columns {
     r.enter_level(level);
 
     if let Some(where_clause) = n.where_clause.as_deref() {
-        resolve_node(r, where_clause);
-        if let Some(expr) = where_clause.node.as_ref() {
-            infer_expr(r, expr);
-        }
+        resolve_expr(r, where_clause);
     }
 
     let level = r.exit_level();
