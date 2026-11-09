@@ -1,8 +1,7 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_catalog::{
-    MAX_IDENTIFIER_BYTES, truncate_identifier, uescape_char, unicode_identifier_value,
-    untruncated_identifier_name,
+    MAX_IDENTIFIER_BYTES, truncate_identifier, unicode_identifier_name, untruncated_identifier_name,
 };
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -74,16 +73,16 @@ impl LinterRule for IdentifierTooLong {
             let (identifier, replaceable) = match token.token() {
                 Token::Ident => (untruncated_identifier_name(token_text), true),
                 Token::Uident => {
-                    let escape = match (tokens.get(i + 1), tokens.get(i + 2)) {
+                    let uescape = match (tokens.get(i + 1), tokens.get(i + 2)) {
                         (Some(uescape), Some(escape)) if uescape.token() == Token::Uescape => {
-                            match text(escape).and_then(|(_, escape)| uescape_char(escape)) {
-                                Some(escape) => escape,
+                            match text(escape) {
+                                Some((_, escape)) => Some(escape),
                                 None => continue,
                             }
                         }
-                        _ => '\\',
+                        _ => None,
                     };
-                    match unicode_identifier_value(token_text, escape) {
+                    match unicode_identifier_name(token_text, uescape) {
                         // Rewriting a `U&"..."` identifier would leave its UESCAPE clause behind.
                         Some(identifier) => (identifier, false),
                         None => continue,
@@ -144,8 +143,7 @@ fn truncate(sql: &str, truncated: &str, occurrences: &[Occurrence]) -> Option<Ru
             format!("\"{}\"", truncated.replace('"', "\"\""))
         } else {
             // Keep the case as written, downcasing it doesn't change the length.
-            let text = &sql[occurrence.range];
-            text[..text.floor_char_boundary(MAX_IDENTIFIER_BYTES)].to_owned()
+            truncate_identifier(&sql[occurrence.range]).to_owned()
         };
         fix = fix.replace(occurrence.range, replacement);
     }

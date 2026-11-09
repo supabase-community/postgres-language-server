@@ -28,8 +28,8 @@ pub mod typing;
 
 pub use catalog::{Catalog, CatalogBase};
 pub use identifier::{
-    MAX_IDENTIFIER_BYTES, identifier_name, truncate_identifier, uescape_char,
-    unicode_identifier_value, untruncated_identifier_name,
+    MAX_IDENTIFIER_BYTES, identifier_name, truncate_identifier, unicode_identifier_name,
+    untruncated_identifier_name,
 };
 pub use lookup::{
     Candidates, CastContext, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,

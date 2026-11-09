@@ -8,7 +8,7 @@ pub const MAX_IDENTIFIER_BYTES: usize = 63;
 /// The name an identifier as written in SQL stands for, like Postgres' scanner reads it:
 ///
 /// - a quoted identifier without its quotes and with `""` unescaped,
-/// - a `U&"..."` identifier with its Unicode escapes replaced, see [`unicode_identifier_value`].
+/// - a `U&"..."` identifier with its Unicode escapes replaced, see [`unicode_identifier_name`].
 ///   A `UESCAPE` clause after the identifier isn't part of `text`, so the escape character is
 ///   `\`.
 /// - an unquoted identifier downcased. Like [`downcase_identifier`] in a multibyte encoding such
@@ -55,11 +55,22 @@ pub fn truncate_identifier(name: &str) -> &str {
     &name[..name.floor_char_boundary(MAX_IDENTIFIER_BYTES)]
 }
 
+/// The name a `U&"..."` identifier stands for, given the string literal of its `UESCAPE` clause
+/// if it has one, or `None` if Postgres rejects the escape character or the escapes. The name is
+/// not truncated.
+pub fn unicode_identifier_name(text: &str, uescape: Option<&str>) -> Option<String> {
+    let escape = match uescape {
+        Some(literal) => uescape_char(literal)?,
+        None => '\\',
+    };
+    unicode_identifier_value(text, escape)
+}
+
 /// The name a `U&"..."` identifier stands for, with `escape` as its escape character, or `None`
 /// if Postgres rejects its escapes. The name is not truncated. Port of [`str_udeescape`].
 ///
 /// [`str_udeescape`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parser.c#L372
-pub fn unicode_identifier_value(text: &str, escape: char) -> Option<String> {
+fn unicode_identifier_value(text: &str, escape: char) -> Option<String> {
     let quoted = text.get(2..)?.strip_prefix('"')?.strip_suffix('"')?;
     let value = quoted.replace("\"\"", "\"");
     let mut chars = value.chars().peekable();
@@ -108,7 +119,7 @@ pub fn unicode_identifier_value(text: &str, escape: char) -> Option<String> {
 /// [`check_uescapechar`].
 ///
 /// [`check_uescapechar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parser.c#L352
-pub fn uescape_char(literal: &str) -> Option<char> {
+fn uescape_char(literal: &str) -> Option<char> {
     let value = literal
         .strip_prefix('\'')?
         .strip_suffix('\'')?
@@ -170,6 +181,15 @@ mod tests {
         assert_eq!(uescape_char("'!'"), Some('!'));
         assert_eq!(uescape_char("'a'"), None);
         assert_eq!(uescape_char("'!!'"), None);
+        assert_eq!(
+            unicode_identifier_name(r#"u&"a!!b!0063""#, Some("'!'")).as_deref(),
+            Some("a!bc")
+        );
+        assert_eq!(
+            unicode_identifier_name(r#"U&"d\0061ta""#, None).as_deref(),
+            Some("data")
+        );
+        assert_eq!(unicode_identifier_name(r#"U&"a""#, Some("'a'")), None);
     }
 
     #[test]
