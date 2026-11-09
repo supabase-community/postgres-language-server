@@ -1771,11 +1771,13 @@ impl Workspace for WorkspaceServer {
             Some(ParameterNameHints::None) | None => return Ok(PullInlayHintsResult::default()),
         };
 
+        // During the reconnect backoff this returns the connection error too, so that the client
+        // is asked to request them again once the database is reachable.
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                    .try_with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -1845,11 +1847,13 @@ impl Workspace for WorkspaceServer {
             return Ok(PullSemanticTokensResult::default());
         }
 
+        // During the reconnect backoff this returns the connection error too, so that the client
+        // is asked to request them again once the database is reachable.
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                    .try_with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -1946,6 +1950,8 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             // The columns of a `*` can come from objects that the file changed, and so can the
             // relations behind CTEs and aliases.
             Reference::Star { .. } | Reference::Cte { .. } | Reference::Alias { .. } => false,
+            // The catalog doesn't tell where schemas and roles come from.
+            Reference::Schema { .. } | Reference::Role { .. } => false,
         })
 }
 
