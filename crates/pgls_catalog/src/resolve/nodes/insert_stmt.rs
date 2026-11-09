@@ -13,6 +13,7 @@ use super::{
 };
 use crate::resolve::{
     FindingKind,
+    column_name::leftmost_select,
     expr::{check_assignment, infer_expr},
     scope::{Columns, Level},
     utils::node_location,
@@ -213,10 +214,9 @@ fn values_rows(source: &pgls_query::Node) -> Option<Vec<&[pgls_query::Node]>> {
 }
 
 /// The number of columns a query produces, if it is certain.
+/// A set operation has the columns of its left-most select.
 fn select_width(select: &SelectStmt) -> Option<usize> {
-    if select.op() != SetOperation::SetopNone {
-        return select_width(select.larg.as_deref()?);
-    }
+    let select = leftmost_select(select)?;
     if let Some(row) = select.values_lists.first() {
         return match &row.node {
             Some(NodeEnum::List(row)) => Some(row.items.len()),
@@ -244,4 +244,61 @@ fn expands_to_columns(value: &NodeEnum) -> bool {
         _ => return false,
     };
     last.is_some_and(|last| matches!(last.node, Some(NodeEnum::AStar(_))))
+}
+
+#[cfg(test)]
+mod tests {
+    use pgls_query::protobuf::{AConst, Node, ResTarget};
+
+    use super::*;
+
+    /// A chain of `select 1, 2 union select 1, 2 union ...` with this many arms. Recursing once
+    /// per arm overflowed the stack below.
+    const ARMS: usize = 10_000;
+    const SMALL_STACK_BYTES: usize = 256 * 1024;
+
+    fn two_columns() -> SelectStmt {
+        let target = || Node {
+            node: Some(NodeEnum::ResTarget(Box::new(ResTarget {
+                val: Some(Box::new(Node {
+                    node: Some(NodeEnum::AConst(AConst::default())),
+                })),
+                ..Default::default()
+            }))),
+        };
+        SelectStmt {
+            target_list: vec![target(), target()],
+            op: SetOperation::SetopNone.into(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn long_set_operation_chains_dont_overflow_the_stack() {
+        // Dropping the chain recurses, so it is built and dropped on a thread with a large stack.
+        std::thread::Builder::new()
+            .stack_size(256 * 1024 * 1024)
+            .spawn(|| {
+                let mut select = two_columns();
+                for _ in 0..ARMS {
+                    select = SelectStmt {
+                        op: SetOperation::SetopUnion.into(),
+                        larg: Some(Box::new(select)),
+                        rarg: Some(Box::new(two_columns())),
+                        ..Default::default()
+                    };
+                }
+                std::thread::scope(|scope| {
+                    std::thread::Builder::new()
+                        .stack_size(SMALL_STACK_BYTES)
+                        .spawn_scoped(scope, || assert_eq!(select_width(&select), Some(2)))
+                        .unwrap()
+                        .join()
+                        .unwrap();
+                });
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    }
 }

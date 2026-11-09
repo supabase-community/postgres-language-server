@@ -1,4 +1,4 @@
-use crate::utils::{ConstraintSite, added_constraints};
+use crate::utils::{ConstraintSite, added_constraints, skips_validation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -67,7 +67,7 @@ fn check_foreign_key_constraint(
     }
 
     // NOT VALID constraints are safe
-    if constraint.skip_validation {
+    if skips_validation(constraint) {
         return None;
     }
 

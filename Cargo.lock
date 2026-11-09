@@ -2327,6 +2327,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "strum",
+ "tracing",
 ]
 
 [[package]]

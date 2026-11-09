@@ -56,6 +56,16 @@ pub(crate) fn column_constraints(col_def: &ColumnDef) -> impl Iterator<Item = &C
     constraints(&col_def.constraints)
 }
 
+/// Whether Postgres adds the constraint without checking the existing rows: `NOT VALID`, and
+/// `NOT ENFORCED`, which implies it. The parser sets `skip_validation` and makes
+/// `initially_valid` its negation ([`processCASbits`]); Postgres decides on the scan with
+/// `skip_validation`. Inline column constraints can't be `NOT VALID`.
+///
+/// [`processCASbits`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L19447
+pub(crate) fn skips_validation(constraint: &Constraint) -> bool {
+    constraint.skip_validation
+}
+
 /// Where an `ALTER TABLE` adds a constraint.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ConstraintSite {
@@ -221,10 +231,33 @@ mod tests {
     use pgls_query::NodeEnum;
     use pgls_query::protobuf::ConstrType;
 
-    use super::{AlterDomainKind, ConstraintSite, added_constraints};
+    use super::{AlterDomainKind, ConstraintSite, added_constraints, skips_validation};
 
     fn parse(sql: &str) -> NodeEnum {
         pgls_query::parse(sql).unwrap().into_root().unwrap()
+    }
+
+    #[test]
+    fn not_valid_and_not_enforced_constraints_skip_validation() {
+        let skips = |sql: &str| {
+            let stmt = parse(sql);
+            let (constraint, _) = added_constraints(&stmt).next().unwrap();
+            assert_eq!(constraint.initially_valid, !constraint.skip_validation);
+            skips_validation(constraint)
+        };
+        assert!(skips(
+            "alter table t add constraint c foreign key (a) references b not valid"
+        ));
+        assert!(skips(
+            "alter table t add constraint c check (a > 0) not valid"
+        ));
+        assert!(skips(
+            "alter table t add constraint c foreign key (a) references b not enforced"
+        ));
+        assert!(!skips(
+            "alter table t add constraint c foreign key (a) references b"
+        ));
+        assert!(!skips("alter table t add column a int references b"));
     }
 
     #[test]
