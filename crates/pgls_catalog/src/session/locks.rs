@@ -7,6 +7,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{self, VariableSetKind},
 };
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 use crate::Catalog;
 
@@ -98,10 +99,8 @@ impl Locks {
     ) -> Option<(String, String)> {
         let relation = stmt.relation.as_ref()?;
         // Some subcommands take lighter locks.
-        let has_access_exclusive_cmd = stmt.cmds.iter().any(|cmd| {
-            matches!(&cmd.node, Some(NodeEnum::AlterTableCmd(c))
-                if c.subtype() != protobuf::AlterTableType::AtValidateConstraint)
-        });
+        let has_access_exclusive_cmd = alter_table_cmds(stmt)
+            .any(|cmd| cmd.subtype() != protobuf::AlterTableType::AtValidateConstraint);
         if !has_access_exclusive_cmd {
             return None;
         }
@@ -219,10 +218,9 @@ impl Locks {
         schema: &str,
         table: &str,
     ) {
-        for item in &stmt.cmds {
-            if let Some(NodeEnum::AlterTableCmd(c)) = &item.node
-                && c.subtype() == protobuf::AlterTableType::AtAddConstraint
-                && let Some(NodeEnum::Constraint(c)) = c.def.as_ref().and_then(|d| d.node.as_ref())
+        for cmd in alter_table_cmds(stmt) {
+            if cmd.subtype() == protobuf::AlterTableType::AtAddConstraint
+                && let Some(NodeEnum::Constraint(c)) = cmd_def(cmd)
                 && c.skip_validation
                 && !c.conname.is_empty()
             {

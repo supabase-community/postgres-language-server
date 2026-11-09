@@ -2,23 +2,17 @@
 
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, Node, TypeName};
+pub(crate) use pgls_query_ext::utils::cmd_def;
+use pgls_query_ext::utils::{QualifiedName, string_value};
 
 /// The subcommands of an `ALTER TABLE` statement. Other statements have none.
 pub(crate) fn alter_table_cmds(stmt: &NodeEnum) -> impl Iterator<Item = &AlterTableCmd> {
-    let cmds = match stmt {
-        NodeEnum::AlterTableStmt(stmt) => stmt.cmds.as_slice(),
-        _ => &[],
-    };
-    cmds.iter().filter_map(|cmd| match &cmd.node {
-        Some(NodeEnum::AlterTableCmd(cmd)) => Some(cmd.as_ref()),
+    let stmt = match stmt {
+        NodeEnum::AlterTableStmt(stmt) => Some(stmt),
         _ => None,
-    })
-}
-
-/// The definition of an `ALTER TABLE` subcommand, e.g. the column of `ADD COLUMN` or the
-/// constraint of `ADD CONSTRAINT`.
-pub(crate) fn cmd_def(cmd: &AlterTableCmd) -> Option<&NodeEnum> {
-    cmd.def.as_ref()?.node.as_ref()
+    };
+    stmt.into_iter()
+        .flat_map(pgls_query_ext::utils::alter_table_cmds)
 }
 
 /// The columns that a statement adds or retypes: the columns of `CREATE TABLE`, and of
@@ -50,10 +44,7 @@ pub(crate) fn column_defs(stmt: &NodeEnum) -> impl Iterator<Item = &ColumnDef> {
 pub(crate) fn dotted_name(names: &[Node]) -> String {
     names
         .iter()
-        .filter_map(|name| match &name.node {
-            Some(NodeEnum::String(name)) => Some(name.sval.as_str()),
-            _ => None,
-        })
+        .filter_map(string_value)
         .collect::<Vec<_>>()
         .join(".")
 }
@@ -68,18 +59,16 @@ pub(crate) fn qualified_name(schema: Option<&str>, name: &str) -> String {
 
 /// The name of a built-in type, e.g. `varchar` for `varchar(10)` and `pg_catalog.varchar`, but
 /// not for `myschema.varchar`. Unqualified names are built-in types if they exist, since
-/// `pg_catalog` comes first on the search path.
+/// `pg_catalog` comes first on the search path. Postgres only accepts the current database as
+/// the catalog of a three-part name like `mydb.pg_catalog.varchar`, and then ignores it, so we
+/// ignore it too.
 pub(crate) fn builtin_type_name(type_name: &TypeName) -> Option<&str> {
-    let names: Vec<&str> = type_name
-        .names
-        .iter()
-        .map(|name| match &name.node {
-            Some(NodeEnum::String(name)) => Some(name.sval.as_str()),
-            _ => None,
-        })
-        .collect::<Option<_>>()?;
-    match names.as_slice() {
-        [name] | ["pg_catalog", name] => Some(name),
+    match pgls_query_ext::utils::qualified_name(&type_name.names)? {
+        QualifiedName {
+            schema: None | Some("pg_catalog"),
+            name,
+            ..
+        } => Some(name),
         _ => None,
     }
 }
