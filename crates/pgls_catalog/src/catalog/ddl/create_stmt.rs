@@ -1,6 +1,7 @@
 use pgls_query::{NodeEnum, protobuf::CreateStmt};
+use pgls_query_ext::utils::type_name;
 
-use crate::catalog::{Catalog, key, names::type_name, overlay::column_info};
+use crate::catalog::{Catalog, key, overlay::column_info};
 use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
 
 /// `CREATE TABLE`. Models [`DefineRelation`], which merges inherited columns with
@@ -44,7 +45,7 @@ pub(super) fn create_table(
     // Typed tables (`OF type`) take the attributes of the type.
     if let Some(of_type) = &n.of_typename {
         let attributes = type_name(of_type).and_then(|name| {
-            c.type_(name.schema(), &name.name, search_path)
+            c.type_(name.schema, name.name, search_path)
                 .found()
                 .and_then(|type_info| type_info.attributes)
         });

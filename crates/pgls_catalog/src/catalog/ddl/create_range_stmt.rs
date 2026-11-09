@@ -1,6 +1,7 @@
 use pgls_query::{NodeEnum, protobuf::CreateRangeStmt};
+use pgls_query_ext::utils::qualified_name;
 
-use crate::catalog::{Catalog, names::qualified_name, overlay::function_info};
+use crate::catalog::{Catalog, overlay::function_info};
 use crate::lookup::FunctionKind;
 
 /// A range type also creates its multirange type and their constructor functions. Models
@@ -23,7 +24,7 @@ pub(super) fn apply_create_range_stmt(
         return;
     }
 
-    let (schema, range_name) = c.creation_key(&name, search_path);
+    let (schema, range_name) = c.creation_key(name, search_path);
     let multirange_name = if range_name.contains("range") {
         range_name.replacen("range", "multirange", 1)
     } else {

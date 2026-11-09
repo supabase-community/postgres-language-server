@@ -4,12 +4,11 @@
 use crate::typing::TypeId;
 use crate::{FunctionArgumentMode, FunctionSignature};
 use pgls_query::{Node, protobuf};
-use pgls_query_ext::utils::string_value;
-
-use super::{
-    Catalog, Entry, Key, key,
-    names::{QualifiedName, qualified_name, range_var_name, type_label},
+use pgls_query_ext::utils::{
+    QualifiedName, qualified_name, range_var_name, string_value, type_name,
 };
+
+use super::{Catalog, Entry, Key, key};
 use crate::lookup::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
     RelationKind, TypeInfo,
@@ -32,10 +31,12 @@ impl Catalog {
             .unwrap_or_else(|| "public".into())
     }
 
-    pub(super) fn creation_key(&self, name: &QualifiedName, search_path: &[String]) -> Key {
+    /// Where a new object with `name` is created. A catalog name is ignored, like in
+    /// [`qualified_name`].
+    pub(super) fn creation_key(&self, name: QualifiedName, search_path: &[String]) -> Key {
         (
-            self.creation_schema(name.schema(), search_path),
-            name.name.clone(),
+            self.creation_schema(name.schema, search_path),
+            name.name.to_owned(),
         )
     }
 
@@ -50,9 +51,9 @@ impl Catalog {
     ) -> Option<Key> {
         let name = range_var_name(range_var);
         if range_var.relpersistence == "t" {
-            return Some(key("pg_temp", &name.name));
+            return Some(key("pg_temp", name.name));
         }
-        let key = self.creation_key(&name, search_path);
+        let key = self.creation_key(name, search_path);
         (key.0 != "pg_catalog").then_some(key)
     }
 
@@ -290,7 +291,7 @@ impl Catalog {
         search_path: &[String],
     ) {
         let name = range_var_name(range_var);
-        let mut index = match self.index(name.schema(), &name.name, search_path) {
+        let mut index = match self.index(name.schema, name.name, search_path) {
             Lookup::Found(index) => index,
             Lookup::Missing => return,
             Lookup::Unknown => {
@@ -310,7 +311,7 @@ impl Catalog {
 
     pub(super) fn define_type(
         &mut self,
-        name: &QualifiedName,
+        name: QualifiedName,
         attributes: Option<Vec<ColumnInfo>>,
         search_path: &[String],
     ) {
@@ -418,12 +419,12 @@ impl Catalog {
     /// Moves a type to a new schema or name.
     pub(super) fn move_type(
         &mut self,
-        name: &QualifiedName,
+        name: QualifiedName,
         new_schema: Option<&str>,
         new_name: Option<&str>,
         search_path: &[String],
     ) {
-        let Some(mut type_info) = self.type_(name.schema(), &name.name, search_path).found() else {
+        let Some(mut type_info) = self.type_(name.schema, name.name, search_path).found() else {
             return;
         };
         let old_key = key(&type_info.schema, &type_info.name);
@@ -473,7 +474,7 @@ impl Catalog {
         search_path: &[String],
     ) -> Option<FunctionInfo> {
         let name = qualified_name(&object.objname)?;
-        let key = self.function_key(name.schema(), &name.name, search_path)?;
+        let key = self.function_key(name.schema, name.name, search_path)?;
         let Lookup::Found(mut overloads) = self.functions_in(&key.0, &key.1) else {
             return None;
         };
@@ -567,10 +568,9 @@ impl Catalog {
                     return;
                 };
                 let schema = new_schema
-                    .map(str::to_owned)
                     .or(name.schema)
-                    .unwrap_or_else(|| self.creation_schema(None, search_path));
-                let name = new_name.map_or(name.name, str::to_owned);
+                    .map_or_else(|| self.creation_schema(None, search_path), str::to_owned);
+                let name = new_name.unwrap_or(name.name).to_owned();
                 self.functions.insert((schema, name), Entry::Unknown);
             }
         }
@@ -582,6 +582,12 @@ pub(super) fn column_info(
     column: &protobuf::ColumnDef,
     search_path: &[String],
 ) -> ColumnInfo {
+    // The unqualified name, as stored in `ColumnInfo::type_name`.
+    let type_label = column
+        .type_name
+        .as_ref()
+        .and_then(type_name)
+        .map(|name| name.name);
     let type_id = column
         .type_name
         .as_ref()
@@ -589,7 +595,7 @@ pub(super) fn column_info(
         .or_else(|| {
             // Serial pseudo-types are rewritten to integer columns by PostgreSQL, but they
             // are not pg_type entries and therefore cannot be normalized by name lookup.
-            let internal_name = match column.type_name.as_ref().and_then(type_label).as_deref() {
+            let internal_name = match type_label {
                 Some("serial") => "int4",
                 Some("bigserial") => "int8",
                 Some("smallserial") => "int2",
@@ -597,10 +603,9 @@ pub(super) fn column_info(
             };
             catalog.builtin_type(internal_name)
         });
-    let type_name = column.type_name.as_ref().and_then(type_label);
     ColumnInfo {
         name: column.colname.clone(),
-        type_name,
+        type_name: type_label.map(str::to_owned),
         ty: type_id.map(crate::typing::Type::Named),
     }
 }

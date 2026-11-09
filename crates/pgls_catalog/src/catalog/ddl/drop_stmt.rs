@@ -2,11 +2,9 @@ use pgls_query::{
     NodeEnum,
     protobuf::{DropStmt, ObjectType},
 };
+use pgls_query_ext::utils::{qualified_name, type_name};
 
-use crate::catalog::{
-    Catalog, Entry, key,
-    names::{qualified_name, type_name},
-};
+use crate::catalog::{Catalog, Entry, key};
 
 /// `DROP TABLE`, `DROP TYPE`, `DROP FUNCTION`, and the other `DROP` statements. Models
 /// [`RemoveRelations`] and [`RemoveObjects`].
@@ -36,7 +34,7 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                     continue;
                 };
                 if let Some(key) = c
-                    .relation_key(name.schema(), &name.name, search_path)
+                    .relation_key(name.schema, name.name, search_path)
                     .filter(|key| key.0 != "pg_catalog")
                 {
                     c.drop_table_indexes(&key.0, &key.1);
@@ -60,7 +58,7 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                 let Some(name) = type_name(type_) else {
                     continue;
                 };
-                if let Some(key) = c.type_key(name.schema(), &name.name, search_path) {
+                if let Some(key) = c.type_key(name.schema, name.name, search_path) {
                     c.types.insert(key.clone(), Entry::Dropped);
                     let array_key = (key.0, format!("_{}", key.1));
                     if c.types.contains_key(&array_key) {

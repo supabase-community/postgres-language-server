@@ -1,13 +1,14 @@
 use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::resolve::figure_column_name;
+use pgls_catalog::resolve::target_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{
     AlterTableType, CreateTableAsStmt, Node, RangeVar, ResTarget, SelectStmt, SetOperation, Token,
 };
 use pgls_query::{NodeEnum, NodeRef};
+use pgls_query_ext::utils::is_star;
 use pgls_text_size::TextRange;
 
 declare_lint_rule! {
@@ -410,29 +411,12 @@ fn select_columns(
     let skipped = names.len();
     let mut columns = names;
     columns.extend(targets.iter().skip(skipped).filter_map(|target| {
-        let name = if target.name.is_empty() {
-            figure_column_name(target.val.as_deref()?.node.as_ref()?)?
-        } else {
-            target.name.clone()
-        };
         Some(Column {
-            name,
+            name: target_name(target)?,
             span: select_entry_range(tokens, target.location),
         })
     }));
     columns
-}
-
-fn is_star(value: &NodeEnum) -> bool {
-    let last = match value {
-        NodeEnum::ColumnRef(column) => column.fields.last(),
-        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
-        _ => None,
-    };
-    matches!(
-        last.and_then(|last| last.node.as_ref()),
-        Some(NodeEnum::AStar(_))
-    )
 }
 
 /// The names of a column list, like `copy t (a, b)` or `create view v (a, b)`, which directly

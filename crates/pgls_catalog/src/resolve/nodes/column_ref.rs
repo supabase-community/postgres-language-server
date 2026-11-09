@@ -1,5 +1,5 @@
-use pgls_query::{NodeEnum, protobuf::ColumnRef};
-use pgls_query_ext::utils::string_values;
+use pgls_query::protobuf::ColumnRef;
+use pgls_query_ext::utils::{star_qualifier, string_values};
 
 use super::Resolver;
 use crate::lookup::Lookup;
@@ -21,10 +21,7 @@ use crate::resolve::{
 /// [`errorMissingRTE`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L3732
 pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
     // `*` and `t.*`
-    let Some(last) = n.fields.last() else {
-        return;
-    };
-    if matches!(last.node, Some(NodeEnum::AStar(_))) {
+    if star_qualifier(n).is_some() {
         return;
     }
     let Some(names) = string_values(&n.fields) else {

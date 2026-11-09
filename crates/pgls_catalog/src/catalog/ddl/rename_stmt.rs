@@ -2,11 +2,9 @@ use pgls_query::{
     NodeEnum,
     protobuf::{ObjectType, RangeVar, RenameStmt},
 };
+use pgls_query_ext::utils::{qualified_name, range_var_name};
 
-use crate::catalog::{
-    Catalog, Entry, key,
-    names::{qualified_name, range_var_name},
-};
+use crate::catalog::{Catalog, Entry, key};
 use crate::lookup::{CatalogView, ColumnInfo, Origin};
 
 /// `ALTER ... RENAME`. Models [`ExecRenameStmt`], with [`RenameRelation`] for relations and
@@ -45,8 +43,7 @@ pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[
         ObjectType::ObjectAttribute => {
             if let Some(range_var) = &n.relation {
                 let name = range_var_name(range_var);
-                if let Some(mut type_info) = c.type_(name.schema(), &name.name, search_path).found()
-                {
+                if let Some(mut type_info) = c.type_(name.schema, name.name, search_path).found() {
                     rename_in(&mut type_info.attributes, &n.subname, &n.newname);
                     type_info.origin = Origin::File;
                     let key = key(&type_info.schema, &type_info.name);
@@ -58,7 +55,7 @@ pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[
             if let Some(NodeEnum::List(list)) = object
                 && let Some(name) = qualified_name(&list.items)
             {
-                c.move_type(&name, None, Some(&n.newname), search_path);
+                c.move_type(name, None, Some(&n.newname), search_path);
             }
         }
         ObjectType::ObjectFunction

@@ -9,7 +9,6 @@ mod base;
 mod ddl;
 mod derive;
 mod materialize;
-mod names;
 mod overlay;
 #[cfg(test)]
 mod tests;
@@ -19,6 +18,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
+use pgls_query_ext::utils::{qualified_name, range_var_name};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::Candidates;
@@ -280,8 +280,8 @@ impl Catalog {
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
     ) -> Lookup<RelationInfo> {
-        let name = names::range_var_name(range_var);
-        self.relation(name.schema(), &name.name, search_path)
+        let name = range_var_name(range_var);
+        self.relation(name.schema, name.name, search_path)
     }
 
     /// The schema and name of the relation a `RangeVar` names: the relation or index it resolves
@@ -291,24 +291,24 @@ impl Catalog {
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
     ) -> (String, String) {
-        let name = names::range_var_name(range_var);
+        let name = range_var_name(range_var);
         // Indexes are relations too, in their own map.
         let in_schema = |schema: &str| match (
-            self.relation_in(schema, &name.name),
-            self.index_in(schema, &name.name),
+            self.relation_in(schema, name.name),
+            self.index_in(schema, name.name),
         ) {
-            (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(key(schema, &name.name)),
+            (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(key(schema, name.name)),
             (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
             (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
         };
-        let found = match name.schema() {
+        let found = match name.schema {
             Some(schema) => in_schema(schema),
             None => self.search(relation_search_path(search_path), in_schema),
         };
         match found.found() {
             Some(key) => key,
             None if range_var.relpersistence == "t" => key("pg_temp", &range_var.relname),
-            None => self.creation_key(&name, search_path),
+            None => self.creation_key(name, search_path),
         }
     }
 
@@ -363,8 +363,8 @@ impl Catalog {
         names: &[pgls_query::protobuf::Node],
         search_path: &[String],
     ) -> Lookup<IndexInfo> {
-        match names::qualified_name(names) {
-            Some(name) => self.index(name.schema(), &name.name, search_path),
+        match qualified_name(names) {
+            Some(name) => self.index(name.schema, name.name, search_path),
             None => Lookup::Unknown,
         }
     }

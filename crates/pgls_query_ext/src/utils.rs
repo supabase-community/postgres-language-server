@@ -5,7 +5,7 @@
 
 use pgls_query::{
     NodeEnum,
-    protobuf::{CreateFunctionStmt, Node},
+    protobuf::{ColumnRef, CreateFunctionStmt, Node, RangeVar, TypeName},
 };
 
 /// The value of a `String` node.
@@ -54,6 +54,45 @@ pub fn qualified_name(nodes: &[Node]) -> Option<QualifiedName<'_>> {
         schema,
         name,
     })
+}
+
+/// The name of a `RangeVar`, like `t`, `s.t` or `db.s.t`.
+pub fn range_var_name(range_var: &RangeVar) -> QualifiedName<'_> {
+    fn part(value: &str) -> Option<&str> {
+        (!value.is_empty()).then_some(value)
+    }
+    QualifiedName {
+        catalog: part(&range_var.catalogname),
+        schema: part(&range_var.schemaname),
+        name: &range_var.relname,
+    }
+}
+
+/// The name of a type as the parser stores it, e.g. `pg_catalog.int4` for `integer`. `None`
+/// for names that are not a [`qualified_name`].
+pub fn type_name(type_name: &TypeName) -> Option<QualifiedName<'_>> {
+    qualified_name(&type_name.names)
+}
+
+/// Whether a select list entry is a `*` that expands to any number of columns, like `*`, `t.*`
+/// or `(t.c).*`.
+pub fn is_star(value: &NodeEnum) -> bool {
+    let last = match value {
+        NodeEnum::ColumnRef(column) => column.fields.last(),
+        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
+        _ => None,
+    };
+    matches!(
+        last.and_then(|last| last.node.as_ref()),
+        Some(NodeEnum::AStar(_))
+    )
+}
+
+/// The fields before the `*` of a column reference like `*`, `t.*` or `s.t.*`. `None` if the
+/// reference doesn't end in `*`.
+pub fn star_qualifier(column: &ColumnRef) -> Option<&[Node]> {
+    let (last, qualifier) = column.fields.split_last()?;
+    matches!(last.node, Some(NodeEnum::AStar(_))).then_some(qualifier)
 }
 
 /// The string value of a `CREATE FUNCTION` option, like `language`, or `as` with the body.
@@ -115,7 +154,10 @@ pub fn find_option_value_mut<'a>(
 mod tests {
     use pgls_query::NodeEnum;
 
-    use crate::utils::{QualifiedName, find_option_value, qualified_name};
+    use crate::utils::{
+        QualifiedName, find_option_value, is_star, qualified_name, range_var_name, star_qualifier,
+        string_value,
+    };
 
     fn create_function(sql: &str) -> pgls_query::protobuf::CreateFunctionStmt {
         match pgls_query::parse(sql).unwrap().into_root().unwrap() {
@@ -210,5 +252,81 @@ mod tests {
             panic!("Expected ColumnRef");
         };
         assert_eq!(qualified_name(&column.fields), None);
+    }
+
+    fn select_values(sql: &str) -> Vec<NodeEnum> {
+        let NodeEnum::SelectStmt(select) = pgls_query::parse(sql).unwrap().into_root().unwrap()
+        else {
+            panic!("Expected SelectStmt");
+        };
+        select
+            .target_list
+            .iter()
+            .map(|target| match target.node.as_ref().unwrap() {
+                NodeEnum::ResTarget(target) => target.val.as_ref().unwrap().node.clone().unwrap(),
+                _ => panic!("Expected ResTarget"),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn stars() {
+        let values = select_values("select *, t.*, s.t.*, (t.c).*, t.c, (t.c).f from t");
+        let stars: Vec<_> = values.iter().map(is_star).collect();
+        assert_eq!(stars, [true, true, true, true, false, false]);
+
+        let qualifiers: Vec<_> = values
+            .iter()
+            .map(|value| match value {
+                NodeEnum::ColumnRef(column) => star_qualifier(column).map(|qualifier| {
+                    qualifier
+                        .iter()
+                        .map(|field| string_value(field).unwrap())
+                        .collect::<Vec<_>>()
+                }),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            qualifiers,
+            [
+                Some(vec![]),
+                Some(vec!["t"]),
+                Some(vec!["s", "t"]),
+                None,
+                None,
+                None
+            ]
+        );
+    }
+
+    #[test]
+    fn range_var_names() {
+        let NodeEnum::SelectStmt(select) = pgls_query::parse("select from t, s.t, db.s.t")
+            .unwrap()
+            .into_root()
+            .unwrap()
+        else {
+            panic!("Expected SelectStmt");
+        };
+        let names: Vec<_> = select
+            .from_clause
+            .iter()
+            .map(|item| match item.node.as_ref().unwrap() {
+                NodeEnum::RangeVar(range_var) => {
+                    let name = range_var_name(range_var);
+                    (name.catalog, name.schema, name.name)
+                }
+                _ => panic!("Expected RangeVar"),
+            })
+            .collect();
+        assert_eq!(
+            names,
+            [
+                (None, None, "t"),
+                (None, Some("s"), "t"),
+                (Some("db"), Some("s"), "t")
+            ]
+        );
     }
 }

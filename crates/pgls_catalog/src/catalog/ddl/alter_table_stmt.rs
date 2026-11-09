@@ -2,12 +2,9 @@ use pgls_query::{
     NodeEnum,
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, ObjectType},
 };
+use pgls_query_ext::utils::{range_var_name, type_name};
 
-use crate::catalog::{
-    Catalog, Entry, key,
-    names::{range_var_name, type_label},
-    overlay::column_info,
-};
+use crate::catalog::{Catalog, Entry, key, overlay::column_info};
 use crate::lookup::{CatalogView, ColumnInfo, Origin};
 
 /// `ALTER TABLE`, and `ALTER TYPE ... ADD/DROP/ALTER ATTRIBUTE` on composite types.
@@ -33,7 +30,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     if n.objtype() == ObjectType::ObjectType {
         let name = range_var_name(range_var);
         if let Some(mut type_info) = c
-            .type_(name.schema(), &name.name, search_path)
+            .type_(name.schema, name.name, search_path)
             .found()
             .filter(|type_info| type_info.schema != "pg_catalog")
         {
@@ -116,7 +113,11 @@ fn apply_column_change(
                     .iter_mut()
                     .find(|column| column.name == command.name),
             ) {
-                column.type_name = definition.type_name.as_ref().and_then(type_label);
+                column.type_name = definition
+                    .type_name
+                    .as_ref()
+                    .and_then(type_name)
+                    .map(|name| name.name.to_owned());
                 column.ty = definition
                     .type_name
                     .as_ref()

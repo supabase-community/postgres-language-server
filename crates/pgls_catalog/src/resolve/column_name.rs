@@ -1,8 +1,18 @@
 //! The names Postgres gives to unnamed select list entries.
 
 use pgls_query::{NodeEnum, protobuf};
+use pgls_query_ext::utils::{is_star, string_value};
 
 const UNNAMED: &str = "?column?";
+
+/// The name of a select list entry: its alias, or else the name Postgres chooses for it
+/// ([`figure_column_name`]).
+pub fn target_name(target: &protobuf::ResTarget) -> Option<String> {
+    if !target.name.is_empty() {
+        return Some(target.name.clone());
+    }
+    figure_column_name(target.val.as_deref()?.node.as_ref()?)
+}
 
 /// The column name Postgres chooses for an unnamed select list entry. Port of [`FigureColname`].
 ///
@@ -17,29 +27,9 @@ pub fn figure_column_name(value: &NodeEnum) -> Option<String> {
     figure_column_name_with_strength(value).map(|(name, _)| name)
 }
 
-/// Whether a select list entry is a `*` that expands to several columns, like `*`, `t.*` or
-/// `(t.c).*`.
-fn is_star(value: &NodeEnum) -> bool {
-    let last = match value {
-        NodeEnum::ColumnRef(column) => column.fields.last(),
-        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
-        _ => None,
-    };
-    matches!(
-        last.and_then(|last| last.node.as_ref()),
-        Some(NodeEnum::AStar(_))
-    )
-}
-
 /// The last field name of a column reference or indirection, ignoring `*` and subscripts.
 fn last_field_name(fields: &[pgls_query::protobuf::Node]) -> Option<&str> {
-    fields
-        .iter()
-        .rev()
-        .find_map(|field| match field.node.as_ref()? {
-            NodeEnum::String(name) => Some(name.sval.as_str()),
-            _ => None,
-        })
+    fields.iter().rev().find_map(string_value)
 }
 
 /// The column name together with how strong that choice is. A type cast uses the name of its
@@ -59,10 +49,7 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
             Some(name) => named(name),
             None => figure_column_name_with_strength(indirection.arg.as_deref()?.node.as_ref()?),
         },
-        NodeEnum::FuncCall(call) => match call.funcname.last()?.node.as_ref()? {
-            NodeEnum::String(name) => named(&name.sval),
-            _ => None,
-        },
+        NodeEnum::FuncCall(call) => named(string_value(call.funcname.last()?)?),
         NodeEnum::AExpr(expr) if expr.kind() == protobuf::AExprKind::AexprNullif => named("nullif"),
         NodeEnum::TypeCast(cast) => {
             let inner = figure_column_name_with_strength(cast.arg.as_deref()?.node.as_ref()?)?;
@@ -70,10 +57,7 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
                 Some(inner)
             } else {
                 let type_name = cast.type_name.as_ref()?;
-                match type_name.names.last()?.node.as_ref()? {
-                    NodeEnum::String(name) => Some((name.sval.clone(), 1)),
-                    _ => None,
-                }
+                Some((string_value(type_name.names.last()?)?.to_owned(), 1))
             }
         }
         NodeEnum::CollateClause(collate) => {
@@ -189,8 +173,5 @@ fn first_column_name(select: &protobuf::SelectStmt) -> Option<String> {
     let NodeEnum::ResTarget(target) = select.target_list.first()?.node.as_ref()? else {
         return None;
     };
-    if !target.name.is_empty() {
-        return Some(target.name.clone());
-    }
-    figure_column_name(target.val.as_deref()?.node.as_ref()?)
+    target_name(target)
 }

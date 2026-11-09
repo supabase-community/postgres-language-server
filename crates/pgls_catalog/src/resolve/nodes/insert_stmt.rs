@@ -2,6 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{InsertStmt, SelectStmt, SetOperation},
 };
+use pgls_query_ext::utils::is_star;
 
 use super::{
     Resolver,
@@ -187,7 +188,7 @@ fn select_value(source: &pgls_query::Node, index: usize) -> Option<&NodeEnum> {
         });
     // A `*` before the entry expands to any number of columns.
     for _ in 0..index {
-        if values.next()?.is_none_or(expands_to_columns) {
+        if values.next()?.is_none_or(is_star) {
             return None;
         }
     }
@@ -228,20 +229,10 @@ fn select_width(select: &SelectStmt) -> Option<usize> {
         let NodeEnum::ResTarget(target) = target.node.as_ref()? else {
             return None;
         };
-        if expands_to_columns(target.val.as_deref()?.node.as_ref()?) {
+        if is_star(target.val.as_deref()?.node.as_ref()?) {
             return None;
         }
         width += 1;
     }
     Some(width)
-}
-
-/// `*`, `t.*`, and `(row).*` expand to any number of columns.
-fn expands_to_columns(value: &NodeEnum) -> bool {
-    let last = match value {
-        NodeEnum::ColumnRef(column) => column.fields.last(),
-        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
-        _ => return false,
-    };
-    last.is_some_and(|last| matches!(last.node, Some(NodeEnum::AStar(_))))
 }

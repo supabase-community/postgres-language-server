@@ -4,15 +4,16 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{SelectStmt, SetOperation},
 };
+use pgls_query_ext::utils::string_value;
 
 use super::{
     Resolver,
     from_clause::resolve_from_clause,
-    res_target::{record_star_references, target_list_columns},
+    res_target::{record_star_references, target_list_columns, target_list_typed_columns},
     resolve_list, resolve_node,
     with_clause::resolve_with_clause,
 };
-use crate::resolve::column_name::figure_column_name;
+use crate::resolve::column_name::target_name;
 use crate::resolve::{expr::infer_expr, scope::Columns};
 
 #[cfg(test)]
@@ -202,57 +203,9 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     }
 
     let columns = target_list_columns(r, &n.target_list);
-    let typed = columns.as_ref().map(|names| {
-        let mut out = Vec::new();
-        for target in &n.target_list {
-            let Some(NodeEnum::ResTarget(t)) = target.node.as_ref() else {
-                continue;
-            };
-            let Some(value) = t.val.as_deref().and_then(|v| v.node.as_ref()) else {
-                continue;
-            };
-            if let NodeEnum::ColumnRef(c) = value
-                && c.fields
-                    .last()
-                    .is_some_and(|f| matches!(f.node, Some(NodeEnum::AStar(_))))
-            {
-                let qualifier = c
-                    .fields
-                    .iter()
-                    .rev()
-                    .nth(1)
-                    .and_then(pgls_query_ext::utils::string_value);
-                if let Some(item) = qualifier.and_then(|q| r.levels.last().and_then(|l| l.item(q)))
-                {
-                    out.extend(item.typed_columns.clone().unwrap_or_default());
-                } else if let Some(level) = r.levels.last() {
-                    out.extend(level.star_typed_columns().unwrap_or_default());
-                }
-                continue;
-            }
-            let name = if !t.name.is_empty() {
-                t.name.clone()
-            } else {
-                figure_column_name(value).unwrap_or_default()
-            };
-            out.push(crate::typing::TypedColumn {
-                name,
-                ty: infer_expr(r, value),
-            });
-        }
-        if out.len() == names.len() {
-            out
-        } else {
-            names
-                .iter()
-                .map(|name| crate::typing::TypedColumn {
-                    name: name.clone(),
-                    ty: None,
-                })
-                .collect()
-        }
-    });
-    r.output = typed;
+    r.output = columns
+        .as_ref()
+        .map(|names| target_list_typed_columns(r, &n.target_list, names));
     r.exit_level();
     columns
 }
@@ -263,14 +216,11 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
 /// [`findTargetlistEntrySQL92`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L2006
 fn is_output_reference(expr: &NodeEnum, output_names: &[String]) -> bool {
     match expr {
-        NodeEnum::ColumnRef(column) if column.fields.len() == 1 => column.fields[0]
-            .node
-            .as_ref()
-            .and_then(|node| match node {
-                NodeEnum::String(value) => Some(value.sval.as_str()),
-                _ => None,
-            })
-            .is_some_and(|name| output_names.iter().any(|output| output == name)),
+        NodeEnum::ColumnRef(column) => match column.fields.as_slice() {
+            [field] => string_value(field)
+                .is_some_and(|name| output_names.iter().any(|output| output == name)),
+            _ => false,
+        },
         NodeEnum::AConst(value) => value
             .val
             .as_ref()
@@ -282,12 +232,7 @@ fn is_output_reference(expr: &NodeEnum, output_names: &[String]) -> bool {
 /// The name of an entry of the select list, which `ORDER BY` and `GROUP BY` can reference.
 fn output_name(target: &Node) -> Option<String> {
     match &target.node {
-        Some(NodeEnum::ResTarget(target)) if !target.name.is_empty() => Some(target.name.clone()),
-        Some(NodeEnum::ResTarget(target)) => target
-            .val
-            .as_deref()
-            .and_then(|value| value.node.as_ref())
-            .and_then(figure_column_name),
+        Some(NodeEnum::ResTarget(target)) => target_name(target),
         _ => None,
     }
 }
