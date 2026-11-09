@@ -33,6 +33,5 @@ pub(super) fn emit_create_enum_stmt(e: &mut EventEmitter, n: &CreateEnumStmt) {
         });
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

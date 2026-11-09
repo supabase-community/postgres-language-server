@@ -1,0 +1,16 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+revoke usage from bob;
+-----------------------
+program [0..22] 'revoke usage from bob;'
+  statement [0..21] 'revoke usage from bob'
+    revoke_statement [0..21] 'revoke usage from bob'
+      keyword_revoke [0..6] 'revoke'
+      grantables [7..12] 'usage'
+        role_identifier [7..12] 'usage'
+      keyword_from [13..17] 'from'
+      role_specification [18..21] 'bob'
+        role_identifier [18..21] 'bob' (@end)
+  ; [21..22] ';'

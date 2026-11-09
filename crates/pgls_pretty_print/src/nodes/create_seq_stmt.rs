@@ -8,14 +8,6 @@ use crate::{
 use super::node_list::emit_space_separated_list;
 
 pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
-    emit_create_seq_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_create_seq_stmt_no_semicolon(e: &mut EventEmitter, n: &CreateSeqStmt) {
-    emit_create_seq_stmt_impl(e, n, false);
-}
-
-fn emit_create_seq_stmt_impl(e: &mut EventEmitter, n: &CreateSeqStmt, with_semicolon: bool) {
     e.group_start(GroupKind::CreateSeqStmt);
 
     e.token(TokenKind::CREATE_KW);
@@ -64,8 +56,5 @@ fn emit_create_seq_stmt_impl(e: &mut EventEmitter, n: &CreateSeqStmt, with_semic
         });
     }
 
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
-    }
     e.group_end();
 }

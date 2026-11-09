@@ -58,7 +58,6 @@ pub(super) fn emit_alter_owner_stmt(e: &mut EventEmitter, n: &AlterOwnerStmt) {
         super::emit_role_spec(e, newowner);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
 

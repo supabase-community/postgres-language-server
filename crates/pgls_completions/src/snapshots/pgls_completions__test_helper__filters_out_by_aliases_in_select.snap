@@ -24,6 +24,12 @@ create table auth.posts (
 --------------
 
 s| from auth.users u join auth.posts p on u.id = p.user_id;
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from auth.users u join auth.posts p on u.id = p.user_id;
 
 Results:

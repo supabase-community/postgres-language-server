@@ -920,6 +920,112 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
+/// A server with the database configuration `db`, with `document.sql` open.
+async fn server_with_database(
+    db: PartialDatabaseConfiguration,
+    text: &str,
+) -> Result<(Server, tokio::task::JoinHandle<Result<()>>)> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(db),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+    server.open_document(text).await?;
+
+    Ok((server, reader))
+}
+
+/// The plain text of the hover at `position` in `document.sql`.
+async fn hover_text(server: &mut Server, position: Position) -> Result<String> {
+    let hover: Option<lsp::Hover> = server
+        .request(
+            "textDocument/hover",
+            "hover",
+            lsp::HoverParams {
+                text_document_position_params: TextDocumentPositionParams {
+                    text_document: TextDocumentIdentifier {
+                        uri: url!("document.sql"),
+                    },
+                    position,
+                },
+                work_done_progress_params: WorkDoneProgressParams::default(),
+            },
+        )
+        .await?;
+    match hover.context("expected a hover")?.contents {
+        lsp::HoverContents::Markup(content) => Ok(content.value),
+        contents => bail!("expected plain text, got {contents:?}"),
+    }
+}
+
+/// A query that fails on a working connection isn't reported as a connection failure: hover says
+/// why the schema couldn't be loaded.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn hover_reports_why_the_schema_could_not_be_loaded(test_db: PgPool) -> Result<()> {
+    // The server's connections run as `test_login`, a role of the test migrations that isn't a
+    // superuser. Both settings belong to the test's own database, which is dropped afterwards, so
+    // no role or privilege outlives the test.
+    let database = test_db
+        .connect_options()
+        .get_database()
+        .unwrap()
+        .to_string();
+    test_db
+        .execute(
+            format!(
+                r#"
+                revoke select on pg_catalog.pg_proc from public;
+                alter database "{database}" set role = 'test_login';
+                "#
+            )
+            .as_str(),
+        )
+        .await?;
+
+    let (mut server, reader) = server_with_database(
+        PartialDatabaseConfiguration {
+            database: Some(database),
+            ..Default::default()
+        },
+        "select 1;\n",
+    )
+    .await?;
+
+    let text = hover_text(&mut server, Position::new(0, 7)).await?;
+    assert!(
+        text.starts_with("Cannot load the database schema: permission denied for table pg_proc"),
+        "unexpected hover: {text}"
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
@@ -4947,6 +5053,181 @@ async fn the_user_configuration_and_extended_files_are_watched() -> Result<()> {
             file.display()
         );
     }
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// Relative paths of the root configuration, here `migrations.migrationsDir`, are relative to the
+/// folder of the configuration file, like in a nested one, not to the working directory of the
+/// server process (Neovim started elsewhere, the daemon, another workspace folder).
+#[tokio::test]
+async fn relative_paths_of_the_root_configuration_are_relative_to_its_folder() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let elsewhere = tempfile::tempdir()?;
+    let migrations = r#"{ "migrations": { "migrationsDir": "migrations", "after": 5 } }"#;
+    for directory in [root.path().to_path_buf(), root.path().join("sub")] {
+        std::fs::create_dir_all(&directory)?;
+        std::fs::write(directory.join(ConfigName::pgls_jsonc()), migrations)?;
+    }
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            // The server process runs somewhere else than the workspace.
+            DynRef::Owned(Box::new(OsFileSystem::new(elsewhere.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
+        .await?;
+    server.initialized().await?;
+
+    let document = |path: &str| Uri::from_file_path(root.path().join(path)).unwrap();
+    // `banDropColumn` only runs on migrations once `migrations` is configured, and migrations up
+    // to `after` are ignored.
+    for directory in ["sub/", ""] {
+        assert_eq!(
+            open_and_check(
+                &mut server,
+                &mut receiver,
+                document(&format!("{directory}migrations/0001_init.sql"))
+            )
+            .await?,
+            [],
+            "{directory}migrations/0001_init.sql"
+        );
+        assert_eq!(
+            open_and_check(
+                &mut server,
+                &mut receiver,
+                document(&format!("{directory}migrations/0009_later.sql"))
+            )
+            .await?,
+            [lsp::DiagnosticSeverity::WARNING],
+            "{directory}migrations/0009_later.sql is not recognised as a migration"
+        );
+    }
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// Reloading the root configuration replaces its settings, so a section removed from the file
+/// goes back to its defaults, like in a nested configuration.
+#[tokio::test]
+async fn a_section_removed_from_the_configuration_goes_back_to_its_defaults() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let config = root.path().join(ConfigName::pgls_jsonc());
+    std::fs::write(
+        &config,
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )?;
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root.path().to_path_buf()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
+        .await?;
+    server.initialized().await?;
+
+    let document = Uri::from_file_path(root.path().join("a.sql")).unwrap();
+    assert_eq!(
+        open_and_check(&mut server, &mut receiver, document.clone()).await?,
+        [lsp::DiagnosticSeverity::ERROR]
+    );
+
+    std::fs::write(&config, "{}")?;
+    drain_notifications(&mut receiver);
+    server
+        .notify(
+            "workspace/didChangeWatchedFiles",
+            DidChangeWatchedFilesParams {
+                changes: vec![FileEvent {
+                    uri: Uri::from_file_path(&config).unwrap(),
+                    typ: FileChangeType::CHANGED,
+                }],
+            },
+        )
+        .await?;
+    wait_for_severities(
+        &mut receiver,
+        &document,
+        &[lsp::DiagnosticSeverity::WARNING],
+    )
+    .await
+    .context("the removed `linter` section still applies after the reload")?;
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// A file opened by its real path belongs to the workspace folder that was opened through a
+/// symlink, instead of getting the defaults of a file outside every folder.
+#[cfg(unix)]
+#[tokio::test]
+async fn files_opened_by_their_real_path_belong_to_a_symlinked_folder() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    // On macOS, the temporary directory is itself below a symlink (`/var` -> `/private/var`).
+    let root_path = root.path().canonicalize()?;
+    let real = root_path.join("real");
+    std::fs::create_dir_all(&real)?;
+    std::fs::write(
+        real.join(ConfigName::pgls_jsonc()),
+        r#"{ "linter": { "rules": { "banDropColumn": "error" } } }"#,
+    )?;
+    let link = root_path.join("link");
+    std::os::unix::fs::symlink(&real, &link)?;
+    let folder = WorkspaceFolder {
+        uri: Uri::from_file_path(&link).unwrap(),
+        name: "link".to_string(),
+    };
+
+    let factory = ServerFactory::default();
+    let (service, client) = factory
+        .create_with_fs(
+            None,
+            DynRef::Owned(Box::new(OsFileSystem::new(root_path.clone()))),
+        )
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_folders(folder.uri.clone(), Some(vec![folder]))
+        .await?;
+    server.initialized().await?;
+
+    assert_eq!(
+        open_and_check(
+            &mut server,
+            &mut receiver,
+            Uri::from_file_path(real.join("a.sql")).unwrap()
+        )
+        .await?,
+        [lsp::DiagnosticSeverity::ERROR]
+    );
 
     server.shutdown().await?;
     reader.abort();
