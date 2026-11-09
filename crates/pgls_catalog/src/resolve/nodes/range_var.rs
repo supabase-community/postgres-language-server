@@ -4,11 +4,15 @@ use std::rc::Rc;
 
 use pgls_query::protobuf::RangeVar;
 
-use super::{Resolver, alias::apply_alias};
+use super::{
+    Resolver,
+    alias::{apply_alias, apply_typed_alias},
+};
 use crate::lookup::{Lookup, RelationKind};
 use crate::resolve::{
     ColumnSource, FindingKind, Reference,
     scope::{Columns, Item, ItemSource},
+    utils::ref_name,
 };
 
 /// A relation or CTE in FROM. A name without schema is a CTE first ([`transformFromClauseItem`]
@@ -36,19 +40,10 @@ pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
             r.record_alias(n.location, alias);
         }
         let mut item = Item::named(
-            Some(alias.map_or_else(|| cte.name.clone(), |alias| alias.aliasname.clone())),
+            Some(ref_name(n).to_owned()),
             apply_alias(cte.columns.clone(), alias),
         );
-        item.typed_columns = cte.typed_columns.clone().map(|mut columns| {
-            if let Some(alias) = alias
-                && let Some(names) = super::string::string_values(&alias.colnames)
-            {
-                for (column, name) in columns.iter_mut().zip(names) {
-                    column.name = name;
-                }
-            }
-            columns
-        });
+        item.typed_columns = apply_typed_alias(cte.typed_columns.clone(), alias);
         if r.collects_references()
             && let Some(names) = &cte.columns
         {
@@ -75,20 +70,10 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
         r.record_alias(n.location, alias);
     }
     Item {
-        name: Some(alias.map_or_else(|| n.relname.clone(), |alias| alias.aliasname.clone())),
+        name: Some(ref_name(n).to_owned()),
         schema: relation.schema.filter(|_| alias.is_none()),
         columns: apply_alias(relation.columns, alias),
-        typed_columns: relation.typed_columns.map(|mut columns| {
-            if let Some(alias) = alias {
-                for (column, name) in columns.iter_mut().zip(
-                    crate::resolve::nodes::string::string_values(&alias.colnames)
-                        .unwrap_or_default(),
-                ) {
-                    column.name = name;
-                }
-            }
-            columns
-        }),
+        typed_columns: apply_typed_alias(relation.typed_columns, alias),
         has_system_columns: relation.has_system_columns,
         source: relation.source,
     }

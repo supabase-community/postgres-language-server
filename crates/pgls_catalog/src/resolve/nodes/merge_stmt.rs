@@ -6,9 +6,9 @@ use pgls_query::{
 use super::{
     Resolver,
     from_clause::resolve_from_clause,
-    insert_stmt::{check_insert_width, insert_target_types, node_location},
+    insert_stmt::{check_insert_width, insert_target_columns, insert_target_types},
     range_var::resolve_target_relation,
-    res_target::{check_target_column, resolve_returning_clause, resolve_set_clause},
+    res_target::{resolve_returning_clause, resolve_set_clause},
     resolve_node,
     with_clause::resolve_with_clause,
 };
@@ -16,6 +16,7 @@ use crate::resolve::{
     FindingKind, MergeError,
     expr::{check_assignment, infer_expr},
     scope::{Columns, Item, Level},
+    utils::{node_location, ref_name, resolve_expr},
 };
 
 /// Resolves a MERGE and returns the columns of its RETURNING list. Port of
@@ -140,18 +141,9 @@ fn check_reachable_when_clauses(r: &mut Resolver, clauses: &[Node]) {
 /// their namespace items. The name of an unaliased subquery, function, or join is a placeholder
 /// or not certain, so only relations, CTEs, and aliased items are compared.
 fn check_distinct_names(r: &mut Resolver, target: &pgls_query::protobuf::RangeVar, source: &Node) {
-    let target_name = target
-        .alias
-        .as_ref()
-        .map_or(target.relname.as_str(), |alias| alias.aliasname.as_str());
+    let target_name = ref_name(target);
     let (source_name, location) = match source.node.as_ref() {
-        Some(NodeEnum::RangeVar(source)) => (
-            source
-                .alias
-                .as_ref()
-                .map_or(source.relname.as_str(), |alias| alias.aliasname.as_str()),
-            source.location,
-        ),
+        Some(NodeEnum::RangeVar(source)) => (ref_name(source), source.location),
         Some(NodeEnum::RangeSubselect(source)) => match &source.alias {
             Some(alias) => (alias.aliasname.as_str(), -1),
             None => return,
@@ -252,17 +244,7 @@ fn resolve_when_clause(
 /// [`checkInsertTargets`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1018
 /// [`transformInsertRow`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1060
 fn resolve_insert_action(r: &mut Resolver, n: &MergeWhenClause, target: &Item) {
-    let mut target_columns = Vec::new();
-    let mut partial_targets = Vec::new();
-    for column in &n.target_list {
-        let Some(NodeEnum::ResTarget(column)) = &column.node else {
-            r.depends_on_file();
-            continue;
-        };
-        check_target_column(r, target, &column.name, column.location);
-        target_columns.push(column.name.clone());
-        partial_targets.push(!column.indirection.is_empty());
-    }
+    let (target_columns, partial_targets) = insert_target_columns(r, target, &n.target_list);
 
     // `DEFAULT VALUES` has no values.
     if n.values.is_empty() {
@@ -290,12 +272,4 @@ fn resolve_insert_action(r: &mut Resolver, n: &MergeWhenClause, target: &Item) {
         }
     }
     check_insert_width(r, target, &target_columns, n.values.len());
-}
-
-/// Resolves the names of a condition and types it, which reports its operators and functions.
-fn resolve_expr(r: &mut Resolver, node: &Node) {
-    resolve_node(r, node);
-    if let Some(expr) = node.node.as_ref() {
-        infer_expr(r, expr);
-    }
 }

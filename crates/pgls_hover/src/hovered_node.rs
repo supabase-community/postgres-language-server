@@ -10,8 +10,6 @@ pub(crate) enum HoveredNode {
     Role(String),
     PostgresType((Option<String>, String)),
 
-    #[allow(unused)]
-    Trigger((Option<String>, String)),
     #[allow(dead_code)]
     Policy((Option<String>, String)),
 }
@@ -75,7 +73,8 @@ impl HoveredNode {
                     // but not its qualifier `t`, which may be the name of a column too.
                     || ((ctx.history_ends_with(&["assignment", "object_reference", "any_identifier"])
                         || ctx.history_ends_with(&[
-                            "when_clause",
+                            "merge_insert",
+                            "insert_values",
                             "object_reference",
                             "any_identifier",
                         ]))
