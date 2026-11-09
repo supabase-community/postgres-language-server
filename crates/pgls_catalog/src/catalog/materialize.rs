@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use super::{Catalog, Entry, Key};
+use super::{Catalog, Entry, Key, key};
 use crate::lookup::{FunctionInfo, FunctionKind, Origin, RelationInfo, RelationKind, TypeInfo};
 use crate::snapshot::{
     Column, ColumnClassKind, Function, PostgresType, PostgresTypeAttribute, ProcKind, Schema,
@@ -59,34 +59,21 @@ impl Catalog {
         // The relations have different names, so dropping them all after defining the others
         // removes the same objects as dropping them in between.
         let mut defined = Vec::new();
-        let mut dropped = FxHashSet::default();
-        for ((schema, name), entry) in &self.relations {
-            match entry {
-                Entry::Defined(relation) => {
-                    if let Some((table_id, class_kind)) = builder.define_relation(relation) {
-                        defined.push((table_id, class_kind, relation.as_ref()));
-                    }
-                }
-                Entry::Dropped => {
-                    dropped.insert((schema.as_str(), name.as_str()));
-                }
-                Entry::Unknown => {}
+        for entry in self.relations.values() {
+            if let Entry::Defined(relation) = entry
+                && let Some((table_id, class_kind)) = builder.define_relation(relation)
+            {
+                defined.push((table_id, class_kind, relation.as_ref()));
             }
         }
-        builder.drop_relations(&dropped);
+        builder.drop_relations(&dropped(&self.relations));
         builder.define_columns(&defined);
 
-        let dropped: FxHashSet<(&str, &str)> = self
-            .types
-            .iter()
-            .filter(|(_, entry)| matches!(entry, Entry::Dropped))
-            .map(|((schema, name), _)| (schema.as_str(), name.as_str()))
-            .collect();
-        if !dropped.is_empty() {
-            builder
-                .snapshot
-                .types
-                .retain(|type_| !dropped.contains(&(type_.schema.as_str(), type_.name.as_str())));
+        let dropped_types = dropped(&self.types);
+        if !dropped_types.is_empty() {
+            builder.snapshot.types.retain(|type_| {
+                !dropped_types.contains(&(type_.schema.as_str(), type_.name.as_str()))
+            });
         }
         builder.index();
         for (key, entry) in &self.types {
@@ -97,30 +84,33 @@ impl Catalog {
             }
         }
         // The same holds for the functions.
-        let mut dropped = FxHashSet::default();
         for (key, entry) in &self.functions {
-            match entry {
-                Entry::Defined(overloads) => {
-                    for function in overloads.iter() {
-                        if function.origin == Origin::File {
-                            builder.add_function(key, function);
-                        }
+            if let Entry::Defined(overloads) = entry {
+                for function in overloads.iter() {
+                    if function.origin == Origin::File {
+                        builder.add_function(key, function);
                     }
                 }
-                Entry::Dropped => {
-                    dropped.insert((key.0.as_str(), key.1.as_str()));
-                }
-                Entry::Unknown => {}
             }
         }
-        if !dropped.is_empty() {
+        let dropped_functions = dropped(&self.functions);
+        if !dropped_functions.is_empty() {
             builder.snapshot.functions.retain(|function| {
-                !dropped.contains(&(function.schema.as_str(), function.name.as_str()))
+                !dropped_functions.contains(&(function.schema.as_str(), function.name.as_str()))
             });
         }
 
         Some(Arc::new(builder.snapshot))
     }
+}
+
+/// The schemas and names of the objects that the file drops.
+fn dropped<T>(entries: &FxHashMap<Key, Entry<T>>) -> FxHashSet<(&str, &str)> {
+    entries
+        .iter()
+        .filter(|(_, entry)| matches!(entry, Entry::Dropped))
+        .map(|((schema, name), _)| (schema.as_str(), name.as_str()))
+        .collect()
 }
 
 fn type_kind_code(kind: TypeKind) -> char {
@@ -156,7 +146,7 @@ impl Builder {
         self.tables.clear();
         for table in &snapshot.tables {
             self.tables
-                .entry((table.schema.clone(), table.name.clone()))
+                .entry(key(&table.schema, &table.name))
                 .or_insert(table.id);
         }
         self.types.clear();
@@ -167,7 +157,7 @@ impl Builder {
         self.sequences = snapshot
             .sequences
             .iter()
-            .map(|sequence| (sequence.schema.clone(), sequence.name.clone()))
+            .map(|sequence| key(&sequence.schema, &sequence.name))
             .collect();
     }
 
@@ -266,7 +256,7 @@ impl Builder {
             }
         };
 
-        let key = (relation.schema.clone(), relation.name.clone());
+        let key = key(&relation.schema, &relation.name);
         let table_id = match self.tables.get(&key) {
             Some(id) => *id,
             None => {
@@ -344,7 +334,7 @@ impl Builder {
     }
 
     fn define_sequence(&mut self, relation: &RelationInfo) {
-        let key = (relation.schema.clone(), relation.name.clone());
+        let key = key(&relation.schema, &relation.name);
         if !self.sequences.contains(&key) {
             self.sequences.insert(key);
             let id = self.next_id();
@@ -360,10 +350,7 @@ impl Builder {
         let Some(TypeId::File(file_id)) = &info.id else {
             return;
         };
-        if self
-            .types
-            .contains_key(&(info.schema.clone(), info.name.clone()))
-        {
+        if self.types.contains_key(&key(&info.schema, &info.name)) {
             return;
         }
         let id = self.next_id();
@@ -371,7 +358,7 @@ impl Builder {
     }
 
     fn define_type(&mut self, (schema, name): &Key, info: &TypeInfo) {
-        if self.types.contains_key(&(schema.clone(), name.clone())) {
+        if self.types.contains_key(&key(schema, name)) {
             return;
         }
         let Some(id) = info.id.as_ref().and_then(|id| self.id_for(id)) else {
@@ -423,12 +410,9 @@ impl Builder {
             .as_ref()
             .and_then(|id| self.id_for(id))
             .unwrap_or(0);
-        type_.typrelid = info.relation.unwrap_or_else(|| {
-            self.tables
-                .get(&(schema.clone(), name.clone()))
-                .copied()
-                .unwrap_or(0)
-        });
+        type_.typrelid = info
+            .relation
+            .unwrap_or_else(|| self.tables.get(&key(schema, name)).copied().unwrap_or(0));
         type_.is_array = info.element.is_some();
         self.push_type(type_);
     }
@@ -503,10 +487,10 @@ impl Builder {
         };
         // An unqualified name is the type in `pg_catalog`, or else the first of that name.
         let found = match schema {
-            Some(schema) => self.types.get(&(schema.to_owned(), name.to_owned())),
+            Some(schema) => self.types.get(&key(schema, name)),
             None => self
                 .types
-                .get(&("pg_catalog".to_owned(), name.to_owned()))
+                .get(&key("pg_catalog", name))
                 .or_else(|| self.type_names.get(name)),
         };
         found.copied().unwrap_or(0)
@@ -520,7 +504,7 @@ fn index_type(
     type_: &PostgresType,
 ) {
     types
-        .entry((type_.schema.clone(), type_.name.clone()))
+        .entry(key(&type_.schema, &type_.name))
         .or_insert(type_.id);
     type_names.entry(type_.name.clone()).or_insert(type_.id);
 }
