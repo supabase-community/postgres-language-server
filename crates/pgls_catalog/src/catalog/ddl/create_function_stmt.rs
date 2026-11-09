@@ -47,7 +47,7 @@ pub(super) fn apply_create_function_stmt(
             let argument_type = parameter
                 .arg_type
                 .as_ref()
-                .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0);
+                .and_then(|ty| crate::typing::normalize_type_name(c, ty, search_path).0);
             outputs.push(ColumnInfo {
                 name: parameter.name.clone(),
                 type_name: parameter.arg_type.as_ref().and_then(type_label),
@@ -57,7 +57,7 @@ pub(super) fn apply_create_function_stmt(
         let argument_type = parameter
             .arg_type
             .as_ref()
-            .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0);
+            .and_then(|ty| crate::typing::normalize_type_name(c, ty, search_path).0);
         let argument_mode = match mode {
             Mode::FuncParamInout => crate::FunctionArgumentMode::InOut,
             Mode::FuncParamVariadic => crate::FunctionArgumentMode::Variadic,
@@ -138,7 +138,7 @@ pub(super) fn apply_create_function_stmt(
     } else if !has_outputs {
         n.return_type
             .as_ref()
-            .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0)
+            .and_then(|ty| crate::typing::normalize_type_name(c, ty, search_path).0)
     } else {
         None
     };
@@ -170,7 +170,7 @@ pub(super) fn apply_create_function_stmt(
     let variadic_element = match variadic_type {
         None => Some(None),
         Some(ty) => ty
-            .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0)
+            .and_then(|ty| crate::typing::normalize_type_name(c, ty, search_path).0)
             .and_then(|id| variadic_element(c, &id))
             .map(Some),
     };

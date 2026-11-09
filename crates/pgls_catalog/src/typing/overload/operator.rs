@@ -17,7 +17,7 @@ use crate::{CatalogView, OperatorInfo, OperatorKind};
 /// [`oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L370
 /// [`left_oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L518
 /// [`oper_select_candidate`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L312
-pub fn select_operator(
+pub(crate) fn select_operator(
     c: &dyn CatalogView,
     schema: Option<&str>,
     name: &str,

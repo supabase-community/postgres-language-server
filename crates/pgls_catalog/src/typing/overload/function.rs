@@ -16,7 +16,7 @@ use crate::{CatalogView, Lookup, TypeKind};
 /// candidates the arguments can be coerced to, and the best of them.
 ///
 /// [`func_get_detail`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1450
-pub fn select_function(
+pub(crate) fn select_function(
     c: &dyn CatalogView,
     schema: Option<&str>,
     name: &str,

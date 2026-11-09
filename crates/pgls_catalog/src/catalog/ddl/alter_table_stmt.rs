@@ -120,7 +120,7 @@ fn apply_column_change(
                 column.ty = definition
                     .type_name
                     .as_ref()
-                    .and_then(|name| crate::normalize_type_name(c, name, search_path).0)
+                    .and_then(|name| crate::typing::normalize_type_name(c, name, search_path).0)
                     .map(crate::typing::Type::Named);
             }
         }

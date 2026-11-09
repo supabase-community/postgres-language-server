@@ -16,7 +16,7 @@ pub(super) fn apply_create_domain_stmt(
         let base = n
             .type_name
             .as_ref()
-            .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0);
+            .and_then(|ty| crate::typing::normalize_type_name(c, ty, search_path).0);
         let category = base
             .as_ref()
             .and_then(|id| c.type_by_id(id).found())

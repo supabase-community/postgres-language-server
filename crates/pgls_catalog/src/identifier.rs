@@ -58,7 +58,7 @@ pub fn quote_identifier(name: &str, position: NamePosition) -> Cow<'_, str> {
 /// there.
 ///
 /// [`scan.l`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332
-pub fn needs_quotes(name: &str, position: NamePosition) -> bool {
+fn needs_quotes(name: &str, position: NamePosition) -> bool {
     let mut chars = name.chars();
     let Some(first) = chars.next() else {
         return true;

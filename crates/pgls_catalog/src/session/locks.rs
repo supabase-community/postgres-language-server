@@ -163,7 +163,7 @@ impl Locks {
             if catalog.skipped_existing() {
                 return None;
             }
-            catalog.relation_creation_name_of(relation, search_path)
+            catalog.relation_creation_key(relation, search_path)
         };
         match stmt {
             NodeEnum::CreateStmt(s) => {

@@ -7,7 +7,7 @@ use pgls_query::{Node, protobuf};
 use pgls_query_ext::utils::string_value;
 
 use super::{
-    Catalog, Entry, Key, key,
+    Catalog, Entry, Key, explicit_schemas, key,
     names::{QualifiedName, qualified_name, range_var_name, type_label},
 };
 use crate::lookup::{
@@ -24,11 +24,8 @@ impl Catalog {
         if let Some(schema) = schema {
             return schema.to_owned();
         }
-        search_path
-            .iter()
-            .filter(|schema| schema.as_str() != "$user")
+        explicit_schemas(search_path)
             .find(|schema| !self.schema(schema).is_missing())
-            .cloned()
             .unwrap_or_else(|| "public".into())
     }
 
@@ -39,11 +36,13 @@ impl Catalog {
         )
     }
 
-    /// The key of a new relation. Temporary relations live in `pg_temp`. `None` for system
+    /// The key of a new relation. Temporary relations live in `pg_temp`. Unlike
+    /// [`Catalog::relation_name_of`], this doesn't depend on the relations that exist: a
+    /// temporary table with the name doesn't capture a new permanent table. `None` for system
     /// catalogs, where Postgres rejects new relations ([`heap_create`]).
     ///
     /// [`heap_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/heap.c#L285
-    pub(super) fn relation_creation_key(
+    pub(crate) fn relation_creation_key(
         &self,
         range_var: &protobuf::RangeVar,
         search_path: &[String],
@@ -489,7 +488,7 @@ impl Catalog {
                             pgls_query::NodeEnum::TypeName(name) => name,
                             _ => return None,
                         };
-                        crate::normalize_type_name(self, name, search_path).0
+                        crate::typing::normalize_type_name(self, name, search_path).0
                     })
                     .collect::<Option<Vec<_>>>()
             })
@@ -585,7 +584,7 @@ pub(super) fn column_info(
     let type_id = column
         .type_name
         .as_ref()
-        .and_then(|name| crate::normalize_type_name(catalog, name, search_path).0)
+        .and_then(|name| crate::typing::normalize_type_name(catalog, name, search_path).0)
         .or_else(|| {
             // Serial pseudo-types are rewritten to integer columns by PostgreSQL, but they
             // are not pg_type entries and therefore cannot be normalized by name lookup.

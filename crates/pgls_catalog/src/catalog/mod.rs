@@ -223,6 +223,16 @@ impl Catalog {
         }
     }
 
+    /// Whether a relation or an index has the name in the schema. Indexes share their namespace
+    /// with tables, views, sequences and composite types, but live in their own map.
+    fn relation_or_index_in(&self, schema: &str, name: &str) -> Lookup<()> {
+        match (self.relation_in(schema, name), self.index_in(schema, name)) {
+            (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(()),
+            (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
+            (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
+        }
+    }
+
     fn type_in(&self, schema: &str, name: &str) -> Lookup<TypeInfo> {
         if let Some(entry) = self.types.get(&key(schema, name)) {
             return self.entry_lookup(entry);
@@ -275,7 +285,7 @@ impl Catalog {
 
     /// Looks up the relation a `RangeVar` names. An unqualified name is looked up in the search
     /// path.
-    pub fn relation_of(
+    pub(crate) fn relation_of(
         &self,
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
@@ -292,14 +302,9 @@ impl Catalog {
         search_path: &[String],
     ) -> (String, String) {
         let name = names::range_var_name(range_var);
-        // Indexes are relations too, in their own map.
-        let in_schema = |schema: &str| match (
-            self.relation_in(schema, &name.name),
-            self.index_in(schema, &name.name),
-        ) {
-            (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(key(schema, &name.name)),
-            (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
-            (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
+        let in_schema = |schema: &str| {
+            self.relation_or_index_in(schema, &name.name)
+                .map(|()| key(schema, &name.name))
         };
         let found = match name.schema() {
             Some(schema) => in_schema(schema),
@@ -312,22 +317,10 @@ impl Catalog {
         }
     }
 
-    /// The schema and name of the relation that `CREATE TABLE` creates for a `RangeVar`. Unlike
-    /// [`Catalog::relation_name_of`], this doesn't depend on the relations that exist: a
-    /// temporary table with the name doesn't capture a new permanent table. `None` for system
-    /// catalogs, where Postgres rejects new relations.
-    pub fn relation_creation_name_of(
-        &self,
-        range_var: &pgls_query::protobuf::RangeVar,
-        search_path: &[String],
-    ) -> Option<(String, String)> {
-        self.relation_creation_key(range_var, search_path)
-    }
-
     /// Whether the last statement applied was a no-op because of `IF NOT EXISTS`, like `CREATE
     /// TABLE IF NOT EXISTS` of a table that is known to exist. If the catalog doesn't know
     /// whether the object exists, the statement may have created it and this is `false`.
-    pub fn skipped_existing(&self) -> bool {
+    pub(crate) fn skipped_existing(&self) -> bool {
         self.skipped_existing
     }
 
@@ -358,7 +351,7 @@ impl Catalog {
     }
 
     /// Looks up the index that a name list names, like the objects of `DROP INDEX`.
-    pub fn index_of(
+    pub(crate) fn index_of(
         &self,
         names: &[pgls_query::protobuf::Node],
         search_path: &[String],
@@ -370,7 +363,7 @@ impl Catalog {
     }
 
     /// Looks up the table or materialized view an index is on.
-    pub fn index_table(&self, index: &IndexInfo) -> Lookup<RelationInfo> {
+    pub(crate) fn index_table(&self, index: &IndexInfo) -> Lookup<RelationInfo> {
         self.relation_in(&index.schema, &index.table)
     }
 

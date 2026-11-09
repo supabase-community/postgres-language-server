@@ -1,12 +1,12 @@
 //! Whether a value of one type can become another: Postgres' coercion rules.
 
-use crate::typing::types::{array_element, base_type, info, is_array, type_category};
+use crate::typing::types::{array_element, base_type, info, type_category};
 use crate::typing::{CoercionContext, Decision, Type, TypeId};
 use crate::{CastContext, CastMethod};
 use crate::{CatalogView, Lookup, TypeKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CoercionPathway {
+pub(crate) enum CoercionPathway {
     RelabelType,
     Func,
     ArrayCoerce,
@@ -32,7 +32,7 @@ fn coercion_context(context: CoercionContext) -> u8 {
 /// through I/O, or as an array element by element. Port of [`find_coercion_pathway`].
 ///
 /// [`find_coercion_pathway`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L3156
-pub fn find_coercion_pathway(
+pub(crate) fn find_coercion_pathway(
     c: &dyn CatalogView,
     source: &TypeId,
     target: &TypeId,
@@ -153,7 +153,7 @@ fn target_pseudo(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<String>> {
 /// [`crate::typing::check_generic_type_consistency`] instead.
 ///
 /// [`can_coerce_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557
-pub fn can_coerce(
+pub(crate) fn can_coerce(
     c: &dyn CatalogView,
     from: &Type,
     to: &TypeId,
@@ -235,70 +235,6 @@ fn row_coercion(c: &dyn CatalogView, source: &TypeId, target: &TypeId) -> Decisi
     }
 }
 
-/// Port of [`IsBinaryCoercible`], which [`IsBinaryCoercibleWithCast`] implements since
-/// Postgres 16.
-///
-/// [`IsBinaryCoercible`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L3033
-/// [`IsBinaryCoercibleWithCast`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L3048
-pub fn is_binary_coercible(
-    c: &dyn CatalogView,
-    source: &TypeId,
-    target: &TypeId,
-) -> Decision<bool> {
-    if source == target {
-        return Decision::Known(true);
-    }
-    let source = match base_type(c, source) {
-        Decision::Known(id) => id,
-        Decision::Unknown => return Decision::Unknown,
-    };
-    if source == *target {
-        return Decision::Known(true);
-    }
-    match target_pseudo(c, target) {
-        Decision::Unknown => return Decision::Unknown,
-        Decision::Known(Some(name)) => {
-            return match name.as_str() {
-                "any" | "anyelement" | "anycompatible" => Decision::Known(true),
-                "anyarray" | "anycompatiblearray" => is_array(c, &source),
-                "anynonarray" | "anycompatiblenonarray" => match is_array(c, &source) {
-                    Decision::Known(array) => Decision::Known(!array),
-                    Decision::Unknown => Decision::Unknown,
-                },
-                "anyenum" => match info(c, &source) {
-                    Decision::Known(t) => Decision::Known(t.kind == Some(TypeKind::Enum)),
-                    Decision::Unknown => Decision::Unknown,
-                },
-                "anyrange" | "anycompatiblerange" => match info(c, &source) {
-                    Decision::Known(t) => Decision::Known(t.kind == Some(TypeKind::Range)),
-                    Decision::Unknown => Decision::Unknown,
-                },
-                "anymultirange" | "anycompatiblemultirange" => match info(c, &source) {
-                    Decision::Known(t) => Decision::Known(t.kind == Some(TypeKind::Multirange)),
-                    Decision::Unknown => Decision::Unknown,
-                },
-                _ => Decision::Known(false),
-            };
-        }
-        Decision::Known(None) => {}
-    }
-    match is_named(c, target, "record") {
-        Decision::Known(true) => match info(c, &source) {
-            Decision::Known(t) => return Decision::Known(t.kind == Some(TypeKind::Composite)),
-            Decision::Unknown => return Decision::Unknown,
-        },
-        Decision::Unknown => return Decision::Unknown,
-        Decision::Known(false) => {}
-    }
-    match c.cast(&source, target) {
-        Lookup::Found(cast) => Decision::Known(
-            cast.method == CastMethod::Binary && cast.context == CastContext::Implicit,
-        ),
-        Lookup::Missing => Decision::Known(false),
-        Lookup::Unknown => Decision::Unknown,
-    }
-}
-
 #[cfg(all(test, feature = "db"))]
 mod tests {
     use super::*;
@@ -342,10 +278,6 @@ mod tests {
                 &int4,
                 CoercionContext::Implicit
             ),
-            Decision::Known(true)
-        );
-        assert_eq!(
-            is_binary_coercible(&catalog, &int4, &int4),
             Decision::Known(true)
         );
         assert_eq!(

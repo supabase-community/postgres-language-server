@@ -22,7 +22,7 @@ fn text_type(c: &dyn CatalogView) -> Decision<Type> {
 /// [`select_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1345
 /// [`verify_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1609
 /// [`coerce_to_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1575
-pub fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type> {
+pub(crate) fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type> {
     let Some(first) = types.first() else {
         return Selection::Unknown;
     };
@@ -118,7 +118,7 @@ fn is(id: &Option<TypeId>, candidate: &TypeId) -> bool {
 /// of [`check_generic_type_consistency`].
 ///
 /// [`check_generic_type_consistency`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1740
-pub fn check_generic_type_consistency(
+pub(crate) fn check_generic_type_consistency(
     c: &dyn CatalogView,
     actual: &[Type],
     declared: &[TypeId],
@@ -251,7 +251,7 @@ pub fn check_generic_type_consistency(
 /// `"any"` result. Port of [`enforce_generic_type_consistency`], without range types.
 ///
 /// [`enforce_generic_type_consistency`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2134
-pub fn resolve_polymorphic_result(
+pub(crate) fn resolve_polymorphic_result(
     c: &dyn CatalogView,
     actual: &[Type],
     declared: &[TypeId],
@@ -418,7 +418,7 @@ pub fn resolve_polymorphic_result(
 /// [`check_valid_polymorphic_signature`]. Unknown when a type is unknown.
 ///
 /// [`check_valid_polymorphic_signature`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2878
-pub fn is_valid_polymorphic_signature(
+pub(crate) fn is_valid_polymorphic_signature(
     c: &dyn CatalogView,
     result: &TypeId,
     inputs: &[Option<TypeId>],

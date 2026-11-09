@@ -22,8 +22,11 @@ mod overload;
 mod types;
 mod unify;
 
-pub use coerce::*;
-pub use model::*;
-pub use overload::*;
-pub use types::*;
-pub use unify::*;
+pub use model::{Type, TypeId, TypedColumn};
+pub use types::format_type;
+
+pub(crate) use coerce::*;
+pub(crate) use model::*;
+pub(crate) use overload::*;
+pub(crate) use types::*;
+pub(crate) use unify::*;

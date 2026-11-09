@@ -28,7 +28,7 @@ pub mod snapshot;
 pub mod typing;
 
 pub use catalog::{Catalog, CatalogBase};
-pub use identifier::{NamePosition, identifier_name, needs_quotes, quote_identifier};
+pub use identifier::{NamePosition, identifier_name, quote_identifier};
 pub use lookup::{
     Candidates, CastContext, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
     FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
@@ -36,4 +36,4 @@ pub use lookup::{
 };
 pub use session::{Session, TransactionMode, is_reindex_concurrent, is_vacuum_full};
 pub use snapshot::*;
-pub use typing::*;
+pub use typing::{Type, TypeId, TypedColumn};
