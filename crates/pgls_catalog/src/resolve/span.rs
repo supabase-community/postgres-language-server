@@ -384,6 +384,9 @@ pub(super) fn operator_end(sql: &str, start: usize) -> Option<usize> {
 }
 
 #[cfg(test)]
+mod regress_tests;
+
+#[cfg(test)]
 mod tests {
     use super::{
         alias_span, cast_end, literal_end, operator_end, reference_end, star_end, token_end,
