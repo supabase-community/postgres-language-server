@@ -5,7 +5,11 @@ use super::{
     res_target::{check_generated_update, check_target_column},
     resolve_node,
 };
-use crate::resolve::scope::{Item, Level};
+use crate::resolve::{
+    expr::{check_assignment, infer_expr},
+    scope::{Item, Level},
+    utils::node_location,
+};
 
 /// `ON CONFLICT` sees the target relation and the row proposed for insertion, `excluded`. Port
 /// of [`transformOnConflictClause`].
@@ -43,8 +47,8 @@ pub(super) fn resolve_on_conflict_clause(r: &mut Resolver, n: &OnConflictClause,
                 target.type_of(&assignment.name).flatten(),
                 assignment.val.as_deref().and_then(|v| v.node.as_ref()),
             ) {
-                let expr_type = super::super::expr::infer_expr(r, expr);
-                super::super::expr::check_assignment(
+                let expr_type = infer_expr(r, expr);
+                check_assignment(
                     r,
                     &assignment.name,
                     column_type,
@@ -53,7 +57,7 @@ pub(super) fn resolve_on_conflict_clause(r: &mut Resolver, n: &OnConflictClause,
                     assignment
                         .val
                         .as_deref()
-                        .and_then(super::insert_stmt::node_location)
+                        .and_then(node_location)
                         .unwrap_or(assignment.location),
                 );
             }

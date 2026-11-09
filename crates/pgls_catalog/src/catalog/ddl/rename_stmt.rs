@@ -24,7 +24,17 @@ pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[
         | ObjectType::ObjectForeignTable
         | ObjectType::ObjectSequence => {
             if let Some(range_var) = &n.relation {
-                c.move_relation(range_var, None, Some(&n.newname), search_path);
+                // `ALTER TABLE` can rename indexes too.
+                if c.relation_of(range_var, search_path).found().is_some() {
+                    c.move_relation(range_var, None, Some(&n.newname), search_path);
+                } else {
+                    c.rename_index(range_var, &n.newname, search_path);
+                }
+            }
+        }
+        ObjectType::ObjectIndex => {
+            if let Some(range_var) = &n.relation {
+                c.rename_index(range_var, &n.newname, search_path);
             }
         }
         ObjectType::ObjectColumn => {

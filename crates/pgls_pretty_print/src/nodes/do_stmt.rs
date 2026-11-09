@@ -86,6 +86,5 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

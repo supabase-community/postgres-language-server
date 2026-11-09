@@ -140,6 +140,7 @@ mod tests {
                 position: (pos as u32).into(),
                 text: sql,
                 tree: &tree,
+                server_version_num: None,
             };
             let _ = TreesitterContext::new(params);
         }

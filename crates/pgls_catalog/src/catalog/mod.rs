@@ -22,7 +22,9 @@ use std::sync::{
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::Candidates;
-use crate::lookup::{CatalogView, FunctionInfo, Lookup, RelationInfo, TypeInfo};
+use crate::lookup::{
+    CatalogView, FunctionInfo, IndexInfo, Lookup, RelationInfo, RelationKind, TypeInfo,
+};
 use crate::typing::TypeId;
 use crate::{CastInfo, OperatorInfo, OperatorKind};
 
@@ -61,12 +63,20 @@ pub struct Catalog {
     /// Inheritance children of [`Catalog::children`] whose inherited columns may also be their own,
     /// or inherited from another parent. They keep a column their parent drops.
     children_with_own_columns: FxHashSet<Key>,
+    indexes: FxHashMap<Key, Entry<IndexInfo>>,
+    /// Set once the file may have created an index whose name we don't know: one with a
+    /// generated name, or one that comes with a constraint or a partition. From then on, no
+    /// index is known to be missing.
+    indexes_incomplete: bool,
     /// Set once the file changed the columns of a database table. Its partitions and
     /// inheritance children in the database changed too, but we don't know which they are.
     database_columns_changed: bool,
     /// Set once the file ran a statement with effects the catalog can't model (`DO`, `CALL`,
     /// `CREATE EXTENSION` of a new extension, ...). From then on, nothing is known to be missing.
     tainted: bool,
+    /// Whether the last statement was a no-op because of `IF NOT EXISTS`: the object it would
+    /// create is known to exist. See [`Catalog::skipped_existing`].
+    skipped_existing: bool,
     /// Whether lookups ignore [`Catalog::tainted`], for editor features. See
     /// [`Catalog::best_effort`].
     best_effort: bool,
@@ -97,8 +107,11 @@ impl Catalog {
             functions: FxHashMap::default(),
             children: FxHashMap::default(),
             children_with_own_columns: FxHashSet::default(),
+            indexes: FxHashMap::default(),
+            indexes_incomplete: false,
             database_columns_changed: false,
             tainted: false,
+            skipped_existing: false,
             best_effort: false,
             casts_incomplete: false,
             operators_incomplete: false,
@@ -190,6 +203,30 @@ impl Catalog {
         }
     }
 
+    fn index_in(&self, schema: &str, name: &str) -> Lookup<IndexInfo> {
+        let not_found = || {
+            if self.indexes_incomplete {
+                Lookup::Unknown
+            } else {
+                self.not_found()
+            }
+        };
+        if let Some(entry) = self.indexes.get(&key(schema, name)) {
+            return match entry {
+                Entry::Dropped => not_found(),
+                entry => self.entry_lookup(entry),
+            };
+        }
+        match self.base_for(schema) {
+            Some(base) => match base.index(schema, name) {
+                Some(index) => Lookup::Found(index.clone()),
+                None if base.may_have_index(schema, name) => Lookup::Unknown,
+                None => not_found(),
+            },
+            None => not_found(),
+        }
+    }
+
     fn type_in(&self, schema: &str, name: &str) -> Lookup<TypeInfo> {
         if let Some(entry) = self.types.get(&key(schema, name)) {
             return self.entry_lookup(entry);
@@ -238,6 +275,120 @@ impl Catalog {
         } else {
             self.not_found()
         }
+    }
+
+    /// Looks up the relation a `RangeVar` names. An unqualified name is looked up in the search
+    /// path.
+    pub fn relation_of(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        search_path: &[String],
+    ) -> Lookup<RelationInfo> {
+        let name = names::range_var_name(range_var);
+        self.relation(name.schema(), &name.name, search_path)
+    }
+
+    /// The schema and name of the relation a `RangeVar` names: the relation or index it resolves
+    /// to, or, if the catalog doesn't know one, where `CREATE TABLE` would create it.
+    pub fn relation_name_of(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        search_path: &[String],
+    ) -> (String, String) {
+        let name = names::range_var_name(range_var);
+        // Indexes are relations too, in their own map.
+        let in_schema = |schema: &str| match (
+            self.relation_in(schema, &name.name),
+            self.index_in(schema, &name.name),
+        ) {
+            (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(key(schema, &name.name)),
+            (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
+            (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
+        };
+        let found = match name.schema() {
+            Some(schema) => in_schema(schema),
+            None => self.search(relation_search_path(search_path), in_schema),
+        };
+        match found.found() {
+            Some(key) => key,
+            None if range_var.relpersistence == "t" => key("pg_temp", &range_var.relname),
+            None => self.creation_key(&name, search_path),
+        }
+    }
+
+    /// The schema and name of the relation that `CREATE TABLE` creates for a `RangeVar`. Unlike
+    /// [`Catalog::relation_name_of`], this doesn't depend on the relations that exist: a
+    /// temporary table with the name doesn't capture a new permanent table. `None` for system
+    /// catalogs, where Postgres rejects new relations.
+    pub fn relation_creation_name_of(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        search_path: &[String],
+    ) -> Option<(String, String)> {
+        self.relation_creation_key(range_var, search_path)
+    }
+
+    /// Whether the last statement applied was a no-op because of `IF NOT EXISTS`, like `CREATE
+    /// TABLE IF NOT EXISTS` of a table that is known to exist. If the catalog doesn't know
+    /// whether the object exists, the statement may have created it and this is `false`.
+    pub fn skipped_existing(&self) -> bool {
+        self.skipped_existing
+    }
+
+    /// Whether the relation a `RangeVar` names is known to be a partitioned table.
+    pub fn is_partitioned_table(
+        &self,
+        range_var: &pgls_query::protobuf::RangeVar,
+        search_path: &[String],
+    ) -> bool {
+        self.relation_of(range_var, search_path)
+            .found()
+            .is_some_and(|relation| relation.kind == RelationKind::PartitionedTable)
+    }
+
+    /// Looks up an index. With `schema: None`, the search path is used, like for relations.
+    pub fn index(
+        &self,
+        schema: Option<&str>,
+        name: &str,
+        search_path: &[String],
+    ) -> Lookup<IndexInfo> {
+        match schema {
+            Some(schema) => self.index_in(schema, name),
+            None => self.search(relation_search_path(search_path), |schema| {
+                self.index_in(schema, name)
+            }),
+        }
+    }
+
+    /// Looks up the index that a name list names, like the objects of `DROP INDEX`.
+    pub fn index_of(
+        &self,
+        names: &[pgls_query::protobuf::Node],
+        search_path: &[String],
+    ) -> Lookup<IndexInfo> {
+        match names::qualified_name(names) {
+            Some(name) => self.index(name.schema(), &name.name, search_path),
+            None => Lookup::Unknown,
+        }
+    }
+
+    /// Looks up the table or materialized view an index is on.
+    pub fn index_table(&self, index: &IndexInfo) -> Lookup<RelationInfo> {
+        self.relation_in(&index.schema, &index.table)
+    }
+
+    /// Whether the index that a name list names is known to be on a partitioned table, which
+    /// makes it a partitioned index.
+    pub fn is_partitioned_index(
+        &self,
+        names: &[pgls_query::protobuf::Node],
+        search_path: &[String],
+    ) -> bool {
+        self.index_of(names, search_path)
+            .found()
+            .and_then(|index| self.index_table(&index).found())
+            .is_some_and(|table| table.kind == RelationKind::PartitionedTable)
     }
 
     /// Finds the schema of a relation, if the relation is known to exist.

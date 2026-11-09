@@ -1,14 +1,21 @@
-use pgls_query::{NodeEnum, protobuf::CreateStmt};
+use pgls_query::{
+    NodeEnum,
+    protobuf::{CreateStmt, TableLikeOption},
+};
 
 use crate::catalog::{Catalog, key, names::type_name, overlay::column_info};
 use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
 use crate::{Generated, Identity};
 
-/// `CREATE_TABLE_LIKE_GENERATED` of `TableLikeOption`, the bit of `INCLUDING GENERATED`:
-/// https://github.com/postgres/postgres/blob/REL_18_6/src/include/nodes/parsenodes.h#L791
-const CREATE_TABLE_LIKE_GENERATED: u32 = 1 << 4;
-/// `CREATE_TABLE_LIKE_IDENTITY`, the bit of `INCLUDING IDENTITY`.
-const CREATE_TABLE_LIKE_IDENTITY: u32 = 1 << 5;
+/// The bit of `INCLUDING GENERATED` in `TableLikeClause.options`. The protobuf enum numbers the
+/// options of [`TableLikeOption`] from 1, after `Undefined`, while Postgres uses them as bits from
+/// `1 << 0`.
+///
+/// [`TableLikeOption`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/nodes/parsenodes.h#L785
+const CREATE_TABLE_LIKE_GENERATED: u32 =
+    1 << (TableLikeOption::CreateTableLikeGenerated as u32 - 1);
+/// The bit of `INCLUDING IDENTITY`, like [`CREATE_TABLE_LIKE_GENERATED`].
+const CREATE_TABLE_LIKE_IDENTITY: u32 = 1 << (TableLikeOption::CreateTableLikeIdentity as u32 - 1);
 
 /// `CREATE TABLE`. Models [`DefineRelation`], which merges inherited columns with
 /// [`MergeAttributes`], and the columns copied by `LIKE` ([`transformTableLikeClause`]).

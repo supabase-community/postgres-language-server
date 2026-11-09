@@ -6,6 +6,7 @@
 
 use std::borrow::Cow;
 
+use crate::Behavior;
 use crate::typing::{Type, TypeId};
 use crate::{Generated, Identity};
 
@@ -76,6 +77,20 @@ pub struct ColumnInfo {
     pub identity: Identity,
 }
 
+impl ColumnInfo {
+    /// A column with what any relation's column has; the properties of table columns, like
+    /// [`ColumnInfo::generated`], take their defaults.
+    pub fn new(name: impl Into<String>, type_name: Option<String>, ty: Option<Type>) -> Self {
+        ColumnInfo {
+            name: name.into(),
+            type_name,
+            ty,
+            generated: Generated::No,
+            identity: Identity::No,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationInfo {
     pub schema: String,
@@ -83,6 +98,16 @@ pub struct RelationInfo {
     pub kind: RelationKind,
     /// `None` when the column set is not known, e.g. a view whose select list could not be derived.
     pub columns: Option<Vec<ColumnInfo>>,
+    pub origin: Origin,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IndexInfo {
+    /// The schema of the index, which is always the schema of its table.
+    pub schema: String,
+    pub name: String,
+    /// The table or materialized view the index is on.
+    pub table: String,
     pub origin: Origin,
 }
 
@@ -107,6 +132,8 @@ pub struct FunctionInfo {
     /// Output columns when the function returns a relation or composite type
     /// (what `select * from fn()` yields). `None` when unknown or scalar.
     pub return_columns: Option<Vec<ColumnInfo>>,
+    /// `pg_proc.provolatile`. `None` when unknown, e.g. for aggregates the file creates.
+    pub volatility: Option<Behavior>,
     pub origin: Origin,
     /// Complete typing signature when available.
     pub signature: Option<FunctionSignature>,
@@ -170,6 +197,11 @@ pub trait CatalogView {
     /// Looks up a type by its internal name (e.g. `int4`, not `integer`). With `schema: None`,
     /// the search path is used.
     fn type_(&self, schema: Option<&str>, name: &str, search_path: &[String]) -> Lookup<TypeInfo>;
+
+    /// The identity of the builtin type `pg_catalog.<name>`, if it is known.
+    fn builtin_type(&self, name: &str) -> Option<TypeId> {
+        self.type_(Some("pg_catalog"), name, &[]).found()?.id
+    }
 
     /// Looks up a type by identity.
     fn type_by_id(&self, _: &TypeId) -> Lookup<TypeInfo> {

@@ -321,6 +321,16 @@ fn ctes() {
     assert_valid(
         "with recursive c(n) as (select 1 union all select n + 1 from c where n < 2) search depth first by n set ord select ord from c",
     );
+    // The recursive term sees the columns of the non-recursive term.
+    assert_eq!(
+        findings(
+            "with recursive c(n) as (select 1 union all select nope from c where n < 2) select n from c"
+        ),
+        [unknown_column(None, "nope")]
+    );
+    assert_valid(
+        "with recursive c as (select 1 as n union all select n + 1 from c where n < 2) select n from c",
+    );
 }
 
 #[test]
@@ -363,6 +373,28 @@ fn types() {
         findings("select null::nope"),
         [FindingKind::UnknownType {
             schema: None,
+            name: "nope".into()
+        }]
+    );
+}
+
+#[test]
+fn catalog_qualified_names() {
+    // `catalog.schema.name`, where Postgres only accepts the current database as the catalog.
+    assert_valid("select db.pg_catalog.upper('a'), null::db.public.address");
+    assert_eq!(
+        findings("select db.public.nope()"),
+        [FindingKind::UnknownFunction {
+            schema: Some("public".into()),
+            name: "nope".into(),
+            arg_count: 0,
+            name_exists: false
+        }]
+    );
+    assert_eq!(
+        findings("select null::db.public.nope"),
+        [FindingKind::UnknownType {
+            schema: Some("public".into()),
             name: "nope".into()
         }]
     );
@@ -484,6 +516,175 @@ fn names_of_sql_json_and_xml_expressions() {
     );
     assert_eq!(
         findings("select nope from (select json_object('a': 1), xmlconcat(null)) s"),
+        [unknown_column(None, "nope")]
+    );
+}
+
+/// The output column names of a query, which must be the same as the names of its typed
+/// output columns.
+fn star_output_names(sql: &str) -> Option<Vec<String>> {
+    let catalog = Catalog::new(Some(database()));
+    let parsed = pgls_query::parse(sql).expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let names = query_output_columns(&query, &catalog, &search_path());
+    let typed = query_output_types(&query, &catalog, &search_path())
+        .map(|columns| columns.into_iter().map(|column| column.name).collect());
+    assert_eq!(names, typed, "{sql}");
+    names
+}
+
+#[test]
+fn joins_that_merge_columns_have_known_output_columns() {
+    // The merged columns come first, then the other columns of each side.
+    assert_eq!(
+        star_output_names("select * from users join posts using (id)"),
+        Some(vec![
+            "id".into(),
+            "name".into(),
+            "user_id".into(),
+            "title".into()
+        ])
+    );
+    assert_eq!(
+        star_output_names("select * from users natural join posts"),
+        Some(vec![
+            "id".into(),
+            "name".into(),
+            "user_id".into(),
+            "title".into()
+        ])
+    );
+    // A FROM item after the join keeps its own columns, even one with a merged name.
+    assert_eq!(
+        star_output_names("select * from users join posts using (id), users u2"),
+        Some(vec![
+            "id".into(),
+            "name".into(),
+            "user_id".into(),
+            "title".into(),
+            "id".into(),
+            "name".into()
+        ])
+    );
+    // The alias of a join sees its columns.
+    assert_eq!(
+        findings("select j.title, j.nope from (users join posts using (id)) j"),
+        [unknown_column(Some("j"), "nope")]
+    );
+    assert_eq!(
+        findings("select title, nope from (select * from users natural join posts) s"),
+        [unknown_column(None, "nope")]
+    );
+}
+
+#[test]
+fn natural_joins_merge_the_columns_both_sides_have() {
+    assert_eq!(
+        findings("select nme from users natural join posts"),
+        [unknown_column(None, "nme")]
+    );
+    // The merged column is not ambiguous, and both sides can still be qualified.
+    assert_valid("select id, name, title, users.id, posts.id from users natural join posts");
+    let setup = "create table people (id int8, name text, age int8);";
+    assert_eq!(
+        findings_after(
+            setup,
+            "select id, name, age, nope from users natural join people"
+        ),
+        [unknown_column(None, "nope")]
+    );
+    // With `USING`, a name that both sides have but that isn't merged is ambiguous.
+    assert_eq!(
+        findings_after(setup, "select id, name from users join people using (id)"),
+        [FindingKind::AmbiguousColumn {
+            column: "name".into(),
+            candidates: vec!["users".into(), "people".into()],
+        }]
+    );
+    // Nested natural joins.
+    assert_eq!(
+        findings_after(
+            setup,
+            "select id, name, user_id, age, nope from users natural join people natural join posts"
+        ),
+        [unknown_column(None, "nope")]
+    );
+    // The columns of a natural join have types, the merged ones their common type.
+    let catalog = Catalog::new(Some(database()));
+    let parsed = pgls_query::parse("select id, title from users natural join posts").unwrap();
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let types: Vec<_> = query_output_types(&query, &catalog, &search_path())
+        .expect("known columns")
+        .into_iter()
+        .map(|column| column.ty)
+        .collect();
+    let builtin = |name| {
+        catalog
+            .type_(Some("pg_catalog"), name, &[])
+            .found()
+            .and_then(|info| info.id)
+            .map(crate::typing::Type::Named)
+    };
+    assert_eq!(types, [builtin("int8"), builtin("text")]);
+    // A column that an inner join merged keeps its type in the outer one.
+    let mut catalog = Catalog::new(Some(database()));
+    for stmt in pgls_query::parse(setup).unwrap().stmts() {
+        catalog.apply(stmt, &search_path());
+    }
+    let parsed =
+        pgls_query::parse("select name from users natural join people natural join posts").unwrap();
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let types: Vec<_> = query_output_types(&query, &catalog, &search_path())
+        .expect("known columns")
+        .into_iter()
+        .map(|column| column.ty)
+        .collect();
+    assert_eq!(types, [builtin("text")]);
+    // If the columns of a side are unknown, so are the merged ones.
+    assert_eq!(
+        findings("select nme from users natural join nope"),
+        [FindingKind::UnknownRelation {
+            schema: None,
+            name: "nope".into()
+        }]
+    );
+}
+
+#[test]
+fn merged_columns_are_ambiguous_next_to_another_column_of_the_name() {
+    let setup = "create table people (id int8, name text, age int8);";
+    let ambiguous = |column: &str, candidates: &[&str]| FindingKind::AmbiguousColumn {
+        column: column.into(),
+        candidates: candidates.iter().map(|name| (*name).to_owned()).collect(),
+    };
+    // Postgres: column reference "id" is ambiguous
+    for sql in [
+        "select id from users natural join people, posts",
+        "select id from users join people using (id), posts",
+        "select id from users join people using (id) join posts on true",
+    ] {
+        assert_eq!(
+            findings_after(setup, sql),
+            [ambiguous("id", &["users", "people", "posts"])],
+            "{sql}"
+        );
+    }
+    // A column only one side has, a merged column, and qualified columns are fine.
+    assert_eq!(
+        findings_after(
+            setup,
+            "select age, title, users.id, posts.id from users natural join people, posts"
+        ),
+        []
+    );
+    assert_eq!(
+        findings_after(setup, "select id, nope from users natural join people"),
         [unknown_column(None, "nope")]
     );
 }
@@ -850,5 +1051,67 @@ fn correlated_scalar_subquery_has_the_type_of_the_outer_column() {
         Some(crate::typing::Type::Named(crate::typing::TypeId::Snapshot(
             20
         )))
+    );
+}
+
+/// The names of the output columns of `sql`, if their types are known.
+fn typed_output_names(sql: &str) -> Option<Vec<String>> {
+    let catalog = Catalog::new(Some(database()));
+    let parsed = pgls_query::parse(sql).expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    query_output_types(&query, &catalog, &search_path())
+        .map(|columns| columns.into_iter().map(|column| column.name).collect())
+}
+
+#[test]
+fn alias_column_names_apply_to_typed_columns() {
+    assert_eq!(
+        typed_output_names("select * from users as u(a)"),
+        Some(vec!["a".into(), "name".into()])
+    );
+    assert_eq!(
+        typed_output_names("select * from (select 1 as x, 2 as y) as s(a)"),
+        Some(vec!["a".into(), "y".into()])
+    );
+    assert_eq!(
+        typed_output_names("select * from (users join posts on true) as j(a)")
+            .and_then(|names| names.first().cloned()),
+        Some("a".into())
+    );
+    // Postgres rejects more names than columns, so the columns are unknown, like the untyped
+    // ones.
+    assert_eq!(
+        typed_output_names("select * from users as u(a, b, c)"),
+        None
+    );
+    assert_eq!(
+        typed_output_names("select * from (select 1 as x) as s(a, b)"),
+        None
+    );
+}
+
+#[test]
+fn cte_column_lists_apply_to_typed_columns() {
+    assert_eq!(
+        typed_output_names("with c(x) as (select 1 as a, 2 as b) select * from c"),
+        Some(vec!["x".into(), "b".into()])
+    );
+    let catalog = Catalog::new(Some(database()));
+    let parsed =
+        pgls_query::parse("with c(x) as (select 1::int8 as a) select x from c").expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let columns = query_output_types(&query, &catalog, &search_path()).expect("known columns");
+    assert_eq!(
+        columns[0].ty,
+        catalog.builtin_type("int8").map(crate::typing::Type::Named)
+    );
+    // Postgres rejects more names than columns, so the columns are unknown.
+    assert_eq!(
+        typed_output_names("with c(x, y) as (select 1 as a) select * from c"),
+        None
     );
 }
