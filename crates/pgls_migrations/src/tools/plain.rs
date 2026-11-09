@@ -4,7 +4,7 @@ use std::path::Path;
 
 use pgls_fs::FileSystem;
 
-use crate::{Detected, FileInfo, MigrationTool, Root, Script, ToolId, Version, naming};
+use crate::{Database, Detected, FileInfo, MigrationTool, Root, Script, ToolId, Version, naming};
 
 pub struct Plain;
 
@@ -22,8 +22,9 @@ impl MigrationTool for Plain {
         None
     }
 
-    fn is_tool_directory(&self, _fs: &dyn FileSystem, _directory: &Path) -> bool {
-        false
+    /// Plain SQL files are run by hand, which records nothing.
+    fn database(&self) -> Database {
+        Database { history: None }
     }
 
     fn default_dir(&self) -> Option<&'static str> {

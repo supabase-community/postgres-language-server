@@ -48,9 +48,8 @@ pub trait MigrationTool: Sync {
     /// projects.
     fn detect(&self, fs: &dyn FileSystem, root: &Root) -> Option<Detected>;
 
-    /// Whether `directory` is the folder of the tool inside a project, like `supabase`, so that
-    /// `init` configures the project above it.
-    fn is_tool_directory(&self, fs: &dyn FileSystem, directory: &Path) -> bool;
+    /// What the tool keeps in the database it migrates.
+    fn database(&self) -> Database;
 
     /// The folder of the migrations in a project of the tool, relative to the project, if the
     /// tool has one by default.
@@ -93,6 +92,23 @@ impl ToolId {
 
 /// The tools, in the order `init` reports their projects.
 pub const TOOLS: &[&dyn MigrationTool] = &[&Supabase, &Dbmate, &Goose, &Plain];
+
+/// What a migration tool keeps in the database it migrates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Database {
+    /// Where the tool records the migrations it ran, if it does.
+    pub history: Option<History>,
+}
+
+/// Where a migration tool records the migrations it ran. Completions rank it low, since a
+/// migration rarely queries it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum History {
+    /// A table of this name, in any schema.
+    Table(&'static str),
+    /// Every table of this schema.
+    Schema(&'static str),
+}
 
 /// What the path of a file says.
 #[derive(Debug, Clone, PartialEq, Eq)]

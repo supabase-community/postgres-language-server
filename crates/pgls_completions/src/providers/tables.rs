@@ -263,6 +263,34 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn ranks_the_history_tables_of_migration_tools_low(pool: PgPool) {
+        let setup = r#"
+          create table goose_db_version (id serial primary key, version_id bigint);
+          create table goose_feathers_and_eggs (id serial primary key);
+        "#;
+
+        let query = format!(
+            r#"select * from goose{}"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
+        let params = get_test_params(&tree, &cache, query.as_str().into());
+        let labels: Vec<String> = complete(params)
+            .into_iter()
+            .map(|item| item.label)
+            .collect();
+
+        let position = |label: &str| labels.iter().position(|l| l == label);
+        // goose's table matches as well as the other one, and is shorter, but comes after it.
+        assert!(
+            position("goose_feathers_and_eggs") < position("goose_db_version"),
+            "{labels:?}"
+        );
+        assert!(position("goose_db_version").is_some(), "{labels:?}");
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn suggests_tables_in_update(pool: PgPool) {
         let setup = r#"
           create table coos (

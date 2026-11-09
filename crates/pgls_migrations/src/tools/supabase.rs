@@ -7,7 +7,8 @@ use std::path::Path;
 use pgls_fs::{FileSystem, OpenOptions};
 
 use crate::{
-    Detected, FileInfo, LocalDatabase, MigrationTool, Root, Script, ToolId, Version, naming,
+    Database, Detected, FileInfo, History, LocalDatabase, MigrationTool, Root, Script, ToolId,
+    Version, naming,
 };
 
 /// The folder of a project managed by the Supabase CLI, and its configuration file in it.
@@ -33,48 +34,33 @@ impl MigrationTool for Supabase {
     }
 
     /// A `supabase` folder with a `config.toml`, and the local database of `supabase status`.
+    ///
+    /// Run inside the `supabase` folder itself, which has a `config.toml` with a `[db]` section,
+    /// `init` configures the project above it.
     fn detect(&self, fs: &dyn FileSystem, root: &Root) -> Option<Detected> {
         let path = root.path(SUPABASE_DIRECTORY).join(SUPABASE_CONFIG_FILE);
-        if !fs.path_is_file(&path) {
-            return None;
+        if fs.path_is_file(&path) {
+            return Some(self.project(root, read(fs, &path)));
         }
-        let mut contents = String::new();
-        let port = fs
-            .open_with_options(&path, OpenOptions::default().read(true))
-            .and_then(|mut file| file.read_to_string(&mut contents))
-            .ok()
-            .and_then(|_| supabase_db_port(&contents));
-        let mut project = Detected::new(self, root, SUPABASE_DIRECTORY);
-        if port.is_none() {
-            project.warning = Some(format!(
-                "Could not read the database port from {}/{SUPABASE_CONFIG_FILE}, using the default port {SUPABASE_DEFAULT_DB_PORT}.",
-                project.directory
-            ));
-        }
-        project.database = Some(LocalDatabase {
-            host: "127.0.0.1",
-            port: port.unwrap_or(SUPABASE_DEFAULT_DB_PORT),
-            username: "postgres",
-            password: "postgres",
-            database: "postgres",
-        });
-        Some(project)
-    }
 
-    /// The folder is named `supabase` and has a `config.toml` with a `[db]` section.
-    fn is_tool_directory(&self, fs: &dyn FileSystem, directory: &Path) -> bool {
-        let mut contents = String::new();
-        directory.file_name() == Some(OsStr::new(SUPABASE_DIRECTORY))
-            && fs
-                .open_with_options(
-                    &directory.join(SUPABASE_CONFIG_FILE),
-                    OpenOptions::default().read(true),
-                )
-                .and_then(|mut file| file.read_to_string(&mut contents))
-                .is_ok()
+        let path = root.path(SUPABASE_CONFIG_FILE);
+        let contents = read(fs, &path)?;
+        let in_supabase_directory = root.is_working_directory()
+            && path.parent().and_then(Path::file_name) == Some(OsStr::new(SUPABASE_DIRECTORY))
             && contents
                 .parse::<toml::Table>()
-                .is_ok_and(|config| config.get("db").is_some_and(toml::Value::is_table))
+                .is_ok_and(|config| config.get("db").is_some_and(toml::Value::is_table));
+        in_supabase_directory.then(|| Detected {
+            configuration_directory: Path::new(".."),
+            ..self.project(root, Some(contents))
+        })
+    }
+
+    fn database(&self) -> Database {
+        Database {
+            // The Supabase CLI keeps its migrations and seed files in the schema.
+            history: Some(History::Schema("supabase_migrations")),
+        }
     }
 
     fn file(&self, path: &Path, migrations_dir: &Path) -> FileInfo {
@@ -89,6 +75,38 @@ impl MigrationTool for Supabase {
     fn read(&self, _text: &str) -> Script {
         Script::default()
     }
+}
+
+impl Supabase {
+    /// The project with the configuration `contents`, if it could be read. Its folders are
+    /// relative to `root`.
+    fn project(&self, root: &Root, contents: Option<String>) -> Detected {
+        let port = contents.as_deref().and_then(supabase_db_port);
+        let mut project = Detected::new(self, root, SUPABASE_DIRECTORY);
+        if port.is_none() {
+            project.warning = Some(format!(
+                "Could not read the database port from {}/{SUPABASE_CONFIG_FILE}, using the default port {SUPABASE_DEFAULT_DB_PORT}.",
+                project.directory
+            ));
+        }
+        project.database = Some(LocalDatabase {
+            host: "127.0.0.1",
+            port: port.unwrap_or(SUPABASE_DEFAULT_DB_PORT),
+            username: "postgres",
+            password: "postgres",
+            database: "postgres",
+        });
+        project
+    }
+}
+
+/// The contents of the file at `path`, if it can be read.
+fn read(fs: &dyn FileSystem, path: &Path) -> Option<String> {
+    let mut contents = String::new();
+    fs.open_with_options(path, OpenOptions::default().read(true))
+        .and_then(|mut file| file.read_to_string(&mut contents))
+        .ok()?;
+    Some(contents)
 }
 
 /// Returns `[db] port` of a Supabase configuration, or the default port if it is not set.
