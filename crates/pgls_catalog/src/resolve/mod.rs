@@ -5,8 +5,9 @@
 //! known, a construct the resolver doesn't model), it stays silent.
 //!
 //! Not modelled yet, so never reported: the columns of scalar functions in `FROM`, `NATURAL`
-//! joins, `XMLTABLE`/`JSON_TABLE` and `TABLESAMPLE`, the `ORDER BY` of set operations, recursive
-//! CTEs and `SEARCH`/`CYCLE`, and statements with psql identifier parameters (`:schema.table`).
+//! joins of items whose columns are not known, `XMLTABLE`/`JSON_TABLE` and `TABLESAMPLE`, the
+//! `ORDER BY` of set operations, recursive CTEs and `SEARCH`/`CYCLE`, and statements with psql
+//! identifier parameters (`:schema.table`).
 //!
 //! It also decides whether a statement is [`Resolution::database_only`]: whether everything it
 //! references comes unchanged from the database, so that checking it against the database gives
@@ -28,11 +29,12 @@ mod span;
 mod tests;
 #[cfg(all(test, feature = "db"))]
 mod type_tests;
+mod utils;
 
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
 
-use crate::lookup::{CatalogView, Lookup};
+use crate::lookup::CatalogView;
 use crate::typing::{QueryColumns, Type};
 use resolver::Resolver;
 
@@ -205,7 +207,8 @@ pub enum Reference {
         span: Option<TextRange>,
         relation: crate::RelationInfo,
     },
-    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`.
+    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`, or a type in DDL,
+    /// like a column type in `CREATE TABLE` or a parameter type in `CREATE FUNCTION`.
     Type {
         /// The location of the type name in the statement.
         location: i32,
@@ -412,10 +415,7 @@ pub(crate) fn resolve_unknown_outputs(
         .iter()
         .any(|column| column.ty == Some(Type::UnknownLiteral))
     {
-        let text = match catalog.type_(Some("pg_catalog"), "text", &[]) {
-            Lookup::Found(info) => info.id.map(Type::Named),
-            _ => None,
-        };
+        let text = catalog.builtin_type("text").map(Type::Named);
         for column in &mut columns {
             if column.ty == Some(Type::UnknownLiteral) {
                 column.ty = text.clone();

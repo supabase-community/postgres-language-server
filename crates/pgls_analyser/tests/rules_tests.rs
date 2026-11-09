@@ -136,17 +136,23 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
 fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDiagnostic> {
     let split = pgls_statement_splitter::split(query);
 
-    // Statements that don't parse are passed on as such, like the workspace does. The statements
-    // of a SQL function body follow the function, with its parameters in scope.
+    // Statements that don't parse are passed on as such, like the workspace does. Like there,
+    // placeholders such as psql variables are parsed as parameters. The statements of a SQL
+    // function body follow the function, with its parameters in scope.
     let mut stmts = Vec::new();
     let mut unparsable = Vec::new();
     for r in &split.ranges {
         let text = &query[*r];
-        match pgls_query::parse(text) {
+        let conversion = pgls_lexer::convert_to_positional_params_with_metadata(text);
+        match pgls_query::parse(&conversion.sql) {
             Ok(ast) => {
                 let root = ast.into_root().expect("Failed to convert AST to root node");
                 let body = sql_function_body(&root, text, *r);
-                stmts.push(AnalysableStatement::new(root, *r).with_sql(text));
+                stmts.push(
+                    AnalysableStatement::new(root, *r)
+                        .with_sql(text)
+                        .with_identifier_parameters(conversion.has_identifier_parameters),
+                );
                 stmts.extend(body);
             }
             Err(_) => unparsable.push(UnparsableStatement {
@@ -198,7 +204,7 @@ fn assert_fixes_converge(analyser: &Analyser, query: &str, is_typecheck: bool) {
     panic!("the fixes still change the input after 10 passes:\n{code}");
 }
 
-/// The statements in the body of a `LANGUAGE sql` function, as the workspace extracts them.
+/// The statements in the body of a SQL function, as the workspace extracts them.
 fn sql_function_body(
     root: &pgls_query::NodeEnum,
     sql: &str,
@@ -207,18 +213,13 @@ fn sql_function_body(
     let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = root else {
         return Vec::new();
     };
-    let Some(body) = pgls_query_ext::utils::sql_function_body(root, sql) else {
-        return Vec::new();
-    };
     let function = pgls_catalog::resolve::FunctionContext::from_create_function(create_fn);
-    body.statements()
-        .into_iter()
+    pgls_query_ext::function_body::sql_function_body(root, sql)
+        .iter()
         .filter_map(|statement| {
-            let text = &body.body[statement];
-            let root = pgls_query::parse(text).ok()?.into_root()?;
+            let root = pgls_query::parse(&statement.sql).ok()?.into_root()?;
             Some(
-                AnalysableStatement::new(root, statement + body.range.start() + range.start())
-                    .with_sql(text)
+                AnalysableStatement::embedded(root, range.start(), statement)
                     .with_function(function.clone()),
             )
         })
@@ -307,16 +308,19 @@ fn write_snapshot(snapshot: &mut String, query: &str, diagnostics: &[LinterDiagn
     }
 }
 
-/// Writes the input with the fix applied. A fix must keep the input valid SQL.
+/// Writes the input with the fix applied. A fix must keep the input valid SQL, with its
+/// placeholders read as parameters.
 fn write_fix(snapshot: &mut String, query: &str, fix: &RuleFix) {
     let applicability = match fix.applicability {
         Applicability::Always => "safe",
         Applicability::MaybeIncorrect => "unsafe",
     };
     let fixed = fix.apply(query);
-    if pgls_query::parse(query).is_ok() {
+    let parses =
+        |sql: &str| pgls_query::parse(&pgls_lexer::convert_to_positional_params(sql)).is_ok();
+    if parses(query) {
         assert!(
-            pgls_query::parse(&fixed).is_ok(),
+            parses(&fixed),
             "the fix `{}` produces invalid SQL:\n{fixed}",
             fix.message
         );

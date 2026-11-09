@@ -100,6 +100,8 @@ fn clear_location(node: &mut NodeEnum) {
             }
             NodeMut::AExpr(n) => {
                 (*n).location = 0;
+                (*n).rexpr_list_start = 0;
+                (*n).rexpr_list_end = 0;
             }
             NodeMut::JoinExpr(n) => {
                 (*n).rtindex = 0;
@@ -145,6 +147,8 @@ fn clear_location(node: &mut NodeEnum) {
             }
             NodeMut::AArrayExpr(n) => {
                 (*n).location = 0;
+                (*n).list_start = 0;
+                (*n).list_end = 0;
             }
             NodeMut::ResTarget(n) => {
                 (*n).location = 0;
@@ -173,8 +177,30 @@ fn clear_location(node: &mut NodeEnum) {
             NodeMut::ColumnDef(n) => {
                 (*n).location = 0;
             }
+            NodeMut::VariableSetStmt(n) => {
+                (*n).location = 0;
+                // Only set by some spellings, e.g. `SET TIME ZONE` but not `SET timezone`, for
+                // query jumbling.
+                (*n).jumble_args = false;
+            }
+            NodeMut::FunctionParameter(n) => {
+                (*n).location = 0;
+            }
+            NodeMut::ReturningOption(n) => {
+                (*n).location = 0;
+            }
+            NodeMut::NotifyStmt(n) => {
+                (*n).payload_location = 0;
+            }
+            NodeMut::CreateSubscriptionStmt(n) => {
+                (*n).conninfo_location = 0;
+            }
+            NodeMut::AlterSubscriptionStmt(n) => {
+                (*n).conninfo_location = 0;
+            }
             NodeMut::DefElem(n) => {
                 (*n).location = 0;
+                (*n).arg_location = 0;
                 // Normalize defname to lowercase for case-insensitive options
                 (*n).defname = (*n).defname.to_lowercase();
             }
@@ -514,7 +540,7 @@ fn normalize_merge_support_func_recursive(node: &mut NodeEnum) {
             process_optional_boxed_node(&mut cte.ctequery);
         }
         NodeEnum::MergeStmt(stmt) => {
-            process_node_list(&mut stmt.returning_list);
+            process_returning_clause(&mut stmt.returning_clause);
             process_node_list(&mut stmt.merge_when_clauses);
         }
         NodeEnum::MergeWhenClause(mwc) => {
@@ -524,17 +550,17 @@ fn normalize_merge_support_func_recursive(node: &mut NodeEnum) {
         }
         NodeEnum::UpdateStmt(stmt) => {
             process_node_list(&mut stmt.target_list);
-            process_node_list(&mut stmt.returning_list);
+            process_returning_clause(&mut stmt.returning_clause);
         }
         NodeEnum::InsertStmt(stmt) => {
-            process_node_list(&mut stmt.returning_list);
+            process_returning_clause(&mut stmt.returning_clause);
             process_optional_boxed_node(&mut stmt.select_stmt);
             if let Some(ref mut wc) = stmt.with_clause {
                 process_node_list(&mut wc.ctes);
             }
         }
         NodeEnum::DeleteStmt(stmt) => {
-            process_node_list(&mut stmt.returning_list);
+            process_returning_clause(&mut stmt.returning_clause);
         }
         NodeEnum::CaseExpr(ce) => {
             process_optional_boxed_node(&mut ce.arg);
@@ -566,6 +592,9 @@ fn normalize_merge_support_func_recursive(node: &mut NodeEnum) {
         NodeEnum::ViewStmt(vs) => {
             process_optional_boxed_node(&mut vs.query);
         }
+        NodeEnum::ExplainStmt(explain) => {
+            process_optional_boxed_node(&mut explain.query);
+        }
         NodeEnum::WithClause(wc) => {
             wc.location = 0;
             process_node_list(&mut wc.ctes);
@@ -586,6 +615,12 @@ fn process_node_list(list: &mut [pgls_query::protobuf::Node]) {
         if let Some(ref mut n) = node.node {
             normalize_merge_support_func_recursive(n);
         }
+    }
+}
+
+fn process_returning_clause(clause: &mut Option<pgls_query::protobuf::ReturningClause>) {
+    if let Some(clause) = clause {
+        process_node_list(&mut clause.exprs);
     }
 }
 
