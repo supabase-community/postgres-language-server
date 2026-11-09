@@ -2376,6 +2376,7 @@ dependencies = [
  "pgls_query_ext",
  "pgls_statement_splitter",
  "pgls_test_macros",
+ "pgls_test_utils",
  "pgls_text_size",
  "rayon",
  "rustc-hash",
