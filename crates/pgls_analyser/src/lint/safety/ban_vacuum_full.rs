@@ -1,5 +1,6 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::is_vacuum_full};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::is_vacuum_full;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 

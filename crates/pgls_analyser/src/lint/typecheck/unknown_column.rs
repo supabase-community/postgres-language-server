@@ -40,14 +40,7 @@ impl LinterRule for UnknownColumn {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
-
-        resolution
-            .findings
-            .iter()
-            .filter_map(|finding| match &finding.kind {
+        ctx.findings().filter_map(|finding| match &finding.kind {
                 FindingKind::UnknownColumn { relation, column } => {
                     Some(match relation {
                         Some(relation) => LinterDiagnostic::new(
