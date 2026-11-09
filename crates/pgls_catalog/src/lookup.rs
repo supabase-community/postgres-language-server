@@ -74,6 +74,19 @@ pub struct ColumnInfo {
     pub generated: Generated,
 }
 
+impl ColumnInfo {
+    /// A column with what any relation's column has; the properties of table columns, like
+    /// [`ColumnInfo::generated`], take their defaults.
+    pub fn new(name: impl Into<String>, type_name: Option<String>, ty: Option<Type>) -> Self {
+        ColumnInfo {
+            name: name.into(),
+            type_name,
+            ty,
+            generated: Generated::No,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationInfo {
     pub schema: String,

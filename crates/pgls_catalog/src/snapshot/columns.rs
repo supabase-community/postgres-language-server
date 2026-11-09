@@ -54,6 +54,15 @@ pub enum Generated {
 }
 
 impl Generated {
+    /// From a `pg_attribute.attgenerated` or `Constraint.generated_kind` code: `s` or `v`.
+    pub fn from_code(code: &str) -> Self {
+        match code {
+            "s" => Generated::Stored,
+            "v" => Generated::Virtual,
+            _ => Generated::No,
+        }
+    }
+
     pub fn is_generated(self) -> bool {
         self != Generated::No
     }
@@ -61,11 +70,7 @@ impl Generated {
 
 impl From<String> for Generated {
     fn from(value: String) -> Self {
-        match value.as_str() {
-            "s" => Generated::Stored,
-            "v" => Generated::Virtual,
-            _ => Generated::No,
-        }
+        Generated::from_code(&value)
     }
 }
 

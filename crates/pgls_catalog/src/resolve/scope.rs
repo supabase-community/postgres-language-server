@@ -59,17 +59,11 @@ impl ItemSource {
             .enumerate()
             .map(|(i, name)| {
                 let ty = typed.and_then(|typed| typed[i].ty.clone());
-                ColumnInfo {
-                    name: name.clone(),
-                    type_name: match &ty {
-                        Some(Type::Named(id)) => {
-                            r.catalog.type_by_id(id).found().map(|info| info.name)
-                        }
-                        _ => None,
-                    },
-                    ty,
-                    generated: crate::Generated::No,
-                }
+                let type_name = match &ty {
+                    Some(Type::Named(id)) => r.catalog.type_by_id(id).found().map(|info| info.name),
+                    _ => None,
+                };
+                ColumnInfo::new(name.clone(), type_name, ty)
             })
             .collect();
         Self { source, columns }

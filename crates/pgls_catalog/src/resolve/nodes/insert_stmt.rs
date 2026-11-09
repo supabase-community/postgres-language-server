@@ -1,6 +1,6 @@
 use pgls_query::{
     NodeEnum,
-    protobuf::{InsertStmt, SelectStmt, SetOperation},
+    protobuf::{InsertStmt, ResTarget, SelectStmt, SetOperation},
 };
 
 use super::{
@@ -44,17 +44,14 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     };
     let target = resolve_target_relation(r, relation);
 
-    let mut target_columns = Vec::new();
-    // Targets with subscripts or fields, like `a[1]` or `c.f`, assign to part of a column.
-    let mut partial_targets = Vec::new();
+    let mut target_columns: Vec<&ResTarget> = Vec::new();
     for column in &n.cols {
         let Some(NodeEnum::ResTarget(column)) = &column.node else {
             r.depends_on_file();
             continue;
         };
         check_target_column(r, &target, &column.name, column.location);
-        target_columns.push(column.name.clone());
-        partial_targets.push(!column.indirection.is_empty());
+        target_columns.push(column);
     }
 
     // The number of columns of the source query, if known.
@@ -71,10 +68,13 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         } else {
             target_columns
                 .iter()
-                .zip(&partial_targets)
-                .map(|(name, partial)| {
-                    (!partial)
-                        .then(|| targets.iter().find(|column| column.name == *name))
+                .map(|target| {
+                    // Targets with subscripts or fields, like `a[1]` or `c.f`, assign to part of
+                    // a column.
+                    target
+                        .indirection
+                        .is_empty()
+                        .then(|| targets.iter().find(|column| column.name == target.name))
                         .flatten()
                 })
                 .collect()
@@ -139,7 +139,7 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         }
     }
 
-    check_generated_insert(r, &target, n, source_width);
+    check_generated_insert(r, &target, &target_columns, n, source_width);
 
     if let Some(conflict) = &n.on_conflict_clause {
         resolve_on_conflict_clause(r, conflict, &target);
@@ -159,6 +159,7 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
 fn check_generated_insert(
     r: &mut Resolver,
     target: &Item,
+    target_columns: &[&ResTarget],
     n: &InsertStmt,
     source_width: Option<usize>,
 ) {
@@ -172,7 +173,7 @@ fn check_generated_insert(
     let rows = values_rows(source);
 
     // The assigned columns and the location of each in the column list.
-    let targets: Vec<(&str, Option<i32>)> = if n.cols.is_empty() {
+    let targets: Vec<(&str, Option<i32>)> = if target_columns.is_empty() {
         // Without a column list, the values go to the first columns of the table.
         let width = match (&rows, &source.node) {
             (Some(rows), _) => rows.first().map(|row| row.len()),
@@ -188,14 +189,15 @@ fn check_generated_insert(
             .map(|column| (column.as_str(), None))
             .collect()
     } else {
-        n.cols
+        target_columns
             .iter()
-            .map(|column| match &column.node {
-                Some(NodeEnum::ResTarget(column)) if column.indirection.is_empty() => {
+            .map(|column| {
+                if column.indirection.is_empty() {
                     (column.name.as_str(), Some(column.location))
+                } else {
+                    // Not checked: an empty name is never a generated column.
+                    ("", None)
                 }
-                // Not checked: an empty name is never a generated column.
-                _ => ("", None),
             })
             .collect()
     };

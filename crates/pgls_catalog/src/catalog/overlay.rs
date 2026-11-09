@@ -614,10 +614,12 @@ pub(super) fn column_info(
         });
     let type_name = column.type_name.as_ref().and_then(type_label);
     ColumnInfo {
-        name: column.colname.clone(),
-        type_name,
-        ty: type_id.map(crate::typing::Type::Named),
         generated: column_generated(column),
+        ..ColumnInfo::new(
+            column.colname.clone(),
+            type_name,
+            type_id.map(crate::typing::Type::Named),
+        )
     }
 }
 
@@ -633,11 +635,7 @@ fn column_generated(column: &protobuf::ColumnDef) -> Generated {
             Some(NodeEnum::Constraint(constraint))
                 if constraint.contype() == protobuf::ConstrType::ConstrGenerated =>
             {
-                match constraint.generated_kind.as_str() {
-                    "s" => Some(Generated::Stored),
-                    "v" => Some(Generated::Virtual),
-                    _ => None,
-                }
+                Some(Generated::from_code(&constraint.generated_kind))
             }
             _ => None,
         })
