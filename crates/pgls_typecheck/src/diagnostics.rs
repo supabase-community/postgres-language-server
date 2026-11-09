@@ -3,6 +3,7 @@ use std::io;
 use once_cell::sync::Lazy;
 use pgls_console::markup;
 use pgls_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
+use pgls_line_index::offset_of_char_position;
 use pgls_text_size::{TextRange, TextSize};
 use regex::Regex;
 use sqlx::postgres::{PgDatabaseError, PgSeverity};
@@ -153,21 +154,6 @@ pub fn rewrite_error_message(
         .replace(&format!("'{unquoted_default}'"), &replacement.type_name)
 }
 
-/// The byte offset in `text` of the position of an error, which Postgres reports as a 1-based
-/// character position ([`parser_errposition`]). `None` if the position isn't in the text, e.g.
-/// because it comes from a different text than the one we sent.
-///
-/// [`parser_errposition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_node.c#L106
-fn byte_offset_of_position(text: &str, position: usize) -> Option<TextSize> {
-    let index = position.checked_sub(1)?;
-    let offset = match text.char_indices().nth(index) {
-        Some((offset, _)) => offset,
-        None if index == text.chars().count() => text.len(),
-        None => return None,
-    };
-    u32::try_from(offset).ok().map(TextSize::from)
-}
-
 pub(crate) fn create_type_error(
     pg_err: &PgDatabaseError,
     ts: &tree_sitter::Tree,
@@ -176,7 +162,7 @@ pub(crate) fn create_type_error(
 ) -> TypecheckDiagnostic {
     let position = pg_err.position().and_then(|pos| match pos {
         sqlx::postgres::PgErrorPosition::Original(pos) => {
-            byte_offset_of_position(typed_replacement.text_replacement().text(), pos)
+            offset_of_char_position(typed_replacement.text_replacement().text(), pos)
         }
         _ => None,
     });
@@ -312,28 +298,5 @@ pub(crate) fn create_type_error(
                 }
             }),
         },
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use pgls_text_size::TextSize;
-
-    use super::byte_offset_of_position;
-
-    #[test]
-    fn error_positions_are_character_positions() {
-        let sql = "select 'prüfen', missing from t";
-        let position = sql[..sql.find("missing").unwrap()].chars().count() + 1;
-        assert_eq!(
-            byte_offset_of_position(sql, position),
-            Some(TextSize::from(sql.find("missing").unwrap() as u32))
-        );
-        assert_eq!(
-            byte_offset_of_position(sql, sql.chars().count() + 1),
-            Some(TextSize::of(sql))
-        );
-        assert_eq!(byte_offset_of_position(sql, 0), None);
-        assert_eq!(byte_offset_of_position(sql, sql.chars().count() + 2), None);
     }
 }

@@ -34,10 +34,5 @@ pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
         }
     }
 
-    // for_identity field indicates if this is part of ALTER TABLE ALTER COLUMN
-    // In that case, the statement is embedded and might not need semicolon
-    // But for now, we'll always emit it as a standalone statement
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }
