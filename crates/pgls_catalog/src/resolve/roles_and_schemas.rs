@@ -6,6 +6,7 @@ use pgls_query::{
     NodeEnum, NodeRef,
     protobuf::{AConst, GrantTargetType, ObjectType, RoleSpecType, Token, a_const},
 };
+use pgls_query_ext::utils::{string_value, string_values};
 
 use super::{Reference, resolver::Resolver};
 use crate::lookup::Lookup;
@@ -132,27 +133,21 @@ fn record_schema_names(r: &mut Resolver, stmt: &NodeEnum) {
 
 /// The schemas that a statement names on their own.
 fn schema_names(stmt: &NodeEnum) -> Vec<String> {
-    let strings = |nodes: &[pgls_query::Node]| -> Vec<String> {
-        nodes
-            .iter()
-            .filter_map(|node| match node.node.as_ref()? {
-                NodeEnum::String(name) => Some(name.sval.clone()),
-                _ => None,
-            })
-            .collect()
-    };
-    let string = |node: Option<&pgls_query::Node>| match node.and_then(|node| node.node.as_ref()) {
-        Some(NodeEnum::String(name)) => vec![name.sval.clone()],
-        _ => Vec::new(),
+    let string = |node: Option<&pgls_query::Node>| {
+        node.and_then(string_value)
+            .map(|name| vec![name.to_owned()])
+            .unwrap_or_default()
     };
     match stmt {
         NodeEnum::CreateSchemaStmt(n) if !n.schemaname.is_empty() => vec![n.schemaname.clone()],
-        NodeEnum::DropStmt(n) if n.remove_type() == ObjectType::ObjectSchema => strings(&n.objects),
+        NodeEnum::DropStmt(n) if n.remove_type() == ObjectType::ObjectSchema => {
+            string_values(&n.objects).unwrap_or_default()
+        }
         NodeEnum::GrantStmt(n)
             if n.objtype() == ObjectType::ObjectSchema
                 || n.targtype() == GrantTargetType::AclTargetAllInSchema =>
         {
-            strings(&n.objects)
+            string_values(&n.objects).unwrap_or_default()
         }
         NodeEnum::AlterDefaultPrivilegesStmt(n) => n
             .options
@@ -160,7 +155,7 @@ fn schema_names(stmt: &NodeEnum) -> Vec<String> {
             .filter_map(|option| match option.node.as_ref()? {
                 NodeEnum::DefElem(option) if option.defname == "schemas" => {
                     match option.arg.as_deref()?.node.as_ref()? {
-                        NodeEnum::List(list) => Some(strings(&list.items)),
+                        NodeEnum::List(list) => string_values(&list.items),
                         _ => None,
                     }
                 }
