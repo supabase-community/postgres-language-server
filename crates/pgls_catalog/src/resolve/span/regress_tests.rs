@@ -7,10 +7,7 @@ use std::fmt::Write;
 
 use pgls_query::{NodeEnum, NodeRef};
 
-use super::{
-    alias_span, cast_end, literal_end, operator_end, reference_end, star_end, token_end,
-    type_name_end,
-};
+use super::Tokens;
 
 /// Statements longer than this are skipped. Finding a span can walk to the end of the
 /// statement, so the work per statement is quadratic in its length, and the few longer
@@ -43,16 +40,16 @@ impl Kind {
 }
 
 /// The span of `kind` starting at `start`, the way the resolver finds it.
-fn span(sql: &str, kind: Kind, start: usize) -> Option<(usize, usize)> {
+fn span(tokens: &Tokens, kind: Kind, start: usize) -> Option<(usize, usize)> {
     let end = match kind {
-        Kind::Name => reference_end(sql, start),
-        Kind::Type => type_name_end(sql, start),
-        Kind::Star => star_end(sql, start),
-        Kind::Operator => operator_end(sql, start),
-        Kind::Cast => cast_end(sql, start),
-        Kind::Literal => literal_end(sql, start),
-        Kind::Alias => return alias_span(sql, start),
-        Kind::Expression => reference_end(sql, start).or_else(|| token_end(sql, start)),
+        Kind::Name => tokens.name_end(start),
+        Kind::Type => tokens.type_name_end(start),
+        Kind::Star => tokens.star_end(start),
+        Kind::Operator => tokens.operator_end(start),
+        Kind::Cast => tokens.cast_end(start),
+        Kind::Literal => tokens.literal_end(start),
+        Kind::Alias => return tokens.alias_span(start),
+        Kind::Expression => tokens.expression_end(start),
     };
     end.map(|end| (start, end))
 }
@@ -157,9 +154,12 @@ fn spans_of_the_regression_suite() {
             else {
                 continue;
             };
+            let Some(tokens) = Tokens::scan(sql) else {
+                continue;
+            };
             for (kind, locations) in Kind::ALL.into_iter().zip(locations(&root)) {
                 for start in locations {
-                    let span = span(sql, kind, start);
+                    let span = span(&tokens, kind, start);
                     digests[kind as usize].write_span(index, start, span);
                     counts[kind as usize].0 += usize::from(span.is_some());
                     counts[kind as usize].1 += 1;
