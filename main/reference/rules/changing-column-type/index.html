@@ -1253,6 +1253,8 @@ reads and writes.</p>
 <li>Changing to <code>varchar</code> without a length limit</li>
 <li>Dropping a <code>numeric</code> precision constraint (e.g., <code>numeric(10,2)</code> to <code>numeric</code>)</li>
 </ul>
+<p>Changing the type of a virtual generated column (Postgres 18) doesn't rewrite the table
+either: its values are computed when rows are read.</p>
 <p>For unsafe type changes, consider creating a new column with the desired type,
 migrating the data, and then dropping the old column.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
