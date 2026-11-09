@@ -73,7 +73,8 @@ impl HoveredNode {
                     // but not its qualifier `t`, which may be the name of a column too.
                     || ((ctx.history_ends_with(&["assignment", "object_reference", "any_identifier"])
                         || ctx.history_ends_with(&[
-                            "when_clause",
+                            "merge_insert",
+                            "insert_values",
                             "object_reference",
                             "any_identifier",
                         ]))
