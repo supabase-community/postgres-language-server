@@ -3,6 +3,7 @@ use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, ConstrType, TypeName};
+use pgls_query_ext::utils::string_value;
 
 declare_lint_rule! {
     /// Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.
@@ -59,10 +60,7 @@ impl LinterRule for AddingRequiredField {
                 _ => None,
             })
             .flat_map(|constraint| &constraint.keys)
-            .filter_map(|key| match &key.node {
-                Some(pgls_query::NodeEnum::String(name)) => Some(name.sval.as_str()),
-                _ => None,
-            })
+            .filter_map(string_value)
             .collect();
 
         commands
@@ -112,21 +110,18 @@ fn is_required(column: &ColumnDef, not_null_columns: &[&str]) -> bool {
     is_not_null && !has_value
 }
 
-/// `serial` types get a default from a sequence.
+/// `serial` types get a default from a sequence. Like Postgres, only an unqualified name without
+/// `%TYPE` is a serial type, see
+/// [`transformColumnDefinition`](https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L604).
 fn is_serial(type_name: &TypeName) -> bool {
-    let name = match type_name.names.as_slice() {
-        [name] => name,
-        [schema, name] if matches!(&schema.node, Some(pgls_query::NodeEnum::String(schema)) if schema.sval == "pg_catalog") => {
-            name
-        }
-        _ => return false,
+    let [name] = type_name.names.as_slice() else {
+        return false;
     };
-    matches!(
-        &name.node,
-        Some(pgls_query::NodeEnum::String(name))
-            if matches!(
-                name.sval.as_str(),
+    !type_name.pct_type
+        && string_value(name).is_some_and(|name| {
+            matches!(
+                name,
                 "smallserial" | "serial" | "bigserial" | "serial2" | "serial4" | "serial8"
             )
-    )
+        })
 }
