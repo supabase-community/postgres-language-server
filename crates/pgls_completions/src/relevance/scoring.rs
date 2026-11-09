@@ -1,5 +1,6 @@
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 
+use pgls_migrations::{History, TOOLS};
 use pgls_treesitter::context::{TreesitterContext, WrappingClause};
 
 use crate::{providers::helper::word_at_cursor, sanitization};
@@ -472,15 +473,20 @@ impl CompletionScore<'_> {
         }
     }
 
+    /// Ranks the tables where migration tools record the migrations they ran low.
     fn check_is_not_wellknown_migration(&mut self, _ctx: &TreesitterContext) {
-        if let Some(table_name) = self.get_table_name()
-            && ["_sqlx_migrations"].contains(&table_name)
-        {
-            self.score -= 10;
-        }
-
-        if let Some(schema_name) = self.get_schema_name()
-            && ["supabase_migrations"].contains(&schema_name)
+        let table_name = self.get_table_name();
+        let schema_name = self.get_schema_name();
+        let is_history = |history: &History| match history {
+            History::Table(name) => table_name == Some(*name),
+            History::Schema(name) => schema_name == Some(*name),
+        };
+        if TOOLS
+            .iter()
+            .filter_map(|tool| tool.database().history)
+            .any(|history| is_history(&history))
+            // sqlx records its migrations here, but isn't a migration tool of ours yet.
+            || table_name == Some("_sqlx_migrations")
         {
             self.score -= 10;
         }
