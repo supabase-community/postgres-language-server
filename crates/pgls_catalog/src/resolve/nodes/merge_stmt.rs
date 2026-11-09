@@ -16,7 +16,7 @@ use crate::resolve::{
     FindingKind, MergeError,
     expr::{check_assignment, infer_expr},
     scope::{Columns, Item, Level},
-    utils::{node_location, resolve_expr},
+    utils::{node_location, ref_name, resolve_expr},
 };
 
 /// Resolves a MERGE and returns the columns of its RETURNING list. Port of
@@ -141,18 +141,9 @@ fn check_reachable_when_clauses(r: &mut Resolver, clauses: &[Node]) {
 /// their namespace items. The name of an unaliased subquery, function, or join is a placeholder
 /// or not certain, so only relations, CTEs, and aliased items are compared.
 fn check_distinct_names(r: &mut Resolver, target: &pgls_query::protobuf::RangeVar, source: &Node) {
-    let target_name = target
-        .alias
-        .as_ref()
-        .map_or(target.relname.as_str(), |alias| alias.aliasname.as_str());
+    let target_name = ref_name(target);
     let (source_name, location) = match source.node.as_ref() {
-        Some(NodeEnum::RangeVar(source)) => (
-            source
-                .alias
-                .as_ref()
-                .map_or(source.relname.as_str(), |alias| alias.aliasname.as_str()),
-            source.location,
-        ),
+        Some(NodeEnum::RangeVar(source)) => (ref_name(source), source.location),
         Some(NodeEnum::RangeSubselect(source)) => match &source.alias {
             Some(alias) => (alias.aliasname.as_str(), -1),
             None => return,
