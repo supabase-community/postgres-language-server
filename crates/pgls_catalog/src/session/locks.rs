@@ -225,7 +225,13 @@ impl Locks {
                 && let Some(NodeEnum::Constraint(c)) = c.def.as_ref().and_then(|d| d.node.as_ref())
                 && c.skip_validation
                 // A NOT ENFORCED constraint (Postgres 18) is NOT VALID too, but can't be validated.
-                && c.is_enforced
+                // Only CHECK and FOREIGN KEY constraints can be NOT ENFORCED; the parser leaves
+                // `is_enforced` false for the others, e.g. NOT NULL ... NOT VALID.
+                && (c.is_enforced
+                    || !matches!(
+                        c.contype(),
+                        protobuf::ConstrType::ConstrCheck | protobuf::ConstrType::ConstrForeign
+                    ))
                 && !c.conname.is_empty()
             {
                 self.not_valid_constraints.push((
