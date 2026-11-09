@@ -8,6 +8,7 @@ use std::borrow::Cow;
 
 use crate::Behavior;
 use crate::typing::{Type, TypeId};
+use crate::{Generated, Identity};
 
 /// The result of a catalog lookup.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,6 +69,26 @@ pub struct ColumnInfo {
     pub type_name: Option<String>,
     /// Resolved type identity, when available.
     pub ty: Option<Type>,
+    /// Whether the column of a table is a generated column. [`Generated::No`] also when that is
+    /// not known, and for the columns of anything but tables.
+    pub generated: Generated,
+    /// Whether the column of a table is an identity column. [`Identity::No`] also when that is
+    /// not known, and for the columns of anything but tables.
+    pub identity: Identity,
+}
+
+impl ColumnInfo {
+    /// A column with what any relation's column has; the properties of table columns, like
+    /// [`ColumnInfo::generated`], take their defaults.
+    pub fn new(name: impl Into<String>, type_name: Option<String>, ty: Option<Type>) -> Self {
+        ColumnInfo {
+            name: name.into(),
+            type_name,
+            ty,
+            generated: Generated::No,
+            identity: Identity::No,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,6 +99,19 @@ pub struct RelationInfo {
     /// `None` when the column set is not known, e.g. a view whose select list could not be derived.
     pub columns: Option<Vec<ColumnInfo>>,
     pub origin: Origin,
+}
+
+impl RelationInfo {
+    /// The column with the name. [`Lookup::Unknown`] if the columns of the relation aren't known.
+    pub fn column(&self, name: &str) -> Lookup<&ColumnInfo> {
+        let Some(columns) = &self.columns else {
+            return Lookup::Unknown;
+        };
+        match columns.iter().find(|column| column.name == name) {
+            Some(column) => Lookup::Found(column),
+            None => Lookup::Missing,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

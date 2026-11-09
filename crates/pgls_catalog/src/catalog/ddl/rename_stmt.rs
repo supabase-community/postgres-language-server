@@ -99,7 +99,9 @@ fn rename_column(
     let Some(relation) = c.relation_of(range_var, search_path).found() else {
         return;
     };
-    c.change_columns(&relation, |columns| rename_in(columns, old_name, new_name));
+    c.change_columns(&relation, |columns, _| {
+        rename_in(columns, old_name, new_name)
+    });
 }
 
 fn rename_in(columns: &mut Option<Vec<ColumnInfo>>, old_name: &str, new_name: &str) {
