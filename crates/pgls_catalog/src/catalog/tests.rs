@@ -700,6 +700,39 @@ fn generated_columns(
 }
 
 #[test]
+fn column_of_looks_up_the_column_of_a_range_var() {
+    use crate::Generated;
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create table items (price int, total int generated always as (price * 2) virtual);",
+        &search_path,
+    );
+    let range_var = |relname: &str| pgls_query::protobuf::RangeVar {
+        relname: relname.to_owned(),
+        inh: true,
+        ..Default::default()
+    };
+    let generated = |relname: &str, column: &str| {
+        catalog
+            .column_of(&range_var(relname), column, &search_path)
+            .map(|column| column.generated)
+    };
+    assert_eq!(
+        generated("items", "total"),
+        Lookup::Found(Generated::Virtual)
+    );
+    assert_eq!(generated("items", "price"), Lookup::Found(Generated::No));
+    assert_eq!(generated("items", "missing"), Lookup::Missing);
+    assert_eq!(generated("missing", "total"), Lookup::Missing);
+    assert_eq!(
+        Catalog::new(None)
+            .column_of(&range_var("items"), "total", &search_path)
+            .map(|column| column.generated),
+        Lookup::Unknown
+    );
+}
+
+#[test]
 fn redeclared_inherited_columns_merge_generated() {
     use crate::Generated;
     let search_path = path(&["public"]);
