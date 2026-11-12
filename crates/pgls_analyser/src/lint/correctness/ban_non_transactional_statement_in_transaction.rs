@@ -1,9 +1,9 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::is_reindex_concurrent;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::{NodeEnum, protobuf};
+use pgls_query_ext::options::{def_elem_bool, find_def_elem, is_reindex_concurrent};
 
 declare_lint_rule! {
     /// Statements that Postgres can't run inside a transaction block.
@@ -124,9 +124,7 @@ fn non_transactional_statement(
         NodeEnum::AlterSystemStmt(_) => Some("ALTER SYSTEM"),
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/dbcommands.c#L2439
         NodeEnum::AlterDatabaseStmt(stmt)
-            if stmt.options.iter().any(|option| {
-                matches!(&option.node, Some(NodeEnum::DefElem(def)) if def.defname == "tablespace")
-            }) =>
+            if find_def_elem(&stmt.options, "tablespace").is_some() =>
         {
             Some("ALTER DATABASE SET TABLESPACE")
         }
@@ -146,18 +144,12 @@ fn non_transactional_statement(
             // `ReindexPartitions`, for a partitioned table or index:
             // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/indexcmds.c#L3392
             ReindexObjectType::ReindexObjectTable
-                if stmt
-                    .relation
-                    .as_ref()
-                    .is_some_and(is_partitioned_table) =>
+                if stmt.relation.as_ref().is_some_and(is_partitioned_table) =>
             {
                 Some("REINDEX TABLE")
             }
             ReindexObjectType::ReindexObjectIndex
-                if stmt
-                    .relation
-                    .as_ref()
-                    .is_some_and(is_partitioned_index) =>
+                if stmt.relation.as_ref().is_some_and(is_partitioned_index) =>
             {
                 Some("REINDEX INDEX")
             }
@@ -173,12 +165,15 @@ fn non_transactional_statement(
             TransactionStmtKind::TransStmtRollbackPrepared => Some("ROLLBACK PREPARED"),
             _ => None,
         },
-        // `create_slot` is on by default, unless `connect = false`.
+        // `create_slot` is on by default, unless `connect = false`. Postgres rejects an invalid
+        // value of either before it checks for a transaction block.
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/subscriptioncmds.c#L602
         NodeEnum::CreateSubscriptionStmt(stmt) => {
-            let create_slot = option(&stmt.options, "create_slot")
-                .unwrap_or_else(|| option(&stmt.options, "connect").unwrap_or(true));
-            create_slot.then_some("CREATE SUBSCRIPTION ... WITH (create_slot = true)")
+            let option = |name| find_def_elem(&stmt.options, name).map(def_elem_bool);
+            let connect = option("connect").unwrap_or(Some(true));
+            let create_slot = option("create_slot").unwrap_or(connect);
+            (connect.is_some() && create_slot == Some(true))
+                .then_some("CREATE SUBSCRIPTION ... WITH (create_slot = true)")
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/subscriptioncmds.c#L1535
         NodeEnum::AlterSubscriptionStmt(stmt)
@@ -188,24 +183,4 @@ fn non_transactional_statement(
         }
         _ => None,
     }
-}
-
-/// The value of a boolean option, like [`defGetBoolean`], if it is set. An option without a
-/// value is on.
-///
-/// [`defGetBoolean`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/define.c#L94
-fn option(options: &[protobuf::Node], name: &str) -> Option<bool> {
-    let def = options.iter().find_map(|option| match &option.node {
-        Some(NodeEnum::DefElem(def)) if def.defname == name => Some(def),
-        _ => None,
-    })?;
-    Some(match def.arg.as_ref().and_then(|arg| arg.node.as_ref()) {
-        None => true,
-        Some(NodeEnum::Integer(value)) => value.ival != 0,
-        Some(NodeEnum::Boolean(value)) => value.boolval,
-        Some(NodeEnum::String(value)) => !["false", "off", "0"]
-            .iter()
-            .any(|off| value.sval.eq_ignore_ascii_case(off)),
-        Some(_) => true,
-    })
 }

@@ -198,7 +198,7 @@ pub fn function_body_location(
 
 /// Whether the function is written in SQL: `LANGUAGE sql`, or a `BEGIN ATOMIC` or `RETURN` body,
 /// which only SQL functions have.
-fn is_sql_function(create_fn: &CreateFunctionStmt) -> bool {
+pub fn is_sql_function(create_fn: &CreateFunctionStmt) -> bool {
     create_fn.sql_body.is_some()
         || find_option_value(create_fn, "language")
             .is_some_and(|language| language.eq_ignore_ascii_case("sql"))

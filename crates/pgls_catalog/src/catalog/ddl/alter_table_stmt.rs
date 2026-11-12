@@ -2,6 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, ObjectType},
 };
+use pgls_query_ext::options::find_def_elem;
 use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 use crate::catalog::{
@@ -392,17 +393,11 @@ fn apply_column_change(
         // `SET GENERATED { ALWAYS | BY DEFAULT }` among the sequence options.
         AlterTableType::AtSetIdentity => {
             let generated = match command.def.as_deref().and_then(|def| def.node.as_ref()) {
-                Some(NodeEnum::List(options)) => {
-                    options.items.iter().find_map(|option| match &option.node {
-                        Some(NodeEnum::DefElem(option)) if option.defname == "generated" => {
-                            match option.arg.as_deref().and_then(|arg| arg.node.as_ref()) {
-                                Some(NodeEnum::Integer(value)) => u8::try_from(value.ival).ok(),
-                                _ => None,
-                            }
-                        }
+                Some(NodeEnum::List(options)) => find_def_elem(&options.items, "generated")
+                    .and_then(|option| match option.arg.as_deref()?.node.as_ref()? {
+                        NodeEnum::Integer(value) => u8::try_from(value.ival).ok(),
                         _ => None,
-                    })
-                }
+                    }),
                 _ => None,
             };
             if let Some(generated) = generated {
