@@ -287,7 +287,7 @@ impl Catalog {
             .values()
             .filter_map(|entry| match entry {
                 Entry::Defined(index) if index.schema == schema && index.table == table => {
-                    Some(index.clone())
+                    Some(IndexInfo::clone(index))
                 }
                 _ => None,
             })

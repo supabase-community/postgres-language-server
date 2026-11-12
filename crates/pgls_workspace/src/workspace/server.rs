@@ -30,7 +30,7 @@ use pgls_analyse::{AnalysisFilter, RuleCategories};
 use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
 use pgls_lexer::convert_to_positional_params_with_metadata;
-use pgls_walk::{AnalysableStatement, MigrationSection, WalkParams};
+use pgls_walk::MigrationSection;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::inlay_hints::ParameterNameHints;
