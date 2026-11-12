@@ -1271,7 +1271,7 @@ migration tool runs the file in a transaction, so the other statements aren't re
 <span class="w">    </span><span class="m">3</span><span class="w"> </span>│<span class="w"> </span>commit<span class="p">;</span>
 <span class="w">    </span><span class="m">4</span><span class="w"> </span>│<span class="w"> </span>
 
-<span class="w">  </span>i<span class="w"> </span>Run<span class="w"> </span>VACUUM<span class="w"> </span>outside<span class="w"> </span>of<span class="w"> </span>a<span class="w"> </span>transaction<span class="w"> </span>block,<span class="w"> </span>e.g.<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>migration<span class="w"> </span>of<span class="w"> </span>its<span class="w"> </span>own<span class="w"> </span>that<span class="w"> </span>runs<span class="w"> </span>without<span class="w"> </span>a<span class="w"> </span>transaction.
+<span class="w">  </span>i<span class="w"> </span>Run<span class="w"> </span>VACUUM<span class="w"> </span>outside<span class="w"> </span>of<span class="w"> </span>a<span class="w"> </span>transaction,<span class="w"> </span>e.g.<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>migration<span class="w"> </span>of<span class="w"> </span>its<span class="w"> </span>own<span class="w"> </span>that<span class="w"> </span>runs<span class="w"> </span>without<span class="w"> </span>a<span class="w"> </span>transaction.
 </code></pre></div>
 <h3 id="valid">Valid<a class="headerlink" href="#valid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">vacuum</span><span class="w"> </span><span class="n">users</span><span class="p">;</span>

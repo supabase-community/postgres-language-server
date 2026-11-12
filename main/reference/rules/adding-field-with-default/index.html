@@ -1252,9 +1252,6 @@ which holds an ACCESS EXCLUSIVE lock on the table and blocks all reads and write
 <li>Stored generated columns (GENERATED ALWAYS AS ... STORED) always require table rewrites</li>
 <li>Non-volatile defaults are safe in Postgres 11+</li>
 </ul>
-<p>The server version and the volatility of the functions, operators and casts of a default
-come from the database. Without a connection, or when the volatility of a default isn't
-known, the rule assumes that it rewrites the table.</p>
 <p>Virtual generated columns (Postgres 18) are computed when rows are read, so adding one
 doesn't rewrite the table.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>

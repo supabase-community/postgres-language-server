@@ -1247,8 +1247,7 @@
 <p>Exclusion constraints require a full table scan to validate and block all reads
 and writes while held. Unlike other constraints, there is no concurrent alternative.
 Use <code>SET lock_timeout</code> to limit the impact on concurrent operations.</p>
-<p>Exclusion constraints in <code>CREATE TABLE</code> are not reported: the new table is empty, and no
-other session can use it before the transaction commits.</p>
+<p>This also applies to exclusion constraints defined inline in <code>CREATE TABLE</code>.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">alter</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">my_table</span><span class="w"> </span><span class="k">add</span><span class="w"> </span><span class="k">constraint</span><span class="w"> </span><span class="n">my_excl</span><span class="w"> </span><span class="n">exclude</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">gist</span><span class="w"> </span><span class="p">(</span><span class="n">col</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="p">);</span>
