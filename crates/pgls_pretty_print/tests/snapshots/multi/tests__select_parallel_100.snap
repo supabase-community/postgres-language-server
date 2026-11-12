@@ -138,7 +138,7 @@ select stringu1, count(*) from tenk1 group by stringu1 order by stringu1;
 
 select sum(sp_parallel_restricted(unique1)) from tenk1 group by sp_parallel_restricted(unique1);
 
-prepare tenk1_count (int) as select count(unique1) from tenk1 where hundred > $1;;
+prepare tenk1_count (int) as select count(unique1) from tenk1 where hundred > $1;
 
 explain (costs 'off') execute tenk1_count (1);
 
@@ -639,7 +639,7 @@ create table fooarr (
 
 insert into fooarr values ('1', array[1, 2], 'one');
 
-prepare pstmt (text, int[]) as select * from fooarr where f1 = $1 and f2 = $2;;
+prepare pstmt (text, int[]) as select * from fooarr where f1 = $1 and f2 = $2;
 
 explain (costs 'off') execute pstmt ('1', make_some_array(1, 2));
 

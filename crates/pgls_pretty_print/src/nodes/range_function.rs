@@ -1,22 +1,19 @@
 use pgls_query::protobuf::RangeFunction;
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-
-use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
+use super::prelude::*;
 
 /// Emits a function of a `FROM` item. A cast there must keep the `CAST(...)` spelling.
 fn emit_function(e: &mut EventEmitter, node: &pgls_query::Node) {
     match node.node.as_ref() {
         Some(pgls_query::NodeEnum::TypeCast(type_cast)) => {
-            super::type_cast::emit_type_cast_call(e, type_cast)
+            super::emit_type_cast_as(e, type_cast, super::CastSpelling::Call)
         }
-        _ => super::emit_node(node, e),
+        _ => emit_node(e, node),
     }
 }
 
 pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
-    e.group_start(GroupKind::RangeFunction);
+    e.group_start();
 
     if n.lateral {
         e.token(TokenKind::LATERAL_KW);
@@ -30,7 +27,7 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
         e.space();
         e.token(TokenKind::L_PAREN);
 
-        emit_comma_separated_list(e, &n.functions, |node, e| {
+        emit_comma_separated_list(e, &n.functions, |e, node| {
             // Each item is a List containing function + optional column definitions
             if let Some(pgls_query::NodeEnum::List(func_list)) = node.node.as_ref() {
                 if !func_list.items.is_empty() {
@@ -48,7 +45,7 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
                         e.space();
                         e.token(TokenKind::AS_KW);
                         e.space();
-                        emit_parenthesized_list(e, &col_defs, super::emit_node);
+                        emit_parenthesized_list(e, &col_defs, emit_node);
                     }
                 }
             } else {
@@ -87,14 +84,14 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::AS_KW);
             e.space();
-            super::emit_identifier_maybe_quoted(e, &alias.aliasname);
+            emit_identifier_maybe_quoted(e, &alias.aliasname);
             // Allow line break before column definition list for narrow widths
             e.line(LineType::SoftOrSpace);
-            e.group_start(GroupKind::List);
+            e.group_start();
             e.token(TokenKind::L_PAREN);
             e.line(LineType::Soft);
             e.indent_start();
-            emit_comma_separated_list(e, &n.coldeflist, super::emit_node);
+            emit_comma_separated_list(e, &n.coldeflist, emit_node);
             e.indent_end();
             e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
@@ -109,11 +106,11 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
         e.space();
         e.token(TokenKind::AS_KW);
         e.line(LineType::SoftOrSpace);
-        e.group_start(GroupKind::List);
+        e.group_start();
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
-        emit_comma_separated_list(e, &n.coldeflist, super::emit_node);
+        emit_comma_separated_list(e, &n.coldeflist, emit_node);
         e.indent_end();
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);

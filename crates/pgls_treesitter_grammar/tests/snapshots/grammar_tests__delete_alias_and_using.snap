@@ -1,0 +1,64 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+delete from only users as u using posts p join comments c on c.post_id = p.id where p.user_id = u.id returning u.id;
+-----------------------
+program [0..116] 'delete from only users as u using posts p join comments c on c.post_id = p.id where p.user_id = u.id returning u.id;'
+  statement [0..115] 'delete from only users as u using posts p join comments c on c.post_id = p.id where p.user_id = u.id returning u.id'
+    delete_statement [0..115] 'delete from only users as u using posts p join comments c on c.post_id = p.id where p.user_id = u.id returning u.id'
+      keyword_delete [0..6] 'delete'
+      from [7..100] 'from only users as u using posts p join comments c on c.post_id = p.id where p.user_id = u.id'
+        keyword_from [7..11] 'from'
+        keyword_only [12..16] 'only'
+        table_reference [17..22] 'users' (@end)
+          any_identifier [17..22] 'users' (@table_reference_1of1)
+        alias [23..27] 'as u'
+          keyword_as [23..25] 'as'
+          any_identifier [26..27] 'u' (@end)
+        delete_using [28..77] 'using posts p join comments c on c.post_id = p.id'
+          keyword_using [28..33] 'using'
+          relation [34..41] 'posts p' (@end)
+            table_reference [34..39] 'posts' (@end)
+              any_identifier [34..39] 'posts' (@table_reference_1of1)
+            alias [40..41] 'p'
+              any_identifier [40..41] 'p' (@end)
+          join [42..77] 'join comments c on c.post_id = p.id' (@end)
+            keyword_join [42..46] 'join'
+            relation [47..57] 'comments c'
+              table_reference [47..55] 'comments' (@end)
+                any_identifier [47..55] 'comments' (@table_reference_1of1)
+              alias [56..57] 'c'
+                any_identifier [56..57] 'c' (@end)
+            keyword_on [58..60] 'on'
+            binary_expression [61..77] 'c.post_id = p.id' (@end)
+              object_reference [61..70] 'c.post_id' (@binary_expr_left)
+                any_identifier [61..62] 'c' (@object_reference_1of2)
+                . [62..63] '.'
+                any_identifier [63..70] 'post_id' (@object_reference_2of2)
+              = [71..72] '=' (@binary_expr_operator)
+              object_reference [73..77] 'p.id' (@end)
+                any_identifier [73..74] 'p' (@object_reference_1of2)
+                . [74..75] '.'
+                any_identifier [75..77] 'id' (@object_reference_2of2)
+        where [78..100] 'where p.user_id = u.id'
+          keyword_where [78..83] 'where'
+          binary_expression [84..100] 'p.user_id = u.id' (@end)
+            object_reference [84..93] 'p.user_id' (@binary_expr_left)
+              any_identifier [84..85] 'p' (@object_reference_1of2)
+              . [85..86] '.'
+              any_identifier [86..93] 'user_id' (@object_reference_2of2)
+            = [94..95] '=' (@binary_expr_operator)
+            object_reference [96..100] 'u.id' (@end)
+              any_identifier [96..97] 'u' (@object_reference_1of2)
+              . [97..98] '.'
+              any_identifier [98..100] 'id' (@object_reference_2of2)
+      returning [101..115] 'returning u.id'
+        keyword_returning [101..110] 'returning'
+        select_expression [111..115] 'u.id' (@end)
+          term [111..115] 'u.id' (@end)
+            object_reference [111..115] 'u.id' (@end)
+              any_identifier [111..112] 'u' (@object_reference_1of2)
+              . [112..113] '.'
+              any_identifier [113..115] 'id' (@object_reference_2of2)
+  ; [115..116] ';'

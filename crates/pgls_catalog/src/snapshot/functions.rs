@@ -35,7 +35,7 @@ impl From<i8> for ProcKind {
 }
 
 /// `Behavior` describes the characteristics of the function. Is it deterministic? Does it changed due to side effects, and if so, when?
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum Behavior {
     /// The function is a pure function (same input leads to same output.)
@@ -167,7 +167,7 @@ mod tests {
 
     use crate::snapshot::{Behavior, Snapshot, functions::ProcKind};
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn loads(pool: PgPool) {
         let setup = r#"
           create table coos (

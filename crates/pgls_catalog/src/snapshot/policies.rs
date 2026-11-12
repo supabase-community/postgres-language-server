@@ -91,7 +91,7 @@ mod tests {
 
     use crate::snapshot::{Snapshot, policies::PolicyCommand};
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn loads_policies(test_db: PgPool) {
         let setup = r#"
             create table public.users (

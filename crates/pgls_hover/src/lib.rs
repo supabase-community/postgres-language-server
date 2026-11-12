@@ -1,3 +1,7 @@
+// Hover reads the client's SQL and the database's catalog, so a panic on unexpected input takes
+// down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use pgls_catalog::Snapshot;
 use pgls_catalog::resolve::Reference;
 use pgls_text_size::TextSize;
@@ -37,6 +41,7 @@ pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
         position: params.position,
         text: params.stmt_sql,
         tree: params.ts_tree,
+        server_version_num: params.snapshot.version.version_num,
     });
 
     if let Some(hovered_node) = HoveredNode::get(&ctx) {
@@ -137,7 +142,12 @@ pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
         (!markdown_blocks.is_empty()).then_some(markdown_blocks)
     } else {
         // The grammar doesn't cover every statement, like `CALL`, but the resolver may.
-        let item = resolved_function(params.references, params.snapshot)?;
+        let item = resolved_function(
+            params.references,
+            params.snapshot,
+            params.stmt_sql,
+            params.position,
+        )?;
         format_hover_markdown(&item, params.snapshot)
             .ok()
             .map(|markdown| vec![markdown])
@@ -171,5 +181,55 @@ mod tests {
         });
 
         assert!(hover.is_none());
+    }
+
+    /// Hover on `name` in `returning old.name`, by name only, as if the server had the version
+    /// `version_num`.
+    fn hover_returning_old(version_num: i64) -> Option<Vec<String>> {
+        let query = "update users set name = 'x' returning old.na{}me";
+        let position = query.find("{}").unwrap();
+        let sql = query.replace("{}", "");
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
+        let tree = parser.parse(&sql, None).unwrap();
+        let mut snapshot = Snapshot::default();
+        snapshot.version.version_num = Some(version_num);
+        snapshot.columns.push(pgls_catalog::Column {
+            name: "name".into(),
+            table_name: "users".into(),
+            table_oid: 1,
+            class_kind: pgls_catalog::ColumnClassKind::OrdinaryTable,
+            number: 1,
+            schema_name: "public".into(),
+            type_id: 25,
+            type_name: Some("text".into()),
+            is_nullable: true,
+            is_primary_key: false,
+            is_unique: false,
+            default_expr: None,
+            generated: pgls_catalog::Generated::No,
+            identity: pgls_catalog::Identity::No,
+            varchar_length: None,
+            comment: None,
+        });
+
+        on_hover(OnHoverParams {
+            position: TextSize::new(position as u32),
+            snapshot: &snapshot,
+            stmt_sql: &sql,
+            ts_tree: &tree,
+            references: &[],
+        })
+    }
+
+    #[test]
+    fn hover_finds_old_and_new_in_returning_by_name_since_postgres_18() {
+        let hover = hover_returning_old(180000).expect("a hover");
+        assert!(hover[0].contains("public.users.name"), "{hover:?}");
+        // Before Postgres 18, `old` is no name in RETURNING.
+        assert_eq!(hover_returning_old(170000), None);
     }
 }

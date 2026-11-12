@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::adapters::line_index::LineIndex;
+use pgls_line_index::LineIndex;
 
 /// Represents an open [`textDocument`]. Can be cheaply cloned.
 ///

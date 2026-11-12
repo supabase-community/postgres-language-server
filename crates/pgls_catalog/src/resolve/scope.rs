@@ -31,6 +31,8 @@ pub(super) struct Item {
     pub typed_columns: TypedColumns,
     /// Whether the item has system columns (`ctid`, `xmin`, ...).
     pub has_system_columns: bool,
+    /// The columns of a table that INSERT and UPDATE can only set to `DEFAULT`.
+    pub default_only_columns: Vec<(String, DefaultOnly)>,
     /// What the columns come from. Only set when references are collected.
     pub source: Option<Rc<ItemSource>>,
 }
@@ -57,19 +59,35 @@ impl ItemSource {
             .enumerate()
             .map(|(i, name)| {
                 let ty = typed.and_then(|typed| typed[i].ty.clone());
-                ColumnInfo {
-                    name: name.clone(),
-                    type_name: match &ty {
-                        Some(Type::Named(id)) => {
-                            r.catalog.type_by_id(id).found().map(|info| info.name)
-                        }
-                        _ => None,
-                    },
-                    ty,
-                }
+                let type_name = match &ty {
+                    Some(Type::Named(id)) => r.catalog.type_by_id(id).found().map(|info| info.name),
+                    _ => None,
+                };
+                ColumnInfo::new(name.clone(), type_name, ty)
             })
             .collect();
         Self { source, columns }
+    }
+}
+
+/// Why INSERT and UPDATE can only set a column of a table to `DEFAULT`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum DefaultOnly {
+    /// A generated column.
+    Generated,
+    /// A `GENERATED ALWAYS` identity column. INSERT can set it with an `OVERRIDING` clause.
+    IdentityAlways,
+}
+
+impl DefaultOnly {
+    pub fn of(column: &ColumnInfo) -> Option<Self> {
+        if column.generated.is_generated() {
+            Some(DefaultOnly::Generated)
+        } else if column.identity == crate::Identity::Always {
+            Some(DefaultOnly::IdentityAlways)
+        } else {
+            None
+        }
     }
 }
 
@@ -81,6 +99,7 @@ impl Item {
             columns,
             typed_columns: None,
             has_system_columns: false,
+            default_only_columns: Vec::new(),
             source: None,
         }
     }
@@ -113,6 +132,16 @@ impl Item {
             .map(|c| c.ty.clone())
     }
 
+    /// Why a value for the column can only be `DEFAULT`, if it can. An INSERT with an
+    /// `OVERRIDING` clause (`overriding`) can set `GENERATED ALWAYS` identity columns.
+    pub fn default_only(&self, column: &str, overriding: bool) -> Option<DefaultOnly> {
+        self.default_only_columns
+            .iter()
+            .find(|(name, _)| name == column)
+            .map(|(_, kind)| *kind)
+            .filter(|kind| !(overriding && *kind == DefaultOnly::IdentityAlways))
+    }
+
     pub fn has_column(&self, column: &str) -> Option<bool> {
         let columns = self.columns.as_ref()?;
         Some(
@@ -126,11 +155,15 @@ impl Item {
 #[derive(Debug, Clone, Default)]
 pub(super) struct Level {
     pub items: Vec<Item>,
-    /// Columns merged by `JOIN ... USING`. An unqualified reference to them is not ambiguous.
+    /// The order of the columns of `*`.
+    pub star_order: StarOrder,
+    /// Columns merged by `JOIN ... USING` and `NATURAL` joins. An unqualified reference to them
+    /// is not ambiguous.
     pub merged_columns: Vec<String>,
     /// Types of columns merged by USING, in USING-clause order.
     pub merged_typed_columns: Vec<TypedColumn>,
-    /// Set if the level contains a `NATURAL` join, whose merged columns we don't compute.
+    /// Set if the level contains a `NATURAL` join whose merged columns are not known, because
+    /// the columns of a side are not known.
     pub has_natural_join: bool,
     /// Set if the level contains items we don't model (`XMLTABLE`, `TABLESAMPLE`, ...), whose
     /// names we don't know.
@@ -145,6 +178,27 @@ pub(super) struct Level {
     pub qualified_only: Vec<Item>,
 }
 
+/// The order of the columns that `*` expands to.
+#[derive(Debug, Clone, Default)]
+pub(super) enum StarOrder {
+    /// The columns of each item, one item after the other, as without joins that merge columns.
+    #[default]
+    Items,
+    /// The order of a level with a join that merges columns.
+    Columns(Vec<StarEntry>),
+    /// Not known, because a join's columns can't be merged with certainty.
+    Unknown,
+}
+
+/// A column that `*` expands to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) enum StarEntry {
+    /// A column that `JOIN ... USING` or a `NATURAL` join merges, by its name.
+    Merged(String),
+    /// The column at `column` in the columns of the item at `item` of the level.
+    Item { item: usize, column: usize },
+}
+
 impl Level {
     pub fn with_item(item: Item) -> Self {
         Self {
@@ -154,6 +208,23 @@ impl Level {
     }
 
     pub fn extend(&mut self, other: Level) {
+        self.star_order = match (&self.star_order, &other.star_order) {
+            (StarOrder::Items, StarOrder::Items) => StarOrder::Items,
+            _ => match (self.star(), other.star()) {
+                (Some(mut columns), Some(other_columns)) => {
+                    let offset = self.items.len();
+                    columns.extend(other_columns.into_iter().map(|column| match column {
+                        StarEntry::Item { item, column } => StarEntry::Item {
+                            item: item + offset,
+                            column,
+                        },
+                        merged => merged,
+                    }));
+                    StarOrder::Columns(columns)
+                }
+                _ => StarOrder::Unknown,
+            },
+        };
         self.items.extend(other.items);
         self.merged_columns.extend(other.merged_columns);
         self.merged_typed_columns.extend(other.merged_typed_columns);
@@ -161,39 +232,113 @@ impl Level {
         self.has_opaque_items |= other.has_opaque_items;
     }
 
-    /// Typed columns of `SELECT *`, including columns merged by USING.
-    pub fn star_typed_columns(&self) -> TypedColumns {
-        if self.has_natural_join || self.items.is_empty() {
+    /// The columns that `*` expands to, in order, like [`ExpandAllTables`]. A join expands to the
+    /// columns it merges, then the other columns of its left side, then those of its right side
+    /// ([`transformFromClauseItem`]). `None` if they are not known.
+    ///
+    /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
+    /// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
+    pub fn star(&self) -> Option<Vec<StarEntry>> {
+        match &self.star_order {
+            StarOrder::Items => {
+                let mut columns = Vec::new();
+                for (item, entry) in self.items.iter().enumerate() {
+                    let count = entry.columns.as_ref()?.len();
+                    columns.extend((0..count).map(|column| StarEntry::Item { item, column }));
+                }
+                Some(columns)
+            }
+            StarOrder::Columns(columns) => Some(columns.clone()),
+            StarOrder::Unknown => None,
+        }
+    }
+
+    /// The name of a column of `*`.
+    pub fn star_column_name<'a>(&'a self, column: &'a StarEntry) -> Option<&'a str> {
+        match column {
+            StarEntry::Merged(name) => Some(name),
+            StarEntry::Item { item, column } => self
+                .items
+                .get(*item)?
+                .columns
+                .as_ref()?
+                .get(*column)
+                .map(String::as_str),
+        }
+    }
+
+    /// The columns that an unqualified reference to `column` can mean, if the level has a join
+    /// that merges columns and all columns are known. A join shows its merged columns once and
+    /// hides the columns of its sides, so these are the columns of `*` with that name. `None`
+    /// otherwise, and for system columns, which joins don't have.
+    fn visible_columns(&self, column: &str) -> Option<Vec<StarEntry>> {
+        let StarOrder::Columns(columns) = &self.star_order else {
+            return None;
+        };
+        if is_system_column(column) {
             return None;
         }
-        let mut output = self.merged_typed_columns.clone();
-        for item in &self.items {
-            let columns = item.typed_columns.as_ref()?;
-            output.extend(
-                columns
-                    .iter()
-                    .filter(|column| !self.merged_columns.contains(&column.name))
-                    .cloned(),
-            );
+        Some(
+            columns
+                .iter()
+                .filter(|entry| self.star_column_name(entry) == Some(column))
+                .cloned()
+                .collect(),
+        )
+    }
+
+    /// The names of the items that have `column`, for the message of an ambiguous reference.
+    fn items_with_column(&self, column: &str) -> Vec<String> {
+        self.items
+            .iter()
+            .filter(|item| item.has_column(column) == Some(true))
+            .map(|item| item.name.clone().unwrap_or_default())
+            .collect()
+    }
+
+    /// Typed columns of `SELECT *`, including merged columns. The type of a merged column is
+    /// unknown if nested joins merge the same name again.
+    pub fn star_typed_columns(&self) -> TypedColumns {
+        if self.items.is_empty() {
+            return None;
         }
-        Some(output)
+        self.star()?
+            .iter()
+            .map(|column| match column {
+                StarEntry::Merged(name) => {
+                    let mut merged = self
+                        .merged_typed_columns
+                        .iter()
+                        .filter(|typed| typed.name == *name);
+                    let ty = match (merged.next(), merged.next()) {
+                        (Some(typed), None) => typed.ty.clone(),
+                        _ => None,
+                    };
+                    Some(TypedColumn {
+                        name: name.clone(),
+                        ty,
+                    })
+                }
+                StarEntry::Item { item, column } => self
+                    .items
+                    .get(*item)?
+                    .typed_columns
+                    .as_ref()?
+                    .get(*column)
+                    .cloned(),
+            })
+            .collect()
     }
 
     /// The columns of `SELECT *`, if known.
     pub fn star_columns(&self) -> Columns {
-        if self.has_natural_join || self.items.is_empty() {
+        if self.items.is_empty() {
             return None;
         }
-        let mut columns = self.merged_columns.clone();
-        for item in &self.items {
-            columns.extend(
-                item.columns
-                    .clone()?
-                    .into_iter()
-                    .filter(|column| !self.merged_columns.contains(column)),
-            );
-        }
-        Some(columns)
+        self.star()?
+            .iter()
+            .map(|column| self.star_column_name(column).map(str::to_owned))
+            .collect()
     }
 
     pub fn item(&self, name: &str) -> Option<&Item> {
@@ -223,6 +368,16 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
             && level.output_names.iter().any(|n| n == column)
         {
             return None;
+        }
+        if let Some(visible) = level.visible_columns(column) {
+            match visible.as_slice() {
+                [] => continue,
+                [entry] => {
+                    let position = level.star()?.iter().position(|other| other == entry)?;
+                    return level.star_typed_columns()?.get(position)?.ty.clone();
+                }
+                _ => return None,
+            }
         }
         if level.merged_columns.iter().any(|c| c == column) {
             return level
@@ -255,6 +410,15 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
     None
 }
 
+/// Looks up an unqualified column, innermost query level first. Port of [`colNameToVar`] and
+/// [`scanNSItemForColumn`]: a name that more than one visible column of a level has is
+/// ambiguous. A join that merges columns shows its merged column once and hides the columns of
+/// its sides ([`transformFromClauseItem`]), so a merged column is ambiguous only if another FROM
+/// item, or the other columns of a join, have its name too.
+///
+/// [`colNameToVar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L930
+/// [`scanNSItemForColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L720
+/// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1608
 pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
     for (depth, level) in levels.iter().rev().enumerate() {
         if depth == 0
@@ -262,6 +426,14 @@ pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
             && level.output_names.iter().any(|name| name == column)
         {
             return ColumnLookup::Found;
+        }
+
+        if let Some(visible) = level.visible_columns(column) {
+            match visible.len() {
+                0 => continue,
+                1 => return ColumnLookup::Found,
+                _ => return ColumnLookup::Ambiguous(level.items_with_column(column)),
+            }
         }
 
         let mut matches = Vec::new();
@@ -297,6 +469,13 @@ pub(super) fn find_column_item<'a>(levels: &'a [Level], column: &str) -> Option<
             && level.output_names.iter().any(|name| name == column)
         {
             return None;
+        }
+        if let Some(visible) = level.visible_columns(column) {
+            match visible.as_slice() {
+                [] => continue,
+                [StarEntry::Item { item, .. }] => return level.items.get(*item),
+                _ => return None,
+            }
         }
         if level.merged_columns.iter().any(|c| c == column) {
             return None;
