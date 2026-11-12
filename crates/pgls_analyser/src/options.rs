@@ -76,12 +76,15 @@ pub type CreatingEnum = <lint::style::creating_enum::CreatingEnum as crate::Lint
 pub type DisallowUniqueConstraint = < lint :: safety :: disallow_unique_constraint :: DisallowUniqueConstraint as crate :: LinterRule > :: Options ;
 pub type FunctionArgumentMismatch = < lint :: typecheck :: function_argument_mismatch :: FunctionArgumentMismatch as crate :: LinterRule > :: Options ;
 pub type FunctionReturnTypeMismatch = < lint :: typecheck :: function_return_type_mismatch :: FunctionReturnTypeMismatch as crate :: LinterRule > :: Options ;
+pub type GeneratedColumnAssignment = < lint :: typecheck :: generated_column_assignment :: GeneratedColumnAssignment as crate :: LinterRule > :: Options ;
 pub type IdentifierTooLong =
     <lint::correctness::identifier_too_long::IdentifierTooLong as crate::LinterRule>::Options;
 pub type InsertColumnMismatch =
     <lint::typecheck::insert_column_mismatch::InsertColumnMismatch as crate::LinterRule>::Options;
 pub type InvalidCast = <lint::typecheck::invalid_cast::InvalidCast as crate::LinterRule>::Options;
 pub type InvalidDropTypeSignature = < lint :: correctness :: invalid_drop_type_signature :: InvalidDropTypeSignature as crate :: LinterRule > :: Options ;
+pub type InvalidMerge =
+    <lint::typecheck::invalid_merge::InvalidMerge as crate::LinterRule>::Options;
 pub type LockTimeoutWarning =
     <lint::safety::lock_timeout_warning::LockTimeoutWarning as crate::LinterRule>::Options;
 pub type MissingFromClauseEntry = < lint :: typecheck :: missing_from_clause_entry :: MissingFromClauseEntry as crate :: LinterRule > :: Options ;

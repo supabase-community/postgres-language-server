@@ -1,6 +1,6 @@
 //! The state of name resolution: the catalog, the names in scope, and the findings so far.
 
-use std::mem::Discriminant;
+use std::{cell::OnceCell, mem::Discriminant};
 
 use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -13,18 +13,20 @@ use pgls_query::{
 use super::{
     Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
     column_name::figure_column_name_with,
-    scope::{Columns, Cte, Level},
-    span,
+    scope::{Cte, Level},
+    span::Tokens,
 };
+use crate::TypeKind;
 use crate::lookup::{CatalogView, Lookup, Origin};
-use crate::typing::TypeId;
-use crate::{FunctionInfo, TypeKind};
+use crate::typing::{ResolvedFunction, Type, TypeId};
 
 pub(super) struct Resolver<'a> {
     pub catalog: &'a dyn CatalogView,
     pub search_path: &'a [String],
     pub function: Option<&'a FunctionContext>,
     sql: Option<&'a str>,
+    /// The tokens of `sql`, scanned when the first span is needed.
+    tokens: OnceCell<Option<Tokens<'a>>>,
     pub findings: Vec<Finding>,
     /// Cleared as soon as the statement references something that doesn't come unchanged from
     /// the database, or something the resolver doesn't understand.
@@ -38,9 +40,13 @@ pub(super) struct Resolver<'a> {
     pub references: Option<Vec<Reference>>,
     /// The location and kind of each reference in `references`.
     recorded: FxHashSet<(i32, Discriminant<Reference>)>,
-    /// The name of the first output column of each scalar subquery resolved so far, by the
-    /// location of the subquery.
-    subquery_columns: FxHashMap<i32, String>,
+    /// The output columns of the subqueries of sublinks resolved so far, by the address of the
+    /// subquery's node, so that typing a sublink doesn't resolve its subquery again. Resolving
+    /// it again at every level of nested subqueries took time exponential in their depth.
+    subquery_outputs: FxHashMap<usize, crate::typing::QueryColumns>,
+    /// Set while resolving the RETURNING list of MERGE, including its subqueries, where
+    /// `merge_action()` is allowed.
+    pub in_merge_returning: bool,
 }
 
 impl<'a> Resolver<'a> {
@@ -55,6 +61,7 @@ impl<'a> Resolver<'a> {
             search_path,
             function,
             sql,
+            tokens: OnceCell::new(),
             findings: Vec::new(),
             database_only: true,
             levels: Vec::new(),
@@ -62,8 +69,25 @@ impl<'a> Resolver<'a> {
             output: None,
             references: None,
             recorded: FxHashSet::default(),
-            subquery_columns: FxHashMap::default(),
+            subquery_outputs: FxHashMap::default(),
+            in_merge_returning: false,
         }
+    }
+
+    /// Remembers the output columns of `query`, the subquery of a sublink.
+    pub fn remember_subquery_output(
+        &mut self,
+        query: &protobuf::Node,
+        columns: crate::typing::QueryColumns,
+    ) {
+        self.subquery_outputs
+            .insert(std::ptr::from_ref(query) as usize, columns);
+    }
+
+    /// The output columns of `query`, the subquery of a sublink, if it was resolved before.
+    pub fn subquery_output(&self, query: &protobuf::Node) -> Option<&crate::typing::QueryColumns> {
+        self.subquery_outputs
+            .get(&(std::ptr::from_ref(query) as usize))
     }
 
     /// Makes the FROM items of `level` visible, until [`Resolver::exit_level`].
@@ -117,16 +141,6 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    /// Remembers the output columns of the scalar subquery `link`, which name an unnamed select
-    /// list entry that is the subquery.
-    pub fn set_subquery_columns(&mut self, link: &protobuf::SubLink, columns: Columns) {
-        if link.sub_link_type() == protobuf::SubLinkType::ExprSublink
-            && let Some(first) = columns.and_then(|columns| columns.into_iter().next())
-        {
-            self.subquery_columns.insert(link.location, first);
-        }
-    }
-
     /// The column name Postgres chooses for an unnamed select list entry, see
     /// [`figure_column_name`]. Scalar subqueries the resolver has resolved are named after their
     /// first output column, which is also known when it is a `*`, as in `(select * from t)`.
@@ -134,8 +148,22 @@ impl<'a> Resolver<'a> {
     /// [`figure_column_name`]: super::figure_column_name
     pub fn column_name(&self, value: &NodeEnum) -> Option<String> {
         figure_column_name_with(value, &|link| {
-            self.subquery_columns.get(&link.location).cloned()
+            let output = self.subquery_output(link.subselect.as_deref()?)?;
+            Some(output.as_ref()?.first()?.name.clone())
         })
+    }
+
+    /// The statement text, if known.
+    pub fn sql(&self) -> Option<&'a str> {
+        self.sql
+    }
+
+    /// The tokens of the statement. It is scanned once, the first time they are needed, which for
+    /// most statements is never: spans are only needed for findings and references.
+    pub fn tokens(&self) -> Option<&Tokens<'a>> {
+        self.tokens
+            .get_or_init(|| self.sql.and_then(Tokens::scan))
+            .as_ref()
     }
 
     /// Whether references are being collected.
@@ -157,8 +185,9 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    /// Records that `call` resolves to `function`, when references are being collected.
-    pub fn record_call(&mut self, call: &FuncCall, function: &FunctionInfo) {
+    /// Records that `call` resolves to `resolved`, when references are being collected.
+    pub fn record_call(&mut self, call: &FuncCall, resolved: &ResolvedFunction) {
+        let function = &resolved.function;
         if !self.collects_references() {
             return;
         }
@@ -195,20 +224,16 @@ impl<'a> Resolver<'a> {
             };
             arguments.push(ResolvedCallArgument { parameter, named });
         }
-        for (arg, argument) in call.args.iter().zip(&arguments) {
+        // The type each argument is coerced to, with polymorphic parameters like `anyelement`
+        // resolved from the other arguments.
+        for (arg, target) in call.args.iter().zip(&resolved.arguments) {
             let value = match arg.node.as_ref() {
                 Some(NodeEnum::NamedArgExpr(named)) => {
                     named.arg.as_deref().and_then(|arg| arg.node.as_ref())
                 }
                 value => value,
             };
-            let is_variadic = expanded && argument.parameter + 1 == parameters.len();
-            let target = if is_variadic {
-                signature.variadic_element.as_ref()
-            } else {
-                parameters[argument.parameter].ty.as_ref()
-            };
-            if let Some(target) = target {
+            if let Some(Type::Named(target)) = target {
                 self.record_enum_literal(value, target);
             }
         }
@@ -286,48 +311,86 @@ impl<'a> Resolver<'a> {
 
     /// The span of the (possibly qualified) name starting at `location`.
     pub fn name_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::reference_end)
+        self.span_to(location, Tokens::name_end)
     }
 
     /// The span of the (possibly qualified) type name starting at `location`, with all the words
     /// of multi-word types like `double precision`.
     pub fn type_name_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::type_name_end)
+        self.span_to(location, Tokens::type_name_end)
     }
 
     /// The span of the `*` or `t.*` starting at `location`.
     pub fn star_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::star_end)
+        self.span_to(location, Tokens::star_end)
     }
 
     /// The span of the operator token starting at `location`.
     pub fn operator_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::operator_end)
+        self.span_to(location, Tokens::operator_end)
     }
 
     pub fn cast_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::cast_end)
+        self.span_to(location, Tokens::cast_end)
     }
 
     /// The span of the string constant starting at `location`.
     pub fn literal_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::literal_end)
+        self.span_to(location, Tokens::literal_end)
+    }
+
+    /// The alias `alias` after the (possibly qualified) name starting at `location`: its location
+    /// and span, if it is written there.
+    pub fn alias_location(&self, location: i32, alias: &str) -> Option<(i32, TextRange)> {
+        let sql = self.sql?;
+        let (start, end) = self.tokens()?.alias_span(usize::try_from(location).ok()?)?;
+        if crate::identifier_name(sql.get(start..end)?) != alias {
+            return None;
+        }
+        Some((
+            i32::try_from(start).ok()?,
+            TextRange::new(
+                TextSize::try_from(start).ok()?,
+                TextSize::try_from(end).ok()?,
+            ),
+        ))
+    }
+
+    /// Records the alias of the FROM item named at `location`, when references are being
+    /// collected.
+    pub fn record_alias(&mut self, location: i32, alias: Option<&pgls_query::protobuf::Alias>) {
+        if !self.collects_references() {
+            return;
+        }
+        let Some(alias) = alias else {
+            return;
+        };
+        if let Some((location, span)) = self.alias_location(location, &alias.aliasname) {
+            self.record(Reference::Alias {
+                location,
+                span: Some(span),
+                name: alias.aliasname.clone(),
+            });
+        }
     }
 
     /// The span of the first token of an expression starting at `location`.
     pub fn expression_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, |sql, start| {
-            span::reference_end(sql, start).or_else(|| span::token_end(sql, start))
-        })
+        self.span_to(location, Tokens::expression_end)
     }
 
     fn span_to(
         &self,
         location: i32,
-        end_fn: fn(&str, usize) -> Option<usize>,
+        end_fn: fn(&Tokens<'a>, usize) -> Option<usize>,
     ) -> Option<TextRange> {
         let start = usize::try_from(location).ok()?;
-        let end = end_fn(self.sql?, start)?;
+        let end = end_fn(self.tokens()?, start)?;
+        debug_assert!(
+            self.sql
+                .is_some_and(|sql| start < end && sql.get(start..end).is_some()),
+            "span {start}..{end} outside the statement or not on character boundaries"
+        );
         Some(TextRange::new(
             TextSize::try_from(start).ok()?,
             TextSize::try_from(end).ok()?,

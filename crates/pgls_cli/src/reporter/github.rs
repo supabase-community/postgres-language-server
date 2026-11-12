@@ -14,15 +14,7 @@ impl ReportWriter for GithubReportWriter {
         config: &ReportConfig,
     ) -> Result<(), CliDiagnostic> {
         for diagnostic in &report.diagnostics {
-            if diagnostic.severity() < config.diagnostic_level {
-                continue;
-            }
-
-            if diagnostic.tags().is_verbose() {
-                if config.verbose {
-                    console.log(markup! {{PrintGitHubDiagnostic(diagnostic)}});
-                }
-            } else if !config.verbose {
+            if config.should_emit(diagnostic) {
                 console.log(markup! {{PrintGitHubDiagnostic(diagnostic)}});
             }
         }

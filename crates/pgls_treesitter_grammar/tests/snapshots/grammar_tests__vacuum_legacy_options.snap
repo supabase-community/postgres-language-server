@@ -1,0 +1,22 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+vacuum full freeze verbose analyze users (id);
+-----------------------
+program [0..46] 'vacuum full freeze verbose analyze users (id);'
+  statement [0..45] 'vacuum full freeze verbose analyze users (id)'
+    vacuum_statement [0..45] 'vacuum full freeze verbose analyze users (id)'
+      keyword_vacuum [0..6] 'vacuum' (@end)
+      keyword_full [7..11] 'full'
+      keyword_freeze [12..18] 'freeze'
+      keyword_verbose [19..26] 'verbose'
+      keyword_analyze [27..34] 'analyze'
+      table_and_columns [35..45] 'users (id)'
+        table_reference [35..40] 'users' (@end)
+          any_identifier [35..40] 'users' (@table_reference_1of1)
+        table_columns [41..45] '(id)'
+          ( [41..42] '('
+          column_identifier [42..44] 'id'
+          ) [44..45] ')' (@end)
+  ; [45..46] ';'

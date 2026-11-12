@@ -1,0 +1,47 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+update t set a = 1 returning with (old as o, new as n) o.a, n.*;
+-----------------------
+program [0..64] 'update t set a = 1 returning with (old as o, new as n) o.a, n.*;'
+  statement [0..63] 'update t set a = 1 returning with (old as o, new as n) o.a, n.*'
+    update [0..18] 'update t set a = 1'
+      keyword_update [0..6] 'update'
+      update_target [7..8] 't'
+        table_reference [7..8] 't' (@end)
+          any_identifier [7..8] 't' (@table_reference_1of1)
+      update_set_values [9..18] 'set a = 1' (@end)
+        keyword_set [9..12] 'set'
+        assignment [13..18] 'a = 1' (@end)
+          column_identifier [13..14] 'a' (@left)
+          = [15..16] '='
+          literal [17..18] '1' (@end)
+    returning [19..63] 'returning with (old as o, new as n) o.a, n.*'
+      keyword_returning [19..28] 'returning'
+      returning_with [29..54] 'with (old as o, new as n)'
+        keyword_with [29..33] 'with'
+        ( [34..35] '('
+        returning_with_item [35..43] 'old as o'
+          keyword_old [35..38] 'old'
+          keyword_as [39..41] 'as'
+          any_identifier [42..43] 'o' (@end)
+        , [43..44] ','
+        returning_with_item [45..53] 'new as n'
+          keyword_new [45..48] 'new'
+          keyword_as [49..51] 'as'
+          any_identifier [52..53] 'n' (@end)
+        ) [53..54] ')' (@end)
+      select_expression [55..63] 'o.a, n.*' (@end)
+        term [55..58] 'o.a' (@end)
+          object_reference [55..58] 'o.a' (@end)
+            any_identifier [55..56] 'o' (@object_reference_1of2)
+            . [56..57] '.'
+            any_identifier [57..58] 'a' (@object_reference_2of2)
+        , [58..59] ',' (@end)
+        term [60..63] 'n.*' (@end)
+          all_fields [60..63] 'n.*' (@end)
+            table_identifier [60..61] 'n'
+            . [61..62] '.'
+            * [62..63] '*' (@end)
+  ; [63..64] ';'

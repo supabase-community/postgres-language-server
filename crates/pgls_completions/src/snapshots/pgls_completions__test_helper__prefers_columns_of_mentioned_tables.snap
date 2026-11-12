@@ -29,6 +29,12 @@ create table public.users (
 ***Case 1:***
 
 s| from public.users
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from public.users
 **Should suggest address 2 from public table**
 
@@ -61,6 +67,12 @@ select address2 | from public.users
 ***Case 2:***
 
 s| from private.users
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from private.users
 **Should suggest address 1 from private table**
 
@@ -93,6 +105,12 @@ select address1 | from private.users
 ***Case 3:***
 
 s| from private.users
+
+Results:
+select - select (Keyword)
+
+--------------
+
 select | from private.users
 **Should prioritize columns starting with s**
 

@@ -11,6 +11,10 @@
  * {"jsonrpc":"2.0","method":"pgls/setSchema","params":{"schema":"..."}}
  * ```
  *
+ * The configuration, in the shape of `postgres-language-server.jsonc`, comes as the
+ * `initializationOptions` of `initialize`, or as the `settings` of
+ * `workspace/didChangeConfiguration`, which replaces it.
+ *
  * @example
  * ```typescript
  * import { createLanguageServer } from '@postgres-language-server/wasm/lsp';
