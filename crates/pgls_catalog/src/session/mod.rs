@@ -1,18 +1,21 @@
 //! Session state tracked while analysing a file: the settings that name resolution depends on,
 //! the transaction depth, and the lock and timeout state that the safety rules check.
 
+mod lock_level;
 mod locks;
 mod settings;
 #[cfg(test)]
 mod tests;
+mod transaction;
 
 use pgls_query::{NodeEnum, protobuf};
 
 use crate::Catalog;
 
+pub use lock_level::{LockMode, TableLock, alter_table_cmd_lock, alter_table_lock, relation_locks};
 use locks::Locks;
-pub use locks::{is_reindex_concurrent, is_vacuum_full};
 use settings::Settings;
+pub use transaction::{NonTransactional, ends_transaction_block, prevents_transaction_block};
 
 /// Whether the migration tool runs the statements outside `BEGIN` and `COMMIT` in a
 /// transaction.
@@ -36,8 +39,9 @@ pub struct Session {
     locks: Locks,
     /// Tables (schema, name) that an `ALTER TABLE` changed, also in earlier transactions.
     altered_tables: Vec<(String, String)>,
-    /// Transaction nesting depth (0 = not in explicit transaction)
-    transaction_depth: usize,
+    /// Whether a `BEGIN` opened a transaction block that hasn't ended yet. Postgres doesn't nest
+    /// transaction blocks: a `BEGIN` in one only warns, and savepoints don't end it.
+    explicit_block: bool,
     transaction_mode: TransactionMode,
     /// Whether the statements run in an implicit transaction block, see
     /// [`Session::begin_implicit_block`].
@@ -71,9 +75,23 @@ impl Session {
     pub fn check_function_bodies(&self) -> bool {
         self.settings.check_function_bodies()
     }
-    /// Returns the transaction nesting depth (0 = not in an explicit transaction).
-    pub fn transaction_depth(&self) -> usize {
-        self.transaction_depth
+    /// Whether a `BEGIN` opened a transaction block that hasn't ended yet.
+    pub fn in_explicit_transaction(&self) -> bool {
+        self.explicit_block
+    }
+
+    /// Whether the statement opens a transaction block that a later statement has to end: a
+    /// `BEGIN` outside of one, or `COMMIT AND CHAIN` or `ROLLBACK AND CHAIN` in one.
+    pub fn opens_transaction_block(&self, stmt: &NodeEnum) -> bool {
+        use protobuf::TransactionStmtKind as Kind;
+        let NodeEnum::TransactionStmt(stmt) = stmt else {
+            return false;
+        };
+        match stmt.kind() {
+            Kind::TransStmtBegin | Kind::TransStmtStart => !self.explicit_block,
+            Kind::TransStmtCommit | Kind::TransStmtRollback => stmt.chain && self.explicit_block,
+            _ => false,
+        }
     }
 
     pub fn transaction_mode(&self) -> TransactionMode {
@@ -84,7 +102,7 @@ impl Session {
     /// unknown migration tool.
     pub fn in_transaction(&self) -> Option<bool> {
         match self.transaction_mode {
-            _ if self.transaction_depth > 0 || self.implicit_block => Some(true),
+            _ if self.explicit_block || self.implicit_block => Some(true),
             TransactionMode::Unknown => None,
             TransactionMode::Transaction => Some(true),
             TransactionMode::Autocommit => Some(false),
@@ -167,22 +185,20 @@ impl Session {
 
     /// Returns true if the statement takes a dangerous lock on an existing object.
     ///
-    /// Covers: AlterTableStmt, non-concurrent IndexStmt, DropStmt (table/index),
-    /// TruncateStmt, VacuumStmt, non-concurrent ReindexStmt, RenameStmt (with relation),
-    /// and non-concurrent RefreshMatViewStmt.
+    /// Covers: AlterTableStmt and IndexStmt with a lock that blocks writes (see
+    /// [`Session::table_locks`]), DropStmt (table/index), TruncateStmt, VacuumStmt,
+    /// non-concurrent ReindexStmt, RenameStmt (with relation), and non-concurrent
+    /// RefreshMatViewStmt.
     pub fn is_dangerous_lock_stmt(&self, stmt: &NodeEnum, catalog: &Catalog) -> bool {
         self.locks
             .is_dangerous_lock_stmt(stmt, catalog, self.search_path())
     }
 
-    /// Returns the existing table targeted by an ALTER TABLE command that takes ACCESS EXCLUSIVE.
-    pub fn access_exclusive_table_for_alter(
-        &self,
-        stmt: &protobuf::AlterTableStmt,
-        catalog: &Catalog,
-    ) -> Option<(String, String)> {
-        self.locks
-            .access_exclusive_table_for_alter(stmt, catalog, self.search_path())
+    /// The locks that an `ALTER TABLE` or `CREATE INDEX` takes on tables that this transaction
+    /// didn't create, see [`relation_locks`]. A table created in the transaction is invisible to
+    /// other sessions, so its locks block no one.
+    pub fn table_locks(&self, stmt: &NodeEnum, catalog: &Catalog) -> Vec<TableLock> {
+        self.locks.table_locks(stmt, catalog, self.search_path())
     }
 
     /// Update session state based on a statement. `catalog` is the catalog after the statement,
@@ -210,30 +226,44 @@ impl Session {
         }
     }
 
+    /// Port of what `BEGIN`, `COMMIT`, `ROLLBACK` and `PREPARE TRANSACTION` do to the transaction
+    /// block, see [`BeginTransactionBlock`] and [`ends_transaction_block`].
+    ///
+    /// [`BeginTransactionBlock`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L3924
     fn apply_transaction(&mut self, stmt: &protobuf::TransactionStmt) {
         use protobuf::TransactionStmtKind as Kind;
         match stmt.kind() {
+            // In a transaction block, `BEGIN` only warns.
             Kind::TransStmtBegin | Kind::TransStmtStart => {
-                if self.transaction_depth == 0 {
+                if !self.explicit_block {
                     self.settings.begin();
+                    self.explicit_block = true;
                 }
-                self.transaction_depth += 1;
             }
-            Kind::TransStmtCommit => {
-                self.transaction_depth = self.transaction_depth.saturating_sub(1);
+            // A prepared transaction keeps its settings like a committed one, see
+            // [`PrepareTransaction`](https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L2760).
+            Kind::TransStmtCommit | Kind::TransStmtPrepare => {
                 self.settings.commit();
                 self.locks.reset();
+                self.end_block(stmt.chain);
             }
             Kind::TransStmtRollback => {
-                self.transaction_depth = self.transaction_depth.saturating_sub(1);
                 self.settings.rollback();
                 self.locks.reset();
+                self.end_block(stmt.chain);
             }
-            Kind::TransStmtSavepoint => self.transaction_depth += 1,
-            Kind::TransStmtRelease | Kind::TransStmtRollbackTo => {
-                self.transaction_depth = self.transaction_depth.saturating_sub(1)
-            }
+            // Savepoints don't open or end the block, and Postgres rejects them outside of one.
             _ => {}
+        }
+    }
+
+    /// Ends the transaction block. `AND CHAIN` opens the next one right away; outside of a
+    /// transaction block, Postgres rejects it.
+    fn end_block(&mut self, chain: bool) {
+        if chain && self.explicit_block {
+            self.settings.begin();
+        } else {
+            self.explicit_block = false;
         }
     }
 }

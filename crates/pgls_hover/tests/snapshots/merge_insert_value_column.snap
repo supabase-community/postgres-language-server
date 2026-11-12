@@ -1,0 +1,20 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+merge into hover_users u using hover_posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values (p.post_id, p.title)
+                                                                                                                                                                                       ↑ hovered here
+```
+
+# Hover Results
+### `public.hover_posts.post_id`  
+```plain  
+int4 - nullable
+  
+```  
+---    
+```plain  
+  
+```

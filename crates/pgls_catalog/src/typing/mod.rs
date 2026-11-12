@@ -22,8 +22,9 @@ mod overload;
 mod types;
 mod unify;
 
-pub use model::{Type, TypeId, TypedColumn};
-pub use types::format_type;
+pub use coerce::is_binary_coercible;
+pub use model::{Decision, Type, TypeId, TypedColumn};
+pub use types::{SerialType, base_type, format_type, normalize_type_name, serial_type};
 
 pub(crate) use coerce::*;
 pub(crate) use model::*;

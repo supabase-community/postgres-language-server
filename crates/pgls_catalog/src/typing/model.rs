@@ -32,7 +32,7 @@ pub(crate) type QueryColumns = Option<Vec<TypedColumn>>;
 
 /// A result that may not be known statically.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Decision<T> {
+pub enum Decision<T> {
     Known(T),
     Unknown,
 }

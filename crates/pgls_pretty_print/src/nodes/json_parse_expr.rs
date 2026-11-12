@@ -1,13 +1,10 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::JsonParseExpr;
 
-use super::json_value_expr::{emit_json_output, emit_json_value_expr};
+use super::emit_json_value_expr;
+use super::prelude::*;
 
 pub(super) fn emit_json_parse_expr(e: &mut EventEmitter, n: &JsonParseExpr) {
-    e.group_start(GroupKind::JsonParseExpr);
+    e.group_start();
 
     e.token(TokenKind::JSON_KW);
     e.token(TokenKind::L_PAREN);
@@ -32,7 +29,7 @@ pub(super) fn emit_json_parse_expr(e: &mut EventEmitter, n: &JsonParseExpr) {
     }
 
     if let Some(ref output) = n.output {
-        emit_json_output(e, output, &mut has_content);
+        emit_json_output_clause(e, output, &mut has_content);
     }
 
     e.token(TokenKind::R_PAREN);
