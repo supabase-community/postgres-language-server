@@ -1,0 +1,39 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+alter default privileges for role admin in schema s grant select, update on large objects to r with grant option;
+-----------------------
+program [0..113] 'alter default privileges for role admin in schema s grant select, update on large objects to r with grant option;'
+  statement [0..112] 'alter default privileges for role admin in schema s grant select, update on large objects to r with grant option'
+    alter_default_privileges [0..112] 'alter default privileges for role admin in schema s grant select, update on large objects to r with grant option'
+      keyword_alter [0..5] 'alter'
+      keyword_default [6..13] 'default'
+      keyword_privileges [14..24] 'privileges'
+      default_privileges_for_role [25..39] 'for role admin'
+        keyword_for [25..28] 'for'
+        keyword_role [29..33] 'role'
+        role_specification [34..39] 'admin' (@end)
+          role_identifier [34..39] 'admin' (@end)
+      default_privileges_in_schema [40..51] 'in schema s'
+        keyword_in [40..42] 'in'
+        keyword_schema [43..49] 'schema'
+        schema_identifier [50..51] 's' (@end)
+      default_privileges_grant [52..112] 'grant select, update on large objects to r with grant option' (@end)
+        keyword_grant [52..57] 'grant'
+        grantable [58..72] 'select, update'
+          keyword_select [58..64] 'select' (@end)
+          , [64..65] ','
+          keyword_update [66..72] 'update' (@end)
+        default_privileges_target [73..89] 'on large objects'
+          keyword_on [73..75] 'on'
+          keyword_large [76..81] 'large'
+          keyword_objects [82..89] 'objects' (@end)
+        keyword_to [90..92] 'to'
+        role_specification [93..94] 'r' (@end)
+          role_identifier [93..94] 'r' (@end)
+        with_grant_option [95..112] 'with grant option'
+          keyword_with [95..99] 'with'
+          keyword_grant [100..105] 'grant'
+          keyword_option [106..112] 'option' (@end)
+  ; [112..113] ';'

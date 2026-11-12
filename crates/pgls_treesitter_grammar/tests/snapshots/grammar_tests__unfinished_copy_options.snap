@@ -1,0 +1,19 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+copy t from stdin with (format csv
+-----------------------
+program [0..34] 'copy t from stdin with (format csv'
+  statement [0..34] 'copy t from stdin with (format csv'
+    copy_statement [0..34] 'copy t from stdin with (format csv'
+      keyword_copy [0..4] 'copy'
+      table_reference [5..6] 't'
+        any_identifier [5..6] 't' (@table_reference_1of1)
+      keyword_from [7..11] 'from'
+      keyword_stdin [12..17] 'stdin' (@end)
+      copy_stmt_options [18..34] 'with (format csv'
+        keyword_with [18..22] 'with'
+        ( [23..24] '('
+        keyword_format [24..30] 'format'
+        keyword_csv [31..34] 'csv'

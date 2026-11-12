@@ -67,6 +67,10 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     /// Checks if the given path is a symlink
     fn path_is_symlink(&self, path: &Path) -> bool;
 
+    /// The absolute form of `path` with `.`, `..` and symlinks resolved. Fails if it doesn't
+    /// exist.
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
+
     /// This method accepts a directory path (`search_dir`) and a list of filenames (`file_names`),
     /// It looks for the files in the specified directory in the order they appear in the list.
     /// If a file is not found in the initial directory, the search may continue into the parent
@@ -173,8 +177,12 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
         }
     }
 
+    /// The files that changed between `base` and `HEAD`, relative to the working directory. Fails
+    /// with [NotAGitRepository] outside a git repository.
     fn get_changed_files(&self, base: &str) -> io::Result<Vec<String>>;
 
+    /// The staged files, relative to the working directory. Fails with [NotAGitRepository]
+    /// outside a git repository.
     fn get_staged_files(&self) -> io::Result<Vec<String>>;
 
     fn resolve_configuration(
@@ -186,8 +194,8 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     /// Finds the files at or below `root` named like one of `search.file_names`.
     ///
     /// It skips hidden directories, the directories in [SKIPPED_DIRECTORIES], the directories that
-    /// [FindFiles::skip_directory] skips, and, on the OS file system, everything that `.gitignore`
-    /// and `.ignore` files exclude. It stops at [FindFiles::max_depth] and
+    /// [FindFiles::skip_directory] skips, and, on the OS file system, everything that `.ignore`
+    /// files and, with [FindFiles::vcs_ignore_files], `.gitignore` files exclude. It stops at [FindFiles::max_depth] and
     /// [FindFiles::max_entries].
     fn find_files(&self, root: &Path, search: &FindFiles) -> FoundFiles;
 }
@@ -208,6 +216,9 @@ pub struct FindFiles<'a> {
     pub max_depth: usize,
     /// The search stops after this many files and directories.
     pub max_entries: usize,
+    /// Whether the OS file system skips what `.gitignore` files and git's excludes exclude.
+    /// `.ignore` files are always honoured.
+    pub vcs_ignore_files: bool,
 }
 
 impl<'a> FindFiles<'a> {
@@ -223,6 +234,7 @@ impl<'a> FindFiles<'a> {
             skip_directory: None,
             max_depth: Self::DEFAULT_MAX_DEPTH,
             max_entries: Self::DEFAULT_MAX_ENTRIES,
+            vcs_ignore_files: true,
         }
     }
 }
@@ -442,6 +454,10 @@ where
         T::path_is_symlink(self, path)
     }
 
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+        T::canonicalize(self, path)
+    }
+
     fn get_changed_files(&self, base: &str) -> io::Result<Vec<String>> {
         T::get_changed_files(self, base)
     }
@@ -462,6 +478,26 @@ where
         T::find_files(self, root, search)
     }
 }
+
+/// The error of [FileSystem::get_changed_files] and [FileSystem::get_staged_files] when the
+/// working directory isn't inside a git repository.
+#[derive(Debug)]
+pub struct NotAGitRepository;
+
+impl NotAGitRepository {
+    /// Whether `error` is this error.
+    pub fn is(error: &io::Error) -> bool {
+        error.get_ref().is_some_and(|error| error.is::<Self>())
+    }
+}
+
+impl Display for NotAGitRepository {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str("not a git repository")
+    }
+}
+
+impl std::error::Error for NotAGitRepository {}
 
 #[derive(Debug, Diagnostic, Deserialize, Serialize)]
 #[diagnostic(category = "internalError/fs")]

@@ -1,4 +1,5 @@
-use pgls_query::{NodeEnum, protobuf::CreateRangeStmt};
+use pgls_query::protobuf::CreateRangeStmt;
+use pgls_query_ext::options::find_def_elem;
 
 use crate::catalog::{Catalog, names::qualified_name, overlay::function_info};
 use crate::lookup::FunctionKind;
@@ -15,10 +16,7 @@ pub(super) fn apply_create_range_stmt(
     let Some(name) = qualified_name(&n.type_name) else {
         return;
     };
-    let custom_multirange_name = n.params.iter().any(|param| {
-        matches!(&param.node, Some(NodeEnum::DefElem(param)) if param.defname == "multirange_type_name")
-    });
-    if custom_multirange_name {
+    if find_def_elem(&n.params, "multirange_type_name").is_some() {
         c.tainted = true;
         return;
     }

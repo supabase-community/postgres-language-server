@@ -1,0 +1,19 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+alter table t alter column a set data
+-----------------------
+program [0..37] 'alter table t alter column a set data'
+  statement [0..37] 'alter table t alter column a set data'
+    alter_table [0..37] 'alter table t alter column a set data'
+      keyword_alter [0..5] 'alter'
+      keyword_table [6..11] 'table'
+      table_reference [12..13] 't'
+        any_identifier [12..13] 't' (@table_reference_1of1)
+      alter_column [14..37] 'alter column a set data'
+        keyword_alter [14..19] 'alter'
+        keyword_column [20..26] 'column'
+        column_identifier [27..28] 'a'
+        keyword_set [29..32] 'set'
+        keyword_data [33..37] 'data'

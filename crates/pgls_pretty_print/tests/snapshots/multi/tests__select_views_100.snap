@@ -146,9 +146,9 @@ from
 where
   f_leak(cnum) and ymd >= '2011-10-01' and ymd < '2011-11-01';
 
-prepare p1 as select * from my_property_normal where f_leak(passwd);;
+prepare p1 as select * from my_property_normal where f_leak(passwd);
 
-prepare p2 as select * from my_property_secure where f_leak(passwd);;
+prepare p2 as select * from my_property_secure where f_leak(passwd);
 
 execute p1;
 
