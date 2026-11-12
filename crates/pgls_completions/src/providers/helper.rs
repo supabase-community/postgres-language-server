@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_text_size::TextRange;
 use pgls_treesitter::TreesitterContext;
@@ -31,6 +33,43 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     }
 
     TextRange::new(start.try_into().unwrap(), end.try_into().unwrap())
+}
+
+/// The bytes of the word at the cursor, like `ver` in `explain (analyze, ver|)`, or the
+/// sanitized token if the cursor is on one. A keyword completion replaces this word.
+///
+/// It isn't always the node under the cursor: where the grammar expects no identifier, as in
+/// option lists, tree-sitter puts the word into an `ERROR` together with the tokens before it,
+/// like `, ver`, or skips it, so that the node under the cursor is the `)` after it.
+pub(crate) fn word_at_cursor(ctx: &TreesitterContext) -> Range<usize> {
+    let bytes = ctx.text.as_bytes();
+    let is_word = |b: &u8| b.is_ascii_alphanumeric() || *b == b'_';
+
+    if !bytes.get(ctx.position).is_some_and(is_word) {
+        return ctx.node_under_cursor.byte_range();
+    }
+
+    let start = bytes[..ctx.position]
+        .iter()
+        .rposition(|b| !is_word(b))
+        .map_or(0, |i| i + 1);
+    let end = bytes[ctx.position..]
+        .iter()
+        .position(|b| !is_word(b))
+        .map_or(bytes.len(), |i| ctx.position + i);
+
+    start..end
+}
+
+/// The range a keyword completion replaces: the [`word_at_cursor`] without the sanitized token.
+pub(crate) fn get_keyword_range_to_replace(ctx: &TreesitterContext) -> TextRange {
+    let word = word_at_cursor(ctx);
+    let typed = remove_sanitized_token(&ctx.text[word.clone()]);
+
+    TextRange::at(
+        word.start.try_into().unwrap(),
+        typed.len().try_into().unwrap(),
+    )
 }
 
 /// Whether the cursor is in a quoted identifier without a closing quote, so the completion has to
@@ -126,7 +165,7 @@ mod tests {
             .map(|item| item.completion_text.map_or(item.label, |text| text.text))
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn quotes_names_that_need_it(pool: PgPool) {
         pool.execute(
             r#"
@@ -206,7 +245,7 @@ mod tests {
     }
 
     /// The range to replace is in bytes, like the cursor, also after multibyte characters.
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn replaces_at_the_cursor_after_multibyte_characters(pool: PgPool) {
         pool.execute("create schema private; create table people (name text);")
             .await

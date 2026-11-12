@@ -1,13 +1,32 @@
 //! Helpers shared by the modules of the resolver.
 
-use pgls_query::{Node, NodeEnum};
+use pgls_query::{Node, NodeEnum, protobuf::RangeVar};
 
-use super::{FunctionParam, expr::infer_expr, resolver::Resolver};
+use super::{FunctionParam, expr::infer_expr, nodes::resolve_node, resolver::Resolver};
 use crate::{
     OperatorInfo, OperatorKind, TypeKind,
     lookup::Lookup,
     typing::{Selection, Type, TypeId, TypedColumn, select_common_type, select_operator},
 };
+
+/// Resolves the names of an expression, like a condition, and types it, which reports its
+/// operators and functions.
+pub(super) fn resolve_expr(r: &mut Resolver<'_>, node: &Node) {
+    resolve_node(r, node);
+    if let Some(expr) = node.node.as_ref() {
+        infer_expr(r, expr);
+    }
+}
+
+/// The name that a relation or CTE in FROM is referenced by: its alias, else its name
+/// ([`addRangeTableEntry`]).
+///
+/// [`addRangeTableEntry`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L1527
+pub(super) fn ref_name(n: &RangeVar) -> &str {
+    n.alias
+        .as_ref()
+        .map_or(n.relname.as_str(), |alias| alias.aliasname.as_str())
+}
 
 /// The builtin type `pg_catalog.<name>`.
 pub(super) fn named(r: &Resolver<'_>, name: &str) -> Option<Type> {

@@ -8,7 +8,10 @@ use std::{
 };
 
 #[cfg(feature = "db")]
-use crate::features::code_actions::execute_statement::execution;
+use crate::features::code_actions::execute_statement::{
+    execution,
+    running::{RUNNING_STATEMENTS_MAX, RunningStatements},
+};
 use analyser::AnalyserVisitorBuilder;
 #[cfg(feature = "db")]
 use async_helper::run_async;
@@ -26,11 +29,10 @@ use pgls_analyse::{AnalysisFilter, RuleCategories, RuleCategoriesBuilder, RuleFi
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix, WalkParams,
+    LinterDiagnostic, LinterOptions, MigrationSection, WalkParams,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session};
-use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
@@ -89,6 +91,8 @@ use crate::settings::DatabaseSettings;
 use connection_key::ConnectionKey;
 #[cfg(feature = "db")]
 mod connection_manager;
+#[cfg(feature = "db")]
+pub(crate) use connection_manager::DatabasePools;
 pub(crate) mod document;
 mod formatting;
 #[cfg(feature = "db")]
@@ -119,6 +123,10 @@ pub struct WorkspaceServer {
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
+
+    /// The statements that are being executed, to cancel them
+    #[cfg(feature = "db")]
+    running_statements: RunningStatements,
 }
 
 /// A database snapshot with the changes of the statements before a statement.
@@ -155,6 +163,7 @@ impl WorkspaceServer {
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
             connection: ConnectionManager::new(),
+            running_statements: RunningStatements::default(),
         }
     }
 
@@ -728,6 +737,8 @@ impl WorkspaceServer {
                                         snapshot: snapshot.as_ref(),
                                         search_path: &statement.search_path,
                                         identifiers: Vec::new(),
+                                        duplicate_assignments_reported: statement
+                                            .has_duplicate_assignments,
                                     })
                                     .await?;
 
@@ -1148,7 +1159,9 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        let stmt = parser.find(params.statement_id.clone(), ExecuteStatementMapper);
+        // Files can change while the statement runs.
+        drop(documents);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
@@ -1159,35 +1172,69 @@ impl Workspace for WorkspaceServer {
 
         let (_id, range, content, ast) = stmt.unwrap();
 
-        if ast.is_none() {
+        let Some(ast) = ast else {
             return Ok(ExecuteStatementResult {
                 message: "Statement is invalid.".into(),
                 ..Default::default()
             });
         };
 
+        if let Some(message) = execution::refusal(&ast) {
+            return Ok(ExecuteStatementResult {
+                message,
+                ..Default::default()
+            });
+        }
+
         let settings = self.workspaces();
         let no_connection = ExecuteStatementResult {
             message: "No database connection available.".into(),
             ..Default::default()
         };
-        let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
+        let Some(db) = settings
+            .settings_for(params.project_key, params.path.as_path())
+            .map(|settings| settings.db.clone())
         else {
             return Ok(no_connection);
         };
+        // The settings can change while the statement runs.
+        drop(settings);
 
-        if let Some(reason) = settings.db.statement_execution_disabled_reason() {
+        if let Some(reason) = db.statement_execution_disabled_reason() {
             return Ok(ExecuteStatementResult {
                 message: reason,
                 ..Default::default()
             });
         }
 
-        let Some(result) = self.connection.with_pools(&settings.db, |pools| {
-            let pool = pools.statement_pool.clone();
-            run_async(async move { execution::execute_statement(&pool, &content).await })?
-                .map_err(WorkspaceError::from)
-        }) else {
+        let options = execution::ExecuteOptions {
+            is_query: execution::is_query(&ast),
+            timeout: db.statement_timeout,
+        };
+        let Some((_running, cancelled)) = self.running_statements.start(&params) else {
+            return Ok(ExecuteStatementResult {
+                message: format!(
+                    "{RUNNING_STATEMENTS_MAX} statements are already running. Wait for one to finish, or cancel it."
+                ),
+                ..Default::default()
+            });
+        };
+
+        let result = self.connection.with_pools(&db, |pools| {
+            let statement_pools = pools.clone();
+            let result = run_async(async move {
+                execution::execute_statement(&statement_pools, &content, options, cancelled).await
+            })?
+            .map_err(WorkspaceError::from)?;
+
+            // Diagnostics, completions and hover should see the objects the statement created.
+            if result.error.is_none() && execution::may_change_schema(&ast) {
+                self.snapshot.clear_connection(&pools.pool);
+            }
+            Ok(result)
+        });
+
+        let Some(result) = result else {
             return Ok(no_connection);
         };
 
@@ -1213,6 +1260,24 @@ impl Workspace for WorkspaceServer {
             message: "Statement execution requires database support.".into(),
             ..Default::default()
         })
+    }
+
+    #[cfg(feature = "db")]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        self.running_statements.cancel(&params);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "db"))]
+    #[allow(unused_variables)]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        Ok(())
     }
 
     #[cfg(feature = "db")]
@@ -1742,11 +1807,13 @@ impl Workspace for WorkspaceServer {
             Some(ParameterNameHints::None) | None => return Ok(PullInlayHintsResult::default()),
         };
 
+        // During the reconnect backoff this returns the connection error too, so that the client
+        // is asked to request them again once the database is reachable.
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                    .try_with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -1816,11 +1883,13 @@ impl Workspace for WorkspaceServer {
             return Ok(PullSemanticTokensResult::default());
         }
 
+        // During the reconnect backoff this returns the connection error too, so that the client
+        // is asked to request them again once the database is reachable.
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                    .try_with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -1917,6 +1986,8 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             // The columns of a `*` can come from objects that the file changed, and so can the
             // relations behind CTEs and aliases.
             Reference::Star { .. } | Reference::Cte { .. } | Reference::Alias { .. } => false,
+            // The catalog doesn't tell where schemas and roles come from.
+            Reference::Schema { .. } | Reference::Role { .. } => false,
         })
 }
 

@@ -1,11 +1,10 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterRoleSetStmt;
 
-use super::role_spec::emit_role_spec;
+use super::emit_role_spec;
+use super::prelude::*;
 
 pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStmt) {
-    e.group_start(GroupKind::AlterRoleSetStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -23,7 +22,7 @@ pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStm
         e.space();
         e.token(TokenKind::DATABASE_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.database);
+        emit_identifier_maybe_quoted(e, &n.database);
     }
 
     // The SET/RESET statement

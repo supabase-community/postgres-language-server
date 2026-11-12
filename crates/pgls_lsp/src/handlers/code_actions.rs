@@ -1,23 +1,25 @@
 use std::collections::HashMap;
 
 use crate::{
-    adapters::{get_cursor_position, to_lsp},
+    adapters::{PositionEncoding, get_cursor_position, to_lsp},
     session::Session,
 };
 use anyhow::{Result, anyhow};
 use pgls_analyse::{Applicability, SUPPRESSION_ACTION_CATEGORY};
+use pgls_line_index::{LineIndex, changed_range};
 use tower_lsp_server::jsonrpc;
 use tower_lsp_server::ls_types::{
     self, CodeAction, CodeActionDisabled, CodeActionOrCommand, Command, ExecuteCommandParams,
     MessageType, WorkspaceEdit,
 };
 
-use pgls_text_size::{TextRange, TextSize};
+use pgls_workspace::Workspace;
 use pgls_workspace::features::code_actions::{
     CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams, FixFileMode,
     FixFileParams,
 };
 use pgls_workspace::workspace::GetFileContentParams;
+use std::sync::Arc;
 
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn get_actions(
@@ -198,13 +200,14 @@ fn fix_all_action(
         return Ok(None);
     }
 
-    // Replaces only what changed, so that the editor keeps the cursor and the folds.
-    let Some((range, new_text)) = changed_range(&content, &fixed.code) else {
+    let Some(edit) = fix_all_edit(
+        &content,
+        &doc.line_index,
+        &fixed.code,
+        session.position_encoding(),
+    )?
+    else {
         return Ok(None);
-    };
-    let edit = ls_types::TextEdit {
-        range: to_lsp::range(&doc.line_index, range, session.position_encoding())?,
-        new_text: new_text.to_string(),
     };
     Ok(Some(CodeAction {
         title: "Apply all safe fixes".into(),
@@ -214,24 +217,21 @@ fn fix_all_action(
     }))
 }
 
-/// The range of `old` that differs from `new`, and the text that replaces it. `None` if `old` is
-/// too large for a `TextSize`.
-fn changed_range<'a>(old: &str, new: &'a str) -> Option<(TextRange, &'a str)> {
-    let prefix = old
-        .char_indices()
-        .zip(new.chars())
-        .find(|((_, a), b)| a != b)
-        .map_or(old.len().min(new.len()), |((index, _), _)| index);
-    let suffix = old[prefix..]
-        .chars()
-        .rev()
-        .zip(new[prefix..].chars().rev())
-        .take_while(|(a, b)| a == b)
-        .map(|(a, _)| a.len_utf8())
-        .sum::<usize>();
-    let start = TextSize::try_from(prefix).ok()?;
-    let end = TextSize::try_from(old.len() - suffix).ok()?;
-    Some((TextRange::new(start, end), &new[prefix..new.len() - suffix]))
+/// The edit that turns `old` into `new`, replacing only what changed, so that the editor keeps
+/// the cursor and the folds. `None` if `old` is too large for a `TextSize`.
+fn fix_all_edit(
+    old: &str,
+    old_index: &LineIndex,
+    new: &str,
+    encoding: PositionEncoding,
+) -> Result<Option<ls_types::TextEdit>> {
+    let Some((range, new_text)) = changed_range(old, new) else {
+        return Ok(None);
+    };
+    Ok(Some(ls_types::TextEdit {
+        range: to_lsp::range(old_index, range, encoding)?,
+        new_text: new_text.to_string(),
+    }))
 }
 
 /// An edit of the document at `url`. If the client supports it, the edit names the version of
@@ -310,13 +310,19 @@ pub async fn execute_command(
             let path = session.file_path(&doc_url)?;
             let project_key = session.project_key(&path);
 
-            let result = session
-                .workspace
-                .execute_statement(ExecuteStatementParams {
-                    project_key,
-                    statement_id,
-                    path,
-                })?;
+            let params = ExecuteStatementParams {
+                project_key,
+                statement_id,
+                path,
+            };
+            // The statement runs on a blocking thread, so that the server keeps handling requests,
+            // `$/cancelRequest` included. That drops this future, and the guard then cancels the
+            // statement in the database.
+            let guard = CancelStatementOnDrop(Some((session.workspace.clone(), params.clone())));
+            let workspace = session.workspace.clone();
+            let result =
+                tokio::task::spawn_blocking(move || workspace.execute_statement(params)).await??;
+            guard.disarm();
 
             /*
              * Updating all diagnostics: the changes caused by the statement execution
@@ -366,10 +372,32 @@ pub async fn execute_command(
     }
 }
 
+/// Cancels the execution of a statement when dropped, unless disarmed.
+struct CancelStatementOnDrop(Option<(Arc<dyn Workspace>, ExecuteStatementParams)>);
+
+impl CancelStatementOnDrop {
+    fn disarm(mut self) {
+        self.0 = None;
+    }
+}
+
+impl Drop for CancelStatementOnDrop {
+    fn drop(&mut self) {
+        if let Some((workspace, params)) = self.0.take() {
+            tokio::task::spawn_blocking(move || {
+                if let Err(err) = workspace.cancel_statement_execution(params) {
+                    tracing::warn!("Could not cancel the statement execution: {err}");
+                }
+            });
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{FIX_ALL_KIND, changed_range, covers};
-    use pgls_text_size::TextRange;
+    use super::{FIX_ALL_KIND, covers, fix_all_edit};
+    use crate::adapters::{PositionEncoding, from_lsp};
+    use pgls_line_index::{LineIndex, WideEncoding};
     use tower_lsp_server::ls_types::CodeActionKind;
 
     #[test]
@@ -383,18 +411,24 @@ mod tests {
     }
 
     #[test]
-    fn changed_range_keeps_the_common_start_and_end() {
-        assert_eq!(
-            changed_range("drop index ä_idx;", "drop index concurrently ä_idx;"),
-            Some((TextRange::new(11.into(), 11.into()), "concurrently "))
-        );
-        assert_eq!(
-            changed_range("a", "a"),
-            Some((TextRange::new(1.into(), 1.into()), ""))
-        );
-        assert_eq!(
-            changed_range("ab", "b"),
-            Some((TextRange::new(0.into(), 1.into()), ""))
-        );
+    fn fix_all_edits_keep_crlf_whole() {
+        let encoding = PositionEncoding::Wide(WideEncoding::Utf16);
+        for (old, new) in [
+            ("select 1;\r\nselect 2;", "select 1;\nselect 2;"),
+            ("select 1;\nselect 2;", "select 1;\r\nselect 2;"),
+            ("select 1;\r\n", "select 1;\r\r\n"),
+            ("select 1;\r\nselect 2;", "select 1;\r\n\r\nselect 2;"),
+            (
+                "drop index ä_idx;\r\n",
+                "drop index concurrently ä_idx;\r\n",
+            ),
+        ] {
+            let index = LineIndex::new(old);
+            let edit = fix_all_edit(old, &index, new, encoding).unwrap().unwrap();
+            let range = from_lsp::text_range(&index, edit.range, encoding).unwrap();
+            let mut applied = old.to_string();
+            applied.replace_range(std::ops::Range::<usize>::from(range), &edit.new_text);
+            assert_eq!(applied, new, "{edit:?}");
+        }
     }
 }

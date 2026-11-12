@@ -1,4 +1,7 @@
-use std::sync::{Arc, LazyLock};
+use std::{
+    ops::Range,
+    sync::{Arc, LazyLock},
+};
 
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
 use pgls_catalog::{CatalogBase, resolve::FunctionContext};
@@ -16,6 +19,8 @@ mod linter_rule;
 mod migration;
 pub mod options;
 mod registry;
+mod transaction_block;
+mod utils;
 mod walk;
 
 // Re-export linter-specific types
@@ -29,10 +34,6 @@ pub use migration::{Direction, MigrationSection};
 use walk::is_plain_query;
 pub use walk::{WalkParams, walk_statements};
 
-// For convenience in macros and rule files - keep these shorter names
-pub use LinterDiagnostic as RuleDiagnostic;
-pub use LinterRule as Rule;
-pub use LinterRuleContext as RuleContext;
 pub static METADATA: LazyLock<MetadataRegistry> = LazyLock::new(|| {
     let mut metadata = MetadataRegistry::default();
     // Use a separate visitor for metadata that implements pgls_analyse::RegistryVisitor
@@ -193,6 +194,9 @@ pub struct StatementAnalysis {
     pub database_only: bool,
     /// `true` when a typecheck rule reported a diagnostic for this statement.
     pub has_typecheck_findings: bool,
+    /// `true` when `banDuplicateColumnAssignments` reported the statement. Postgres reports
+    /// the same assignments when it prepares the statement, without a position.
+    pub has_duplicate_assignments: bool,
     /// The explicit search path of the session at this statement.
     pub search_path: Vec<String>,
 }
@@ -274,6 +278,7 @@ impl<'a> Analyser<'a> {
             let statement =
                 StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
             let mut has_typecheck_findings = false;
+            let mut has_duplicate_assignments = false;
 
             let rule_params = LinterRegistryRuleParams {
                 root,
@@ -287,6 +292,10 @@ impl<'a> Analyser<'a> {
                 }
                 let diagnostics = (rule.run)(&rule_params);
                 has_typecheck_findings |= rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
+                has_duplicate_assignments |= diagnostics.iter().any(|diagnostic| {
+                    diagnostic.category
+                        == pgls_diagnostics::category!("lint/banDuplicateColumnAssignments")
+                });
 
                 result
                     .diagnostics
@@ -322,6 +331,7 @@ impl<'a> Analyser<'a> {
                 range: stmt.range,
                 database_only,
                 has_typecheck_findings,
+                has_duplicate_assignments,
                 search_path: file_context.session().search_path().to_vec(),
             });
         });
@@ -588,6 +598,36 @@ mod tests {
         // Before the semicolon of the last statement. Without the placeholders converted, the
         // text wouldn't parse without the fix either, and the fix would be kept.
         assert!(!valid(source.len() - 1, "\ncommit"));
+    }
+
+    /// The workspace drops Postgres' error for the statements that `banDuplicateColumnAssignments`
+    /// reported, which has no position.
+    #[test]
+    fn statements_with_duplicate_assignments_are_marked() {
+        let rule_filter = RuleFilter::Rule("correctness", "banDuplicateColumnAssignments");
+        let options = LinterOptions::default();
+        let analyser = Analyser::new(crate::AnalyserConfig {
+            options: &options,
+            filter: AnalysisFilter {
+                enabled_rules: Some(slice::from_ref(&rule_filter)),
+                ..Default::default()
+            },
+        });
+        let marked = |sql: &str| {
+            let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+            let range = TextRange::new(0.into(), u32::try_from(sql.len()).unwrap().into());
+            let result = analyser.analyse(crate::AnalyserParams {
+                stmts: vec![AnalysableStatement::new(ast, range)],
+                ..Default::default()
+            });
+            result.statements[0].has_duplicate_assignments
+        };
+        assert!(marked(
+            "merge into users u using imports i on u.id = i.id \
+             when matched then update set name = i.name, name = 'again'"
+        ));
+        assert!(marked("update users set name = 'a', name = 'b'"));
+        assert!(!marked("update users set name = 'a', id = 1"));
     }
 
     #[ignore]

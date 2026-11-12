@@ -1,4 +1,4 @@
-use crate::linter_context::builtin_type_name;
+use crate::utils::{builtin_type_name, column_defs, dotted_name};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -76,31 +76,9 @@ impl LinterRule for PreferBigInt {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
-
-        match &ctx.stmt() {
-            pgls_query::NodeEnum::CreateStmt(stmt) => {
-                for table_elt in &stmt.table_elts {
-                    if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = &table_elt.node {
-                        check_column_def(&mut diagnostics, col_def, ctx.options());
-                    }
-                }
-            }
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => {
-                for cmd in &stmt.cmds {
-                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                        && (cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
-                            || cmd.subtype()
-                                == pgls_query::protobuf::AlterTableType::AtAlterColumnType)
-                        && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                            &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                    {
-                        check_column_def(&mut diagnostics, col_def, ctx.options());
-                    }
-                }
-            }
-            _ => {}
+        for col_def in column_defs(ctx.stmt()) {
+            check_column_def(&mut diagnostics, col_def, ctx.options());
         }
-
         diagnostics
     }
 }
@@ -110,11 +88,20 @@ fn check_column_def(
     col_def: &pgls_query::protobuf::ColumnDef,
     options: &PreferBigIntOptions,
 ) {
-    let Some(type_name) = col_def.type_name.as_ref().and_then(builtin_type_name) else {
+    let Some(type_name) = &col_def.type_name else {
         return;
     };
-    let is_smallint = matches!(type_name, "int2" | "serial2" | "smallserial");
-    let is_int = matches!(type_name, "int4" | "serial" | "serial4");
+    // A serial type becomes an integer of its size. Otherwise only the built-in integers count,
+    // not types of the user with the same name.
+    let (name, integer_type) = match pgls_catalog::serial_type(type_name) {
+        Some(serial) => (dotted_name(&type_name.names), serial.integer_type()),
+        None => match builtin_type_name(type_name) {
+            Some(name) => (name.to_owned(), name),
+            None => return,
+        },
+    };
+    let is_smallint = integer_type == "int2";
+    let is_int = integer_type == "int4";
 
     if (is_smallint && options.check_smallint) || (is_int && options.check_int) {
         diagnostics.push(
@@ -125,7 +112,12 @@ fn check_column_def(
                     "Using smaller integer types can lead to overflow issues."
                 },
             )
-            .detail(None, format!("The '{type_name}' type has a limited range that may be exceeded as your data grows."))
+            .detail(
+                None,
+                format!(
+                    "The '{name}' type has a limited range that may be exceeded as your data grows."
+                ),
+            )
             .note("Consider using BIGINT for integer columns to avoid future migration issues."),
         );
     }

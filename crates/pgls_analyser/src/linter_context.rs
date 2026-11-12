@@ -3,12 +3,10 @@ use std::cell::OnceCell;
 use pgls_analyse::{GroupCategory, RuleCategory, RuleGroup, RuleMetadata};
 use pgls_catalog::{
     Catalog, Session,
-    resolve::{FunctionContext, Resolution, ResolveParams, resolve},
+    resolve::{Finding, FunctionContext, Resolution, ResolveParams, resolve},
 };
 
-pub(crate) use pgls_catalog::{is_reindex_concurrent, is_vacuum_full};
-
-use pgls_query::protobuf::{ScanToken, Token};
+use pgls_query::protobuf::{RangeVar, ScanToken, Token};
 
 use crate::fix::StatementTokens;
 use crate::linter_rule::LinterRule;
@@ -87,12 +85,28 @@ where
         self.file_context.session()
     }
 
+    /// Whether the relation was created earlier in the current transaction. Other transactions
+    /// can't see it until the transaction commits, so its locks, scans and rewrites block no
+    /// one. A relation that an earlier transaction created and committed isn't new. The name is
+    /// resolved with the catalog, see [`Session::has_created_relation`].
+    pub fn is_new_relation(&self, relation: &RangeVar) -> bool {
+        self.session()
+            .has_created_relation(relation, self.catalog())
+    }
+
     /// Name resolution of the current statement against the catalog.
     ///
     /// Returns `None` without a database snapshot: typecheck rules only run with a database
     /// connection. The resolution is computed once per statement and shared by all rules.
     pub fn resolution(&self) -> Option<&Resolution> {
         self.statement.resolution(self.file_context)
+    }
+
+    /// The findings of the name resolution of the current statement, see [`Self::resolution`].
+    pub fn findings(&self) -> impl Iterator<Item = &Finding> {
+        self.resolution()
+            .into_iter()
+            .flat_map(|resolution| &resolution.findings)
     }
 
     /// The SQL function whose body the current statement is in, if it is in one.
@@ -256,8 +270,14 @@ impl<'a> AnalysedFileContext<'a> {
         self
     }
 
+    /// The statements before the current one.
     pub fn previous_stmts(&self) -> &[&'a pgls_query::NodeEnum] {
-        &self.stmts[0..self.pos]
+        self.stmts.get(..self.pos).unwrap_or(self.stmts)
+    }
+
+    /// The statements after the current one.
+    pub fn later_stmts(&self) -> &[&'a pgls_query::NodeEnum] {
+        self.stmts.get(self.pos + 1..).unwrap_or_default()
     }
 
     /// The number of statements that the file runs, including those that don't parse.
@@ -319,70 +339,5 @@ impl<'a> AnalysedFileContext<'a> {
             self.session.apply(stmt, &self.catalog);
         }
         self.pos += 1;
-    }
-}
-
-/// The name of a built-in type, e.g. `varchar` for `varchar(10)` and `pg_catalog.varchar`, but
-/// not for `myschema.varchar`. Unqualified names are built-in types if they exist, since
-/// `pg_catalog` comes first on the search path.
-pub(crate) fn builtin_type_name(type_name: &pgls_query::protobuf::TypeName) -> Option<&str> {
-    let names: Vec<&str> = type_name
-        .names
-        .iter()
-        .map(|name| match &name.node {
-            Some(pgls_query::NodeEnum::String(name)) => Some(name.sval.as_str()),
-            _ => None,
-        })
-        .collect::<Option<_>>()?;
-    match names.as_slice() {
-        [name] | ["pg_catalog", name] => Some(name),
-        _ => None,
-    }
-}
-
-/// The object type as a noun with its article, e.g. "a view", for diagnostic messages.
-pub(crate) fn object_type_noun(object_type: pgls_query::protobuf::ObjectType) -> &'static str {
-    use pgls_query::protobuf::ObjectType;
-    match object_type {
-        ObjectType::ObjectAggregate => "an aggregate",
-        ObjectType::ObjectAttribute => "an attribute",
-        ObjectType::ObjectCollation => "a collation",
-        ObjectType::ObjectColumn => "a column",
-        ObjectType::ObjectConversion => "a conversion",
-        ObjectType::ObjectDatabase => "a database",
-        ObjectType::ObjectDomain => "a domain",
-        ObjectType::ObjectDomconstraint | ObjectType::ObjectTabconstraint => "a constraint",
-        ObjectType::ObjectEventTrigger => "an event trigger",
-        ObjectType::ObjectExtension => "an extension",
-        ObjectType::ObjectFdw => "a foreign-data wrapper",
-        ObjectType::ObjectForeignServer => "a foreign server",
-        ObjectType::ObjectForeignTable => "a foreign table",
-        ObjectType::ObjectFunction => "a function",
-        ObjectType::ObjectIndex => "an index",
-        ObjectType::ObjectLanguage => "a language",
-        ObjectType::ObjectMatview => "a materialized view",
-        ObjectType::ObjectOpclass => "an operator class",
-        ObjectType::ObjectOperator => "an operator",
-        ObjectType::ObjectOpfamily => "an operator family",
-        ObjectType::ObjectPolicy => "a policy",
-        ObjectType::ObjectProcedure => "a procedure",
-        ObjectType::ObjectPublication => "a publication",
-        ObjectType::ObjectRole => "a role",
-        ObjectType::ObjectRoutine => "a routine",
-        ObjectType::ObjectRule => "a rule",
-        ObjectType::ObjectSchema => "a schema",
-        ObjectType::ObjectSequence => "a sequence",
-        ObjectType::ObjectStatisticExt => "a statistics object",
-        ObjectType::ObjectSubscription => "a subscription",
-        ObjectType::ObjectTable => "a table",
-        ObjectType::ObjectTablespace => "a tablespace",
-        ObjectType::ObjectTrigger => "a trigger",
-        ObjectType::ObjectTsconfiguration => "a text search configuration",
-        ObjectType::ObjectTsdictionary => "a text search dictionary",
-        ObjectType::ObjectTsparser => "a text search parser",
-        ObjectType::ObjectTstemplate => "a text search template",
-        ObjectType::ObjectType => "a type",
-        ObjectType::ObjectView => "a view",
-        _ => "an object",
     }
 }
