@@ -8,7 +8,9 @@ use pgls_diagnostics::{
 };
 use pgls_text_size::{TextRange, TextSize};
 use std::fmt::Debug;
+use std::ops::Range;
 
+use crate::AnalysableStatement;
 use crate::linter_context::LinterRuleContext;
 
 /// Trait implemented by all AST-based linter rules
@@ -20,7 +22,7 @@ pub trait LinterRule: RuleMeta + Sized {
 }
 
 /// Diagnostic object returned by a single linter rule
-#[derive(Debug, Diagnostic, PartialEq)]
+#[derive(Clone, Debug, Diagnostic, PartialEq)]
 pub struct LinterDiagnostic {
     #[category]
     pub(crate) category: &'static Category,
@@ -94,6 +96,13 @@ impl RuleFix {
 
     /// Applies the fix to `text`. The edits must be relative to `text`.
     pub fn apply(&self, text: &str) -> String {
+        debug_assert!(
+            self.edits_fit(text),
+            "the edits of fix {:?} are not sorted, overlap, or are not on char boundaries of a text of length {}: {:?}",
+            self.message,
+            text.len(),
+            self.edits
+        );
         let mut result = String::with_capacity(text.len());
         let mut last = 0;
         for edit in &self.edits {
@@ -113,6 +122,17 @@ impl RuleFix {
         Some(first.range.cover(last.range))
     }
 
+    /// Whether the edits are sorted, don't overlap, and lie on char boundaries of `text`.
+    fn edits_fit(&self, text: &str) -> bool {
+        let mut previous_end = TextSize::from(0);
+        self.edits.iter().all(|edit| {
+            let fits = edit.range.start() >= previous_end
+                && text.get(Range::<usize>::from(edit.range)).is_some();
+            previous_end = edit.range.end();
+            fits
+        })
+    }
+
     pub(crate) fn shift(&mut self, offset: TextSize) {
         for edit in &mut self.edits {
             edit.range += offset;
@@ -120,7 +140,7 @@ impl RuleFix {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 /// It contains possible advices to show when printing a diagnostic that belong to the rule
 pub struct RuleAdvice {
     pub(crate) details: Vec<Detail>,
@@ -129,7 +149,7 @@ pub struct RuleAdvice {
     pub(crate) code_suggestion_list: Vec<CodeSuggestionAdvice<MarkupBuf>>,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SuggestionList {
     pub(crate) message: MarkupBuf,
     pub(crate) list: Vec<MarkupBuf>,
@@ -171,7 +191,7 @@ impl Advices for RuleAdvice {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Detail {
     pub log_category: LogCategory,
     pub message: MarkupBuf,
@@ -225,6 +245,20 @@ impl LinterDiagnostic {
         self
     }
 
+    /// Moves the spans of the diagnostic, which are relative to the statement while the rule
+    /// runs, into the file. A diagnostic without a span points at the whole statement.
+    pub(crate) fn move_into_file(&mut self, statement: &AnalysableStatement) {
+        self.span = Some(match self.span {
+            Some(span) => statement.document_range(span),
+            None => statement.range,
+        });
+        for detail in &mut self.rule_advice.details {
+            if let Some(range) = &mut detail.range {
+                *range = statement.document_range(*range);
+            }
+        }
+    }
+
     /// Sets the span of this diagnostic.
     pub fn span(mut self, span: TextRange) -> Self {
         self.span = Some(span);
@@ -242,7 +276,7 @@ impl LinterDiagnostic {
 
     /// Attaches a label to this [`LinterDiagnostic`].
     ///
-    /// The given span has to be in the file that was provided while creating this [`LinterDiagnostic`].
+    /// Like the span of the diagnostic, the given span is relative to the statement.
     pub fn label(mut self, span: Option<TextRange>, msg: impl Display) -> Self {
         self.rule_advice.details.push(Detail {
             log_category: LogCategory::Info,

@@ -23,6 +23,7 @@ export { loadWasm } from "./common.js";
 
 // Re-export types
 export type {
+  Configuration,
   Diagnostic,
   CompletionItem,
   FormatOptions,

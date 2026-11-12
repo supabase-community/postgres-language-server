@@ -2,12 +2,14 @@
 //! functions, and schemas in the overlay.
 
 use crate::typing::TypeId;
-use crate::{FunctionArgumentMode, FunctionSignature};
-use pgls_query::{Node, protobuf};
+use crate::{FunctionArgumentMode, FunctionSignature, Generated, Identity};
+use pgls_query::{Node, NodeEnum, protobuf};
+use pgls_query_ext::utils::string_value;
+use rustc_hash::FxHashSet;
 
 use super::{
     Catalog, Entry, Key, key,
-    names::{QualifiedName, qualified_name, range_var_name, string_value, type_label},
+    names::{QualifiedName, qualified_name, range_var_name, type_label},
 };
 use crate::lookup::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
@@ -53,6 +55,24 @@ impl Catalog {
         }
         let key = self.creation_key(&name, search_path);
         (key.0 != "pg_catalog").then_some(key)
+    }
+
+    /// The relation that is already where `CREATE TABLE`, `CREATE TABLE AS` or `SELECT INTO`
+    /// would create `range_var`. With `IF NOT EXISTS`, Postgres skips the statement unless this
+    /// is [`Lookup::Missing`] ([`transformCreateStmt`], [`CreateTableAsRelExists`]).
+    ///
+    /// [`transformCreateStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L164
+    /// [`CreateTableAsRelExists`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/createas.c#L393
+    pub fn relation_at_creation(
+        &self,
+        range_var: &protobuf::RangeVar,
+        search_path: &[String],
+    ) -> Lookup<RelationInfo> {
+        match self.relation_creation_key(range_var, search_path) {
+            Some((schema, name)) => self.relation_in(&schema, &name),
+            // Postgres rejects new relations in `pg_catalog`.
+            None => Lookup::Unknown,
+        }
     }
 
     // ----- schemas -----
@@ -114,7 +134,10 @@ impl Catalog {
             return false;
         }
         match self.relation_in(&key.0, &key.1) {
-            Lookup::Found(_) => true,
+            Lookup::Found(_) => {
+                self.skipped_existing = true;
+                true
+            }
             Lookup::Unknown => {
                 self.mark_relation_unknown(key.clone());
                 true
@@ -135,45 +158,61 @@ impl Catalog {
                 .is_some_and(|base| base.is_inheritance_child(&relation.schema, &relation.name))
     }
 
-    /// Changes the columns of a relation and of its inheritance children and partitions.
+    /// Whether partitions inherit the identity of their partitioned table's columns, and follow
+    /// its identity changes. Partitions do since Postgres 17 ([`MergeAttributes`]). `None` when
+    /// the server version isn't known.
+    ///
+    /// [`MergeAttributes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L2798
+    pub(super) fn partitions_inherit_identity(&self) -> Option<bool> {
+        self.server_version_num().map(|version| version >= 170_000)
+    }
+
+    /// Changes the columns of a relation and of its inheritance children and partitions. The
+    /// second argument of `change` is whether the relation is a child or partition of
+    /// `relation`.
     pub(super) fn change_columns(
         &mut self,
         relation: &RelationInfo,
-        change: impl Fn(&mut Option<Vec<ColumnInfo>>),
+        change: impl Fn(&mut Option<Vec<ColumnInfo>>, bool),
     ) {
         // Column changes of a database table also change its children in the database.
         if self.is_database_relation(relation) {
             self.database_columns_changed = true;
         }
 
-        for key in self.with_file_children(relation) {
+        let root = key(&relation.schema, &relation.name);
+        for key in self.with_descendants(root.clone()) {
             let Some(mut relation) = self.relation_in(&key.0, &key.1).found() else {
                 continue;
             };
-            change(&mut relation.columns);
+            change(&mut relation.columns, key != root);
             relation.origin = Origin::File;
             self.define_relation(relation);
         }
+    }
+
+    /// A relation and its inheritance children and partitions created or attached by the file,
+    /// recursively, each once.
+    pub(super) fn with_descendants(&self, root: Key) -> Vec<Key> {
+        let mut seen = FxHashSet::default();
+        let mut pending = vec![root];
+        let mut keys = Vec::new();
+        while let Some(key) = pending.pop() {
+            if !seen.insert(key.clone()) {
+                continue;
+            }
+            if let Some(children) = self.children.get(&key) {
+                pending.extend(children.iter().cloned());
+            }
+            keys.push(key);
+        }
+        keys
     }
 
     fn is_database_relation(&self, relation: &RelationInfo) -> bool {
         self.base
             .as_ref()
             .is_some_and(|base| base.relation(&relation.schema, &relation.name).is_some())
-    }
-
-    /// A relation, and its inheritance children and partitions that the file created, at any
-    /// depth.
-    fn with_file_children(&self, relation: &RelationInfo) -> Vec<Key> {
-        let mut relations = Vec::new();
-        let mut pending = vec![key(&relation.schema, &relation.name)];
-        while let Some(key) = pending.pop() {
-            if let Some(children) = self.children.get(&key) {
-                pending.extend(children.iter().cloned());
-            }
-            relations.push(key);
-        }
-        relations
     }
 
     /// Moves a relation to a new schema or name.
@@ -288,7 +327,7 @@ impl Catalog {
         may_fail: bool,
     ) {
         let tables = if recurse {
-            self.with_file_children(relation)
+            self.with_descendants(key(&relation.schema, &relation.name))
         } else {
             vec![key(&relation.schema, &relation.name)]
         };
@@ -327,7 +366,7 @@ impl Catalog {
         old_name: &str,
         new_name: &str,
     ) {
-        for (schema, table) in self.with_file_children(relation) {
+        for (schema, table) in self.with_descendants(key(&relation.schema, &relation.name)) {
             for mut index in self.table_indexes(&schema, &table) {
                 let Some(columns) = index.columns.as_mut() else {
                     continue;
@@ -516,6 +555,28 @@ impl Catalog {
         );
     }
 
+    /// Applies `change` to a type and marks it as changed by the file, so that its uses are no
+    /// longer checked against the database. Postgres rejects changes to the types of system
+    /// catalogs, which are left as they are.
+    pub(super) fn change_type(
+        &mut self,
+        name: &QualifiedName,
+        search_path: &[String],
+        change: impl FnOnce(&Self, &mut TypeInfo),
+    ) {
+        let Some(mut type_info) = self
+            .type_(name.schema(), &name.name, search_path)
+            .found()
+            .filter(|type_info| type_info.schema != "pg_catalog")
+        else {
+            return;
+        };
+        change(self, &mut type_info);
+        type_info.origin = Origin::File;
+        let key = key(&type_info.schema, &type_info.name);
+        self.types.insert(key, Entry::Defined(type_info));
+    }
+
     /// Moves a type to a new schema or name.
     pub(super) fn move_type(
         &mut self,
@@ -683,30 +744,57 @@ pub(super) fn column_info(
     column: &protobuf::ColumnDef,
     search_path: &[String],
 ) -> ColumnInfo {
-    let type_id = column
-        .type_name
-        .as_ref()
-        .and_then(|name| crate::normalize_type_name(catalog, name, search_path).0)
-        .or_else(|| {
-            // Serial pseudo-types are rewritten to integer columns by PostgreSQL, but they
-            // are not pg_type entries and therefore cannot be normalized by name lookup.
-            let internal_name = match column.type_name.as_ref().and_then(type_label).as_deref() {
-                Some("serial") => "int4",
-                Some("bigserial") => "int8",
-                Some("smallserial") => "int2",
-                _ => return None,
-            };
-            catalog
-                .type_(Some("pg_catalog"), internal_name, search_path)
-                .found()
-                .and_then(|ty| ty.id)
-        });
-    let type_name = column.type_name.as_ref().and_then(type_label);
+    // Postgres checks for the serial pseudo-types before it looks the name up, and turns them
+    // into integer columns. They aren't types, so a lookup wouldn't find them.
+    let (type_name, type_id) = match column.type_name.as_ref() {
+        Some(name) => match crate::serial_type(name) {
+            Some(serial) => {
+                let integer_type = serial.integer_type();
+                (
+                    Some(integer_type.to_owned()),
+                    catalog.builtin_type(integer_type),
+                )
+            }
+            None => (
+                type_label(name),
+                crate::normalize_type_name(catalog, name, search_path).0,
+            ),
+        },
+        None => (None, None),
+    };
+    let (generated, identity) = column_kinds(column);
     ColumnInfo {
-        name: column.colname.clone(),
-        type_name,
-        ty: type_id.map(crate::typing::Type::Named),
+        generated,
+        identity,
+        ..ColumnInfo::new(
+            column.colname.clone(),
+            type_name,
+            type_id.map(crate::typing::Type::Named),
+        )
     }
+}
+
+/// Whether a column definition has a `GENERATED ALWAYS AS (...)` clause and whether it has a
+/// `GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY` clause, like [`transformColumnDefinition`].
+///
+/// [`transformColumnDefinition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L591
+fn column_kinds(column: &protobuf::ColumnDef) -> (Generated, Identity) {
+    let mut kinds = (Generated::No, Identity::No);
+    for constraint in &column.constraints {
+        let Some(NodeEnum::Constraint(constraint)) = &constraint.node else {
+            continue;
+        };
+        match constraint.contype() {
+            protobuf::ConstrType::ConstrGenerated => {
+                kinds.0 = Generated::from_code(&constraint.generated_kind);
+            }
+            protobuf::ConstrType::ConstrIdentity => {
+                kinds.1 = Identity::from_code(&constraint.generated_when);
+            }
+            _ => {}
+        }
+    }
+    kinds
 }
 
 pub(super) fn function_info(

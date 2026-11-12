@@ -1,0 +1,6 @@
+-- Other transactions can't see a table created earlier in the transaction.
+-- expect_no_diagnostics
+BEGIN;
+CREATE TABLE users (id int, name varchar(100));
+ALTER TABLE users ALTER COLUMN id TYPE bigint;
+COMMIT;
