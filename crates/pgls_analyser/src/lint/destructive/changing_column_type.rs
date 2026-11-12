@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, builtin_type_name, cmd_def};
+use crate::utils::{alter_table_cmds, altered_relation, builtin_type_name, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::{
@@ -60,6 +60,11 @@ impl LinterRule for ChangingColumnType {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        // Other transactions can't see a table created earlier in the transaction, so its
+        // rewrite blocks no one.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
+        }
         let mut diagnostics = Vec::new();
         let relation = match ctx.stmt() {
             pgls_query::NodeEnum::AlterTableStmt(stmt) => stmt.relation.as_ref(),

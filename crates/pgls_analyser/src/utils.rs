@@ -2,7 +2,7 @@
 
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{
-    AlterDomainStmt, AlterTableCmd, AlterTableType, ColumnDef, Constraint, Node, TypeName,
+    AlterDomainStmt, AlterTableCmd, AlterTableType, ColumnDef, Constraint, Node, RangeVar, TypeName,
 };
 pub(crate) use pgls_query_ext::utils::cmd_def;
 use pgls_query_ext::utils::{QualifiedName, string_value};
@@ -15,6 +15,14 @@ pub(crate) fn alter_table_cmds(stmt: &NodeEnum) -> impl Iterator<Item = &AlterTa
     };
     stmt.into_iter()
         .flat_map(pgls_query_ext::utils::alter_table_cmds)
+}
+
+/// The table that an `ALTER TABLE` changes. Other statements change none.
+pub(crate) fn altered_relation(stmt: &NodeEnum) -> Option<&RangeVar> {
+    match stmt {
+        NodeEnum::AlterTableStmt(stmt) => stmt.relation.as_ref(),
+        _ => None,
+    }
 }
 
 /// The columns that a statement adds or retypes: the columns of `CREATE TABLE`, and of
