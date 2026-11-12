@@ -33,7 +33,7 @@ pub(super) fn emit_bool_expr_as(e: &mut EventEmitter, n: &BoolExpr, group: Opera
                 BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
                 BoolExprType::OrExpr => emit_variadic_bool_expr(e, n, TokenKind::OR_KW),
                 BoolExprType::NotExpr => emit_not_expr(e, n),
-                BoolExprType::Undefined => unreachable!("Undefined BoolExprType"),
+                BoolExprType::Undefined => {}
             }
 
             e.expression_group_end();
@@ -107,13 +107,6 @@ fn emit_variadic_operands(
 
 fn emit_not_expr(e: &mut EventEmitter, n: &BoolExpr) {
     e.token(TokenKind::NOT_KW);
-
-    if n.args.len() != 1 {
-        panic!(
-            "NOT expressions should have exactly one argument, got {}",
-            n.args.len()
-        );
-    }
 
     if let Some(arg) = n.args.first() {
         e.space();

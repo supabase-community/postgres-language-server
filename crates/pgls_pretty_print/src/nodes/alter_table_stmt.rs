@@ -39,7 +39,10 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
             }
 
             // Extract AlterTableCmd from Node
-            let cmd = assert_node_variant!(AlterTableCmd, cmd_node);
+            let Some(NodeEnum::AlterTableCmd(cmd)) = cmd_node.node.as_ref() else {
+                emit_node(e, cmd_node);
+                continue;
+            };
             super::emit_alter_table_cmd_of(e, cmd, n.objtype());
         }
 

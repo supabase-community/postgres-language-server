@@ -156,7 +156,10 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
 
 fn emit_trigger_transitions(e: &mut EventEmitter, rels: &[pgls_query::Node]) {
     emit_space_separated_list(e, rels, |e, rel| {
-        let transition = assert_node_variant!(TriggerTransition, rel);
+        let Some(NodeEnum::TriggerTransition(transition)) = rel.node.as_ref() else {
+            emit_node(e, rel);
+            return;
+        };
 
         if transition.is_new {
             e.token(TokenKind::NEW_KW);
