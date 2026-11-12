@@ -45,15 +45,15 @@ pub(super) fn apply_create_function_stmt(
                 .arg_type
                 .as_ref()
                 .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0);
-            outputs.push(ColumnInfo {
-                name: parameter.name.clone(),
-                type_name: parameter
+            outputs.push(ColumnInfo::new(
+                parameter.name.clone(),
+                parameter
                     .arg_type
                     .as_ref()
                     .and_then(type_name)
                     .map(|name| name.name.to_owned()),
-                ty: argument_type.clone().map(crate::typing::Type::Named),
-            });
+                argument_type.clone().map(crate::typing::Type::Named),
+            ));
         }
         let argument_type = parameter
             .arg_type

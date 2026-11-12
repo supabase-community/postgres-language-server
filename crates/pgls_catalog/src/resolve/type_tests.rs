@@ -24,7 +24,7 @@ fn output_types(catalog: &mut Catalog, setup_sql: &str, query: &str) -> Vec<Opti
         .collect()
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn infers_query_output_types(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
@@ -123,7 +123,7 @@ async fn infers_query_output_types(test_db: PgPool) {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn infers_length_result_type(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
@@ -133,7 +133,7 @@ async fn infers_length_result_type(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn infers_mixed_numeric_operator(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
@@ -143,7 +143,7 @@ async fn infers_mixed_numeric_operator(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn infers_timestamp_minus_interval(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
@@ -153,7 +153,7 @@ async fn infers_timestamp_minus_interval(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn infers_array_subscripts(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
@@ -171,7 +171,7 @@ async fn infers_array_subscripts(test_db: PgPool) {
 /// composite type itself ([`get_expr_result_type`]).
 ///
 /// [`get_expr_result_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/fmgr/funcapi.c#L299
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn infers_fields_of_domains_over_composite_types(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
@@ -191,7 +191,7 @@ async fn infers_fields_of_domains_over_composite_types(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn infers_array_agg_result(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
@@ -205,7 +205,7 @@ async fn infers_array_agg_result(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn infers_the_types_of_recursive_ctes(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
@@ -259,7 +259,7 @@ async fn infers_the_types_of_recursive_ctes(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn unknown_output_types_stay_unknown(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));

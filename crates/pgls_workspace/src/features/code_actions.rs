@@ -14,7 +14,8 @@ pub(crate) mod lint;
 pub(crate) mod schema_cache;
 
 pub use execute_statement::{
-    EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementParams,
+    EXECUTE_STATEMENT_MAX_RESULT_SIZE, EXECUTE_STATEMENT_MAX_ROWS,
+    EXECUTE_STATEMENT_MAX_VALUE_SIZE, ExecuteStatementError, ExecuteStatementParams,
     ExecuteStatementResult,
 };
 pub use lint::{FixFileMode, FixFileParams, FixFileResult};

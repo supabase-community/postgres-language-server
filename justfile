@@ -74,6 +74,14 @@ _touch file:
 record-regress major *args:
 	cargo run -p pgls_postgres_regress --features record --bin record -- {{major}} {{args}}
 
+# Starts the test database and waits until it accepts connections. Rebuilds the image first; with the Docker build cache, that takes seconds unless the Dockerfile changed.
+db:
+	docker compose up -d --build --wait
+
+# Removes target/, which takes about 6 GB per checkout or worktree once every test is built
+clean:
+	cargo clean
+
 # Run tests of all crates
 test:
 	cargo test --workspace --no-fail-fast
