@@ -1334,7 +1334,11 @@ impl Workspace for WorkspaceServer {
                 .collect();
             checks
                 .into_iter()
-                .map(|check| check.join().expect("a connection check panicked"))
+                .map(|check| {
+                    check.join().unwrap_or_else(|_| {
+                        Some(Err(WorkspaceError::runtime("A connection check panicked.")))
+                    })
+                })
                 .collect()
         });
 
