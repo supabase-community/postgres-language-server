@@ -36,7 +36,7 @@ pub use lookup::{
 };
 pub use session::{
     LockMode, Session, TableLock, TransactionMode, alter_table_cmd_lock, alter_table_lock,
-    is_reindex_concurrent, is_vacuum_full, relation_locks,
+    relation_locks,
 };
 pub use snapshot::*;
 pub use typing::*;

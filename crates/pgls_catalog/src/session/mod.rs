@@ -13,7 +13,6 @@ use crate::Catalog;
 
 pub use lock_level::{LockMode, TableLock, alter_table_cmd_lock, alter_table_lock, relation_locks};
 use locks::Locks;
-pub use locks::{is_reindex_concurrent, is_vacuum_full};
 use settings::Settings;
 
 /// Whether the migration tool runs the statements outside `BEGIN` and `COMMIT` in a
