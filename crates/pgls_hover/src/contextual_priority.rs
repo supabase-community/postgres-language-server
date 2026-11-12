@@ -23,7 +23,7 @@ pub(crate) fn prioritize_by_context<T: ContextualPriority + std::fmt::Debug>(
         })
         .collect();
 
-    scored.sort_by(|(_, score_a), (_, score_b)| score_b.partial_cmp(score_a).unwrap());
+    scored.sort_by(|(_, score_a), (_, score_b)| score_b.total_cmp(score_a));
 
     if scored.is_empty() {
         return vec![];

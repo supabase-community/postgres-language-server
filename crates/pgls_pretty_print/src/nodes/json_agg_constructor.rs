@@ -1,13 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::JsonAggConstructor;
 
-use super::json_value_expr::emit_json_output;
+use super::prelude::*;
 
 pub(super) fn emit_json_agg_constructor(e: &mut EventEmitter, n: &JsonAggConstructor) {
-    e.group_start(GroupKind::JsonAggConstructor);
+    e.group_start();
 
     let mut has_content = false;
 
@@ -16,7 +12,7 @@ pub(super) fn emit_json_agg_constructor(e: &mut EventEmitter, n: &JsonAggConstru
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        super::node_list::emit_comma_separated_list(e, &n.agg_order, super::emit_node);
+        emit_comma_separated_list(e, &n.agg_order, emit_node);
         has_content = true;
     }
 
@@ -25,20 +21,20 @@ pub(super) fn emit_json_agg_constructor(e: &mut EventEmitter, n: &JsonAggConstru
     e.group_end();
 }
 
-pub(super) fn emit_json_agg_tail(
+fn emit_json_agg_tail(
     e: &mut EventEmitter,
     constructor: &JsonAggConstructor,
     mut has_content: bool,
 ) {
     if let Some(ref output) = constructor.output {
-        emit_json_output(e, output, &mut has_content);
+        emit_json_output_clause(e, output, &mut has_content);
     }
 
     if let Some(ref filter) = constructor.agg_filter {
         if has_content {
             e.line(LineType::SoftOrSpace);
         }
-        super::func_call::emit_filter_clause(e, filter);
+        emit_filter_clause(e, filter);
         has_content = true;
     }
 
