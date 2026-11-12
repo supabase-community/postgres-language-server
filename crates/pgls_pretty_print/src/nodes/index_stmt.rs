@@ -47,6 +47,9 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // USING access_method
     if !n.access_method.is_empty() {
+        if let Some(ref relation) = n.relation {
+            emit_comments_before_keyword_after(e, "using", relation.location);
+        }
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
@@ -95,6 +98,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // WHERE clause (partial index), kept on its keyword line when it fits there
     if let Some(ref where_clause) = n.where_clause {
+        emit_comments_before_keyword(e, "where", where_clause);
         emit_layout_break(e);
         e.group_start();
         e.token(TokenKind::WHERE_KW);

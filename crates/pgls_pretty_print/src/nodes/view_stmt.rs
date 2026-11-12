@@ -61,6 +61,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
 
     // Query
     if let Some(ref query) = n.query {
+        emit_comments_before_keyword(e, "as", query);
         e.line(LineType::Hard);
         e.token(TokenKind::AS_KW);
         e.space();

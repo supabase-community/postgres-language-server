@@ -32,20 +32,36 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
 
     // ON condition
     if let Some(ref condition) = n.join_condition {
+        emit_comments_before_keyword(e, "on", condition);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();
         emit_node(e, condition);
     }
 
-    // WHEN clauses
+    // WHEN clauses. A branch has no location of its own, so a comment before `WHEN` is attached
+    // to the node that follows the last node written before it. That node has to be the branch's
+    // own first node: after a branch without nodes, `WHEN MATCHED THEN DELETE`, it belongs to a
+    // later branch.
+    let mut last_location = n
+        .join_condition
+        .as_ref()
+        .and_then(|node| node.node.as_ref())
+        .and_then(|node| crate::comments::last_node_location(node.to_ref()));
     for when_clause_node in &n.merge_when_clauses {
         let Some(NodeEnum::MergeWhenClause(when_clause)) = when_clause_node.node.as_ref() else {
             emit_node(e, when_clause_node);
             continue;
         };
+        let branch = pgls_query::NodeRef::MergeWhenClause(when_clause);
+        if let Some(first) = crate::comments::first_node_location(branch)
+            && last_location.and_then(|location| e.next_node_location(location)) == Some(first)
+        {
+            e.take_comments_before_keyword_at(first, "when");
+        }
         e.line(LineType::SoftOrSpace);
         emit_merge_when_clause(e, when_clause);
+        last_location = crate::comments::last_node_location(branch).or(last_location);
     }
 
     // RETURNING clause - wrap in group for compact formatting

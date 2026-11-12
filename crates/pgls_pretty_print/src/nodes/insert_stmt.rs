@@ -78,6 +78,7 @@ pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
 
     // Emit ON CONFLICT clause if present
     if let Some(ref on_conflict) = n.on_conflict_clause {
+        emit_comments_before_clause(e, on_conflict.location);
         super::emit_on_conflict_clause(e, on_conflict);
     }
 
