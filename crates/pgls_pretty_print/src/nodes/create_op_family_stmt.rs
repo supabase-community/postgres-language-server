@@ -1,9 +1,6 @@
-use super::node_list::emit_dot_separated_list;
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::CreateOpFamilyStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_op_family_stmt(e: &mut EventEmitter, n: &CreateOpFamilyStmt) {
     e.group_start(GroupKind::CreateOpFamilyStmt);
@@ -22,7 +19,7 @@ pub(super) fn emit_create_op_family_stmt(e: &mut EventEmitter, n: &CreateOpFamil
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::USING_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.amname);
+    emit_identifier_maybe_quoted(e, &n.amname);
 
     e.group_end();
 }

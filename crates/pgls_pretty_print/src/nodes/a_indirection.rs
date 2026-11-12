@@ -1,9 +1,6 @@
-use pgls_query::{NodeEnum, protobuf::AIndirection};
+use pgls_query::protobuf::AIndirection;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
     e.group_start(GroupKind::AIndirection);
@@ -18,7 +15,7 @@ pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
     }
 
     if let Some(ref arg) = n.arg {
-        super::emit_node(arg, e);
+        emit_node(arg, e);
     }
 
     if needs_parens {
@@ -34,7 +31,7 @@ pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
             }
             _ => {}
         }
-        super::emit_node(indirection, e);
+        emit_node(indirection, e);
     }
 
     e.group_end();

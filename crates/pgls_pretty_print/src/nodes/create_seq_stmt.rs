@@ -1,11 +1,6 @@
 use pgls_query::protobuf::CreateSeqStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::emit_space_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
     e.group_start(GroupKind::CreateSeqStmt);
@@ -47,11 +42,11 @@ pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
         emit_space_separated_list(e, &n.options, |opt, e| {
             // Use specialized sequence option emission
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {
-                super::emit_with_comments_at(e, def_elem.location, |e| {
+                emit_with_comments_at(e, def_elem.location, |e| {
                     super::emit_sequence_option(e, def_elem);
                 });
             } else {
-                super::emit_node(opt, e);
+                emit_node(opt, e);
             }
         });
     }

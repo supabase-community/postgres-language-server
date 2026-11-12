@@ -24,9 +24,8 @@ use std::{
 
 use pgls_postgres_regress::Verdict;
 use pgls_pretty_print::{
-    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, FormatError, Layout,
-    LogicalOperatorPlacement, format_statement,
-    renderer::{IndentStyle, KeywordCase},
+    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, FormatError, IndentStyle, KeywordCase,
+    Layout, LogicalOperatorPlacement, format_statement,
 };
 use rayon::prelude::*;
 

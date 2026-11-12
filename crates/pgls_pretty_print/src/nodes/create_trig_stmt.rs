@@ -1,11 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{
-        emit_comma_separated_list, emit_dot_separated_list, emit_space_separated_list,
-    },
-};
 use pgls_query::protobuf::CreateTrigStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     e.group_start(GroupKind::CreateTrigStmt);
@@ -27,7 +22,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
 
     e.token(TokenKind::TRIGGER_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.trigname);
+    emit_identifier_maybe_quoted(e, &n.trigname);
 
     // Timing: BEFORE (2), AFTER (4), INSTEAD OF (16)
     // After trigger name, break to new line for timing + events + ON table
@@ -83,7 +78,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
         e.space();
         e.token(TokenKind::OF_KW);
         e.space();
-        emit_comma_separated_list(e, &n.columns, super::emit_node);
+        emit_comma_separated_list(e, &n.columns, emit_node);
     }
 
     // ON table - allow break before ON for long table names
@@ -140,7 +135,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
         e.token(TokenKind::WHEN_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
-        super::emit_node(when, e);
+        emit_node(when, e);
         e.token(TokenKind::R_PAREN);
     }
 
@@ -154,7 +149,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     e.token(TokenKind::L_PAREN);
     if !n.args.is_empty() {
         // Arguments are string literals
-        emit_comma_separated_list(e, &n.args, super::emit_node);
+        emit_comma_separated_list(e, &n.args, emit_node);
     }
     e.token(TokenKind::R_PAREN);
 
@@ -182,6 +177,6 @@ fn emit_trigger_transitions(e: &mut EventEmitter, rels: &[pgls_query::Node]) {
         e.space();
         e.token(TokenKind::AS_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &transition.name);
+        emit_identifier_maybe_quoted(e, &transition.name);
     });
 }

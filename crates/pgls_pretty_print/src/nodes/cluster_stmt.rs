@@ -1,8 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::ClusterStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_cluster_stmt(e: &mut EventEmitter, n: &ClusterStmt) {
     e.group_start(GroupKind::ClusterStmt);
@@ -25,7 +23,7 @@ pub(super) fn emit_cluster_stmt(e: &mut EventEmitter, n: &ClusterStmt) {
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::USING_KW);
             e.space();
-            super::emit_identifier_maybe_quoted(e, &n.indexname);
+            emit_identifier_maybe_quoted(e, &n.indexname);
         }
     }
 

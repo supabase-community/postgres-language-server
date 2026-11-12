@@ -1,14 +1,12 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::RangeTableFuncCol;
+
+use super::prelude::*;
 
 pub(super) fn emit_range_table_func_col(e: &mut EventEmitter, col: &RangeTableFuncCol) {
     e.group_start(GroupKind::RangeTableFuncCol);
 
     if !col.colname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &col.colname);
+        emit_identifier_maybe_quoted(e, &col.colname);
     }
 
     if col.for_ordinality {
@@ -33,14 +31,14 @@ pub(super) fn emit_range_table_func_col(e: &mut EventEmitter, col: &RangeTableFu
         e.space();
         e.token(TokenKind::PATH_KW);
         e.space();
-        super::emit_node(expr, e);
+        emit_node(expr, e);
     }
 
     if let Some(expr) = col.coldefexpr.as_ref() {
         e.space();
         e.token(TokenKind::DEFAULT_KW);
         e.space();
-        super::emit_node(expr, e);
+        emit_node(expr, e);
     }
 
     if col.is_not_null {

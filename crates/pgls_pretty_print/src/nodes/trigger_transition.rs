@@ -1,5 +1,6 @@
-use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::protobuf::TriggerTransition;
+
+use super::prelude::*;
 
 pub(super) fn emit_trigger_transition(e: &mut EventEmitter, n: &TriggerTransition) {
     e.group_start(GroupKind::TriggerTransition);
@@ -16,7 +17,7 @@ pub(super) fn emit_trigger_transition(e: &mut EventEmitter, n: &TriggerTransitio
     label.push_str(if n.is_table { "table" } else { "row" });
     label.push(']');
 
-    super::emit_identifier(e, &label);
+    emit_identifier(e, &label);
 
     e.group_end();
 }

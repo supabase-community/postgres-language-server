@@ -1,10 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::AlterUserMappingStmt;
 
-use super::node_list::emit_parenthesized_list;
+use super::prelude::*;
 
 pub(super) fn emit_alter_user_mapping_stmt(e: &mut EventEmitter, n: &AlterUserMappingStmt) {
     e.group_start(GroupKind::AlterUserMappingStmt);
@@ -27,7 +23,7 @@ pub(super) fn emit_alter_user_mapping_stmt(e: &mut EventEmitter, n: &AlterUserMa
     e.space();
     e.token(TokenKind::SERVER_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.servername);
+    emit_identifier_maybe_quoted(e, &n.servername);
 
     // Options
     if !n.options.is_empty() {

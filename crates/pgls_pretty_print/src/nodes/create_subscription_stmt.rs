@@ -1,11 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
-};
-use pgls_query::{NodeEnum, protobuf::CreateSubscriptionStmt};
+use pgls_query::protobuf::CreateSubscriptionStmt;
 
-use super::string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str};
+use super::prelude::*;
 
 pub(super) fn emit_create_subscription_stmt(e: &mut EventEmitter, n: &CreateSubscriptionStmt) {
     e.group_start(GroupKind::CreateSubscriptionStmt);
@@ -39,7 +34,7 @@ pub(super) fn emit_create_subscription_stmt(e: &mut EventEmitter, n: &CreateSubs
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, super::emit_node);
+        emit_parenthesized_list(e, &n.options, emit_node);
     }
     e.indent_end();
 

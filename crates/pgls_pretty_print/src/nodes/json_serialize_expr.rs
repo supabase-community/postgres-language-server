@@ -1,10 +1,8 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::JsonSerializeExpr;
 
-use super::json_value_expr::{emit_json_output, emit_json_value_expr};
+use super::emit_json_value_expr;
+use super::json_value_expr::emit_json_output;
+use super::prelude::*;
 
 pub(super) fn emit_json_serialize_expr(e: &mut EventEmitter, n: &JsonSerializeExpr) {
     e.group_start(GroupKind::JsonSerializeExpr);

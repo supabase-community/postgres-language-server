@@ -1,6 +1,5 @@
 use pgls_pretty_print::{
-    CommaStyle, FormatConfig, Layout, format_statement,
-    renderer::{IndentStyle, KeywordCase},
+    CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout, format_statement,
 };
 
 fn format_idempotently(sql: &str, config: &FormatConfig) -> String {
