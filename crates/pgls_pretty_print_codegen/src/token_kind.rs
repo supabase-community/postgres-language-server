@@ -114,8 +114,8 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
         let kw_upper = kw.to_uppercase();
         render_kw_match_arms.push(quote! {
             TokenKind::#kind_ident => match config.keyword_case {
-                crate::renderer::KeywordCase::Upper => #kw_upper.to_string(),
-                crate::renderer::KeywordCase::Lower => #kw_lower.to_string(),
+                crate::config::KeywordCase::Upper => #kw_upper.to_string(),
+                crate::config::KeywordCase::Lower => #kw_lower.to_string(),
             }
         });
     }
@@ -192,12 +192,12 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
                     TokenKind::DOLLAR => "$".to_string(),
                     TokenKind::IDENT(ident) => ident.clone(),
                     TokenKind::TYPE_IDENT(type_name) => match config.type_case {
-                        crate::renderer::KeywordCase::Upper => type_name.to_uppercase(),
-                        crate::renderer::KeywordCase::Lower => type_name.to_lowercase(),
+                        crate::config::KeywordCase::Upper => type_name.to_uppercase(),
+                        crate::config::KeywordCase::Lower => type_name.to_lowercase(),
                     },
                     TokenKind::WORD(word) => match config.keyword_case {
-                        crate::renderer::KeywordCase::Upper => word.to_uppercase(),
-                        crate::renderer::KeywordCase::Lower => word.to_lowercase(),
+                        crate::config::KeywordCase::Upper => word.to_uppercase(),
+                        crate::config::KeywordCase::Lower => word.to_lowercase(),
                     },
                     TokenKind::STRING(s) => s.clone(),
                     TokenKind::ESC_STRING(s) => s.clone(),
@@ -209,12 +209,12 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
                     TokenKind::BIT_STRING(s) => s.clone(),
                     TokenKind::BYTE_STRING(s) => s.clone(),
                     TokenKind::BOOLEAN(b) => match config.constant_case {
-                        crate::renderer::KeywordCase::Upper => if *b { "TRUE" } else { "FALSE" }.to_string(),
-                        crate::renderer::KeywordCase::Lower => if *b { "true" } else { "false" }.to_string(),
+                        crate::config::KeywordCase::Upper => if *b { "TRUE" } else { "FALSE" }.to_string(),
+                        crate::config::KeywordCase::Lower => if *b { "true" } else { "false" }.to_string(),
                     },
                     TokenKind::NULL => match config.constant_case {
-                        crate::renderer::KeywordCase::Upper => "NULL".to_string(),
-                        crate::renderer::KeywordCase::Lower => "null".to_string(),
+                        crate::config::KeywordCase::Upper => "NULL".to_string(),
+                        crate::config::KeywordCase::Lower => "null".to_string(),
                     },
                     #(#render_kw_match_arms),*,
                     _ => format!("{:?}", self), // Fallback for other variants

@@ -141,6 +141,8 @@ mod tests {
             is_primary_key: is_pk,
             is_unique: is_pk,
             default_expr: None,
+            generated: pgls_catalog::Generated::No,
+            identity: pgls_catalog::Identity::No,
             varchar_length: None,
             comment: None,
         }

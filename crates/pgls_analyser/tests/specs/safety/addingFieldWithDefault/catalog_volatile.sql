@@ -1,0 +1,10 @@
+-- Volatile functions anywhere in the default rewrite the table, even in Postgres 11+.
+-- catalog: builtin
+-- expect_lint/addingFieldWithDefault
+ALTER TABLE users ADD COLUMN token uuid DEFAULT gen_random_uuid();
+-- expect_lint/addingFieldWithDefault
+ALTER TABLE users ADD COLUMN created_on date DEFAULT clock_timestamp()::date;
+-- expect_lint/addingFieldWithDefault
+ALTER TABLE users ADD COLUMN jitter float8 DEFAULT 1 + random();
+-- expect_lint/addingFieldWithDefault
+ALTER TABLE users ADD COLUMN pick int DEFAULT CASE WHEN random() > 0.5 THEN 1 ELSE 2 END;

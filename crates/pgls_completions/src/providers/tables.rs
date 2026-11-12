@@ -74,7 +74,7 @@ mod tests {
 
     use pgls_test_utils::QueryWithCursorPosition;
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn autocompletes_simple_table(pool: PgPool) {
         let setup = r#"
             create table users (
@@ -104,7 +104,7 @@ mod tests {
         )
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn autocompletes_table_alphanumerically(pool: PgPool) {
         let setup = r#"
             create table addresses (
@@ -163,7 +163,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn autocompletes_table_with_schema(pool: PgPool) {
         let setup = r#"
             create schema customer_support;
@@ -225,7 +225,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn prefers_table_in_from_clause(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -262,7 +262,7 @@ mod tests {
         assert_eq!(kind, CompletionItemKind::Table);
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn ranks_the_history_tables_of_migration_tools_low(pool: PgPool) {
         let setup = r#"
           create table goose_db_version (id serial primary key, version_id bigint);
@@ -290,7 +290,7 @@ mod tests {
         assert!(position("goose_db_version").is_some(), "{labels:?}");
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_update(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -308,7 +308,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_inherits_and_references(pool: PgPool) {
         pool.execute("create table public.parents (id int primary key);")
             .await
@@ -334,7 +334,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_delete(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -395,7 +395,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_join(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -425,7 +425,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_drop_statements(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -451,7 +451,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_alter_statements(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -477,7 +477,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_insert_into(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -534,7 +534,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn after_quoted_schemas(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -620,7 +620,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_tables_in_policies(pool: PgPool) {
         let setup = r#"
             create schema auth;
