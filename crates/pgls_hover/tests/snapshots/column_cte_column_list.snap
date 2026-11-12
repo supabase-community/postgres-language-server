@@ -1,0 +1,20 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+with c(label) as (select name from hover_users) select label from c
+                                                          ↑ hovered here
+```
+
+# Hover Results
+### `c.label`  
+```plain  
+text - CTE column
+  
+```  
+---    
+```plain  
+  
+```

@@ -1,0 +1,66 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+create table t (a int constraint t_a_check check (a > 0) not enforced, b int references u (id) enforced, check (b > 0) not enforced);
+-----------------------
+program [0..133] 'create table t (a int constraint t_a_check check (a > 0) not enforced, b int references u (id) enforced, check (b > 0) not enforced);'
+  statement [0..132] 'create table t (a int constraint t_a_check check (a > 0) not enforced, b int references u (id) enforced, check (b > 0) not enforced)'
+    create_table [0..132] 'create table t (a int constraint t_a_check check (a > 0) not enforced, b int references u (id) enforced, check (b > 0) not enforced)'
+      keyword_create [0..6] 'create'
+      keyword_table [7..12] 'table'
+      object_reference [13..14] 't'
+        any_identifier [13..14] 't' (@object_reference_1of1)
+      column_definitions [15..132] '(a int constraint t_a_check check (a > 0) not enforced, b int references u (id) enforced, check (b > 0) not enforced)' (@end)
+        ( [15..16] '('
+        column_definition [16..69] 'a int constraint t_a_check check (a > 0) not enforced'
+          any_identifier [16..17] 'a'
+          type [18..21] 'int' (@end)
+            int [18..21] 'int'
+              keyword_int [18..21] 'int'
+          column_constraint [22..42] 'constraint t_a_check'
+            keyword_constraint [22..32] 'constraint'
+            any_identifier [33..42] 't_a_check' (@end)
+          column_constraint [43..56] 'check (a > 0)'
+            keyword_check [43..48] 'check'
+            ( [49..50] '('
+            binary_expression [50..55] 'a > 0'
+              object_reference [50..51] 'a' (@binary_expr_left)
+                any_identifier [50..51] 'a' (@object_reference_1of1)
+              > [52..53] '>' (@binary_expr_operator)
+              literal [54..55] '0' (@end)
+            ) [55..56] ')' (@end)
+          column_constraint [57..69] 'not enforced'
+            keyword_not [57..60] 'not'
+            keyword_enforced [61..69] 'enforced' (@end)
+        , [69..70] ','
+        column_definition [71..103] 'b int references u (id) enforced'
+          any_identifier [71..72] 'b'
+          type [73..76] 'int' (@end)
+            int [73..76] 'int'
+              keyword_int [73..76] 'int'
+          column_constraint [77..94] 'references u (id)'
+            keyword_references [77..87] 'references'
+            table_reference [88..89] 'u' (@end)
+              any_identifier [88..89] 'u' (@table_reference_1of1)
+            ( [90..91] '('
+            column_identifier [91..93] 'id'
+            ) [93..94] ')' (@end)
+          column_constraint [95..103] 'enforced'
+            keyword_enforced [95..103] 'enforced' (@end)
+        , [103..104] ','
+        constraint [105..131] 'check (b > 0) not enforced'
+          keyword_check [105..110] 'check'
+          ( [111..112] '('
+          binary_expression [112..117] 'b > 0'
+            object_reference [112..113] 'b' (@binary_expr_left)
+              any_identifier [112..113] 'b' (@object_reference_1of1)
+            > [114..115] '>' (@binary_expr_operator)
+            literal [116..117] '0' (@end)
+          ) [117..118] ')' (@end)
+          constraint_attributes [119..131] 'not enforced'
+            constraint_attribute [119..131] 'not enforced' (@end)
+              keyword_not [119..122] 'not'
+              keyword_enforced [123..131] 'enforced' (@end)
+        ) [131..132] ')' (@end)
+  ; [132..133] ';'

@@ -4,11 +4,15 @@ use std::rc::Rc;
 
 use pgls_query::protobuf::RangeVar;
 
-use super::{Resolver, alias::apply_alias};
+use super::{
+    Resolver,
+    alias::{apply_alias, apply_typed_alias},
+};
 use crate::lookup::{Lookup, RelationKind};
 use crate::resolve::{
     ColumnSource, FindingKind, Reference,
-    scope::{Columns, Item, ItemSource},
+    scope::{Columns, DefaultOnly, Item, ItemSource},
+    utils::ref_name,
 };
 
 /// A relation or CTE in FROM. A name without schema is a CTE first ([`transformFromClauseItem`]
@@ -19,21 +23,27 @@ use crate::resolve::{
 pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
     let alias = n.alias.as_ref();
     let is_unqualified = n.schemaname.is_empty() && n.catalogname.is_empty();
-    if is_unqualified && let Some(cte) = r.ctes.iter().rev().find(|cte| cte.name == n.relname) {
+    if is_unqualified
+        && let Some(cte) = r
+            .ctes
+            .iter()
+            .rev()
+            .find(|cte| cte.name == n.relname)
+            .cloned()
+    {
+        if r.collects_references() {
+            r.record(Reference::Cte {
+                location: n.location,
+                span: r.name_span(n.location),
+                name: cte.name.clone(),
+            });
+            r.record_alias(n.location, alias);
+        }
         let mut item = Item::named(
-            Some(alias.map_or_else(|| cte.name.clone(), |alias| alias.aliasname.clone())),
+            Some(ref_name(n).to_owned()),
             apply_alias(cte.columns.clone(), alias),
         );
-        item.typed_columns = cte.typed_columns.clone().map(|mut columns| {
-            if let Some(alias) = alias
-                && let Some(names) = super::string::string_values(&alias.colnames)
-            {
-                for (column, name) in columns.iter_mut().zip(names) {
-                    column.name = name;
-                }
-            }
-            columns
-        });
+        item.typed_columns = apply_typed_alias(cte.typed_columns.clone(), alias);
         if r.collects_references()
             && let Some(names) = &cte.columns
         {
@@ -55,22 +65,17 @@ pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
 pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
     let alias = n.alias.as_ref();
     let relation = lookup_relation(r, n);
+    // Like the relation, its alias only has a reference if the relation is known.
+    if relation.schema.is_some() {
+        r.record_alias(n.location, alias);
+    }
     Item {
-        name: Some(alias.map_or_else(|| n.relname.clone(), |alias| alias.aliasname.clone())),
+        name: Some(ref_name(n).to_owned()),
         schema: relation.schema.filter(|_| alias.is_none()),
         columns: apply_alias(relation.columns, alias),
-        typed_columns: relation.typed_columns.map(|mut columns| {
-            if let Some(alias) = alias {
-                for (column, name) in columns.iter_mut().zip(
-                    crate::resolve::nodes::string::string_values(&alias.colnames)
-                        .unwrap_or_default(),
-                ) {
-                    column.name = name;
-                }
-            }
-            columns
-        }),
+        typed_columns: apply_typed_alias(relation.typed_columns, alias),
         has_system_columns: relation.has_system_columns,
+        default_only_columns: relation.default_only_columns,
         source: relation.source,
     }
 }
@@ -82,6 +87,8 @@ pub(super) struct ResolvedRelation {
     pub columns: Columns,
     pub typed_columns: Option<Vec<crate::typing::TypedColumn>>,
     pub has_system_columns: bool,
+    /// The columns of a table that INSERT and UPDATE can only set to `DEFAULT`.
+    pub default_only_columns: Vec<(String, DefaultOnly)>,
     /// Only set when references are collected.
     pub source: Option<Rc<ItemSource>>,
 }
@@ -123,6 +130,17 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
                     relation: relation.clone(),
                 });
             }
+            let default_only_columns = match relation.kind {
+                RelationKind::Table
+                | RelationKind::PartitionedTable
+                | RelationKind::ForeignTable => relation
+                    .columns
+                    .iter()
+                    .flatten()
+                    .filter_map(|column| Some((column.name.clone(), DefaultOnly::of(column)?)))
+                    .collect(),
+                _ => Vec::new(),
+            };
             ResolvedRelation {
                 schema: Some(relation.schema),
                 columns: relation
@@ -139,6 +157,7 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
                         .collect()
                 }),
                 has_system_columns: relation.kind != RelationKind::View,
+                default_only_columns,
                 source,
             }
         }

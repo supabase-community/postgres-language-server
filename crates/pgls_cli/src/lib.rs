@@ -5,20 +5,21 @@
 //! execute the traversal of directory and files, based on the command that was passed.
 
 use cli_options::CliOptions;
+use commands::FileTargets;
 use commands::check::{self, CheckArgs};
 use commands::format::{self, FormatArgs};
-use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_console::{ColorMode, Console, ConsoleExt, markup};
 use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use pgls_workspace::configuration::{
-    NestedConfiguration, NestedConfigurationSearch, apply_nested_configurations,
+    ConfigurationLayers, ConfigurationNotice, ConfigureProjectParams, NestedConfiguration,
+    NestedConfigurationSearch, apply_nested_configurations, configure_project,
 };
 use pgls_workspace::settings::FilesSettings;
 use pgls_workspace::workspace::ProjectKey;
@@ -34,19 +35,11 @@ mod metrics;
 mod panic;
 mod reporter;
 mod service;
-mod workspace;
 
-/// The stack size of the threads that run the workspace: the tokio workers and blocking threads
-/// of the language server, and the rayon workers of `check`.
-///
-/// libpg_query serializes the parse tree recursively, so a long expression needs stack
-/// proportional to its length. In a release build, `select 1 + abs(1) + ...` overflows the 2 MiB
-/// default of tokio and rayon at about 10,000 terms, and the overflow aborts the whole process.
-/// With 8 MiB, the default stack of the main thread on Linux, it handles 20,000 terms. Postgres
-/// itself rejects that statement at 5,000 terms with its default `max_stack_depth` of 2 MB.
-pub(crate) const WORKER_STACK_SIZE_BYTES: usize = 8 * 1024 * 1024;
+pub(crate) use pgls_workspace::WORKER_STACK_SIZE_BYTES;
 
-/// A multi-threaded tokio runtime whose threads have a stack of [`WORKER_STACK_SIZE_BYTES`].
+/// A multi-threaded tokio runtime whose threads have a stack of [`WORKER_STACK_SIZE_BYTES`]. It
+/// runs the language server's handlers and their `spawn_blocking` threads.
 pub(crate) fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -61,6 +54,7 @@ use crate::reporter::Report;
 pub use diagnostics::CliDiagnostic;
 pub use execute::{ExecutionConfig, ExecutionMode, VcsTargeting};
 pub use panic::setup_panic_handler;
+pub use pgls_workspace::configuration::VcsIntegration;
 pub use reporter::{ReportConfig, Reporter, TraversalData};
 pub use service::{SocketTransport, open_transport};
 
@@ -70,11 +64,14 @@ pub(crate) use pgls_env::VERSION;
 pub struct CliSession<'app> {
     /// Instance of [App] used by this run of the CLI
     pub app: App<'app>,
-    /// The project of the working directory, once [CliSession::setup_workspace] registered it
+    /// The project of the working directory, once [CliSession::configure_workspace] registered it
     project_key: ProjectKey,
     /// The files settings of the root configuration, which decide the folders to search for
     /// nested configuration files
     root_files: Option<FilesSettings>,
+    /// The layers laid over each configuration file: the environment and the arguments, which
+    /// replace what they set like the client overrides of the language server
+    layers: ConfigurationLayers,
 }
 
 impl<'app> CliSession<'app> {
@@ -90,6 +87,7 @@ impl<'app> CliSession<'app> {
             ),
             project_key: ProjectKey::default(),
             root_files: None,
+            layers: ConfigurationLayers::default(),
         })
     }
 
@@ -123,11 +121,13 @@ impl<'app> CliSession<'app> {
                 &cli_options,
                 CheckArgs {
                     configuration,
-                    paths,
-                    stdin_file_path,
-                    staged,
-                    changed,
-                    since,
+                    targets: FileTargets {
+                        paths,
+                        stdin_file_path,
+                        staged,
+                        changed,
+                        since,
+                    },
                     fix,
                     unsafe_,
                     only,
@@ -148,12 +148,14 @@ impl<'app> CliSession<'app> {
                 &cli_options,
                 FormatArgs {
                     configuration,
-                    paths,
+                    targets: FileTargets {
+                        paths,
+                        stdin_file_path,
+                        staged,
+                        changed,
+                        since,
+                    },
                     write,
-                    stdin_file_path,
-                    staged,
-                    changed,
-                    since,
                 },
             ),
             PgLSCommand::Parse {
@@ -233,46 +235,68 @@ impl<'app> CliSession<'app> {
         &*self.app.workspace
     }
 
-    pub fn prepare_with_config(
+    /// Registers the project of the working directory and applies the configuration file, with
+    /// the database configuration of the environment and then the arguments laid over it, to it
+    /// and the VCS integration. Relative paths in the configuration file are relative to its
+    /// folder, and relative paths in the arguments to the working directory. Returns the
+    /// configuration as applied.
+    pub fn configure_workspace(
         &mut self,
         cli_options: &CliOptions,
-        cli_configuration: Option<PartialConfiguration>,
+        mut cli_configuration: Option<PartialConfiguration>,
+        vcs: VcsIntegration,
     ) -> Result<PartialConfiguration, CliDiagnostic> {
         setup_cli_subscriber(cli_options.log_level, cli_options.log_kind);
 
-        let fs = self.fs();
-        let loaded_configuration =
-            workspace::load_config(fs, cli_options.as_configuration_path_hint())?;
-
-        if let Some(config_path) = &loaded_configuration.file_path
-            && let Some(file_name) = config_path.file_name().and_then(|name| name.to_str())
-            && ConfigName::is_deprecated(file_name)
+        if let (Some(configuration), Some(working_directory)) =
+            (cli_configuration.as_mut(), self.fs().working_directory())
         {
-            self.console().log(markup! {
+            resolve_path_arguments(configuration, &working_directory);
+        }
+        self.layers = ConfigurationLayers {
+            environment: PartialDatabaseConfiguration::from_env(),
+            overrides: cli_configuration,
+        };
+        let project = configure_project(
+            self.workspace(),
+            self.fs(),
+            ConfigureProjectParams {
+                hint: cli_options.as_configuration_path_hint(),
+                layers: &self.layers,
+                vcs,
+            },
+        )?;
+        for notice in &project.notices {
+            self.print_configuration_notice(notice);
+        }
+        let applied = project.result?;
+        self.project_key = project.project_key;
+        self.root_files = Some(applied.files);
+        Ok(applied.configuration)
+    }
+
+    fn print_configuration_notice(&mut self, notice: &ConfigurationNotice) {
+        match notice {
+            ConfigurationNotice::DeprecatedFileName(_) => self.console().log(markup! {
                 <Warn>"Warning: "</Warn>
                 "Deprecated config filename detected. Use 'postgres-language-server.jsonc'.\n"
-            });
-        }
-
-        if loaded_configuration.is_user_configuration
-            && let Some(file_path) = &loaded_configuration.file_path
-        {
+            }),
             // On stderr, so that it doesn't end up in the output of a reporter or of `format`.
-            self.console().error(markup! {
-                <Info>"Using the user configuration at "{file_path.display().to_string()}"\n"</Info>
-            });
+            ConfigurationNotice::UserConfiguration { file_path, .. } => {
+                self.console().error(markup! {
+                    <Info>"Using the user configuration at "{file_path.display().to_string()}"\n"</Info>
+                })
+            }
+            ConfigurationNotice::DeprecatedSettings(deprecations) => {
+                for deprecation in deprecations {
+                    self.console().log(markup! {
+                        <Warn>"Warning: "</Warn>{deprecation}"\n"
+                    });
+                }
+            }
+            // `check` reports it when it checks the database connection.
+            ConfigurationNotice::InvalidConnectionString(_) => {}
         }
-
-        for deprecation in loaded_configuration.configuration.deprecations() {
-            self.console().log(markup! {
-                <Warn>"Warning: "</Warn>{deprecation}"\n"
-            });
-        }
-
-        Ok(apply_overrides(
-            loaded_configuration.configuration,
-            cli_configuration,
-        ))
     }
 
     /// The project of the working directory, which every file of this run belongs to
@@ -290,7 +314,6 @@ impl<'app> CliSession<'app> {
     pub fn apply_nested_configurations(
         &mut self,
         cli_options: &CliOptions,
-        cli_configuration: Option<PartialConfiguration>,
         paths: &[OsString],
     ) -> Result<Vec<Error>, CliDiagnostic> {
         if cli_options.config_path.is_some() {
@@ -310,8 +333,7 @@ impl<'app> CliSession<'app> {
                 root_files,
                 ..NestedConfigurationSearch::new(root)
             },
-            PartialDatabaseConfiguration::from_env().as_ref(),
-            |configuration| apply_arguments(configuration, cli_configuration.clone()),
+            &self.layers,
         )?;
         if let Some(incomplete) = nested.incomplete {
             self.console().log(markup! {
@@ -338,18 +360,6 @@ impl<'app> CliSession<'app> {
         Ok(errors)
     }
 
-    pub fn setup_workspace(
-        &mut self,
-        configuration: PartialConfiguration,
-        vcs: VcsIntegration,
-    ) -> Result<(), CliDiagnostic> {
-        let (project_key, root_files) =
-            workspace::setup_workspace(self.workspace(), self.fs(), configuration, vcs)?;
-        self.project_key = project_key;
-        self.root_files = Some(root_files);
-        Ok(())
-    }
-
     pub fn report(
         &mut self,
         command_name: &str,
@@ -361,40 +371,22 @@ impl<'app> CliSession<'app> {
     }
 }
 
-/// Lays the database configuration from the environment and then the arguments over a
-/// configuration file.
-fn apply_overrides(
-    mut configuration: PartialConfiguration,
-    cli_configuration: Option<PartialConfiguration>,
-) -> PartialConfiguration {
-    // Env vars override config file but are overridden by explicit CLI args.
-    if let Some(env_db) = PartialDatabaseConfiguration::from_env() {
-        let env_config = PartialConfiguration {
-            db: Some(env_db),
-            ..Default::default()
-        };
-        configuration.merge_with(env_config);
+/// Makes the relative paths in the arguments absolute against the working directory. Otherwise
+/// they would be relative to the folder of the configuration file that they are laid over, like
+/// the paths in it.
+fn resolve_path_arguments(configuration: &mut PartialConfiguration, working_directory: &Path) {
+    let paths = [
+        configuration
+            .migrations
+            .as_mut()
+            .and_then(|migrations| migrations.migrations_dir.as_mut()),
+        configuration.vcs.as_mut().and_then(|vcs| vcs.root.as_mut()),
+    ];
+    for path in paths.into_iter().flatten() {
+        if !path.is_empty() && Path::new(path.as_str()).is_relative() {
+            *path = working_directory.join(path.as_str()).display().to_string();
+        }
     }
-
-    apply_arguments(configuration, cli_configuration)
-}
-
-/// Lays the configuration from the arguments over a configuration file.
-fn apply_arguments(
-    mut configuration: PartialConfiguration,
-    cli_configuration: Option<PartialConfiguration>,
-) -> PartialConfiguration {
-    if let Some(cli_config) = cli_configuration {
-        configuration.merge_with(cli_config);
-    }
-
-    configuration
-}
-
-/// Controls whether workspace setup should include VCS integration details.
-pub enum VcsIntegration {
-    Enabled,
-    Disabled,
 }
 
 pub fn to_color_mode(color: Option<&ColorsArg>) -> ColorMode {

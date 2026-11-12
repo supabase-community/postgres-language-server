@@ -20,14 +20,7 @@ impl ReportWriter for JsonReportWriter {
         let diagnostics: Vec<_> = report
             .diagnostics
             .iter()
-            .filter(|d| d.severity() >= config.diagnostic_level)
-            .filter(|d| {
-                if d.tags().is_verbose() {
-                    config.verbose
-                } else {
-                    true
-                }
-            })
+            .filter(|d| config.should_emit(d))
             .map(to_json_report)
             .collect();
 

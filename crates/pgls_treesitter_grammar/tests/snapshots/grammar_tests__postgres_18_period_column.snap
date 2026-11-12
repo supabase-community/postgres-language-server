@@ -1,0 +1,47 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+create table t (period int, primary key (period), foreign key (period) references u (period));
+-----------------------
+program [0..94] 'create table t (period int, primary key (period), foreign key (period) references u (period));'
+  statement [0..93] 'create table t (period int, primary key (period), foreign key (period) references u (period))'
+    create_table [0..93] 'create table t (period int, primary key (period), foreign key (period) references u (period))'
+      keyword_create [0..6] 'create'
+      keyword_table [7..12] 'table'
+      object_reference [13..14] 't'
+        any_identifier [13..14] 't' (@object_reference_1of1)
+      column_definitions [15..93] '(period int, primary key (period), foreign key (period) references u (period))' (@end)
+        ( [15..16] '('
+        column_definition [16..26] 'period int'
+          any_identifier [16..22] 'period'
+          type [23..26] 'int' (@end)
+            int [23..26] 'int'
+              keyword_int [23..26] 'int'
+        , [26..27] ','
+        constraint [28..48] 'primary key (period)'
+          keyword_primary [28..35] 'primary'
+          keyword_key [36..39] 'key'
+          ordered_columns [40..48] '(period)' (@end)
+            ( [40..41] '('
+            column [41..47] 'period'
+              column_identifier [41..47] 'period' (@name)
+            ) [47..48] ')' (@end)
+        , [48..49] ','
+        constraint [50..92] 'foreign key (period) references u (period)'
+          keyword_foreign [50..57] 'foreign'
+          keyword_key [58..61] 'key'
+          ordered_columns [62..70] '(period)' (@end)
+            ( [62..63] '('
+            column [63..69] 'period'
+              column_identifier [63..69] 'period' (@name)
+            ) [69..70] ')' (@end)
+          foreign_key_references [71..92] 'references u (period)'
+            keyword_references [71..81] 'references'
+            table_reference [82..83] 'u' (@end)
+              any_identifier [82..83] 'u' (@table_reference_1of1)
+            ( [84..85] '('
+            column_identifier [85..91] 'period'
+            ) [91..92] ')' (@end)
+        ) [92..93] ')' (@end)
+  ; [93..94] ';'
