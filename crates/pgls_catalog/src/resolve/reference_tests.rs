@@ -493,7 +493,7 @@ async fn cte_and_alias_references(test_db: PgPool) {
     assert_eq!(names("select 1 from users"), [""; 0]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn returning_old_and_new_references(test_db: PgPool) {
     test_db.execute(SETUP).await.expect("valid setup");
     let mut snapshot = Snapshot::load(&test_db).await.expect("snapshot");
