@@ -1,3 +1,4 @@
+use crate::utils::AlterDomainKind;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -34,9 +35,8 @@ impl LinterRule for BanAlterDomainWithAddConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        // 'C' is `ADD CONSTRAINT`.
         if let pgls_query::NodeEnum::AlterDomainStmt(stmt) = ctx.stmt()
-            && stmt.subtype == "C"
+            && AlterDomainKind::of(stmt) == Some(AlterDomainKind::AddConstraint)
         {
             return vec![
                 LinterDiagnostic::new(

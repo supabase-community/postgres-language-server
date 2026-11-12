@@ -1,0 +1,6 @@
+-- expect_no_diagnostics
+-- A foreign key takes SHARE ROW EXCLUSIVE and VALIDATE CONSTRAINT SHARE UPDATE EXCLUSIVE, so no
+-- statement runs while holding ACCESS EXCLUSIVE.
+alter table orders add constraint orders_user_fk foreign key (user_id) references users (id) not valid;
+alter table orders validate constraint orders_user_fk;
+select count(*) from orders;

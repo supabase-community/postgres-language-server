@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, cmd_def};
+use crate::utils::{added_constraints, altered_relation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -50,35 +50,15 @@ impl LinterRule for AddingPrimaryKeyConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut diagnostics = Vec::new();
-
-        for cmd in alter_table_cmds(ctx.stmt()) {
-            match cmd.subtype() {
-                // Check for ADD CONSTRAINT PRIMARY KEY
-                pgls_query::protobuf::AlterTableType::AtAddConstraint => {
-                    if let Some(pgls_query::NodeEnum::Constraint(constraint)) = cmd_def(cmd)
-                        && let Some(diagnostic) = check_for_primary_key_constraint(constraint)
-                    {
-                        diagnostics.push(diagnostic);
-                    }
-                }
-                // Check for ADD COLUMN with PRIMARY KEY
-                pgls_query::protobuf::AlterTableType::AtAddColumn => {
-                    if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd) {
-                        for constraint in &col_def.constraints {
-                            if let Some(pgls_query::NodeEnum::Constraint(constr)) = &constraint.node
-                                && let Some(diagnostic) = check_for_primary_key_constraint(constr)
-                            {
-                                diagnostics.push(diagnostic);
-                            }
-                        }
-                    }
-                }
-                _ => {}
-            }
+        // Other transactions can't see a table created earlier in the transaction, so its
+        // lock blocks no one.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
         }
-
-        diagnostics
+        // `ADD CONSTRAINT ... PRIMARY KEY`, and `ADD COLUMN ... PRIMARY KEY`.
+        added_constraints(ctx.stmt())
+            .filter_map(|(constraint, _)| check_for_primary_key_constraint(constraint))
+            .collect()
     }
 }
 

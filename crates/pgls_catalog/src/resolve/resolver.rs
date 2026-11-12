@@ -1,6 +1,6 @@
 //! The state of name resolution: the catalog, the names in scope, and the findings so far.
 
-use std::mem::Discriminant;
+use std::{cell::OnceCell, mem::Discriminant};
 
 use pgls_text_size::{TextRange, TextSize};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -13,7 +13,7 @@ use pgls_query::{
 use super::{
     Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
     scope::{Cte, Level},
-    span,
+    span::Tokens,
 };
 use crate::TypeKind;
 use crate::lookup::{CatalogView, Lookup, Origin};
@@ -24,6 +24,8 @@ pub(super) struct Resolver<'a> {
     pub search_path: &'a [String],
     pub function: Option<&'a FunctionContext>,
     sql: Option<&'a str>,
+    /// The tokens of `sql`, scanned when the first span is needed.
+    tokens: OnceCell<Option<Tokens<'a>>>,
     pub findings: Vec<Finding>,
     /// Cleared as soon as the statement references something that doesn't come unchanged from
     /// the database, or something the resolver doesn't understand.
@@ -41,6 +43,9 @@ pub(super) struct Resolver<'a> {
     /// subquery's node, so that typing a sublink doesn't resolve its subquery again. Resolving
     /// it again at every level of nested subqueries took time exponential in their depth.
     subquery_outputs: FxHashMap<usize, crate::typing::QueryColumns>,
+    /// Set while resolving the RETURNING list of MERGE, including its subqueries, where
+    /// `merge_action()` is allowed.
+    pub in_merge_returning: bool,
 }
 
 impl<'a> Resolver<'a> {
@@ -55,6 +60,7 @@ impl<'a> Resolver<'a> {
             search_path,
             function,
             sql,
+            tokens: OnceCell::new(),
             findings: Vec::new(),
             database_only: true,
             levels: Vec::new(),
@@ -63,6 +69,7 @@ impl<'a> Resolver<'a> {
             references: None,
             recorded: FxHashSet::default(),
             subquery_outputs: FxHashMap::default(),
+            in_merge_returning: false,
         }
     }
 
@@ -136,6 +143,14 @@ impl<'a> Resolver<'a> {
     /// The statement text, if known.
     pub fn sql(&self) -> Option<&'a str> {
         self.sql
+    }
+
+    /// The tokens of the statement. It is scanned once, the first time they are needed, which for
+    /// most statements is never: spans are only needed for findings and references.
+    pub fn tokens(&self) -> Option<&Tokens<'a>> {
+        self.tokens
+            .get_or_init(|| self.sql.and_then(Tokens::scan))
+            .as_ref()
     }
 
     /// Whether references are being collected.
@@ -283,40 +298,40 @@ impl<'a> Resolver<'a> {
 
     /// The span of the (possibly qualified) name starting at `location`.
     pub fn name_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::reference_end)
+        self.span_to(location, Tokens::name_end)
     }
 
     /// The span of the (possibly qualified) type name starting at `location`, with all the words
     /// of multi-word types like `double precision`.
     pub fn type_name_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::type_name_end)
+        self.span_to(location, Tokens::type_name_end)
     }
 
     /// The span of the `*` or `t.*` starting at `location`.
     pub fn star_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::star_end)
+        self.span_to(location, Tokens::star_end)
     }
 
     /// The span of the operator token starting at `location`.
     pub fn operator_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::operator_end)
+        self.span_to(location, Tokens::operator_end)
     }
 
     pub fn cast_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::cast_end)
+        self.span_to(location, Tokens::cast_end)
     }
 
     /// The span of the string constant starting at `location`.
     pub fn literal_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, span::literal_end)
+        self.span_to(location, Tokens::literal_end)
     }
 
     /// The alias `alias` after the (possibly qualified) name starting at `location`: its location
     /// and span, if it is written there.
     pub fn alias_location(&self, location: i32, alias: &str) -> Option<(i32, TextRange)> {
         let sql = self.sql?;
-        let (start, end) = span::alias_span(sql, usize::try_from(location).ok()?)?;
-        if crate::identifier_name(&sql[start..end]) != alias {
+        let (start, end) = self.tokens()?.alias_span(usize::try_from(location).ok()?)?;
+        if crate::identifier_name(sql.get(start..end)?) != alias {
             return None;
         }
         Some((
@@ -348,18 +363,21 @@ impl<'a> Resolver<'a> {
 
     /// The span of the first token of an expression starting at `location`.
     pub fn expression_span(&self, location: i32) -> Option<TextRange> {
-        self.span_to(location, |sql, start| {
-            span::reference_end(sql, start).or_else(|| span::token_end(sql, start))
-        })
+        self.span_to(location, Tokens::expression_end)
     }
 
     fn span_to(
         &self,
         location: i32,
-        end_fn: fn(&str, usize) -> Option<usize>,
+        end_fn: fn(&Tokens<'a>, usize) -> Option<usize>,
     ) -> Option<TextRange> {
         let start = usize::try_from(location).ok()?;
-        let end = end_fn(self.sql?, start)?;
+        let end = end_fn(self.tokens()?, start)?;
+        debug_assert!(
+            self.sql
+                .is_some_and(|sql| start < end && sql.get(start..end).is_some()),
+            "span {start}..{end} outside the statement or not on character boundaries"
+        );
         Some(TextRange::new(
             TextSize::try_from(start).ok()?,
             TextSize::try_from(end).ok()?,

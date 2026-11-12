@@ -47,8 +47,8 @@ pub struct FixFileResult {
 
 /// The fixes of the lint diagnostics at `cursor`, and an action to suppress each of them.
 /// `diagnostics` are the lint diagnostics of `doc` that are not suppressed.
-pub(crate) fn lint_actions(
-    diagnostics: &[LinterDiagnostic],
+pub(crate) fn lint_actions<'a>(
+    diagnostics: impl IntoIterator<Item = &'a LinterDiagnostic>,
     doc: &Document,
     cursor: TextSize,
 ) -> Vec<CodeAction> {

@@ -4,13 +4,16 @@ use pgls_query::{
 };
 
 use super::{
-    Resolver, alias::rename_typed_columns, common_table_expr::resolve_common_table_expr,
+    Resolver,
+    alias::rename_typed_columns,
+    common_table_expr::{resolve_common_table_expr, search_cycle_columns},
     select_stmt::resolve_select_stmt,
 };
 use crate::resolve::{
     Reference, resolve_unknown_outputs,
     scope::{Cte, TypedColumns},
 };
+use crate::typing::TypedColumn;
 
 /// Resolves the CTEs of a WITH clause and brings them into scope. The query that owns the
 /// clause removes them again. Port of [`transformWithClause`].
@@ -43,6 +46,12 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
                 name: cte.ctename.clone(),
             });
         }
+        // SEARCH and CYCLE add columns after the CTE's own, also to its reference in the recursive
+        // term.
+        let added = search_cycle_columns(r, cte);
+        let with_added = |columns: Vec<TypedColumn>| -> Vec<TypedColumn> {
+            columns.into_iter().chain(added.iter().cloned()).collect()
+        };
         let non_recursive = if n.recursive {
             non_recursive_term_columns(r, cte)
         } else {
@@ -52,26 +61,29 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
         if let Some(Some(columns)) = &non_recursive
             && let Some(placeholder) = r.ctes.iter_mut().rev().find(|c| c.name == cte.ctename)
         {
+            let columns = with_added(columns.clone());
             placeholder.columns = Some(columns.iter().map(|c| c.name.clone()).collect());
-            placeholder.typed_columns = Some(columns.clone());
+            placeholder.typed_columns = Some(columns);
         }
 
-        let columns = resolve_common_table_expr(r, cte);
-        let typed_columns = if cte.search_clause.is_some() || cte.cycle_clause.is_some() {
-            None
-        } else {
-            // The column list renames the first columns ([`analyzeCTETargetList`]).
-            //
-            // [`analyzeCTETargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L571
-            let output = rename_typed_columns(
-                resolve_unknown_outputs(r.catalog, r.output.clone()),
-                &cte.aliascolnames,
-            );
-            match non_recursive {
-                Some(non_recursive) => recursive_cte_types(non_recursive, output),
-                None => output,
-            }
-        };
+        let columns = resolve_common_table_expr(r, cte).map(|columns| {
+            columns
+                .into_iter()
+                .chain(added.iter().map(|column| column.name.clone()))
+                .collect()
+        });
+        // The column list renames the first columns ([`analyzeCTETargetList`]).
+        //
+        // [`analyzeCTETargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L571
+        let output = rename_typed_columns(
+            resolve_unknown_outputs(r.catalog, r.output.clone()),
+            &cte.aliascolnames,
+        );
+        let typed_columns = match non_recursive {
+            Some(non_recursive) => recursive_cte_types(non_recursive, output),
+            None => output,
+        }
+        .map(with_added);
         let resolved = Cte {
             name: cte.ctename.clone(),
             columns,

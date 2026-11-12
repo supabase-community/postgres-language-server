@@ -1,17 +1,9 @@
-use pgls_query::{
-    NodeEnum,
-    protobuf::{DefElem, TransactionStmt, TransactionStmtKind, a_const},
-};
+use pgls_query::protobuf::{DefElem, TransactionStmt, TransactionStmtKind, a_const};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str};
+use super::prelude::*;
 
 pub(super) fn emit_transaction_stmt(e: &mut EventEmitter, n: &TransactionStmt) {
-    e.group_start(GroupKind::TransactionStmt);
+    e.group_start();
 
     let kind = n.kind();
 
@@ -116,7 +108,11 @@ fn emit_transaction_options(e: &mut EventEmitter, n: &TransactionStmt) {
             e.line(LineType::SoftOrSpace);
         }
 
-        let def_elem = assert_node_variant!(DefElem, option);
+        let Some(NodeEnum::DefElem(def_elem)) = option.node.as_ref() else {
+            emit_node(e, option);
+
+            continue;
+        };
         emit_transaction_option(e, def_elem);
     }
 }
@@ -156,7 +152,7 @@ fn emit_transaction_option(e: &mut EventEmitter, def: &DefElem) {
             }
         }
         _ => {
-            super::def_elem::emit_def_elem(e, def);
+            super::emit_def_elem(e, def);
         }
     }
 }

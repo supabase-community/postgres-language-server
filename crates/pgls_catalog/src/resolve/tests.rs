@@ -51,7 +51,7 @@ fn function(name: &str, kind: ProcKind, modes: &[&str], defaults: usize) -> Func
 }
 
 /// A database with a few builtins, the tables `users (id, name)` and `posts (id, user_id,
-/// title)`, and the composite type `address (street, city)`.
+/// title)`, the composite type `address (street, city)`, and the enum `mood`.
 fn database() -> Arc<CatalogBase> {
     const INT8: i64 = 20;
     const TEXT: i64 = 25;
@@ -89,6 +89,7 @@ fn database() -> Arc<CatalogBase> {
         "address",
         &[("street", TEXT), ("city", TEXT)],
     ));
+    types.push(type_(9004, "public", "mood", &[]));
 
     let tables = [(1, "users"), (2, "posts")]
         .into_iter()
@@ -126,6 +127,13 @@ fn database() -> Arc<CatalogBase> {
         ..Default::default()
     };
     Arc::new(CatalogBase::new(Arc::new(cache)))
+}
+
+/// [`database`] on a server of this version.
+fn database_of_version(version_num: i64) -> Arc<CatalogBase> {
+    let mut snapshot = database().snapshot().as_ref().clone();
+    snapshot.version.version_num = Some(version_num);
+    Arc::new(CatalogBase::new(Arc::new(snapshot)))
 }
 
 const SEARCH_PATH: &[&str] = &["public"];
@@ -334,6 +342,91 @@ fn ctes() {
 }
 
 #[test]
+fn search_and_cycle_add_columns_to_ctes() {
+    let cte = "with recursive c(n) as (select 1 union all select n + 1 from c where n < 2)";
+    assert_eq!(
+        findings(&format!(
+            "{cte} search depth first by n set ord select n, ord, nope from c"
+        )),
+        [unknown_column(None, "nope")]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{cte} cycle n set is_cycle using path select n, is_cycle, path, nope from c"
+        )),
+        [unknown_column(None, "nope")]
+    );
+    // The added columns come after the CTE's own, the sequence column first.
+    let parsed = pgls_query::parse(&format!(
+        "{cte} search breadth first by n set ord cycle n set is_cycle using path select * from c as x(a)"
+    ))
+    .expect("valid sql");
+    let query = pgls_query::protobuf::Node {
+        node: parsed.stmts().first().map(|node| (**node).clone()),
+    };
+    let catalog = Catalog::new(Some(database()));
+    assert_eq!(
+        crate::resolve::query_output_columns(&query, &catalog, &search_path()),
+        Some(vec![
+            "a".to_owned(),
+            "ord".to_owned(),
+            "is_cycle".to_owned(),
+            "path".to_owned()
+        ])
+    );
+}
+
+#[test]
+fn search_and_cycle_columns_have_types() {
+    let catalog = Catalog::new(Some(database()));
+    let types = |sql: &str| {
+        let parsed = pgls_query::parse(sql).expect("valid sql");
+        let query = pgls_query::protobuf::Node {
+            node: parsed.stmts().first().map(|node| (**node).clone()),
+        };
+        query_output_types(&query, &catalog, &search_path())
+            .expect("known columns")
+            .into_iter()
+            .map(|column| column.ty)
+            .collect::<Vec<_>>()
+    };
+    let named = |name| catalog.builtin_type(name).map(crate::typing::Type::Named);
+    let cte = "with recursive c(n) as (select 1 union all select n + 1 from c where n < 2)";
+    assert_eq!(
+        types(&format!(
+            "{cte} search breadth first by n set ord select ord from c"
+        )),
+        [named("record")]
+    );
+    assert_eq!(
+        types(&format!(
+            "{cte} search depth first by n set ord select ord from c"
+        )),
+        [named("_record")]
+    );
+    assert_eq!(
+        types(&format!(
+            "{cte} cycle n set is_cycle using path select is_cycle, path from c"
+        )),
+        [named("bool"), named("_record")]
+    );
+    assert_eq!(
+        types(&format!(
+            "{cte} cycle n set is_cycle to 'Y' default 'N' using path select is_cycle from c"
+        )),
+        [named("text")]
+    );
+    // The reference in the recursive term has the added columns too.
+    assert_eq!(
+        findings(
+            "with recursive c(n) as (select 1 union all select n + 1 from c where ord is not null) \
+             search depth first by n set ord select n from c"
+        ),
+        []
+    );
+}
+
+#[test]
 fn functions() {
     assert_eq!(
         findings("select nope()"),
@@ -477,6 +570,87 @@ fn generated_columns() {
         spans("update items set (price, total) = (1, default)"),
         [] as [&str; 0]
     );
+    // The actions of MERGE.
+    assert_eq!(
+        spans(
+            "merge into items i using src s on s.price = i.price \
+             when matched then update set total = s.total \
+             when not matched then insert (price, total) values (s.price, s.total)"
+        ),
+        ["total", "total"]
+    );
+    assert_eq!(
+        spans(
+            "merge into items i using src s on s.price = i.price \
+             when not matched then insert values (s.price, s.total)"
+        ),
+        ["s.total"]
+    );
+    assert_eq!(
+        spans(
+            "merge into items i using src s on s.price = i.price \
+             when matched then update set total = default \
+             when not matched then insert values (s.price, default) \
+             when not matched by source then delete"
+        ),
+        [] as [&str; 0]
+    );
+}
+
+#[test]
+fn identity_columns_in_merge() {
+    let setup = "create table users (id int generated always as identity, name text);
+        create table src (id int, name text)";
+    let spans = |sql: &str| {
+        resolve_after(setup, sql, None)
+            .findings
+            .into_iter()
+            .map(|finding| {
+                assert!(matches!(
+                    finding.kind,
+                    FindingKind::GeneratedColumnAssignment { identity: true, .. }
+                ));
+                sql[finding.span.unwrap()].to_owned()
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert (id, name) values (s.id, s.name)"
+        ),
+        ["id"]
+    );
+    // `OVERRIDING` doesn't apply to the UPDATE action.
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when matched then update set id = s.id \
+             when not matched then insert (id, name) overriding system value values (s.id, s.name)"
+        ),
+        ["id"]
+    );
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert (id, name) overriding user value values (s.id, s.name)"
+        ),
+        [] as [&str; 0]
+    );
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert (id, name) values (default, s.name)"
+        ),
+        [] as [&str; 0]
+    );
+    assert_eq!(
+        spans(
+            "merge into users u using src s on s.id = u.id \
+             when not matched then insert default values"
+        ),
+        [] as [&str; 0]
+    );
 }
 
 #[test]
@@ -493,6 +667,238 @@ fn updates_and_deletes() {
         findings("delete from users where nope = 1"),
         [unknown_column(None, "nope")]
     );
+}
+
+#[test]
+fn merge() {
+    let source = "merge into users u using posts p on p.user_id = u.id";
+    assert_valid(&format!(
+        "{source} when matched and p.title <> u.name then update set name = p.title \
+         when matched then delete \
+         when not matched by source and u.id > 0 then update set name = u.name \
+         when not matched by target and p.title is null then do nothing \
+         when not matched then insert (id, name) values (p.user_id, p.title)"
+    ));
+    assert_valid(&format!(
+        "{source} when not matched then insert default values"
+    ));
+    assert_valid(&format!(
+        "{source} when not matched then insert values (p.user_id, default)"
+    ));
+    // The target and the join condition.
+    assert_eq!(
+        findings("merge into nope using posts on true when matched then delete"),
+        [FindingKind::UnknownRelation {
+            schema: None,
+            name: "nope".into()
+        }]
+    );
+    assert_eq!(
+        findings("merge into users u using posts p on p.nope = u.id when matched then delete"),
+        [unknown_column(Some("p"), "nope")]
+    );
+    assert_eq!(
+        findings("merge into users using posts on id = 1 when matched then delete"),
+        [FindingKind::AmbiguousColumn {
+            column: "id".into(),
+            candidates: vec!["users".into(), "posts".into()],
+        }]
+    );
+    // UPDATE and INSERT target columns of the target.
+    assert_eq!(
+        findings(&format!("{source} when matched then update set nope = 1")),
+        [unknown_column(Some("u"), "nope")]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched then insert (nope) values (1)"
+        )),
+        [unknown_column(Some("u"), "nope")]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched then insert (id) values (1, 'x')"
+        )),
+        [FindingKind::InsertColumnMismatch {
+            expected: 1,
+            found: 2
+        }]
+    );
+    // `NOT MATCHED [BY TARGET]` only sees the source, `NOT MATCHED BY SOURCE` only the target.
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched then insert (id) values (u.id)"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "u".into() }]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched by source and p.id = 1 then delete"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "p".into() }]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{source} when not matched by source then update set name = title"
+        )),
+        [unknown_column(None, "title")]
+    );
+    // It hides only the top-level source: the items of a join without an alias stay reachable
+    // by name, but not for unqualified columns. A join alias hides them too.
+    let join = "merge into users u using posts p join posts p2 on p.id = p2.id on p.user_id = u.id";
+    assert_valid(&format!(
+        "{join} when not matched by source and p.id is null and p2.title is null then delete"
+    ));
+    assert_eq!(
+        findings(&format!(
+            "{join} when not matched by source and title is null then delete"
+        )),
+        [unknown_column(None, "title")]
+    );
+    let join = "merge into users u using (posts p join users x on p.user_id = x.id) j \
+                on j.user_id = u.id";
+    assert_eq!(
+        findings(&format!(
+            "{join} when not matched by source and j.title is null then delete"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "j".into() }]
+    );
+    assert_eq!(
+        findings(&format!(
+            "{join} when not matched by source and p.title is null then delete"
+        )),
+        [FindingKind::MissingFromClauseEntry { name: "p".into() }]
+    );
+    // A source subquery and a CTE.
+    assert_valid(
+        "with c as (select 1 as id) merge into users using c on c.id = users.id \
+         when not matched then insert (id) values (c.id)",
+    );
+    assert_eq!(
+        findings(
+            "merge into users using (select 1 as x) s on s.x = users.id \
+             when not matched then insert (id) values (s.nope)"
+        ),
+        [unknown_column(Some("s"), "nope")]
+    );
+    // RETURNING sees the source and the target, and `merge_action()`.
+    assert_valid(&format!(
+        "{source} when matched then delete returning merge_action(), p.title, u.name, old.id"
+    ));
+    assert_eq!(
+        findings(&format!("{source} when matched then delete returning nope")),
+        [unknown_column(None, "nope")]
+    );
+}
+
+/// Before Postgres 17, `merge_action()` is an ordinary function call, of any type.
+#[test]
+fn merge_action_is_a_function_call_before_postgres_17() {
+    let search_path = search_path();
+    let stmt = pgls_query::parse("select merge_action()")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    let node = pgls_query::protobuf::Node { node: Some(stmt) };
+    for (version, typed) in [(150000, false), (160000, false), (170000, true)] {
+        let catalog = Catalog::new(Some(database_of_version(version)));
+        let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+        assert_eq!(columns[0].ty.is_some(), typed, "{version}");
+    }
+}
+
+#[test]
+fn merge_returning_star_expands_the_source_first() {
+    let search_path = search_path();
+    let catalog = Catalog::new(Some(database()));
+    let stmt = pgls_query::parse(
+        "merge into users u using posts p on p.user_id = u.id when matched then delete returning *",
+    )
+    .unwrap()
+    .into_root()
+    .unwrap();
+    let node = pgls_query::protobuf::Node { node: Some(stmt) };
+    let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+    let names = columns.iter().map(|c| c.name.as_str()).collect::<Vec<_>>();
+    assert_eq!(names, ["id", "user_id", "title", "id", "name"]);
+}
+
+#[test]
+fn invalid_merge() {
+    let invalid = |error| [FindingKind::InvalidMerge(error)];
+    assert_eq!(
+        findings(
+            "with recursive c as (select 1 as id) merge into users using c on c.id = users.id \
+             when matched then delete"
+        ),
+        invalid(MergeError::RecursiveWith)
+    );
+    // Only the first unreachable clause, and only after one of the same kind.
+    assert_eq!(
+        findings(
+            "merge into users using posts on posts.user_id = users.id \
+             when not matched then do nothing when matched then delete \
+             when not matched and true then do nothing when matched then delete"
+        ),
+        invalid(MergeError::UnreachableWhen)
+    );
+    assert_valid(
+        "merge into users using posts on posts.user_id = users.id \
+         when matched and posts.id > 0 then delete when matched then do nothing \
+         when not matched by source then delete when not matched then do nothing",
+    );
+    // The names of the target and the source, aliased or not.
+    for sql in [
+        "merge into users using users on true when matched then delete",
+        "merge into users u using posts u on true when matched then delete",
+        "merge into users using (select 1 as id) users on true when matched then delete",
+        "merge into users using posts join posts p using (id) as users on true when matched then delete",
+        "merge into users using (posts join posts p using (id)) as users on true when matched then delete",
+    ] {
+        let name = if sql.contains(" u ") { "u" } else { "users" };
+        assert_eq!(
+            findings(sql),
+            invalid(MergeError::DuplicateName { name: name.into() }),
+            "{sql}"
+        );
+    }
+    assert_valid("merge into users u using users on true when matched then delete");
+    assert_valid("merge into users using (select 1 as id) on true when matched then delete");
+    // `merge_action()` is only allowed in the RETURNING list of MERGE and its subqueries.
+    assert_valid(
+        "merge into users using posts on true when matched then delete \
+         returning merge_action(), (select merge_action())",
+    );
+    for sql in [
+        "select merge_action()",
+        "update users set name = 'x' returning merge_action()",
+        "merge into users using posts on true when matched and merge_action() = 'x' then delete",
+        "merge into users using posts on true when matched then update set name = merge_action()",
+    ] {
+        assert_eq!(
+            findings(sql),
+            invalid(MergeError::MergeActionOutsideReturning),
+            "{sql}"
+        );
+    }
+    // Before Postgres 17, it is an ordinary function call, e.g. of `public.merge_action()`.
+    for version in [150000, 160000] {
+        let search_path = search_path();
+        let catalog = Catalog::new(Some(database_of_version(version)));
+        let stmt = pgls_query::parse("select merge_action()")
+            .unwrap()
+            .into_root()
+            .unwrap();
+        let resolution = resolve(ResolveParams {
+            stmt: &stmt,
+            catalog: &catalog,
+            search_path: &search_path,
+            function: None,
+            sql: None,
+            collect_references: false,
+        });
+        assert_eq!(resolution.findings, [], "{version}");
+    }
 }
 
 #[test]
@@ -853,6 +1259,10 @@ fn database_only() {
     assert!(database_only("", "create view v as select id from users"));
     assert!(database_only(
         "",
+        "merge into users using posts on posts.user_id = users.id when matched then delete"
+    ));
+    assert!(database_only(
+        "",
         "select count(*) from users join posts using (id)"
     ));
 
@@ -877,6 +1287,21 @@ fn database_only() {
     assert!(!database_only(
         "do $$ begin end $$",
         "select * from anything"
+    ));
+    // The database doesn't know the labels that the file adds to an enum or renames.
+    assert!(database_only("", "select 'happy'::mood"));
+    assert!(!database_only(
+        "alter type mood add value 'sad'",
+        "select 'sad'::mood"
+    ));
+    assert!(!database_only(
+        "alter type mood rename value 'happy' to 'glad'",
+        "select 'glad'::mood"
+    ));
+    assert!(!database_only(
+        "alter type mood add value 'sad'",
+        "merge into users u using posts p on u.id = p.user_id \
+         when matched then update set name = 'sad'::mood::text"
     ));
 }
 

@@ -4,9 +4,8 @@ use std::{
 };
 
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
-use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode, resolve::FunctionContext};
+use pgls_catalog::CatalogBase;
 use pgls_diagnostics::DiagnosticTags;
-use pgls_query_ext::function_body::{EmbeddedStatement, OffsetMap};
 use pgls_text_size::{TextRange, TextSize};
 pub use registry::visit_registry;
 
@@ -16,19 +15,22 @@ mod linter_context;
 mod linter_options;
 mod linter_registry;
 mod linter_rule;
-mod migration;
 pub mod options;
 mod registry;
+mod transaction_block;
 mod utils;
 
 // Re-export linter-specific types
-pub use linter_context::{AnalysedFileContext, FileKind, LinterRuleContext, StatementContext};
+pub use linter_context::{FileKind, LinterRuleContext, StatementContext};
 pub use linter_options::{LinterOptions, LinterRules, RuleOptions};
 pub use linter_registry::{
     LinterRegistryRuleParams, LinterRuleRegistry, LinterRuleRegistryBuilder,
 };
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
-pub use migration::{Direction, MigrationSection};
+pub use pgls_walk::{
+    AnalysableStatement, AnalysedFileContext, Direction, MigrationSection, UnparsableStatement,
+    WalkParams, is_plain_query, walk_statements,
+};
 
 pub static METADATA: LazyLock<MetadataRegistry> = LazyLock::new(|| {
     let mut metadata = MetadataRegistry::default();
@@ -74,82 +76,6 @@ pub fn replacement_of_removed_rule(name: &str) -> Option<&'static str> {
         .map(|(_, replacement)| *replacement)
 }
 
-#[derive(Debug)]
-pub struct AnalysableStatement {
-    pub root: pgls_query::NodeEnum,
-    pub range: TextRange,
-    /// The statement text, used for precise spans of typecheck findings.
-    pub sql: Option<String>,
-    /// Set when the statement is the body of a SQL function. Body statements are analysed, but
-    /// they don't change the catalog or the session.
-    pub function: Option<FunctionContext>,
-    /// Set when identifiers of the statement are client-side parameters, like psql's
-    /// `:schema.table`. The parsed names are placeholders, so the statement isn't typechecked.
-    pub has_identifier_parameters: bool,
-    /// Where the text of the statement is in the file, when it is embedded in another statement
-    /// and its text is not the source text, like a function body with escaped quotes.
-    pub offsets: OffsetMap,
-}
-
-impl AnalysableStatement {
-    pub fn new(root: pgls_query::NodeEnum, range: TextRange) -> Self {
-        Self {
-            root,
-            range,
-            sql: None,
-            function: None,
-            has_identifier_parameters: false,
-            offsets: OffsetMap::default(),
-        }
-    }
-
-    /// The statement `embedded`, like a statement of a SQL function body, in the statement that
-    /// starts at `parent_start` in the file. `root` is the parsed `embedded.sql`.
-    pub fn embedded(
-        root: pgls_query::NodeEnum,
-        parent_start: TextSize,
-        embedded: &EmbeddedStatement,
-    ) -> Self {
-        Self {
-            offsets: embedded.offsets.clone(),
-            ..Self::new(root, embedded.range + parent_start).with_sql(embedded.sql.as_str())
-        }
-    }
-
-    /// The range in the file of `range` in the statement text.
-    pub fn document_range(&self, range: TextRange) -> TextRange {
-        self.offsets.range_to_source(range) + self.range.start()
-    }
-
-    /// The offset in the file of `offset` in the statement text.
-    pub fn document_offset(&self, offset: TextSize) -> TextSize {
-        self.offsets.to_source(offset) + self.range.start()
-    }
-
-    /// The offset in the statement text of `offset` in the file, which is in the statement's
-    /// range.
-    pub fn statement_offset(&self, offset: TextSize) -> TextSize {
-        debug_assert!(self.range.contains_inclusive(offset));
-        self.offsets
-            .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())
-    }
-
-    pub fn with_sql(mut self, sql: impl Into<String>) -> Self {
-        self.sql = Some(sql.into());
-        self
-    }
-
-    pub fn with_function(mut self, function: Option<FunctionContext>) -> Self {
-        self.function = function;
-        self
-    }
-
-    pub fn with_identifier_parameters(mut self, has_identifier_parameters: bool) -> Self {
-        self.has_identifier_parameters = has_identifier_parameters;
-        self
-    }
-}
-
 #[derive(Default)]
 pub struct AnalyserParams {
     pub stmts: Vec<AnalysableStatement>,
@@ -172,13 +98,6 @@ pub struct AnalyserParams {
     pub source: Option<String>,
 }
 
-/// A top-level statement that doesn't parse, e.g. because it uses syntax of a newer Postgres.
-#[derive(Debug, Clone)]
-pub struct UnparsableStatement {
-    pub range: TextRange,
-    pub sql: String,
-}
-
 /// What the analyser learned about a single statement.
 #[derive(Debug, Clone)]
 pub struct StatementAnalysis {
@@ -188,6 +107,9 @@ pub struct StatementAnalysis {
     pub database_only: bool,
     /// `true` when a typecheck rule reported a diagnostic for this statement.
     pub has_typecheck_findings: bool,
+    /// `true` when `banDuplicateColumnAssignments` reported the statement. Postgres reports
+    /// the same assignments when it prepares the statement, without a position.
+    pub has_duplicate_assignments: bool,
     /// The explicit search path of the session at this statement.
     pub search_path: Vec<String>,
 }
@@ -220,13 +142,11 @@ impl<'a> Analyser<'a> {
     }
 
     /// Runs the rules statement by statement, while the catalog and the session follow the
-    /// effects of the statements.
+    /// effects of the statements, see [`walk_statements`].
     pub fn analyse(&self, params: AnalyserParams) -> AnalysisResult {
         let mut result = AnalysisResult::default();
 
         let mut typecheck = params.typecheck && params.catalog_base.is_some();
-        let roots: Vec<pgls_query::NodeEnum> =
-            params.stmts.iter().map(|s| s.root.clone()).collect();
         let file = params.source.as_deref().map(|source| FileText {
             source,
             stmts: params
@@ -250,184 +170,84 @@ impl<'a> Analyser<'a> {
             })
             .collect();
 
-        // The catalog after the up sections so far. A down section runs after its up section,
-        // and its changes don't carry into the next section.
-        let mut catalog = Catalog::new(params.catalog_base.clone());
-        let mut unparsable = params.unparsable.iter().peekable();
-        for unit in migration_units(&params.stmts, &params.sections) {
-            let is_down = unit
-                .section
-                .is_some_and(|section| section.direction == Direction::Down);
-            let unit_catalog = if is_down {
-                catalog.clone()
-            } else {
-                std::mem::replace(&mut catalog, Catalog::new(None))
+        let walk = WalkParams {
+            stmts: &params.stmts,
+            unparsable: &params.unparsable,
+            catalog_base: params.catalog_base.clone(),
+            search_path: &params.search_path,
+            sections: &params.sections,
+            end: TextSize::from(u32::MAX),
+            best_effort: false,
+        };
+        walk_statements(walk, |stmt, file_context| {
+            let root = &*stmt.root;
+            // The catalog can't follow statements on placeholder names, like `drop table :name`,
+            // so the rest of the file isn't typechecked.
+            if stmt.has_identifier_parameters && !is_plain_query(root) {
+                typecheck = false;
+            }
+            let typecheck_statement = typecheck && !stmt.has_identifier_parameters;
+
+            let statement =
+                StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
+            let mut has_typecheck_findings = false;
+            let mut has_duplicate_assignments = false;
+
+            let rule_params = LinterRegistryRuleParams {
+                root,
+                options: self.options,
+                analysed_file_context: file_context,
+                statement: &statement,
             };
-            // Each section runs in a session and transaction of its own.
-            let session = Session::new(params.search_path.clone()).with_transaction_mode(
-                unit.section
-                    .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-            );
-            let stmts = &params.stmts[unit.stmts.clone()];
-            // The last statement of the unit, including those that don't parse. The statements
-            // of a function body end within their `CREATE FUNCTION`.
-            let last = stmts
-                .iter()
-                .filter(|stmt| stmt.function.is_none())
-                .map(|stmt| (stmt.range, stmt.sql.as_deref()))
-                .chain(
-                    params
-                        .unparsable
-                        .iter()
-                        .filter(|skipped| unit.range.contains(skipped.range.start()))
-                        .map(|skipped| (skipped.range, Some(skipped.sql.as_str()))),
-                )
-                .max_by_key(|(range, _)| range.end());
-            let end = last.map_or(TextSize::default(), |(range, _)| range.end());
-            // Without the text of the last statement, assume that it ends with a semicolon. The
-            // fix guard below still checks the fixes that rely on it on the file.
-            let terminated = last
-                .and_then(|(_, sql)| sql)
-                .is_none_or(|sql| sql.trim_end().ends_with(';'));
-            // The statements the unit runs, including those that don't parse, but not those in
-            // function bodies.
-            let stmt_count = |range: TextRange| {
-                params.stmts[unit.stmts.clone()]
-                    .iter()
-                    .filter(|stmt| stmt.function.is_none() && range.contains(stmt.range.start()))
-                    .count()
-                    + params
-                        .unparsable
-                        .iter()
-                        .filter(|skipped| range.contains(skipped.range.start()))
-                        .count()
-            };
-            // Outside a transaction, the queries with more than one statement run in an implicit
-            // transaction block.
-            let implicit_blocks: Vec<TextRange> = unit
-                .section
-                .filter(|section| !section.transaction)
-                .map(|section| {
-                    section
-                        .queries
-                        .iter()
-                        .copied()
-                        .filter(|query| stmt_count(*query) > 1)
-                        .collect()
-                })
-                .unwrap_or_default();
-            let mut file_context =
-                AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
-                    .with_positions(
-                        stmts.iter().map(|stmt| stmt.range.start()).collect(),
-                        end,
-                        terminated,
-                    )
-                    .with_stmt_count(stmt_count(unit.range));
-            let mut implicit_block = None;
-
-            for (stmt, root) in params.stmts[unit.stmts.clone()]
-                .iter()
-                .zip(&roots[unit.stmts.clone()])
-            {
-                if stmt.function.is_none() {
-                    let block = implicit_blocks
-                        .iter()
-                        .position(|block| block.contains(stmt.range.start()));
-                    if block != implicit_block {
-                        if implicit_block.is_some() {
-                            file_context.end_implicit_block();
-                        }
-                        if block.is_some() {
-                            file_context.begin_implicit_block();
-                        }
-                        implicit_block = block;
-                    }
+            for rule in &rules {
+                if rule.group == TYPECHECK_GROUP && !typecheck_statement {
+                    continue;
                 }
-                while let Some(skipped) =
-                    unparsable.next_if(|skipped| skipped.range.start() < stmt.range.start())
-                {
-                    if may_change_catalog(&skipped.sql) {
-                        file_context.taint_catalog();
-                    }
-                }
-                // The catalog and session can't follow statements on placeholder names, like
-                // `drop table :name`, so the rest of the file isn't typechecked.
-                if stmt.has_identifier_parameters && !is_plain_query(root) {
-                    typecheck = false;
-                }
-                let typecheck_statement = typecheck && !stmt.has_identifier_parameters;
-
-                let statement =
-                    StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
-                let mut has_typecheck_findings = false;
-
-                let rule_params = LinterRegistryRuleParams {
-                    root,
-                    options: self.options,
-                    analysed_file_context: &file_context,
-                    statement: &statement,
-                };
-                for rule in &rules {
-                    if rule.group == TYPECHECK_GROUP && !typecheck_statement {
-                        continue;
-                    }
-                    let diagnostics = (rule.run)(&rule_params);
-                    has_typecheck_findings |=
-                        rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
-
-                    result
-                        .diagnostics
-                        .extend(diagnostics.into_iter().map(|mut diagnostic| {
-                            debug_assert_in_statement(&diagnostic, stmt);
-                            diagnostic.move_into_file(stmt);
-                            // Fixes are computed on the statement text, which only matches the
-                            // source if it is the source as written. A fix must keep the statement
-                            // valid.
-                            let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
-                                stmt.offsets.is_verbatim()
-                                    && TextSize::of(sql.as_str()) == stmt.range.len()
-                                    && diagnostic.fix.as_ref().is_none_or(|fix| {
-                                        keeps_sql_valid(fix, sql, stmt.range.start(), file.as_ref())
-                                    })
-                            });
-                            if !fix_is_valid {
-                                diagnostic.fix = None;
-                            }
-                            if let Some(fix) = &mut diagnostic.fix {
-                                fix.shift(stmt.range.start());
-                                diagnostic.tags |= DiagnosticTags::FIXABLE;
-                            }
-                            diagnostic
-                        }));
-                }
-
-                let database_only = typecheck_statement
-                    && statement
-                        .resolution(&file_context)
-                        .is_some_and(|resolution| resolution.database_only);
-
-                result.statements.push(StatementAnalysis {
-                    range: stmt.range,
-                    database_only,
-                    has_typecheck_findings,
-                    search_path: file_context.session().search_path().to_vec(),
+                let diagnostics = (rule.run)(&rule_params);
+                has_typecheck_findings |= rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
+                has_duplicate_assignments |= diagnostics.iter().any(|diagnostic| {
+                    diagnostic.category
+                        == pgls_diagnostics::category!("lint/banDuplicateColumnAssignments")
                 });
 
-                file_context.next(stmt.function.is_none());
+                result
+                    .diagnostics
+                    .extend(diagnostics.into_iter().map(|mut diagnostic| {
+                        debug_assert_in_statement(&diagnostic, stmt);
+                        diagnostic.move_into_file(stmt);
+                        // Fixes are computed on the statement text, which only matches the source
+                        // if it is the source as written. A fix must keep the statement valid.
+                        let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
+                            stmt.offsets.is_verbatim()
+                                && TextSize::of(sql.as_str()) == stmt.range.len()
+                                && diagnostic.fix.as_ref().is_none_or(|fix| {
+                                    keeps_sql_valid(fix, sql, stmt.range.start(), file.as_ref())
+                                })
+                        });
+                        if !fix_is_valid {
+                            diagnostic.fix = None;
+                        }
+                        if let Some(fix) = &mut diagnostic.fix {
+                            fix.shift(stmt.range.start());
+                            diagnostic.tags |= DiagnosticTags::FIXABLE;
+                        }
+                        diagnostic
+                    }));
             }
 
-            while let Some(skipped) =
-                unparsable.next_if(|skipped| skipped.range.start() < unit.range.end())
-            {
-                if may_change_catalog(&skipped.sql) {
-                    file_context.taint_catalog();
-                }
-            }
-            if !is_down {
-                catalog = file_context.into_catalog();
-            }
-        }
+            let database_only = typecheck_statement
+                && statement
+                    .resolution(file_context)
+                    .is_some_and(|resolution| resolution.database_only);
+
+            result.statements.push(StatementAnalysis {
+                range: stmt.range,
+                database_only,
+                has_typecheck_findings,
+                has_duplicate_assignments,
+                search_path: file_context.session().search_path().to_vec(),
+            });
+        });
 
         result
     }
@@ -517,108 +337,6 @@ fn debug_assert_in_statement(diagnostic: &LinterDiagnostic, stmt: &AnalysableSta
     }
 }
 
-/// Statements that run together: those before the first section marker, then each section.
-struct MigrationUnit<'a> {
-    section: Option<&'a MigrationSection>,
-    /// The indices of the statements.
-    stmts: Range<usize>,
-    range: TextRange,
-}
-
-fn migration_units<'a>(
-    stmts: &[AnalysableStatement],
-    sections: &'a [MigrationSection],
-) -> Vec<MigrationUnit<'a>> {
-    let before_sections = sections
-        .first()
-        .map_or(TextSize::from(u32::MAX), |section| section.range.start());
-    let ranges = std::iter::once((None, TextRange::up_to(before_sections))).chain(
-        sections
-            .iter()
-            .map(|section| (Some(section), section.range)),
-    );
-
-    let mut first = 0;
-    ranges
-        .map(|(section, range)| {
-            let last =
-                first + stmts[first..].partition_point(|stmt| stmt.range.start() < range.end());
-            let unit = MigrationUnit {
-                section,
-                stmts: first..last,
-                range,
-            };
-            first = last;
-            unit
-        })
-        .collect()
-}
-
-/// Whether a statement that doesn't parse may have changed the catalog. Queries, `COPY`,
-/// maintenance, cursors, prepared statements, comments and privileges can't create, drop or
-/// rename objects, unless they are `SELECT ... INTO` or `EXPLAIN ANALYZE CREATE TABLE AS`. For
-/// anything else we can't tell.
-pub fn may_change_catalog(sql: &str) -> bool {
-    use pgls_query::protobuf::Token;
-    let Ok(scan) = pgls_query::scan(sql) else {
-        return true;
-    };
-    let mut tokens = scan
-        .tokens
-        .iter()
-        .map(|token| token.token())
-        .filter(|token| !matches!(token, Token::SqlComment | Token::CComment | Token::Ascii40));
-    match tokens.next() {
-        Some(
-            Token::Insert
-            | Token::Update
-            | Token::DeleteP
-            | Token::Merge
-            | Token::Copy
-            | Token::Analyse
-            | Token::Analyze
-            | Token::Vacuum
-            | Token::Reindex
-            | Token::Cluster
-            | Token::Checkpoint
-            | Token::LockP
-            | Token::Listen
-            | Token::Notify
-            | Token::Unlisten
-            | Token::Show
-            | Token::Declare
-            | Token::Fetch
-            | Token::Move
-            | Token::Close
-            | Token::Prepare
-            | Token::Execute
-            | Token::Deallocate
-            | Token::Comment
-            | Token::Grant
-            | Token::Revoke,
-        ) => false,
-        Some(Token::Select | Token::With | Token::Values | Token::Table | Token::Explain) => {
-            tokens.any(|token| matches!(token, Token::Into | Token::Create))
-        }
-        _ => true,
-    }
-}
-
-/// Whether the statement only reads or writes rows, without changing the catalog or the
-/// session.
-pub fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
-    use pgls_query::NodeEnum;
-    match root {
-        NodeEnum::SelectStmt(select) => select.into_clause.is_none(),
-        NodeEnum::InsertStmt(_)
-        | NodeEnum::UpdateStmt(_)
-        | NodeEnum::DeleteStmt(_)
-        | NodeEnum::MergeStmt(_) => true,
-        _ => false,
-    }
-}
-
-/// Runs a single rule on a statement and returns the text each diagnostic points at.
 #[cfg(test)]
 pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
     let rule_filter = pgls_analyse::RuleFilter::Rule(group, rule);
@@ -793,6 +511,36 @@ mod tests {
         // Before the semicolon of the last statement. Without the placeholders converted, the
         // text wouldn't parse without the fix either, and the fix would be kept.
         assert!(!valid(source.len() - 1, "\ncommit"));
+    }
+
+    /// The workspace drops Postgres' error for the statements that `banDuplicateColumnAssignments`
+    /// reported, which has no position.
+    #[test]
+    fn statements_with_duplicate_assignments_are_marked() {
+        let rule_filter = RuleFilter::Rule("correctness", "banDuplicateColumnAssignments");
+        let options = LinterOptions::default();
+        let analyser = Analyser::new(crate::AnalyserConfig {
+            options: &options,
+            filter: AnalysisFilter {
+                enabled_rules: Some(slice::from_ref(&rule_filter)),
+                ..Default::default()
+            },
+        });
+        let marked = |sql: &str| {
+            let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+            let range = TextRange::new(0.into(), u32::try_from(sql.len()).unwrap().into());
+            let result = analyser.analyse(crate::AnalyserParams {
+                stmts: vec![AnalysableStatement::new(ast, range)],
+                ..Default::default()
+            });
+            result.statements[0].has_duplicate_assignments
+        };
+        assert!(marked(
+            "merge into users u using imports i on u.id = i.id \
+             when matched then update set name = i.name, name = 'again'"
+        ));
+        assert!(marked("update users set name = 'a', name = 'b'"));
+        assert!(!marked("update users set name = 'a', id = 1"));
     }
 
     #[ignore]

@@ -1447,7 +1447,7 @@ mod typing_overlay_tests {
             .ty
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn created_table_columns_have_type_identities(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;
@@ -1459,6 +1459,7 @@ mod typing_overlay_tests {
              create table typed (
                i int, b bigint, t text, v varchar(10), n numeric(5,2), z timestamptz,
                a int[], aa int[][], s serial, bs bigserial, ss smallserial,
+               s2 serial2, s4 serial4, s8 serial8,
                m mood, d positive_int, p pair
              );
              create table typed_copy (like typed);
@@ -1479,6 +1480,9 @@ mod typing_overlay_tests {
             ("s", "int4"),
             ("bs", "int8"),
             ("ss", "int2"),
+            ("s2", "int2"),
+            ("s4", "int4"),
+            ("s8", "int8"),
         ];
         for (column, pg_type) in expected {
             assert_eq!(
@@ -1550,7 +1554,7 @@ mod typing_overlay_tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn undeterminable_polymorphic_results_are_not_created(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;
@@ -1578,7 +1582,7 @@ mod typing_overlay_tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn overload_mutations_keep_signature_identity_and_invalidation(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;
@@ -1626,7 +1630,7 @@ mod typing_overlay_tests {
         assert!(out[0].signature.as_ref().unwrap().return_type.is_none());
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn derived_columns_and_ddl_invalidation_are_typed(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;

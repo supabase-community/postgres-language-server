@@ -33,7 +33,7 @@ lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━
 
   × REINDEX INDEX cannot run inside a transaction block.
   
-  i Run REINDEX INDEX outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  i Run REINDEX INDEX outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
   
 
 
@@ -41,7 +41,7 @@ lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━
 
   × REINDEX INDEX cannot run inside a transaction block.
   
-  i Run REINDEX INDEX outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  i Run REINDEX INDEX outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
   
 
 
@@ -49,4 +49,4 @@ lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━
 
   × REINDEX INDEX cannot run inside a transaction block.
   
-  i Run REINDEX INDEX outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  i Run REINDEX INDEX outside of a transaction block, e.g. in a migration of its own that runs without a transaction.

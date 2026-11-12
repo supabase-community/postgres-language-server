@@ -1,10 +1,9 @@
 use pgls_query::protobuf::RangeSubselect;
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
+use super::prelude::*;
 
 pub(super) fn emit_range_subselect(e: &mut EventEmitter, n: &RangeSubselect) {
-    e.group_start(GroupKind::RangeSubselect);
+    e.group_start();
 
     if n.lateral {
         e.token(TokenKind::LATERAL_KW);
@@ -15,7 +14,7 @@ pub(super) fn emit_range_subselect(e: &mut EventEmitter, n: &RangeSubselect) {
     e.line(LineType::Soft);
     e.indent_start();
     if let Some(ref subquery) = n.subquery {
-        super::emit_node(subquery, e);
+        emit_node(e, subquery);
     }
     e.indent_end();
     e.line(LineType::Soft);

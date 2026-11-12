@@ -12,11 +12,15 @@ Most column type changes require an exclusive lock on the table while the entire
 table is rewritten. This can take a long time for large tables and will block
 reads and writes.
 
-Some type changes are safe and don't require a table rewrite:
+A type change doesn't rewrite the table when the old type is binary coercible to the new
+one, like `varchar` to `text`, or when the column keeps its type and only drops a type
+modifier, like `numeric(10,2)` to `numeric`. A `USING` clause other than the column itself
+rewrites the table. The old type comes from the database and the statements before; when
+it isn't known, only changes to these types count as safe:
 
-- Changing to `text` (binary compatible with varchar/char types)
-- Changing to `varchar` without a length limit
-- Dropping a `numeric` precision constraint (e.g., `numeric(10,2)` to `numeric`)
+- `text`
+- `varchar` without a length limit
+- `numeric` without a precision
 
 Changing the type of a virtual generated column (Postgres 18) doesn't rewrite the table
 either: its values are computed when rows are read.

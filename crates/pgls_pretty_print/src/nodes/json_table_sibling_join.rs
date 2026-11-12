@@ -1,24 +1,25 @@
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::JsonTableSiblingJoin;
 
-pub(super) fn emit_json_table_sibling_join(e: &mut EventEmitter, n: &JsonTableSiblingJoin) {
-    e.group_start(GroupKind::JsonTableSiblingJoin);
+use super::prelude::*;
 
-    super::emit_identifier(e, "jsonsiblingjoin");
+pub(super) fn emit_json_table_sibling_join(e: &mut EventEmitter, n: &JsonTableSiblingJoin) {
+    e.group_start();
+
+    emit_identifier(e, "jsonsiblingjoin");
 
     if let Some(plan) = n.plan.as_ref() {
         e.line(LineType::SoftOrSpace);
-        super::emit_node(plan, e);
+        emit_node(e, plan);
     }
 
     if let Some(left) = n.lplan.as_ref() {
         e.line(LineType::SoftOrSpace);
-        super::emit_node(left, e);
+        emit_node(e, left);
     }
 
     if let Some(right) = n.rplan.as_ref() {
         e.line(LineType::SoftOrSpace);
-        super::emit_node(right, e);
+        emit_node(e, right);
     }
 
     e.group_end();

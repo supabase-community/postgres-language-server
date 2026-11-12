@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/avoidWideLockWindow
+-- The name of the column is a psql variable, but the table is known, so its lock is held.
+ALTER TABLE users ADD COLUMN :"column" TEXT;
+ALTER TABLE orders ADD COLUMN total NUMERIC;
+
+```
+
+# Diagnostics
+lint/avoidWideLockWindow ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Acquiring a lock on public.orders while already holding ACCESS EXCLUSIVE locks on other tables.
+  
+  i This widens the lock window. Split into separate transactions to minimize lock duration.

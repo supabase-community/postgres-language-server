@@ -1,0 +1,35 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- Postgres doesn't nest transaction blocks: one COMMIT ends the block, also after a second
+-- BEGIN or a savepoint. PREPARE TRANSACTION ends it too.
+-- section: up transaction:false queries:separate
+begin;
+begin;
+commit;
+vacuum users;
+begin;
+savepoint a;
+commit;
+vacuum users;
+begin;
+prepare transaction 'tx';
+vacuum users;
+-- COMMIT AND CHAIN opens the next transaction block right away.
+begin;
+commit and chain;
+-- expect_lint/banNonTransactionalStatementInTransaction
+vacuum users;
+commit;
+
+```
+
+# Diagnostics
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × VACUUM cannot run inside a transaction block.
+  
+  i Run VACUUM outside of a transaction block, e.g. in a migration of its own that runs without a transaction.

@@ -1,0 +1,6 @@
+-- Other transactions can't see a table created earlier in the transaction.
+-- expect_no_diagnostics
+BEGIN;
+CREATE TABLE orders (id bigint, user_id bigint);
+ALTER TABLE orders ADD CONSTRAINT orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id);
+COMMIT;

@@ -480,6 +480,28 @@ impl Catalog {
         );
     }
 
+    /// Applies `change` to a type and marks it as changed by the file, so that its uses are no
+    /// longer checked against the database. Postgres rejects changes to the types of system
+    /// catalogs, which are left as they are.
+    pub(super) fn change_type(
+        &mut self,
+        name: &QualifiedName,
+        search_path: &[String],
+        change: impl FnOnce(&Self, &mut TypeInfo),
+    ) {
+        let Some(mut type_info) = self
+            .type_(name.schema(), &name.name, search_path)
+            .found()
+            .filter(|type_info| type_info.schema != "pg_catalog")
+        else {
+            return;
+        };
+        change(self, &mut type_info);
+        type_info.origin = Origin::File;
+        let key = key(&type_info.schema, &type_info.name);
+        self.types.insert(key, Entry::Defined(type_info));
+    }
+
     /// Moves a type to a new schema or name.
     pub(super) fn move_type(
         &mut self,
@@ -647,22 +669,24 @@ pub(super) fn column_info(
     column: &protobuf::ColumnDef,
     search_path: &[String],
 ) -> ColumnInfo {
-    let type_id = column
-        .type_name
-        .as_ref()
-        .and_then(|name| crate::normalize_type_name(catalog, name, search_path).0)
-        .or_else(|| {
-            // Serial pseudo-types are rewritten to integer columns by PostgreSQL, but they
-            // are not pg_type entries and therefore cannot be normalized by name lookup.
-            let internal_name = match column.type_name.as_ref().and_then(type_label).as_deref() {
-                Some("serial") => "int4",
-                Some("bigserial") => "int8",
-                Some("smallserial") => "int2",
-                _ => return None,
-            };
-            catalog.builtin_type(internal_name)
-        });
-    let type_name = column.type_name.as_ref().and_then(type_label);
+    // Postgres checks for the serial pseudo-types before it looks the name up, and turns them
+    // into integer columns. They aren't types, so a lookup wouldn't find them.
+    let (type_name, type_id) = match column.type_name.as_ref() {
+        Some(name) => match crate::serial_type(name) {
+            Some(serial) => {
+                let integer_type = serial.integer_type();
+                (
+                    Some(integer_type.to_owned()),
+                    catalog.builtin_type(integer_type),
+                )
+            }
+            None => (
+                type_label(name),
+                crate::normalize_type_name(catalog, name, search_path).0,
+            ),
+        },
+        None => (None, None),
+    };
     let (generated, identity) = column_kinds(column);
     ColumnInfo {
         generated,

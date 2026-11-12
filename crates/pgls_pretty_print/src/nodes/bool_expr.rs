@@ -1,31 +1,43 @@
 use pgls_query::protobuf::{BoolExpr, BoolExprType};
-use pgls_query::{Node, NodeEnum};
 
-use crate::{
-    LogicalOperatorPlacement, TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use crate::LogicalOperatorPlacement;
+
+use super::prelude::*;
 
 pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
-    e.group_start(GroupKind::BoolExpr);
-
-    match n.boolop() {
-        BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
-        BoolExprType::OrExpr => emit_variadic_bool_expr(e, n, TokenKind::OR_KW),
-        BoolExprType::NotExpr => emit_not_expr(e, n),
-        BoolExprType::Undefined => unreachable!("Undefined BoolExprType"),
-    }
-
-    e.expression_group_end();
+    emit_bool_expr_as(e, n, OperandGroup::Own);
 }
 
-/// Emits an AND or OR chain in the enclosing group instead of a group of its own, so that its
-/// operands go on their own lines whenever that group breaks.
-pub(super) fn emit_bool_expr_in_enclosing_group(e: &mut EventEmitter, n: &BoolExpr) {
-    match n.boolop() {
-        BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
-        BoolExprType::OrExpr => emit_variadic_bool_expr(e, n, TokenKind::OR_KW),
-        _ => emit_bool_expr(e, n),
+/// Which group the operands of an AND or OR chain break with.
+#[derive(Clone, Copy)]
+pub(super) enum OperandGroup {
+    /// A group of the chain's own.
+    Own,
+    /// The enclosing group, so that the operands go on their own lines whenever it breaks. A NOT
+    /// keeps a group of its own.
+    Enclosing,
+}
+
+pub(super) fn emit_bool_expr_as(e: &mut EventEmitter, n: &BoolExpr, group: OperandGroup) {
+    match (group, n.boolop()) {
+        (OperandGroup::Enclosing, BoolExprType::AndExpr) => {
+            emit_variadic_bool_expr(e, n, TokenKind::AND_KW)
+        }
+        (OperandGroup::Enclosing, BoolExprType::OrExpr) => {
+            emit_variadic_bool_expr(e, n, TokenKind::OR_KW)
+        }
+        _ => {
+            e.group_start();
+
+            match n.boolop() {
+                BoolExprType::AndExpr => emit_variadic_bool_expr(e, n, TokenKind::AND_KW),
+                BoolExprType::OrExpr => emit_variadic_bool_expr(e, n, TokenKind::OR_KW),
+                BoolExprType::NotExpr => emit_not_expr(e, n),
+                BoolExprType::Undefined => {}
+            }
+
+            e.expression_group_end();
+        }
     }
 }
 
@@ -53,7 +65,7 @@ fn emit_variadic_operands(
         if let Some(NodeEnum::BoolExpr(nested)) = arg.node.as_ref()
             && nested.boolop() == parent_kind
         {
-            super::emit_with_comments_at(e, nested.location, |e| {
+            emit_with_comments_at(e, nested.location, |e| {
                 emit_variadic_operands(e, nested, keyword, is_first);
             });
             continue;
@@ -64,14 +76,14 @@ fn emit_variadic_operands(
                 if let Some(location) = arg
                     .node
                     .as_ref()
-                    .and_then(crate::comments::first_node_location)
+                    .and_then(|node| crate::comments::first_node_location(node.to_ref()))
                 {
                     e.take_own_line_leading_comments_at(location);
                 }
                 // The break opportunity sits before the keyword, so a broken condition reads
                 // "\n\tAND b = 2" while a single line one still reads "a = 1 AND b = 2".
                 if matches!(e.config().layout, crate::Layout::Expanded) {
-                    super::emit_layout_break(e);
+                    emit_layout_break(e);
                 } else {
                     e.line(LineType::SoftOrSpace);
                 }
@@ -81,7 +93,7 @@ fn emit_variadic_operands(
                 e.space();
                 e.token(keyword.clone());
                 if matches!(e.config().layout, crate::Layout::Expanded) {
-                    super::emit_layout_break(e);
+                    emit_layout_break(e);
                 } else {
                     e.line(LineType::SoftOrSpace);
                 }
@@ -96,13 +108,6 @@ fn emit_variadic_operands(
 fn emit_not_expr(e: &mut EventEmitter, n: &BoolExpr) {
     e.token(TokenKind::NOT_KW);
 
-    if n.args.len() != 1 {
-        panic!(
-            "NOT expressions should have exactly one argument, got {}",
-            n.args.len()
-        );
-    }
-
     if let Some(arg) = n.args.first() {
         e.space();
         emit_bool_operand(e, arg, BoolExprType::NotExpr);
@@ -111,42 +116,21 @@ fn emit_not_expr(e: &mut EventEmitter, n: &BoolExpr) {
 
 fn emit_bool_operand(e: &mut EventEmitter, node: &Node, parent_kind: BoolExprType) {
     e.with_leading_comment_line_break(|e| {
-        if needs_parentheses(node, parent_kind) {
+        if needs_parentheses(node, Position::BoolOperand(parent_kind)) {
             // The parentheses get their own group so that `or (a and b)` stays on one line when it
             // fits, even after the enclosing chain broke. Once it breaks, the operands go on their
             // own lines, indented, and the closing parenthesis returns to the operand's indent.
-            e.group_start(GroupKind::BoolExpr);
+            e.group_start();
             e.token(TokenKind::L_PAREN);
             e.indent_start();
             e.line(LineType::Soft);
-            super::emit_node(node, e);
+            emit_node(e, node);
             e.indent_end();
             e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
             e.group_end();
         } else {
-            super::emit_node(node, e);
+            emit_node(e, node);
         }
     });
-}
-
-/// Whether an operand is wrapped in parentheses: a weaker operator always needs them, and an AND
-/// inside an OR keeps them for readability, although AND already binds tighter.
-fn needs_parentheses(node: &Node, parent_kind: BoolExprType) -> bool {
-    match node.node.as_ref() {
-        Some(NodeEnum::BoolExpr(child)) => {
-            bool_precedence(child.boolop()) < bool_precedence(parent_kind)
-                || (parent_kind == BoolExprType::OrExpr && child.boolop() == BoolExprType::AndExpr)
-        }
-        _ => false,
-    }
-}
-
-fn bool_precedence(kind: BoolExprType) -> u8 {
-    match kind {
-        BoolExprType::NotExpr => 3,
-        BoolExprType::AndExpr => 2,
-        BoolExprType::OrExpr => 1,
-        BoolExprType::Undefined => 0,
-    }
 }

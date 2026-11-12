@@ -4,12 +4,20 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, RwLock},
+    sync::{
+        Arc, Mutex, RwLock,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 #[cfg(feature = "db")]
-use crate::features::code_actions::execute_statement::execution;
+use crate::features::code_actions::execute_statement::{
+    execution,
+    running::{RUNNING_STATEMENTS_MAX, RunningStatements},
+};
 use analyser::AnalyserVisitorBuilder;
+#[cfg(feature = "db")]
+use analysis::DocumentAnalysis;
 #[cfg(feature = "db")]
 use async_helper::run_async;
 #[cfg(feature = "db")]
@@ -17,28 +25,22 @@ use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
 use document::{Document, ExecuteStatementMapper};
+use document_cache::CacheKey;
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
-#[cfg(feature = "db")]
-use pg_query::convert_to_positional_params_with_metadata;
-use pgls_analyse::{AnalysisFilter, RuleCategories, RuleCategoriesBuilder, RuleFilter};
-#[cfg(feature = "db")]
-use pgls_analyser::StatementAnalysis;
-use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection,
-};
+use pgls_analyse::{AnalysisFilter, RuleCategories};
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
-use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
+use pgls_catalog::{Catalog, CatalogBase, Origin, Session};
+#[cfg(feature = "db")]
+use pgls_lexer::convert_to_positional_params_with_metadata;
+use pgls_walk::{AnalysableStatement, MigrationSection, WalkParams};
 
 use pgls_catalog::Snapshot;
-use pgls_configuration::RuleSelector;
 use pgls_configuration::inlay_hints::ParameterNameHints;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -48,7 +50,6 @@ use tracing::{debug, info};
 
 use crate::{
     WorkspaceError,
-    configuration::to_analyser_rules,
     features::{
         code_actions::{
             self, CodeAction, CodeActionsParams, CodeActionsResult, ExecuteStatementParams,
@@ -78,6 +79,7 @@ use super::{
 pub use statement_identifier::StatementId;
 
 mod analyser;
+mod analysis;
 #[cfg(feature = "db")]
 mod async_helper;
 #[cfg(feature = "db")]
@@ -88,18 +90,19 @@ use crate::settings::DatabaseSettings;
 use connection_key::ConnectionKey;
 #[cfg(feature = "db")]
 mod connection_manager;
+#[cfg(feature = "db")]
+pub(crate) use connection_manager::DatabasePools;
 pub(crate) mod document;
+mod document_cache;
 mod formatting;
 #[cfg(feature = "db")]
 mod last_used;
 mod migration;
-mod pg_query;
 #[cfg(feature = "db")]
 mod pgpass;
 mod snapshot_manager;
 mod sql_function;
 mod statement_identifier;
-mod tree_sitter;
 
 pub struct WorkspaceServer {
     /// global settings object for this workspace
@@ -116,8 +119,15 @@ pub struct WorkspaceServer {
     /// The last snapshot built for completions and hover
     snapshot_before: Mutex<Option<SnapshotBefore>>,
 
+    /// Incremented whenever the settings change, see [`CacheKey`].
+    settings_version: AtomicU64,
+
     #[cfg(feature = "db")]
     connection: ConnectionManager,
+
+    /// The statements that are being executed, to cancel them
+    #[cfg(feature = "db")]
+    running_statements: RunningStatements,
 }
 
 /// A database snapshot with the changes of the statements before a statement.
@@ -153,7 +163,9 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
+            settings_version: AtomicU64::default(),
             connection: ConnectionManager::new(),
+            running_statements: RunningStatements::default(),
         }
     }
 
@@ -166,6 +178,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
+            settings_version: AtomicU64::default(),
         }
     }
 
@@ -175,7 +188,39 @@ impl WorkspaceServer {
     }
 
     fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut<'_> {
-        WorkspaceSettingsHandleMut::new(&self.settings)
+        let handle = WorkspaceSettingsHandleMut::new(&self.settings);
+        // While the settings are locked, so that nothing is cached with the old settings under
+        // the new version.
+        self.settings_version.fetch_add(1, Ordering::Relaxed);
+        handle
+    }
+
+    /// The database snapshot of the database in `settings`, if it is reachable or a snapshot was
+    /// loaded from JSON.
+    fn database_snapshot(&self, settings: &Settings) -> Option<Arc<Snapshot>> {
+        #[cfg(feature = "db")]
+        let snapshot = self
+            .connection
+            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+            .and_then(Result::ok);
+
+        #[cfg(not(feature = "db"))]
+        let snapshot = {
+            let _ = settings;
+            self.snapshot.get()
+        };
+
+        snapshot
+    }
+
+    /// What the caches of a document of `project_key` depend on besides its text, when the
+    /// analysis starts from `snapshot`.
+    fn cache_key(&self, project_key: ProjectKey, snapshot: Option<&Arc<Snapshot>>) -> CacheKey {
+        CacheKey::new(
+            self.settings_version.load(Ordering::Relaxed),
+            project_key,
+            snapshot.map(|snapshot| self.catalog_base(snapshot)),
+        )
     }
 
     /// Load schema from JSON string.
@@ -235,130 +280,6 @@ impl WorkspaceServer {
         settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
     }
 
-    /// Whether the file is a migration. Migration-only rules don't run on other files.
-    fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
-        match settings
-            .migrations
-            .as_ref()
-            .and_then(|migrations| migrations.path.as_ref())
-        {
-            Some(migrations_dir) if migration::is_in_migrations_dir(path, migrations_dir) => {
-                FileKind::Migration
-            }
-            Some(_) => FileKind::Other,
-            None => FileKind::Unknown,
-        }
-    }
-
-    /// Runs the lint and typecheck rules on a document. Returns the analysis, the syntax errors
-    /// of the statements, the disabled rules, and the migration sections that are not linted.
-    fn analyse_document(
-        &self,
-        settings: &Settings,
-        path: &PgLSPath,
-        doc: &Document,
-        categories: RuleCategories,
-        only: &[RuleSelector],
-        skip: &[RuleSelector],
-    ) -> (
-        AnalysisResult,
-        Vec<SyntaxDiagnostic>,
-        Vec<RuleFilter<'static>>,
-        Vec<TextRange>,
-    ) {
-        #[cfg(feature = "db")]
-        let snapshot = self
-            .connection
-            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
-            .and_then(Result::ok);
-
-        #[cfg(not(feature = "db"))]
-        let snapshot = self.snapshot.get();
-
-        /*
-         * Static analysis: the lint rules, and the typecheck rules when a database schema is
-         * available. The catalog starts from the database schema and follows the DDL of the
-         * file.
-         */
-        let typecheck = settings.typecheck.enabled && snapshot.is_some();
-        let search_path = match snapshot.as_deref() {
-            Some(snapshot) => snapshot.expand_search_path(&settings.typecheck.search_path),
-            None => settings.typecheck.search_path.clone(),
-        };
-        let catalog_base = snapshot
-            .as_ref()
-            .map(|snapshot| self.catalog_base(snapshot));
-
-        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
-            .with_linter_rules(only, skip)
-            .finish();
-
-        let options = LinterOptions {
-            rules: to_analyser_rules(settings),
-        };
-
-        let filter = AnalysisFilter {
-            categories,
-            enabled_rules: Some(enabled_rules.as_slice()),
-            disabled_rules: &disabled_rules,
-        };
-
-        let analyser = Analyser::new(AnalyserConfig {
-            options: &options,
-            filter,
-        });
-
-        /*
-         * Migration tools like dbmate and goose put the up and the down migration in one file.
-         * Each section is analysed as a migration of its own, and the down sections are only
-         * checked with `lintDown`. Syntax errors are reported everywhere.
-         */
-        let sections = document_sections(settings, doc);
-        let skipped_sections: Vec<TextRange> = sections
-            .iter()
-            .filter(|section| {
-                section.direction == Direction::Down
-                    && settings
-                        .migrations
-                        .as_ref()
-                        .is_some_and(|migrations| !migrations.lint_down)
-            })
-            .map(|section| section.range)
-            .collect();
-        let is_skipped = |range: TextRange| {
-            skipped_sections
-                .iter()
-                .any(|section| section.contains(range.start()))
-        };
-
-        let mut analysable_stmts = vec![];
-        let mut syntax_diagnostics = vec![];
-        let mut unparsable = vec![];
-        for (stmt, diagnostic, unparsable_stmt) in doc.iter(AnalyserDiagnosticsMapper) {
-            analysable_stmts.extend(stmt.filter(|stmt| !is_skipped(stmt.range)));
-            syntax_diagnostics.extend(diagnostic);
-            unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
-        }
-
-        let analysis = analyser.analyse(AnalyserParams {
-            stmts: analysable_stmts,
-            unparsable,
-            catalog_base,
-            search_path,
-            file_kind: self.file_kind(settings, path.as_path()),
-            sections,
-            typecheck,
-            source: Some(doc.get_document_content().to_owned()),
-        });
-
-        (
-            analysis,
-            syntax_diagnostics,
-            disabled_rules,
-            skipped_sections,
-        )
-    }
-
     /// The refactors offered at `position`: expanding a `*` into its columns. `settings` are the
     /// ones of the file.
     fn refactor_code_actions(
@@ -396,44 +317,17 @@ impl WorkspaceServer {
             .collect()
     }
 
-    /// The lint diagnostics of a document that are not suppressed.
-    fn lint_diagnostics(
-        &self,
-        settings: &Settings,
-        path: &PgLSPath,
-        doc: &Document,
-        only: &[RuleSelector],
-        skip: &[RuleSelector],
-    ) -> Vec<LinterDiagnostic> {
-        let (analysis, _, _, _) = self.analyse_document(
-            settings,
-            path,
-            doc,
-            RuleCategoriesBuilder::default().all().build(),
-            only,
-            skip,
-        );
-        let suppressions = doc.suppressions();
-        analysis
-            .diagnostics
-            .into_iter()
-            .filter(|diagnostic| !suppressions.is_suppressed(diagnostic))
-            .collect()
-    }
-
-    /// Walks the statements of `doc` that start before `end` like the analyser does: the catalog
-    /// and the session follow the statements, so that each statement sees the objects created
-    /// earlier in the file. Each migration section gets a session of its own, and the changes of
-    /// a down section don't carry into the next section. `visit` gets every parsed statement with
-    /// the catalog and the session as they are before it. `settings` are the ones of the file.
-    /// Returns the catalog after the walked statements.
+    /// Walks the statements of `doc` that start before `end` like the analyser does, see
+    /// [`pgls_walk::walk_statements`]. `visit` gets every parsed statement, except those with
+    /// identifier parameters, with the catalog and the session as they are before it. `settings`
+    /// are the ones of the file. Returns the catalog as a statement at `end` sees it.
     fn walk_statements(
         &self,
         settings: Option<&Settings>,
         doc: &Document,
         snapshot: &Arc<Snapshot>,
         end: TextSize,
-        mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
+        mut visit: impl FnMut(&AnalysableStatement, &Catalog, &Session),
     ) -> Catalog {
         let (search_path, sections) = settings
             .map(|settings| {
@@ -443,69 +337,43 @@ impl WorkspaceServer {
                 )
             })
             .unwrap_or_default();
-        let search_path = snapshot.expand_search_path(&search_path);
-        let new_session = |section: Option<&MigrationSection>| {
-            Session::new(search_path.clone()).with_transaction_mode(
-                section.map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-            )
-        };
-
-        // Editor features show what names most likely refer to, so a `DO` block or a statement
-        // that doesn't parse doesn't turn them off for the rest of the file.
-        let mut catalog = Catalog::new(Some(self.catalog_base(snapshot))).best_effort();
-        let mut session = new_session(None);
-        let mut section: Option<&MigrationSection> = None;
-        // The catalog after the up sections so far, while walking a down section.
-        let mut up_catalog: Option<Catalog> = None;
-        for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
-            let Some(start) = stmt.as_ref().map(|stmt| stmt.range.start()).or_else(|| {
-                unparsable
-                    .as_ref()
-                    .map(|unparsable| unparsable.range.start())
-            }) else {
+        let mut stmts = Vec::new();
+        let mut unparsable = Vec::new();
+        for (stmt, _, skipped) in doc.iter(AnalyserDiagnosticsMapper) {
+            let Some(start) = stmt
+                .as_ref()
+                .map(|stmt| stmt.range.start())
+                .or_else(|| skipped.as_ref().map(|skipped| skipped.range.start()))
+            else {
                 continue;
             };
             if start >= end {
                 break;
             }
-            let current = sections
-                .iter()
-                .find(|section| section.range.contains(start));
-            if current != section {
-                if let Some(up_catalog) = up_catalog.take() {
-                    catalog = up_catalog;
-                }
-                if current.is_some_and(|section| section.direction == Direction::Down) {
-                    up_catalog = Some(catalog.clone());
-                }
-                session = new_session(current);
-                section = current;
-            }
-
-            if let Some(unparsable) = unparsable {
-                if pgls_analyser::may_change_catalog(&unparsable.sql) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            let Some(stmt) = stmt else {
-                continue;
-            };
-            // The names of statements with identifier parameters like `:name` are placeholders.
-            if stmt.has_identifier_parameters {
-                if !pgls_analyser::is_plain_query(&stmt.root) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            visit(&stmt, &catalog, &session);
-            // Statements in the bodies of SQL functions are not executed.
-            if stmt.function.is_none() {
-                catalog.apply(&stmt.root, session.search_path());
-                session.apply(&stmt.root, &catalog);
-            }
+            stmts.extend(stmt);
+            unparsable.extend(skipped);
         }
-        catalog
+
+        pgls_walk::walk_statements(
+            WalkParams {
+                stmts: &stmts,
+                unparsable: &unparsable,
+                catalog_base: Some(self.catalog_base(snapshot)),
+                search_path: &snapshot.expand_search_path(&search_path),
+                sections: &sections,
+                end,
+                // Editor features show what names most likely refer to, so a `DO` block or a
+                // statement that doesn't parse doesn't turn them off for the rest of the file.
+                best_effort: true,
+            },
+            |stmt, file_context| {
+                // The names of statements with identifier parameters like `:name` are
+                // placeholders.
+                if !stmt.has_identifier_parameters {
+                    visit(stmt, file_context.catalog(), file_context.session());
+                }
+            },
+        )
     }
 
     /// For hover on the statement `id` at `range`: the references whose span contains
@@ -693,8 +561,7 @@ impl WorkspaceServer {
         settings: &Settings,
         path: &PgLSPath,
         doc: &Document,
-        statements: &[StatementAnalysis],
-        skipped_sections: &[TextRange],
+        analysis: &DocumentAnalysis,
     ) -> Result<(Vec<SDiagnostic>, Vec<TextRange>), WorkspaceError> {
         let typecheck_enabled = settings.typecheck.enabled;
         let plpgsql_check = settings.plpgsql_check.clone();
@@ -706,13 +573,10 @@ impl WorkspaceServer {
             let snapshot = self.snapshot.load(pool)?;
             let input = doc
                 .iter(TypecheckDiagnosticsMapper)
-                .filter(|(_, range, ..)| {
-                    !skipped_sections
-                        .iter()
-                        .any(|section| section.contains(range.start()))
-                })
+                .filter(|(_, range, ..)| !analysis.is_skipped(range.start()))
                 .map(|(id, range, ast, cst)| {
-                    let statement = statements
+                    let statement = analysis
+                        .statements()
                         .iter()
                         .find(|statement| statement.range == range)
                         .cloned();
@@ -755,6 +619,8 @@ impl WorkspaceServer {
                                         snapshot: snapshot.as_ref(),
                                         search_path: &statement.search_path,
                                         identifiers: Vec::new(),
+                                        duplicate_assignments_reported: statement
+                                            .has_duplicate_assignments,
                                     })
                                     .await?;
 
@@ -1099,10 +965,23 @@ impl Workspace for WorkspaceServer {
 
         let mut actions = Vec::new();
         if let Some(settings) = settings {
-            let diagnostics =
-                self.lint_diagnostics(settings, &params.path, parser, &params.only, &params.skip);
+            // Editors request code actions whenever the cursor moves. Without a rule selection,
+            // this is the analysis that the diagnostics of the last edit cached.
+            let analysis = self.analyse_document(
+                params.project_key,
+                settings,
+                &params.path,
+                parser,
+                RuleCategories::all(),
+                &params.only,
+                &params.skip,
+            );
+            let suppressions = parser.suppressions();
             actions.extend(code_actions::lint::lint_actions(
-                &diagnostics,
+                analysis
+                    .lint_diagnostics()
+                    .iter()
+                    .filter(|diagnostic| !suppressions.is_suppressed(*diagnostic)),
                 parser,
                 params.cursor_position,
             ));
@@ -1160,7 +1039,16 @@ impl Workspace for WorkspaceServer {
             &params.path,
             code,
             params.fix_file_mode,
-            |doc| self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip),
+            |doc| {
+                self.lint_diagnostics(
+                    params.project_key,
+                    settings,
+                    &params.path,
+                    doc,
+                    &params.only,
+                    &params.skip,
+                )
+            },
         ))
     }
 
@@ -1175,7 +1063,9 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        let stmt = parser.find(params.statement_id.clone(), ExecuteStatementMapper);
+        // Files can change while the statement runs.
+        drop(documents);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
@@ -1186,35 +1076,69 @@ impl Workspace for WorkspaceServer {
 
         let (_id, range, content, ast) = stmt.unwrap();
 
-        if ast.is_none() {
+        let Some(ast) = ast else {
             return Ok(ExecuteStatementResult {
                 message: "Statement is invalid.".into(),
                 ..Default::default()
             });
         };
 
+        if let Some(message) = execution::refusal(&ast) {
+            return Ok(ExecuteStatementResult {
+                message,
+                ..Default::default()
+            });
+        }
+
         let settings = self.workspaces();
         let no_connection = ExecuteStatementResult {
             message: "No database connection available.".into(),
             ..Default::default()
         };
-        let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
+        let Some(db) = settings
+            .settings_for(params.project_key, params.path.as_path())
+            .map(|settings| settings.db.clone())
         else {
             return Ok(no_connection);
         };
+        // The settings can change while the statement runs.
+        drop(settings);
 
-        if let Some(reason) = settings.db.statement_execution_disabled_reason() {
+        if let Some(reason) = db.statement_execution_disabled_reason() {
             return Ok(ExecuteStatementResult {
                 message: reason,
                 ..Default::default()
             });
         }
 
-        let Some(result) = self.connection.with_pools(&settings.db, |pools| {
-            let pool = pools.statement_pool.clone();
-            run_async(async move { execution::execute_statement(&pool, &content).await })?
-                .map_err(WorkspaceError::from)
-        }) else {
+        let options = execution::ExecuteOptions {
+            is_query: execution::is_query(&ast),
+            timeout: db.statement_timeout,
+        };
+        let Some((_running, cancelled)) = self.running_statements.start(&params) else {
+            return Ok(ExecuteStatementResult {
+                message: format!(
+                    "{RUNNING_STATEMENTS_MAX} statements are already running. Wait for one to finish, or cancel it."
+                ),
+                ..Default::default()
+            });
+        };
+
+        let result = self.connection.with_pools(&db, |pools| {
+            let statement_pools = pools.clone();
+            let result = run_async(async move {
+                execution::execute_statement(&statement_pools, &content, options, cancelled).await
+            })?
+            .map_err(WorkspaceError::from)?;
+
+            // Diagnostics, completions and hover should see the objects the statement created.
+            if result.error.is_none() && execution::may_change_schema(&ast) {
+                self.snapshot.clear_connection(&pools.pool);
+            }
+            Ok(result)
+        });
+
+        let Some(result) = result else {
             return Ok(no_connection);
         };
 
@@ -1240,6 +1164,24 @@ impl Workspace for WorkspaceServer {
             message: "Statement execution requires database support.".into(),
             ..Default::default()
         })
+    }
+
+    #[cfg(feature = "db")]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        self.running_statements.cancel(&params);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "db"))]
+    #[allow(unused_variables)]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        Ok(())
     }
 
     #[cfg(feature = "db")]
@@ -1306,20 +1248,15 @@ impl Workspace for WorkspaceServer {
             );
         }
 
-        let (analysis, syntax_diagnostics, disabled_rules, skipped_sections) = self
-            .analyse_document(
-                settings,
-                &params.path,
-                doc,
-                params.categories,
-                &params.only,
-                &params.skip,
-            );
-        let is_skipped = |range: TextRange| {
-            skipped_sections
-                .iter()
-                .any(|section| section.contains(range.start()))
-        };
+        let analysis = self.analyse_document(
+            params.project_key,
+            settings,
+            &params.path,
+            doc,
+            params.categories,
+            &params.only,
+            &params.skip,
+        );
 
         /*
          * Checks against the database: statements that reference only objects that exist
@@ -1328,20 +1265,15 @@ impl Workspace for WorkspaceServer {
          */
         #[cfg(feature = "db")]
         let plpgsql_checked = {
-            let (db_diagnostics, plpgsql_checked) = self.database_diagnostics(
-                settings,
-                &params.path,
-                doc,
-                &analysis.statements,
-                &skipped_sections,
-            )?;
+            let (db_diagnostics, plpgsql_checked) =
+                self.database_diagnostics(settings, &params.path, doc, &analysis)?;
             diagnostics.extend(db_diagnostics);
             plpgsql_checked
         };
         #[cfg(not(feature = "db"))]
         let plpgsql_checked: Vec<TextRange> = Vec::new();
 
-        for diagnostic in syntax_diagnostics {
+        for diagnostic in analysis.syntax_diagnostics() {
             // Ignore the syntax error if we already have more specialized diagnostics for the
             // same statement, e.g. from plpgsql_check for CREATE FUNCTION statements.
             let covered = diagnostics.iter().any(|d| {
@@ -1362,34 +1294,42 @@ impl Workspace for WorkspaceServer {
             if !covered && !checked {
                 diagnostics.push(SDiagnostic::new(
                     diagnostic
+                        .clone()
                         .with_file_path(path.clone())
                         .with_severity(Severity::Error),
                 ));
             }
         }
 
-        diagnostics.extend(analysis.diagnostics.into_iter().map(Error::from).map(|d| {
-            let severity = d
-                .category()
-                .and_then(|category| settings.get_severity_from_rule_code(category))
-                .unwrap_or(Severity::Warning);
+        diagnostics.extend(
+            analysis
+                .lint_diagnostics()
+                .iter()
+                .cloned()
+                .map(Error::from)
+                .map(|d| {
+                    let severity = d
+                        .category()
+                        .and_then(|category| settings.get_severity_from_rule_code(category))
+                        .unwrap_or(Severity::Warning);
 
-            let span = d.location().span;
-            SDiagnostic::new(
-                d.with_file_path(path.clone())
-                    .with_file_span(span)
-                    .with_severity(severity),
-            )
-        }));
+                    let span = d.location().span;
+                    SDiagnostic::new(
+                        d.with_file_path(path.clone())
+                            .with_file_span(span)
+                            .with_severity(severity),
+                    )
+                }),
+        );
 
         let suppressions = doc.suppressions();
 
         let disabled_suppression_errors =
-            suppressions.get_disabled_diagnostic_suppressions_as_errors(&disabled_rules);
+            suppressions.get_disabled_diagnostic_suppressions_as_errors(analysis.disabled_rules());
 
         let mut unused_suppression_errors =
             suppressions.get_unused_suppressions_as_errors(&diagnostics);
-        unused_suppression_errors.retain(|error| !is_skipped(error.span));
+        unused_suppression_errors.retain(|error| !analysis.is_skipped(error.span.start()));
 
         let suppression_errors: Vec<Error> = suppressions
             .diagnostics

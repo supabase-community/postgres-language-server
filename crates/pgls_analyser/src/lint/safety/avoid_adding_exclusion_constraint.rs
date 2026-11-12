@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, cmd_def};
+use crate::utils::{added_constraints, altered_relation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -11,7 +11,8 @@ declare_lint_rule! {
     /// and writes while held. Unlike other constraints, there is no concurrent alternative.
     /// Use `SET lock_timeout` to limit the impact on concurrent operations.
     ///
-    /// This also applies to exclusion constraints defined inline in `CREATE TABLE`.
+    /// Exclusion constraints in `CREATE TABLE` are not reported: the new table is empty, and no
+    /// other session can use it before the transaction commits.
     ///
     /// ## Examples
     ///
@@ -41,33 +42,18 @@ impl LinterRule for AvoidAddingExclusionConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut diagnostics = vec![];
-
-        match &ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(_) => {
-                for cmd in alter_table_cmds(ctx.stmt()) {
-                    if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddConstraint
-                        && let Some(pgls_query::NodeEnum::Constraint(constraint)) = cmd_def(cmd)
-                        && constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
-                    {
-                        diagnostics.push(exclusion_diagnostic());
-                    }
-                }
-            }
-            pgls_query::NodeEnum::CreateStmt(stmt) => {
-                for constraint_node in &stmt.constraints {
-                    if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
-                        &constraint_node.node
-                        && constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
-                    {
-                        diagnostics.push(exclusion_diagnostic());
-                    }
-                }
-            }
-            _ => {}
+        // Other transactions can't see a table created earlier in the transaction, so its
+        // lock blocks no one.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
         }
-
-        diagnostics
+        // An exclusion constraint is always a table constraint, never inline on a column.
+        added_constraints(ctx.stmt())
+            .filter(|(constraint, _)| {
+                constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
+            })
+            .map(|_| exclusion_diagnostic())
+            .collect()
     }
 }
 
