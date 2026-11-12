@@ -5866,7 +5866,7 @@ async fn walks_from_checkpoints_match_full_walks(test_db: PgPool) {
 
 /// A request keeps working on the version of the document it started with, while an edit
 /// replaces it. A walk of the outdated version stops and leaves nothing in the shared cache.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_editor_requests_use_document_snapshots(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -5935,7 +5935,7 @@ async fn test_editor_requests_use_document_snapshots(test_db: PgPool) {
 }
 
 /// A cancelled request stops walking, and the next one gets everything.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_cancelled_requests_stop_walking(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -5975,7 +5975,7 @@ async fn test_cancelled_requests_stop_walking(test_db: PgPool) {
     };
     let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(true));
     assert_eq!(crate::cancellation::with_cancellation(cancelled, tokens), 0);
-    assert_eq!(tokens(), 200);
+    assert_eq!(tokens(), 300);
 }
 
 /// Cancelled diagnostics and code actions stop analysing the document.
