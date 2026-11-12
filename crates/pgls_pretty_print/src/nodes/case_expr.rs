@@ -62,6 +62,7 @@ fn emit_case(e: &mut EventEmitter, n: &CaseExpr, branches: BranchPlacement) {
         emit_case_result(e, defresult);
     }
 
+    e.take_comments_before_case_end_at(n.location);
     e.indent_end();
     emit_layout_break(e);
     e.token(TokenKind::END_KW);

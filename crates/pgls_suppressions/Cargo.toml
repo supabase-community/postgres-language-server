@@ -15,6 +15,7 @@ version              = "0.0.0"
 pgls_analyse     = { workspace = true }
 pgls_analyser    = { workspace = true }
 pgls_diagnostics = { workspace = true }
+pgls_line_index  = { workspace = true }
 pgls_text_size   = { workspace = true }
 tracing          = { workspace = true }
 

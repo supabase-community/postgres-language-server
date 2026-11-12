@@ -1,9 +1,9 @@
-use crate::{
-    LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::is_reindex_concurrent,
-};
+use crate::utils::{alter_table_cmds, detaches_concurrently};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::options::is_reindex_concurrent;
 
 declare_lint_rule! {
     /// Concurrent index operations are not allowed within a transaction.
@@ -91,17 +91,7 @@ fn concurrent_statement(stmt: &pgls_query::NodeEnum) -> Option<&'static str> {
         NodeEnum::IndexStmt(stmt) if stmt.concurrent => Some("CREATE INDEX CONCURRENTLY"),
         NodeEnum::DropStmt(stmt) if stmt.concurrent => Some("DROP INDEX CONCURRENTLY"),
         NodeEnum::ReindexStmt(stmt) if is_reindex_concurrent(stmt) => Some("REINDEX CONCURRENTLY"),
-        NodeEnum::AlterTableStmt(stmt)
-            if stmt.cmds.iter().any(|cmd| {
-                matches!(
-                    &cmd.node,
-                    Some(NodeEnum::AlterTableCmd(cmd)) if matches!(
-                        cmd.def.as_ref().and_then(|def| def.node.as_ref()),
-                        Some(NodeEnum::PartitionCmd(partition)) if partition.concurrent
-                    )
-                )
-            }) =>
-        {
+        NodeEnum::AlterTableStmt(_) if alter_table_cmds(stmt).any(detaches_concurrently) => {
             Some("DETACH PARTITION CONCURRENTLY")
         }
         _ => None,

@@ -1,5 +1,6 @@
 use pgls_query::protobuf::AlterDomainStmt;
 
+use super::constraint::emit_domain_constraint;
 use super::prelude::*;
 
 pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) {
@@ -57,7 +58,12 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             e.token(TokenKind::ADD_KW);
             if let Some(ref def) = n.def {
                 e.space();
-                emit_node(e, def);
+                match &def.node {
+                    Some(NodeEnum::Constraint(constraint)) => {
+                        emit_domain_constraint(e, constraint);
+                    }
+                    _ => emit_node(e, def),
+                }
             }
         }
         "X" => {
