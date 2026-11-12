@@ -1,8 +1,6 @@
-use crate::{
-    LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::is_reindex_concurrent,
-};
+use crate::transaction_block::{non_transactional_statement, transaction_block_diagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
 declare_lint_rule! {
@@ -42,68 +40,10 @@ impl LinterRule for BanConcurrentIndexCreationInTransaction {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(statement) = concurrent_statement(ctx.stmt()) else {
-            return vec![];
-        };
-
-        if ctx.function().is_some() {
-            return vec![
-                LinterDiagnostic::new(
-                    rule_category!(),
-                    None,
-                    markup! {
-                        {statement}" cannot be executed from a function."
-                    },
-                )
-                .detail(
-                    None,
-                    "The statements of a function run in the transaction of the statement that calls it. Run the statement outside of the function.",
-                ),
-            ];
-        }
-
-        if !ctx.in_transaction() {
-            return vec![];
-        }
-        let diagnostic = LinterDiagnostic::new(
-                rule_category!(),
-                None,
-                markup! {
-                    {statement}" cannot be used inside a transaction block."
-                }
-            ).detail(None, format!("Run {statement} outside of a transaction. Migration tools usually run in transactions, so you may need to run this statement in its own migration or manually."));
-        let diagnostic = if ctx.session().in_implicit_block()
-            && ctx.session().transaction_depth() == 0
-        {
-            diagnostic.note("The migration tool sends the statements to Postgres as one query, and Postgres runs a query with more than one statement in a transaction block. Put the statement in a section of its own.")
-        } else {
-            diagnostic
-        };
-        vec![diagnostic]
-    }
-}
-
-/// The statement, if it is one that Postgres can't run in a transaction block because of
-/// `CONCURRENTLY`.
-fn concurrent_statement(stmt: &pgls_query::NodeEnum) -> Option<&'static str> {
-    use pgls_query::NodeEnum;
-    match stmt {
-        NodeEnum::IndexStmt(stmt) if stmt.concurrent => Some("CREATE INDEX CONCURRENTLY"),
-        NodeEnum::DropStmt(stmt) if stmt.concurrent => Some("DROP INDEX CONCURRENTLY"),
-        NodeEnum::ReindexStmt(stmt) if is_reindex_concurrent(stmt) => Some("REINDEX CONCURRENTLY"),
-        NodeEnum::AlterTableStmt(stmt)
-            if stmt.cmds.iter().any(|cmd| {
-                matches!(
-                    &cmd.node,
-                    Some(NodeEnum::AlterTableCmd(cmd)) if matches!(
-                        cmd.def.as_ref().and_then(|def| def.node.as_ref()),
-                        Some(NodeEnum::PartitionCmd(partition)) if partition.concurrent
-                    )
-                )
-            }) =>
-        {
-            Some("DETACH PARTITION CONCURRENTLY")
-        }
-        _ => None,
+        non_transactional_statement(ctx)
+            .filter(|statement| statement.concurrently)
+            .and_then(|statement| transaction_block_diagnostic(ctx, rule_category!(), statement))
+            .into_iter()
+            .collect()
     }
 }

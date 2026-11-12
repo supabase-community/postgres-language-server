@@ -1,12 +1,9 @@
 use pgls_query::protobuf::CallStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_call_stmt(e: &mut EventEmitter, n: &CallStmt) {
-    e.group_start(GroupKind::CallStmt);
+    e.group_start();
 
     e.token(TokenKind::CALL_KW);
 
@@ -16,6 +13,5 @@ pub(super) fn emit_call_stmt(e: &mut EventEmitter, n: &CallStmt) {
         super::emit_func_call(e, funccall);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

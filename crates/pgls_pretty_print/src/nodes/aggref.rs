@@ -1,16 +1,12 @@
-use pgls_query::protobuf::{Aggref, Node};
+use pgls_query::protobuf::Aggref;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
-};
+use super::prelude::*;
 
 /// Emit an Aggref (planner aggregate function node)
 /// These are internal planner representations with function OIDs
 /// We emit a simple fallback representation
 pub(super) fn emit_aggref(e: &mut EventEmitter, n: &Aggref) {
-    e.group_start(GroupKind::Aggref);
+    e.group_start();
 
     // Aggref is the planner's representation of aggregate functions
     // Without access to pg_proc, we emit a placeholder with the OID
@@ -44,7 +40,7 @@ pub(super) fn emit_aggref(e: &mut EventEmitter, n: &Aggref) {
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        emit_comma_separated_list(e, &n.aggorder, super::emit_node);
+        emit_comma_separated_list(e, &n.aggorder, emit_node);
     }
 
     if let Some(ref filter) = n.aggfilter {
@@ -53,7 +49,7 @@ pub(super) fn emit_aggref(e: &mut EventEmitter, n: &Aggref) {
         e.space();
         e.token(TokenKind::L_PAREN);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, filter);
+        emit_clause_condition(e, filter);
         e.token(TokenKind::R_PAREN);
     }
 
@@ -66,7 +62,7 @@ fn emit_node_sequence(e: &mut EventEmitter, nodes: &[Node], mut emitted_any: boo
             e.token(TokenKind::COMMA);
             e.line(LineType::SoftOrSpace);
         }
-        super::emit_node(node, e);
+        emit_node(e, node);
         emitted_any = true;
     }
 

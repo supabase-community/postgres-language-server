@@ -40,6 +40,7 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
         position: sanitized_params.position,
         text: &sanitized_params.text,
         tree: &sanitized_params.tree,
+        server_version_num: sanitized_params.schema.version.version_num,
     });
 
     let mut builder = CompletionBuilder::new(&ctx);

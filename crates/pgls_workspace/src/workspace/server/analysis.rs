@@ -185,6 +185,7 @@ impl WorkspaceServer {
             file_kind: self.file_kind(settings, path.as_path()),
             sections,
             typecheck,
+            source: Some(doc.get_document_content().to_owned()),
         });
 
         DocumentAnalysis {

@@ -1,8 +1,13 @@
+// plpgsql_check reports on functions from the client, so a panic on unexpected output takes down
+// the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 mod diagnostics;
 
 pub use diagnostics::PlPgSqlCheckDiagnostic;
 use diagnostics::create_diagnostics_from_check_result;
 use pgls_query::protobuf::CreateFunctionStmt;
+use pgls_query_ext::utils::{QualifiedName, find_option_value, qualified_name};
 use regex::Regex;
 use serde::Deserialize;
 pub use sqlx::postgres::PgSeverity;
@@ -68,9 +73,7 @@ fn should_check_function<'a>(
         _ => return None,
     };
 
-    if pgls_query_ext::utils::find_option_value(create_fn, "language")
-        != Some("plpgsql".to_string())
-    {
+    if find_option_value(create_fn, "language") != Some("plpgsql") {
         return None;
     }
 
@@ -92,8 +95,12 @@ fn is_trigger_function(create_fn: &CreateFunctionStmt) -> bool {
         .as_ref()
         .map(|n| {
             matches!(
-                pgls_query_ext::utils::parse_name(&n.names),
-                Some((None, name)) if name == "trigger"
+                qualified_name(&n.names),
+                Some(QualifiedName {
+                    schema: None,
+                    name: "trigger",
+                    ..
+                })
             )
         })
         .unwrap_or(false)
@@ -102,7 +109,7 @@ fn is_trigger_function(create_fn: &CreateFunctionStmt) -> bool {
 /// build the function identifier string used by plpgsql_check
 fn build_function_identifier(
     create_fn: &CreateFunctionStmt,
-    fn_schema: &Option<String>,
+    fn_schema: Option<&str>,
     fn_name: &str,
 ) -> String {
     let args = create_fn
@@ -114,12 +121,13 @@ fn build_function_identifier(
                 _ => return None,
             };
             let type_name_node = node.arg_type.as_ref()?;
-            let type_name = match pgls_query_ext::utils::parse_name(&type_name_node.names) {
-                Some((schema, name)) => match schema {
-                    Some(s) => format!("{s}.{name}"),
-                    None => name,
-                },
-                None => return None,
+            let type_name = match qualified_name(&type_name_node.names)? {
+                QualifiedName {
+                    schema: Some(schema),
+                    name,
+                    ..
+                } => format!("{schema}.{name}"),
+                QualifiedName { name, .. } => name.to_owned(),
             };
 
             if !type_name_node.array_bounds.is_empty() {
@@ -200,18 +208,22 @@ pub async fn check_plpgsql(
         None => return Ok(None),
     };
 
-    let (fn_schema, fn_name) = match pgls_query_ext::utils::parse_name(&create_fn.funcname) {
-        Some(n) => n,
-        None => return Ok(None),
+    let Some(QualifiedName {
+        schema: fn_schema,
+        name: fn_name,
+        ..
+    }) = qualified_name(&create_fn.funcname)
+    else {
+        return Ok(None);
     };
 
-    let fn_identifier = build_function_identifier(create_fn, &fn_schema, &fn_name);
+    let fn_identifier = build_function_identifier(create_fn, fn_schema, fn_name);
 
-    let fn_body = pgls_query_ext::utils::find_option_value(create_fn, "as")
+    let fn_body = find_option_value(create_fn, "as")
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body".to_string()))?;
     let offset = params
         .sql
-        .find(&fn_body)
+        .find(fn_body)
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body in SQL".to_string()))?;
     let is_trigger = is_trigger_function(create_fn);
 
@@ -227,6 +239,10 @@ pub async fn check_plpgsql(
 
     // make sure we run with "or replace"
     let sql_with_replace = if !create_fn.replace {
+        #[expect(
+            clippy::unwrap_used,
+            reason = "the pattern is a constant, which the tests of functions without `OR REPLACE` compile"
+        )]
         let re = Regex::new(r"(?i)\bCREATE\s+FUNCTION\b").unwrap();
         re.replace(params.sql, "CREATE OR REPLACE FUNCTION")
             .to_string()
@@ -245,7 +261,7 @@ pub async fn check_plpgsql(
 
         for trigger in params.snapshot.triggers.iter() {
             if trigger.proc_name == fn_name
-                && (fn_schema.is_none() || fn_schema.as_deref() == Some(&trigger.proc_schema))
+                && (fn_schema.is_none() || fn_schema == Some(trigger.proc_schema.as_str()))
             {
                 let relation = format!("{}.{}", trigger.table_schema, trigger.table_name);
                 checked = true;
@@ -293,7 +309,7 @@ pub async fn check_plpgsql(
         })?;
 
         let mut result_diagnostics =
-            create_diagnostics_from_check_result(&check_result, &fn_body, offset, relation);
+            create_diagnostics_from_check_result(&check_result, fn_body, offset, relation);
         diagnostics.append(&mut result_diagnostics);
     }
 
@@ -352,7 +368,7 @@ mod tests {
         Ok((diagnostics, span_texts))
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_composite_types(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -385,7 +401,7 @@ mod tests {
         assert_eq!(diagnostics.len(), 0);
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_if_expr(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -424,7 +440,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_missing_var(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -454,7 +470,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("v_c"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_missing_col_if_stmt(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -486,7 +502,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("c"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_entire_body_broken(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -518,7 +534,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("DECLRE"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -553,7 +569,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("RAISE NOTICE '%', r.c;"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_stacked_diagnostics(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -587,7 +603,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("get stacked diagnostics"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_constant_refcursor(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -620,7 +636,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_constant_assignment(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -655,7 +671,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("call p1(10, b);"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_missing_procedure(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -683,7 +699,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("p1"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_dml_in_stable_function(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -713,7 +729,7 @@ mod tests {
         assert_eq!(diagnostics[0].advices.code.as_deref(), Some("0A000"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_record_field_assignment(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -750,7 +766,7 @@ mod tests {
         assert!(span_texts[0].is_some());
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_trigger_basic(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -810,7 +826,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("audit_log"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_trigger_missing_column(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -871,7 +887,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_trigger_multiple_tables(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;

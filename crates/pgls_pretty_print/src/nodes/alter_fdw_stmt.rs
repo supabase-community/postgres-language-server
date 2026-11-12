@@ -1,11 +1,9 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterFdwStmt;
 
-use super::node_list::emit_parenthesized_list;
+use super::prelude::*;
 
 pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
-    e.group_start(GroupKind::AlterFdwStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -17,7 +15,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
     e.space();
 
     if !n.fdwname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.fdwname);
+        emit_identifier_maybe_quoted(e, &n.fdwname);
     }
 
     // Handler/validator functions in func_options - space-separated, not comma-separated
@@ -25,14 +23,17 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
         e.indent_start();
         for opt in n.func_options.iter() {
             e.line(LineType::SoftOrSpace);
-            let def_elem = assert_node_variant!(DefElem, opt);
+            let Some(NodeEnum::DefElem(def_elem)) = opt.node.as_ref() else {
+                emit_node(e, opt);
+                continue;
+            };
 
             match def_elem.defname.as_str() {
                 "handler" => {
                     if let Some(ref arg) = def_elem.arg {
                         e.token(TokenKind::HANDLER_KW);
                         e.space();
-                        super::emit_node(arg, e);
+                        emit_node(e, arg);
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
@@ -43,7 +44,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
                     if let Some(ref arg) = def_elem.arg {
                         e.token(TokenKind::VALIDATOR_KW);
                         e.space();
-                        super::emit_node(arg, e);
+                        emit_node(e, arg);
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
@@ -52,7 +53,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
                 }
                 _ => {
                     // Fallback for unknown options
-                    super::emit_node(opt, e);
+                    emit_node(e, opt);
                 }
             }
         }
@@ -63,16 +64,9 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.indent_start();
-        e.token(TokenKind::OPTIONS_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, |n, e| {
-            let def_elem = assert_node_variant!(DefElem, n);
-            super::emit_options_def_elem(e, def_elem);
-        });
+        emit_options_clause(e, &n.options);
         e.indent_end();
     }
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

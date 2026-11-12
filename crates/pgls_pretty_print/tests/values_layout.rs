@@ -1,6 +1,5 @@
 use pgls_pretty_print::{
-    CommaStyle, FormatConfig, Layout, format_statement,
-    renderer::{IndentStyle, KeywordCase},
+    CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout, format_statement,
 };
 
 fn format_idempotently(sql: &str, config: &FormatConfig) -> String {
@@ -172,6 +171,44 @@ fn a_comment_after_a_values_row_stays_after_the_row() {
         for sql in [
             "insert into t values (1, 'a'), -- first row\n(2, 'b');",
             "insert into t values (1, 'a') -- first row\n, (2, 'b');",
+        ] {
+            assert_eq!(format_idempotently(sql, &config), expected);
+        }
+    }
+}
+
+#[test]
+fn a_block_comment_after_a_values_row_stays_after_the_row() {
+    for (comma_style, row_layout, expected) in [
+        (
+            CommaStyle::Trailing,
+            Layout::Fit,
+            "insert into t values (1, 'a') /* first row */, (2, 'b');",
+        ),
+        (
+            CommaStyle::Leading,
+            Layout::Fit,
+            "insert into t values (1, 'a') /* first row */, (2, 'b');",
+        ),
+        (
+            CommaStyle::Trailing,
+            Layout::Expanded,
+            "insert into t\nvalues\n  (1, 'a') /* first row */,\n  (2, 'b');",
+        ),
+        (
+            CommaStyle::Leading,
+            Layout::Expanded,
+            "insert into t\nvalues\n  (1, 'a') /* first row */\n  , (2, 'b');",
+        ),
+    ] {
+        let config = FormatConfig {
+            values_row_layout: row_layout,
+            comma_style,
+            ..Default::default()
+        };
+        for sql in [
+            "insert into t values (1, 'a') /* first row */, (2, 'b');",
+            "insert into t values (1, 'a') /* first row */\n, (2, 'b');",
         ] {
             assert_eq!(format_idempotently(sql, &config), expected);
         }

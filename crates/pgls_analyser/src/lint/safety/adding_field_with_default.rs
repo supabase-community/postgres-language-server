@@ -1,5 +1,7 @@
+use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::{CatalogView, Decision, contains_volatile_functions};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -11,8 +13,15 @@ declare_lint_rule! {
     ///
     /// In Postgres 11+, this behavior was optimized for non-volatile defaults. However:
     /// - Volatile default values (like random() or custom functions) still cause table rewrites
-    /// - Generated columns (GENERATED ALWAYS AS) always require table rewrites
+    /// - Stored generated columns (GENERATED ALWAYS AS ... STORED) always require table rewrites
     /// - Non-volatile defaults are safe in Postgres 11+
+    ///
+    /// The server version and the volatility of the functions, operators and casts of a default
+    /// come from the database. Without a connection, or when the volatility of a default isn't
+    /// known, the rule assumes that it rewrites the table.
+    ///
+    /// Virtual generated columns (Postgres 18) are computed when rows are read, so adding one
+    /// doesn't rewrite the table.
     ///
     /// ## Examples
     ///
@@ -44,91 +53,85 @@ impl LinterRule for AddingFieldWithDefault {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        // Other transactions can't see a table created earlier in the transaction, so its
+        // rewrite blocks no one.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
+        }
         let mut diagnostics = Vec::new();
 
-        // Check Postgres version - in 11+, non-volatile defaults are safe
-        let pg_version = ctx.snapshot().and_then(|sc| sc.version.major_version);
+        // Since Postgres 11, a default without volatile functions needs no rewrite.
+        let has_fast_defaults = ctx.catalog().server_version_at_least(11) == Some(true);
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
-                    && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                        &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                {
-                    let has_default = col_def.constraints.iter().any(|constraint| {
-                        if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
+                && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd)
+            {
+                let has_default = column_constraints(col_def)
+                    .any(|c| c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault);
+
+                // A virtual generated column ('v', Postgres 18) is computed on read and
+                // needs no rewrite.
+                let has_stored_generated = column_constraints(col_def).any(|c| {
+                    c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
+                        && c.generated_kind == "s"
+                });
+
+                if has_stored_generated {
+                    diagnostics.push(
+                                LinterDiagnostic::new(
+                                    rule_category!(),
+                                    None,
+                                    markup! {
+                                        "Adding a stored generated column requires a table rewrite."
+                                    },
+                                )
+                                .detail(None, "This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.")
+                                .note("Add the column as nullable, backfill existing rows, and add a trigger to update the column on write instead."),
+                            );
+                } else if has_default {
+                    // For PG 11+, check if the default is volatile
+                    if has_fast_defaults {
+                        let is_safe_default = column_constraints(col_def).any(|c| {
                             c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault
-                        } else {
-                            false
-                        }
-                    });
+                                && c.raw_expr
+                                    .as_ref()
+                                    .and_then(|raw_expr| raw_expr.node.as_ref())
+                                    .is_some_and(|raw_expr| {
+                                        contains_volatile_functions(
+                                            raw_expr,
+                                            ctx.catalog(),
+                                            ctx.session().search_path(),
+                                        ) == Decision::Known(false)
+                                    })
+                        });
 
-                    let has_generated = col_def.constraints.iter().any(|constraint| {
-                        if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
-                            c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
-                        } else {
-                            false
-                        }
-                    });
-
-                    if has_generated {
-                        diagnostics.push(
-                                    LinterDiagnostic::new(
-                                        rule_category!(),
-                                        None,
-                                        markup! {
-                                            "Adding a generated column requires a table rewrite."
-                                        },
-                                    )
-                                    .detail(None, "This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.")
-                                    .note("Add the column as nullable, backfill existing rows, and add a trigger to update the column on write instead."),
-                                );
-                    } else if has_default {
-                        // For PG 11+, check if the default is volatile
-                        if pg_version.is_some_and(|v| v >= 11) {
-                            // Check if default is non-volatile
-                            let is_safe_default = col_def.constraints.iter().any(|constraint| {
-                                if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node
-                                    && c.contype()
-                                        == pgls_query::protobuf::ConstrType::ConstrDefault
-                                    && let Some(raw_expr) = &c.raw_expr
-                                {
-                                    return is_safe_default_expr(
-                                        &raw_expr.node.as_ref().map(|n| Box::new(n.clone())),
-                                        ctx.snapshot(),
-                                    );
-                                }
-                                false
-                            });
-
-                            if !is_safe_default {
-                                diagnostics.push(
-                                            LinterDiagnostic::new(
-                                                rule_category!(),
-                                                None,
-                                                markup! {
-                                                    "Adding a column with a volatile default value causes a table rewrite."
-                                                },
-                                            )
-                                            .detail(None, "Even in Postgres 11+, volatile default values require a full table rewrite.")
-                                            .note("Add the column without a default, then set the default in a separate statement."),
-                                        );
-                            }
-                        } else {
-                            // Pre PG 11, all defaults cause rewrites
+                        if !is_safe_default {
                             diagnostics.push(
                                         LinterDiagnostic::new(
                                             rule_category!(),
                                             None,
                                             markup! {
-                                                "Adding a column with a DEFAULT value causes a table rewrite."
+                                                "Adding a column with a volatile default value causes a table rewrite."
                                             },
                                         )
-                                        .detail(None, "This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.")
+                                        .detail(None, "Even in Postgres 11+, volatile default values require a full table rewrite.")
                                         .note("Add the column without a default, then set the default in a separate statement."),
                                     );
                         }
+                    } else {
+                        // Pre PG 11, all defaults cause rewrites
+                        diagnostics.push(
+                                    LinterDiagnostic::new(
+                                        rule_category!(),
+                                        None,
+                                        markup! {
+                                            "Adding a column with a DEFAULT value causes a table rewrite."
+                                        },
+                                    )
+                                    .detail(None, "This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.")
+                                    .note("Add the column without a default, then set the default in a separate statement."),
+                                );
                     }
                 }
             }
@@ -138,54 +141,151 @@ impl LinterRule for AddingFieldWithDefault {
     }
 }
 
-fn is_safe_default_expr(
-    expr: &Option<Box<pgls_query::NodeEnum>>,
-    snapshot: Option<&pgls_catalog::Snapshot>,
-) -> bool {
-    match expr {
-        Some(node) => match node.as_ref() {
-            // Constants are always safe
-            pgls_query::NodeEnum::AConst(_) => true,
-            // Type casts of constants are safe
-            pgls_query::NodeEnum::TypeCast(tc) => is_safe_default_expr(
-                &tc.arg.as_ref().and_then(|a| a.node.clone()).map(Box::new),
-                snapshot,
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use pgls_analyse::{AnalysisFilter, RuleFilter};
+    use pgls_catalog::{Behavior, CatalogBase, Function, Schema, Snapshot, Version};
+    use pgls_text_size::TextRange;
+
+    use crate::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterOptions};
+
+    /// A Postgres 17 database with the functions `pg_catalog.now()` (stable),
+    /// `pg_catalog.random()` (volatile), and `app.now()` (volatile).
+    fn database() -> Arc<CatalogBase> {
+        let function = |schema: &str, name: &str, behavior| Function {
+            schema: schema.into(),
+            name: name.into(),
+            behavior,
+            ..Default::default()
+        };
+        let schema = |name: &str| Schema {
+            name: name.into(),
+            ..Default::default()
+        };
+        Arc::new(CatalogBase::new(Arc::new(Snapshot {
+            schemas: vec![schema("pg_catalog"), schema("public"), schema("app")],
+            functions: vec![
+                function("pg_catalog", "now", Behavior::Stable),
+                function("pg_catalog", "random", Behavior::Volatile),
+                function("app", "now", Behavior::Volatile),
+            ],
+            version: Version {
+                version_num: Some(170000),
+                major_version: Some(17),
+                ..Default::default()
+            },
+            ..Default::default()
+        })))
+    }
+
+    /// The number of diagnostics for the statements, separated by `;`.
+    fn diagnostics(sql: &str) -> usize {
+        let rule_filter = RuleFilter::Rule("safety", "addingFieldWithDefault");
+        let options = LinterOptions::default();
+        let analyser = Analyser::new(AnalyserConfig {
+            options: &options,
+            filter: AnalysisFilter {
+                enabled_rules: Some(std::slice::from_ref(&rule_filter)),
+                ..Default::default()
+            },
+        });
+        let stmts = pgls_query::parse(sql)
+            .unwrap()
+            .stmts()
+            .into_iter()
+            .map(|stmt| AnalysableStatement::new(stmt.clone(), TextRange::default()))
+            .collect();
+        analyser
+            .run(AnalyserParams {
+                stmts,
+                catalog_base: Some(database()),
+                search_path: vec!["public".into()],
+                ..Default::default()
+            })
+            .len()
+    }
+
+    #[test]
+    fn non_volatile_functions_are_safe_defaults() {
+        assert_eq!(
+            diagnostics("alter table t add column c timestamptz default now()"),
+            0
+        );
+        assert_eq!(
+            diagnostics("alter table t add column c float8 default random()"),
+            1
+        );
+        assert_eq!(
+            diagnostics("alter table t add column c timestamptz default app.now()"),
+            1
+        );
+        assert_eq!(
+            diagnostics("alter table t add column c int default missing()"),
+            1
+        );
+    }
+
+    #[test]
+    fn functions_follow_the_search_path() {
+        // `pg_catalog` comes first, unless the search path lists it later.
+        assert_eq!(
+            diagnostics(
+                "set search_path = app; alter table t add column c timestamptz default now()"
             ),
-            // function calls might be safe if they are non-volatile and have no args
-            pgls_query::NodeEnum::FuncCall(fc) => {
-                // must have no args
-                if !fc.args.is_empty() {
-                    return false;
-                }
+            0
+        );
+        assert_eq!(
+            diagnostics(
+                "set search_path = app, pg_catalog; alter table t add column c timestamptz default now()"
+            ),
+            1
+        );
+    }
 
-                let Some(sc) = snapshot else {
-                    return false;
-                };
+    #[test]
+    fn functions_of_the_file_are_known() {
+        assert_eq!(
+            diagnostics(
+                "create function public.one() returns int language sql immutable as 'select 1';
+                 alter table t add column c int default one()"
+            ),
+            0
+        );
+        assert_eq!(
+            diagnostics(
+                "create function public.one() returns int language sql as 'select 1';
+                 alter table t add column c int default one()"
+            ),
+            1
+        );
+        assert_eq!(
+            diagnostics(
+                "create function public.one() returns int language sql immutable as 'select 1';
+                 alter function public.one() volatile;
+                 alter table t add column c int default one()"
+            ),
+            1
+        );
+    }
 
-                let Some((schema, name)) = pgls_query_ext::utils::parse_name(&fc.funcname) else {
-                    return false;
-                };
-
-                // check if function is a non-volatile function
-                sc.functions.iter().any(|f| {
-                    // no args only
-                    if !f.args.args.is_empty() {
-                        return false;
-                    }
-
-                    // must be non-volatile
-                    if f.behavior == pgls_catalog::Behavior::Volatile {
-                        return false;
-                    }
-
-                    // check name and schema (if given)
-                    f.name.eq_ignore_ascii_case(&name)
-                        && schema.as_ref().is_none_or(|s| &f.schema == s)
-                })
-            }
-            // everything else is potentially unsafe
-            _ => false,
-        },
-        None => false,
+    #[test]
+    fn functions_with_defaulted_parameters_are_unsafe() {
+        // Postgres passes `random()` for `x`, so the default is volatile.
+        assert_eq!(
+            diagnostics(
+                "create function public.f(x float8 default random()) returns float8 language sql immutable as 'select x';
+                 alter table t add column c float8 default f()"
+            ),
+            1
+        );
+        assert_eq!(
+            diagnostics(
+                "create function public.f(variadic xs int[] default '{}') returns int language sql immutable as 'select 1';
+                 alter table t add column c int default f()"
+            ),
+            1
+        );
     }
 }

@@ -7,13 +7,7 @@ mod common;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use pgls_postgres_regress::Verdict;
-use pgls_pretty_print::{
-    FormatConfig,
-    emitter::EventEmitter,
-    nodes::emit_node_enum,
-    normalize::normalize_ast,
-    renderer::{RenderConfig, Renderer},
-};
+use pgls_pretty_print::{FormatConfig, format_statement_unchecked, normalize_ast};
 use rayon::prelude::*;
 
 const LINE_WIDTHS: [usize; 2] = [80, 100];
@@ -87,6 +81,13 @@ fn round_trip(sql: &str) -> Result<(), String> {
                 whitespace.join(", ")
             ));
         }
+        let empty_statements = common::empty_statements(&output);
+        if !empty_statements.is_empty() {
+            return Err(format!(
+                "{} at width {max_line_length}\n{output}",
+                empty_statements.join(", ")
+            ));
+        }
         let mut formatted = reparsed.clone();
         normalize_ast(&mut formatted);
         if formatted != expected {
@@ -108,16 +109,9 @@ fn round_trip(sql: &str) -> Result<(), String> {
 }
 
 fn format(ast: &pgls_query::NodeEnum, max_line_length: usize) -> String {
-    let config = FormatConfig::default();
-    let mut emitter = EventEmitter::new(config.clone());
-    emit_node_enum(ast, &mut emitter);
-    let mut output = String::new();
-    let config = RenderConfig {
-        max_line_length,
-        ..RenderConfig::from(config)
+    let config = FormatConfig {
+        line_width: max_line_length,
+        ..Default::default()
     };
-    Renderer::new(&mut output, config)
-        .render(emitter.events)
-        .expect("render");
-    output
+    format_statement_unchecked(ast, &config).expect("render")
 }

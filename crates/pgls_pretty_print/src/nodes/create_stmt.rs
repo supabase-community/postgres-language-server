@@ -1,16 +1,14 @@
-use pgls_query::protobuf::{CreateStmt, node::Node as NodeEnum};
+use pgls_query::protobuf::CreateStmt;
+use pgls_query::protobuf::node::Node as NodeEnum;
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-
-use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
+use super::prelude::*;
 
 /// Emit a column override for typed tables (OF typename).
 /// These use the syntax: column_name WITH OPTIONS constraints
 fn emit_typed_table_column_override(e: &mut EventEmitter, item: &pgls_query::protobuf::Node) {
     if let Some(NodeEnum::ColumnDef(col)) = &item.node {
         // Emit column name
-        super::string::emit_identifier_maybe_quoted(e, &col.colname);
+        emit_identifier_maybe_quoted(e, &col.colname);
 
         // WITH OPTIONS keyword
         e.space();
@@ -21,24 +19,16 @@ fn emit_typed_table_column_override(e: &mut EventEmitter, item: &pgls_query::pro
         // Emit constraints (e.g., GENERATED ALWAYS AS ... STORED)
         for constraint in &col.constraints {
             e.line(LineType::SoftOrSpace);
-            super::emit_node(constraint, e);
+            emit_node(e, constraint);
         }
     } else {
         // Fall back to regular node emission
-        super::emit_node(item, e);
+        emit_node(e, item);
     }
 }
 
 pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
-    emit_create_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_create_stmt_no_semicolon(e: &mut EventEmitter, n: &CreateStmt) {
-    emit_create_stmt_impl(e, n, false);
-}
-
-fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: bool) {
-    e.group_start(GroupKind::CreateStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -63,11 +53,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
     // Add IF NOT EXISTS if specified
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     // Add table name
@@ -89,7 +75,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.space();
 
         if !n.inh_relations.is_empty() {
-            emit_comma_separated_list(e, &n.inh_relations, super::emit_node);
+            emit_comma_separated_list(e, &n.inh_relations, emit_node);
         }
 
         // Add constraints for partition tables
@@ -103,18 +89,16 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
             let mut first = true;
             for item in &n.table_elts {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
                 }
-                super::emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
             for item in &n.constraints {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
                 }
-                super::emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
 
@@ -131,6 +115,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
 
         // Add PARTITION BY for sub-partitioned tables
         if let Some(ref partspec) = n.partspec {
+            emit_comments_before_clause(e, partspec.location);
             e.line(LineType::SoftOrSpace);
             super::emit_partition_spec(e, partspec);
         }
@@ -154,8 +139,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
             let mut first = true;
             for item in &n.table_elts {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
                 }
                 // For typed tables, columns need WITH OPTIONS syntax
                 emit_typed_table_column_override(e, item);
@@ -163,10 +147,9 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
             }
             for item in &n.constraints {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(item), ListSeparatorSpacing::SoftOrSpace);
                 }
-                super::emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
 
@@ -180,7 +163,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         let multiple_items = n.table_elts.len() + n.constraints.len() > 1;
 
         e.space();
-        e.group_start(GroupKind::List);
+        e.group_start();
         e.token(TokenKind::L_PAREN);
         // Force break for tables with multiple columns for readability. A table without columns
         // keeps `()` together.
@@ -193,29 +176,24 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         if has_content {
             e.indent_start();
 
+            let separator = if multiple_items {
+                ListSeparatorSpacing::Hard
+            } else {
+                ListSeparatorSpacing::SoftOrSpace
+            };
             let mut first = true;
             for item in &n.table_elts {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    if multiple_items {
-                        e.line(LineType::Hard);
-                    } else {
-                        e.line(LineType::SoftOrSpace);
-                    }
+                    emit_list_comma(e, Some(item), separator);
                 }
-                super::emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
             for item in &n.constraints {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    if multiple_items {
-                        e.line(LineType::Hard);
-                    } else {
-                        e.line(LineType::SoftOrSpace);
-                    }
+                    emit_list_comma(e, Some(item), separator);
                 }
-                super::emit_node(item, e);
+                emit_node(e, item);
                 first = false;
             }
 
@@ -235,11 +213,12 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
             e.line(LineType::Hard);
             e.token(TokenKind::INHERITS_KW);
             e.space();
-            emit_parenthesized_list(e, &n.inh_relations, super::emit_node);
+            emit_parenthesized_list(e, &n.inh_relations, emit_node);
         }
 
         // Add PARTITION BY clause for regular partitioned tables
         if let Some(ref partspec) = n.partspec {
+            emit_comments_before_clause(e, partspec.location);
             e.line(LineType::Hard);
             super::emit_partition_spec(e, partspec);
         }
@@ -250,7 +229,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.space();
         e.token(TokenKind::USING_KW);
         e.space();
-        super::string::emit_identifier_maybe_quoted(e, &n.access_method);
+        emit_identifier_maybe_quoted(e, &n.access_method);
     }
 
     // Add WITH options if specified - use SoftOrSpace to break if needed
@@ -258,11 +237,11 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.group_start(GroupKind::List);
+        e.group_start();
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
-        emit_comma_separated_list(e, &n.options, super::emit_node);
+        emit_comma_separated_list(e, &n.options, emit_node);
         e.indent_end();
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
@@ -303,11 +282,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.tablespacename);
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
+        emit_identifier_maybe_quoted(e, &n.tablespacename);
     }
 
     e.group_end();

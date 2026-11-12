@@ -1,14 +1,9 @@
-use pgls_query::{NodeEnum, protobuf::GrantRoleStmt};
+use pgls_query::protobuf::GrantRoleStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::{def_elem::emit_grant_role_option, grant_stmt::emit_grant_list};
+use super::prelude::*;
 
 pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
-    e.group_start(GroupKind::GrantRoleStmt);
+    e.group_start();
 
     // GRANT or REVOKE
     if n.is_grant {
@@ -22,7 +17,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
             if let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() {
                 e.space();
                 // Emit the option name
-                super::emit_keyword(e, &def.defname);
+                emit_keyword(e, &def.defname);
                 e.space();
                 e.token(TokenKind::OPTION_KW);
                 e.space();
@@ -34,7 +29,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
     // Role list
     if !n.granted_roles.is_empty() {
         e.space();
-        emit_grant_list(e, &n.granted_roles, super::emit_node);
+        emit_grant_list(e, &n.granted_roles, emit_node);
     }
 
     // The clauses after the granted roles continue the statement, so a broken one indents them.
@@ -42,7 +37,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
 
     // TO or FROM
     if let Some(grantee) = n.grantee_roles.first() {
-        super::emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
+        emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
     }
     if n.is_grant {
         e.line(LineType::SoftOrSpace);
@@ -55,7 +50,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
     // Grantee list
     if !n.grantee_roles.is_empty() {
         e.space();
-        emit_grant_list(e, &n.grantee_roles, super::emit_node);
+        emit_grant_list(e, &n.grantee_roles, emit_node);
     }
 
     // WITH options (WITH INHERIT TRUE, SET FALSE, etc.) - only for GRANT
@@ -64,7 +59,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_grant_list(e, &n.opt, |opt, e| {
+        emit_grant_list(e, &n.opt, |e, opt| {
             if let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() {
                 emit_grant_role_option(e, def);
             }
@@ -82,27 +77,11 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
     }
 
     // CASCADE or RESTRICT (for REVOKE)
-    // DropBehavior: 0=Undefined (default, omit), 1=DropRestrict, 2=DropCascade
     if !n.is_grant {
-        match n.behavior {
-            1 => {
-                // DropRestrict - RESTRICT is the default, but emit for explicitness
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::RESTRICT_KW);
-            }
-            2 => {
-                // DropCascade
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::CASCADE_KW);
-            }
-            _ => {
-                // Undefined - don't emit anything (defaults to RESTRICT in PostgreSQL)
-            }
-        }
+        emit_drop_behavior(e, n.behavior(), Separator::SoftOrSpace, Restrict::Written);
     }
 
     e.indent_end();
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

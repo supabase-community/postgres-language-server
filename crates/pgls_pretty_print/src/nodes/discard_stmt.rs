@@ -1,12 +1,9 @@
 use pgls_query::protobuf::DiscardStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_discard_stmt(e: &mut EventEmitter, n: &DiscardStmt) {
-    e.group_start(GroupKind::DiscardStmt);
+    e.group_start();
 
     e.token(TokenKind::DISCARD_KW);
     e.space();
@@ -20,6 +17,5 @@ pub(super) fn emit_discard_stmt(e: &mut EventEmitter, n: &DiscardStmt) {
         _ => e.token(TokenKind::ALL_KW),
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

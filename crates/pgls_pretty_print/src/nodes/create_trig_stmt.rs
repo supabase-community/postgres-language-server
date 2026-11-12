@@ -1,30 +1,15 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{
-        emit_comma_separated_list, emit_dot_separated_list, emit_space_separated_list,
-    },
-};
 use pgls_query::protobuf::CreateTrigStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
-    emit_create_trig_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_create_trig_stmt_no_semicolon(e: &mut EventEmitter, n: &CreateTrigStmt) {
-    emit_create_trig_stmt_impl(e, n, false);
-}
-
-fn emit_create_trig_stmt_impl(e: &mut EventEmitter, n: &CreateTrigStmt, with_semicolon: bool) {
-    e.group_start(GroupKind::CreateTrigStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
 
     if n.replace {
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
         e.space();
     }
 
@@ -35,7 +20,7 @@ fn emit_create_trig_stmt_impl(e: &mut EventEmitter, n: &CreateTrigStmt, with_sem
 
     e.token(TokenKind::TRIGGER_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.trigname);
+    emit_identifier_maybe_quoted(e, &n.trigname);
 
     // Timing: BEFORE (2), AFTER (4), INSTEAD OF (16)
     // After trigger name, break to new line for timing + events + ON table
@@ -91,7 +76,7 @@ fn emit_create_trig_stmt_impl(e: &mut EventEmitter, n: &CreateTrigStmt, with_sem
         e.space();
         e.token(TokenKind::OF_KW);
         e.space();
-        emit_comma_separated_list(e, &n.columns, super::emit_node);
+        emit_comma_separated_list(e, &n.columns, emit_node);
     }
 
     // ON table - allow break before ON for long table names
@@ -148,7 +133,7 @@ fn emit_create_trig_stmt_impl(e: &mut EventEmitter, n: &CreateTrigStmt, with_sem
         e.token(TokenKind::WHEN_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
-        super::emit_node(when, e);
+        emit_node(e, when);
         e.token(TokenKind::R_PAREN);
     }
 
@@ -162,20 +147,19 @@ fn emit_create_trig_stmt_impl(e: &mut EventEmitter, n: &CreateTrigStmt, with_sem
     e.token(TokenKind::L_PAREN);
     if !n.args.is_empty() {
         // Arguments are string literals
-        emit_comma_separated_list(e, &n.args, super::emit_node);
+        emit_comma_separated_list(e, &n.args, emit_node);
     }
     e.token(TokenKind::R_PAREN);
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
-    }
 
     e.group_end();
 }
 
 fn emit_trigger_transitions(e: &mut EventEmitter, rels: &[pgls_query::Node]) {
-    emit_space_separated_list(e, rels, |rel, e| {
-        let transition = assert_node_variant!(TriggerTransition, rel);
+    emit_space_separated_list(e, rels, |e, rel| {
+        let Some(NodeEnum::TriggerTransition(transition)) = rel.node.as_ref() else {
+            emit_node(e, rel);
+            return;
+        };
 
         if transition.is_new {
             e.token(TokenKind::NEW_KW);
@@ -194,6 +178,6 @@ fn emit_trigger_transitions(e: &mut EventEmitter, rels: &[pgls_query::Node]) {
         e.space();
         e.token(TokenKind::AS_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &transition.name);
+        emit_identifier_maybe_quoted(e, &transition.name);
     });
 }

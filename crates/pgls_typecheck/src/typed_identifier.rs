@@ -42,6 +42,10 @@ impl TypedReplacement {
         let mut text_range_replacement_builder = TextRangeReplacementBuilder::new(sql);
 
         for replacement in &replacements {
+            #[expect(
+                clippy::unwrap_used,
+                reason = "offsets are `TextSize` (u32) everywhere, statements over 4 GiB aren't supported"
+            )]
             let text_range: TextRange = replacement.original_range.clone().try_into().unwrap();
             text_range_replacement_builder.replace_range(text_range, &replacement.default_value);
         }
@@ -129,8 +133,8 @@ fn get_formatted_default_value(pg_type: &PostgresType, is_array: bool) -> String
 /// * `pg_type`: The type to return the default value for.
 pub fn resolve_default_value(pg_type: &PostgresType) -> String {
     // Handle ENUM types by returning the first variant
-    if !pg_type.enums.values.is_empty() {
-        return format!("'{}'", pg_type.enums.values[0]);
+    if let Some(first) = pg_type.enums.values.first() {
+        return format!("'{first}'");
     }
 
     match pg_type.name.as_str() {
@@ -254,7 +258,7 @@ fn resolve_type<'a>(
     parts: &[&str],
     snapshot: &'a pgls_catalog::Snapshot,
 ) -> Option<&'a PostgresType> {
-    if position < parts.len() - 1 {
+    if position + 1 < parts.len() {
         // Find the composite type
         let schema_type = snapshot.types.iter().find(|t| {
             identifier
@@ -266,7 +270,7 @@ fn resolve_type<'a>(
         })?;
 
         // Find the field within the composite type
-        let field_name = parts.last().unwrap();
+        let field_name = parts.last()?;
         let field = schema_type
             .attributes
             .attrs
@@ -286,7 +290,7 @@ mod tests {
     use pgls_catalog::Snapshot;
     use sqlx::{Executor, PgPool};
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_apply_identifiers(test_db: PgPool) {
         let input = "select v_test + fn_name.custom_type.v_test2 + $3 + custom_type.v_test3 + fn_name.v_test2 + enum_type";
 
@@ -387,7 +391,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_apply_identifiers_table_row_type(test_db: PgPool) {
         // A SQL function argument may be a table's row (composite) type, e.g.
         // `CREATE FUNCTION f(row_arg public.tbl) ... SELECT row_arg.name`.
@@ -448,7 +452,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_row_type_excludes_system_columns(test_db: PgPool) {
         // System columns (e.g. `ctid`) are not real fields of a table's row
         // type, so they must not be loaded as attributes: a reference to one is
@@ -494,7 +498,7 @@ mod tests {
         assert_eq!(replacement.text_replacement.text(), "select row_arg.ctid");
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_qualified_column_is_not_a_parameter(pool: PgPool) {
         // create function next_after(received_at timestamptz) returns bigint as $$
         //   select r.id from ev r where r.received_at > received_at order by r.received_at
@@ -530,7 +534,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_longer_identifiers(pool: PgPool) {
         // create or replace function retrieve(uid uuid, mail text)
         // returns uuid

@@ -1,22 +1,9 @@
 use pgls_query::protobuf::CreateSeqStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::emit_space_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
-    emit_create_seq_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_create_seq_stmt_no_semicolon(e: &mut EventEmitter, n: &CreateSeqStmt) {
-    emit_create_seq_stmt_impl(e, n, false);
-}
-
-fn emit_create_seq_stmt_impl(e: &mut EventEmitter, n: &CreateSeqStmt, with_semicolon: bool) {
-    e.group_start(GroupKind::CreateSeqStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -37,11 +24,7 @@ fn emit_create_seq_stmt_impl(e: &mut EventEmitter, n: &CreateSeqStmt, with_semic
 
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     if let Some(ref sequence) = n.sequence {
@@ -52,20 +35,17 @@ fn emit_create_seq_stmt_impl(e: &mut EventEmitter, n: &CreateSeqStmt, with_semic
     // Emit sequence options (AS type, INCREMENT BY, MINVALUE, MAXVALUE, START WITH, CACHE, CYCLE, etc.)
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_space_separated_list(e, &n.options, |opt, e| {
+        emit_space_separated_list(e, &n.options, |e, opt| {
             // Use specialized sequence option emission
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {
-                super::emit_with_comments_at(e, def_elem.location, |e| {
-                    super::emit_sequence_option(e, def_elem);
+                emit_with_comments_at(e, def_elem.location, |e| {
+                    emit_sequence_option(e, def_elem);
                 });
             } else {
-                super::emit_node(opt, e);
+                emit_node(e, opt);
             }
         });
     }
 
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
-    }
     e.group_end();
 }
