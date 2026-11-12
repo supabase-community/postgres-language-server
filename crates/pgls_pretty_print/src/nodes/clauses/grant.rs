@@ -1,7 +1,5 @@
 //! The lists of GRANT, REVOKE and ALTER DEFAULT PRIVILEGES.
 
-use pgls_query::protobuf::AccessPriv;
-
 use crate::nodes::prelude::*;
 
 /// Emits the privileges, objects, or roles of a `GRANT` or `REVOKE`. The list is its own group, so
@@ -29,24 +27,4 @@ where
         e.indent_end();
     }
     e.group_end();
-}
-
-/// Emits a privilege of GRANT or REVOKE: `select`, `update (a, b)`, or `all (a, b)` for all
-/// privileges on some columns.
-///
-/// An `AccessPriv` reached through `emit_node`, in ALTER DEFAULT PRIVILEGES, is written by
-/// `emit_access_priv` instead, which writes all privileges as `ALL PRIVILEGES` and may break
-/// before the column list.
-pub(crate) fn emit_privilege(e: &mut EventEmitter, priv_node: &AccessPriv) {
-    if priv_node.priv_name.is_empty() && !priv_node.cols.is_empty() {
-        e.token(TokenKind::ALL_KW);
-    } else if !priv_node.priv_name.is_empty() {
-        emit_keywords(e, &priv_node.priv_name);
-    }
-
-    // Handle column privileges
-    if !priv_node.cols.is_empty() {
-        e.space();
-        emit_parenthesized_list(e, &priv_node.cols, emit_node);
-    }
 }
