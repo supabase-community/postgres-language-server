@@ -8,8 +8,9 @@ use pgls_diagnostics::Severity;
 declare_lint_rule! {
     /// Adding constraints without NOT VALID blocks all reads and writes.
     ///
-    /// When adding a CHECK or FOREIGN KEY constraint, Postgres must validate all existing rows,
-    /// which requires a full table scan. This blocks reads and writes for the duration.
+    /// When adding a CHECK, FOREIGN KEY or (on Postgres 18) NOT NULL constraint, Postgres must
+    /// validate all existing rows, which requires a full table scan. This blocks reads and writes
+    /// for the duration.
     ///
     /// Instead, add the constraint with NOT VALID first, then VALIDATE CONSTRAINT in a separate
     /// transaction. This allows reads and writes to continue while validation happens.
@@ -61,10 +62,12 @@ fn check_constraint_needs_not_valid(
         return None;
     }
 
-    // Only warn for CHECK and FOREIGN KEY constraints
+    // Only warn for the constraints that can be NOT VALID: CHECK, FOREIGN KEY, and NOT NULL
+    // (`ADD CONSTRAINT ... NOT NULL column`, Postgres 18)
     match constraint.contype() {
         pgls_query::protobuf::ConstrType::ConstrCheck
-        | pgls_query::protobuf::ConstrType::ConstrForeign => Some(
+        | pgls_query::protobuf::ConstrType::ConstrForeign
+        | pgls_query::protobuf::ConstrType::ConstrNotnull => Some(
             LinterDiagnostic::new(
                 rule_category!(),
                 None,

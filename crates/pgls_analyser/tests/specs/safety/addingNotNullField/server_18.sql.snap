@@ -1,0 +1,21 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- On Postgres 18, the note suggests a NOT VALID NOT NULL constraint instead of a CHECK constraint
+-- server_version: 18
+-- expect_lint/addingNotNullField
+ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+
+```
+
+# Diagnostics
+lint/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Setting a column NOT NULL blocks reads while the table is scanned.
+  
+  i This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.
+  
+  i Add the constraint with ADD CONSTRAINT ... NOT NULL ... NOT VALID, then VALIDATE it in a separate transaction.
