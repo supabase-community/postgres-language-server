@@ -1,4 +1,11 @@
-use super::*;
+use pgls_query::NodeEnum;
+
+use super::infer_expr;
+use crate::resolve::{resolver::Resolver, utils::field_type};
+use crate::{
+    lookup::Lookup,
+    typing::{Decision, Type},
+};
 
 /// Subscripts and field selection. Port of [`transformIndirection`] for true arrays
 /// ([`transformContainerSubscripts`]) and composite fields ([`ParseComplexProjection`]).

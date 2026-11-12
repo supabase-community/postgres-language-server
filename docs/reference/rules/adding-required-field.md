@@ -13,6 +13,8 @@ This will fail immediately upon running for any populated table. Furthermore, ol
 Make new columns optional initially by omitting the NOT NULL constraint until all existing data and application code has been updated. Once no NULL values are written to or persisted in the database, set it to NOT NULL.
 Alternatively, if using Postgres version 11 or later, add a DEFAULT value that is not volatile. This allows the column to keep its NOT NULL constraint.
 
+Generated, identity and `serial` columns get their values from Postgres, so they are not reported.
+
 ## Invalid
 
 alter table test add column count int not null;

@@ -2,7 +2,7 @@ use std::io;
 
 use pgls_console::{MarkupBuf, fmt, markup};
 use pgls_text_edit::TextEdit;
-use pgls_text_size::{TextRange, TextSize};
+use pgls_text_size::TextRange;
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
     de::{self, SeqAccess},
@@ -72,14 +72,6 @@ impl Diagnostic {
             tags,
             source,
         }
-    }
-
-    pub fn with_offset(mut self, offset: TextSize) -> Self {
-        self.location.span = self
-            .location
-            .span
-            .map(|span| TextRange::new(span.start() + offset, span.end() + offset));
-        self
     }
 
     /// Get the diagnostic description as a string
