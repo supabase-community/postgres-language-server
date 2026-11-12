@@ -6192,7 +6192,7 @@ fn requests_on_a_reopened_document_are_outdated() {
 
 /// A cancelled diagnostics request whose analysis is cached doesn't check the statements against
 /// the database.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_cancelled_database_diagnostics_stop(test_db: PgPool) {
     test_db
         .execute("create table cancelled_items (id int);")
