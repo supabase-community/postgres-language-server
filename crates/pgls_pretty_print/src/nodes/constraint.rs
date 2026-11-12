@@ -1,13 +1,8 @@
-use pgls_query::{
-    Node, NodeEnum,
-    protobuf::{ConstrType, Constraint},
-};
+use pgls_query::protobuf::{ConstrType, Constraint};
 
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-use crate::{Layout, TokenKind};
+use crate::Layout;
 
-use super::node_list::emit_parenthesized_list;
-use super::string::emit_identifier_maybe_quoted;
+use super::prelude::*;
 
 pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
     emit_constraint_of(e, n, Owner::Table);
@@ -88,7 +83,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                 if needs_parens {
                     e.token(TokenKind::L_PAREN);
                 }
-                super::emit_node(raw_expr, e);
+                emit_node(raw_expr, e);
                 if needs_parens {
                     e.token(TokenKind::R_PAREN);
                 }
@@ -154,7 +149,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
             if let Some(ref raw_expr) = n.raw_expr {
                 e.space();
                 e.token(TokenKind::L_PAREN);
-                super::emit_node(raw_expr, e);
+                emit_node(raw_expr, e);
                 e.token(TokenKind::R_PAREN);
             }
 
@@ -227,7 +222,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                     if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
                         emit_identifier_maybe_quoted(emitter, &s.sval);
                     } else {
-                        super::emit_node(node, emitter);
+                        emit_node(node, emitter);
                     }
                 });
             }
@@ -292,7 +287,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                     if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
                         emit_identifier_maybe_quoted(emitter, &s.sval);
                     } else {
-                        super::emit_node(node, emitter);
+                        emit_node(node, emitter);
                     }
                 });
             }
@@ -335,7 +330,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                 e.space();
                 e.token(TokenKind::USING_KW);
                 e.space();
-                super::emit_identifier_maybe_quoted(e, &n.access_method);
+                emit_identifier_maybe_quoted(e, &n.access_method);
             }
 
             if !n.exclusions.is_empty() {
@@ -352,7 +347,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                     if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
                         emit_identifier_maybe_quoted(emitter, &s.sval);
                     } else {
-                        super::emit_node(node, emitter);
+                        emit_node(node, emitter);
                     }
                 });
             }
@@ -361,7 +356,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                 e.space();
                 e.token(TokenKind::WHERE_KW);
                 e.space();
-                super::emit_parenthesized_condition(e, GroupKind::Constraint, where_clause);
+                emit_parenthesized_condition(e, GroupKind::Constraint, where_clause);
             }
 
             emit_deferrable(e, n, &mut continued);
@@ -519,14 +514,17 @@ fn emit_check_condition(e: &mut EventEmitter, condition: &Node) {
     let expanded = matches!(e.config().layout, Layout::Expanded);
 
     e.with_layout(Layout::Fit, |e| {
-        super::emit_parenthesized_condition_with(e, GroupKind::Constraint, condition, |node, e| {
-            match node {
+        emit_parenthesized_condition_with(
+            e,
+            GroupKind::Constraint,
+            condition,
+            |node, e| match node {
                 NodeEnum::BoolExpr(n) if expanded => {
                     super::bool_expr::emit_bool_expr_in_enclosing_group(e, n);
                 }
-                _ => super::emit_node_enum(node, e),
-            }
-        });
+                _ => emit_node_enum(node, e),
+            },
+        );
     });
 }
 
@@ -564,7 +562,7 @@ fn emit_not_enforced(e: &mut EventEmitter) {
 /// `WITHOUT OVERLAPS` (since Postgres 18) if the constraint has it.
 fn emit_keys(e: &mut EventEmitter, n: &Constraint) {
     emit_parenthesized_list(e, &n.keys, |node, e| {
-        super::emit_node(node, e);
+        emit_node(node, e);
         if n.without_overlaps && n.keys.last().is_some_and(|last| std::ptr::eq(last, node)) {
             e.space();
             e.token(TokenKind::WITHOUT_KW);
@@ -581,7 +579,7 @@ fn emit_period_column(e: &mut EventEmitter, node: &Node, columns: &[Node], with_
         e.token(TokenKind::PERIOD_KW);
         e.space();
     }
-    super::emit_node(node, e);
+    emit_node(node, e);
 }
 
 /// Emits one element of an exclusion constraint: `column WITH operator`.
@@ -590,7 +588,7 @@ fn emit_exclusion(exclusion: &pgls_query::Node, e: &mut EventEmitter) {
     debug_assert!(exclusion_list.items.len() >= 2);
 
     if let Some(index_elem) = exclusion_list.items.first() {
-        super::emit_node(index_elem, e);
+        emit_node(index_elem, e);
     }
 
     if let Some(operators) = exclusion_list.items.get(1) {
@@ -616,7 +614,7 @@ fn emit_exclusion(exclusion: &pgls_query::Node, e: &mut EventEmitter) {
 fn emit_exclusion_operator(e: &mut EventEmitter, node: &pgls_query::Node) {
     match node.node.as_ref() {
         Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-        _ => super::emit_node(node, e),
+        _ => emit_node(node, e),
     }
 }
 
@@ -629,7 +627,7 @@ fn emit_foreign_key_action(
     // Caller handles line break - we just emit the action
     e.token(TokenKind::ON_KW);
     e.space();
-    super::emit_keyword(e, event);
+    emit_keyword(e, event);
     e.space();
 
     match action {
@@ -646,7 +644,7 @@ fn emit_foreign_key_action(
 
             if !set_cols.is_empty() {
                 e.space();
-                emit_parenthesized_list(e, set_cols, super::emit_node);
+                emit_parenthesized_list(e, set_cols, emit_node);
             }
         }
         "d" => {
@@ -656,7 +654,7 @@ fn emit_foreign_key_action(
 
             if !set_cols.is_empty() {
                 e.space();
-                emit_parenthesized_list(e, set_cols, super::emit_node);
+                emit_parenthesized_list(e, set_cols, emit_node);
             }
         }
         "a" => {

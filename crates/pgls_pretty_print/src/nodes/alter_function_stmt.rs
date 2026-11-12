@@ -1,8 +1,7 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::{AlterFunctionStmt, ObjectType};
 
-use super::object_with_args::emit_object_with_args;
+use super::emit_object_with_args;
+use super::prelude::*;
 
 pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionStmt) {
     e.group_start(GroupKind::AlterFunctionStmt);

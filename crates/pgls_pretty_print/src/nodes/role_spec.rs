@@ -1,10 +1,6 @@
 use pgls_query::protobuf::{RoleSpec, RoleSpecType};
 
-use super::string::emit_identifier_maybe_quoted;
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_role_spec(e: &mut EventEmitter, n: &RoleSpec) {
     e.group_start(GroupKind::RoleSpec);

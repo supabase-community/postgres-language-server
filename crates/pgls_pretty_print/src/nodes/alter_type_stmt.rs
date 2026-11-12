@@ -1,10 +1,6 @@
-use pgls_query::{NodeEnum, protobuf::AlterTypeStmt};
+use pgls_query::protobuf::AlterTypeStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_dot_separated_list, emit_parenthesized_list},
-};
+use super::prelude::*;
 
 pub(super) fn emit_alter_type_stmt(e: &mut EventEmitter, n: &AlterTypeStmt) {
     e.group_start(GroupKind::AlterTypeStmt);
@@ -30,7 +26,7 @@ pub(super) fn emit_alter_type_stmt(e: &mut EventEmitter, n: &AlterTypeStmt) {
                     emitter.space();
                     emitter.token(TokenKind::IDENT("=".to_string()));
                     emitter.space();
-                    super::emit_node(arg, emitter);
+                    emit_node(arg, emitter);
                 }
             }
         });

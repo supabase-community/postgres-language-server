@@ -1,9 +1,7 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::{LockClauseStrength, LockWaitPolicy, RowMarkClause};
 use std::convert::TryFrom;
+
+use super::prelude::*;
 
 pub(super) fn emit_row_mark_clause(e: &mut EventEmitter, n: &RowMarkClause) {
     e.group_start(GroupKind::RowMarkClause);
@@ -16,7 +14,7 @@ pub(super) fn emit_row_mark_clause(e: &mut EventEmitter, n: &RowMarkClause) {
         e.space();
         e.token(TokenKind::OF_KW);
         e.space();
-        super::emit_identifier(e, &format!("rte#{}", n.rti));
+        emit_identifier(e, &format!("rte#{}", n.rti));
     }
 
     match LockWaitPolicy::try_from(n.wait_policy).unwrap_or(LockWaitPolicy::Undefined) {
@@ -35,7 +33,7 @@ pub(super) fn emit_row_mark_clause(e: &mut EventEmitter, n: &RowMarkClause) {
 
     if n.pushed_down {
         e.space();
-        super::emit_identifier(e, "pushed_down");
+        emit_identifier(e, "pushed_down");
     }
 
     e.group_end();
@@ -58,7 +56,7 @@ fn emit_strength(e: &mut EventEmitter, raw: i32) {
             e.token(TokenKind::SHARE_KW);
         }
         LockClauseStrength::LcsNone | LockClauseStrength::Undefined => {
-            super::emit_identifier(e, "lock");
+            emit_identifier(e, "lock");
         }
     }
 }

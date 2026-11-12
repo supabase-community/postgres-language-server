@@ -1,10 +1,6 @@
 use pgls_query::protobuf::DropOwnedStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
-};
+use super::prelude::*;
 
 pub(super) fn emit_drop_owned_stmt(e: &mut EventEmitter, n: &DropOwnedStmt) {
     e.group_start(GroupKind::DropOwnedStmt);
@@ -18,7 +14,7 @@ pub(super) fn emit_drop_owned_stmt(e: &mut EventEmitter, n: &DropOwnedStmt) {
     // Role list
     if !n.roles.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.roles, super::emit_node);
+        emit_comma_separated_list(e, &n.roles, emit_node);
     }
 
     // CASCADE or RESTRICT

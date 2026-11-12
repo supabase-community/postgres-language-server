@@ -1,13 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::{
-    NodeEnum,
-    protobuf::{ObjectType, SecLabelStmt},
-};
+use pgls_query::protobuf::{ObjectType, SecLabelStmt};
 
-use super::string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str};
+use super::prelude::*;
 
 pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
     e.group_start(GroupKind::SecLabelStmt);
@@ -67,10 +60,10 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
             if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
                 super::emit_object_with_args_for_aggregate(e, owa);
             } else {
-                super::emit_node(object, e);
+                emit_node(object, e);
             }
         } else {
-            super::emit_node(object, e);
+            emit_node(object, e);
         }
     }
 

@@ -1,8 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::{CoercionContext, CreateCastStmt};
+
+use super::prelude::*;
 
 pub(super) fn emit_create_cast_stmt(e: &mut EventEmitter, n: &CreateCastStmt) {
     e.group_start(GroupKind::CreateCastStmt);

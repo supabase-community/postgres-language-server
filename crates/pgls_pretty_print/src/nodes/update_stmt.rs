@@ -1,8 +1,7 @@
 use pgls_query::protobuf::UpdateStmt;
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-use crate::nodes::node_list::emit_comma_separated_list;
+use super::prelude::*;
+
 pub(super) fn emit_update_stmt(e: &mut EventEmitter, n: &UpdateStmt) {
     e.group_start(GroupKind::UpdateStmt);
 
@@ -33,13 +32,13 @@ pub(super) fn emit_update_stmt(e: &mut EventEmitter, n: &UpdateStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FROM_KW);
         e.space();
-        emit_comma_separated_list(e, &n.from_clause, super::emit_node);
+        emit_comma_separated_list(e, &n.from_clause, emit_node);
     }
 
     if let Some(ref where_clause) = n.where_clause {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, where_clause);
+        emit_clause_condition(e, where_clause);
     }
 
     if let Some(returning) = &n.returning_clause {

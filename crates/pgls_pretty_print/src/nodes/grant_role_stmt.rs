@@ -1,11 +1,8 @@
-use pgls_query::{NodeEnum, protobuf::GrantRoleStmt};
+use pgls_query::protobuf::GrantRoleStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::{def_elem::emit_grant_role_option, grant_stmt::emit_grant_list};
+use super::def_elem::emit_grant_role_option;
+use super::grant_stmt::emit_grant_list;
+use super::prelude::*;
 
 pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
     e.group_start(GroupKind::GrantRoleStmt);
@@ -22,7 +19,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
             if let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() {
                 e.space();
                 // Emit the option name
-                super::emit_keyword(e, &def.defname);
+                emit_keyword(e, &def.defname);
                 e.space();
                 e.token(TokenKind::OPTION_KW);
                 e.space();
@@ -34,7 +31,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
     // Role list
     if !n.granted_roles.is_empty() {
         e.space();
-        emit_grant_list(e, &n.granted_roles, super::emit_node);
+        emit_grant_list(e, &n.granted_roles, emit_node);
     }
 
     // The clauses after the granted roles continue the statement, so a broken one indents them.
@@ -42,7 +39,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
 
     // TO or FROM
     if let Some(grantee) = n.grantee_roles.first() {
-        super::emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
+        emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
     }
     if n.is_grant {
         e.line(LineType::SoftOrSpace);
@@ -55,7 +52,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
     // Grantee list
     if !n.grantee_roles.is_empty() {
         e.space();
-        emit_grant_list(e, &n.grantee_roles, super::emit_node);
+        emit_grant_list(e, &n.grantee_roles, emit_node);
     }
 
     // WITH options (WITH INHERIT TRUE, SET FALSE, etc.) - only for GRANT

@@ -1,8 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::{NodeEnum, protobuf::CreateExtensionStmt};
+use pgls_query::protobuf::CreateExtensionStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensionStmt) {
     e.group_start(GroupKind::CreateExtensionStmt);
@@ -21,7 +19,7 @@ pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensi
         e.space();
     }
 
-    super::emit_identifier_maybe_quoted(e, &n.extname);
+    emit_identifier_maybe_quoted(e, &n.extname);
 
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
@@ -50,7 +48,7 @@ fn emit_extension_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefEl
                 e.space();
                 // Schema name is a String node - emit_node dispatches to
                 // emit_string which uses emit_identifier_maybe_quoted
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "new_version" => {
@@ -59,9 +57,9 @@ fn emit_extension_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefEl
                 e.space();
                 // Version must be a quoted string literal
                 if let Some(NodeEnum::String(s)) = &arg.node {
-                    super::emit_string_literal(e, s);
+                    emit_string_literal(e, s);
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -70,10 +68,10 @@ fn emit_extension_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefEl
         }
         _ => {
             // Fallback for unknown options
-            super::string::emit_keyword(e, &def.defname);
+            emit_keyword(e, &def.defname);
             if let Some(ref arg) = def.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
     }

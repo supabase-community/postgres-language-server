@@ -1,14 +1,7 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_parenthesized_list,
-};
-use pgls_query::protobuf::{self, TypeName};
+use pgls_query::protobuf;
+use pgls_query::protobuf::TypeName;
 
-use super::string::{
-    emit_identifier, emit_identifier_maybe_quoted, emit_type_identifier_maybe_quoted,
-    needs_quoting_as_function_or_type_name,
-};
+use super::prelude::*;
 
 const INTERVAL_MASK_MONTH: i32 = 1 << 1;
 const INTERVAL_MASK_YEAR: i32 = 1 << 2;
@@ -22,7 +15,7 @@ const INTERVAL_FULL_PRECISION: i32 = 0xFFFF;
 pub(super) fn emit_type_name(e: &mut EventEmitter, n: &TypeName) {
     // Column definitions and casts call this helper directly rather than emit_node, so this is the
     // only place that can emit the comments written next to a type.
-    super::emit_with_comments_at(e, n.location, |e| emit_type_name_tokens(e, n));
+    emit_with_comments_at(e, n.location, |e| emit_type_name_tokens(e, n));
 }
 
 fn emit_type_name_tokens(e: &mut EventEmitter, n: &TypeName) {
@@ -203,9 +196,7 @@ fn emit_type_modifiers(e: &mut EventEmitter, n: &TypeName, name_parts: &[String]
     }
 
     if !n.typmods.is_empty() {
-        emit_parenthesized_list(e, &n.typmods, |node, emitter| {
-            super::emit_node(node, emitter)
-        });
+        emit_parenthesized_list(e, &n.typmods, emit_node);
     }
 }
 
@@ -243,9 +234,7 @@ fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[Stri
             e.token(TokenKind::TIME_KW);
             // Emit precision if any
             if !n.typmods.is_empty() {
-                emit_parenthesized_list(e, &n.typmods, |node, emitter| {
-                    super::emit_node(node, emitter)
-                });
+                emit_parenthesized_list(e, &n.typmods, emit_node);
             }
             e.space();
             e.token(TokenKind::WITH_KW);
@@ -258,9 +247,7 @@ fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[Stri
             e.token(TokenKind::TIMESTAMP_KW);
             // Emit precision if any
             if !n.typmods.is_empty() {
-                emit_parenthesized_list(e, &n.typmods, |node, emitter| {
-                    super::emit_node(node, emitter)
-                });
+                emit_parenthesized_list(e, &n.typmods, emit_node);
             }
             e.space();
             e.token(TokenKind::WITH_KW);

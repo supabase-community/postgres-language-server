@@ -1,30 +1,28 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::{XmlOptionType, XmlSerialize};
+
+use super::prelude::*;
 
 pub(super) fn emit_xml_serialize(e: &mut EventEmitter, n: &XmlSerialize) {
     e.group_start(GroupKind::XmlSerialize);
 
-    super::emit_keyword(e, "xmlserialize");
-    super::open_call_arguments(e);
+    emit_keyword(e, "xmlserialize");
+    open_call_arguments(e);
 
     // XmlOptionType: XmloptionDocument=1, XmloptionContent=2
     match n.xmloption() {
         XmlOptionType::XmloptionDocument => {
-            super::emit_keyword(e, "document");
+            emit_keyword(e, "document");
             e.space();
         }
         _ => {
-            super::emit_keyword(e, "content");
+            emit_keyword(e, "content");
             e.space();
         }
     }
 
     // Expression to serialize
     if let Some(ref expr) = n.expr {
-        super::emit_node(expr, e);
+        emit_node(expr, e);
     }
 
     // AS type
@@ -38,10 +36,10 @@ pub(super) fn emit_xml_serialize(e: &mut EventEmitter, n: &XmlSerialize) {
     // INDENT option
     if n.indent {
         e.space();
-        super::emit_keyword(e, "indent");
+        emit_keyword(e, "indent");
     }
 
-    super::close_call_arguments(e);
+    close_call_arguments(e);
 
     e.group_end();
 }

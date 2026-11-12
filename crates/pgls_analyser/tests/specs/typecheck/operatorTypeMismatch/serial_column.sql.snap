@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- A serial2 column is a smallint, and there is no smallint + timestamp operator.
+create table counters (a serial2);
+-- expect_lint/operatorTypeMismatch
+select a + timestamp '2020-01-01' from counters;
+
+```
+
+# Diagnostics
+lint/operatorTypeMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Operator does not exist: smallint + timestamp without time zone
+  
+  i No operator matches the given name and argument types. You might need to add explicit type casts.
