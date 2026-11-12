@@ -1,5 +1,6 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::LockMode;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -51,10 +52,13 @@ impl LinterRule for AvoidWideLockWindow {
             return diagnostics;
         }
 
+        // The first table that the statement locks ACCESS EXCLUSIVE.
         let current_table = match ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => {
-                tx_state.access_exclusive_table_for_alter(stmt, ctx.catalog())
-            }
+            pgls_query::NodeEnum::AlterTableStmt(_) => tx_state
+                .table_locks(ctx.stmt(), ctx.catalog())
+                .into_iter()
+                .find(|lock| lock.mode == LockMode::AccessExclusive)
+                .map(|lock| (lock.schema, lock.name)),
             _ => None,
         };
 

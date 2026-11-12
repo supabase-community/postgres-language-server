@@ -967,7 +967,7 @@ export interface LinterRules {
    */
   avoidAlterEnumAddValue?: RuleConfiguration_for_Null;
   /**
-   * Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.
+   * Attaching a partition acquires an ACCESS EXCLUSIVE lock on the partition.
    */
   avoidAttachingPartition?: RuleConfiguration_for_Null;
   /**
