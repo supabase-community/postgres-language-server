@@ -248,8 +248,8 @@ struct KeywordAnchor {
 }
 
 /// Anchors every comment in a consecutive group to the following keyword, when no node starts
-/// there. A comma counts as such a keyword. Matching CASE and END tokens identifies the expression
-/// that owns a closing comment.
+/// there. A comma counts as such a keyword, but anchors only the comment right before it. Matching
+/// CASE and END tokens identifies the expression that owns a closing comment.
 fn keywords_after_comments(
     sql: &str,
     locations: &[i32],
@@ -296,13 +296,22 @@ fn keywords_after_comments(
             _ => None,
         };
         previous_token = kind;
+        let is_comma = kind == Some(Token::Ascii44);
         if !pending_comments.is_empty()
-            && (token.keyword_kind != KeywordKind::NoKeyword as i32 || kind == Some(Token::Ascii44))
+            && (token.keyword_kind != KeywordKind::NoKeyword as i32 || is_comma)
             && locations.binary_search(&token.start).is_err()
             && let Some(keyword) = sql.get(token.start as usize..token.end as usize)
         {
-            let group_start = pending_comments[0];
-            for &comment_start in &pending_comments {
+            // A comma anchors only the comment right before it, in a group of its own: the
+            // comments before it may belong to different items, and placing them together moves
+            // them on every pass.
+            let anchored = if is_comma {
+                &pending_comments[pending_comments.len() - 1..]
+            } else {
+                &pending_comments[..]
+            };
+            let group_start = anchored[0];
+            for &comment_start in anchored {
                 keywords.insert(
                     comment_start,
                     KeywordAnchor {
