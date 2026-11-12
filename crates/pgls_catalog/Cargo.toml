@@ -31,8 +31,9 @@ sqlx           = { workspace = true, optional = true }
 strum          = { workspace = true }
 
 [dev-dependencies]
-insta           = { workspace = true }
-pgls_test_utils = { workspace = true }
+insta                 = { workspace = true }
+pgls_postgres_regress = { workspace = true }
+pgls_test_utils       = { workspace = true }
 
 [lib]
 doctest = false
