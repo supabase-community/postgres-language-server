@@ -62,6 +62,7 @@ define_categories! {
     "lint/disallowUniqueConstraint": "https://pg-language-server.com/latest/reference/rules/disallow-unique-constraint/",
     "lint/functionArgumentMismatch": "https://pg-language-server.com/latest/reference/rules/function-argument-mismatch/",
     "lint/functionReturnTypeMismatch": "https://pg-language-server.com/latest/reference/rules/function-return-type-mismatch/",
+    "lint/generatedColumnAssignment": "https://pg-language-server.com/latest/reference/rules/generated-column-assignment/",
     "lint/identifierTooLong": "https://pg-language-server.com/latest/reference/rules/identifier-too-long/",
     "lint/insertColumnMismatch": "https://pg-language-server.com/latest/reference/rules/insert-column-mismatch/",
     "lint/invalidCast": "https://pg-language-server.com/latest/reference/rules/invalid-cast/",

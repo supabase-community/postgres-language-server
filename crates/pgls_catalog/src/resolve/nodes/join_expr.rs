@@ -5,12 +5,11 @@ use super::{
     Resolver,
     alias::{apply_alias, apply_typed_alias},
     from_clause::resolve_from_item,
-    resolve_node,
 };
 use crate::{
     resolve::{
-        expr::infer_expr,
         scope::{Item, Level, StarEntry, StarOrder},
+        utils::resolve_expr,
     },
     typing::{Selection, TypedColumn, select_common_type},
 };
@@ -92,10 +91,7 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
 
     if let Some(quals) = n.quals.as_deref() {
         r.enter_level(joined);
-        resolve_node(r, quals);
-        if let Some(expr) = quals.node.as_ref() {
-            infer_expr(r, expr);
-        }
+        resolve_expr(r, quals);
         joined = r.exit_level();
     }
 
