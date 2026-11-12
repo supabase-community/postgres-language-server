@@ -44,12 +44,12 @@ pub(super) fn emit_update_stmt(e: &mut EventEmitter, n: &UpdateStmt) {
         emit_clause_condition(e, where_clause);
     }
 
-    if let Some(first) = n.returning_list.first() {
-        emit_comments_before_keyword(e, "returning", first);
+    if let Some(returning) = &n.returning_clause {
+        if let Some(first) = returning.options.first().or(returning.exprs.first()) {
+            emit_comments_before_keyword(e, "returning", first);
+        }
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::RETURNING_KW);
-        e.space();
-        emit_comma_separated_list(e, &n.returning_list, emit_node);
+        super::emit_returning_clause(e, returning);
     }
 
     e.group_end();

@@ -1,0 +1,34 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- Postgres computes the values of generated and identity columns, and serial columns have a default
+alter table test add column total int not null generated always as (price * 2) stored;
+alter table test add column doubled int not null generated always as (price * 2) virtual;
+alter table test add column id int not null generated always as identity;
+alter table test add column seq bigserial not null;
+-- Only the column without a value is reported
+-- expect_lint/addingRequiredField
+alter table test add column a int not null default 0, add column b int not null;
+-- A NOT NULL constraint (Postgres 18) in the same statement
+-- expect_lint/addingRequiredField
+alter table test add column c int, add constraint test_c_not_null not null c;
+
+```
+
+# Diagnostics
+lint/addingRequiredField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.
+  
+  i Make new columns optional initially by omitting the NOT NULL constraint until all existing data and application code has been updated. Once no NULL values are written to or persisted in the database, set it to NOT NULL. Alternatively, if using Postgres version 11 or later, add a DEFAULT value that is not volatile. This allows the column to keep its NOT NULL constraint.
+  
+
+
+lint/addingRequiredField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.
+  
+  i Make new columns optional initially by omitting the NOT NULL constraint until all existing data and application code has been updated. Once no NULL values are written to or persisted in the database, set it to NOT NULL. Alternatively, if using Postgres version 11 or later, add a DEFAULT value that is not volatile. This allows the column to keep its NOT NULL constraint.

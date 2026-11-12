@@ -87,6 +87,7 @@ pub fn format_statement(
     let attached = comments::attach_comments(sql, ast);
     let has_comments = !attached.leading_by_location.is_empty()
         || !attached.trailing_by_location.is_empty()
+        || !attached.before_case_end_by_location.is_empty()
         || !attached.unattached.is_empty();
 
     if !has_comments {
@@ -194,6 +195,7 @@ fn render(
         attached.leading_by_location,
         attached.trailing_by_location,
     );
+    emitter.set_comments_before_case_end(attached.before_case_end_by_location);
     emitter.set_node_locations(attached.node_locations);
     emitter.set_truncated_identifiers(truncated_identifiers);
     nodes::emit_statement(&mut emitter, ast);

@@ -1,4 +1,5 @@
-use super::*;
+use crate::resolve::{resolver::Resolver, utils::common};
+use crate::{lookup::Lookup, typing::Type};
 
 /// `ARRAY[...]`: the array type of the elements' common type. Port of [`transformArrayExpr`]
 /// for one-dimensional arrays with a known element type.

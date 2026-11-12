@@ -1,3 +1,4 @@
+use crate::utils::added_constraints;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -9,6 +10,10 @@ declare_lint_rule! {
     /// When you add a PRIMARY KEY constraint, Postgres needs to scan the entire table
     /// to verify uniqueness and build the underlying index. This requires an ACCESS EXCLUSIVE
     /// lock which blocks all reads and writes.
+    ///
+    /// Instead, create a unique index concurrently and add the primary key using that index. A
+    /// temporal primary key (`WITHOUT OVERLAPS`, Postgres 18) needs a GiST index, which can't be
+    /// unique, so it has no such alternative.
     ///
     /// ## Examples
     ///
@@ -45,45 +50,10 @@ impl LinterRule for AddingPrimaryKeyConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut diagnostics = Vec::new();
-
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    match cmd.subtype() {
-                        // Check for ADD CONSTRAINT PRIMARY KEY
-                        pgls_query::protobuf::AlterTableType::AtAddConstraint => {
-                            if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
-                                cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                                && let Some(diagnostic) =
-                                    check_for_primary_key_constraint(constraint)
-                            {
-                                diagnostics.push(diagnostic);
-                            }
-                        }
-                        // Check for ADD COLUMN with PRIMARY KEY
-                        pgls_query::protobuf::AlterTableType::AtAddColumn => {
-                            if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                                cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                            {
-                                for constraint in &col_def.constraints {
-                                    if let Some(pgls_query::NodeEnum::Constraint(constr)) =
-                                        &constraint.node
-                                        && let Some(diagnostic) =
-                                            check_for_primary_key_constraint(constr)
-                                    {
-                                        diagnostics.push(diagnostic);
-                                    }
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        }
-
-        diagnostics
+        // `ADD CONSTRAINT ... PRIMARY KEY`, and `ADD COLUMN ... PRIMARY KEY`.
+        added_constraints(ctx.stmt())
+            .filter_map(|(constraint, _)| check_for_primary_key_constraint(constraint))
+            .collect()
     }
 }
 
@@ -93,6 +63,12 @@ fn check_for_primary_key_constraint(
     if constraint.contype() == pgls_query::protobuf::ConstrType::ConstrPrimary
         && constraint.indexname.is_empty()
     {
+        // `USING INDEX` needs a unique B-tree index, but a temporal key needs a GiST index.
+        let note = if constraint.without_overlaps {
+            "There is no concurrent alternative for a temporal key (WITHOUT OVERLAPS). Use SET lock_timeout to limit the impact on concurrent operations."
+        } else {
+            "Add the PRIMARY KEY constraint USING an index."
+        };
         Some(
             LinterDiagnostic::new(
                 rule_category!(),
@@ -102,7 +78,7 @@ fn check_for_primary_key_constraint(
                 },
             )
             .detail(None, "Adding a PRIMARY KEY constraint requires an ACCESS EXCLUSIVE lock which blocks reads.")
-            .note("Add the PRIMARY KEY constraint USING an index."),
+            .note(note),
         )
     } else {
         None

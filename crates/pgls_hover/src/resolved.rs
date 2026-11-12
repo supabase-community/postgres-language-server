@@ -58,14 +58,23 @@ pub(crate) fn resolved_hoverable<'a>(
 }
 
 /// The function that a call resolves to, for statements whose names the editor grammar doesn't
-/// classify, like `CALL`.
+/// classify, like `CALL`. On the schema of a qualified name, like `public` in
+/// `call public.proc()`, the schema. `position` is the cursor in `sql`, the statement.
 pub(crate) fn resolved_function<'a>(
     references: &[Reference],
     snapshot: &'a Snapshot,
+    sql: &str,
+    position: TextSize,
 ) -> Option<Hoverable<'a>> {
     references.iter().find_map(|reference| match reference {
-        Reference::Function { function, .. } => {
-            find_function(snapshot, function).map(Hoverable::Function)
+        Reference::Function { function, span, .. } => {
+            if span.is_some_and(|span| !is_in_last_part(sql, span, position)) {
+                snapshot
+                    .find_schema(&function.schema)
+                    .map(Hoverable::Schema)
+            } else {
+                find_function(snapshot, function).map(Hoverable::Function)
+            }
         }
         _ => None,
     })
