@@ -20,7 +20,8 @@ pub(super) fn emit_delete_stmt(e: &mut EventEmitter, n: &DeleteStmt) {
         super::emit_range_var(e, relation);
     }
 
-    if !n.using_clause.is_empty() {
+    if let Some(first) = n.using_clause.first() {
+        emit_comments_before_keyword(e, "using", first);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
@@ -28,12 +29,16 @@ pub(super) fn emit_delete_stmt(e: &mut EventEmitter, n: &DeleteStmt) {
     }
 
     if let Some(ref where_clause) = n.where_clause {
+        emit_comments_before_keyword(e, "where", where_clause);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
         emit_clause_condition(e, where_clause);
     }
 
     if let Some(returning) = &n.returning_clause {
+        if let Some(first) = returning.options.first().or(returning.exprs.first()) {
+            emit_comments_before_keyword(e, "returning", first);
+        }
         e.line(LineType::SoftOrSpace);
         super::emit_returning_clause(e, returning);
     }

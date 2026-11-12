@@ -196,6 +196,7 @@ fn render(
         attached.trailing_by_location,
     );
     emitter.set_comments_before_case_end(attached.before_case_end_by_location);
+    emitter.set_node_locations(attached.node_locations);
     emitter.set_truncated_identifiers(truncated_identifiers);
     nodes::emit_statement(&mut emitter, ast);
     let pending = emitter.pending_comments();
@@ -292,7 +293,7 @@ mod tests {
             .expect("second pass")
             .formatted;
 
-        assert!(first.contains("order by -- WHERE"));
+        assert!(first.contains("-- WHERE\n--  a is active\norder by a"));
         assert_eq!(first, second);
     }
 

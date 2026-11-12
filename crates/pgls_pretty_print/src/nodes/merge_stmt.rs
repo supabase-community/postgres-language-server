@@ -23,6 +23,7 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
 
     // USING clause
     if let Some(ref source) = n.source_relation {
+        emit_comments_before_keyword(e, "using", source);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
@@ -49,6 +50,9 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
 
     // RETURNING clause - wrap in group for compact formatting
     if let Some(returning) = &n.returning_clause {
+        if let Some(first) = returning.options.first().or(returning.exprs.first()) {
+            emit_comments_before_keyword(e, "returning", first);
+        }
         e.line(LineType::SoftOrSpace);
         super::returning_clause::emit_returning_keyword(e, returning);
         e.indent_start();

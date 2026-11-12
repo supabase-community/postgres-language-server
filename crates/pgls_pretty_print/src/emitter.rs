@@ -62,6 +62,8 @@ pub struct EventEmitter {
     configured_layout: crate::Layout,
     /// Identifiers the parser truncated, by their truncated name, as written in the source.
     truncated_identifiers: HashMap<String, String>,
+    /// The locations comments are attached to, in source order.
+    node_locations: Vec<i32>,
 }
 
 impl EventEmitter {
@@ -102,6 +104,7 @@ impl EventEmitter {
             trailing_comments,
             comments_before_case_end: HashMap::new(),
             truncated_identifiers: HashMap::new(),
+            node_locations: Vec::new(),
             leading_line_comments_require_break: false,
             comments_after_separator: Vec::new(),
         }
@@ -124,6 +127,20 @@ impl EventEmitter {
     /// writes them as written rather than as the AST has them.
     pub fn set_truncated_identifiers(&mut self, identifiers: HashMap<String, String>) {
         self.truncated_identifiers = identifiers;
+    }
+
+    /// The locations comments are attached to, in source order.
+    pub fn set_node_locations(&mut self, locations: Vec<i32>) {
+        self.node_locations = locations;
+    }
+
+    /// The location of the node that follows the one at `location` in the source, which holds the
+    /// comments written between the two.
+    pub fn next_node_location(&self, location: i32) -> Option<i32> {
+        let index = self
+            .node_locations
+            .partition_point(|other| *other <= location);
+        self.node_locations.get(index).copied()
     }
 
     /// `name` as written in the source, when the parser truncated it.

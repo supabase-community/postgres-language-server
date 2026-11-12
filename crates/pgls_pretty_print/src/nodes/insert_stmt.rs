@@ -82,6 +82,9 @@ pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
     }
 
     if let Some(returning) = &n.returning_clause {
+        if let Some(first) = returning.options.first().or(returning.exprs.first()) {
+            emit_comments_before_keyword(e, "returning", first);
+        }
         emit_layout_break(e);
         super::emit_returning_clause(e, returning);
     }
