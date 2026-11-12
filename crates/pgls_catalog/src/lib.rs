@@ -35,8 +35,7 @@ pub use lookup::{
     OperatorInfo, OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
 pub use session::{
-    NonTransactional, Session, TransactionMode, ends_transaction_block, is_reindex_concurrent,
-    is_vacuum_full, prevents_transaction_block,
+    NonTransactional, Session, TransactionMode, ends_transaction_block, prevents_transaction_block,
 };
 pub use snapshot::*;
 pub use typing::*;

@@ -1,8 +1,8 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_catalog::is_vacuum_full;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::options::is_vacuum_full;
 
 declare_lint_rule! {
     /// `VACUUM FULL` rewrites the entire table and acquires an `ACCESS EXCLUSIVE` lock.

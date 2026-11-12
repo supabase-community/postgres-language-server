@@ -12,7 +12,6 @@ use pgls_query::{NodeEnum, protobuf};
 use crate::Catalog;
 
 use locks::Locks;
-pub use locks::{is_reindex_concurrent, is_vacuum_full};
 use settings::Settings;
 pub use transaction::{NonTransactional, ends_transaction_block, prevents_transaction_block};
 

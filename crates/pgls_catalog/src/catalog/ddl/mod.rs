@@ -23,6 +23,7 @@
 //!   table makes the indexes of all partitions unknown. `DROP COLUMN` doesn't drop the indexes
 //!   on the column.
 
+mod alter_enum_stmt;
 mod alter_function_stmt;
 mod alter_object_schema_stmt;
 mod alter_table_stmt;
@@ -50,6 +51,7 @@ use pgls_query::NodeEnum;
 
 use super::Catalog;
 
+use alter_enum_stmt::apply_alter_enum_stmt;
 use alter_function_stmt::apply_alter_function_stmt;
 use alter_object_schema_stmt::apply_alter_object_schema_stmt;
 use alter_table_stmt::apply_alter_table_stmt;
@@ -99,6 +101,7 @@ impl Catalog {
             NodeEnum::AlterFunctionStmt(n) => apply_alter_function_stmt(c, n, search_path),
             NodeEnum::IndexStmt(n) => apply_index_stmt(c, n, search_path),
             NodeEnum::AlterTableStmt(n) => apply_alter_table_stmt(c, n, search_path),
+            NodeEnum::AlterEnumStmt(n) => apply_alter_enum_stmt(c, n, search_path),
             NodeEnum::RenameStmt(n) => apply_rename_stmt(c, n, search_path),
             NodeEnum::AlterObjectSchemaStmt(n) => apply_alter_object_schema_stmt(c, n, search_path),
             NodeEnum::DropStmt(n) => apply_drop_stmt(c, n, search_path),

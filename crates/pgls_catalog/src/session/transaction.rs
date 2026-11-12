@@ -5,9 +5,9 @@ use pgls_query::{
     NodeEnum,
     protobuf::{self, AlterSubscriptionType, DiscardMode, ReindexObjectType, TransactionStmtKind},
 };
+use pgls_query_ext::options::{def_elem_bool, find_def_elem, is_reindex_concurrent};
 use pgls_query_ext::utils::{alter_table_cmds, detaches_concurrently};
 
-use super::locks::is_reindex_concurrent;
 use crate::Catalog;
 
 /// A statement that Postgres can't run in a transaction block, see
@@ -39,12 +39,11 @@ impl NonTransactional {
 
 /// The statement, if Postgres refuses to run it in a transaction block or from a function. These
 /// are the callers of [`PreventInTransactionBlock`] that we can recognize without the state of
-/// the database. `catalog` and `search_path` tell whether a table is partitioned.
+/// the database. `catalog` and `search_path` tell whether a table or index is partitioned.
 ///
 /// Not covered, because whether they fail depends on state we don't have: `DROP SUBSCRIPTION`
 /// (only with a replication slot), `ALTER SUBSCRIPTION ... SET/ADD/DROP PUBLICATION` with
-/// refresh and `SET (failover/two_phase)`, `REINDEX INDEX` of a partitioned index, and the
-/// walsender replication commands.
+/// refresh and `SET (failover/two_phase)`, and the walsender replication commands.
 ///
 /// [`PreventInTransactionBlock`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L3648
 pub fn prevents_transaction_block(
@@ -54,6 +53,8 @@ pub fn prevents_transaction_block(
 ) -> Option<NonTransactional> {
     let is_partitioned_table =
         |relation: &protobuf::RangeVar| catalog.is_partitioned_table(relation, search_path);
+    let is_partitioned_index =
+        |index: &protobuf::RangeVar| catalog.is_partitioned_index_of(index, search_path);
     let statement = match stmt {
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/tcop/utility.c#L1465
         NodeEnum::IndexStmt(stmt) if stmt.concurrent => {
@@ -81,9 +82,7 @@ pub fn prevents_transaction_block(
         NodeEnum::AlterSystemStmt(_) => NonTransactional::new("ALTER SYSTEM"),
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/dbcommands.c#L2439
         NodeEnum::AlterDatabaseStmt(stmt)
-            if stmt.options.iter().any(|option| {
-                matches!(&option.node, Some(NodeEnum::DefElem(def)) if def.defname == "tablespace")
-            }) =>
+            if find_def_elem(&stmt.options, "tablespace").is_some() =>
         {
             NonTransactional::new("ALTER DATABASE SET TABLESPACE")
         }
@@ -102,12 +101,14 @@ pub fn prevents_transaction_block(
             ReindexObjectType::ReindexObjectDatabase => NonTransactional::new("REINDEX DATABASE"),
             // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/indexcmds.c#L3392
             ReindexObjectType::ReindexObjectTable
-                if stmt
-                    .relation
-                    .as_ref()
-                    .is_some_and(is_partitioned_table) =>
+                if stmt.relation.as_ref().is_some_and(is_partitioned_table) =>
             {
                 NonTransactional::new("REINDEX TABLE")
+            }
+            ReindexObjectType::ReindexObjectIndex
+                if stmt.relation.as_ref().is_some_and(is_partitioned_index) =>
+            {
+                NonTransactional::new("REINDEX INDEX")
             }
             _ => return None,
         },
@@ -117,18 +118,22 @@ pub fn prevents_transaction_block(
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/tcop/utility.c#L652
         NodeEnum::TransactionStmt(stmt) => match stmt.kind() {
-            TransactionStmtKind::TransStmtCommitPrepared => NonTransactional::new("COMMIT PREPARED"),
+            TransactionStmtKind::TransStmtCommitPrepared => {
+                NonTransactional::new("COMMIT PREPARED")
+            }
             TransactionStmtKind::TransStmtRollbackPrepared => {
                 NonTransactional::new("ROLLBACK PREPARED")
             }
             _ => return None,
         },
-        // `create_slot` is on by default, unless `connect = false`.
+        // `create_slot` is on by default, unless `connect = false`. Postgres rejects an invalid
+        // value of either before it checks for a transaction block.
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/subscriptioncmds.c#L602
         NodeEnum::CreateSubscriptionStmt(stmt) => {
-            let create_slot = bool_option(&stmt.options, "create_slot")
-                .unwrap_or_else(|| bool_option(&stmt.options, "connect").unwrap_or(true));
-            if !create_slot {
+            let option = |name| find_def_elem(&stmt.options, name).map(def_elem_bool);
+            let connect = option("connect").unwrap_or(Some(true));
+            let create_slot = option("create_slot").unwrap_or(connect);
+            if connect.is_none() || create_slot != Some(true) {
                 return None;
             }
             NonTransactional::new("CREATE SUBSCRIPTION ... WITH (create_slot = true)")
@@ -163,24 +168,4 @@ pub fn ends_transaction_block(stmt: &NodeEnum) -> bool {
                 | TransactionStmtKind::TransStmtPrepare
         )
     )
-}
-
-/// The value of a boolean option, like [`defGetBoolean`], if it is set. An option without a
-/// value is on.
-///
-/// [`defGetBoolean`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/define.c#L94
-fn bool_option(options: &[protobuf::Node], name: &str) -> Option<bool> {
-    let def = options.iter().find_map(|option| match &option.node {
-        Some(NodeEnum::DefElem(def)) if def.defname == name => Some(def),
-        _ => None,
-    })?;
-    Some(match def.arg.as_ref().and_then(|arg| arg.node.as_ref()) {
-        None => true,
-        Some(NodeEnum::Integer(value)) => value.ival != 0,
-        Some(NodeEnum::Boolean(value)) => value.boolval,
-        Some(NodeEnum::String(value)) => !["false", "off", "0"]
-            .iter()
-            .any(|off| value.sval.eq_ignore_ascii_case(off)),
-        Some(_) => true,
-    })
 }
