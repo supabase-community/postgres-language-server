@@ -25,7 +25,6 @@ bindgen     = "0.72.0"
 cc          = "1.0.83"
 glob        = "0.3.1"
 prost-build = "0.13.5"
-which       = "6.0.0"
 
 [dev-dependencies]
 easy-parallel = "3.2.0"

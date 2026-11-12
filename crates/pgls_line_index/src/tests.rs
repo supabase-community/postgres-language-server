@@ -1,7 +1,7 @@
-use pgls_text_size::TextSize;
+use pgls_text_size::{TextRange, TextSize};
 
 use crate::WideEncoding::{Utf16, Utf32};
-use crate::{LineCol, LineIndex, WideLineCol, offset_of_char_position};
+use crate::{LineCol, LineIndex, WideLineCol, changed_range, offset_of_char_position};
 
 #[test]
 fn line_breaks_and_wide_characters() {
@@ -13,7 +13,8 @@ fn line_breaks_and_wide_characters() {
     let at = |line, col| LineCol { line, col };
 
     assert_eq!(line_col(2), at(0, 2));
-    assert_eq!(line_col(3), at(0, 3));
+    // Between the `\r` and the `\n`: the end of the line.
+    assert_eq!(line_col(3), at(0, 2));
     assert_eq!(line_col(4), at(1, 0));
     assert_eq!(line_col(6), at(1, 2));
     assert_eq!(line_col(8), at(2, 0));
@@ -21,12 +22,18 @@ fn line_breaks_and_wide_characters() {
     assert_eq!(line_col(14), at(2, 6));
     assert_eq!(line_col(15), at(2, 7));
 
-    // Past the end of a line: its line break. Past the last line: the end of the text.
+    // Past the end of a line: the start of its line break. Past the last line: the end of the
+    // text.
     let clamped = |line, col| u32::from(line_index.offset_clamped(at(line, col)));
-    assert_eq!(clamped(0, 100), 3);
+    assert_eq!(clamped(0, 100), 2);
     assert_eq!(clamped(1, 100), 7);
     assert_eq!(clamped(2, 100), 15);
     assert_eq!(clamped(3, 0), 15);
+    // Inside a character: the start of the character.
+    assert_eq!(clamped(2, 1), 8);
+    assert_eq!(clamped(2, 4), 10);
+    let mid_surrogate_pair = line_index.to_utf8(Utf16, WideLineCol { line: 2, col: 2 });
+    assert_eq!(u32::from(line_index.offset_clamped(mid_surrogate_pair)), 10);
 
     for (offset, utf16, utf32) in [(8, 0, 0), (10, 1, 1), (14, 3, 2), (15, 4, 3)] {
         let utf8 = line_col(offset);
@@ -88,6 +95,43 @@ fn test_every_chars() {
             lin_col.col += char.len_utf8() as u32;
             col_utf16 += char.len_utf16() as u32;
             col_utf32 += 1;
+        }
+    }
+}
+
+#[test]
+fn changed_range_keeps_the_common_start_and_end() {
+    let range = |start: u32, end: u32| TextRange::new(start.into(), end.into());
+    assert_eq!(
+        changed_range("drop index ä_idx;", "drop index concurrently ä_idx;"),
+        Some((range(11, 11), "concurrently "))
+    );
+    assert_eq!(changed_range("a", "a"), Some((range(1, 1), "")));
+    assert_eq!(changed_range("ab", "b"), Some((range(0, 1), "")));
+}
+
+#[test]
+fn changed_range_keeps_crlf_whole() {
+    for (old, new) in [
+        ("select 1;\r\nselect 2;", "select 1;\nselect 2;"),
+        ("select 1;\nselect 2;", "select 1;\r\nselect 2;"),
+        ("select 1;\r\n", "select 1;\r\r\n"),
+        ("select 1;\r\nselect 2;", "select 1;\r\n\r\nselect 2;"),
+    ] {
+        let (range, new_text) = changed_range(old, new).unwrap();
+        let mut applied = old.to_string();
+        applied.replace_range(std::ops::Range::<usize>::from(range), new_text);
+        assert_eq!(applied, new, "{range:?}");
+
+        // Neither end is between the `\r` and the `\n`, so a position can point at both.
+        let line_index = LineIndex::new(old);
+        for offset in [range.start(), range.end()] {
+            let line_col = line_index.line_col(offset).unwrap();
+            assert_eq!(
+                line_index.offset_clamped(line_col),
+                offset,
+                "{old:?} {offset:?}"
+            );
         }
     }
 }

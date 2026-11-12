@@ -117,8 +117,10 @@ Code that fails at runtime because of names or types.
 | [assignmentTypeMismatch](./rules/assignment-type-mismatch.md) ✅ 🔌 | An expression assigned to a column cannot be coerced to that column's type. |
 | [functionArgumentMismatch](./rules/function-argument-mismatch.md) ✅ 🔌 | A function name and argument count exist, but its argument types do not select exactly one overload. |
 | [functionReturnTypeMismatch](./rules/function-return-type-mismatch.md) ✅ 🔌 | The final statement of a SQL function doesn't return what the function is declared to return. |
+| [generatedColumnAssignment](./rules/generated-column-assignment.md) ✅ 🔌 | An `INSERT` or `UPDATE` assigns a value to a generated column or a `GENERATED ALWAYS` identity column. |
 | [insertColumnMismatch](./rules/insert-column-mismatch.md) ✅ 🔌 | An `INSERT` has a different number of target columns than values. |
 | [invalidCast](./rules/invalid-cast.md) ✅ 🔌 | An explicit cast is not permitted between the source and target types. |
+| [invalidMerge](./rules/invalid-merge.md) ✅ 🔌 | A `MERGE`, or `merge_action()`, that Postgres rejects. |
 | [missingFromClauseEntry](./rules/missing-from-clause-entry.md) ✅ 🔌 | A column is qualified with a name that is not in the `FROM` clause. |
 | [operatorTypeMismatch](./rules/operator-type-mismatch.md) ✅ 🔌 | An operator exists by name but cannot be resolved for the operand types, or has multiple equally suitable candidates. |
 | [unknownColumn](./rules/unknown-column.md) ✅ 🔌 | A column does not exist on the relation or record it is taken from. |

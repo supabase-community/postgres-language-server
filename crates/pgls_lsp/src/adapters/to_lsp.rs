@@ -1,4 +1,4 @@
-use crate::adapters::PositionEncoding;
+use crate::adapters::{PositionEncoding, from_lsp};
 use anyhow::{Context, Result};
 use pgls_line_index::LineIndex;
 use pgls_text_edit::{CompressedOp, DiffOp, TextEdit};
@@ -24,6 +24,13 @@ pub fn position(
             ls_types::Position::new(line_col.line, line_col.col)
         }
     };
+    // An offset between the `\r` and the `\n` of a line break is the end of its line, so the
+    // position maps back to the offset of `line_col`, not always to `offset`.
+    debug_assert_eq!(
+        from_lsp::offset(line_index, position, position_encoding).ok(),
+        line_index.offset(line_col),
+        "{position:?} doesn't map back to offset {offset:?}"
+    );
 
     Ok(position)
 }
@@ -90,6 +97,11 @@ pub fn text_edits(
             }
         }
     }
+    debug_assert_eq!(
+        offset,
+        line_index.len(),
+        "the diff doesn't cover the whole text"
+    );
 
     Ok(result)
 }

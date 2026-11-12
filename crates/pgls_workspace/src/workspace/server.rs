@@ -7,6 +7,11 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
+#[cfg(feature = "db")]
+use crate::features::code_actions::execute_statement::{
+    execution,
+    running::{RUNNING_STATEMENTS_MAX, RunningStatements},
+};
 use analyser::AnalyserVisitorBuilder;
 #[cfg(feature = "db")]
 use async_helper::run_async;
@@ -14,27 +19,24 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
-use document::{DefaultMapper, Document, ExecuteStatementMapper, FormatStatementMapper};
+use document::{Document, ExecuteStatementMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 #[cfg(feature = "db")]
 use pg_query::convert_to_positional_params_with_metadata;
-use pgls_analyse::{
-    ActionCategory, AnalysisFilter, Applicability, RuleCategories, RuleCategoriesBuilder,
-    RuleFilter, SUPPRESSION_ACTION_CATEGORY,
-};
+use pgls_analyse::{AnalysisFilter, RuleCategories, RuleCategoriesBuilder, RuleFilter};
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix,
+    LinterDiagnostic, LinterOptions, MigrationSection,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session, TransactionMode};
-use std::borrow::Cow;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
+use pgls_configuration::inlay_hints::ParameterNameHints;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
@@ -45,29 +47,28 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_typecheck::TypecheckParams;
 use pgls_workspace_macros::ignored_path;
 use snapshot_manager::SnapshotManager;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use crate::{
     WorkspaceError,
     configuration::to_analyser_rules,
     features::{
         code_actions::{
-            CodeAction, CodeActionKind, CodeActionsParams, CodeActionsResult, CommandAction,
-            CommandActionCategory, EditAction, ExecuteStatementParams, ExecuteStatementResult,
-            FixFileMode, FixFileParams, FixFileResult, TextEdit,
+            self, CodeAction, CodeActionsParams, CodeActionsResult, ExecuteStatementParams,
+            ExecuteStatementResult, FixFileParams, FixFileResult,
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{
             CheckDatabaseConnectionParams, CheckDatabaseConnectionResult, PullDiagnosticsResult,
             PullFileDiagnosticsParams,
         },
-        format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
+        format::{PullFileFormattingParams, PullFormattingResult},
         inlay_hints::{InlayHint, PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
         semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    workspace::{AnalyserDiagnosticsMapper, WithCSTandASTMapper},
+    workspace::{AnalyserDiagnosticsMapper, WithCSTMapper},
 };
 
 use super::{
@@ -80,7 +81,6 @@ use super::{
 pub use statement_identifier::StatementId;
 
 mod analyser;
-mod annotation;
 #[cfg(feature = "db")]
 mod async_helper;
 #[cfg(feature = "db")]
@@ -91,8 +91,10 @@ use crate::settings::DatabaseSettings;
 use connection_key::ConnectionKey;
 #[cfg(feature = "db")]
 mod connection_manager;
+#[cfg(feature = "db")]
+pub(crate) use connection_manager::DatabasePools;
 pub(crate) mod document;
-mod expand_star;
+mod formatting;
 #[cfg(feature = "db")]
 mod last_used;
 mod migration;
@@ -101,8 +103,6 @@ mod pg_query;
 mod pgpass;
 mod snapshot_manager;
 mod sql_function;
-#[cfg(feature = "db")]
-mod statement_execution;
 mod statement_identifier;
 mod tree_sitter;
 
@@ -123,6 +123,10 @@ pub struct WorkspaceServer {
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
+
+    /// The statements that are being executed, to cancel them
+    #[cfg(feature = "db")]
+    running_statements: RunningStatements,
 }
 
 /// A database snapshot with the changes of the statements before a statement.
@@ -159,6 +163,7 @@ impl WorkspaceServer {
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
             connection: ConnectionManager::new(),
+            running_statements: RunningStatements::default(),
         }
     }
 
@@ -364,60 +369,6 @@ impl WorkspaceServer {
         )
     }
 
-    /// The fixes of the lint diagnostics at the cursor, and an action to suppress each of them.
-    fn lint_code_actions(
-        &self,
-        settings: &Settings,
-        params: &CodeActionsParams,
-        doc: &Document,
-    ) -> Vec<CodeAction> {
-        let mut actions = Vec::new();
-        for diagnostic in
-            self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
-        {
-            let Some(span) = diagnostic.location().span else {
-                continue;
-            };
-            if !span.contains_inclusive(params.cursor_position) {
-                continue;
-            }
-            let category = diagnostic.get_category_name();
-            let rule = category.strip_prefix("lint/").unwrap_or(category);
-
-            if let Some(fix) = diagnostic.get_fix() {
-                actions.push(CodeAction {
-                    title: fix.message.clone(),
-                    kind: CodeActionKind::Edit(EditAction {
-                        rule: Some(category.to_string()),
-                        category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
-                        applicability: fix.applicability,
-                        edits: fix
-                            .edits
-                            .iter()
-                            .map(|edit| TextEdit {
-                                range: edit.range,
-                                new_text: edit.replacement.clone(),
-                            })
-                            .collect(),
-                    }),
-                    disabled_reason: None,
-                });
-            }
-
-            actions.push(CodeAction {
-                title: format!("Suppress rule {rule} for this statement"),
-                kind: CodeActionKind::Edit(EditAction {
-                    rule: Some(category.to_string()),
-                    category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
-                    applicability: Applicability::MaybeIncorrect,
-                    edits: vec![suppression_edit(doc, span.start(), rule)],
-                }),
-                disabled_reason: None,
-            });
-        }
-        actions
-    }
-
     /// The refactors offered at `position`: expanding a `*` into its columns. `settings` are the
     /// ones of the file.
     fn refactor_code_actions(
@@ -429,7 +380,7 @@ impl WorkspaceServer {
         // Code actions are requested whenever the cursor moves, so don't resolve the file unless
         // the cursor is on a `*` of a select list.
         let content = doc.get_document_content();
-        if !expand_star::is_at_star(content, position) {
+        if !code_actions::expand_star::is_at_star(content, position) {
             return Vec::new();
         }
 
@@ -449,7 +400,9 @@ impl WorkspaceServer {
         let (stmt_start, references) = self.references_at(settings, doc, &snapshot, position);
         references
             .iter()
-            .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
+            .filter_map(|reference| {
+                code_actions::expand_star::expand_star_action(reference, content, stmt_start)
+            })
             .collect()
     }
 
@@ -559,7 +512,7 @@ impl WorkspaceServer {
             // Statements in the bodies of SQL functions are not executed.
             if stmt.function.is_none() {
                 catalog.apply(&stmt.root, session.search_path());
-                session.apply(&stmt.root);
+                session.apply(&stmt.root, &catalog);
             }
         }
         catalog
@@ -592,7 +545,7 @@ impl WorkspaceServer {
                 if stmt.range != range {
                     return;
                 }
-                let position = position - range.start();
+                let position = stmt.statement_offset(position);
                 let (references, others): (Vec<_>, Vec<_>) = resolve(ResolveParams {
                     stmt: &stmt.root,
                     catalog,
@@ -636,7 +589,9 @@ impl WorkspaceServer {
 
     /// The references whose span contains `position`, in the innermost statement at `position`
     /// (the body of a SQL function rather than its `CREATE FUNCTION`). Their spans are relative
-    /// to the start of that statement, which is returned with them.
+    /// to the start of that statement, which is returned with them. Empty if the statement's
+    /// text isn't the source text, like a function body with escaped quotes, since the spans
+    /// would then not point into the document.
     fn references_at(
         &self,
         settings: Option<&Settings>,
@@ -644,7 +599,7 @@ impl WorkspaceServer {
         snapshot: &Arc<Snapshot>,
         position: TextSize,
     ) -> (TextSize, Vec<Reference>) {
-        let mut innermost: Option<(TextRange, Vec<Reference>)> = None;
+        let mut innermost: Option<(TextRange, bool, Vec<Reference>)> = None;
         self.walk_statements(
             settings,
             doc,
@@ -657,7 +612,7 @@ impl WorkspaceServer {
                 if !stmt.range.contains(position)
                     || innermost
                         .as_ref()
-                        .is_some_and(|(range, _)| !range.contains_range(stmt.range))
+                        .is_some_and(|(range, ..)| !range.contains_range(stmt.range))
                 {
                     return;
                 }
@@ -670,10 +625,10 @@ impl WorkspaceServer {
                     collect_references: true,
                 })
                 .references;
-                innermost = Some((stmt.range, references));
+                innermost = Some((stmt.range, stmt.offsets.is_verbatim(), references));
             },
         );
-        let Some((range, references)) = innermost else {
+        let Some((range, true, references)) = innermost else {
             return (TextSize::default(), Vec::new());
         };
         let position = position - range.start();
@@ -810,6 +765,8 @@ impl WorkspaceServer {
                                         snapshot: snapshot.as_ref(),
                                         search_path: &statement.search_path,
                                         identifiers: Vec::new(),
+                                        duplicate_assignments_reported: statement
+                                            .has_duplicate_assignments,
                                     })
                                     .await?;
 
@@ -1152,34 +1109,22 @@ impl Workspace for WorkspaceServer {
             None => Some("Statement execution not allowed against database.".into()),
         };
 
-        let mut actions: Vec<CodeAction> = parser
-            .iter_at(DefaultMapper, params.cursor_position)
-            .map(|(stmt, _, txt)| {
-                let title = format!(
-                    "Execute Statement: {}...",
-                    txt.chars().take(50).collect::<String>()
-                );
-
-                CodeAction {
-                    title,
-                    kind: CodeActionKind::Command(CommandAction {
-                        category: CommandActionCategory::ExecuteStatement(stmt),
-                    }),
-                    disabled_reason: disabled_reason.clone(),
-                }
-            })
-            .collect();
-
-        actions.splice(
-            0..0,
-            self.refactor_code_actions(settings, parser, params.cursor_position),
-        );
-
+        let mut actions = Vec::new();
         if let Some(settings) = settings {
-            let mut lint_actions = self.lint_code_actions(settings, &params, parser);
-            lint_actions.append(&mut actions);
-            actions = lint_actions;
+            let diagnostics =
+                self.lint_diagnostics(settings, &params.path, parser, &params.only, &params.skip);
+            actions.extend(code_actions::lint::lint_actions(
+                &diagnostics,
+                parser,
+                params.cursor_position,
+            ));
         }
+        actions.extend(self.refactor_code_actions(settings, parser, params.cursor_position));
+        actions.extend(code_actions::execute_statement::execute_statement_actions(
+            parser,
+            params.cursor_position,
+            disabled_reason,
+        ));
 
         #[cfg(feature = "db")]
         let invalidate_disabled_reason = match settings {
@@ -1198,28 +1143,20 @@ impl Workspace for WorkspaceServer {
         let invalidate_disabled_reason: Option<String> =
             Some("Database support not enabled.".into());
 
-        actions.push(CodeAction {
-            title: "Invalidate Schema Cache".into(),
-            kind: CodeActionKind::Command(CommandAction {
-                category: CommandActionCategory::InvalidateSchemaCache,
-            }),
-            disabled_reason: invalidate_disabled_reason,
-        });
+        actions.push(code_actions::schema_cache::invalidate_schema_cache_action(
+            invalidate_disabled_reason,
+        ));
 
         Ok(CodeActionsResult { actions })
     }
 
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError> {
-        /// Fixes can enable other fixes, e.g. `CONCURRENTLY` enables `IF NOT EXISTS`, and fixes
-        /// that overlap are applied one after the other.
-        const MAX_PASSES: usize = 10;
-
         let documents = self.documents.read().unwrap();
         let doc = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
-        let mut code = doc.get_document_content().to_string();
+        let code = doc.get_document_content().to_string();
 
         let settings = self.workspaces();
         let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
@@ -1231,62 +1168,12 @@ impl Workspace for WorkspaceServer {
             });
         };
 
-        let mut fixes_applied = 0;
-        let mut skipped_suggested_fixes = 0;
-        let mut converged = false;
-        for _ in 0..MAX_PASSES {
-            let doc = Document::new(code.clone(), 0);
-            let diagnostics =
-                self.lint_diagnostics(settings, &params.path, &doc, &params.only, &params.skip);
-
-            skipped_suggested_fixes = 0;
-            let mut fixes: Vec<&RuleFix> = Vec::new();
-            for fix in diagnostics.iter().filter_map(LinterDiagnostic::get_fix) {
-                if fix.applicability == Applicability::Always
-                    || params.fix_file_mode == FixFileMode::SafeAndUnsafeFixes
-                {
-                    fixes.push(fix);
-                } else {
-                    skipped_suggested_fixes += 1;
-                }
-            }
-            fixes.sort_by_key(|fix| fix.range().map(TextRange::start));
-
-            // Applies the fixes that don't touch the text of an earlier fix in this pass.
-            let mut combined = RuleFix::new("");
-            let mut applied = 0;
-            for fix in fixes {
-                let Some(range) = fix.range() else {
-                    continue;
-                };
-                if combined
-                    .range()
-                    .is_some_and(|previous| range.start() <= previous.end())
-                {
-                    continue;
-                }
-                combined.edits.extend(fix.edits.iter().cloned());
-                applied += 1;
-            }
-            if applied == 0 {
-                converged = true;
-                break;
-            }
-            code = combined.apply(&code);
-            fixes_applied += applied;
-        }
-        if !converged {
-            warn!(
-                path = ?params.path,
-                "Fixes still changed the file after {MAX_PASSES} passes, some may be left"
-            );
-        }
-
-        Ok(FixFileResult {
+        Ok(code_actions::lint::fix_file(
+            &params.path,
             code,
-            fixes_applied,
-            skipped_suggested_fixes,
-        })
+            params.fix_file_mode,
+            |doc| self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip),
+        ))
     }
 
     #[cfg(feature = "db")]
@@ -1300,7 +1187,9 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        let stmt = parser.find(params.statement_id.clone(), ExecuteStatementMapper);
+        // Files can change while the statement runs.
+        drop(documents);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
@@ -1311,35 +1200,69 @@ impl Workspace for WorkspaceServer {
 
         let (_id, range, content, ast) = stmt.unwrap();
 
-        if ast.is_none() {
+        let Some(ast) = ast else {
             return Ok(ExecuteStatementResult {
                 message: "Statement is invalid.".into(),
                 ..Default::default()
             });
         };
 
+        if let Some(message) = execution::refusal(&ast) {
+            return Ok(ExecuteStatementResult {
+                message,
+                ..Default::default()
+            });
+        }
+
         let settings = self.workspaces();
         let no_connection = ExecuteStatementResult {
             message: "No database connection available.".into(),
             ..Default::default()
         };
-        let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
+        let Some(db) = settings
+            .settings_for(params.project_key, params.path.as_path())
+            .map(|settings| settings.db.clone())
         else {
             return Ok(no_connection);
         };
+        // The settings can change while the statement runs.
+        drop(settings);
 
-        if let Some(reason) = settings.db.statement_execution_disabled_reason() {
+        if let Some(reason) = db.statement_execution_disabled_reason() {
             return Ok(ExecuteStatementResult {
                 message: reason,
                 ..Default::default()
             });
         }
 
-        let Some(result) = self.connection.with_pools(&settings.db, |pools| {
-            let pool = pools.statement_pool.clone();
-            run_async(async move { statement_execution::execute_statement(&pool, &content).await })?
-                .map_err(WorkspaceError::from)
-        }) else {
+        let options = execution::ExecuteOptions {
+            is_query: execution::is_query(&ast),
+            timeout: db.statement_timeout,
+        };
+        let Some((_running, cancelled)) = self.running_statements.start(&params) else {
+            return Ok(ExecuteStatementResult {
+                message: format!(
+                    "{RUNNING_STATEMENTS_MAX} statements are already running. Wait for one to finish, or cancel it."
+                ),
+                ..Default::default()
+            });
+        };
+
+        let result = self.connection.with_pools(&db, |pools| {
+            let statement_pools = pools.clone();
+            let result = run_async(async move {
+                execution::execute_statement(&statement_pools, &content, options, cancelled).await
+            })?
+            .map_err(WorkspaceError::from)?;
+
+            // Diagnostics, completions and hover should see the objects the statement created.
+            if result.error.is_none() && execution::may_change_schema(&ast) {
+                self.snapshot.clear_connection(&pools.pool);
+            }
+            Ok(result)
+        });
+
+        let Some(result) = result else {
             return Ok(no_connection);
         };
 
@@ -1365,6 +1288,24 @@ impl Workspace for WorkspaceServer {
             message: "Statement execution requires database support.".into(),
             ..Default::default()
         })
+    }
+
+    #[cfg(feature = "db")]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        self.running_statements.cancel(&params);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "db"))]
+    #[allow(unused_variables)]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        Ok(())
     }
 
     #[cfg(feature = "db")]
@@ -1627,199 +1568,12 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let config = pgls_pretty_print::FormatConfig {
-            line_width: settings.formatter.line_width as usize,
-            indent_size: settings.formatter.indent_size as usize,
-            indent_style: settings.formatter.indent_style.into(),
-            keyword_case: settings.formatter.keyword_case.into(),
-            constant_case: settings.formatter.constant_case.into(),
-            type_case: settings.formatter.type_case.into(),
-            comma_style: settings.formatter.comma_style.into(),
-            logical_operator_placement: settings.formatter.logical_operator_placement.into(),
-            layout: settings.formatter.layout.into(),
-            values_row_layout: settings.formatter.values_row_layout.into(),
-            cast_style: settings.formatter.cast_style.into(),
-            clause_body_style: settings.formatter.clause_body_style.into(),
-            isolate_semicolon: settings.formatter.isolate_semicolon,
-            function_argument_groups: settings
-                .formatter
-                .function_argument_groups
-                .iter()
-                .map(|(name, size)| (name.to_lowercase(), usize::from(size.get())))
-                .collect(),
-        };
-
-        let mut diagnostics = Vec::new();
-        let mut statements = Vec::new();
-        let mut formatted_output = String::new();
-        let path_str = params.path.as_path().display().to_string();
-
-        let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
-        let mut formatted_sql_fn_bodies = HashMap::new();
-
-        // Only format SQL function bodies if skip_fn_bodies is false. A body with several
-        // statements is left as written.
-        if !settings.formatter.skip_fn_bodies {
-            let mut statements_per_body: HashMap<StatementId, usize> = HashMap::new();
-            for (id, ..) in &format_candidates {
-                if let Some(parent_id) = id.parent() {
-                    *statements_per_body.entry(parent_id).or_default() += 1;
-                }
-            }
-            for (id, _stmt_range, text, ast_result) in &format_candidates {
-                if !id.is_child() {
-                    continue;
-                }
-
-                let Some(parent_id) = id.parent() else {
-                    continue;
-                };
-
-                if statements_per_body.get(&parent_id) != Some(&1) {
-                    continue;
-                }
-
-                let Ok(ast) = ast_result else {
-                    continue;
-                };
-
-                let Ok(result) = pgls_pretty_print::format_statement(ast, text, &config) else {
-                    continue;
-                };
-
-                let Some(formatted) = restore_named_parameters(text, &result.formatted, ast) else {
-                    continue;
-                };
-
-                formatted_sql_fn_bodies.insert(parent_id, formatted);
-            }
-        }
-
-        // Reconstruct the file by replacing each statement's source span with its
-        // formatted output while copying the gaps between statements (whitespace and
-        // standalone comments) verbatim. libpg_query drops comments from the AST, so
-        // anything that lives outside a statement's range would otherwise be lost.
-        let source = doc.get_document_content();
-        let mut last_end = 0usize;
-
-        // Formatting a range leaves everything outside its statements as written.
-        let collapses_blank_lines = params.range.is_none();
-
-        for (id, stmt_range, text, ast_result) in format_candidates {
-            if id.is_child() {
-                continue;
-            }
-
-            let stmt_start = usize::from(stmt_range.start());
-            let stmt_end = usize::from(stmt_range.end());
-
-            // Preserve the standalone comments that precede this statement, with at most one
-            // blank line between statements and none before the first.
-            let gap = &source[last_end..stmt_start];
-            if collapses_blank_lines {
-                let gap = collapse_blank_lines(gap);
-                formatted_output.push_str(if last_end == 0 {
-                    gap.trim_start()
-                } else {
-                    &gap
-                });
-            } else {
-                formatted_output.push_str(gap);
-            }
-            last_end = stmt_end;
-
-            // Leave statements outside the requested range untouched.
-            if let Some(filter_range) = params.range
-                && stmt_range.intersect(filter_range).is_none()
-            {
-                formatted_output.push_str(&text);
-                continue;
-            }
-
-            match ast_result {
-                Ok(ast) => {
-                    let mut ast = ast;
-                    if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
-                        sql_function::set_formatted_sql_fn_body(&mut ast, formatted_sql_fn_body);
-                    }
-
-                    match pgls_pretty_print::format_statement(&ast, &text, &config) {
-                        Ok(result) => {
-                            match restore_named_parameters(&text, &result.formatted, &ast) {
-                                Some(formatted) => {
-                                    if text != formatted {
-                                        statements.push(StatementFormatResult {
-                                            original: text.clone(),
-                                            formatted: formatted.clone(),
-                                            range: stmt_range,
-                                        });
-                                    }
-                                    formatted_output.push_str(&formatted);
-                                }
-                                None => {
-                                    diagnostics.push(SDiagnostic::new(
-                                        pgls_diagnostics::Error::from(
-                                            WorkspaceError::format_error(
-                                                "Named parameters could not be restored after \
-                                                 formatting, the statement was left untouched"
-                                                    .to_string(),
-                                            ),
-                                        )
-                                        .with_file_path(&path_str)
-                                        .with_file_span(stmt_range),
-                                    ));
-
-                                    formatted_output.push_str(&text);
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            diagnostics.push(SDiagnostic::new(
-                                pgls_diagnostics::Error::from(WorkspaceError::format_error(
-                                    err.to_string(),
-                                ))
-                                .with_file_path(&path_str)
-                                .with_file_span(stmt_range),
-                            ));
-
-                            formatted_output.push_str(&text);
-                        }
-                    }
-                }
-                Err(syntax_err) => {
-                    diagnostics.push(SDiagnostic::new(
-                        pgls_diagnostics::Error::from(syntax_err).with_file_path(&path_str),
-                    ));
-
-                    formatted_output.push_str(&text);
-                }
-            }
-        }
-
-        // Preserve any trailing text or comments after the last statement, without blank lines
-        // at the end of the file but with its final line break.
-        let rest = &source[last_end..];
-        if collapses_blank_lines {
-            let rest = collapse_blank_lines(rest);
-            let rest = if last_end == 0 {
-                rest.trim()
-            } else {
-                rest.trim_end()
-            };
-            formatted_output.push_str(rest);
-            if source.ends_with('\n') && !formatted_output.is_empty() {
-                formatted_output.push('\n');
-            }
-        } else {
-            formatted_output.push_str(rest);
-        }
-
-        Ok(PullFormattingResult {
-            original: doc.get_document_content().to_string(),
-            formatted: formatted_output,
-            statements,
-            diagnostics,
-        })
+        Ok(formatting::format_document(
+            doc,
+            &settings.formatter,
+            params.range,
+            &params.path.as_path().display().to_string(),
+        ))
     }
 
     #[cfg(feature = "db")]
@@ -1962,11 +1716,12 @@ impl Workspace for WorkspaceServer {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
             }
-            Some((id, range, cst)) => {
-                let position = params.position - range.start();
+            Some((stmt, cst)) => {
+                let position = stmt.statement_offset(params.position);
+                let range = stmt.range;
                 let snapshot = self.snapshot_before(
                     parsed_doc,
-                    &id,
+                    &stmt.id,
                     range,
                     Arc::clone(&snapshot),
                     &search_path,
@@ -1985,10 +1740,10 @@ impl Workspace for WorkspaceServer {
                     position,
                     schema: snapshot.as_ref(),
                     tree: &cst,
-                    text: id.content().to_string(),
+                    text: stmt.id.content().to_string(),
                 });
 
-                Ok(CompletionsResult::with_offset(items, range.start()))
+                Ok(CompletionsResult::in_document(items, &stmt))
             }
         }
     }
@@ -2026,14 +1781,14 @@ impl Workspace for WorkspaceServer {
         };
 
         // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
-        match doc.iter_at(WithCSTandASTMapper, params.position).last() {
-            Some((stmt_id, range, ts_tree, maybe_ast)) => {
-                let position_in_stmt = params.position - range.start();
+        match doc.iter_at(WithCSTMapper, params.position).last() {
+            Some((stmt, ts_tree)) => {
+                let position_in_stmt = stmt.statement_offset(params.position);
                 let (references, snapshot) = self.hover_references(
                     settings,
                     doc,
-                    &stmt_id,
-                    range,
+                    &stmt.id,
+                    stmt.range,
                     params.position,
                     snapshot,
                 );
@@ -2041,9 +1796,8 @@ impl Workspace for WorkspaceServer {
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,
                     snapshot: &snapshot,
-                    ast: maybe_ast.as_ref(),
                     position: position_in_stmt,
-                    stmt_sql: stmt_id.content(),
+                    stmt_sql: stmt.id.content(),
                     references: &references,
                 })
                 .unwrap_or_default();
@@ -2070,15 +1824,24 @@ impl Workspace for WorkspaceServer {
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
-        if !settings.is_none_or(|settings| settings.inlay_hints.enabled) {
-            return Ok(PullInlayHintsResult::default());
-        }
+        let parameter_names = match settings.map_or(Some(ParameterNameHints::All), |settings| {
+            settings
+                .inlay_hints
+                .enabled
+                .then_some(settings.inlay_hints.parameter_names)
+        }) {
+            Some(ParameterNameHints::All) => pgls_inlay_hints::ParameterNameHints::All,
+            Some(ParameterNameHints::Literals) => pgls_inlay_hints::ParameterNameHints::Literals,
+            Some(ParameterNameHints::None) | None => return Ok(PullInlayHintsResult::default()),
+        };
 
+        // During the reconnect backoff this returns the connection error too, so that the client
+        // is asked to request them again once the database is reachable.
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                    .try_with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -2112,10 +1875,11 @@ impl Workspace for WorkspaceServer {
                         catalog,
                         search_path: session.search_path(),
                         function: stmt.function.as_ref(),
+                        parameter_names,
                     })
                     .into_iter()
                     .map(|hint| InlayHint {
-                        offset: hint.offset + stmt.range.start(),
+                        offset: stmt.document_offset(hint.offset),
                         label: hint.label,
                         kind: hint.kind.into(),
                     }),
@@ -2147,11 +1911,13 @@ impl Workspace for WorkspaceServer {
             return Ok(PullSemanticTokensResult::default());
         }
 
+        // During the reconnect backoff this returns the connection error too, so that the client
+        // is asked to request them again once the database is reachable.
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                    .try_with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -2193,7 +1959,7 @@ impl Workspace for WorkspaceServer {
                     )
                     .into_iter()
                     .map(|token| SemanticToken {
-                        range: token.range + stmt.range.start(),
+                        range: stmt.document_range(token.range),
                         kind: token.kind.into(),
                         default_library: token.default_library,
                     }),
@@ -2248,6 +2014,8 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             // The columns of a `*` can come from objects that the file changed, and so can the
             // relations behind CTEs and aliases.
             Reference::Star { .. } | Reference::Cte { .. } | Reference::Alias { .. } => false,
+            // The catalog doesn't tell where schemas and roles come from.
+            Reference::Schema { .. } | Reference::Role { .. } => false,
         })
 }
 
@@ -2259,138 +2027,6 @@ fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSectio
         .map_or_else(Vec::new, |migrations| {
             migration::migration_sections(doc.get_document_content(), migrations.section_markers)
         })
-}
-
-/// The edit that adds `-- pgls-ignore <rule>` on its own line above the statement at `offset`,
-/// with the statement's indentation and the file's line ending. Above the statement, the comment
-/// suppresses the rule for all of the statement, including the bodies of its functions.
-fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
-    let content = doc.get_document_content();
-    let start = doc
-        .statement_ranges()
-        .iter()
-        .find(|statement| statement.contains_inclusive(offset))
-        .map_or(offset, |statement| statement.start());
-    let line_ending = match content.find('\n') {
-        Some(newline) if content[..newline].ends_with('\r') => "\r\n",
-        _ => "\n",
-    };
-
-    let start = usize::from(start);
-    let line_start = content[..start]
-        .rfind('\n')
-        .map_or(0, |newline| newline + 1);
-    let before = &content[line_start..start];
-    let indentation: String = before
-        .chars()
-        .take_while(|c| *c == ' ' || *c == '\t')
-        .collect();
-    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
-    if before.trim().is_empty() {
-        TextEdit {
-            range: TextRange::empty(offset(line_start)),
-            new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
-        }
-    } else {
-        // The statement starts after another one on the same line, so it moves to a line of its
-        // own.
-        let previous_end = line_start + before.trim_end().len();
-        TextEdit {
-            range: TextRange::new(offset(previous_end), offset(start)),
-            new_text: format!(
-                "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
-            ),
-        }
-    }
-}
-
-/// Returns `true` if `path` is a directory or
-/// if it is a symlink that resolves to a directory.
-/// Keeps at most one blank line in `text`, which only holds whitespace and comments.
-fn collapse_blank_lines(text: &str) -> String {
-    let mut result = String::with_capacity(text.len());
-    // Line breaks since the last text that is not whitespace. Two make a blank line.
-    let mut line_breaks = 0;
-    for line in text.split_inclusive('\n') {
-        let is_blank = line.trim().is_empty();
-        let ends_line = line.ends_with('\n');
-        if is_blank && ends_line {
-            line_breaks += 1;
-            if line_breaks <= 2 {
-                result.push('\n');
-            }
-            continue;
-        }
-
-        result.push_str(line);
-        if !is_blank {
-            line_breaks = usize::from(ends_line);
-        }
-    }
-    result
-}
-
-/// Put psql named parameters back where the formatter printed their placeholders.
-///
-/// The parser only ever sees placeholders, so the printed statement carries `$1` or a bare
-/// identifier instead of `:'agen_code'` or `:raw_data`. Substitution happens on the token stream
-/// so that a `$1` inside a string literal is left alone, and the result is proven by converting it
-/// back and comparing the normalized ASTs: a statement that does not survive that round trip is
-/// reported as unrestorable and kept as it was written.
-fn restore_named_parameters(
-    original: &str,
-    formatted: &str,
-    original_ast: &pgls_query::NodeEnum,
-) -> Option<String> {
-    use pgls_lexer::{SyntaxKind, lex};
-
-    let conversion = pgls_lexer::convert_to_positional_params_with_metadata(original);
-
-    if conversion.identifier_replacements.is_empty() && conversion.value_replacements.is_empty() {
-        return Some(formatted.to_string());
-    }
-
-    if !conversion.restorable {
-        return None;
-    }
-
-    let lexed = lex(formatted);
-    let mut restored = String::with_capacity(formatted.len());
-
-    for (idx, kind) in lexed.tokens().enumerate() {
-        if kind == SyntaxKind::EOF {
-            break;
-        }
-
-        let text = lexed.text(idx);
-
-        let replacement = match kind {
-            SyntaxKind::IDENT => conversion.identifier_replacements.get(text),
-            SyntaxKind::POSITIONAL_PARAM => text
-                .trim_start_matches('$')
-                .parse::<usize>()
-                .ok()
-                .and_then(|index| conversion.value_replacements.get(&index)),
-            _ => None,
-        };
-
-        match replacement {
-            Some(source_text) => restored.push_str(source_text),
-            None => restored.push_str(text),
-        }
-    }
-
-    let reparsed = pgls_query::parse(&pgls_lexer::convert_to_positional_params(&restored)).ok()?;
-    let mut restored_ast = reparsed.into_root()?;
-    let mut expected_ast = original_ast.clone();
-    pgls_pretty_print::normalize_ast(&mut restored_ast);
-    pgls_pretty_print::normalize_ast(&mut expected_ast);
-
-    if restored_ast == expected_ast {
-        Some(restored)
-    } else {
-        None
-    }
 }
 
 /// Moves the span of a diagnostic from the database, which is relative to the text of the

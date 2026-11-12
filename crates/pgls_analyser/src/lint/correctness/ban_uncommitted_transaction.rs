@@ -59,8 +59,7 @@ impl LinterRule for BanUncommittedTransaction {
         }
 
         let file_context = ctx.file_context();
-        let later_stmts = &file_context.stmts[file_context.previous_stmts().len() + 1..];
-        let is_ended = later_stmts.iter().any(|stmt| {
+        let is_ended = file_context.later_stmts().iter().any(|stmt| {
             matches!(
                 stmt,
                 pgls_query::NodeEnum::TransactionStmt(stmt) if starts_transaction(stmt) || ends_transaction(stmt)

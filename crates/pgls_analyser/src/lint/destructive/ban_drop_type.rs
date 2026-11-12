@@ -1,4 +1,4 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, utils::object_type_noun};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -42,14 +42,18 @@ impl LinterRule for BanDropType {
             return vec![];
         };
 
-        let kind = match stmt.remove_type() {
-            ObjectType::ObjectType => "a type",
-            ObjectType::ObjectCast => "a cast",
-            ObjectType::ObjectOperator => "an operator",
-            ObjectType::ObjectOpclass => "an operator class",
-            ObjectType::ObjectOpfamily => "an operator family",
-            _ => return vec![],
-        };
+        let object_type = stmt.remove_type();
+        if !matches!(
+            object_type,
+            ObjectType::ObjectType
+                | ObjectType::ObjectCast
+                | ObjectType::ObjectOperator
+                | ObjectType::ObjectOpclass
+                | ObjectType::ObjectOpfamily
+        ) {
+            return vec![];
+        }
+        let kind = object_type_noun(object_type);
 
         vec![
             LinterDiagnostic::new(

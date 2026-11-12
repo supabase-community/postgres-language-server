@@ -5,9 +5,11 @@ use pgls_catalog::resolve::figure_column_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{
-    AlterTableType, Node, RangeVar, ResTarget, SelectStmt, SetOperation, Token,
+    AlterTableStmt, AlterTableType, CreateTableAsStmt, Node, RangeVar, ResTarget, SelectStmt,
+    SetOperation, Token,
 };
 use pgls_query::{NodeEnum, NodeRef};
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 use pgls_text_size::TextRange;
 
 declare_lint_rule! {
@@ -92,7 +94,7 @@ impl LinterRule for BanDuplicateColumnAssignments {
                     &mut diagnostics,
                 ),
                 NodeRef::AlterTableStmt(stmt) => report_definitions(
-                    added_columns(&stmt.cmds, tokens),
+                    added_columns(stmt, tokens),
                     Definition::AddedColumn,
                     &mut diagnostics,
                 ),
@@ -105,6 +107,9 @@ impl LinterRule for BanDuplicateColumnAssignments {
                     Definition::Relation,
                     &mut diagnostics,
                 ),
+                // Postgres skips the statement without looking at its columns if the relation
+                // exists.
+                NodeRef::CreateTableAsStmt(stmt) if may_skip(stmt, ctx) => {}
                 NodeRef::CreateTableAsStmt(stmt) => {
                     let names = stmt.into.as_ref().map_or(Vec::new(), |into| {
                         column_list(&into.col_names, into.rel.as_ref(), tokens)
@@ -126,6 +131,24 @@ impl LinterRule for BanDuplicateColumnAssignments {
 
         diagnostics
     }
+}
+
+/// Whether a `CREATE TABLE AS` or `CREATE MATERIALIZED VIEW` with `IF NOT EXISTS` may be
+/// skipped, because the catalog doesn't know that the relation is missing.
+fn may_skip(
+    stmt: &CreateTableAsStmt,
+    ctx: &LinterRuleContext<BanDuplicateColumnAssignments>,
+) -> bool {
+    stmt.if_not_exists
+        && !stmt
+            .into
+            .as_ref()
+            .and_then(|into| into.rel.as_ref())
+            .is_some_and(|relation| {
+                ctx.catalog()
+                    .relation_at_creation(relation, ctx.session().search_path())
+                    .is_missing()
+            })
 }
 
 /// A column name, and where it is written if we know that.
@@ -153,7 +176,7 @@ fn report_assignments(
         (
             Column {
                 name: target.name.clone(),
-                span: token_range(tokens, target.location),
+                span: tokens.and_then(|tokens| tokens.range_at(target.location)),
             },
             target.indirection.is_empty(),
         )
@@ -296,7 +319,7 @@ fn column_definitions(elements: &[Node], tokens: Option<StatementTokens>) -> Vec
         .filter_map(|element| match &element.node {
             Some(NodeEnum::ColumnDef(column)) => Some(Column {
                 name: column.colname.clone(),
-                span: token_range(tokens, column.location),
+                span: tokens.and_then(|tokens| tokens.range_at(column.location)),
             }),
             _ => None,
         })
@@ -305,18 +328,13 @@ fn column_definitions(elements: &[Node], tokens: Option<StatementTokens>) -> Vec
 
 /// The columns added by `ADD COLUMN`. Postgres skips an `ADD COLUMN IF NOT EXISTS` of a column
 /// that an earlier command added, so only the other ones count as duplicates.
-fn added_columns(cmds: &[Node], tokens: Option<StatementTokens>) -> Vec<Column> {
+fn added_columns(stmt: &AlterTableStmt, tokens: Option<StatementTokens>) -> Vec<Column> {
     let mut columns = Vec::new();
-    for cmd in cmds {
-        let Some(NodeEnum::AlterTableCmd(cmd)) = &cmd.node else {
-            continue;
-        };
+    for cmd in alter_table_cmds(stmt) {
         if cmd.subtype() != AlterTableType::AtAddColumn {
             continue;
         }
-        let Some(NodeEnum::ColumnDef(column)) =
-            cmd.def.as_deref().and_then(|def| def.node.as_ref())
-        else {
+        let Some(NodeEnum::ColumnDef(column)) = cmd_def(cmd) else {
             continue;
         };
         let added = columns
@@ -327,7 +345,7 @@ fn added_columns(cmds: &[Node], tokens: Option<StatementTokens>) -> Vec<Column> 
         }
         columns.push(Column {
             name: column.colname.clone(),
-            span: token_range(tokens, column.location),
+            span: tokens.and_then(|tokens| tokens.range_at(column.location)),
         });
     }
     columns
@@ -446,32 +464,7 @@ fn list_element_ranges(tokens: StatementTokens, location: i32) -> Option<Vec<Tex
         .map_while(|index| Some((index, tokens.kind(index)?)))
         .find(|(_, kind)| *kind == Token::Ascii40)?
         .0;
-    let close = tokens.closing_paren(open)?;
-    let mut ranges = Vec::new();
-    let mut element: Option<TextRange> = None;
-    let mut depth = 0usize;
-    for index in open + 1..close {
-        match tokens.kind(index)? {
-            Token::Ascii44 if depth == 0 => ranges.push(element.take()?),
-            kind => {
-                match kind {
-                    Token::Ascii40 => depth += 1,
-                    Token::Ascii41 => depth = depth.saturating_sub(1),
-                    _ => {}
-                }
-                let range = tokens.range(index);
-                element = Some(element.map_or(range, |element| element.cover(range)));
-            }
-        }
-    }
-    ranges.push(element?);
-    Some(ranges)
-}
-
-/// The range of the token at `location`, e.g. the name of a column definition.
-fn token_range(tokens: Option<StatementTokens>, location: i32) -> Option<TextRange> {
-    let tokens = tokens?;
-    Some(tokens.range(tokens.at(location)?))
+    tokens.list_elements(open + 1, tokens.closing_paren(open)?)
 }
 
 /// The range of the select list entry that starts at `location`: up to the next `,` outside

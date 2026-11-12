@@ -1,12 +1,14 @@
+use super::helper::{get_range_to_replace, with_schema_or_alias};
 use crate::{
+    CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
-use pgls_catalog::Snapshot;
+use pgls_catalog::{NamePosition, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 pub fn complete_schemas<'a>(
-    _ctx: &'a TreesitterContext,
+    ctx: &'a TreesitterContext,
     snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,
 ) {
@@ -22,7 +24,11 @@ pub fn complete_schemas<'a>(
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
             detail: None,
-            completion_text: None,
+            completion_text: Some(CompletionText {
+                is_snippet: false,
+                range: get_range_to_replace(ctx),
+                text: with_schema_or_alias(ctx, schema.name.as_str(), None, NamePosition::ColId),
+            }),
         };
 
         builder.add_item(item);
@@ -32,7 +38,7 @@ pub fn complete_schemas<'a>(
 #[cfg(test)]
 mod tests {
 
-    use sqlx::PgPool;
+    use sqlx::{Executor, PgPool};
 
     use crate::{
         CompletionItemKind,
@@ -117,5 +123,31 @@ mod tests {
             &pool,
         )
         .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completes_schemas_in_alter_default_privileges(pool: PgPool) {
+        pool.execute("create schema private;").await.unwrap();
+
+        for query in [
+            "alter default privileges in schema {}",
+            "alter default privileges for role owner in schema public, {}",
+        ] {
+            assert_complete_results(
+                query
+                    .replace(
+                        "{}",
+                        &format!("pri{}", QueryWithCursorPosition::cursor_marker()),
+                    )
+                    .as_str(),
+                vec![CompletionAssertion::LabelAndKind(
+                    "private".into(),
+                    CompletionItemKind::Schema,
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
     }
 }

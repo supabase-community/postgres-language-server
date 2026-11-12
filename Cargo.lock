@@ -1838,12 +1838,6 @@ checksum = "ef53942eb7bf7ff43a617b3e2c1c4a5ecf5944a7c1bc12d7ee39bbb15e5c1519"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.4.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d26c52dbd32dccf2d10cac7725f8eae5296885fb5703b261f7d0a0739ec807ab"
-
-[[package]]
-name = "linux-raw-sys"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df1d3c3b53da64cf5760482273a98e575c651a67eec7f77df96b5b642de8f039"
@@ -2322,7 +2316,10 @@ dependencies = [
  "futures-util",
  "globset",
  "insta",
+ "pgls_lexer",
+ "pgls_postgres_regress",
  "pgls_query",
+ "pgls_query_ext",
  "pgls_test_utils",
  "pgls_text_size",
  "rustc-hash",
@@ -2457,6 +2454,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics_categories",
  "pgls_diagnostics_macros",
+ "pgls_line_index",
  "pgls_text_edit",
  "pgls_text_size",
  "schemars",
@@ -2586,7 +2584,6 @@ dependencies = [
  "pgls_analyse",
  "pgls_completions",
  "pgls_configuration",
- "pgls_console",
  "pgls_diagnostics",
  "pgls_fs",
  "pgls_line_index",
@@ -2716,7 +2713,6 @@ dependencies = [
  "prost",
  "prost-build",
  "thiserror 1.0.69",
- "which",
 ]
 
 [[package]]
@@ -2789,6 +2785,7 @@ dependencies = [
  "pgls_analyse",
  "pgls_analyser",
  "pgls_diagnostics",
+ "pgls_line_index",
  "pgls_text_size",
  "tracing",
 ]
@@ -2904,6 +2901,7 @@ dependencies = [
  "pgls_configuration",
  "pgls_diagnostics",
  "pgls_fs",
+ "pgls_line_index",
  "pgls_query",
  "pgls_text_size",
  "pgls_treesitter_grammar",
@@ -3547,19 +3545,6 @@ dependencies = [
  "libc",
  "linux-raw-sys 0.3.8",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "rustix"
-version = "0.38.44"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdb5bc1ae2baa591800df16c9ca78619bf65c0488b41b96ccec5d11220d8c154"
-dependencies = [
- "bitflags 2.10.0",
- "errno",
- "libc",
- "linux-raw-sys 0.4.15",
- "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5077,18 +5062,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "which"
-version = "6.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4ee928febd44d98f2f459a4a79bd4d928591333a494a10a868418ac1b39cf1f"
-dependencies = [
- "either",
- "home",
- "rustix 0.38.44",
- "winsafe",
-]
-
-[[package]]
 name = "whoami"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5376,12 +5349,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "winsafe"
-version = "0.0.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d135d17ab770252ad95e9a872d365cf3090e3be864a34ab46f48555993efc904"
-
-[[package]]
 name = "wit-bindgen"
 version = "0.51.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5485,6 +5452,7 @@ dependencies = [
  "pgls_analyse",
  "pgls_analyser",
  "pgls_catalog",
+ "pgls_configuration",
  "pgls_diagnostics",
  "pgls_env",
  "pgls_pglinter",

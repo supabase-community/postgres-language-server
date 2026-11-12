@@ -6,7 +6,9 @@
 
 use std::borrow::Cow;
 
+use crate::Behavior;
 use crate::typing::{Type, TypeId};
+use crate::{Generated, Identity};
 
 /// The result of a catalog lookup.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,6 +69,26 @@ pub struct ColumnInfo {
     pub type_name: Option<String>,
     /// Resolved type identity, when available.
     pub ty: Option<Type>,
+    /// Whether the column of a table is a generated column. [`Generated::No`] also when that is
+    /// not known, and for the columns of anything but tables.
+    pub generated: Generated,
+    /// Whether the column of a table is an identity column. [`Identity::No`] also when that is
+    /// not known, and for the columns of anything but tables.
+    pub identity: Identity,
+}
+
+impl ColumnInfo {
+    /// A column with what any relation's column has; the properties of table columns, like
+    /// [`ColumnInfo::generated`], take their defaults.
+    pub fn new(name: impl Into<String>, type_name: Option<String>, ty: Option<Type>) -> Self {
+        ColumnInfo {
+            name: name.into(),
+            type_name,
+            ty,
+            generated: Generated::No,
+            identity: Identity::No,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -76,6 +98,29 @@ pub struct RelationInfo {
     pub kind: RelationKind,
     /// `None` when the column set is not known, e.g. a view whose select list could not be derived.
     pub columns: Option<Vec<ColumnInfo>>,
+    pub origin: Origin,
+}
+
+impl RelationInfo {
+    /// The column with the name. [`Lookup::Unknown`] if the columns of the relation aren't known.
+    pub fn column(&self, name: &str) -> Lookup<&ColumnInfo> {
+        let Some(columns) = &self.columns else {
+            return Lookup::Unknown;
+        };
+        match columns.iter().find(|column| column.name == name) {
+            Some(column) => Lookup::Found(column),
+            None => Lookup::Missing,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IndexInfo {
+    /// The schema of the index, which is always the schema of its table.
+    pub schema: String,
+    pub name: String,
+    /// The table or materialized view the index is on.
+    pub table: String,
     pub origin: Origin,
 }
 
@@ -100,6 +145,8 @@ pub struct FunctionInfo {
     /// Output columns when the function returns a relation or composite type
     /// (what `select * from fn()` yields). `None` when unknown or scalar.
     pub return_columns: Option<Vec<ColumnInfo>>,
+    /// `pg_proc.provolatile`. `None` when unknown, e.g. for aggregates the file creates.
+    pub volatility: Option<Behavior>,
     pub origin: Origin,
     /// Complete typing signature when available.
     pub signature: Option<FunctionSignature>,
@@ -151,6 +198,11 @@ pub trait CatalogView {
     /// Looks up a schema. `pg_temp` and `pg_catalog` always exist.
     fn schema(&self, name: &str) -> Lookup<()>;
 
+    /// Looks up a role. Never `Missing`, since roles that the file creates aren't followed.
+    fn role(&self, _: &str) -> Lookup<()> {
+        Lookup::Unknown
+    }
+
     /// Returns all overloads with this name that are visible. With `schema: None`, all schemas
     /// on the search path are considered.
     fn functions(
@@ -163,6 +215,11 @@ pub trait CatalogView {
     /// Looks up a type by its internal name (e.g. `int4`, not `integer`). With `schema: None`,
     /// the search path is used.
     fn type_(&self, schema: Option<&str>, name: &str, search_path: &[String]) -> Lookup<TypeInfo>;
+
+    /// The identity of the builtin type `pg_catalog.<name>`, if it is known.
+    fn builtin_type(&self, name: &str) -> Option<TypeId> {
+        self.type_(Some("pg_catalog"), name, &[]).found()?.id
+    }
 
     /// Looks up a type by identity.
     fn type_by_id(&self, _: &TypeId) -> Lookup<TypeInfo> {

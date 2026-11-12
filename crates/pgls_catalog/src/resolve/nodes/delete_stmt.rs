@@ -2,9 +2,12 @@ use pgls_query::protobuf::DeleteStmt;
 
 use super::{
     Resolver, from_clause::resolve_from_clause, range_var::resolve_target_relation,
-    res_target::resolve_returning_clause, resolve_node, with_clause::resolve_with_clause,
+    res_target::resolve_returning_clause, with_clause::resolve_with_clause,
 };
-use crate::resolve::scope::{Columns, Level};
+use crate::resolve::{
+    scope::{Columns, Level},
+    utils::resolve_expr,
+};
 
 /// Resolves a DELETE and returns the columns of its RETURNING list. Port of
 /// [`transformDeleteStmt`].
@@ -27,17 +30,14 @@ fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Columns {
     };
     let target = resolve_target_relation(r, relation);
 
-    let mut level = Level::with_item(target);
+    let mut level = Level::with_item(target.clone());
     level.extend(resolve_from_clause(r, &n.using_clause));
     r.enter_level(level);
 
     if let Some(where_clause) = n.where_clause.as_deref() {
-        resolve_node(r, where_clause);
-        if let Some(expr) = where_clause.node.as_ref() {
-            super::super::expr::infer_expr(r, expr);
-        }
+        resolve_expr(r, where_clause);
     }
 
     let level = r.exit_level();
-    resolve_returning_clause(r, n.returning_clause.as_ref(), level)
+    resolve_returning_clause(r, n.returning_clause.as_ref(), &target, level)
 }
