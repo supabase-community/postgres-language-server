@@ -5375,7 +5375,7 @@ async fn lint_hover_and_completions_see_the_same_catalog(test_db: PgPool) {
 
 /// Hover and completions resume the walk over the statements from a checkpoint before the
 /// statement, as long as the text before the checkpoint doesn't change.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn walks_resume_from_checkpoints_before_the_edit(test_db: PgPool) {
     use std::sync::atomic::Ordering;
 
@@ -5540,7 +5540,7 @@ async fn walks_resume_from_checkpoints_before_the_edit(test_db: PgPool) {
 
 /// After edits anywhere in the file, hover and inlay hints that resume from checkpoints give
 /// the same results as on a document that is walked from its start.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn walks_from_checkpoints_match_full_walks(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -5735,7 +5735,7 @@ async fn walks_from_checkpoints_match_full_walks(test_db: PgPool) {
 
 /// Whether a statement runs in an implicit transaction block depends on the query it is in,
 /// also on its statements after it. Cached walks see the blocks like a walk from the start.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn cached_walks_see_the_implicit_blocks_of_queries(test_db: PgPool) {
     test_db
         .execute(
