@@ -1,0 +1,50 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- A NOT ENFORCED foreign key (Postgres 18) is never validated
+ALTER TABLE email ADD CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users (id) NOT ENFORCED;
+ALTER TABLE email ADD COLUMN owner_id int REFERENCES users (id) NOT ENFORCED;
+ALTER TABLE email ADD COLUMN sender_id int REFERENCES users (id) DEFERRABLE NOT ENFORCED;
+ALTER TABLE email ALTER CONSTRAINT fk_user NOT ENFORCED;
+ALTER TABLE email ALTER CONSTRAINT fk_user DEFERRABLE;
+-- expect_lint/addingForeignKeyConstraint
+ALTER TABLE email ADD COLUMN reader_id int REFERENCES users (id) ENFORCED;
+-- expect_lint/addingForeignKeyConstraint
+ALTER TABLE email ADD COLUMN editor_id int REFERENCES users (id) NOT ENFORCED CHECK (editor_id > 0) REFERENCES users (id);
+-- Enforcing it checks all rows
+-- expect_lint/addingForeignKeyConstraint
+ALTER TABLE email ALTER CONSTRAINT fk_user ENFORCED;
+
+```
+
+# Diagnostics
+lint/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a column with a foreign key constraint requires a table scan and locks.
+  
+  i Using REFERENCES when adding a column will block writes while verifying the constraint.
+  
+  i Add the column without the constraint first, then add the constraint as NOT VALID and VALIDATE it separately.
+  
+
+
+lint/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a column with a foreign key constraint requires a table scan and locks.
+  
+  i Using REFERENCES when adding a column will block writes while verifying the constraint.
+  
+  i Add the column without the constraint first, then add the constraint as NOT VALID and VALIDATE it separately.
+  
+
+
+lint/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Enforcing foreign key constraint fk_user checks all rows of the table.
+  
+  i This holds an ACCESS EXCLUSIVE lock on the table while Postgres verifies the constraint.
+  
+  i Drop the constraint and add it again as NOT VALID, then VALIDATE it in a separate transaction.

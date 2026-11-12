@@ -4,11 +4,11 @@ use std::{
 };
 
 use pgls_diagnostics::MessageAndDescription;
-use pgls_text_size::TextRange;
+use pgls_line_index::{LineCol, LineIndex};
+use pgls_text_size::{TextRange, TextSize};
 
 use crate::{
     Suppressions,
-    line_index::LineIndex,
     suppression::{RangeSuppression, Suppression, SuppressionDiagnostic, SuppressionKind},
 };
 
@@ -75,9 +75,9 @@ impl<'a> SuppressionsParser<'a> {
 
             let (idx, line) = self.lines.next().unwrap();
 
-            let offset = self.line_index.offset_for_line(idx).unwrap();
+            let offset = line_start(&self.line_index, idx);
 
-            match Suppression::from_line(line, offset) {
+            match Suppression::from_line(line, &offset) {
                 Ok(suppr) => {
                     self.diagnostics.extend(suppr.to_legacy_diagnostic());
                     self.file_suppressions.push(suppr);
@@ -94,9 +94,9 @@ impl<'a> SuppressionsParser<'a> {
                 continue;
             }
 
-            let offset = self.line_index.offset_for_line(idx).unwrap();
+            let offset = line_start(&self.line_index, idx);
 
-            let suppr = match Suppression::from_line(line, offset) {
+            let suppr = match Suppression::from_line(line, &offset) {
                 Ok(suppr) => suppr,
                 Err(diag) => {
                     self.diagnostics.push(diag);
@@ -173,6 +173,15 @@ impl<'a> SuppressionsParser<'a> {
             });
         }
     }
+}
+
+/// The offset of line `idx` of `str::lines`. Like the line index, `str::lines` ends lines at `\n`
+/// only, so the line exists.
+fn line_start(line_index: &LineIndex, idx: usize) -> TextSize {
+    u32::try_from(idx)
+        .ok()
+        .and_then(|line| line_index.offset(LineCol { line, col: 0 }))
+        .unwrap()
 }
 
 #[cfg(test)]

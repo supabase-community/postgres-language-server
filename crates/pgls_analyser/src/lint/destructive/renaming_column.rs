@@ -1,4 +1,4 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, utils::object_type_noun};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -37,11 +37,15 @@ impl LinterRule for RenamingColumn {
 
         if let pgls_query::NodeEnum::RenameStmt(stmt) = &ctx.stmt() {
             // The attributes of a composite type are its columns.
-            let column = match stmt.rename_type() {
-                pgls_query::protobuf::ObjectType::ObjectColumn => "a column",
-                pgls_query::protobuf::ObjectType::ObjectAttribute => "an attribute",
-                _ => return diagnostics,
-            };
+            let rename_type = stmt.rename_type();
+            if !matches!(
+                rename_type,
+                pgls_query::protobuf::ObjectType::ObjectColumn
+                    | pgls_query::protobuf::ObjectType::ObjectAttribute
+            ) {
+                return diagnostics;
+            }
+            let column = object_type_noun(rename_type);
             diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),
                     None,

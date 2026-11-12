@@ -18,10 +18,12 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use lsp_types::*;
+use pgls_line_index::{LineIndex, WideEncoding, WideLineCol, changed_range};
+use pgls_text_size::TextSize;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::Workspace;
+use crate::{WasmError, Workspace};
 
 /// JSON-RPC request/notification structure
 #[derive(Debug, Deserialize)]
@@ -64,7 +66,18 @@ struct JsonRpcNotification {
 /// Document state stored in the handler
 struct DocumentState {
     content: String,
+    line_index: LineIndex,
     version: i32,
+}
+
+impl DocumentState {
+    fn new(content: String, version: i32) -> Self {
+        Self {
+            line_index: LineIndex::new(&content),
+            content,
+            version,
+        }
+    }
 }
 
 /// LSP handler for WASM.
@@ -76,6 +89,13 @@ struct DocumentState {
 /// Use the `pgls/setSchema` notification to set the database schema:
 /// ```json
 /// {"jsonrpc":"2.0","method":"pgls/setSchema","params":{"schema":"..."}}
+/// ```
+///
+/// The configuration, in the shape of `postgres-language-server.jsonc`, comes as the
+/// `initializationOptions` of `initialize`, or as the `settings` of
+/// `workspace/didChangeConfiguration`, which replaces it:
+/// ```json
+/// {"jsonrpc":"2.0","method":"workspace/didChangeConfiguration","params":{"settings":{"migrations":{"sectionMarkers":"dbmate"}}}}
 /// ```
 pub struct LspHandler {
     workspace: Workspace,
@@ -164,6 +184,7 @@ impl LspHandler {
             "textDocument/didOpen" => self.did_open(params),
             "textDocument/didChange" => self.did_change(params),
             "textDocument/didClose" => self.did_close(params),
+            "workspace/didChangeConfiguration" => self.did_change_configuration(params),
             "pgls/setSchema" => self.set_schema_notification(params),
             "pgls/clearSchema" => self.clear_schema_notification(),
             _ => vec![],
@@ -175,8 +196,17 @@ impl LspHandler {
     // -------------------------------------------------------------------------
 
     fn initialize(&mut self, params: Option<Value>, id: Value) -> JsonRpcResponse {
+        let params =
+            params.and_then(|params| serde_json::from_value::<InitializeParams>(params).ok());
+        if let Some(options) = params
+            .as_ref()
+            .and_then(|params| params.initialization_options.clone())
+            .filter(|options| !options.is_null())
+            && let Err(e) = self.configure(options)
+        {
+            return self.error_response(id, -32602, &e.to_string());
+        }
         self.versioned_edits = params
-            .and_then(|params| serde_json::from_value::<InitializeParams>(params).ok())
             .and_then(|params| params.capabilities.workspace)
             .and_then(|workspace| workspace.workspace_edit)
             .and_then(|workspace_edit| workspace_edit.document_changes)
@@ -228,14 +258,14 @@ impl LspHandler {
         let uri = params.text_document_position.text_document.uri.to_string();
         let position = params.text_document_position.position;
 
-        let content = match self.documents.get(&uri) {
-            Some(doc) => &doc.content,
+        let line_index = match self.documents.get(&uri) {
+            Some(doc) => &doc.line_index,
             None => {
                 return self.error_response(id, -32002, &format!("Document not found: {uri}"));
             }
         };
 
-        let offset = position_to_offset(content, position);
+        let offset = position_to_offset(line_index, position);
         let completions = self
             .workspace
             .complete(&uri, offset as u32)
@@ -280,14 +310,14 @@ impl LspHandler {
             .to_string();
         let position = params.text_document_position_params.position;
 
-        let content = match self.documents.get(&uri) {
-            Some(doc) => &doc.content,
+        let line_index = match self.documents.get(&uri) {
+            Some(doc) => &doc.line_index,
             None => {
                 return self.error_response(id, -32002, &format!("Document not found: {uri}"));
             }
         };
 
-        let offset = position_to_offset(content, position);
+        let offset = position_to_offset(line_index, position);
         let hover_text = self.workspace.hover(&uri, offset as u32).ok().flatten();
 
         let result = hover_text.map(|text| {
@@ -334,7 +364,7 @@ impl LspHandler {
         let only_fix_all =
             requested.is_some_and(|kinds| kinds.iter().all(|kind| covers(kind, FIX_ALL_KIND)));
         if !only_fix_all {
-            let offset = position_to_offset(&doc.content, params.range.start);
+            let offset = position_to_offset(&doc.line_index, params.range.start);
             let workspace_actions = self
                 .workspace
                 .code_actions(&uri, offset as u32)
@@ -351,11 +381,11 @@ impl LspHandler {
                     .map(|text_edit| TextEdit {
                         range: Range {
                             start: offset_to_position(
-                                &doc.content,
+                                &doc.line_index,
                                 usize::from(text_edit.range.start()),
                             ),
                             end: offset_to_position(
-                                &doc.content,
+                                &doc.line_index,
                                 usize::from(text_edit.range.end()),
                             ),
                         },
@@ -395,15 +425,12 @@ impl LspHandler {
         if wants_fix_all
             && let Ok(fixed) = self.workspace.fix_file(&uri, false)
             && fixed.code != doc.content
+            && let Some(edit) = fix_all_edit(&doc.content, &doc.line_index, &fixed.code)
         {
             actions.push(CodeAction {
                 title: "Apply all safe fixes".into(),
                 kind: Some(CodeActionKind::from(FIX_ALL_KIND)),
-                edit: Some(self.workspace_edit(
-                    &params.text_document.uri,
-                    doc.version,
-                    vec![changed_range(&doc.content, &fixed.code)],
-                )),
+                edit: Some(self.workspace_edit(&params.text_document.uri, doc.version, vec![edit])),
                 ..Default::default()
             });
         }
@@ -452,13 +479,8 @@ impl LspHandler {
         let content = params.text_document.text;
         let version = params.text_document.version;
 
-        self.documents.insert(
-            uri.clone(),
-            DocumentState {
-                content: content.clone(),
-                version,
-            },
-        );
+        self.documents
+            .insert(uri.clone(), DocumentState::new(content.clone(), version));
         self.workspace.insert_file(&uri, &content);
 
         self.publish_diagnostics(&uri)
@@ -480,13 +502,8 @@ impl LspHandler {
             None => return vec![],
         };
 
-        self.documents.insert(
-            uri.clone(),
-            DocumentState {
-                content: content.clone(),
-                version,
-            },
-        );
+        self.documents
+            .insert(uri.clone(), DocumentState::new(content.clone(), version));
         self.workspace.insert_file(&uri, &content);
 
         self.publish_diagnostics(&uri)
@@ -532,11 +549,33 @@ impl LspHandler {
             eprintln!("Failed to set schema: {e}");
         }
 
-        // Re-publish diagnostics for all open documents
-        let uris: Vec<String> = self.documents.keys().cloned().collect();
-        uris.into_iter()
-            .flat_map(|uri| self.publish_diagnostics(&uri))
-            .collect()
+        self.publish_all_diagnostics()
+    }
+
+    /// Replaces the configuration with `settings`, like the native language server, and
+    /// re-publishes the diagnostics. An invalid configuration is reported and ignored.
+    fn did_change_configuration(&mut self, params: Option<Value>) -> Vec<JsonRpcNotification> {
+        let Some(settings) = params
+            .and_then(|params| serde_json::from_value::<DidChangeConfigurationParams>(params).ok())
+            .map(|params| params.settings)
+            .filter(|settings| !settings.is_null())
+        else {
+            return vec![];
+        };
+
+        if let Err(e) = self.configure(settings) {
+            return vec![JsonRpcNotification {
+                jsonrpc: "2.0".into(),
+                method: "window/showMessage".into(),
+                params: serde_json::to_value(ShowMessageParams {
+                    typ: MessageType::WARNING,
+                    message: e.to_string(),
+                })
+                .unwrap(),
+            }];
+        }
+
+        self.publish_all_diagnostics()
     }
 
     fn clear_schema_notification(&mut self) -> Vec<JsonRpcNotification> {
@@ -548,9 +587,25 @@ impl LspHandler {
     // Helper methods
     // -------------------------------------------------------------------------
 
+    /// Replaces the configuration with `configuration`, in the shape of
+    /// `postgres-language-server.jsonc`.
+    fn configure(&mut self, configuration: Value) -> Result<(), WasmError> {
+        let configuration = serde_json::from_value(configuration)
+            .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?;
+        self.workspace.set_configuration(configuration)
+    }
+
+    /// The diagnostics of all open documents.
+    fn publish_all_diagnostics(&self) -> Vec<JsonRpcNotification> {
+        self.documents
+            .keys()
+            .flat_map(|uri| self.publish_diagnostics(uri))
+            .collect()
+    }
+
     fn publish_diagnostics(&self, uri: &str) -> Vec<JsonRpcNotification> {
-        let content = match self.documents.get(uri) {
-            Some(doc) => &doc.content,
+        let line_index = match self.documents.get(uri) {
+            Some(doc) => &doc.line_index,
             None => return vec![],
         };
 
@@ -559,8 +614,8 @@ impl LspHandler {
             .into_iter()
             .map(|d| Diagnostic {
                 range: Range {
-                    start: offset_to_position(content, d.start as usize),
-                    end: offset_to_position(content, d.end as usize),
+                    start: offset_to_position(line_index, d.start as usize),
+                    end: offset_to_position(line_index, d.end as usize),
                 },
                 severity: Some(match d.severity.as_str() {
                     "error" => DiagnosticSeverity::ERROR,
@@ -616,39 +671,16 @@ fn covers(requested: &CodeActionKind, kind: &str) -> bool {
 }
 
 /// The edit that turns `old` into `new`, replacing only what changed, so that the editor keeps
-/// the cursor and the folds.
-fn changed_range(old: &str, new: &str) -> TextEdit {
-    let prefix = old
-        .char_indices()
-        .zip(new.chars())
-        .find(|((_, a), b)| a != b)
-        .map_or(old.len().min(new.len()), |((index, _), _)| index);
-    let suffix = old[prefix..]
-        .chars()
-        .rev()
-        .zip(new[prefix..].chars().rev())
-        .take_while(|(a, b)| a == b)
-        .map(|(a, _)| a.len_utf8())
-        .sum::<usize>();
-    // A position can't point into a `\r\n`, so the edit takes in the whole line break when only
-    // one half of it changed. The characters it takes in are the same in `old` and `new`.
-    let prefix = if splits_crlf(old, prefix) {
-        prefix - 1
-    } else {
-        prefix
-    };
-    let suffix = if splits_crlf(old, old.len() - suffix) {
-        suffix - 1
-    } else {
-        suffix
-    };
-    TextEdit {
+/// the cursor and the folds. `None` if `old` is too large for a `TextSize`.
+fn fix_all_edit(old: &str, old_index: &LineIndex, new: &str) -> Option<TextEdit> {
+    let (range, new_text) = changed_range(old, new)?;
+    Some(TextEdit {
         range: Range {
-            start: offset_to_position(old, prefix),
-            end: offset_to_position(old, old.len() - suffix),
+            start: offset_to_position(old_index, range.start().into()),
+            end: offset_to_position(old_index, range.end().into()),
         },
-        new_text: new[prefix..new.len() - suffix].to_string(),
-    }
+        new_text: new_text.to_string(),
+    })
 }
 
 // =============================================================================
@@ -656,55 +688,26 @@ fn changed_range(old: &str, new: &str) -> TextEdit {
 // =============================================================================
 
 /// Convert LSP Position (line:character in UTF-16) to byte offset.
-///
-/// Lines end at `\n`, like in the native language server; the `\r` of a `\r\n` belongs to the
-/// line break, not to the line.
-fn position_to_offset(content: &str, pos: Position) -> usize {
-    let line_start = match pos.line {
-        0 => 0,
-        line => match content.match_indices('\n').nth(line as usize - 1) {
-            Some((newline, _)) => newline + 1,
-            None => return content.len(),
+fn position_to_offset(line_index: &LineIndex, pos: Position) -> usize {
+    let line_col = line_index.to_utf8(
+        WideEncoding::Utf16,
+        WideLineCol {
+            line: pos.line,
+            col: pos.character,
         },
-    };
-    let rest = &content[line_start..];
-    let line = rest.find('\n').map_or(rest, |end| &rest[..end]);
-    let line = line.strip_suffix('\r').unwrap_or(line);
-
-    // Convert UTF-16 character offset to byte offset
-    let mut utf16_count = 0u32;
-    for (byte_idx, c) in line.char_indices() {
-        if utf16_count >= pos.character {
-            return line_start + byte_idx;
-        }
-        utf16_count += c.len_utf16() as u32;
-    }
-    line_start + line.len()
+    );
+    line_index.offset_clamped(line_col).into()
 }
 
 /// Convert byte offset to LSP Position (line:character in UTF-16).
-///
-/// A position can't point between the `\r` and the `\n` of a line break, so an offset there
-/// becomes the end of the line.
-fn offset_to_position(content: &str, offset: usize) -> Position {
-    let offset = offset.min(content.len());
-    let offset = if splits_crlf(content, offset) {
-        offset - 1
-    } else {
-        offset
-    };
-    let text = &content[..offset];
-
-    let line = text.matches('\n').count() as u32;
-    let line_start = text.rfind('\n').map_or(0, |p| p + 1);
-    let col = text[line_start..].encode_utf16().count() as u32;
-
-    Position::new(line, col)
-}
-
-/// Whether `offset` is between the `\r` and the `\n` of a line break.
-fn splits_crlf(content: &str, offset: usize) -> bool {
-    content[..offset].ends_with('\r') && content[offset..].starts_with('\n')
+fn offset_to_position(line_index: &LineIndex, offset: usize) -> Position {
+    let offset = TextSize::try_from(offset).unwrap_or(TextSize::from(u32::MAX));
+    line_index
+        .line_col(offset)
+        .and_then(|line_col| line_index.to_wide(WideEncoding::Utf16, line_col))
+        .map_or_else(Position::default, |line_col| {
+            Position::new(line_col.line, line_col.col)
+        })
 }
 
 // =============================================================================
@@ -1002,10 +1005,11 @@ mod tests {
             );
             let edit = &actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap()
                 [&Uri::from_str("file:///test.sql").unwrap()][0];
+            let index = LineIndex::new(text);
             let mut applied = text.to_string();
             applied.replace_range(
-                position_to_offset(text, edit.range.start)
-                    ..position_to_offset(text, edit.range.end),
+                position_to_offset(&index, edit.range.start)
+                    ..position_to_offset(&index, edit.range.end),
                 &edit.new_text,
             );
             assert_eq!(applied, fixed);
@@ -1019,6 +1023,125 @@ mod tests {
                 .all(|action| action.title != "Apply all safe fixes"),
             "{actions:#?}"
         );
+    }
+
+    const DBMATE_MIGRATION: &str = "-- migrate:up transaction:false\nreindex index my_index;\n";
+
+    /// Applies the edit of the fix-all action to `text`.
+    fn apply_fix_all(text: &str, actions: &[CodeAction]) -> String {
+        assert_eq!(actions.len(), 1, "{actions:#?}");
+        let edit = &actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap()
+            [&Uri::from_str("file:///test.sql").unwrap()][0];
+        let line_index = LineIndex::new(text);
+        let mut applied = text.to_string();
+        applied.replace_range(
+            position_to_offset(&line_index, edit.range.start)
+                ..position_to_offset(&line_index, edit.range.end),
+            &edit.new_text,
+        );
+        applied.to_lowercase()
+    }
+
+    #[test]
+    fn test_initialization_options_configure_the_workspace() {
+        let mut handler = test_handler();
+        handler.handle_message(
+            &serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "capabilities": {},
+                    "initializationOptions": { "migrations": { "sectionMarkers": "dbmate" } }
+                }
+            })
+            .to_string(),
+        );
+        handler.handle_message(
+            &serde_json::json!({
+                "jsonrpc": "2.0",
+                "method": "textDocument/didOpen",
+                "params": {
+                    "textDocument": {
+                        "uri": "file:///test.sql",
+                        "languageId": "sql",
+                        "version": 1,
+                        "text": DBMATE_MIGRATION,
+                    }
+                }
+            })
+            .to_string(),
+        );
+
+        // With section markers, the migration surely runs outside a transaction, so the fix is
+        // safe: preferred, and applied by fix-all.
+        let actions = code_actions_at(&mut handler, Position::new(1, 2), None);
+        assert_eq!(actions[0].title, "Add CONCURRENTLY", "{actions:#?}");
+        assert_eq!(actions[0].is_preferred, Some(true));
+        let actions = code_actions(&mut handler, Some(&["source.fixAll"]));
+        assert_eq!(
+            apply_fix_all(DBMATE_MIGRATION, &actions),
+            "-- migrate:up transaction:false\nreindex index concurrently my_index;\n"
+        );
+    }
+
+    #[test]
+    fn test_invalid_initialization_options() {
+        let mut handler = test_handler();
+        let response = handler.handle_message(
+            r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{},"initializationOptions":{"unknown":true}}}"#,
+        );
+        let msgs: Vec<Value> = serde_json::from_str(&response).unwrap();
+        assert_eq!(msgs[0]["error"]["code"], -32602, "{msgs:?}");
+    }
+
+    #[test]
+    fn test_did_change_configuration() {
+        let mut handler = test_handler();
+        open(&mut handler, "{}", DBMATE_MIGRATION);
+        let change_configuration = |handler: &mut LspHandler, settings: Value| -> Vec<Value> {
+            let response = handler.handle_message(
+                &serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "method": "workspace/didChangeConfiguration",
+                    "params": { "settings": settings }
+                })
+                .to_string(),
+            );
+            serde_json::from_str(&response).unwrap()
+        };
+
+        // Without section markers, the fix is unsafe.
+        assert!(code_actions(&mut handler, Some(&["source.fixAll"])).is_empty());
+
+        let msgs = change_configuration(
+            &mut handler,
+            serde_json::json!({ "migrations": { "sectionMarkers": "dbmate" } }),
+        );
+        assert_eq!(msgs.len(), 1, "{msgs:?}");
+        assert_eq!(msgs[0]["method"], "textDocument/publishDiagnostics");
+        assert_eq!(msgs[0]["params"]["uri"], "file:///test.sql");
+        let actions = code_actions(&mut handler, Some(&["source.fixAll"]));
+        assert_eq!(
+            apply_fix_all(DBMATE_MIGRATION, &actions),
+            "-- migrate:up transaction:false\nreindex index concurrently my_index;\n"
+        );
+
+        // An invalid configuration is reported and keeps the previous one.
+        let msgs = change_configuration(
+            &mut handler,
+            serde_json::json!({ "migrations": { "sectionMarkers": "flyway" } }),
+        );
+        assert_eq!(msgs.len(), 1, "{msgs:?}");
+        assert_eq!(msgs[0]["method"], "window/showMessage");
+        assert_eq!(
+            code_actions(&mut handler, Some(&["source.fixAll"])).len(),
+            1
+        );
+
+        // The settings replace the configuration.
+        change_configuration(&mut handler, serde_json::json!({}));
+        assert!(code_actions(&mut handler, Some(&["source.fixAll"])).is_empty());
     }
 
     #[test]
@@ -1079,99 +1202,112 @@ mod tests {
 
     #[test]
     fn test_position_conversion() {
-        let content = "SELECT\n  1\n  FROM users;";
+        let index = LineIndex::new("SELECT\n  1\n  FROM users;");
 
         // Line 0, char 0 -> offset 0
-        assert_eq!(position_to_offset(content, Position::new(0, 0)), 0);
+        assert_eq!(position_to_offset(&index, Position::new(0, 0)), 0);
 
         // Line 0, char 6 -> offset 6 (end of "SELECT")
-        assert_eq!(position_to_offset(content, Position::new(0, 6)), 6);
+        assert_eq!(position_to_offset(&index, Position::new(0, 6)), 6);
 
         // Line 1, char 2 -> offset 9 ("  1" starts at offset 7, char 2 = offset 9)
-        assert_eq!(position_to_offset(content, Position::new(1, 2)), 9);
+        assert_eq!(position_to_offset(&index, Position::new(1, 2)), 9);
 
         // Offset 0 -> line 0, char 0
-        assert_eq!(offset_to_position(content, 0), Position::new(0, 0));
+        assert_eq!(offset_to_position(&index, 0), Position::new(0, 0));
 
         // Offset 9 -> line 1, char 2
-        assert_eq!(offset_to_position(content, 9), Position::new(1, 2));
+        assert_eq!(offset_to_position(&index, 9), Position::new(1, 2));
     }
 
     #[test]
     fn test_position_conversion_utf16() {
         // Test with multi-byte characters
-        let content = "SELECT '日本語';";
+        let index = LineIndex::new("SELECT '日本語';");
 
         // The string has: SELECT ' (8 bytes) + 日本語 (9 bytes) + '; (2 bytes) = 19 bytes
         // In UTF-16: SELECT ' (8 units) + 日本語 (3 units) + '; (2 units) = 13 units
 
         // Position at the end of '日本語'
         // Byte offset of ';' is 17
-        let pos = offset_to_position(content, 17);
+        let pos = offset_to_position(&index, 17);
         assert_eq!(pos.line, 0);
         assert_eq!(pos.character, 11); // 8 + 3 = 11 UTF-16 units
-        assert_eq!(position_to_offset(content, pos), 17);
+        assert_eq!(position_to_offset(&index, pos), 17);
     }
 
     #[test]
     fn test_position_conversion_lf() {
-        let content = "select 1;\nselect 2;\n";
+        let index = LineIndex::new("select 1;\nselect 2;\n");
 
         // Past the end of a line is the end of that line, past the last line the end of the file.
-        assert_eq!(position_to_offset(content, Position::new(0, 100)), 9);
-        assert_eq!(position_to_offset(content, Position::new(2, 0)), 20);
-        assert_eq!(position_to_offset(content, Position::new(5, 3)), 20);
+        assert_eq!(position_to_offset(&index, Position::new(0, 100)), 9);
+        assert_eq!(position_to_offset(&index, Position::new(2, 0)), 20);
+        assert_eq!(position_to_offset(&index, Position::new(5, 3)), 20);
 
-        assert_eq!(offset_to_position(content, 9), Position::new(0, 9));
-        assert_eq!(offset_to_position(content, 10), Position::new(1, 0));
-        assert_eq!(offset_to_position(content, 20), Position::new(2, 0));
+        assert_eq!(offset_to_position(&index, 9), Position::new(0, 9));
+        assert_eq!(offset_to_position(&index, 10), Position::new(1, 0));
+        assert_eq!(offset_to_position(&index, 20), Position::new(2, 0));
     }
 
     #[test]
     fn test_position_conversion_crlf() {
-        let content = "select 1;\r\nselect '日本語';\r\nselect 3;";
+        let index = LineIndex::new("select 1;\r\nselect '日本語';\r\nselect 3;");
 
         // "select 1;\r\n" is 11 bytes, "select '日本語';\r\n" 21 bytes.
-        assert_eq!(position_to_offset(content, Position::new(1, 0)), 11);
-        assert_eq!(position_to_offset(content, Position::new(1, 11)), 28);
-        assert_eq!(position_to_offset(content, Position::new(2, 7)), 39);
-        assert_eq!(offset_to_position(content, 39), Position::new(2, 7));
-        assert_eq!(offset_to_position(content, 28), Position::new(1, 11));
+        assert_eq!(position_to_offset(&index, Position::new(1, 0)), 11);
+        assert_eq!(position_to_offset(&index, Position::new(1, 11)), 28);
+        assert_eq!(position_to_offset(&index, Position::new(2, 7)), 39);
+        assert_eq!(offset_to_position(&index, 39), Position::new(2, 7));
+        assert_eq!(offset_to_position(&index, 28), Position::new(1, 11));
 
         // The `\r` is part of the line break, not of the line.
-        assert_eq!(position_to_offset(content, Position::new(0, 100)), 9);
-        assert_eq!(offset_to_position(content, 9), Position::new(0, 9));
-        assert_eq!(offset_to_position(content, 10), Position::new(0, 9));
-        assert_eq!(offset_to_position(content, 11), Position::new(1, 0));
+        assert_eq!(position_to_offset(&index, Position::new(0, 100)), 9);
+        assert_eq!(offset_to_position(&index, 9), Position::new(0, 9));
+        assert_eq!(offset_to_position(&index, 10), Position::new(0, 9));
+        assert_eq!(offset_to_position(&index, 11), Position::new(1, 0));
     }
 
     #[test]
     fn test_position_conversion_surrogate_pairs() {
         // '😀' is 4 bytes in UTF-8 and a surrogate pair, 2 units, in UTF-16.
-        let content = "select '😀😀';\r\nselect 2;";
+        let index = LineIndex::new("select '😀😀';\r\nselect 2;");
 
-        assert_eq!(offset_to_position(content, 12), Position::new(0, 10));
-        assert_eq!(position_to_offset(content, Position::new(0, 10)), 12);
-        assert_eq!(offset_to_position(content, 16), Position::new(0, 12));
-        assert_eq!(position_to_offset(content, Position::new(0, 14)), 18);
-        assert_eq!(position_to_offset(content, Position::new(1, 7)), 27);
+        assert_eq!(offset_to_position(&index, 12), Position::new(0, 10));
+        assert_eq!(position_to_offset(&index, Position::new(0, 10)), 12);
+        assert_eq!(offset_to_position(&index, 16), Position::new(0, 12));
+        assert_eq!(position_to_offset(&index, Position::new(0, 14)), 18);
+        assert_eq!(position_to_offset(&index, Position::new(1, 7)), 27);
 
-        // A position inside a surrogate pair moves past the character.
-        assert_eq!(position_to_offset(content, Position::new(0, 9)), 12);
+        // A position inside a surrogate pair is the start of the character.
+        assert_eq!(position_to_offset(&index, Position::new(0, 9)), 8);
     }
 
     #[test]
-    fn test_changed_range_keeps_crlf_whole() {
+    fn test_position_conversion_lone_cr() {
+        // Like in the native language server, only `\n` ends a line.
+        let index = LineIndex::new("select '\r';\nselect 2;");
+
+        assert_eq!(offset_to_position(&index, 9), Position::new(0, 9));
+        assert_eq!(position_to_offset(&index, Position::new(0, 100)), 11);
+        assert_eq!(offset_to_position(&index, 12), Position::new(1, 0));
+        assert_eq!(position_to_offset(&index, Position::new(1, 0)), 12);
+    }
+
+    #[test]
+    fn test_fix_all_edit_keeps_crlf_whole() {
         for (old, new) in [
             ("select 1;\r\nselect 2;", "select 1;\nselect 2;"),
             ("select 1;\nselect 2;", "select 1;\r\nselect 2;"),
             ("select 1;\r\n", "select 1;\r\r\n"),
             ("select 1;\r\nselect 2;", "select 1;\r\n\r\nselect 2;"),
         ] {
-            let edit = changed_range(old, new);
+            let index = LineIndex::new(old);
+            let edit = fix_all_edit(old, &index, new).unwrap();
             let mut applied = old.to_string();
             applied.replace_range(
-                position_to_offset(old, edit.range.start)..position_to_offset(old, edit.range.end),
+                position_to_offset(&index, edit.range.start)
+                    ..position_to_offset(&index, edit.range.end),
                 &edit.new_text,
             );
             assert_eq!(applied, new, "{edit:?}");

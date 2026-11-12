@@ -65,6 +65,11 @@ impl<'a> StatementTokens<'a> {
         self.tokens.iter().position(|token| token.start == offset)
     }
 
+    /// The range of the token that starts at `offset`, e.g. the name at the location of a node.
+    pub fn range_at(&self, offset: i32) -> Option<TextRange> {
+        Some(self.range(self.at(offset)?))
+    }
+
     /// The closing parenthesis that matches the opening one at `open`.
     pub fn closing_paren(&self, open: usize) -> Option<usize> {
         let mut depth = 0usize;
@@ -99,6 +104,31 @@ impl<'a> StatementTokens<'a> {
             last = index;
         }
         last
+    }
+
+    /// The ranges of the comma-separated elements of the tokens from `start` up to `end`,
+    /// exclusive, e.g. the names of a column list. Commas inside parentheses don't separate
+    /// elements. `None` if an element is empty, which the parser rejects.
+    pub fn list_elements(&self, start: usize, end: usize) -> Option<Vec<TextRange>> {
+        let mut elements = Vec::new();
+        let mut element: Option<TextRange> = None;
+        let mut depth = 0usize;
+        for index in start..end {
+            match self.kind(index)? {
+                Token::Ascii44 if depth == 0 => elements.push(element.take()?),
+                kind => {
+                    match kind {
+                        Token::Ascii40 => depth += 1,
+                        Token::Ascii41 => depth = depth.saturating_sub(1),
+                        _ => {}
+                    }
+                    let range = self.range(index);
+                    element = Some(element.map_or(range, |element| element.cover(range)));
+                }
+            }
+        }
+        elements.push(element?);
+        Some(elements)
     }
 
     /// The words of the type name that starts at the token `start`, e.g. `pg_catalog.varchar`
@@ -167,6 +197,17 @@ impl<'a> StatementTokens<'a> {
         )
     }
 
+    /// A fix that inserts the keywords ` <text>` after the first of the `keywords` that is not
+    /// inside parentheses, like [`Self::insert_after`].
+    pub fn insert_after_keyword(
+        &self,
+        keywords: &[Token],
+        message: &str,
+        text: &str,
+    ) -> Option<RuleFix> {
+        Some(self.insert_after(self.find_any(keywords)?, message, text))
+    }
+
     /// A fix that replaces the token at `index` with `text`, in the case of the token, e.g.
     /// `TIMESTAMP` with `TIMESTAMPTZ`.
     pub fn replace(&self, index: usize, message: &str, text: &str) -> RuleFix {
@@ -174,20 +215,40 @@ impl<'a> StatementTokens<'a> {
     }
 
     /// Replaces the text in `range` with `text`, but keeps the comments in it, e.g. to replace
-    /// `varchar /* name */ (255)` with `text /* name */`.
+    /// `varchar /* name */ (255)` with `text /* name */`. A `--` comment ends at the end of its
+    /// line, so it keeps a line break after it, the one that ends it in the source (e.g. `\r\n`).
+    /// Otherwise it would comment out the rest of the line, e.g. a `NOT NULL` after the replaced
+    /// type.
     pub fn replace_keeping_comments(&self, fix: RuleFix, range: TextRange, text: &str) -> RuleFix {
         let mut replacement = text.to_string();
         for comment in self.comments {
-            let comment = TextRange::new(
+            let comment_range = TextRange::new(
                 TextSize::from(comment.start as u32),
                 TextSize::from(comment.end as u32),
             );
-            if range.contains_range(comment) {
+            if range.contains_range(comment_range) {
                 replacement.push(' ');
-                replacement.push_str(&self.sql[comment]);
+                replacement.push_str(self.sql[comment_range].trim_end());
+                if comment.token() == Token::SqlComment {
+                    replacement.push_str(line_break_after(
+                        &self.sql[usize::from(comment_range.end())..],
+                    ));
+                }
             }
         }
         fix.replace(range, replacement)
+    }
+}
+
+/// The line break that ends a `--` comment followed by `text`: `\r\n`, `\r` or `\n`. `\n` at the
+/// end of the input.
+fn line_break_after(text: &str) -> &'static str {
+    if text.starts_with("\r\n") {
+        "\r\n"
+    } else if text.starts_with('\r') {
+        "\r"
+    } else {
+        "\n"
     }
 }
 
@@ -201,21 +262,64 @@ pub(crate) fn in_case_of(text: &str, like: &str) -> String {
     }
 }
 
-/// A fix that inserts `CONCURRENTLY` after the token at `index`, for a statement that Postgres
-/// can't run in a transaction block. There is none in a transaction block. If we only assume that
-/// the statement runs outside of one, because we don't know the migration tool, the fix is unsafe.
+/// A fix that inserts `CONCURRENTLY` after the first of the `keywords`, for a statement that
+/// Postgres can't run in a transaction block. There is none in a transaction block. If we only
+/// assume that the statement runs outside of one, because we don't know the migration tool, the
+/// fix is unsafe.
 pub(crate) fn add_concurrently<R: LinterRule + 'static>(
     ctx: &LinterRuleContext<R>,
-    tokens: &StatementTokens,
-    index: usize,
+    keywords: &[Token],
 ) -> Option<RuleFix> {
     if ctx.in_transaction() {
         return None;
     }
-    let fix = tokens.insert_after(index, "Add CONCURRENTLY", "CONCURRENTLY");
+    let fix = ctx
+        .tokens()?
+        .insert_after_keyword(keywords, "Add CONCURRENTLY", "CONCURRENTLY")?;
     Some(if ctx.knows_transaction() {
         fix
     } else {
         fix.unsafe_fix()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use pgls_query::protobuf::Token;
+    use pgls_text_size::{TextRange, TextSize};
+
+    use super::StatementTokens;
+    use crate::RuleFix;
+
+    /// Replaces `varchar ... (10)` in `sql` with `text`, keeping the comments in it.
+    fn replace_type(sql: &str) -> String {
+        let scan = pgls_query::scan(sql).unwrap();
+        let (tokens, comments): (Vec<_>, Vec<_>) = scan
+            .tokens
+            .into_iter()
+            .partition(|token| !matches!(token.token(), Token::SqlComment | Token::CComment));
+        let tokens = StatementTokens::new(sql, &tokens, &comments);
+        let start = sql.find("varchar").unwrap();
+        let end = sql.find("(10)").unwrap() + "(10)".len();
+        let range = TextRange::new(TextSize::from(start as u32), TextSize::from(end as u32));
+        tokens
+            .replace_keeping_comments(RuleFix::new(""), range, "text")
+            .apply(sql)
+    }
+
+    #[test]
+    fn a_kept_line_comment_keeps_the_line_break_of_the_source() {
+        assert_eq!(
+            replace_type("create table t (name varchar -- length\n(10) not null);"),
+            "create table t (name text -- length\n not null);"
+        );
+        assert_eq!(
+            replace_type("create table t (\r\n  name varchar -- length  \r\n(10) not null\r\n);"),
+            "create table t (\r\n  name text -- length\r\n not null\r\n);"
+        );
+        assert_eq!(
+            replace_type("create table t (name varchar -- length\r(10) not null);"),
+            "create table t (name text -- length\r not null);"
+        );
+    }
 }
