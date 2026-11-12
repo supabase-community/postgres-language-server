@@ -1,7 +1,3 @@
-//! The walk over the statements of a file. Lint and the workspace's editor features (hover,
-//! completions, inlay hints, semantic tokens, code actions) share it, so that they see the same
-//! catalog and session at each statement.
-
 use std::{ops::Range, sync::Arc};
 
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
@@ -304,7 +300,7 @@ fn may_change_catalog(sql: &str) -> bool {
 
 /// Whether the statement only reads or writes rows, without changing the catalog or the
 /// session.
-pub(crate) fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
+pub fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
     use pgls_query::NodeEnum;
     match root {
         NodeEnum::SelectStmt(select) => select.into_clause.is_none(),

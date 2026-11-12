@@ -28,11 +28,12 @@ use pgls_analyse::{AnalysisFilter, RuleCategories, RuleCategoriesBuilder, RuleFi
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection, WalkParams,
+    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, FileKind, LinterDiagnostic,
+    LinterOptions,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session};
+use pgls_walk::{AnalysableStatement, Direction, MigrationSection, WalkParams};
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
@@ -432,7 +433,7 @@ impl WorkspaceServer {
     }
 
     /// Walks the statements of `doc` that start before `end` like the analyser does, see
-    /// [`pgls_analyser::walk_statements`]. `visit` gets every parsed statement, except those with
+    /// [`pgls_walk::walk_statements`]. `visit` gets every parsed statement, except those with
     /// identifier parameters, with the catalog and the session as they are before it. `settings`
     /// are the ones of the file. Returns the catalog as a statement at `end` sees it.
     fn walk_statements(
@@ -441,7 +442,7 @@ impl WorkspaceServer {
         doc: &Document,
         snapshot: &Arc<Snapshot>,
         end: TextSize,
-        mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
+        mut visit: impl FnMut(&AnalysableStatement, &Catalog, &Session),
     ) -> Catalog {
         let (search_path, sections) = settings
             .map(|settings| {
@@ -468,7 +469,7 @@ impl WorkspaceServer {
             unparsable.extend(skipped);
         }
 
-        pgls_analyser::walk_statements(
+        pgls_walk::walk_statements(
             WalkParams {
                 stmts: &stmts,
                 unparsable: &unparsable,

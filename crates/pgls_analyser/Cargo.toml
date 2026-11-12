@@ -20,6 +20,7 @@ pgls_lexer       = { workspace = true }
 pgls_query       = { workspace = true }
 pgls_query_ext   = { workspace = true }
 pgls_text_size   = { workspace = true }
+pgls_walk        = { workspace = true }
 rustc-hash       = { workspace = true }
 schemars         = { workspace = true }
 serde            = { workspace = true }
