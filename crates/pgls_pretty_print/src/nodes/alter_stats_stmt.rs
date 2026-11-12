@@ -1,12 +1,9 @@
-use super::node_list::emit_dot_separated_list;
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::AlterStatsStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
-    e.group_start(GroupKind::AlterStatsStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -15,9 +12,7 @@ pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
 
     // IF EXISTS
     if n.missing_ok {
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_exists(e);
         e.space();
     }
 
@@ -31,7 +26,7 @@ pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
         e.space();
         e.token(TokenKind::STATISTICS_KW);
         e.space();
-        super::emit_node(target, e);
+        emit_node(e, target);
     }
 
     e.group_end();

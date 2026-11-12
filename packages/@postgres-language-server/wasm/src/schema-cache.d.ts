@@ -41,9 +41,17 @@ export interface Column {
    */
   comment?: string;
   /**
-   * The Default "value" of the column. Might be a function call, hence "_expr".
+   * The Default "value" of the column. Might be a function call, hence "_expr". For a generated column, its generation expression.
    */
   default_expr?: string;
+  /**
+   * Whether the column is a generated column.
+   */
+  generated?: Generated;
+  /**
+   * Whether the column is an identity column.
+   */
+  identity?: Identity;
   is_nullable: boolean;
   is_primary_key: boolean;
   is_unique: boolean;
@@ -251,6 +259,14 @@ export type ColumnClassKind =
   | "MaterializedView"
   | "ForeignTable"
   | "PartitionedTable";
+/**
+ * Whether a column is a generated column (`pg_attribute.attgenerated`).
+ */
+export type Generated = "No" | "Stored" | "Virtual";
+/**
+ * Whether a column is an identity column (`pg_attribute.attidentity`).
+ */
+export type Identity = "No" | "Always" | "ByDefault";
 export interface FunctionArgs {
   args: FunctionArg[];
 }

@@ -7,13 +7,7 @@ mod common;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use pgls_postgres_regress::Verdict;
-use pgls_pretty_print::{
-    FormatConfig,
-    emitter::EventEmitter,
-    nodes::emit_statement,
-    normalize::normalize_ast,
-    renderer::{RenderConfig, Renderer},
-};
+use pgls_pretty_print::{FormatConfig, format_statement_unchecked, normalize_ast};
 use rayon::prelude::*;
 
 const LINE_WIDTHS: [usize; 2] = [80, 100];
@@ -115,16 +109,9 @@ fn round_trip(sql: &str) -> Result<(), String> {
 }
 
 fn format(ast: &pgls_query::NodeEnum, max_line_length: usize) -> String {
-    let config = FormatConfig::default();
-    let mut emitter = EventEmitter::new(config.clone());
-    emit_statement(&mut emitter, ast);
-    let mut output = String::new();
-    let config = RenderConfig {
-        max_line_length,
-        ..RenderConfig::from(config)
+    let config = FormatConfig {
+        line_width: max_line_length,
+        ..Default::default()
     };
-    Renderer::new(&mut output, config)
-        .render(emitter.events)
-        .expect("render");
-    output
+    format_statement_unchecked(ast, &config).expect("render")
 }

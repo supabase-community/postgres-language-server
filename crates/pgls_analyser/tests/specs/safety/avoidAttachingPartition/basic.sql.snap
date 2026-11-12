@@ -11,6 +11,6 @@ alter table my_table attach partition my_partition for values from ('2024-01-01'
 # Diagnostics
 lint/avoidAttachingPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.
+  × Attaching a partition acquires an ACCESS EXCLUSIVE lock on the partition and a SHARE UPDATE EXCLUSIVE lock on the parent table.
   
-  i This blocks all reads and writes on the parent table. Consider adding a matching CHECK constraint to the child table before attaching to minimize lock duration.
+  i This blocks all reads and writes on the partition, and on the default partition if there is one, while Postgres scans them to validate the partition bound. Add a CHECK constraint that matches the partition bound to the partition before attaching it, so that Postgres skips the scan.

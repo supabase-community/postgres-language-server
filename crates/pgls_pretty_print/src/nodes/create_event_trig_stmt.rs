@@ -1,12 +1,9 @@
 use pgls_query::protobuf::CreateEventTrigStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventTrigStmt) {
-    e.group_start(GroupKind::CreateEventTrigStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -17,7 +14,7 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
     // Trigger name
     if !n.trigname.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.trigname);
+        emit_identifier_maybe_quoted(e, &n.trigname);
     }
 
     // ON event_name
@@ -43,7 +40,7 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
             // Each when clause is a DefElem with defname=tag and arg=List of values
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = when.node.as_ref() {
                 // Emit TAG name
-                super::emit_keyword(e, &def_elem.defname);
+                emit_keyword(e, &def_elem.defname);
                 e.space();
                 e.token(TokenKind::IN_KW);
                 e.space();
@@ -51,14 +48,14 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
                 if let Some(arg) = &def_elem.arg
                     && let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref()
                 {
-                    e.group_start(GroupKind::List);
-                    super::open_call_arguments(e);
-                    super::node_list::emit_fill_comma_separated_list(e, &list.items, |item, e| {
+                    e.group_start();
+                    open_call_arguments(e);
+                    emit_fill_comma_separated_list(e, &list.items, |e, item| {
                         if let Some(pgls_query::NodeEnum::String(s)) = item.node.as_ref() {
-                            super::emit_string_literal(e, s);
+                            emit_string_literal(e, s);
                         }
                     });
-                    super::close_call_arguments(e);
+                    close_call_arguments(e);
                     e.group_end();
                 } else {
                     e.token(TokenKind::L_PAREN);
@@ -75,7 +72,7 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
         e.space();
         e.token(TokenKind::FUNCTION_KW);
         e.space();
-        super::node_list::emit_dot_separated_list(e, &n.funcname);
+        emit_dot_separated_list(e, &n.funcname);
         e.token(TokenKind::L_PAREN);
         e.token(TokenKind::R_PAREN);
     }
