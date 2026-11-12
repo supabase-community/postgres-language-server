@@ -1,4 +1,4 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, utils::object_type_noun};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -42,11 +42,14 @@ impl LinterRule for BanDropView {
             return vec![];
         };
 
-        let kind = match stmt.remove_type() {
-            ObjectType::ObjectView => "a view",
-            ObjectType::ObjectMatview => "a materialized view",
-            _ => return vec![],
-        };
+        let object_type = stmt.remove_type();
+        if !matches!(
+            object_type,
+            ObjectType::ObjectView | ObjectType::ObjectMatview
+        ) {
+            return vec![];
+        }
+        let kind = object_type_noun(object_type);
 
         vec![
             LinterDiagnostic::new(

@@ -73,7 +73,7 @@ mod tests {
         },
     };
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn handles_nested_queries(pool: PgPool) {
         let setup = r#"
             create schema private;
@@ -110,7 +110,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn shows_multiple_columns_if_no_relation_specified(pool: PgPool) {
         let setup = r#"
             create schema private;
@@ -141,7 +141,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_relevant_columns_without_letters(pool: PgPool) {
         let setup = r#"
             create table users (
@@ -158,7 +158,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn ignores_cols_in_from_clause(pool: PgPool) {
         let setup = r#"
         create schema private;
@@ -183,7 +183,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn prefers_columns_of_mentioned_tables(pool: PgPool) {
         let setup = r#"
         create schema private;
@@ -228,7 +228,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn filters_out_by_aliases_in_join_on(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -262,7 +262,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn filters_out_by_aliases_in_select(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -295,7 +295,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn does_not_complete_cols_in_join_clauses(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -323,7 +323,7 @@ mod tests {
         ).snapshot("does_not_complete_cols_in_join_clauses").await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_in_join_on_clause(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -355,7 +355,7 @@ mod tests {
         ).snapshot("completes_in_join_on_clause").await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn prefers_not_mentioned_columns(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -397,7 +397,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_columns_in_insert_clause(pool: PgPool) {
         let setup = r#"
             create table instruments (
@@ -434,7 +434,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_columns_in_where_clause(pool: PgPool) {
         let setup = r#"
             create table instruments (
@@ -466,7 +466,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_columns_in_alter_table_and_drop_table(pool: PgPool) {
         let setup = r#"
             create table instruments (
@@ -510,7 +510,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_columns_policy_using_clause(pool: PgPool) {
         let setup = r#"
             create table instruments (
@@ -540,7 +540,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_quoted_columns(pool: PgPool) {
         let setup = r#"
             create schema if not exists private;
@@ -561,7 +561,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_quoted_columns_with_aliases(pool: PgPool) {
         let setup = r#"
             create schema if not exists private;
@@ -616,7 +616,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_the_columns_of_the_table_an_identifier_names(pool: PgPool) {
         let setup = r#"
             create table "MyTable" (quoted_id int);
@@ -669,7 +669,7 @@ mod tests {
             .collect()
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_columns_after_opening_parenthesis(pool: PgPool) {
         pool.execute("create table public.users (id serial primary key, name text);")
             .await
@@ -691,7 +691,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_the_columns_of_update_and_delete_aliases(pool: PgPool) {
         pool.execute(
             r#"
@@ -737,7 +737,7 @@ mod tests {
         source
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn qualifies_columns_with_the_alias_of_their_schema(pool: PgPool) {
         pool.execute(
             r#"
@@ -763,7 +763,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn keeps_escaped_quotes_of_aliases(pool: PgPool) {
         pool.execute("create table public.users (id int, name text);")
             .await
@@ -790,7 +790,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_columns_of_old_and_new_in_returning(pool: PgPool) {
         pool.execute(
             r#"
@@ -845,7 +845,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn no_old_and_new_before_postgres_18(pool: PgPool) {
         pool.execute("create table public.users (id serial primary key, name text);")
             .await
@@ -871,7 +871,7 @@ mod tests {
         assert_eq!(columns, ["id", "name"]);
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_columns_in_returning(pool: PgPool) {
         pool.execute(
             r#"
@@ -904,7 +904,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_in_merge(pool: PgPool) {
         let setup = r#"
             create table public.users (id serial primary key, name text);
@@ -921,7 +921,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_the_columns_of_merge_aliases(pool: PgPool) {
         pool.execute(
             r#"
@@ -964,7 +964,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_the_columns_each_merge_branch_sees(pool: PgPool) {
         pool.execute(
             r#"
@@ -1020,7 +1020,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_a_column_named_period_in_a_key(pool: PgPool) {
         pool.execute("create table public.t (period int);")
             .await

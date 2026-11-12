@@ -1,15 +1,9 @@
 use pgls_query::protobuf::CreateSchemaStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
-
-use super::node_list::emit_space_separated_list;
-use crate::emitter::LineType;
+use super::prelude::*;
 
 pub(super) fn emit_create_schema_stmt(e: &mut EventEmitter, n: &CreateSchemaStmt) {
-    e.group_start(GroupKind::CreateSchemaStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -17,16 +11,12 @@ pub(super) fn emit_create_schema_stmt(e: &mut EventEmitter, n: &CreateSchemaStmt
 
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     if !n.schemaname.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.schemaname);
+        emit_identifier_maybe_quoted(e, &n.schemaname);
     }
 
     // AUTHORIZATION clause
@@ -45,7 +35,7 @@ pub(super) fn emit_create_schema_stmt(e: &mut EventEmitter, n: &CreateSchemaStmt
         // Soft line so the renderer can wrap when the schema name and the
         // first element don't fit on one line.
         e.line(LineType::SoftOrSpace);
-        emit_space_separated_list(e, &n.schema_elts, super::emit_node);
+        emit_space_separated_list(e, &n.schema_elts, emit_node);
     }
 
     e.group_end();

@@ -7,7 +7,10 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParameterMode as Mode, TypeName},
 };
-use pgls_query_ext::utils::{QualifiedName, find_option_value, qualified_name};
+use pgls_query_ext::{
+    function_body::is_sql_function,
+    utils::{QualifiedName, find_option_value, qualified_name},
+};
 
 use super::{Resolver, resolve_node_enum};
 use crate::TypeKind;
@@ -244,13 +247,6 @@ impl FunctionContext {
             params,
         })
     }
-}
-
-fn is_sql_function(n: &CreateFunctionStmt) -> bool {
-    // `BEGIN ATOMIC` and `RETURN` bodies only exist for SQL functions.
-    n.sql_body.is_some()
-        || find_option_value(n, "language")
-            .is_some_and(|language| language.eq_ignore_ascii_case("sql"))
 }
 
 /// The statements of the body. `None` if it can't be read, and for `RETURN expression`
