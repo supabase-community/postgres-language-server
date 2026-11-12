@@ -5,7 +5,7 @@ use crate::{
     CastContext, CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature,
     OperatorInfo, OperatorKind, TypeKind,
 };
-use crate::{ProcKind, Snapshot, TableKind};
+use crate::{Generated, Identity, ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{Key, key};
@@ -18,6 +18,7 @@ use crate::lookup::{
 pub struct CatalogBase {
     snapshot: Arc<Snapshot>,
     schemas: FxHashSet<String>,
+    roles: FxHashSet<String>,
     relations: FxHashMap<Key, RelationInfo>,
     /// Names that may be relations the snapshot doesn't list: foreign tables, relations the
     /// user has no privileges on, and composite types. Lookups of them are unknown, not missing.
@@ -41,6 +42,11 @@ impl CatalogBase {
             .iter()
             .map(|schema| schema.name.clone())
             .collect();
+        let roles = snapshot
+            .roles
+            .iter()
+            .map(|role| role.name.clone())
+            .collect();
 
         let types_by_id: FxHashMap<i64, &crate::PostgresType> =
             snapshot.types.iter().map(|t| (t.id, t)).collect();
@@ -53,13 +59,14 @@ impl CatalogBase {
                     .attributes
                     .attrs
                     .iter()
-                    .map(|attribute| ColumnInfo {
-                        name: attribute.name.clone(),
-                        type_name: types_by_id.get(&attribute.type_id).map(|t| t.name.clone()),
-
-                        ty: types_by_id
-                            .contains_key(&attribute.type_id)
-                            .then_some(Type::Named(TypeId::Snapshot(attribute.type_id))),
+                    .map(|attribute| {
+                        ColumnInfo::new(
+                            attribute.name.clone(),
+                            types_by_id.get(&attribute.type_id).map(|t| t.name.clone()),
+                            types_by_id
+                                .contains_key(&attribute.type_id)
+                                .then_some(Type::Named(TypeId::Snapshot(attribute.type_id))),
+                        )
                     })
                     .collect()
             })
@@ -108,12 +115,15 @@ impl CatalogBase {
                 .entry(column.table_oid)
                 .or_default()
                 .push(ColumnInfo {
-                    name: column.name.clone(),
-                    type_name: column.type_name.clone(),
-
-                    ty: types_by_id
-                        .contains_key(&column.type_id)
-                        .then_some(Type::Named(TypeId::Snapshot(column.type_id))),
+                    generated: column.generated,
+                    identity: column.identity,
+                    ..ColumnInfo::new(
+                        column.name.clone(),
+                        column.type_name.clone(),
+                        types_by_id
+                            .contains_key(&column.type_id)
+                            .then_some(Type::Named(TypeId::Snapshot(column.type_id))),
+                    )
                 });
         }
 
@@ -127,15 +137,22 @@ impl CatalogBase {
         let mut relations = FxHashMap::default();
         for table in &snapshot.tables {
             let key = key(&table.schema, &table.name);
+            let table_columns = columns_by_table.get(&table.id);
             let columns = types
                 .get(&key)
                 .and_then(|row_type: &TypeInfo| row_type.attributes.clone())
-                .or_else(|| {
-                    columns_by_table
-                        .get(&table.id)
-                        .filter(|columns| !columns.is_empty())
-                        .cloned()
-                });
+                .map(|mut columns| {
+                    // The row type doesn't know which columns are generated or identity columns.
+                    for column in &mut columns {
+                        let table_column = table_columns.and_then(|table_columns| {
+                            table_columns.iter().find(|c| c.name == column.name)
+                        });
+                        column.generated = table_column.map_or(Generated::No, |c| c.generated);
+                        column.identity = table_column.map_or(Identity::No, |c| c.identity);
+                    }
+                    columns
+                })
+                .or_else(|| table_columns.filter(|columns| !columns.is_empty()).cloned());
             relations.insert(
                 key,
                 RelationInfo {
@@ -231,12 +248,14 @@ impl CatalogBase {
             let outputs: Vec<ColumnInfo> = args
                 .iter()
                 .filter(|arg| matches!(arg.mode.as_str(), "out" | "inout" | "table"))
-                .map(|arg| ColumnInfo {
-                    name: arg.name.clone(),
-                    type_name: types_by_id.get(&arg.type_id).map(|t| t.name.clone()),
-                    ty: types_by_id
-                        .contains_key(&arg.type_id)
-                        .then_some(Type::Named(TypeId::Snapshot(arg.type_id))),
+                .map(|arg| {
+                    ColumnInfo::new(
+                        arg.name.clone(),
+                        types_by_id.get(&arg.type_id).map(|t| t.name.clone()),
+                        types_by_id
+                            .contains_key(&arg.type_id)
+                            .then_some(Type::Named(TypeId::Snapshot(arg.type_id))),
+                    )
                 })
                 .collect();
             let return_columns = if outputs.is_empty() {
@@ -383,6 +402,7 @@ impl CatalogBase {
         Self {
             snapshot,
             schemas,
+            roles,
             relations,
             possible_relations,
             inheritance_children,
@@ -421,6 +441,10 @@ impl CatalogBase {
         &self.snapshot
     }
 
+    pub(super) fn has_role(&self, name: &str) -> bool {
+        self.roles.contains(name)
+    }
+
     pub(super) fn has_schema(&self, name: &str) -> bool {
         self.schemas.contains(name)
     }
@@ -431,6 +455,11 @@ impl CatalogBase {
 
     pub(super) fn is_inheritance_child(&self, schema: &str, name: &str) -> bool {
         self.inheritance_children.contains(&key(schema, name))
+    }
+
+    /// The partitions and inheritance children of the snapshot.
+    pub(super) fn inheritance_children(&self) -> impl Iterator<Item = &Key> {
+        self.inheritance_children.iter()
     }
 
     pub(super) fn may_have_relation(&self, schema: &str, name: &str) -> bool {
@@ -506,13 +535,15 @@ pub(super) fn sequence_columns(types: &FxHashMap<i64, &crate::PostgresType>) -> 
         ("is_called", "bool"),
     ]
     .into_iter()
-    .map(|(name, type_name)| ColumnInfo {
-        name: name.into(),
-        type_name: Some(type_name.into()),
-        ty: types
-            .values()
-            .find(|type_| type_.name == type_name && type_.schema == "pg_catalog")
-            .map(|type_| Type::Named(TypeId::Snapshot(type_.id))),
+    .map(|(name, type_name)| {
+        ColumnInfo::new(
+            name,
+            Some(type_name.into()),
+            types
+                .values()
+                .find(|type_| type_.name == type_name && type_.schema == "pg_catalog")
+                .map(|type_| Type::Named(TypeId::Snapshot(type_.id))),
+        )
     })
     .collect()
 }

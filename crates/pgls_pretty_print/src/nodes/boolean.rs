@@ -1,12 +1,9 @@
 use pgls_query::protobuf::Boolean;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_boolean(e: &mut EventEmitter, n: &Boolean) {
-    e.group_start(GroupKind::Boolean);
+    e.group_start();
     e.token(TokenKind::BOOLEAN(n.boolval));
     e.group_end();
 }

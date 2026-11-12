@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/sub_link_1.sql
+---
+select
+  *
+from
+  users
+where
+  id operator(myschema.=) any (select user_id from orders);

@@ -1,43 +1,44 @@
 use pgls_query::protobuf::RangeVar;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
+
+/// Whether `ONLY` can precede the name. Only queries and the statements that change rows of a
+/// table, SELECT, UPDATE, DELETE and LOCK, know it. DDL that names a type, CREATE TYPE for
+/// instance, doesn't.
+#[derive(Clone, Copy)]
+pub(super) enum Only {
+    Allowed,
+    Omitted,
+}
 
 pub(super) fn emit_range_var(e: &mut EventEmitter, n: &RangeVar) {
-    emit_range_var_impl(e, n, true);
+    emit_range_var_as(e, n, Only::Allowed);
 }
 
-/// Emit a RangeVar without ONLY keyword (for DDL contexts like CREATE TYPE)
-pub(super) fn emit_range_var_name(e: &mut EventEmitter, n: &RangeVar) {
-    emit_range_var_impl(e, n, false);
-}
-
-fn emit_range_var_impl(e: &mut EventEmitter, n: &RangeVar, allow_only: bool) {
+pub(super) fn emit_range_var_as(e: &mut EventEmitter, n: &RangeVar, only: Only) {
     // The parents of a RangeVar call this helper directly rather than emit_node, so this is the
     // only place that can emit the comments written next to the relation name.
-    super::emit_with_comments_at(e, n.location, |e| emit_range_var_tokens(e, n, allow_only));
+    emit_with_comments_at(e, n.location, |e| emit_range_var_tokens(e, n, only));
 }
 
-fn emit_range_var_tokens(e: &mut EventEmitter, n: &RangeVar, allow_only: bool) {
-    e.group_start(GroupKind::RangeVar);
+fn emit_range_var_tokens(e: &mut EventEmitter, n: &RangeVar, only: Only) {
+    e.group_start();
 
-    // ONLY is only valid in DML contexts (SELECT, UPDATE, DELETE, LOCK), not DDL
-    if allow_only && !n.inh {
+    if matches!(only, Only::Allowed) && !n.inh {
         e.token(TokenKind::ONLY_KW);
         e.space();
     }
 
     if !n.schemaname.is_empty() {
-        super::string::emit_identifier_maybe_quoted(e, &n.schemaname);
+        emit_identifier_maybe_quoted(e, &n.schemaname);
         e.token(TokenKind::DOT);
     }
 
-    super::string::emit_identifier_maybe_quoted(e, &n.relname);
+    emit_identifier_maybe_quoted(e, &n.relname);
 
     // Emit alias if present
     if let Some(ref alias) = n.alias {
+        emit_comments_before_keyword_after(e, "as", n.location);
         e.line(LineType::SoftOrSpace);
         super::emit_alias(e, alias);
     }

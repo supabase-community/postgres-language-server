@@ -61,10 +61,11 @@ The language server provides semantic tokens for the names that resolve to exact
 
 | Token | LSP token type | Example |
 | --- | --- | --- |
-| Schema | `namespace` | `public` in `public.users` |
+| Schema | `namespace` | `public` in `public.users`, `create schema app`, `set search_path to app` |
 | Table, view, or other relation | `class` | `users` in `from users`, `users.id` |
 | Common table expression | `class` | `recent` in `with recent as (...)`, `from recent`, `recent.id` |
 | Alias of a table or CTE | `variable` | `u` in `from users u` and in `u.name` |
+| Role | `variable` | `reader` in `grant select on users to reader` |
 | Column | `property` | `name`, `u.name`, `public.users.id` |
 | Function | `function` | the overload that a call resolves to |
 | Type | `type` | `int8` in `x::int8`, `cast(x as text)`, `date 'today'`, column types in `create table`, function signatures |
@@ -85,7 +86,7 @@ select * from users u join posts p on p.user_id = u.id;
 select u.id, u.name, p.id, p.user_id, p.title from users u join posts p on p.user_id = u.id;
 ```
 
-Columns are qualified with the name or alias of their table when there are several in `FROM`, and quoted where needed. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for joins with `USING` or `NATURAL`, tables whose columns are unknown, or sources with two columns of the same name.
+Columns are qualified with the name or alias of their table when there are several in `FROM`, and quoted where needed. Joins with `USING` or `NATURAL` expand to the merged columns first, by their bare name, as Postgres orders them. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for tables whose columns are unknown, sources with two columns of the same name, or a merged column whose name another table in `FROM` has too.
 
 Like hover, it requires a database connection.
 

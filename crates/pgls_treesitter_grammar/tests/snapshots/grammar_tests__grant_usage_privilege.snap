@@ -1,0 +1,23 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+grant usage, update on my_sequence to bob;
+-----------------------
+program [0..42] 'grant usage, update on my_sequence to bob;'
+  statement [0..41] 'grant usage, update on my_sequence to bob'
+    grant_statement [0..41] 'grant usage, update on my_sequence to bob'
+      keyword_grant [0..5] 'grant'
+      grantables [6..34] 'usage, update on my_sequence'
+        grantable [6..19] 'usage, update'
+          keyword_usage [6..11] 'usage' (@end)
+          , [11..12] ','
+          keyword_update [13..19] 'update' (@end)
+        grantable_on_table [20..34] 'on my_sequence'
+          keyword_on [20..22] 'on'
+          table_reference [23..34] 'my_sequence'
+            any_identifier [23..34] 'my_sequence' (@table_reference_1of1)
+      keyword_to [35..37] 'to'
+      role_specification [38..41] 'bob'
+        role_identifier [38..41] 'bob' (@end)
+  ; [41..42] ';'

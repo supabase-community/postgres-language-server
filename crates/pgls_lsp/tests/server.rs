@@ -26,6 +26,8 @@ use std::any::type_name;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 use tower::timeout::Timeout;
@@ -543,7 +545,7 @@ async fn client_disconnecting_mid_request_does_not_panic() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_database_connection(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -667,7 +669,7 @@ async fn wait_for_diagnostics(
 /// The configuration file has neither a `db` nor a `typecheck` section and there is no environment
 /// configuration, so the client override layer is the only thing that can enable database features
 /// here — and clearing it has to disable them again.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool) -> Result<()> {
     const STATEMENT: &str = "select unknown from public.users;";
 
@@ -809,7 +811,7 @@ async fn server_shutdown() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_completions(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -982,7 +984,7 @@ async fn hover_text(server: &mut Server, position: Position) -> Result<String> {
 
 /// A query that fails on a working connection isn't reported as a connection failure: hover says
 /// why the schema couldn't be loaded.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn hover_reports_why_the_schema_could_not_be_loaded(test_db: PgPool) -> Result<()> {
     // The server's connections run as `test_login`, a role of the test migrations that isn't a
     // superuser. Both settings belong to the test's own database, which is dropped afterwards, so
@@ -1024,7 +1026,7 @@ async fn hover_reports_why_the_schema_could_not_be_loaded(test_db: PgPool) -> Re
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1106,7 +1108,7 @@ async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1224,7 +1226,7 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1399,7 +1401,7 @@ async fn test_completions_is_complete_when_no_db_configured() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_issue_271(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1737,6 +1739,24 @@ async fn execute_statement_at(
     doc_url: &Uri,
     position: Position,
 ) -> Result<Option<Value>> {
+    let params = execute_statement_command(server, doc_url, position).await?;
+    let result = server
+        .request::<ExecuteCommandParams, Option<Value>>(
+            "workspace/executeCommand",
+            "_execStmt",
+            params,
+        )
+        .await?;
+
+    Ok(result.flatten())
+}
+
+/// The `pgls.executeStatement` command of the statement at `position`.
+async fn execute_statement_command(
+    server: &mut Server,
+    doc_url: &Uri,
+    position: Position,
+) -> Result<ExecuteCommandParams> {
     let code_actions_response = server
         .request::<CodeActionParams, CodeActionResponse>(
             "textDocument/codeAction",
@@ -1775,22 +1795,14 @@ async fn execute_statement_at(
         })
         .expect("Did not find executeStatement command!");
 
-    let result = server
-        .request::<ExecuteCommandParams, Option<Value>>(
-            "workspace/executeCommand",
-            "_execStmt",
-            ExecuteCommandParams {
-                command: exec_statement_command.0,
-                arguments: exec_statement_command.1,
-                ..Default::default()
-            },
-        )
-        .await?;
-
-    Ok(result.flatten())
+    Ok(ExecuteCommandParams {
+        command: exec_statement_command.0,
+        arguments: exec_statement_command.1,
+        ..Default::default()
+    })
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     let mut server = statement_execution_server(&test_db);
 
@@ -1857,7 +1869,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_the_postgres_error_at_its_position(
     test_db: PgPool,
 ) -> Result<()> {
@@ -1906,7 +1918,7 @@ async fn execute_statement_returns_the_postgres_error_at_its_position(
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2028,13 +2040,55 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     );
     assert_eq!(edits[0].range.start, Position::new(0, 0));
 
+    // Only the kinds in `context.only`, e.g. when the editor asks for quick fixes.
+    for (only, expected) in [
+        (
+            lsp::CodeActionKind::QUICKFIX,
+            vec![
+                "Add CONCURRENTLY",
+                "Suppress rule requireConcurrentReindex for this statement",
+            ],
+        ),
+        (lsp::CodeActionKind::SOURCE_FIX_ALL, vec![]),
+    ] {
+        let titles: Vec<String> = server
+            .request::<CodeActionParams, CodeActionResponse>(
+                "textDocument/codeAction",
+                "_code_action",
+                CodeActionParams {
+                    text_document: TextDocumentIdentifier {
+                        uri: doc_url.clone(),
+                    },
+                    range: Range {
+                        start: Position::new(0, 3),
+                        end: Position::new(0, 3),
+                    },
+                    context: CodeActionContext {
+                        only: Some(vec![only.clone()]),
+                        ..Default::default()
+                    },
+                    partial_result_params: PartialResultParams::default(),
+                    work_done_progress_params: WorkDoneProgressParams::default(),
+                },
+            )
+            .await?
+            .unwrap_or_default()
+            .into_iter()
+            .map(|action| match action {
+                lsp::CodeActionOrCommand::CodeAction(action) => action.title,
+                lsp::CodeActionOrCommand::Command(command) => command.title,
+            })
+            .collect();
+        assert_eq!(titles, expected, "{only:?}");
+    }
+
     server.shutdown().await?;
     reader.abort();
 
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2142,7 +2196,77 @@ async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
+async fn cancel_request_cancels_the_executed_statement(test_db: PgPool) -> Result<()> {
+    let mut server = statement_execution_server(&test_db);
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    let doc_url = url!("test.sql");
+    server
+        .open_named_document("select pg_sleep(30);", doc_url.clone(), "sql")
+        .await?;
+    let params = execute_statement_command(&mut server, &doc_url, Position::new(0, 3)).await?;
+
+    let sleeping = async || {
+        sqlx::query_scalar::<_, i64>(
+            "select count(*) from pg_stat_activity where state = 'active' and query like '%pg_sleep(30)%' and pid <> pg_backend_pid()",
+        )
+        .fetch_one(&test_db)
+        .await
+        .unwrap()
+    };
+
+    // The executed statement runs on a blocking thread, so the server handles the cancel
+    // request while it waits for the database.
+    let execution = tokio::spawn(
+        server.service.ready().await.map_err(Error::msg)?.call(
+            Request::build("workspace/executeCommand")
+                .id("exec")
+                .params(to_value(params)?)
+                .finish(),
+        ),
+    );
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while sleeping().await == 0 {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    })
+    .await
+    .context("the statement did not start")?;
+
+    server
+        .notify(
+            "$/cancelRequest",
+            lsp::CancelParams {
+                id: lsp::NumberOrString::String("exec".into()),
+            },
+        )
+        .await?;
+
+    let response = execution.await?.map_err(Error::msg)?.unwrap();
+    assert_eq!(
+        response.error().map(|error| error.code),
+        Some(tower_lsp_server::jsonrpc::ErrorCode::RequestCancelled)
+    );
+
+    // The database cancels the statement as well.
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while sleeping().await > 0 {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    })
+    .await
+    .context("the statement still runs")?;
+
+    server.shutdown().await?;
+
+    Ok(())
+}
+
+#[pgls_test_utils::db_test]
 async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2301,7 +2425,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_issue_281(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2387,7 +2511,7 @@ async fn test_issue_281(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_issue_303(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2520,7 +2644,7 @@ async fn test_issue_303(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn multiple_projects(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2705,7 +2829,7 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn extends_config(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2920,7 +3044,7 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_multiple_content_changes_single_request(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -3070,7 +3194,7 @@ ALTER TABLE ONLY "public"."campaign_contact_list"
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_plpgsql(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -3681,8 +3805,9 @@ async fn wait_for_editor_feature_refresh(
     .context("timed out waiting for the inlay hint and semantic token refresh")?
 }
 
+/// The number of inlay hints of the first line, where `null` counts as none.
 async fn inlay_hint_count(server: &mut Server) -> Result<usize> {
-    let hints: Option<Vec<lsp::InlayHint>> = server
+    let hints: Option<Option<Vec<lsp::InlayHint>>> = server
         .request(
             "textDocument/inlayHint",
             "inlay_hints",
@@ -3698,11 +3823,12 @@ async fn inlay_hint_count(server: &mut Server) -> Result<usize> {
             },
         )
         .await?;
-    Ok(hints.map_or(0, |hints| hints.len()))
+    Ok(hints.flatten().map_or(0, |hints| hints.len()))
 }
 
+/// The number of semantic tokens of the document, where `null` counts as none.
 async fn semantic_token_count(server: &mut Server) -> Result<usize> {
-    let tokens: Option<lsp::SemanticTokensResult> = server
+    let tokens: Option<Option<lsp::SemanticTokensResult>> = server
         .request(
             "textDocument/semanticTokens/full",
             "semantic_tokens",
@@ -3715,7 +3841,7 @@ async fn semantic_token_count(server: &mut Server) -> Result<usize> {
             },
         )
         .await?;
-    Ok(match tokens {
+    Ok(match tokens.flatten() {
         Some(lsp::SemanticTokensResult::Tokens(tokens)) => tokens.data.len(),
         _ => 0,
     })
@@ -3723,7 +3849,7 @@ async fn semantic_token_count(server: &mut Server) -> Result<usize> {
 
 /// Inlay hints and semantic tokens are refreshed when the schema cache is invalidated and when the
 /// configuration changes, and the configuration can turn them off.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_editor_features_refresh_and_settings(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -3821,6 +3947,225 @@ async fn test_editor_features_refresh_and_settings(test_db: PgPool) -> Result<()
 
     assert_eq!(inlay_hint_count(&mut server).await?, 0);
     assert_eq!(semantic_token_count(&mut server).await?, 0);
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// A TCP proxy in front of the test database that closes every connection right away until
+/// [`DatabaseProxy::forward`] is called, like a database that is not up yet.
+struct DatabaseProxy {
+    port: u16,
+    forwarding: Arc<AtomicBool>,
+    /// The workspace blocks the thread of the test while it connects, so the proxy needs a runtime
+    /// of its own.
+    runtime: Option<tokio::runtime::Runtime>,
+}
+
+impl DatabaseProxy {
+    fn start(database: &PgPool) -> Result<Self> {
+        let options = database.connect_options();
+        let target = (options.get_host().to_string(), options.get_port());
+        let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+        listener.set_nonblocking(true)?;
+        let port = listener.local_addr()?.port();
+        let forwarding = Arc::new(AtomicBool::new(false));
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_io()
+            .build()?;
+        runtime.spawn({
+            let forwarding = Arc::clone(&forwarding);
+            async move {
+                let listener = tokio::net::TcpListener::from_std(listener)
+                    .expect("failed to register the proxy listener");
+                while let Ok((mut client, _)) = listener.accept().await {
+                    if !forwarding.load(Ordering::SeqCst) {
+                        drop(client);
+                        continue;
+                    }
+                    let target = target.clone();
+                    tokio::spawn(async move {
+                        if let Ok(mut database) = tokio::net::TcpStream::connect(target).await {
+                            tokio::io::copy_bidirectional(&mut client, &mut database)
+                                .await
+                                .ok();
+                        }
+                    });
+                }
+            }
+        });
+        Ok(Self {
+            port,
+            forwarding,
+            runtime: Some(runtime),
+        })
+    }
+
+    /// Forwards the connections from now on, like a database that came up.
+    fn forward(&self) {
+        self.forwarding.store(true, Ordering::SeqCst);
+    }
+}
+
+impl Drop for DatabaseProxy {
+    fn drop(&mut self) {
+        // Dropping a runtime waits for its tasks, which must not happen in the async test.
+        if let Some(runtime) = self.runtime.take() {
+            runtime.shutdown_background();
+        }
+    }
+}
+
+/// Waits for the diagnostics of the given document version, and fails on an inlay hint or semantic
+/// token refresh before them.
+async fn wait_for_diagnostics_without_refresh(
+    receiver: &mut Receiver<ServerNotification>,
+    version: i32,
+) -> Result<()> {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match receiver.next().await {
+                Some(ServerNotification::PublishDiagnostics(params))
+                    if params.version == Some(version) =>
+                {
+                    return Ok(());
+                }
+                Some(ServerNotification::Refresh(method)) => {
+                    bail!("unexpected {method} before the diagnostics of version {version}")
+                }
+                Some(_) => {}
+                None => bail!("the server closed the connection"),
+            }
+        }
+    })
+    .await
+    .with_context(|| format!("timed out waiting for diagnostics of version {version}"))?
+}
+
+/// When inlay hints or semantic tokens were requested while the database could not be reached, the
+/// client is asked to request them again once a diagnostics run finds the database reachable, and
+/// not before.
+#[pgls_test_utils::db_test]
+async fn test_editor_features_refresh_when_the_database_becomes_reachable(
+    test_db: PgPool,
+) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute(
+            "create table people (id int, name text);
+             create function make_point(x int, y int) returns int language sql as 'select x + y';",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let proxy = DatabaseProxy::start(&test_db)?;
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            host: Some("127.0.0.1".to_string()),
+            port: Some(proxy.port),
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server
+        .initialize_with_capabilities(ClientCapabilities {
+            workspace: Some(lsp::WorkspaceClientCapabilities {
+                inlay_hint: Some(lsp::InlayHintWorkspaceClientCapabilities {
+                    refresh_support: Some(true),
+                }),
+                semantic_tokens: Some(lsp::SemanticTokensWorkspaceClientCapabilities {
+                    refresh_support: Some(true),
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        })
+        .await?;
+    // Loading the configuration on `initialized` refreshes them.
+    server.initialized().await?;
+    wait_for_editor_feature_refresh(&mut receiver).await?;
+
+    // Opening the document runs its diagnostics, which fail to connect and start the reconnect
+    // backoff. The requests during the backoff fail with the connection error too.
+    let text = "select name, make_point(1, 2) from people;\n";
+    server.open_document(text).await?;
+    assert_eq!(inlay_hint_count(&mut server).await?, 0);
+    assert_eq!(semantic_token_count(&mut server).await?, 0);
+
+    // Diagnostics runs don't refresh them while the database can't be reached. The second run
+    // makes sure that the connection check at the end of the first one is done.
+    for version in 1..=2 {
+        server.replace_document(version, text).await?;
+        wait_for_diagnostics_without_refresh(&mut receiver, version).await?;
+    }
+
+    // The connection manager retries the connection only after its backoff, so keep editing the
+    // document until a diagnostics run gets through.
+    proxy.forward();
+    let mut pending = vec![
+        "workspace/inlayHint/refresh",
+        "workspace/semanticTokens/refresh",
+    ];
+    let mut version = 3;
+    tokio::time::timeout(Duration::from_secs(30), async {
+        while !pending.is_empty() {
+            server.replace_document(version, text).await?;
+            version += 1;
+            tokio::time::timeout(Duration::from_millis(500), async {
+                while let Some(notification) = receiver.next().await {
+                    if let ServerNotification::Refresh(method) = notification {
+                        pending.retain(|pending| *pending != method);
+                        if pending.is_empty() {
+                            return;
+                        }
+                    }
+                }
+            })
+            .await
+            .ok();
+        }
+        Ok::<_, Error>(())
+    })
+    .await
+    .context("timed out waiting for the refresh once the database became reachable")??;
+
+    assert_eq!(inlay_hint_count(&mut server).await?, 2);
+    assert_eq!(semantic_token_count(&mut server).await?, 3);
+
+    // The refresh is sent once. A run sends it after publishing its diagnostics, so the second run
+    // makes sure that a refresh at the end of the first one is caught.
+    for version in version..version + 2 {
+        server.replace_document(version, text).await?;
+        wait_for_diagnostics_without_refresh(&mut receiver, version).await?;
+    }
 
     server.shutdown().await?;
     reader.abort();
@@ -3926,7 +4271,7 @@ async fn execute_statement_without_arguments_is_invalid() -> Result<()> {
 
 /// Inlay hints after multi-byte characters are positioned in UTF-16, and a range that ends past
 /// the end of the document, as some clients send, still gets them.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -4016,7 +4361,7 @@ async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> 
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();

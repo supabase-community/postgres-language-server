@@ -73,7 +73,9 @@ fn add_concurrently(
     if stmt.skip_data {
         return None;
     }
-    let tokens = ctx.tokens()?;
-    let view = tokens.find(pgls_query::protobuf::Token::View)?;
-    Some(tokens.insert_after(view, "Add CONCURRENTLY", "CONCURRENTLY"))
+    ctx.tokens()?.insert_after_keyword(
+        &[pgls_query::protobuf::Token::View],
+        "Add CONCURRENTLY",
+        "CONCURRENTLY",
+    )
 }

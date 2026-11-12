@@ -3,11 +3,14 @@ use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
     goto_node_at_position, previous_sibling_completed,
 };
+use std::ops::Range;
+
 use tree_sitter::{InputEdit, Point, Tree};
 
 use super::CompletionRelevanceData;
+use crate::providers::helper::word_at_cursor;
 
-/// Parses SQL with a keyword injected at the given position, using incremental parsing.
+/// Parses SQL with `keyword` in place of the bytes in `range`, using incremental parsing.
 ///
 /// Temporarily edits `shared_tree` to hint tree-sitter about the change location,
 /// then undoes the edit so the tree can be reused for subsequent keywords.
@@ -15,12 +18,12 @@ fn parse_with_replaced_keyword(
     shared_tree: &mut Tree,
     text: &str,
     keyword: &str,
-    node: tree_sitter::Node,
+    range: Range<usize>,
 ) -> Tree {
-    let start_position = node.start_position();
-    let start_byte = node.start_byte();
-    let old_end_position = node.end_position();
-    let old_end_byte = node.end_byte();
+    let start_byte = range.start;
+    let start_position = point_at(text, start_byte);
+    let old_end_byte = range.end;
+    let old_end_position = point_at(text, old_end_byte);
 
     let new_end_byte = start_byte + keyword.len();
     let new_end_position = Point {
@@ -64,6 +67,20 @@ fn parse_with_replaced_keyword(
     tree
 }
 
+/// The row and the byte column of `byte` in `text`.
+fn point_at(text: &str, byte: usize) -> Point {
+    let before = &text.as_bytes()[..byte];
+    let line_start = before
+        .iter()
+        .rposition(|b| *b == b'\n')
+        .map_or(0, |i| i + 1);
+
+    Point {
+        row: before.iter().filter(|b| **b == b'\n').count(),
+        column: byte - line_start,
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct CompletionFilter<'a> {
     data: CompletionRelevanceData<'a>,
@@ -90,6 +107,7 @@ impl CompletionFilter<'_> {
 
             self.check_invocation(ctx)?;
             self.check_mentioned_schema_or_alias(ctx)?;
+            self.check_merge_visibility(ctx)?;
 
             Some(())
         }
@@ -125,6 +143,9 @@ impl CompletionFilter<'_> {
                     | Some(WrappingClause::Join { .. })
                     | Some(WrappingClause::Update)
                     | Some(WrappingClause::Delete)
+                    | Some(WrappingClause::Returning)
+                    | Some(WrappingClause::Merge)
+                    | Some(WrappingClause::MergeWhen)
                     | Some(WrappingClause::Insert)
                     | Some(WrappingClause::DropColumn)
                     | Some(WrappingClause::AlterColumn)
@@ -138,7 +159,9 @@ impl CompletionFilter<'_> {
         }
 
         if ctx.node_under_cursor.kind() == "any_identifier"
-            && ctx.history_ends_with(&["alias", "any_identifier"])
+            && (ctx.history_ends_with(&["alias", "any_identifier"])
+                // `o` in `returning with (old as o)` is a new name too.
+                || ctx.history_ends_with(&["returning_with_item", "any_identifier"]))
         {
             return None;
         }
@@ -283,6 +306,8 @@ impl CompletionFilter<'_> {
                                 "keyword_table",
                             ]),
 
+                        WrappingClause::Merge => is_merge_relation(ctx),
+
                         WrappingClause::CreatePolicy
                         | WrappingClause::AlterPolicy
                         | WrappingClause::DropPolicy => {
@@ -298,7 +323,12 @@ impl CompletionFilter<'_> {
                             WrappingClause::Select
                             | WrappingClause::Update
                             | WrappingClause::Delete
+                            | WrappingClause::Returning
+                            | WrappingClause::MergeWhen
                             | WrappingClause::DropColumn => true,
+
+                            // The join condition.
+                            WrappingClause::Merge => !is_merge_relation(ctx),
 
                             WrappingClause::RenameColumn => ctx
                                 .before_cursor_matches_kind(&["keyword_rename", "keyword_column"]),
@@ -342,8 +372,12 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Function(f) => match clause {
                         WrappingClause::From
                         | WrappingClause::Select
+                        | WrappingClause::Returning
+                        | WrappingClause::MergeWhen
                         | WrappingClause::Where
                         | WrappingClause::Join { .. } => true,
+
+                        WrappingClause::Merge => !is_merge_relation(ctx),
 
                         WrappingClause::CheckOrUsingClause => {
                             !matches!(f.kind, ProcKind::Aggregate)
@@ -358,6 +392,9 @@ impl CompletionFilter<'_> {
 
                     CompletionRelevanceData::Schema(_) => match clause {
                         WrappingClause::Select
+                        | WrappingClause::Returning
+                        | WrappingClause::MergeWhen
+                        | WrappingClause::Merge
                         | WrappingClause::Join { .. }
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
@@ -436,6 +473,20 @@ impl CompletionFilter<'_> {
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
     }
 
+    /// A `WHEN` clause of MERGE sees only the target, only the source, or both.
+    fn check_merge_visibility(&self, ctx: &TreesitterContext) -> Option<()> {
+        let hidden = match self.data {
+            CompletionRelevanceData::Column(column) => {
+                ctx.is_hidden_merge_relation(&column.schema_name, &column.table_name)
+            }
+            CompletionRelevanceData::Table(table) => {
+                ctx.is_hidden_merge_relation(&table.schema, &table.name)
+            }
+            _ => false,
+        };
+        (!hidden).then_some(())
+    }
+
     fn check_invocation(&self, ctx: &TreesitterContext) -> Option<()> {
         if !ctx.is_invocation {
             return Some(());
@@ -497,8 +548,8 @@ impl CompletionFilter<'_> {
             return Some(());
         }
 
-        let content = ctx.get_node_under_cursor_content()?;
-        if content.is_empty() || crate::sanitization::is_sanitized_token(&content) {
+        let content = &ctx.text[word_at_cursor(ctx)];
+        if content.is_empty() || crate::sanitization::is_sanitized_token(content) {
             return None;
         }
 
@@ -541,10 +592,19 @@ impl CompletionFilter<'_> {
             return Some(());
         };
 
-        let tree =
-            parse_with_replaced_keyword(shared_tree, ctx.text, keyword.name, ctx.node_under_cursor);
+        let word = word_at_cursor(ctx);
+        let start_byte = word.start;
+        let tree = parse_with_replaced_keyword(shared_tree, ctx.text, keyword.name, word);
 
         if tree.root_node().has_error() {
+            return None;
+        }
+
+        // The grammar reads some keywords as names in some places, like `usage` in
+        // `grant usage to bob`. There, the keyword is a name and no keyword completion.
+        if goto_node_at_position(&tree, start_byte)
+            .is_some_and(|node| !node.kind().starts_with("keyword_"))
+        {
             return None;
         }
 
@@ -566,7 +626,21 @@ impl CompletionFilter<'_> {
             }
         }
 
-        let start_byte = ctx.node_under_cursor.start_byte();
+        // The grammar can't read the word at the cursor, like the sanitized token after a column
+        // type, so the clauses around it are an ERROR and say nothing. The keyword fits if
+        // every clause before it is finished in the tree with the keyword.
+        if ctx.node_under_cursor.kind() == "ERROR"
+            || ctx.current_clause.is_some_and(|n| n.kind() == "ERROR")
+        {
+            let mut node = goto_node_at_position(&tree, start_byte);
+            while let Some(investigated) = node {
+                if !previous_sibling_completed(investigated) {
+                    return None;
+                }
+                node = investigated.parent();
+            }
+            return Some(());
+        }
 
         if let Some(investigated_node) = goto_node_at_position(&tree, start_byte) {
             if !previous_sibling_completed(investigated_node) {
@@ -608,6 +682,11 @@ impl CompletionFilter<'_> {
     }
 }
 
+/// Whether the cursor is on the target or the source of MERGE, rather than in its join condition.
+fn is_merge_relation(ctx: &TreesitterContext) -> bool {
+    ctx.before_cursor_matches_kind(&["keyword_into", "keyword_using"])
+}
+
 #[cfg(test)]
 mod tests {
     use sqlx::{Executor, PgPool};
@@ -618,7 +697,7 @@ mod tests {
 
     use pgls_test_utils::QueryWithCursorPosition;
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completion_after_asterisk(pool: PgPool) {
         let setup = r#"
             create table users (
@@ -686,7 +765,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completion_after_create_table(pool: PgPool) {
         assert_no_complete_results(
             format!("create table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
@@ -696,7 +775,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completion_in_column_definitions(pool: PgPool) {
         let query = format!(
             r#"create table instruments ( {} )"#,

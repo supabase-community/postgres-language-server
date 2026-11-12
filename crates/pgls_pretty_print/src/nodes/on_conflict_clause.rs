@@ -1,15 +1,10 @@
 use pgls_query::protobuf::{OnConflictAction, OnConflictClause};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::res_target::emit_set_clause_list;
+use super::prelude::*;
 
 pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause) {
     e.line(LineType::SoftOrSpace);
-    e.group_start(GroupKind::OnConflictClause);
+    e.group_start();
 
     e.token(TokenKind::ON_KW);
     e.space();
@@ -20,6 +15,15 @@ pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause
         super::emit_infer_clause(e, infer);
     }
 
+    // No node starts between `ON` and `DO` other than those of the conflict target.
+    let before_do = n
+        .infer
+        .as_deref()
+        .and_then(|infer| {
+            crate::comments::last_node_location(pgls_query::NodeRef::InferClause(infer))
+        })
+        .unwrap_or(n.location);
+    emit_comments_before_keyword_after(e, "do", before_do);
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::DO_KW);
 
@@ -40,14 +44,13 @@ pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause
             }
 
             if let Some(ref where_clause) = n.where_clause {
+                emit_comments_before_keyword(e, "where", where_clause);
                 e.line(crate::emitter::LineType::SoftOrSpace);
                 e.token(TokenKind::WHERE_KW);
-                super::emit_clause_condition(e, where_clause);
+                emit_clause_condition(e, where_clause);
             }
         }
-        OnConflictAction::OnconflictNone | OnConflictAction::Undefined => {
-            unreachable!("unexpected OnConflictAction: {:?}", n.action());
-        }
+        OnConflictAction::OnconflictNone | OnConflictAction::Undefined => {}
     }
 
     e.group_end();
