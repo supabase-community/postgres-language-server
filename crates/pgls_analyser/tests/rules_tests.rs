@@ -193,6 +193,7 @@ fn analyse(
     let mut unparsable = Vec::new();
     for r in &split.ranges {
         let text = &query[*r];
+        // psql variables (`:name`, `:'name'`) become positional parameters, as in the workspace.
         let conversion = pgls_lexer::convert_to_positional_params_with_metadata(text);
         match pgls_query::parse(&conversion.sql) {
             Ok(ast) => {

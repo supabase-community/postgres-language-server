@@ -1,0 +1,21 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_only_lint/runningStatementWhileHoldingAccessExclusive
+-- The name of the column is a psql variable, but the table is known, so its lock is held.
+ALTER TABLE authors ADD COLUMN :"column" TEXT;
+SELECT pg_sleep(60);
+
+```
+
+# Diagnostics
+lint/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Running statement while holding ACCESS EXCLUSIVE lock.
+  
+  i This blocks all access to the table for the duration of this statement.
+  
+  i Run this statement in a separate transaction to minimize lock duration.
