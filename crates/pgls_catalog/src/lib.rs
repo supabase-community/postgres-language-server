@@ -36,8 +36,8 @@ pub use lookup::{
     OperatorInfo, OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
 pub use session::{
-    LockMode, Session, TableLock, TransactionMode, alter_table_cmd_lock, alter_table_lock,
-    relation_locks,
+    LockMode, NonTransactional, Session, TableLock, TransactionMode, alter_table_cmd_lock,
+    alter_table_lock, ends_transaction_block, prevents_transaction_block, relation_locks,
 };
 pub use snapshot::*;
 pub use typing::*;
