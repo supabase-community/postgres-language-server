@@ -1,0 +1,77 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireRelationSchema
+insert into users (name) values ('alice');
+-- expect_lint/requireRelationSchema
+update users set name = 'bob' where public.users.id = 1;
+-- expect_lint/requireRelationSchema
+-- expect_lint/requireRelationSchema
+delete from posts using users where posts.user_id = users.id;
+-- expect_lint/requireRelationSchema
+-- expect_lint/requireRelationSchema
+merge into users u using staged s on u.id = s.id when matched then update set name = s.name;
+
+```
+
+# Diagnostics
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation users is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.users.
+  
+
+
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation users is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.users.
+  
+
+
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation posts is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.posts.
+  
+
+
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation users is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.users.
+  
+
+
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation users is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.users.
+  
+
+
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation staged is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.staged.

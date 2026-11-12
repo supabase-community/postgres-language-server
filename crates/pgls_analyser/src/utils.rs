@@ -1,7 +1,7 @@
 //! AST matching that several lint rules share.
 
-use pgls_query::NodeEnum;
 use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, Node, TypeName};
+use pgls_query::{NodeEnum, NodeRef};
 pub(crate) use pgls_query_ext::utils::cmd_def;
 use pgls_query_ext::utils::{QualifiedName, string_value};
 
@@ -38,6 +38,27 @@ pub(crate) fn column_defs(stmt: &NodeEnum) -> impl Iterator<Item = &ColumnDef> {
             _ => None,
         });
     created.chain(altered)
+}
+
+/// The nodes of a statement. The body of a SQL function written as `BEGIN ATOMIC ... END` or
+/// `RETURN ...` is left out, since the analyser checks its statements on their own.
+pub(crate) fn statement_nodes(stmt: &NodeEnum) -> Vec<NodeRef<'_>> {
+    match stmt {
+        NodeEnum::CreateFunctionStmt(create_fn) if create_fn.sql_body.is_some() => create_fn
+            .parameters
+            .iter()
+            .chain(&create_fn.options)
+            .filter_map(|node| node.node.as_ref())
+            .flat_map(NodeEnum::iter)
+            .chain(
+                create_fn
+                    .return_type
+                    .iter()
+                    .flat_map(|return_type| return_type.to_ref().iter()),
+            )
+            .collect(),
+        _ => stmt.iter().collect(),
+    }
 }
 
 /// A list of name nodes as written in a diagnostic, e.g. `myschema.mood`.

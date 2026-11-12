@@ -65,6 +65,12 @@ impl<'a> StatementTokens<'a> {
         self.tokens.iter().position(|token| token.start == offset)
     }
 
+    /// The range of the token that starts at `offset`, e.g. of the name at the location of a
+    /// node.
+    pub fn range_at(&self, offset: i32) -> Option<TextRange> {
+        Some(self.range(self.at(offset)?))
+    }
+
     /// The closing parenthesis that matches the opening one at `open`.
     pub fn closing_paren(&self, open: usize) -> Option<usize> {
         let mut depth = 0usize;

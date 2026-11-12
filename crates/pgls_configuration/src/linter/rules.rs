@@ -427,6 +427,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Warning,
     },
     LinterRuleMetadata {
+        group: "style",
+        name: "requireColumnQualifier",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
         group: "safety",
         name: "requireConcurrentDetachPartition",
         recommended: true,
@@ -463,8 +469,26 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Warning,
     },
     LinterRuleMetadata {
+        group: "style",
+        name: "requireFunctionSchema",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
         group: "safety",
         name: "requireIdleInTransactionTimeout",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "requireOperatorSchema",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "requireRelationSchema",
         recommended: false,
         severity: Severity::Warning,
     },
@@ -483,6 +507,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     LinterRuleMetadata {
         group: "style",
         name: "requireTableSchema",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "requireTypeSchema",
         recommended: false,
         severity: Severity::Warning,
     },
@@ -783,6 +813,10 @@ pub struct Rules {
     #[doc = "Renaming tables may break existing queries and application code."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub renaming_table: Option<RuleConfiguration<pgls_analyser::options::RenamingTable>>,
+    #[doc = "Columns in queries should be qualified with their table."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_column_qualifier:
+        Option<RuleConfiguration<pgls_analyser::options::RequireColumnQualifier>>,
     #[doc = "Detaching a partition without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_concurrent_detach_partition:
@@ -807,10 +841,22 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_enum_value_ordering:
         Option<RuleConfiguration<pgls_analyser::options::RequireEnumValueOrdering>>,
+    #[doc = "Function calls should be schema-qualified."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_function_schema:
+        Option<RuleConfiguration<pgls_analyser::options::RequireFunctionSchema>>,
     #[doc = "Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_idle_in_transaction_timeout:
         Option<RuleConfiguration<pgls_analyser::options::RequireIdleInTransactionTimeout>>,
+    #[doc = "Operators should be schema-qualified."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_operator_schema:
+        Option<RuleConfiguration<pgls_analyser::options::RequireOperatorSchema>>,
+    #[doc = "Relations in queries should be schema-qualified."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_relation_schema:
+        Option<RuleConfiguration<pgls_analyser::options::RequireRelationSchema>>,
     #[doc = "Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_separate_constraint_validation:
@@ -822,6 +868,9 @@ pub struct Rules {
     #[doc = "Table names in DDL should be schema-qualified."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_table_schema: Option<RuleConfiguration<pgls_analyser::options::RequireTableSchema>>,
+    #[doc = "Type names should be schema-qualified."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_type_schema: Option<RuleConfiguration<pgls_analyser::options::RequireTypeSchema>>,
     #[doc = "Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub running_statement_while_holding_access_exclusive: Option<
@@ -1061,6 +1110,10 @@ impl Rules {
             "renamingColumn" => self.renaming_column.as_ref().map(RuleConfiguration::level),
             "renamingObject" => self.renaming_object.as_ref().map(RuleConfiguration::level),
             "renamingTable" => self.renaming_table.as_ref().map(RuleConfiguration::level),
+            "requireColumnQualifier" => self
+                .require_column_qualifier
+                .as_ref()
+                .map(RuleConfiguration::level),
             "requireConcurrentDetachPartition" => self
                 .require_concurrent_detach_partition
                 .as_ref()
@@ -1085,8 +1138,20 @@ impl Rules {
                 .require_enum_value_ordering
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "requireFunctionSchema" => self
+                .require_function_schema
+                .as_ref()
+                .map(RuleConfiguration::level),
             "requireIdleInTransactionTimeout" => self
                 .require_idle_in_transaction_timeout
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireOperatorSchema" => self
+                .require_operator_schema
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireRelationSchema" => self
+                .require_relation_schema
                 .as_ref()
                 .map(RuleConfiguration::level),
             "requireSeparateConstraintValidation" => self
@@ -1099,6 +1164,10 @@ impl Rules {
                 .map(RuleConfiguration::level),
             "requireTableSchema" => self
                 .require_table_schema
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireTypeSchema" => self
+                .require_type_schema
                 .as_ref()
                 .map(RuleConfiguration::level),
             "runningStatementWhileHoldingAccessExclusive" => self
@@ -1392,6 +1461,10 @@ impl Rules {
                 .renaming_table
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "requireColumnQualifier" => self
+                .require_column_qualifier
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "requireConcurrentDetachPartition" => self
                 .require_concurrent_detach_partition
                 .as_ref()
@@ -1416,8 +1489,20 @@ impl Rules {
                 .require_enum_value_ordering
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "requireFunctionSchema" => self
+                .require_function_schema
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "requireIdleInTransactionTimeout" => self
                 .require_idle_in_transaction_timeout
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireOperatorSchema" => self
+                .require_operator_schema
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireRelationSchema" => self
+                .require_relation_schema
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "requireSeparateConstraintValidation" => self
@@ -1430,6 +1515,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "requireTableSchema" => self
                 .require_table_schema
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireTypeSchema" => self
+                .require_type_schema
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "runningStatementWhileHoldingAccessExclusive" => self

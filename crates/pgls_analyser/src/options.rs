@@ -108,17 +108,27 @@ pub type RenamingObject =
     <lint::destructive::renaming_object::RenamingObject as crate::LinterRule>::Options;
 pub type RenamingTable =
     <lint::destructive::renaming_table::RenamingTable as crate::LinterRule>::Options;
+pub type RequireColumnQualifier =
+    <lint::style::require_column_qualifier::RequireColumnQualifier as crate::LinterRule>::Options;
 pub type RequireConcurrentDetachPartition = < lint :: safety :: require_concurrent_detach_partition :: RequireConcurrentDetachPartition as crate :: LinterRule > :: Options ;
 pub type RequireConcurrentIndexCreation = < lint :: safety :: require_concurrent_index_creation :: RequireConcurrentIndexCreation as crate :: LinterRule > :: Options ;
 pub type RequireConcurrentIndexDeletion = < lint :: safety :: require_concurrent_index_deletion :: RequireConcurrentIndexDeletion as crate :: LinterRule > :: Options ;
 pub type RequireConcurrentRefreshMatview = < lint :: safety :: require_concurrent_refresh_matview :: RequireConcurrentRefreshMatview as crate :: LinterRule > :: Options ;
 pub type RequireConcurrentReindex = < lint :: safety :: require_concurrent_reindex :: RequireConcurrentReindex as crate :: LinterRule > :: Options ;
 pub type RequireEnumValueOrdering = < lint :: style :: require_enum_value_ordering :: RequireEnumValueOrdering as crate :: LinterRule > :: Options ;
+pub type RequireFunctionSchema =
+    <lint::style::require_function_schema::RequireFunctionSchema as crate::LinterRule>::Options;
 pub type RequireIdleInTransactionTimeout = < lint :: safety :: require_idle_in_transaction_timeout :: RequireIdleInTransactionTimeout as crate :: LinterRule > :: Options ;
+pub type RequireOperatorSchema =
+    <lint::style::require_operator_schema::RequireOperatorSchema as crate::LinterRule>::Options;
+pub type RequireRelationSchema =
+    <lint::style::require_relation_schema::RequireRelationSchema as crate::LinterRule>::Options;
 pub type RequireSeparateConstraintValidation = < lint :: safety :: require_separate_constraint_validation :: RequireSeparateConstraintValidation as crate :: LinterRule > :: Options ;
 pub type RequireStatementTimeout = < lint :: safety :: require_statement_timeout :: RequireStatementTimeout as crate :: LinterRule > :: Options ;
 pub type RequireTableSchema =
     <lint::style::require_table_schema::RequireTableSchema as crate::LinterRule>::Options;
+pub type RequireTypeSchema =
+    <lint::style::require_type_schema::RequireTypeSchema as crate::LinterRule>::Options;
 pub type RunningStatementWhileHoldingAccessExclusive = < lint :: safety :: running_statement_while_holding_access_exclusive :: RunningStatementWhileHoldingAccessExclusive as crate :: LinterRule > :: Options ;
 pub type TransactionNesting =
     <lint::correctness::transaction_nesting::TransactionNesting as crate::LinterRule>::Options;

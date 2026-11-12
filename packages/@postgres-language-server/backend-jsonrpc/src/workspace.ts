@@ -145,16 +145,21 @@ export type Category =
   | "lint/renamingColumn"
   | "lint/renamingObject"
   | "lint/renamingTable"
+  | "lint/requireColumnQualifier"
   | "lint/requireConcurrentDetachPartition"
   | "lint/requireConcurrentIndexCreation"
   | "lint/requireConcurrentIndexDeletion"
   | "lint/requireConcurrentRefreshMatview"
   | "lint/requireConcurrentReindex"
   | "lint/requireEnumValueOrdering"
+  | "lint/requireFunctionSchema"
   | "lint/requireIdleInTransactionTimeout"
+  | "lint/requireOperatorSchema"
+  | "lint/requireRelationSchema"
   | "lint/requireSeparateConstraintValidation"
   | "lint/requireStatementTimeout"
   | "lint/requireTableSchema"
+  | "lint/requireTypeSchema"
   | "lint/runningStatementWhileHoldingAccessExclusive"
   | "lint/transactionNesting"
   | "lint/unknownColumn"
@@ -1203,6 +1208,10 @@ export interface LinterRules {
    */
   renamingTable?: RuleConfiguration_for_Null;
   /**
+   * Columns in queries should be qualified with their table.
+   */
+  requireColumnQualifier?: RuleConfiguration_for_Null;
+  /**
    * Detaching a partition without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.
    */
   requireConcurrentDetachPartition?: RuleConfiguration_for_Null;
@@ -1227,9 +1236,21 @@ export interface LinterRules {
    */
   requireEnumValueOrdering?: RuleConfiguration_for_Null;
   /**
+   * Function calls should be schema-qualified.
+   */
+  requireFunctionSchema?: RuleConfiguration_for_Null;
+  /**
    * Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.
    */
   requireIdleInTransactionTimeout?: RuleConfiguration_for_Null;
+  /**
+   * Operators should be schema-qualified.
+   */
+  requireOperatorSchema?: RuleConfiguration_for_Null;
+  /**
+   * Relations in queries should be schema-qualified.
+   */
+  requireRelationSchema?: RuleConfiguration_for_Null;
   /**
    * Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.
    */
@@ -1242,6 +1263,10 @@ export interface LinterRules {
    * Table names in DDL should be schema-qualified.
    */
   requireTableSchema?: RuleConfiguration_for_Null;
+  /**
+   * Type names should be schema-qualified.
+   */
+  requireTypeSchema?: RuleConfiguration_for_Null;
   /**
    * Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.
    */

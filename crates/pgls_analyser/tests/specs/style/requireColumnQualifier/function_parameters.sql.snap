@@ -1,0 +1,22 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The parameters of a SQL function are not columns.
+-- expect_lint/requireColumnQualifier
+create function public.user_name(user_id integer) returns pg_catalog.text
+language sql security definer set search_path = ''
+as $$ select u.name from public.users u where u.id = user_id and active $$;
+
+```
+
+# Diagnostics
+lint/requireColumnQualifier ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column active is not qualified with its table.
+  
+  i Without a table, the column is looked up in every relation of the query and of the queries around it, so a column with the same name in another relation can take its place.
+  
+  i Qualify the column with the name or alias of its table, e.g. t.active.

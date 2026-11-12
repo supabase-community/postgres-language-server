@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireTypeSchema
+select 'hello'::text;
+
+```
+
+# Diagnostics
+lint/requireTypeSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Type text is not schema-qualified.
+  
+  i Without a schema, the type is resolved through the search_path: a type with the same name in a schema earlier on the search_path is used instead.
+  
+  i Specify the schema, e.g. pg_catalog.text for a built-in type.

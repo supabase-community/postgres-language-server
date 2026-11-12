@@ -1663,6 +1663,17 @@
             }
           ]
         },
+        "requireColumnQualifier": {
+          "description": "Columns in queries should be qualified with their table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "requireConcurrentDetachPartition": {
           "description": "Detaching a partition without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.",
           "anyOf": [
@@ -1729,8 +1740,41 @@
             }
           ]
         },
+        "requireFunctionSchema": {
+          "description": "Function calls should be schema-qualified.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "requireIdleInTransactionTimeout": {
           "description": "Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireOperatorSchema": {
+          "description": "Operators should be schema-qualified.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireRelationSchema": {
+          "description": "Relations in queries should be schema-qualified.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1764,6 +1808,17 @@
         },
         "requireTableSchema": {
           "description": "Table names in DDL should be schema-qualified.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireTypeSchema": {
+          "description": "Type names should be schema-qualified.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
