@@ -176,7 +176,6 @@ fn insert_after(
     keyword: Token,
     text: &str,
 ) -> Option<RuleFix> {
-    let tokens = ctx.tokens()?;
-    let index = tokens.find(keyword)?;
-    Some(tokens.insert_after(index, &format!("Add {text}"), text))
+    ctx.tokens()?
+        .insert_after_keyword(&[keyword], &format!("Add {text}"), text)
 }

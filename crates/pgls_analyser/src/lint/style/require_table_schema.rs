@@ -1,6 +1,7 @@
 use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::CatalogView;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{Node, ObjectType, RangeVar, Token};
@@ -100,14 +101,17 @@ impl LinterRule for RequireTableSchema {
             _ => vec![],
         };
 
-        let temporary = temporary_tables(ctx.file_context().previous_stmts());
+        // An unqualified name refers to a temporary table if there is one, since `pg_temp` comes
+        // first on the search path.
+        let is_temporary = |name: &str| {
+            ctx.catalog()
+                .relation(None, name, ctx.session().search_path())
+                .found()
+                .is_some_and(|relation| relation.schema == "pg_temp")
+        };
         tables
             .into_iter()
-            .filter(|table| {
-                table.schema.is_none()
-                    && !table.temporary
-                    && !temporary.contains(&table.name.as_str())
-            })
+            .filter(|table| table.schema.is_none() && !table.temporary && !is_temporary(&table.name))
             .map(|table| {
                 let name = table.name;
                 LinterDiagnostic::new(
@@ -143,7 +147,7 @@ impl Table {
             name: relation.relname.clone(),
             schema: (!relation.schemaname.is_empty()).then(|| relation.schemaname.clone()),
             temporary: relation.relpersistence == RELPERSISTENCE_TEMP,
-            span: tokens.and_then(|tokens| Some(tokens.range(tokens.at(relation.location)?))),
+            span: tokens.and_then(|tokens| tokens.range_at(relation.location)),
         }
     }
 }
@@ -199,59 +203,19 @@ fn dropped_names(tokens: StatementTokens) -> Vec<TextRange> {
     let Some(table) = tokens.find(Token::Table) else {
         return vec![];
     };
-    let mut index = table + 1;
-    if tokens.kind(index) == Some(Token::IfP) {
-        index += 2;
+    let mut start = table + 1;
+    if tokens.kind(start) == Some(Token::IfP) {
+        start += 2;
     }
-    let mut names = Vec::new();
-    let mut current: Option<TextRange> = None;
-    while let Some(kind) = tokens.kind(index) {
-        match kind {
-            Token::Ascii44 => names.extend(current.take()),
-            Token::Ascii59 | Token::Cascade | Token::Restrict => break,
-            Token::SqlComment | Token::CComment => {}
-            _ => {
-                let range = tokens.range(index);
-                current = Some(current.map_or(range, |current| current.cover(range)));
-            }
-        }
-        index += 1;
-    }
-    names.extend(current);
-    names
-}
-
-/// The unqualified names of the temporary tables created by earlier statements of the file.
-/// An unqualified name refers to them, since `pg_temp` comes first in the search path.
-fn temporary_tables(previous: &[NodeEnum]) -> Vec<&str> {
-    let mut tables = Vec::new();
-    for stmt in previous {
-        let created = match stmt {
-            NodeEnum::CreateStmt(stmt) => stmt.relation.as_ref(),
-            NodeEnum::CreateTableAsStmt(stmt) => {
-                stmt.into.as_ref().and_then(|into| into.rel.as_ref())
-            }
-            NodeEnum::SelectStmt(stmt) => {
-                stmt.into_clause.as_ref().and_then(|into| into.rel.as_ref())
-            }
-            _ => None,
-        };
-        if let Some(relation) = created
-            && (relation.relpersistence == RELPERSISTENCE_TEMP || relation.schemaname == "pg_temp")
-        {
-            tables.push(relation.relname.as_str());
-        }
-        if let NodeEnum::DropStmt(stmt) = stmt
-            && is_table(stmt.remove_type())
-        {
-            for table in dropped_tables(&stmt.objects, None) {
-                if table.schema.is_none_or(|schema| schema == "pg_temp") {
-                    tables.retain(|name| *name != table.name);
-                }
-            }
-        }
-    }
-    tables
+    // Up to the end of the statement, or `CASCADE` or `RESTRICT`.
+    let end = (start..)
+        .find(|index| {
+            tokens.kind(*index).is_none_or(|kind| {
+                matches!(kind, Token::Ascii59 | Token::Cascade | Token::Restrict)
+            })
+        })
+        .unwrap_or(start);
+    tokens.list_elements(start, end).unwrap_or_default()
 }
 
 #[cfg(test)]
