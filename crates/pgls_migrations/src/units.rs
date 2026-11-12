@@ -20,7 +20,7 @@ pub struct Unit {
     /// The parts of the unit that the migration tool sends to Postgres as one query, like a
     /// whole dbmate section or a goose `StatementBegin` block. Postgres runs a query with more
     /// than one statement in a transaction block, also in a unit without a transaction. The
-    /// other statements of the unit are sent one by one.
+    /// other statements of the unit are sent one by one. In order, and they don't overlap.
     pub queries: Vec<TextRange>,
 }
 

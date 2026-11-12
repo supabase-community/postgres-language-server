@@ -1,0 +1,12 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+update hover_t set name = s.title from s where s.id = hover_t.id
+                          ↑ hovered here
+```
+
+# Hover Results
+No hover information found.

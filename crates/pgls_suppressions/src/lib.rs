@@ -3,11 +3,8 @@ pub mod suppression;
 
 use pgls_analyse::RuleFilter;
 use pgls_diagnostics::{Diagnostic, MessageAndDescription};
+use pgls_line_index::LineIndex;
 use pgls_text_size::{TextRange, TextSize};
-
-pub mod line_index;
-
-use line_index::LineIndex;
 
 use crate::{
     parser::SuppressionsParser,
@@ -201,20 +198,25 @@ impl Suppressions {
         if !statement.contains_inclusive(start) {
             return None;
         }
-        self.line_index.line_for_offset(statement.start())
+        self.line_for_offset(statement.start())
     }
 
     fn diagnostic_line_range<D: Diagnostic>(&self, diagnostic: &D) -> Option<(usize, usize)> {
         let span = diagnostic.location().span?;
 
-        let start = self.line_index.line_for_offset(span.start())?;
+        let start = self.line_for_offset(span.start())?;
         let end_offset = span
             .end()
             .checked_sub(TextSize::new(1))
             .unwrap_or_else(|| span.end());
-        let end = self.line_index.line_for_offset(end_offset)?;
+        let end = self.line_for_offset(end_offset)?;
 
         Some((start, end))
+    }
+
+    fn line_for_offset(&self, offset: TextSize) -> Option<Line> {
+        let line = self.line_index.line_col(offset)?.line;
+        Line::try_from(line).ok()
     }
 
     fn target_line_for_line_suppression(&self, line: usize) -> usize {
@@ -273,6 +275,23 @@ mod tests {
         assert!(suppressions.is_suppressed(&TestDiagnostic {
             span: TextRange::new(67.into(), 76.into()),
         }));
+    }
+
+    #[test]
+    fn a_lone_carriage_return_does_not_end_a_line() {
+        // Lines end at `\n` only, like in the editor positions and `str::lines`.
+        let doc = "select '\r';\n-- pgls-ignore lint\nselect 1;";
+        let start = u32::try_from(doc.find("select 1").unwrap()).unwrap();
+        let diagnostic = TestDiagnostic {
+            span: TextRange::new(start.into(), u32::try_from(doc.len()).unwrap().into()),
+        };
+
+        let suppressions = super::Suppressions::from(doc);
+
+        assert!(suppressions.diagnostics.is_empty());
+        assert!(suppressions.is_suppressed(&diagnostic));
+        let suppression = &suppressions.line_suppressions[&1];
+        assert_eq!(&doc[suppression.suppression_range], "-- pgls-ignore lint");
     }
 
     #[test]

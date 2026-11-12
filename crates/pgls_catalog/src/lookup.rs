@@ -8,6 +8,7 @@ use std::borrow::Cow;
 
 use crate::Behavior;
 use crate::typing::{Type, TypeId};
+use crate::{Generated, Identity};
 
 /// The result of a catalog lookup.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,6 +69,26 @@ pub struct ColumnInfo {
     pub type_name: Option<String>,
     /// Resolved type identity, when available.
     pub ty: Option<Type>,
+    /// Whether the column of a table is a generated column. [`Generated::No`] also when that is
+    /// not known, and for the columns of anything but tables.
+    pub generated: Generated,
+    /// Whether the column of a table is an identity column. [`Identity::No`] also when that is
+    /// not known, and for the columns of anything but tables.
+    pub identity: Identity,
+}
+
+impl ColumnInfo {
+    /// A column with what any relation's column has; the properties of table columns, like
+    /// [`ColumnInfo::generated`], take their defaults.
+    pub fn new(name: impl Into<String>, type_name: Option<String>, ty: Option<Type>) -> Self {
+        ColumnInfo {
+            name: name.into(),
+            type_name,
+            ty,
+            generated: Generated::No,
+            identity: Identity::No,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,6 +99,19 @@ pub struct RelationInfo {
     /// `None` when the column set is not known, e.g. a view whose select list could not be derived.
     pub columns: Option<Vec<ColumnInfo>>,
     pub origin: Origin,
+}
+
+impl RelationInfo {
+    /// The column with the name. [`Lookup::Unknown`] if the columns of the relation aren't known.
+    pub fn column(&self, name: &str) -> Lookup<&ColumnInfo> {
+        let Some(columns) = &self.columns else {
+            return Lookup::Unknown;
+        };
+        match columns.iter().find(|column| column.name == name) {
+            Some(column) => Lookup::Found(column),
+            None => Lookup::Missing,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -164,6 +198,11 @@ pub trait CatalogView {
     /// Looks up a schema. `pg_temp` and `pg_catalog` always exist.
     fn schema(&self, name: &str) -> Lookup<()>;
 
+    /// Looks up a role. Never `Missing`, since roles that the file creates aren't followed.
+    fn role(&self, _: &str) -> Lookup<()> {
+        Lookup::Unknown
+    }
+
     /// Returns all overloads with this name that are visible. With `schema: None`, all schemas
     /// on the search path are considered.
     fn functions(
@@ -218,6 +257,14 @@ pub trait CatalogView {
     /// Returns the server version when available.
     fn server_version_num(&self) -> Option<i64> {
         None
+    }
+
+    /// Whether the server runs Postgres `major` or later, like `server_version_at_least(12)`.
+    /// `None` when the version is not known. Since Postgres 10, `server_version_num` is the major
+    /// version times 10000 plus the minor version.
+    fn server_version_at_least(&self, major: i64) -> Option<bool> {
+        self.server_version_num()
+            .map(|version| version >= major * 10_000)
     }
 }
 

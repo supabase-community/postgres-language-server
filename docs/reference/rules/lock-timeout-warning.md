@@ -12,8 +12,12 @@ When a statement acquires a lock that would block common operations (like SELECT
 it can cause the database to become unresponsive if another transaction is holding a conflicting lock
 while idle in transaction or active. This is particularly dangerous for:
 
-- ALTER TABLE statements (acquire ACCESS EXCLUSIVE lock)
+- ALTER TABLE statements (acquire ACCESS EXCLUSIVE lock for most subcommands, and SHARE ROW
+EXCLUSIVE to enable or disable triggers and to add foreign keys)
 - CREATE INDEX without CONCURRENTLY (acquires SHARE lock)
+
+Subcommands that only take a SHARE UPDATE EXCLUSIVE lock, like `VALIDATE CONSTRAINT`, don't
+block reads or writes and aren't reported.
 
 Setting a lock timeout ensures that if the lock cannot be acquired within a reasonable time,
 the statement will fail rather than blocking indefinitely.
