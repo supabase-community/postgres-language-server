@@ -1,16 +1,13 @@
-use pgls_query::{
-    NodeEnum,
-    protobuf::{ReturningClause, ReturningOption, ReturningOptionKind},
-};
+use pgls_query::protobuf::{ReturningClause, ReturningOption, ReturningOptionKind};
 
-use crate::{TokenKind, emitter::EventEmitter};
+use super::prelude::*;
 
 /// Emits `RETURNING [WITH (OLD AS o, NEW AS n)] expr, ...` of an INSERT, UPDATE or DELETE.
 ///
 /// It opens no group, so the list breaks with the statement around it.
 pub(super) fn emit_returning_clause(e: &mut EventEmitter, n: &ReturningClause) {
     emit_returning_keyword(e, n);
-    super::node_list::emit_comma_separated_list(e, &n.exprs, super::emit_node);
+    emit_comma_separated_list(e, &n.exprs, emit_node);
 }
 
 /// Emits `RETURNING [WITH (OLD AS o, NEW AS n)] `, for a caller that lays out the list itself.
@@ -45,5 +42,5 @@ pub(super) fn emit_returning_option(e: &mut EventEmitter, n: &ReturningOption) {
     e.space();
     e.token(TokenKind::AS_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.value);
+    emit_identifier_maybe_quoted(e, &n.value);
 }

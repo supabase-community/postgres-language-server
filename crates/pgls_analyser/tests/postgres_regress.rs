@@ -39,6 +39,12 @@ const KNOWN_ARTEFACTS: &[(&str, &str, &str)] = &[
         "`CREATE TEMP TABLE fktable2 (fk int references pktable ENFORCED NOT ENFORCED)` fails, so \
          no temporary `fktable2` shadows the one created later",
     ),
+    (
+        "constraints",
+        "UPDATE notnull_tbl1 SET a = 100 WHERE b = 1",
+        "`ALTER COLUMN a ADD GENERATED ALWAYS AS IDENTITY` fails because `a` has an invalid NOT \
+         NULL constraint, so `a` is no identity column",
+    ),
 ];
 
 /// Known false positives in the bodies of SQL functions Postgres accepted: the file, a snippet of

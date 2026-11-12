@@ -177,8 +177,12 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
         }
     }
 
+    /// The files that changed between `base` and `HEAD`, relative to the working directory. Fails
+    /// with [NotAGitRepository] outside a git repository.
     fn get_changed_files(&self, base: &str) -> io::Result<Vec<String>>;
 
+    /// The staged files, relative to the working directory. Fails with [NotAGitRepository]
+    /// outside a git repository.
     fn get_staged_files(&self) -> io::Result<Vec<String>>;
 
     fn resolve_configuration(
@@ -474,6 +478,26 @@ where
         T::find_files(self, root, search)
     }
 }
+
+/// The error of [FileSystem::get_changed_files] and [FileSystem::get_staged_files] when the
+/// working directory isn't inside a git repository.
+#[derive(Debug)]
+pub struct NotAGitRepository;
+
+impl NotAGitRepository {
+    /// Whether `error` is this error.
+    pub fn is(error: &io::Error) -> bool {
+        error.get_ref().is_some_and(|error| error.is::<Self>())
+    }
+}
+
+impl Display for NotAGitRepository {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str("not a git repository")
+    }
+}
+
+impl std::error::Error for NotAGitRepository {}
 
 #[derive(Debug, Diagnostic, Deserialize, Serialize)]
 #[diagnostic(category = "internalError/fs")]

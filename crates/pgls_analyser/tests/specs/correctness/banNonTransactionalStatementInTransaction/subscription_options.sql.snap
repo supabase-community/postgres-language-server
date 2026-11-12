@@ -1,0 +1,25 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+begin;
+-- expect_lint/banNonTransactionalStatementInTransaction
+create subscription sub connection 'dbname=app' publication pub with (connect = on);
+-- `off` is not a reserved keyword, so it is parsed as a type name.
+create subscription sub connection 'dbname=app' publication pub with (connect = off);
+-- Postgres rejects these values.
+create subscription sub connection 'dbname=app' publication pub with (create_slot = 2);
+create subscription sub connection 'dbname=app' publication pub with (create_slot = 'yes');
+create subscription sub connection 'dbname=app' publication pub with (connect = '0');
+commit;
+
+```
+
+# Diagnostics
+lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CREATE SUBSCRIPTION ... WITH (create_slot = true) cannot run inside a transaction block.
+  
+  i Run CREATE SUBSCRIPTION ... WITH (create_slot = true) outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
