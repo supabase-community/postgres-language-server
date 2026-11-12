@@ -671,21 +671,22 @@ pub(super) fn column_info(
 ) -> ColumnInfo {
     // Postgres checks for the serial pseudo-types before it looks the name up, and turns them
     // into integer columns. They aren't types, so a lookup wouldn't find them.
-    if let Some(serial) = column.type_name.as_ref().and_then(crate::serial_type) {
-        let integer_type = serial.integer_type();
-        return ColumnInfo {
-            name: column.colname.clone(),
-            type_name: Some(integer_type.to_owned()),
-            ty: catalog
-                .builtin_type(integer_type)
-                .map(crate::typing::Type::Named),
-        };
-    }
-    let type_id = column
-        .type_name
-        .as_ref()
-        .and_then(|name| crate::normalize_type_name(catalog, name, search_path).0);
-    let type_name = column.type_name.as_ref().and_then(type_label);
+    let (type_name, type_id) = match column.type_name.as_ref() {
+        Some(name) => match crate::serial_type(name) {
+            Some(serial) => {
+                let integer_type = serial.integer_type();
+                (
+                    Some(integer_type.to_owned()),
+                    catalog.builtin_type(integer_type),
+                )
+            }
+            None => (
+                type_label(name),
+                crate::normalize_type_name(catalog, name, search_path).0,
+            ),
+        },
+        None => (None, None),
+    };
     let (generated, identity) = column_kinds(column);
     ColumnInfo {
         generated,
