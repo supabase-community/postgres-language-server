@@ -23,6 +23,7 @@ mod catalog;
 mod identifier;
 mod lookup;
 pub mod resolve;
+pub use resolve::contains_volatile_functions;
 mod session;
 pub mod snapshot;
 pub mod typing;
@@ -34,6 +35,9 @@ pub use lookup::{
     FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
     OperatorInfo, OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
-pub use session::{Session, TransactionMode};
+pub use session::{
+    LockMode, NonTransactional, Session, TableLock, TransactionMode, alter_table_cmd_lock,
+    alter_table_lock, ends_transaction_block, prevents_transaction_block, relation_locks,
+};
 pub use snapshot::*;
 pub use typing::*;
