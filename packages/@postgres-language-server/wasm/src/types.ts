@@ -2,6 +2,7 @@
  * TypeScript type definitions for the Postgres Language Server WASM API.
  */
 
+import type { PartialConfiguration } from "./configuration";
 import type { SchemaCache } from "./schema-cache";
 
 /**
@@ -42,11 +43,22 @@ export interface CompletionItem {
 export type { SchemaCache } from "./schema-cache";
 
 /**
+ * The configuration, in the shape of `postgres-language-server.jsonc`. Generated from Rust
+ * `PartialConfiguration` via schemars.
+ *
+ * There is no project folder, so `migrations.migrationsDir` and `migrations.after` don't apply,
+ * and `extends` isn't resolved.
+ */
+export type Configuration = PartialConfiguration;
+
+/**
  * Options for initializing the workspace.
  */
 export interface WorkspaceOptions {
   /** Optional schema cache to preload */
   schema?: SchemaCache | string;
+  /** Optional configuration, as an object or as the text of a configuration file */
+  configuration?: Configuration | string;
 }
 
 /**
@@ -153,6 +165,7 @@ export interface PGLSModule {
   _pgls_free_string(ptr: number): void;
   _pgls_set_schema(jsonPtr: number): number;
   _pgls_clear_schema(): void;
+  _pgls_configure(jsonPtr: number): number;
   _pgls_insert_file(pathPtr: number, contentPtr: number): number;
   _pgls_remove_file(pathPtr: number): void;
   _pgls_lint(pathPtr: number): number;

@@ -2785,6 +2785,7 @@ dependencies = [
  "pgls_analyse",
  "pgls_analyser",
  "pgls_diagnostics",
+ "pgls_line_index",
  "pgls_text_size",
  "tracing",
 ]
@@ -5451,6 +5452,7 @@ dependencies = [
  "pgls_analyse",
  "pgls_analyser",
  "pgls_catalog",
+ "pgls_configuration",
  "pgls_diagnostics",
  "pgls_env",
  "pgls_pglinter",

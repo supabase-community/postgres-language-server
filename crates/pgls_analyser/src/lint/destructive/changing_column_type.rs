@@ -2,7 +2,8 @@ use crate::utils::{alter_table_cmds, builtin_type_name, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::{
-    CatalogView, Decision, Lookup, Type, base_type, is_binary_coercible, normalize_type_name,
+    CatalogView, Decision, Generated, Lookup, Type, base_type, is_binary_coercible,
+    normalize_type_name,
 };
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -24,6 +25,9 @@ declare_lint_rule! {
     /// - `text`
     /// - `varchar` without a length limit
     /// - `numeric` without a precision
+    ///
+    /// Changing the type of a virtual generated column (Postgres 18) doesn't rewrite the table
+    /// either: its values are computed when rows are read.
     ///
     /// For unsafe type changes, consider creating a new column with the desired type,
     /// migrating the data, and then dropping the old column.
@@ -69,6 +73,9 @@ impl LinterRule for ChangingColumnType {
                 {
                     continue;
                 }
+                if is_virtual_column(ctx, relation, &cmd.name) {
+                    continue;
+                }
 
                 diagnostics.push(LinterDiagnostic::new(
                         rule_category!(),
@@ -82,6 +89,24 @@ impl LinterRule for ChangingColumnType {
 
         diagnostics
     }
+}
+
+/// Whether the column is a virtual generated column, which [`ATExecAlterColumnType`] doesn't
+/// rewrite.
+///
+/// [`ATExecAlterColumnType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L14747
+fn is_virtual_column(
+    ctx: &LinterRuleContext<ChangingColumnType>,
+    relation: Option<&RangeVar>,
+    column: &str,
+) -> bool {
+    let Some(relation) = relation else {
+        return false;
+    };
+    ctx.catalog()
+        .column_of(relation, column, ctx.session().search_path())
+        .found()
+        .is_some_and(|column| column.generated == Generated::Virtual)
 }
 
 /// Whether `ALTER COLUMN ... TYPE` rewrites the table. Postgres coerces the column, or the

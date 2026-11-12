@@ -22,6 +22,9 @@ it isn't known, only changes to these types count as safe:
 - `varchar` without a length limit
 - `numeric` without a precision
 
+Changing the type of a virtual generated column (Postgres 18) doesn't rewrite the table
+either: its values are computed when rows are read.
+
 For unsafe type changes, consider creating a new column with the desired type,
 migrating the data, and then dropping the old column.
 

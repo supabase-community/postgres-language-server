@@ -134,9 +134,29 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     assert_fixes_converge(&analyser, &query, is_typecheck, catalog);
 }
 
+/// A spec of a lint rule can set the server version with a `-- server_version: <major>` line.
+/// Its rules then see an otherwise empty database snapshot of that version.
+fn server_version_catalog(query: &str) -> Option<Arc<pgls_catalog::CatalogBase>> {
+    let major = query.lines().find_map(|line| {
+        line.trim()
+            .strip_prefix("-- server_version:")
+            .map(|major| major.trim().parse().expect("a major version"))
+    })?;
+    let snapshot = pgls_catalog::Snapshot {
+        version: pgls_catalog::Version {
+            version_num: Some(major * 10000),
+            major_version: Some(major),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    Some(Arc::new(pgls_catalog::CatalogBase::new(Arc::new(snapshot))))
+}
+
 /// The catalog of a spec: the built-in catalog of the test database for typecheck specs and for
 /// specs with a `-- catalog: builtin` line. A `-- server_version_num: 110000` line makes it the
-/// catalog of that server version, since the test database can be of any version.
+/// catalog of that server version, since the test database can be of any version. Other specs
+/// get the catalog of [`server_version_catalog`], if any.
 fn spec_catalog(query: &str, is_typecheck: bool) -> Option<Arc<pgls_catalog::CatalogBase>> {
     let directive = |name: &str| {
         query
@@ -144,7 +164,7 @@ fn spec_catalog(query: &str, is_typecheck: bool) -> Option<Arc<pgls_catalog::Cat
             .find_map(|line| line.trim().strip_prefix(name).map(str::trim))
     };
     if !is_typecheck && directive("-- catalog:") != Some("builtin") {
-        return None;
+        return server_version_catalog(query);
     }
     let catalog = typecheck_catalog();
     let Some(version) = directive("-- server_version_num:") else {
@@ -193,7 +213,6 @@ fn analyse(
         }
     }
 
-    // Typecheck rules use the test database's built-in catalog; user schemas are filtered out.
     analyser.run(AnalyserParams {
         stmts,
         unparsable,
