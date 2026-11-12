@@ -1684,7 +1684,7 @@ mod typing_overlay_tests {
         assert!(!catalog.function_candidates(None, "abs", &path).complete);
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn dropping_a_column_drops_the_database_indexes_that_use_it(test_db: PgPool) {
         use sqlx::Executor;
 
