@@ -358,6 +358,8 @@ const ESOTERIC_SPACE_WIDTH: usize = 1;
 pub(super) fn char_width(char: char) -> usize {
     match char {
         '\t' => TAB_WIDTH,
+        // A lone `\r` inside a line, printed as `␍`
+        '\r' => 1,
         '\u{c}' => ESOTERIC_SPACE_WIDTH,
         '\u{b}' => ESOTERIC_SPACE_WIDTH,
         '\u{85}' => ESOTERIC_SPACE_WIDTH,
@@ -727,7 +729,29 @@ impl FusedIterator for IntoIter {}
 mod tests {
     use std::num::NonZeroUsize;
 
-    use super::{OneIndexed, calculate_print_width};
+    use pgls_text_size::TextSize;
+
+    use super::{OneIndexed, SourceFile, SourceLocation, calculate_print_width};
+    use crate::SourceCode;
+
+    #[test]
+    fn location_counts_lines_at_line_feeds_only() {
+        // A lone `\r` is a character of its line, the `\r` of a `\r\n` ends the line.
+        let source = SourceFile::new(SourceCode {
+            text: "a\rbé\r\nc",
+            line_starts: None,
+        });
+        let location = |offset: u32| source.location(TextSize::from(offset)).unwrap();
+        let at = |line, column| SourceLocation {
+            line_number: OneIndexed::new(line).unwrap(),
+            column_number: OneIndexed::new(column).unwrap(),
+        };
+
+        assert_eq!(location(2), at(1, 3));
+        assert_eq!(location(3), at(1, 4));
+        assert_eq!(location(5), at(1, 5));
+        assert_eq!(location(7), at(2, 1));
+    }
 
     #[test]
     fn print_width() {

@@ -13,7 +13,7 @@ program [0..44] 'update auth.users set email = 'my@mail.com';'
           schema_identifier [7..11] 'auth' (@table_reference_1of2)
           . [11..12] '.'
           table_identifier [12..17] 'users' (@table_reference_2of2)
-      update_set_values [18..43] 'set email = 'my@mail.com''
+      update_set_values [18..43] 'set email = 'my@mail.com'' (@end)
         keyword_set [18..21] 'set'
         assignment [22..43] 'email = 'my@mail.com'' (@end)
           column_identifier [22..27] 'email' (@left)

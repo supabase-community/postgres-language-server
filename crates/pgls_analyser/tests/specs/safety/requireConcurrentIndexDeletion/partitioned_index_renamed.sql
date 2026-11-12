@@ -1,0 +1,13 @@
+-- The index of a partitioned table stays partitioned when the index or its table is renamed, so
+-- there is no fix.
+-- section: up transaction:false queries:separate
+create table events (id bigint, created_at timestamptz) partition by range (created_at);
+create index events_created_at_idx on events (created_at);
+alter index events_created_at_idx rename to events_by_time;
+-- expect_lint/requireConcurrentIndexDeletion
+drop index events_by_time;
+create table logs (id bigint, created_at timestamptz) partition by range (created_at);
+create index logs_created_at_idx on logs (created_at);
+alter table logs rename to old_logs;
+-- expect_lint/requireConcurrentIndexDeletion
+drop index logs_created_at_idx;

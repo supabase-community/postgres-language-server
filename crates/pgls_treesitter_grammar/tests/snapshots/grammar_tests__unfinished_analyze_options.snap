@@ -1,0 +1,14 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+analyze (verbose
+-----------------------
+program [0..16] 'analyze (verbose'
+  statement [0..16] 'analyze (verbose'
+    analyze_statement [0..16] 'analyze (verbose'
+      keyword_analyze [0..7] 'analyze'
+      analyze_options [8..16] '(verbose'
+        ( [8..9] '('
+        analyze_option [9..16] 'verbose'
+          keyword_verbose [9..16] 'verbose' (@end)

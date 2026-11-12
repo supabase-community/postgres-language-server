@@ -13,7 +13,7 @@ use super::{
     with_clause::resolve_with_clause,
 };
 use crate::resolve::column_name::figure_column_name;
-use crate::resolve::scope::Columns;
+use crate::resolve::{expr::infer_expr, scope::Columns, utils::resolve_expr};
 
 #[cfg(test)]
 thread_local! {
@@ -114,11 +114,7 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
                         NodeEnum::List(row) => row.items.get(index),
                         _ => None,
                     })
-                    .map(|node| {
-                        node.node
-                            .as_ref()
-                            .and_then(|expr| super::super::expr::infer_expr(r, expr))
-                    })
+                    .map(|node| node.node.as_ref().and_then(|expr| infer_expr(r, expr)))
                     .collect::<Option<Vec<_>>>();
                 let ty = values.and_then(|values| {
                     match crate::typing::select_common_type(r.catalog, &values) {
@@ -149,10 +145,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     resolve_list(r, &n.target_list);
     record_star_references(r, &n.target_list);
     for node in n.where_clause.iter().chain(&n.having_clause) {
-        resolve_node(r, node);
-        if let Some(expr) = node.node.as_ref() {
-            super::super::expr::infer_expr(r, expr);
-        }
+        resolve_expr(r, node);
     }
     r.set_output_names_visible(true);
     for node in &n.group_clause {
@@ -160,7 +153,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
         if let Some(expr) = node.node.as_ref()
             && !is_output_reference(expr, &output_names)
         {
-            super::super::expr::infer_expr(r, expr);
+            infer_expr(r, expr);
         }
     }
     for node in &n.sort_clause {
@@ -170,7 +163,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
             _ => Some(sort),
         }) && !is_output_reference(expr, &output_names)
         {
-            super::super::expr::infer_expr(r, expr);
+            infer_expr(r, expr);
         }
     }
     for node in &n.distinct_clause {
@@ -178,7 +171,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
         if let Some(expr) = node.node.as_ref()
             && !is_output_reference(expr, &output_names)
         {
-            super::super::expr::infer_expr(r, expr);
+            infer_expr(r, expr);
         }
     }
     r.set_output_names_visible(false);
@@ -193,16 +186,13 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
                 .chain(window.end_offset.iter().map(|offset| offset.as_ref()))
             {
                 if let Some(expr) = expr.node.as_ref() {
-                    super::super::expr::infer_expr(r, expr);
+                    infer_expr(r, expr);
                 }
             }
         }
     }
     for node in n.limit_offset.iter().chain(&n.limit_count) {
-        resolve_node(r, node);
-        if let Some(expr) = node.node.as_ref() {
-            super::super::expr::infer_expr(r, expr);
-        }
+        resolve_expr(r, node);
     }
 
     let columns = target_list_columns(r, &n.target_list);
@@ -225,7 +215,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
                     .iter()
                     .rev()
                     .nth(1)
-                    .and_then(|f| super::string::string_value(f));
+                    .and_then(pgls_query_ext::utils::string_value);
                 if let Some(item) = qualifier.and_then(|q| r.levels.last().and_then(|l| l.item(q)))
                 {
                     out.extend(item.typed_columns.clone().unwrap_or_default());
@@ -237,11 +227,11 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
             let name = if !t.name.is_empty() {
                 t.name.clone()
             } else {
-                super::super::column_name::figure_column_name(value).unwrap_or_default()
+                figure_column_name(value).unwrap_or_default()
             };
             out.push(crate::typing::TypedColumn {
                 name,
-                ty: super::super::expr::infer_expr(r, value),
+                ty: infer_expr(r, value),
             });
         }
         if out.len() == names.len() {

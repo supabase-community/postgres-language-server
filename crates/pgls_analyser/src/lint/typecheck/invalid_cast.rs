@@ -35,12 +35,7 @@ impl LinterRule for InvalidCast {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
-        resolution
-            .findings
-            .iter()
+        ctx.findings()
             .filter_map(|finding| {
                 let FindingKind::InvalidCast { from, to } = &finding.kind else {
                     return None;

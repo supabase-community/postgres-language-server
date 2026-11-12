@@ -2,6 +2,7 @@ use std::io;
 
 use pgls_console::markup;
 use pgls_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
+use pgls_line_index::offset_of_char_position;
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::{PlpgSqlCheckIssue, PlpgSqlCheckResult, Query};
@@ -14,9 +15,6 @@ impl ByteOffset {
         self.0
     }
 }
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct OneBasedCharOffset(usize);
 
 /// Find the first occurrence of target text that is not within string literals.
 ///
@@ -74,19 +72,6 @@ fn find_text_outside_strings(text: &str, target: &str) -> Option<ByteOffset> {
     }
 
     None
-}
-
-fn byte_offset_from_one_based_char_offset(
-    text: &str,
-    position: OneBasedCharOffset,
-) -> Option<ByteOffset> {
-    let zero_based_position = position.0.checked_sub(1)?;
-
-    match text.char_indices().nth(zero_based_position) {
-        Some((offset, _)) => Some(ByteOffset(offset)),
-        None if zero_based_position == text.chars().count() => Some(ByteOffset(text.len())),
-        None => None,
-    }
 }
 
 /// A specialized diagnostic for plpgsql_check.
@@ -308,15 +293,10 @@ fn query_token_range(q: &Query, fn_body: &str, search_from: usize) -> Option<Tex
     let query_start = find_text_outside_strings(fn_body.get(search_from..)?, &q.text)
         .map(|pos| ByteOffset(pos.get() + search_from));
 
-    // The position is *within* the query text. plpgsql_check/Postgres
-    // reports it as a 1-based character position, while TextRange uses
-    // UTF-8 byte offsets.
-    let pos = byte_offset_from_one_based_char_offset(
-        &q.text,
-        OneBasedCharOffset(q.position.parse::<usize>().ok()?),
-    )?;
+    // The position is *within* the query text, as a 1-based character position.
+    let pos = offset_of_char_position(&q.text, q.position.parse::<usize>().ok()?)?;
 
-    let start = query_start?.get() + pos.get();
+    let start = query_start?.get() + usize::from(pos);
 
     // the range of the diagnostics is the token that `pos` is on
     // Find the end of the current token by looking for whitespace or SQL delimiters

@@ -1,4 +1,3 @@
-use fs_extra::dir::CopyOptions;
 use glob::glob;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -38,7 +37,7 @@ fn system_layout(prefix: &Path) -> Result<Layout, String> {
     })
 }
 
-fn vendored_layout(vendor_root: &Path, out_dir: &Path) -> Result<Layout, String> {
+fn vendored_layout(vendor_root: &Path) -> Result<Layout, String> {
     // Ensure submodule content exists
     if !vendor_root.join("src").exists() {
         return Err(
@@ -46,25 +45,26 @@ fn vendored_layout(vendor_root: &Path, out_dir: &Path) -> Result<Layout, String>
         );
     }
 
-    // Copy vendored tree into OUT_DIR
-    let copy_opts = CopyOptions {
-        overwrite: true,
-        ..CopyOptions::default()
-    };
-    let items = vec![
-        vendor_root.join(format!("{LIB_NAME}.h")),
-        vendor_root.join("postgres_deparse.h"),
-        vendor_root.join("pg_query_scan_tokens.h"),
-        vendor_root.join("Makefile"),
-        vendor_root.join("src"),
-        vendor_root.join("protobuf"),
-        vendor_root.join("vendor"),
-    ];
-    fs_extra::copy_items(&items, out_dir, &copy_opts).map_err(|e| e.to_string())?;
+    // Compile straight from the submodule, so that no file of another libpg_query version (e.g.
+    // a copy in a cached `OUT_DIR`) ends up in the build. Rerun when its sources change, e.g.
+    // when the submodule moves to another commit.
+    for input in [
+        format!("{LIB_NAME}.h"),
+        "postgres_deparse.h".into(),
+        "pg_query_scan_tokens.h".into(),
+        "src".into(),
+        "protobuf".into(),
+        "vendor".into(),
+    ] {
+        println!(
+            "cargo:rerun-if-changed={}",
+            vendor_root.join(input).display()
+        );
+    }
 
-    let root = out_dir.to_path_buf();
-    let out_header = root.join(format!("{LIB_NAME}.h"));
-    let out_proto = root.join("protobuf").join(format!("{LIB_NAME}.proto"));
+    let root = vendor_root.to_path_buf();
+    let header = root.join(format!("{LIB_NAME}.h"));
+    let proto = root.join("protobuf").join(format!("{LIB_NAME}.proto"));
 
     let extra_includes = vec![
         root.join("."),
@@ -78,8 +78,8 @@ fn vendored_layout(vendor_root: &Path, out_dir: &Path) -> Result<Layout, String>
     Ok(Layout {
         include_dir: root.clone(),
         lib_dir: None,
-        header: out_header,
-        proto: out_proto.exists().then_some(out_proto),
+        header,
+        proto: proto.exists().then_some(proto),
         c_src_roots: vec![root.join("src"), root.join("src/postgres")],
         extra_includes,
         build_root: root,
@@ -219,7 +219,7 @@ fn compile_c_if_needed(layout: &Layout, is_emscripten: bool, target: &str) {
         }
     }
 
-    // Add vendor files from copied tree (see `UPB_SRC_FILES` in libpg_query's Makefile)
+    // Add vendor files (see `UPB_SRC_FILES` in libpg_query's Makefile)
     cc.file(layout.build_root.join("vendor/upb/upb.c"));
     cc.file(
         layout
@@ -261,6 +261,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let target = env::var("TARGET").unwrap();
     let is_emscripten = target.contains("emscripten");
 
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed=LIBPG_QUERY_PATH");
     println!("cargo:rustc-link-search=native={}", out_dir.display());
 
     let layout = if let Ok(p) = env::var("LIBPG_QUERY_PATH") {
@@ -269,7 +271,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         println!("using vendored libpg_query (submodule)");
         let vendor_root = manifest_dir.join("vendor").join("libpg_query");
-        vendored_layout(&vendor_root, &out_dir)?
+        vendored_layout(&vendor_root)?
     };
 
     if let Some(lib_dir) = &layout.lib_dir {

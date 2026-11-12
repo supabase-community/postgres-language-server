@@ -36,17 +36,10 @@ mod panic;
 mod reporter;
 mod service;
 
-/// The stack size of the threads that run the workspace: the tokio workers and blocking threads
-/// of the language server, and the rayon workers of `check`.
-///
-/// libpg_query serializes the parse tree recursively, so a long expression needs stack
-/// proportional to its length. In a release build, `select 1 + abs(1) + ...` overflows the 2 MiB
-/// default of tokio and rayon at about 10,000 terms, and the overflow aborts the whole process.
-/// With 8 MiB, the default stack of the main thread on Linux, it handles 20,000 terms. Postgres
-/// itself rejects that statement at 5,000 terms with its default `max_stack_depth` of 2 MB.
-pub(crate) const WORKER_STACK_SIZE_BYTES: usize = 8 * 1024 * 1024;
+pub(crate) use pgls_workspace::WORKER_STACK_SIZE_BYTES;
 
-/// A multi-threaded tokio runtime whose threads have a stack of [`WORKER_STACK_SIZE_BYTES`].
+/// A multi-threaded tokio runtime whose threads have a stack of [`WORKER_STACK_SIZE_BYTES`]. It
+/// runs the language server's handlers and their `spawn_blocking` threads.
 pub(crate) fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -76,7 +69,8 @@ pub struct CliSession<'app> {
     /// The files settings of the root configuration, which decide the folders to search for
     /// nested configuration files
     root_files: Option<FilesSettings>,
-    /// The layers laid over each configuration file: the environment and the arguments
+    /// The layers laid over each configuration file: the environment and the arguments, which
+    /// replace what they set like the client overrides of the language server
     layers: ConfigurationLayers,
 }
 
@@ -262,7 +256,6 @@ impl<'app> CliSession<'app> {
         self.layers = ConfigurationLayers {
             environment: PartialDatabaseConfiguration::from_env(),
             overrides: cli_configuration,
-            ..Default::default()
         };
         let project = configure_project(
             self.workspace(),

@@ -1,0 +1,4 @@
+-- A NOT ENFORCED constraint (Postgres 18) can't be validated, so there is nothing to separate
+-- expect_no_diagnostics
+ALTER TABLE orders ADD CONSTRAINT orders_customer_fk FOREIGN KEY (customer_id) REFERENCES customers (id) NOT ENFORCED;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_customer_fk;

@@ -1,16 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::{
-    NodeEnum,
-    protobuf::{ObjectType, SecLabelStmt},
-};
+use pgls_query::protobuf::{ObjectType, SecLabelStmt};
 
-use super::string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str};
+use super::prelude::*;
 
 pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
-    e.group_start(GroupKind::SecLabelStmt);
+    e.group_start();
 
     emit_keyword(e, "SECURITY");
     e.space();
@@ -30,34 +23,13 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
     e.space();
 
     // Map object type to SQL keyword
-    let objtype_tokens: &[&str] = match n.objtype() {
-        ObjectType::ObjectTable => &["TABLE"],
-        ObjectType::ObjectSequence => &["SEQUENCE"],
-        ObjectType::ObjectView => &["VIEW"],
-        ObjectType::ObjectColumn => &["COLUMN"],
-        ObjectType::ObjectDatabase => &["DATABASE"],
-        ObjectType::ObjectSchema => &["SCHEMA"],
-        ObjectType::ObjectFunction => &["FUNCTION"],
-        ObjectType::ObjectProcedure => &["PROCEDURE"],
-        ObjectType::ObjectRoutine => &["ROUTINE"],
-        ObjectType::ObjectType => &["TYPE"],
-        ObjectType::ObjectDomain => &["DOMAIN"],
-        ObjectType::ObjectAggregate => &["AGGREGATE"],
-        ObjectType::ObjectRole => &["ROLE"],
-        ObjectType::ObjectTablespace => &["TABLESPACE"],
-        ObjectType::ObjectFdw => &["FOREIGN", "DATA", "WRAPPER"],
-        ObjectType::ObjectForeignServer => &["FOREIGN", "SERVER"],
-        ObjectType::ObjectLanguage => &["LANGUAGE"],
-        ObjectType::ObjectLargeobject => &["LARGE", "OBJECT"],
-        _ => &["TABLE"],
+    // SECURITY LABEL names a foreign server `FOREIGN SERVER`.
+    let keywords = match n.objtype() {
+        ObjectType::ObjectForeignServer => "FOREIGN SERVER",
+        objtype => object_type_keywords(objtype).unwrap_or("TABLE"),
     };
+    emit_keywords(e, keywords);
 
-    for (idx, token) in objtype_tokens.iter().enumerate() {
-        if idx > 0 {
-            e.space();
-        }
-        emit_keyword(e, token);
-    }
     e.space();
 
     // Emit object name
@@ -65,12 +37,12 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
         // Aggregate needs (*) for "any argument types"
         if n.objtype() == ObjectType::ObjectAggregate {
             if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
-                super::emit_object_with_args_for_aggregate(e, owa);
+                super::emit_object_with_args_as(e, owa, super::ObjectArguments::AggregateSignature);
             } else {
-                super::emit_node(object, e);
+                emit_node(e, object);
             }
         } else {
-            super::emit_node(object, e);
+            emit_node(e, object);
         }
     }
 
@@ -79,8 +51,6 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
     e.token(TokenKind::IS_KW);
     e.space();
     emit_single_quoted_str(e, &n.label);
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

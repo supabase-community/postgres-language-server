@@ -1,4 +1,9 @@
-use super::*;
+use pgls_query::NodeEnum;
+use pgls_query_ext::utils::{QualifiedName, qualified_name};
+
+use super::infer_expr;
+use crate::resolve::{resolver::Resolver, utils::named};
+use crate::typing::{CallArg, Selection, Type, select_function};
 
 /// The result type of a function call, and a finding when no function or no unique best
 /// function matches its arguments. Port of [`ParseFuncOrColumn`], which selects the function
@@ -11,12 +16,7 @@ pub(super) fn infer_func_call(
     n: &pgls_query::protobuf::FuncCall,
 ) -> Option<Type> {
     {
-        let names = string_values(&n.funcname)?;
-        let (schema, name) = match names.as_slice() {
-            [name] => (None, name.as_str()),
-            [schema, name] => (Some(schema.as_str()), name.as_str()),
-            _ => return None,
-        };
+        let QualifiedName { schema, name, .. } = qualified_name(&n.funcname)?;
         if n.agg_star {
             return named(r, "int8");
         }
@@ -89,13 +89,8 @@ pub(in crate::resolve) fn resolve_procedure_call(
     let findings = r.findings.len();
     let args = call_args(r, n);
     r.findings.truncate(findings);
-    let Some(names) = string_values(&n.funcname) else {
+    let Some(QualifiedName { schema, name, .. }) = qualified_name(&n.funcname) else {
         return;
-    };
-    let (schema, name) = match names.as_slice() {
-        [name] => (None, name.as_str()),
-        [schema, name] => (Some(schema.as_str()), name.as_str()),
-        _ => return,
     };
     if let Selection::Match(f) = select_function(
         r.catalog,

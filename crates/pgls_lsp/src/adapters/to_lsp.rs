@@ -1,4 +1,4 @@
-use crate::adapters::PositionEncoding;
+use crate::adapters::{PositionEncoding, from_lsp};
 use anyhow::{Context, Result};
 use pgls_line_index::LineIndex;
 use pgls_text_edit::{CompressedOp, DiffOp, TextEdit};
@@ -24,6 +24,13 @@ pub fn position(
             ls_types::Position::new(line_col.line, line_col.col)
         }
     };
+    // An offset between the `\r` and the `\n` of a line break is the end of its line, so the
+    // position maps back to the offset of `line_col`, not always to `offset`.
+    debug_assert_eq!(
+        from_lsp::offset(line_index, position, position_encoding).ok(),
+        line_index.offset(line_col),
+        "{position:?} doesn't map back to offset {offset:?}"
+    );
 
     Ok(position)
 }
@@ -90,6 +97,133 @@ pub fn text_edits(
             }
         }
     }
+    debug_assert_eq!(
+        offset,
+        line_index.len(),
+        "the diff doesn't cover the whole text"
+    );
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use pgls_line_index::LineIndex;
+    use pgls_text_edit::TextEdit;
+    use tower_lsp_server::ls_types as lsp;
+
+    use super::text_edits;
+    use crate::adapters::PositionEncoding;
+
+    #[test]
+    fn test_diff_1() {
+        const OLD: &str = "line 1 old
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7 old";
+
+        const NEW: &str = "line 1 new
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7 new";
+
+        let line_index = LineIndex::new(OLD);
+        let diff = TextEdit::from_unicode_words(OLD, NEW);
+
+        let text_edit = text_edits(&diff, &line_index, PositionEncoding::Utf8).unwrap();
+
+        assert_eq!(
+            text_edit.as_slice(),
+            &[
+                lsp::TextEdit {
+                    range: lsp::Range {
+                        start: lsp::Position {
+                            line: 0,
+                            character: 7,
+                        },
+                        end: lsp::Position {
+                            line: 0,
+                            character: 10,
+                        },
+                    },
+                    new_text: String::from("new"),
+                },
+                lsp::TextEdit {
+                    range: lsp::Range {
+                        start: lsp::Position {
+                            line: 6,
+                            character: 7
+                        },
+                        end: lsp::Position {
+                            line: 6,
+                            character: 10
+                        }
+                    },
+                    new_text: String::from("new"),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn test_diff_2() {
+        const OLD: &str = "console.log(\"Variable: \" + variable);";
+        const NEW: &str = "console.log(`Variable: ${variable}`);";
+
+        let line_index = LineIndex::new(OLD);
+        let diff = TextEdit::from_unicode_words(OLD, NEW);
+
+        let text_edit = text_edits(&diff, &line_index, PositionEncoding::Utf8).unwrap();
+
+        assert_eq!(
+            text_edit.as_slice(),
+            &[
+                lsp::TextEdit {
+                    range: lsp::Range {
+                        start: lsp::Position {
+                            line: 0,
+                            character: 12,
+                        },
+                        end: lsp::Position {
+                            line: 0,
+                            character: 13,
+                        },
+                    },
+                    new_text: String::from("`"),
+                },
+                lsp::TextEdit {
+                    range: lsp::Range {
+                        start: lsp::Position {
+                            line: 0,
+                            character: 23
+                        },
+                        end: lsp::Position {
+                            line: 0,
+                            character: 27
+                        }
+                    },
+                    new_text: String::from("${"),
+                },
+                lsp::TextEdit {
+                    range: lsp::Range {
+                        start: lsp::Position {
+                            line: 0,
+                            character: 35
+                        },
+                        end: lsp::Position {
+                            line: 0,
+                            character: 35
+                        }
+                    },
+                    new_text: String::from("}`"),
+                },
+            ]
+        );
+    }
 }

@@ -3,6 +3,8 @@ use pgls_query::{
     protobuf::{CreateFunctionStmt, FunctionParameterMode as Mode},
 };
 
+use super::alter_function_stmt::volatility_option;
+use crate::Behavior;
 use crate::catalog::{
     Catalog,
     names::{qualified_name, type_label, type_name},
@@ -46,11 +48,11 @@ pub(super) fn apply_create_function_stmt(
                 .arg_type
                 .as_ref()
                 .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0);
-            outputs.push(ColumnInfo {
-                name: parameter.name.clone(),
-                type_name: parameter.arg_type.as_ref().and_then(type_label),
-                ty: argument_type.clone().map(crate::typing::Type::Named),
-            });
+            outputs.push(ColumnInfo::new(
+                parameter.name.clone(),
+                parameter.arg_type.as_ref().and_then(type_label),
+                argument_type.clone().map(crate::typing::Type::Named),
+            ));
         }
         let argument_type = parameter
             .arg_type
@@ -123,6 +125,9 @@ pub(super) fn apply_create_function_stmt(
     );
     function.returns_set = returns_set;
     function.return_columns = return_columns;
+    // Functions are volatile unless they say otherwise (`CreateFunction`):
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L1083
+    function.volatility = Some(volatility_option(&n.options).unwrap_or(Behavior::Volatile));
     let return_type = if n.is_procedure {
         // Procedures return `record` with output parameters and `void` without (`CreateFunction`):
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L1188
@@ -195,7 +200,7 @@ fn variadic_element(c: &Catalog, id: &crate::typing::TypeId) -> Option<crate::ty
             _ => None,
         };
         if let Some(element) = element {
-            return c.type_(Some("pg_catalog"), element, &[]).found()?.id;
+            return c.builtin_type(element);
         }
     }
     info.element
