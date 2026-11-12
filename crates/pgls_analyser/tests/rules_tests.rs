@@ -21,8 +21,7 @@ static TYPECHECK_CATALOG: OnceLock<Arc<pgls_catalog::CatalogBase>> = OnceLock::n
 fn typecheck_catalog() -> Arc<pgls_catalog::CatalogBase> {
     TYPECHECK_CATALOG
         .get_or_init(|| {
-            let default_url = "postgresql://postgres:postgres@127.0.0.1:5432/postgres";
-            let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| default_url.into());
+            let database_url = pgls_test_utils::db::database_url();
             let runtime = tokio::runtime::Runtime::new().expect("failed to create test database runtime");
             let snapshot = runtime.block_on(async {
                 let pool = sqlx::postgres::PgPoolOptions::new()
@@ -30,12 +29,12 @@ fn typecheck_catalog() -> Arc<pgls_catalog::CatalogBase> {
                     .await
                     .unwrap_or_else(|error| {
                         panic!(
-                            "typecheck specs need the test database at {database_url}; run `docker compose up -d` ({error})"
+                            "typecheck specs need the test database at {database_url}; run `just db` ({error})"
                         )
                     });
                 pgls_catalog::Snapshot::load(&pool).await.unwrap_or_else(|error| {
                     panic!(
-                        "typecheck specs need the test database at {database_url}; run `docker compose up -d` ({error})"
+                        "typecheck specs need the test database at {database_url}; run `just db` ({error})"
                     )
                 })
             });
