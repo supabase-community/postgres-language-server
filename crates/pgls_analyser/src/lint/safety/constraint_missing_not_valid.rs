@@ -1,4 +1,5 @@
 use crate::fix::StatementTokens;
+use crate::utils::{ConstraintSite, added_constraints, altered_relation, skips_validation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -43,29 +44,18 @@ impl LinterRule for ConstraintMissingNotValid {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut diagnostics = Vec::new();
-
-        let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() else {
-            return diagnostics;
-        };
-
-        for cmd in &stmt.cmds {
-            let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node else {
-                continue;
-            };
-
-            let Some(pgls_query::NodeEnum::Constraint(constraint)) =
-                cmd.def.as_ref().and_then(|d| d.node.as_ref())
-            else {
-                continue;
-            };
-
-            if let Some(diagnostic) = check_constraint_needs_not_valid(constraint) {
-                diagnostics.push(diagnostic.maybe_fix(add_not_valid(ctx.tokens(), constraint)));
-            }
+        // Other transactions can't see a table created earlier in the transaction, so
+        // validating its rows blocks no one.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
         }
-
-        diagnostics
+        added_constraints(ctx.stmt())
+            .filter(|(_, site)| *site == ConstraintSite::Table)
+            .filter_map(|(constraint, _)| {
+                let diagnostic = check_constraint_needs_not_valid(constraint)?;
+                Some(diagnostic.maybe_fix(add_not_valid(ctx.tokens(), constraint)))
+            })
+            .collect()
     }
 }
 
@@ -73,7 +63,7 @@ fn check_constraint_needs_not_valid(
     constraint: &pgls_query::protobuf::Constraint,
 ) -> Option<LinterDiagnostic> {
     // Skip if the constraint has NOT VALID
-    if !constraint.initially_valid {
+    if skips_validation(constraint) {
         return None;
     }
 

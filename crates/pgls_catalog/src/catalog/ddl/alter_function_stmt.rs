@@ -2,6 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{AlterFunctionStmt, Node},
 };
+use pgls_query_ext::options::find_def_elem;
 
 use crate::Behavior;
 use crate::catalog::Catalog;
@@ -32,18 +33,14 @@ pub(super) fn apply_alter_function_stmt(
 
 /// The volatility that the options of `CREATE FUNCTION` or `ALTER FUNCTION` set, if any.
 pub(super) fn volatility_option(options: &[Node]) -> Option<Behavior> {
-    options.iter().find_map(|option| match &option.node {
-        Some(NodeEnum::DefElem(def)) if def.defname == "volatility" => {
-            match def.arg.as_ref().and_then(|arg| arg.node.as_ref()) {
-                Some(NodeEnum::String(value)) => match value.sval.as_str() {
-                    "immutable" => Some(Behavior::Immutable),
-                    "stable" => Some(Behavior::Stable),
-                    "volatile" => Some(Behavior::Volatile),
-                    _ => None,
-                },
-                _ => None,
-            }
-        }
+    let def = find_def_elem(options, "volatility")?;
+    match def.arg.as_deref()?.node.as_ref()? {
+        NodeEnum::String(value) => match value.sval.as_str() {
+            "immutable" => Some(Behavior::Immutable),
+            "stable" => Some(Behavior::Stable),
+            "volatile" => Some(Behavior::Volatile),
+            _ => None,
+        },
         _ => None,
-    })
+    }
 }

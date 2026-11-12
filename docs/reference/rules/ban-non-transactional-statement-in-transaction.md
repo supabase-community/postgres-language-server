@@ -41,7 +41,7 @@ code-block.sql:2:1 lint/banNonTransactionalStatementInTransaction ━━━━�
     3 │ commit;
     4 │ 
   
-  i Run VACUUM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
+  i Run VACUUM outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
   
 
 ```

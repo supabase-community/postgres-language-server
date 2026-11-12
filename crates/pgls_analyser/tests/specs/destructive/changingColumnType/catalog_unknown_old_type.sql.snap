@@ -1,0 +1,31 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- Without the old type of the column, only the changes to text, varchar and numeric without a
+-- modifier count as safe, unless there is a USING clause.
+-- catalog: builtin
+-- expect_lint/changingColumnType
+alter table unknown_table alter column id type bigint;
+-- expect_lint/changingColumnType
+alter table unknown_table alter column id type text using id::text;
+alter table unknown_table alter column id type text;
+
+```
+
+# Diagnostics
+lint/changingColumnType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing a column type requires a table rewrite and blocks reads and writes.
+  
+  i Consider creating a new column with the desired type, migrating data, and then dropping the old column.
+  
+
+
+lint/changingColumnType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing a column type requires a table rewrite and blocks reads and writes.
+  
+  i Consider creating a new column with the desired type, migrating data, and then dropping the old column.

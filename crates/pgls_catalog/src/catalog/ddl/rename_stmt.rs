@@ -4,10 +4,10 @@ use pgls_query::{
 };
 
 use crate::catalog::{
-    Catalog, Entry, key,
+    Catalog,
     names::{qualified_name, range_var_name},
 };
-use crate::lookup::{CatalogView, ColumnInfo, Origin};
+use crate::lookup::ColumnInfo;
 
 /// `ALTER ... RENAME`. Models [`ExecRenameStmt`], with [`RenameRelation`] for relations and
 /// [`renameatt`] for columns.
@@ -37,6 +37,20 @@ pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[
                 c.rename_index(range_var, &n.newname, search_path);
             }
         }
+        // `RENAME CONSTRAINT` also renames the index of a primary key, unique or exclusion
+        // constraint (`rename_constraint_internal`). We don't know which constraints have an
+        // index, so the index with the old name becomes unknown. The new name is unknown already,
+        // see `creates_implicit_indexes`.
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L4138
+        ObjectType::ObjectTabconstraint => {
+            if let Some(table) = n
+                .relation
+                .as_ref()
+                .and_then(|range_var| c.relation_of(range_var, search_path).found())
+            {
+                c.mark_index_unknown(&table.schema, &n.subname);
+            }
+        }
         ObjectType::ObjectColumn => {
             if let Some(range_var) = &n.relation {
                 rename_column(c, range_var, &n.subname, &n.newname, search_path);
@@ -44,14 +58,9 @@ pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[
         }
         ObjectType::ObjectAttribute => {
             if let Some(range_var) = &n.relation {
-                let name = range_var_name(range_var);
-                if let Some(mut type_info) = c.type_(name.schema(), &name.name, search_path).found()
-                {
+                c.change_type(&range_var_name(range_var), search_path, |_, type_info| {
                     rename_in(&mut type_info.attributes, &n.subname, &n.newname);
-                    type_info.origin = Origin::File;
-                    let key = key(&type_info.schema, &type_info.name);
-                    c.types.insert(key, Entry::Defined(type_info));
-                }
+                });
             }
         }
         ObjectType::ObjectType | ObjectType::ObjectDomain => {
@@ -85,7 +94,9 @@ fn rename_column(
     let Some(relation) = c.relation_of(range_var, search_path).found() else {
         return;
     };
-    c.change_columns(&relation, |columns| rename_in(columns, old_name, new_name));
+    c.change_columns(&relation, |columns, _| {
+        rename_in(columns, old_name, new_name)
+    });
 }
 
 fn rename_in(columns: &mut Option<Vec<ColumnInfo>>, old_name: &str, new_name: &str) {

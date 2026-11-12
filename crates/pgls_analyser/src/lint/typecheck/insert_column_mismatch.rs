@@ -41,13 +41,7 @@ impl LinterRule for InsertColumnMismatch {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
-
-        resolution
-            .findings
-            .iter()
+        ctx.findings()
             .filter_map(|finding| match &finding.kind {
                 FindingKind::InsertColumnMismatch { expected, found } => {
                     let message = if found > expected {

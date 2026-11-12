@@ -81,6 +81,10 @@ SQL pretty-printer / formatter: normalizes the AST and renders it back to format
 
 The linting framework. `pgls_analyse` provides the rule registry, categories, filters, and metadata; `pgls_analyser` hosts the concrete lint rules and the linter runtime.
 
+##### `crates/pgls_walk`
+
+The walk over the statements of a file, like the database runs them: the catalog and the session follow each statement, migration sections run on their own, and statements that don't parse or use placeholder names taint the catalog. Lint and the workspace's editor features share it, so that they see the same catalog and session at each statement.
+
 ##### `crates/pgls_pglinter`
 
 Integration with the `pglinter` Postgres extension for database-level linting.
@@ -109,7 +113,7 @@ Autocompletion and hover providers. They operate on the catalog as of the statem
 
 ##### `crates/pgls_inlay_hints`, `crates/pgls_semantic_tokens`
 
-Inlay hints and semantic tokens of a single statement, built from the references of the name resolver. The workspace walks the file like the analyser does, so that each statement sees the objects created earlier in the file.
+Inlay hints and semantic tokens of a single statement, built from the references of the name resolver. The workspace walks the file with `pgls_walk`, like lint, so that each statement sees the objects created earlier in the file.
 
 #### Diagnostics and utilities
 

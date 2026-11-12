@@ -81,7 +81,7 @@ mod tests {
         ]
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_drop_role(pool: PgPool) {
         assert_complete_results(
             format!("drop role {}", QueryWithCursorPosition::cursor_marker()).as_str(),
@@ -92,7 +92,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_alter_role(pool: PgPool) {
         assert_complete_results(
             format!("alter role {}", QueryWithCursorPosition::cursor_marker()).as_str(),
@@ -103,7 +103,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_set_role_statement(pool: PgPool) {
         TestCompletionsSuite::new(&pool, Some(SETUP))
             .with_case(TestCompletionsCase::new().type_sql("set role anon;"))
@@ -111,7 +111,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_session_authorization_statement(pool: PgPool) {
         TestCompletionsSuite::new(&pool, Some(SETUP))
             .with_case(
@@ -121,7 +121,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_policy_restrictive(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -159,7 +159,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_policy_select(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -195,7 +195,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_grant_on_table_to(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -231,7 +231,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_grant_on_table_to_multiple(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -267,7 +267,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_grant_role_to(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -284,7 +284,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_revoke_role(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -301,7 +301,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_revoke_admin_option_for(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -318,7 +318,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_revoke_from(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -352,7 +352,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_revoke_all_on_schema_from_granted_by(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -369,7 +369,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_revoke_all_on_schema_from_multiple(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -386,7 +386,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_revoke_all_on_table_from_multiple(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
@@ -420,7 +420,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn works_in_alter_default_privileges(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
