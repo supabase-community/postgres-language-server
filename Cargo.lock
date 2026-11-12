@@ -2317,6 +2317,7 @@ dependencies = [
  "globset",
  "insta",
  "pgls_lexer",
+ "pgls_postgres_regress",
  "pgls_query",
  "pgls_query_ext",
  "pgls_test_utils",

@@ -8,8 +8,12 @@ use crate::workspace::{DefaultMapper, Document, StatementId};
 
 #[cfg(feature = "db")]
 pub(crate) mod execution;
+#[cfg(feature = "db")]
+mod notices;
+#[cfg(feature = "db")]
+pub(crate) mod running;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ExecuteStatementParams {
     pub project_key: crate::workspace::ProjectKey,
@@ -20,6 +24,14 @@ pub struct ExecuteStatementParams {
 /// The most rows an executed statement returns; the rest are dropped and the result is marked
 /// as truncated.
 pub const EXECUTE_STATEMENT_MAX_ROWS: usize = 100;
+
+/// The most bytes of a value that an executed statement returns. A longer value is cut and ends
+/// with `…`, and the result is marked with `truncated_values`.
+pub const EXECUTE_STATEMENT_MAX_VALUE_SIZE: usize = 10_000;
+
+/// The most bytes of values that an executed statement returns. The rows that would exceed it are
+/// dropped, and the result is marked as truncated.
+pub const EXECUTE_STATEMENT_MAX_RESULT_SIZE: usize = 1_000_000;
 
 /// The outcome of executing a statement.
 ///
@@ -41,12 +53,19 @@ pub struct ExecuteStatementResult {
     /// Whether the statement returned more rows than `rows` holds.
     #[serde(default)]
     pub truncated: bool,
+    /// Whether a value in `rows` was cut to [`EXECUTE_STATEMENT_MAX_VALUE_SIZE`] bytes.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub truncated_values: bool,
     /// The number of rows affected, for a statement that returns no rows.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rows_affected: Option<u64>,
     /// Why Postgres rejected the statement, if it did.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<ExecuteStatementError>,
+    /// The notices and warnings Postgres sent, e.g. for `raise notice`, as `NOTICE: message`.
+    /// `message` ends with them as well.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notices: Vec<String>,
 }
 
 /// An error that Postgres raised while executing a statement.
