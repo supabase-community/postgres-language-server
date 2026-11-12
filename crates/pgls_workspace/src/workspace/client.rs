@@ -113,6 +113,13 @@ where
         self.request("pgls/execute_statement", params)
     }
 
+    fn cancel_statement_execution(
+        &self,
+        params: crate::features::code_actions::ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        self.request("pgls/cancel_statement_execution", params)
+    }
+
     fn register_project_folder(
         &self,
         params: RegisterProjectFolderParams,

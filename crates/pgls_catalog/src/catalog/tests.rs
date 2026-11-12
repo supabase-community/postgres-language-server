@@ -1400,6 +1400,7 @@ mod typing_overlay_tests {
              create table typed (
                i int, b bigint, t text, v varchar(10), n numeric(5,2), z timestamptz,
                a int[], aa int[][], s serial, bs bigserial, ss smallserial,
+               s2 serial2, s4 serial4, s8 serial8,
                m mood, d positive_int, p pair
              );
              create table typed_copy (like typed);
@@ -1420,6 +1421,9 @@ mod typing_overlay_tests {
             ("s", "int4"),
             ("bs", "int8"),
             ("ss", "int2"),
+            ("s2", "int2"),
+            ("s4", "int4"),
+            ("s8", "int8"),
         ];
         for (column, pg_type) in expected {
             assert_eq!(

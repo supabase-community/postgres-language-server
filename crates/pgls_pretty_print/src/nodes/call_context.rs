@@ -1,6 +1,6 @@
 use pgls_query::protobuf::CallContext;
 
-use crate::emitter::{EventEmitter, GroupKind};
+use super::prelude::*;
 
 pub(super) fn emit_call_context(e: &mut EventEmitter, _n: &CallContext) {
     e.group_start(GroupKind::CallContext);

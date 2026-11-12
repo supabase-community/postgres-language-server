@@ -56,22 +56,22 @@ impl LinterRule for AddSerialColumn {
                 && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd)
             {
                 // Check for SERIAL types
-                if let Some(type_name) = &col_def.type_name {
+                if let Some(type_name) = &col_def.type_name
+                    && pgls_catalog::serial_type(type_name).is_some()
+                {
                     let type_str = dotted_name(&type_name.names);
-                    if is_serial_type(&type_str) {
-                        diagnostics.push(
-                                    LinterDiagnostic::new(
-                                        rule_category!(),
-                                        None,
-                                        markup! {
-                                            "Adding a column with type "<Emphasis>{type_str}</Emphasis>" requires a table rewrite."
-                                        },
-                                    )
-                                    .detail(None, "SERIAL types require rewriting the entire table with an ACCESS EXCLUSIVE lock, blocking all reads and writes.")
-                                    .note("SERIAL types cannot be added to existing tables without a full table rewrite. Consider using a non-serial type with a sequence instead."),
-                                );
-                        continue;
-                    }
+                    diagnostics.push(
+                        LinterDiagnostic::new(
+                            rule_category!(),
+                            None,
+                            markup! {
+                                "Adding a column with type "<Emphasis>{type_str}</Emphasis>" requires a table rewrite."
+                            },
+                        )
+                        .detail(None, "SERIAL types require rewriting the entire table with an ACCESS EXCLUSIVE lock, blocking all reads and writes.")
+                        .note("SERIAL types cannot be added to existing tables without a full table rewrite. Consider using a non-serial type with a sequence instead."),
+                    );
+                    continue;
                 }
 
                 // Check for GENERATED ALWAYS AS ... STORED
@@ -101,23 +101,4 @@ impl LinterRule for AddSerialColumn {
 
         diagnostics
     }
-}
-
-fn is_serial_type(type_name: &str) -> bool {
-    matches!(
-        type_name,
-        "serial"
-            | "bigserial"
-            | "smallserial"
-            | "pg_catalog.serial"
-            | "pg_catalog.bigserial"
-            | "pg_catalog.smallserial"
-            // Also check for serial2, serial4, serial8 which are aliases
-            | "serial2"
-            | "serial4"
-            | "serial8"
-            | "pg_catalog.serial2"
-            | "pg_catalog.serial4"
-            | "pg_catalog.serial8"
-    )
 }

@@ -1,10 +1,9 @@
 use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_catalog::{Behavior, CatalogView, Lookup};
+use pgls_catalog::{CatalogView, Decision, contains_volatile_functions};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query_ext::utils::{QualifiedName, qualified_name};
 
 declare_lint_rule! {
     /// Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
@@ -16,6 +15,10 @@ declare_lint_rule! {
     /// - Volatile default values (like random() or custom functions) still cause table rewrites
     /// - Stored generated columns (GENERATED ALWAYS AS ... STORED) always require table rewrites
     /// - Non-volatile defaults are safe in Postgres 11+
+    ///
+    /// The server version and the volatility of the functions, operators and casts of a default
+    /// come from the database. Without a connection, or when the volatility of a default isn't
+    /// known, the rule assumes that it rewrites the table.
     ///
     /// Virtual generated columns (Postgres 18) are computed when rows are read, so adding one
     /// doesn't rewrite the table.
@@ -57,8 +60,8 @@ impl LinterRule for AddingFieldWithDefault {
         }
         let mut diagnostics = Vec::new();
 
-        // Check Postgres version - in 11+, non-volatile defaults are safe
-        let pg_version = ctx.catalog().server_version_num();
+        // Since Postgres 11, a default without volatile functions needs no rewrite.
+        let has_fast_defaults = ctx.catalog().server_version_at_least(11) == Some(true);
 
         for cmd in alter_table_cmds(ctx.stmt()) {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
@@ -88,13 +91,19 @@ impl LinterRule for AddingFieldWithDefault {
                             );
                 } else if has_default {
                     // For PG 11+, check if the default is volatile
-                    if pg_version.is_some_and(|v| v >= 110000) {
-                        // Check if default is non-volatile
+                    if has_fast_defaults {
                         let is_safe_default = column_constraints(col_def).any(|c| {
                             c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault
-                                && c.raw_expr.as_ref().is_some_and(|raw_expr| {
-                                    is_safe_default_expr(raw_expr.node.as_ref(), ctx)
-                                })
+                                && c.raw_expr
+                                    .as_ref()
+                                    .and_then(|raw_expr| raw_expr.node.as_ref())
+                                    .is_some_and(|raw_expr| {
+                                        contains_volatile_functions(
+                                            raw_expr,
+                                            ctx.catalog(),
+                                            ctx.session().search_path(),
+                                        ) == Decision::Known(false)
+                                    })
                         });
 
                         if !is_safe_default {
@@ -129,65 +138,6 @@ impl LinterRule for AddingFieldWithDefault {
         }
 
         diagnostics
-    }
-}
-
-fn is_safe_default_expr(
-    expr: Option<&pgls_query::NodeEnum>,
-    ctx: &LinterRuleContext<AddingFieldWithDefault>,
-) -> bool {
-    match expr {
-        Some(node) => match node {
-            // Constants are always safe
-            pgls_query::NodeEnum::AConst(_) => true,
-            // Type casts of constants are safe
-            pgls_query::NodeEnum::TypeCast(tc) => {
-                is_safe_default_expr(tc.arg.as_ref().and_then(|a| a.node.as_ref()), ctx)
-            }
-            // function calls might be safe if they are non-volatile and have no args
-            pgls_query::NodeEnum::FuncCall(fc) => {
-                // must have no args
-                if !fc.args.is_empty() {
-                    return false;
-                }
-
-                let Some(QualifiedName { schema, name, .. }) = qualified_name(&fc.funcname) else {
-                    return false;
-                };
-
-                let Lookup::Found(functions) =
-                    ctx.catalog()
-                        .functions(schema, name, ctx.session().search_path())
-                else {
-                    return false;
-                };
-
-                // The functions come in the order of the search path, and the call resolves to
-                // one in the first schema that has a function callable without arguments.
-                let candidates: Vec<_> = functions
-                    .iter()
-                    .filter(|function| function.min_args == 0)
-                    .collect();
-                let Some(first) = candidates.first() else {
-                    return false;
-                };
-                // Postgres passes the defaults of the parameters the call leaves out, which may
-                // be volatile even if the function isn't. We don't know them, so only functions
-                // without parameters are safe.
-                candidates
-                    .iter()
-                    .filter(|function| function.schema == first.schema)
-                    .all(|function| {
-                        function.max_args == Some(0)
-                            && function
-                                .volatility
-                                .is_some_and(|volatility| volatility != Behavior::Volatile)
-                    })
-            }
-            // everything else is potentially unsafe
-            _ => false,
-        },
-        None => false,
     }
 }
 

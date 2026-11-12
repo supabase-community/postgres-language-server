@@ -1,12 +1,6 @@
-use super::{
-    node_list::{emit_comma_separated_list, emit_parenthesized_list},
-    string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str},
-};
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::AlterSubscriptionStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_subscription_stmt(e: &mut EventEmitter, n: &AlterSubscriptionStmt) {
     e.group_start(GroupKind::AlterSubscriptionStmt);
@@ -36,7 +30,7 @@ pub(super) fn emit_alter_subscription_stmt(e: &mut EventEmitter, n: &AlterSubscr
             e.space();
             emit_keyword(e, "PUBLICATION");
             e.line(LineType::SoftOrSpace);
-            emit_comma_separated_list(e, &n.publication, super::emit_node);
+            emit_comma_separated_list(e, &n.publication, emit_node);
         }
         4 => {
             e.line(LineType::SoftOrSpace);
@@ -44,7 +38,7 @@ pub(super) fn emit_alter_subscription_stmt(e: &mut EventEmitter, n: &AlterSubscr
             e.space();
             emit_keyword(e, "PUBLICATION");
             e.line(LineType::SoftOrSpace);
-            emit_comma_separated_list(e, &n.publication, super::emit_node);
+            emit_comma_separated_list(e, &n.publication, emit_node);
         }
         5 => {
             e.line(LineType::SoftOrSpace);
@@ -52,7 +46,7 @@ pub(super) fn emit_alter_subscription_stmt(e: &mut EventEmitter, n: &AlterSubscr
             e.space();
             emit_keyword(e, "PUBLICATION");
             e.line(LineType::SoftOrSpace);
-            emit_comma_separated_list(e, &n.publication, super::emit_node);
+            emit_comma_separated_list(e, &n.publication, emit_node);
         }
         6 => {
             e.space();
@@ -98,7 +92,7 @@ pub(super) fn emit_alter_subscription_stmt(e: &mut EventEmitter, n: &AlterSubscr
             e.token(TokenKind::WITH_KW);
             e.space();
         }
-        emit_parenthesized_list(e, &n.options, super::emit_node);
+        emit_parenthesized_list(e, &n.options, emit_node);
     }
 
     e.group_end();

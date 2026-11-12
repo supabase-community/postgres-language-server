@@ -1,9 +1,6 @@
 use pgls_query::protobuf::Float;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_float(e: &mut EventEmitter, n: &Float) {
     e.group_start(GroupKind::Float);

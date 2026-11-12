@@ -12,6 +12,7 @@ use crate::lookup::{Lookup, RelationKind};
 use crate::resolve::{
     ColumnSource, FindingKind, Reference,
     scope::{Columns, DefaultOnly, Item, ItemSource},
+    utils::ref_name,
 };
 
 /// A relation or CTE in FROM. A name without schema is a CTE first ([`transformFromClauseItem`]
@@ -39,7 +40,7 @@ pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
             r.record_alias(n.location, alias);
         }
         let mut item = Item::named(
-            Some(alias.map_or_else(|| cte.name.clone(), |alias| alias.aliasname.clone())),
+            Some(ref_name(n).to_owned()),
             apply_alias(cte.columns.clone(), alias),
         );
         item.typed_columns = apply_typed_alias(cte.typed_columns.clone(), alias);
@@ -69,7 +70,7 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
         r.record_alias(n.location, alias);
     }
     Item {
-        name: Some(alias.map_or_else(|| n.relname.clone(), |alias| alias.aliasname.clone())),
+        name: Some(ref_name(n).to_owned()),
         schema: relation.schema.filter(|_| alias.is_none()),
         columns: apply_alias(relation.columns, alias),
         typed_columns: apply_typed_alias(relation.typed_columns, alias),

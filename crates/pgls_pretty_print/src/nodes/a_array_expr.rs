@@ -1,11 +1,6 @@
 use pgls_query::protobuf::AArrayExpr;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::emit_fill_comma_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_a_array_expr(e: &mut EventEmitter, n: &AArrayExpr) {
     e.group_start(GroupKind::AArrayExpr);
@@ -19,7 +14,7 @@ pub(super) fn emit_a_array_expr(e: &mut EventEmitter, n: &AArrayExpr) {
         e.indent_start();
         e.line(LineType::Soft);
         e.group_start(GroupKind::List);
-        emit_fill_comma_separated_list(e, &n.elements, super::emit_node);
+        emit_fill_comma_separated_list(e, &n.elements, emit_node);
         e.group_end();
         e.indent_end();
         e.line(LineType::Soft);

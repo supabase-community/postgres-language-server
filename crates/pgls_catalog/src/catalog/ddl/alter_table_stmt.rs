@@ -2,14 +2,15 @@ use pgls_query::{
     NodeEnum,
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, ObjectType},
 };
+use pgls_query_ext::options::find_def_elem;
 use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 use crate::catalog::{
-    Catalog, Entry, Key, key,
+    Catalog, Key, key,
     names::{range_var_name, type_label},
     overlay::column_info,
 };
-use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
+use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};
 use crate::{Generated, Identity};
 
 /// `ALTER TABLE`, and `ALTER TYPE ... ADD/DROP/ALTER ATTRIBUTE` on composite types.
@@ -28,21 +29,13 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     let commands: Vec<&AlterTableCmd> = alter_table_cmds(n).collect();
 
     if n.objtype() == ObjectType::ObjectType {
-        let name = range_var_name(range_var);
-        if let Some(mut type_info) = c
-            .type_(name.schema(), &name.name, search_path)
-            .found()
-            .filter(|type_info| type_info.schema != "pg_catalog")
-        {
+        c.change_type(&range_var_name(range_var), search_path, |c, type_info| {
             if let Some(attributes) = type_info.attributes.as_mut() {
                 for command in &commands {
                     apply_column_change(c, attributes, command, search_path, IdentityChange::Apply);
                 }
             }
-            type_info.origin = Origin::File;
-            let key = key(&type_info.schema, &type_info.name);
-            c.types.insert(key, Entry::Defined(type_info));
-        }
+        });
         return;
     }
 
@@ -400,17 +393,11 @@ fn apply_column_change(
         // `SET GENERATED { ALWAYS | BY DEFAULT }` among the sequence options.
         AlterTableType::AtSetIdentity => {
             let generated = match command.def.as_deref().and_then(|def| def.node.as_ref()) {
-                Some(NodeEnum::List(options)) => {
-                    options.items.iter().find_map(|option| match &option.node {
-                        Some(NodeEnum::DefElem(option)) if option.defname == "generated" => {
-                            match option.arg.as_deref().and_then(|arg| arg.node.as_ref()) {
-                                Some(NodeEnum::Integer(value)) => u8::try_from(value.ival).ok(),
-                                _ => None,
-                            }
-                        }
+                Some(NodeEnum::List(options)) => find_def_elem(&options.items, "generated")
+                    .and_then(|option| match option.arg.as_deref()?.node.as_ref()? {
+                        NodeEnum::Integer(value) => u8::try_from(value.ival).ok(),
                         _ => None,
-                    })
-                }
+                    }),
                 _ => None,
             };
             if let Some(generated) = generated {

@@ -1,394 +1,406 @@
-/// Whether `byte` can continue an unquoted identifier. Postgres treats every byte with the high
-/// bit set as a letter, so this covers every non-ASCII character in UTF-8.
-/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332-L333
-fn is_identifier_byte(byte: u8) -> bool {
-    byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || !byte.is_ascii()
+//! The spans of what findings and references point at: names, types, `*`, operators, casts,
+//! constants and aliases. The parse tree only has the location where each starts, so the end is
+//! found in the tokens of Postgres' scanner, scanned once per statement.
+
+use pgls_query::protobuf::{KeywordKind, Token as Kind};
+
+/// A token of the statement. Comments are left out.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Token {
+    pub start: usize,
+    pub end: usize,
+    pub kind: Kind,
+    /// Whether the token is a keyword, reserved or not.
+    pub keyword: bool,
 }
 
-/// Whether `byte` can start an unquoted identifier.
-fn is_identifier_start(byte: u8) -> bool {
-    byte.is_ascii_alphabetic() || byte == b'_' || !byte.is_ascii()
+/// The tokens of a statement.
+pub(super) struct Tokens<'a> {
+    sql: &'a str,
+    tokens: Vec<Token>,
 }
 
-pub(super) fn reference_end(sql: &str, start: usize) -> Option<usize> {
-    let bytes = sql.as_bytes();
-    if start >= bytes.len() {
-        return None;
+impl<'a> Tokens<'a> {
+    /// Scans `sql` with Postgres' scanner. `None` if the scanner rejects it, which the parser
+    /// would have done too.
+    pub fn scan(sql: &'a str) -> Option<Self> {
+        let scanned = pgls_query::scan(sql).ok()?;
+        let tokens = scanned
+            .tokens
+            .iter()
+            .filter(|token| !matches!(token.token(), Kind::SqlComment | Kind::CComment))
+            .filter_map(|token| {
+                Some(Token {
+                    start: usize::try_from(token.start).ok()?,
+                    end: usize::try_from(token.end).ok()?,
+                    kind: token.token(),
+                    keyword: token.keyword_kind() != KeywordKind::NoKeyword,
+                })
+            })
+            .filter(|token| sql.get(token.start..token.end).is_some())
+            .collect();
+        Some(Self { sql, tokens })
     }
-    let mut cursor = start;
-    loop {
-        if cursor >= bytes.len() {
-            break;
-        }
-        if bytes[cursor] == b'"' {
-            cursor += 1;
-            while cursor < bytes.len() {
-                if bytes[cursor] == b'"' {
-                    cursor += 1;
-                    if cursor < bytes.len() && bytes[cursor] == b'"' {
-                        cursor += 1;
-                    } else {
-                        break;
-                    }
-                } else {
-                    cursor += 1;
-                }
-            }
-        } else {
-            let token_start = cursor;
-            while cursor < bytes.len() && is_identifier_byte(bytes[cursor]) {
-                cursor += 1;
-            }
-            if cursor == token_start {
+
+    /// The tokens of the statement, in order.
+    pub fn tokens(&self) -> &[Token] {
+        &self.tokens
+    }
+
+    /// The text of `token`.
+    pub fn text(&self, token: &Token) -> &'a str {
+        self.sql.get(token.start..token.end).unwrap_or_default()
+    }
+
+    /// The index of the token that starts at `start`.
+    fn at(&self, start: usize) -> Option<usize> {
+        self.tokens
+            .binary_search_by_key(&start, |token| token.start)
+            .ok()
+    }
+
+    fn kind(&self, index: usize) -> Option<Kind> {
+        self.tokens.get(index).map(|token| token.kind)
+    }
+
+    fn end(&self, index: usize) -> Option<usize> {
+        self.tokens.get(index).map(|token| token.end)
+    }
+
+    /// Whether the token at `index` is an identifier, quoted or not, or a keyword.
+    fn is_identifier(&self, index: usize) -> bool {
+        self.tokens
+            .get(index)
+            .is_some_and(|token| token.keyword || matches!(token.kind, Kind::Ident | Kind::Uident))
+    }
+
+    /// Whether the token at `index` can be a part of a name: an identifier or keyword, or a
+    /// number or parameter, which stand for themselves where an expression is expected.
+    fn is_name_part(&self, index: usize) -> bool {
+        self.is_identifier(index)
+            || matches!(
+                self.kind(index),
+                Some(Kind::Iconst | Kind::Fconst | Kind::Param)
+            )
+    }
+
+    /// Whether the token at `index` is the unquoted word `word`, in any case.
+    fn is_word(&self, index: usize, word: &str) -> bool {
+        self.tokens.get(index).is_some_and(|token| {
+            (token.keyword || token.kind == Kind::Ident)
+                && self.text(token).eq_ignore_ascii_case(word)
+        })
+    }
+
+    /// The index of the last token of the (possibly qualified) name whose first token is at
+    /// `index`. `None` if a dot isn't followed by another part, as in `t.*`.
+    fn name_last(&self, mut index: usize) -> Option<usize> {
+        loop {
+            if !self.is_name_part(index) {
                 return None;
             }
-        }
-        let mut dot = cursor;
-        while dot < bytes.len() && bytes[dot].is_ascii_whitespace() {
-            dot += 1;
-        }
-        if dot < bytes.len() && bytes[dot] == b'.' {
-            dot += 1;
-            while dot < bytes.len() && bytes[dot].is_ascii_whitespace() {
-                dot += 1;
+            if self.kind(index + 1) != Some(Kind::Ascii46) {
+                return Some(index);
             }
-            cursor = dot;
-        } else {
-            break;
+            index += 2;
         }
     }
-    Some(cursor)
-}
 
-/// The end of the type name starting at `start`, with all the words of the SQL-standard
-/// multi-word types like `double precision`, `character varying`, or `timestamp with time zone`.
-/// Modifiers are left out, except the precision of `time` and `timestamp`, which can come
-/// before `with time zone`.
-pub(super) fn type_name_end(sql: &str, start: usize) -> Option<usize> {
-    let end = reference_end(sql, start)?;
-    // The end after `word`, if it is the next word after `cursor`.
-    let word_end = |cursor: usize, word: &str| {
-        let next = sql.len() - sql.get(cursor..)?.trim_start().len();
-        let after = next + word.len();
-        let is_word = sql.get(next..after)?.eq_ignore_ascii_case(word)
-            && sql.as_bytes().get(after).is_none_or(|&byte| {
-                !(byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || byte >= 0x80)
-            });
-        is_word.then_some(after)
-    };
-    let words = |cursor: usize, words: &[&str]| {
-        words
-            .iter()
-            .try_fold(cursor, |cursor, word| word_end(cursor, word))
-    };
-    let first = sql[start..end].to_ascii_lowercase();
-    let end = match first.as_str() {
-        "double" => word_end(end, "precision").unwrap_or(end),
-        "character" | "char" | "nchar" | "bit" => word_end(end, "varying").unwrap_or(end),
-        "national" => {
-            let end = word_end(end, "character")
-                .or_else(|| word_end(end, "char"))
-                .unwrap_or(end);
-            word_end(end, "varying").unwrap_or(end)
+    /// The index of the `)` that closes the `(` at `open`.
+    fn closing_paren(&self, open: usize) -> Option<usize> {
+        let mut depth = 0usize;
+        for (index, token) in self.tokens.iter().enumerate().skip(open) {
+            match token.kind {
+                Kind::Ascii40 => depth += 1,
+                Kind::Ascii41 => {
+                    depth = depth.checked_sub(1)?;
+                    if depth == 0 {
+                        return Some(index);
+                    }
+                }
+                _ => {}
+            }
         }
-        "time" | "timestamp" => {
-            let rest = sql[end..].trim_start();
-            let precision = rest
-                .starts_with('(')
-                .then(|| rest.find(')'))
-                .flatten()
-                .map_or(end, |close| sql.len() - rest.len() + close + 1);
+        None
+    }
+
+    /// The end of the (possibly qualified) name starting at `start`, like `public.users`.
+    pub fn name_end(&self, start: usize) -> Option<usize> {
+        self.end(self.name_last(self.at(start)?)?)
+    }
+
+    /// The end of the type name starting at `start`, with all the words of the SQL-standard
+    /// multi-word types like `double precision`, `character varying`, or `timestamp with time
+    /// zone`. Modifiers are left out, except the precision of `time` and `timestamp`, which can
+    /// come before `with time zone`.
+    pub fn type_name_end(&self, start: usize) -> Option<usize> {
+        let first = self.at(start)?;
+        let last = self.name_last(first)?;
+        // The index of the last of `words`, if they follow `index`.
+        let words = |index: usize, words: &[&str]| {
+            words.iter().try_fold(index, |index, word| {
+                self.is_word(index + 1, word).then_some(index + 1)
+            })
+        };
+        let word = |word: &str| words(last, &[word]);
+        let is = |word: &str| first == last && self.is_word(first, word);
+        let last = if is("double") {
+            word("precision").unwrap_or(last)
+        } else if ["character", "char", "nchar", "bit"].into_iter().any(is) {
+            word("varying").unwrap_or(last)
+        } else if is("national") {
+            let last = word("character").or_else(|| word("char")).unwrap_or(last);
+            words(last, &["varying"]).unwrap_or(last)
+        } else if is("time") || is("timestamp") {
+            let precision = if self.kind(last + 1) == Some(Kind::Ascii40) {
+                (last + 1..self.tokens.len())
+                    .find(|&index| self.kind(index) == Some(Kind::Ascii41))
+                    .unwrap_or(last)
+            } else {
+                last
+            };
             words(precision, &["with", "time", "zone"])
                 .or_else(|| words(precision, &["without", "time", "zone"]))
-                .unwrap_or(end)
-        }
-        _ => end,
-    };
-    Some(end)
-}
-
-/// The end of `*`, or of a qualified `t.*` or `"s"."t".*`, starting at `start`.
-pub(super) fn star_end(sql: &str, start: usize) -> Option<usize> {
-    let bytes = sql.as_bytes();
-    let mut cursor = start;
-    loop {
-        match *bytes.get(cursor)? {
-            b'*' => return Some(cursor + 1),
-            b'.' => cursor += 1,
-            byte if byte.is_ascii_whitespace() => cursor += 1,
-            b'"' => {
-                cursor += 1;
-                loop {
-                    if *bytes.get(cursor)? == b'"' {
-                        cursor += 1;
-                        if bytes.get(cursor) != Some(&b'"') {
-                            break;
-                        }
-                    }
-                    cursor += 1;
-                }
-            }
-            byte if byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || byte >= 0x80 => {
-                while bytes.get(cursor).is_some_and(|byte| {
-                    byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$') || *byte >= 0x80
-                }) {
-                    cursor += 1;
-                }
-            }
-            _ => return None,
-        }
+                .unwrap_or(last)
+        } else {
+            last
+        };
+        self.end(last)
     }
-}
 
-/// The position after the whitespace and comments at `cursor`. Block comments nest, as in
-/// [`scan.l`].
-///
-/// [`scan.l`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L440
-fn skip_trivia(sql: &str, mut cursor: usize) -> usize {
-    let bytes = sql.as_bytes();
-    loop {
-        match bytes.get(cursor..) {
-            Some([byte, ..]) if byte.is_ascii_whitespace() => cursor += 1,
-            Some([b'-', b'-', ..]) => {
-                while bytes.get(cursor).is_some_and(|byte| *byte != b'\n') {
-                    cursor += 1;
-                }
-            }
-            Some([b'/', b'*', ..]) => {
-                let mut depth = 0;
-                while cursor < bytes.len() {
-                    match &bytes[cursor..] {
-                        [b'/', b'*', ..] => {
-                            depth += 1;
-                            cursor += 2;
-                        }
-                        [b'*', b'/', ..] => {
-                            depth -= 1;
-                            cursor += 2;
-                            if depth == 0 {
-                                break;
-                            }
-                        }
-                        _ => cursor += 1,
-                    }
-                }
-            }
-            _ => return cursor,
-        }
-    }
-}
-
-/// The span of the alias after the (possibly qualified) name that starts at `start`, with or
-/// without `AS`, like `u` in `users as u` or `"U"` in `public.users "U"`. `None` if no
-/// identifier follows.
-pub(super) fn alias_span(sql: &str, start: usize) -> Option<(usize, usize)> {
-    let bytes = sql.as_bytes();
-    // The end of the name, whose parts can have whitespace and comments around their dots.
-    let mut cursor = start;
-    loop {
-        cursor = skip_trivia(sql, identifier_end(sql, cursor)?);
-        if bytes.get(cursor) != Some(&b'.') {
-            break;
-        }
-        cursor = skip_trivia(sql, cursor + 1);
-    }
-    if bytes
-        .get(cursor..cursor + 2)
-        .is_some_and(|word| word.eq_ignore_ascii_case(b"as"))
-        && !bytes
-            .get(cursor + 2)
-            .is_some_and(|byte| is_identifier_byte(*byte))
-    {
-        cursor = skip_trivia(sql, cursor + 2);
-    }
-    Some((cursor, identifier_end(sql, cursor)?))
-}
-
-/// The end of the quoted or unquoted identifier that starts at `start`.
-fn identifier_end(sql: &str, start: usize) -> Option<usize> {
-    let bytes = sql.as_bytes();
-    let first = *bytes.get(start)?;
-    if first == b'"' {
-        let mut end = start + 1;
+    /// The end of `*`, or of a qualified `t.*` or `"s"."t".*`, starting at `start`.
+    pub fn star_end(&self, start: usize) -> Option<usize> {
+        let mut index = self.at(start)?;
         loop {
-            if *bytes.get(end)? == b'"' {
-                end += 1;
-                if bytes.get(end) != Some(&b'"') {
-                    return Some(end);
-                }
+            match self.kind(index)? {
+                Kind::Ascii42 => return self.end(index),
+                Kind::Ascii46 => {}
+                _ if self.is_name_part(index) => {}
+                _ => return None,
             }
-            end += 1;
+            index += 1;
         }
     }
-    if !is_identifier_start(first) {
-        return None;
-    }
-    let mut end = start;
-    while bytes.get(end).is_some_and(|byte| is_identifier_byte(*byte)) {
-        end += 1;
-    }
-    Some(end)
-}
 
-pub(super) fn token_end(sql: &str, start: usize) -> Option<usize> {
-    let bytes = sql.as_bytes();
-    let mut cursor = start;
-    while cursor < bytes.len() && bytes[cursor].is_ascii_whitespace() {
-        cursor += 1;
-    }
-    let first = *bytes.get(cursor)?;
-    if is_identifier_start(first) {
-        while cursor < bytes.len() && is_identifier_byte(bytes[cursor]) {
-            cursor += 1;
-        }
-        return Some(cursor);
-    }
-    if first == b'"' {
-        return reference_end(sql, cursor);
-    }
-    while cursor < bytes.len()
-        && !bytes[cursor].is_ascii_whitespace()
-        && !is_identifier_byte(bytes[cursor])
-        && !matches!(bytes[cursor], b'(' | b')' | b',' | b';')
-    {
-        cursor += 1;
-    }
-    (cursor > start).then_some(cursor)
-}
-
-pub(super) fn cast_end(sql: &str, start: usize) -> Option<usize> {
-    let bytes = sql.as_bytes();
-    if sql.get(start..)?.get(..5)?.eq_ignore_ascii_case("CAST(") {
-        let mut depth = 0usize;
-        for (offset, byte) in bytes[start..].iter().enumerate() {
-            match byte {
-                b'(' => depth += 1,
-                b')' => {
-                    depth = depth.checked_sub(1)?;
-                    if depth == 0 {
-                        return Some(start + offset + 1);
-                    }
-                }
-                _ => {}
+    /// The span of the alias after the (possibly qualified) name that starts at `start`, with or
+    /// without `AS`, like `u` in `users as u` or `"U"` in `public.users "U"`. `None` if no
+    /// identifier follows.
+    pub fn alias_span(&self, start: usize) -> Option<(usize, usize)> {
+        let mut index = self.at(start)?;
+        loop {
+            if !self.is_identifier(index) {
+                return None;
             }
-        }
-        return None;
-    }
-    let mut cursor = start;
-    if bytes.get(cursor..cursor + 2) == Some(b"::") {
-        cursor += 2;
-    }
-    while cursor < bytes.len() && bytes[cursor].is_ascii_whitespace() {
-        cursor += 1;
-    }
-    let mut end = reference_end(sql, cursor)?;
-    let mut after_type = end;
-    while after_type < bytes.len() && bytes[after_type].is_ascii_whitespace() {
-        after_type += 1;
-    }
-    if bytes.get(after_type) == Some(&b'\'') {
-        let mut literal = after_type + 1;
-        while literal < bytes.len() {
-            if bytes[literal] == b'\'' {
-                literal += 1;
-                if bytes.get(literal) == Some(&b'\'') {
-                    literal += 1;
-                } else {
-                    return Some(literal);
-                }
-            } else {
-                literal += 1;
+            index += 1;
+            if self.kind(index) != Some(Kind::Ascii46) {
+                break;
             }
+            index += 1;
         }
-    }
-    if bytes.get(end) == Some(&b'(') {
-        let mut depth = 0usize;
-        for (offset, byte) in bytes[end..].iter().enumerate() {
-            match byte {
-                b'(' => depth += 1,
-                b')' => {
-                    depth = depth.checked_sub(1)?;
-                    if depth == 0 {
-                        end += offset + 1;
-                        break;
-                    }
-                }
-                _ => {}
-            }
+        if self.kind(index) == Some(Kind::As) {
+            index += 1;
         }
-    }
-    Some(end)
-}
-
-/// The end of the string constant starting at `start`: `'...'`, with an `E`, `B`, `X`, `N`, or
-/// `U&` prefix, or `$tag$...$tag$`. Constants continued on a new line (`'a'\n'b'`) end after
-/// their last part.
-pub(super) fn literal_end(sql: &str, start: usize) -> Option<usize> {
-    let bytes = sql.as_bytes();
-    let tail = sql.get(start..)?;
-    if let Some(after_dollar) = tail.strip_prefix('$') {
-        let tag_len = after_dollar.find('$')? + 2;
-        let tag = &tail[..tag_len];
-        let tag_is_valid = tag[1..tag_len - 1]
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_');
-        if !tag_is_valid {
+        if !self.is_identifier(index) {
             return None;
         }
-        let close = tail[tag_len..].find(tag)?;
-        return Some(start + tag_len + close + tag_len);
+        let alias = self.tokens.get(index)?;
+        Some((alias.start, alias.end))
     }
-    let (prefix, escapes) = match bytes.get(start..start + 2)? {
-        [b'u' | b'U', b'&'] => (2, false),
-        [b'e' | b'E', b'\''] => (1, true),
-        [b'b' | b'B' | b'x' | b'X' | b'n' | b'N', b'\''] => (1, false),
-        [b'\'', _] => (0, false),
-        _ => return None,
-    };
-    let mut cursor = start + prefix;
-    loop {
-        // The opening quote.
-        cursor += 1;
-        loop {
-            match bytes.get(cursor)? {
-                b'\\' if escapes => cursor += 2,
-                b'\'' if bytes.get(cursor + 1) == Some(&b'\'') => cursor += 2,
-                b'\'' => break,
-                _ => cursor += 1,
-            }
-        }
-        cursor += 1;
-        let mut next = cursor;
-        let mut newline = false;
-        while let Some(byte) = bytes.get(next).filter(|byte| byte.is_ascii_whitespace()) {
-            newline |= *byte == b'\n';
-            next += 1;
-        }
-        if !(newline && bytes.get(next) == Some(&b'\'')) {
-            return Some(cursor);
-        }
-        cursor = next;
-    }
-}
 
-pub(super) fn operator_end(sql: &str, start: usize) -> Option<usize> {
-    let tail = sql.get(start..)?;
-    if tail
-        .get(..9)
-        .is_some_and(|head| head.eq_ignore_ascii_case("operator("))
-    {
-        let close = tail.find(')')?;
-        return Some(start + close + 1);
+    /// The end of the token starting at `start`. `None` for parentheses, commas and semicolons.
+    fn token_end(&self, start: usize) -> Option<usize> {
+        let token = self.tokens.get(self.at(start)?)?;
+        if matches!(
+            token.kind,
+            Kind::Ascii40 | Kind::Ascii41 | Kind::Ascii44 | Kind::Ascii59
+        ) {
+            return None;
+        }
+        Some(token.end)
     }
-    token_end(sql, start)
+
+    /// The end of the first token of the expression starting at `start`, or of the whole name if
+    /// it starts with one.
+    pub fn expression_end(&self, start: usize) -> Option<usize> {
+        self.name_end(start).or_else(|| self.token_end(start))
+    }
+
+    /// The end of the operator starting at `start`: a single token, or `OPERATOR(schema.op)`.
+    pub fn operator_end(&self, start: usize) -> Option<usize> {
+        let index = self.at(start)?;
+        if self.kind(index) == Some(Kind::Operator) && self.kind(index + 1) == Some(Kind::Ascii40) {
+            let close = (index + 2..self.tokens.len())
+                .find(|&index| self.kind(index) == Some(Kind::Ascii41))?;
+            return self.end(close);
+        }
+        self.token_end(start)
+    }
+
+    /// The end of the cast starting at `start`: `CAST(x AS t)`, `::t` with the modifiers of `t`,
+    /// or a typed constant like `date 'today'`. The type name of `::t` and `t '...'` ends after
+    /// its first word.
+    pub fn cast_end(&self, start: usize) -> Option<usize> {
+        let mut index = self.at(start)?;
+        if self.kind(index) == Some(Kind::Cast) && self.kind(index + 1) == Some(Kind::Ascii40) {
+            return self.end(self.closing_paren(index + 1)?);
+        }
+        if self.kind(index) == Some(Kind::Typecast) {
+            index += 1;
+        }
+        let last = self.name_last(index)?;
+        if matches!(self.kind(last + 1), Some(Kind::Sconst | Kind::Usconst)) {
+            return self.end(last + 1);
+        }
+        let end = self.end(last)?;
+        let modifiers = self
+            .tokens
+            .get(last + 1)
+            .filter(|open| open.kind == Kind::Ascii40 && open.start == end);
+        if modifiers.is_some() {
+            return self.end(self.closing_paren(last + 1)?);
+        }
+        Some(end)
+    }
+
+    /// The end of the string constant starting at `start`: `'...'`, with an `E`, `B`, `X`, `N`,
+    /// or `U&` prefix, or `$tag$...$tag$`. Constants continued on a new line (`'a'\n'b'`) end
+    /// after their last part.
+    pub fn literal_end(&self, start: usize) -> Option<usize> {
+        let index = self.at(start)?;
+        let token = self.tokens.get(index)?;
+        match token.kind {
+            Kind::Sconst | Kind::Usconst | Kind::Bconst | Kind::Xconst => Some(token.end),
+            // The scanner returns `N'...'` as the keyword `NCHAR` for the `N`, then the string.
+            Kind::Nchar if token.end - token.start == 1 => self
+                .tokens
+                .get(index + 1)
+                .filter(|string| string.kind == Kind::Sconst && string.start == token.end)
+                .map(|string| string.end),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
+mod regress_tests;
+
+#[cfg(test)]
 mod tests {
-    use super::{
-        alias_span, cast_end, literal_end, operator_end, reference_end, star_end, token_end,
-        type_name_end,
-    };
+    use super::Tokens;
+
+    fn reference_end(sql: &str, start: usize) -> Option<usize> {
+        Tokens::scan(sql)?.name_end(start)
+    }
+
+    fn type_name_end(sql: &str, start: usize) -> Option<usize> {
+        Tokens::scan(sql)?.type_name_end(start)
+    }
+
+    fn star_end(sql: &str, start: usize) -> Option<usize> {
+        Tokens::scan(sql)?.star_end(start)
+    }
+
+    fn alias_span(sql: &str, start: usize) -> Option<(usize, usize)> {
+        Tokens::scan(sql)?.alias_span(start)
+    }
+
+    fn token_end(sql: &str, start: usize) -> Option<usize> {
+        Tokens::scan(sql)?.token_end(start)
+    }
+
+    fn cast_end(sql: &str, start: usize) -> Option<usize> {
+        Tokens::scan(sql)?.cast_end(start)
+    }
+
+    fn literal_end(sql: &str, start: usize) -> Option<usize> {
+        Tokens::scan(sql)?.literal_end(start)
+    }
+
+    fn operator_end(sql: &str, start: usize) -> Option<usize> {
+        Tokens::scan(sql)?.operator_end(start)
+    }
+
+    fn expression_end(sql: &str, start: usize) -> Option<usize> {
+        Tokens::scan(sql)?.expression_end(start)
+    }
+
+    /// The text of the span that `end_fn` finds at the first `at` in `sql`.
+    fn span_at<'a>(
+        sql: &'a str,
+        at: &str,
+        end_fn: fn(&str, usize) -> Option<usize>,
+    ) -> Option<&'a str> {
+        let start = sql.find(at).expect("in sql");
+        Some(&sql[start..end_fn(sql, start)?])
+    }
+
+    #[test]
+    fn unicode_escaped_identifiers_are_one_token() {
+        let sql = r#"select U&"d\0061t" from U&"s".t U&"x", U&"s" . *"#;
+        assert_eq!(span_at(sql, "U&\"d", reference_end), Some(r#"U&"d\0061t""#));
+        assert_eq!(span_at(sql, "U&\"s\".t", reference_end), Some(r#"U&"s".t"#));
+        assert_eq!(
+            alias_span(sql, sql.find("U&\"s\".t").unwrap()).map(|(start, end)| &sql[start..end]),
+            Some(r#"U&"x""#)
+        );
+        assert_eq!(span_at(sql, "U&\"s\" .", star_end), Some(r#"U&"s" . *"#));
+    }
+
+    #[test]
+    fn comments_are_skipped_like_whitespace() {
+        let sql = "select public /* c */ . users, x:: -- c\n int from t";
+        assert_eq!(
+            span_at(sql, "public", reference_end),
+            Some("public /* c */ . users")
+        );
+        assert_eq!(span_at(sql, "::", cast_end), Some(":: -- c\n int"));
+    }
+
+    #[test]
+    fn whitespace_before_the_parenthesis_of_cast_and_operator() {
+        let sql = "select CAST (x AS int), a OPERATOR (pg_catalog.+) b";
+        assert_eq!(span_at(sql, "CAST", cast_end), Some("CAST (x AS int)"));
+        assert_eq!(
+            span_at(sql, "OPERATOR", operator_end),
+            Some("OPERATOR (pg_catalog.+)")
+        );
+    }
+
+    #[test]
+    fn parentheses_in_string_constants() {
+        let sql = "select CAST(')' AS text), x::varchar(10) || ')'";
+        assert_eq!(span_at(sql, "CAST", cast_end), Some("CAST(')' AS text)"));
+        assert_eq!(span_at(sql, "::", cast_end), Some("::varchar(10)"));
+    }
+
+    #[test]
+    fn casts_at_the_end_of_the_statement() {
+        assert_eq!(span_at("select x::t", "::", cast_end), Some("::t"));
+        assert_eq!(span_at("select x::t;", "::", cast_end), Some("::t"));
+    }
+
+    #[test]
+    fn typed_constants_with_escapes_and_dollar_quotes() {
+        let sql = "select date E'today', date $$today$$";
+        assert_eq!(span_at(sql, "date E", cast_end), Some("date E'today'"));
+        assert_eq!(span_at(sql, "date $", cast_end), Some("date $$today$$"));
+    }
+
+    #[test]
+    fn expressions_start_with_a_whole_token() {
+        let sql = "select 'it''s', E'a', a='x', 1.5e-3, X'1F'";
+        assert_eq!(span_at(sql, "'it", expression_end), Some("'it''s'"));
+        assert_eq!(span_at(sql, "E'", expression_end), Some("E'a'"));
+        assert_eq!(span_at(sql, "=", expression_end), Some("="));
+        assert_eq!(span_at(sql, "=", operator_end), Some("="));
+        assert_eq!(span_at(sql, "1.5", expression_end), Some("1.5e-3"));
+        assert_eq!(span_at(sql, "1.5", reference_end), Some("1.5e-3"));
+        assert_eq!(span_at(sql, "X'", expression_end), Some("X'1F'"));
+        // String constants are not names, whatever their prefix.
+        assert_eq!(span_at(sql, "E'", reference_end), None);
+        assert_eq!(span_at(sql, "X'", reference_end), None);
+        assert_eq!(span_at("select $$a$$", "$$", reference_end), None);
+    }
 
     #[test]
     fn alias_spans() {
@@ -475,6 +487,10 @@ mod tests {
             ("$t$a$$b$t$ x", "$t$a$$b$t$"),
             ("'a'\n  'b' x", "'a'\n  'b'"),
             ("'a' 'b'", "'a'"),
+            ("N'abc' x", "N'abc'"),
+            ("B'101' x", "B'101'"),
+            ("x'1F' x", "x'1F'"),
+            ("$ä$a$ä$ x", "$ä$a$ä$"),
         ];
         for (sql, expected) in cases {
             assert_eq!(text(sql, 0, literal_end(sql, 0)), expected, "{sql}");

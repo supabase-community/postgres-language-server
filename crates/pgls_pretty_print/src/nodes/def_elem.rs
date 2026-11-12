@@ -1,21 +1,19 @@
-use pgls_query::NodeEnum;
 use pgls_query::protobuf::{DefElem, DefElemAction};
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use super::prelude::*;
 
 pub(super) fn emit_def_elem(e: &mut EventEmitter, n: &DefElem) {
     e.group_start(GroupKind::DefElem);
 
     // Emit namespace if present (namespace.name syntax)
     if !n.defnamespace.is_empty() {
-        super::string::emit_identifier_maybe_quoted(e, &n.defnamespace);
+        emit_identifier_maybe_quoted(e, &n.defnamespace);
         e.token(TokenKind::DOT);
     }
 
     // Emit the option name - use maybe_quoted to preserve case for mixed-case identifiers
     if !n.defname.is_empty() {
-        super::string::emit_identifier_maybe_quoted(e, &n.defname);
+        emit_identifier_maybe_quoted(e, &n.defname);
     }
 
     // Emit the option value if present
@@ -28,10 +26,10 @@ pub(super) fn emit_def_elem(e: &mut EventEmitter, n: &DefElem) {
         if let Some(node_enum) = &arg.node {
             match node_enum {
                 NodeEnum::String(s) => {
-                    super::emit_string_literal(e, s);
+                    emit_string_literal(e, s);
                 }
                 _ => {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -66,7 +64,7 @@ pub(super) fn emit_options_def_elem(e: &mut EventEmitter, n: &DefElem) {
 
     // Emit the option name - use maybe_quoted to preserve case for mixed-case identifiers
     if !n.defname.is_empty() {
-        super::string::emit_identifier_maybe_quoted(e, &n.defname);
+        emit_identifier_maybe_quoted(e, &n.defname);
     }
 
     // For DROP, there's no value
@@ -83,7 +81,7 @@ pub(super) fn emit_options_def_elem(e: &mut EventEmitter, n: &DefElem) {
         if let Some(node_enum) = &arg.node {
             match node_enum {
                 NodeEnum::String(s) => {
-                    super::emit_string_literal(e, s);
+                    emit_string_literal(e, s);
                 }
                 NodeEnum::Boolean(b) => {
                     // Boolean values in COPY/FDW options need to use TRUE/FALSE keywords
@@ -95,7 +93,7 @@ pub(super) fn emit_options_def_elem(e: &mut EventEmitter, n: &DefElem) {
                     }
                 }
                 _ => {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -123,7 +121,7 @@ pub(super) fn emit_grant_role_option(e: &mut EventEmitter, n: &DefElem) {
     });
 
     // Emit the option name
-    super::emit_keyword(e, defname);
+    emit_keyword(e, defname);
 
     // Emit TRUE or FALSE
     if let Some(val) = is_true {
@@ -217,7 +215,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::LIMIT_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "password" => {
@@ -231,9 +229,9 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
                     e.space();
                     // Password values must be single-quoted strings
                     if let Some(NodeEnum::String(s)) = &arg.node {
-                        super::emit_string_literal(e, s);
+                        emit_string_literal(e, s);
                     } else {
-                        super::emit_node(arg, e);
+                        emit_node(arg, e);
                     }
                 }
             }
@@ -244,9 +242,9 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
                 e.space();
                 // Password values must be single-quoted strings
                 if let Some(NodeEnum::String(s)) = &arg.node {
-                    super::emit_string_literal(e, s);
+                    emit_string_literal(e, s);
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -258,9 +256,9 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
                 e.space();
                 // VALID UNTIL values must be single-quoted strings
                 if let Some(NodeEnum::String(s)) = &arg.node {
-                    super::emit_string_literal(e, s);
+                    emit_string_literal(e, s);
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -268,14 +266,14 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::ROLE_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "adminmembers" => {
             e.token(TokenKind::ADMIN_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "addroleto" => {
@@ -284,24 +282,24 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::ROLE_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "sysid" => {
             e.token(TokenKind::SYSID_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         _ => {
             // Fallback for unknown role options
             if !n.defname.is_empty() {
-                super::emit_keyword(e, &n.defname);
+                emit_keyword(e, &n.defname);
             }
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
     }
@@ -323,14 +321,14 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::BY_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "minvalue" => {
             if let Some(ref arg) = n.arg {
                 e.token(TokenKind::MINVALUE_KW);
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             } else {
                 e.token(TokenKind::NO_KW);
                 e.space();
@@ -341,7 +339,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             if let Some(ref arg) = n.arg {
                 e.token(TokenKind::MAXVALUE_KW);
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             } else {
                 e.token(TokenKind::NO_KW);
                 e.space();
@@ -354,7 +352,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::WITH_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "restart" => {
@@ -363,14 +361,14 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
                 e.space();
                 e.token(TokenKind::WITH_KW);
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "cache" => {
             e.token(TokenKind::CACHE_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         "cycle" => {
@@ -396,9 +394,9 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
                 e.space();
                 // The arg is a list of identifiers that should be dot-separated (table.column)
                 if let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref() {
-                    super::node_list::emit_dot_separated_list(e, &list.items);
+                    emit_dot_separated_list(e, &list.items);
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             }
         }
@@ -406,7 +404,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::AS_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
         _ => {
@@ -416,7 +414,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             }
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
             }
         }
     }

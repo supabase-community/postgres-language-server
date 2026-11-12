@@ -1,10 +1,6 @@
-use pgls_query::{NodeEnum, protobuf::DropdbStmt};
+use pgls_query::protobuf::DropdbStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_parenthesized_list,
-};
+use super::prelude::*;
 
 pub(super) fn emit_dropdb_stmt(e: &mut EventEmitter, n: &DropdbStmt) {
     e.group_start(GroupKind::DropdbStmt);
@@ -22,7 +18,7 @@ pub(super) fn emit_dropdb_stmt(e: &mut EventEmitter, n: &DropdbStmt) {
 
     if !n.dbname.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.dbname);
+        emit_identifier_maybe_quoted(e, &n.dbname);
     }
 
     // DROP DATABASE options like (FORCE)
@@ -31,7 +27,7 @@ pub(super) fn emit_dropdb_stmt(e: &mut EventEmitter, n: &DropdbStmt) {
         emit_parenthesized_list(e, &n.options, |node, emitter| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 // Options like FORCE have just the name, no value
-                super::emit_keyword(emitter, &def.defname);
+                emit_keyword(emitter, &def.defname);
             }
         });
     }

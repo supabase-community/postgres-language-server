@@ -1,10 +1,6 @@
 use pgls_query::protobuf::{CreateRoleStmt, RoleStmtType};
 
-use super::string::emit_identifier_maybe_quoted;
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_create_role_stmt(e: &mut EventEmitter, n: &CreateRoleStmt) {
     e.group_start(GroupKind::CreateRoleStmt);
@@ -133,7 +129,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
                 e.space();
                 e.token(TokenKind::LIMIT_KW);
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
                 return;
             }
         }
@@ -145,9 +141,9 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
                 e.space();
                 // The timestamp is a string literal, not an identifier
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                    super::emit_string_literal(e, s);
+                    emit_string_literal(e, s);
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
                 return;
             }
@@ -158,7 +154,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
                 e.space();
                 e.token(TokenKind::ROLE_KW);
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
                 return;
             }
         }
@@ -166,7 +162,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 e.token(TokenKind::ROLE_KW);
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
                 return;
             }
         }
@@ -174,7 +170,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 e.token(TokenKind::ADMIN_KW);
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(arg, e);
                 return;
             }
         }
@@ -184,9 +180,9 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 // Password must be a string literal with single quotes
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                    super::emit_string_literal(e, s);
+                    emit_string_literal(e, s);
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(arg, e);
                 }
             } else {
                 e.token(TokenKind::NULL_KW);
@@ -197,9 +193,9 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
     }
 
     // Default formatting for other options
-    super::emit_keyword(e, &d.defname);
+    emit_keyword(e, &d.defname);
     if let Some(ref arg) = d.arg {
         e.space();
-        super::emit_node(arg, e);
+        emit_node(arg, e);
     }
 }

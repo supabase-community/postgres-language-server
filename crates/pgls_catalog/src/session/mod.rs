@@ -1,6 +1,7 @@
 //! Session state tracked while analysing a file: the settings that name resolution depends on,
 //! the transaction depth, and the lock and timeout state that the safety rules check.
 
+mod lock_level;
 mod locks;
 mod settings;
 #[cfg(test)]
@@ -10,8 +11,8 @@ use pgls_query::{NodeEnum, protobuf};
 
 use crate::Catalog;
 
+pub use lock_level::{LockMode, TableLock, alter_table_cmd_lock, alter_table_lock, relation_locks};
 use locks::Locks;
-pub use locks::{is_reindex_concurrent, is_vacuum_full};
 use settings::Settings;
 
 /// Whether the migration tool runs the statements outside `BEGIN` and `COMMIT` in a
@@ -167,22 +168,20 @@ impl Session {
 
     /// Returns true if the statement takes a dangerous lock on an existing object.
     ///
-    /// Covers: AlterTableStmt, non-concurrent IndexStmt, DropStmt (table/index),
-    /// TruncateStmt, VacuumStmt, non-concurrent ReindexStmt, RenameStmt (with relation),
-    /// and non-concurrent RefreshMatViewStmt.
+    /// Covers: AlterTableStmt and IndexStmt with a lock that blocks writes (see
+    /// [`Session::table_locks`]), DropStmt (table/index), TruncateStmt, VacuumStmt,
+    /// non-concurrent ReindexStmt, RenameStmt (with relation), and non-concurrent
+    /// RefreshMatViewStmt.
     pub fn is_dangerous_lock_stmt(&self, stmt: &NodeEnum, catalog: &Catalog) -> bool {
         self.locks
             .is_dangerous_lock_stmt(stmt, catalog, self.search_path())
     }
 
-    /// Returns the existing table targeted by an ALTER TABLE command that takes ACCESS EXCLUSIVE.
-    pub fn access_exclusive_table_for_alter(
-        &self,
-        stmt: &protobuf::AlterTableStmt,
-        catalog: &Catalog,
-    ) -> Option<(String, String)> {
-        self.locks
-            .access_exclusive_table_for_alter(stmt, catalog, self.search_path())
+    /// The locks that an `ALTER TABLE` or `CREATE INDEX` takes on tables that this transaction
+    /// didn't create, see [`relation_locks`]. A table created in the transaction is invisible to
+    /// other sessions, so its locks block no one.
+    pub fn table_locks(&self, stmt: &NodeEnum, catalog: &Catalog) -> Vec<TableLock> {
+        self.locks.table_locks(stmt, catalog, self.search_path())
     }
 
     /// Update session state based on a statement. `catalog` is the catalog after the statement,

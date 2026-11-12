@@ -1,6 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::{AlterObjectDependsStmt, ObjectType};
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObjectDependsStmt) {
     e.group_start(GroupKind::AlterObjectDependsStmt);
@@ -19,7 +19,7 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
 
     // Object name
     if let Some(ref object) = n.object {
-        super::emit_node(object, e);
+        emit_node(object, e);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -37,7 +37,7 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
 
     if let Some(ref extname) = n.extname {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &extname.sval);
+        emit_identifier_maybe_quoted(e, &extname.sval);
     }
 
     e.group_end();

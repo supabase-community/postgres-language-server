@@ -1,19 +1,14 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::{
-    NodeEnum,
-    protobuf::{RangeTblFunction, String as PgString},
-};
+use pgls_query::protobuf::{RangeTblFunction, String as PgString};
+
+use super::prelude::*;
 
 pub(super) fn emit_range_tbl_function(e: &mut EventEmitter, n: &RangeTblFunction) {
     e.group_start(GroupKind::RangeTblFunction);
 
     if let Some(func) = n.funcexpr.as_ref() {
-        super::emit_node(func, e);
+        emit_node(func, e);
     } else {
-        super::emit_identifier(e, "function#expr");
+        emit_identifier(e, "function#expr");
     }
 
     let column_defs = collect_column_names(n);
@@ -29,7 +24,7 @@ pub(super) fn emit_range_tbl_function(e: &mut EventEmitter, n: &RangeTblFunction
                 e.token(TokenKind::COMMA);
                 e.line(LineType::SoftOrSpace);
             }
-            super::emit_identifier_maybe_quoted(e, name);
+            emit_identifier_maybe_quoted(e, name);
         }
 
         e.indent_end();
@@ -48,7 +43,7 @@ pub(super) fn emit_range_tbl_function(e: &mut EventEmitter, n: &RangeTblFunction
                 e.token(TokenKind::COMMA);
                 e.space();
             }
-            super::emit_identifier(e, &format!("${param}"));
+            emit_identifier(e, &format!("${param}"));
             first = false;
         }
         e.token(TokenKind::R_PAREN);

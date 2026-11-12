@@ -1,9 +1,6 @@
 use pgls_query::protobuf::ParamRef;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_param_ref(e: &mut EventEmitter, n: &ParamRef) {
     e.group_start(GroupKind::ParamRef);

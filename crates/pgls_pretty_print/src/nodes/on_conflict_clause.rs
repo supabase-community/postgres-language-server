@@ -1,10 +1,6 @@
 use pgls_query::protobuf::{OnConflictAction, OnConflictClause};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
+use super::prelude::*;
 use super::res_target::emit_set_clause_list;
 
 pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause) {
@@ -42,7 +38,7 @@ pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause
             if let Some(ref where_clause) = n.where_clause {
                 e.line(crate::emitter::LineType::SoftOrSpace);
                 e.token(TokenKind::WHERE_KW);
-                super::emit_clause_condition(e, where_clause);
+                emit_clause_condition(e, where_clause);
             }
         }
         OnConflictAction::OnconflictNone | OnConflictAction::Undefined => {

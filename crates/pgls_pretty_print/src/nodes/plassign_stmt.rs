@@ -1,18 +1,16 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::PlAssignStmt;
 
-pub(super) fn emit_pl_assign_stmt(e: &mut EventEmitter, n: &PlAssignStmt) {
+use super::prelude::*;
+
+pub(super) fn emit_plassign_stmt(e: &mut EventEmitter, n: &PlAssignStmt) {
     e.group_start(GroupKind::PlassignStmt);
 
     if !n.name.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.name);
+        emit_identifier_maybe_quoted(e, &n.name);
     }
 
     for indirection in &n.indirection {
-        super::emit_node(indirection, e);
+        emit_node(indirection, e);
     }
 
     if let Some(ref select_stmt) = n.val {
