@@ -24,9 +24,8 @@ use std::{
 
 use pgls_postgres_regress::Verdict;
 use pgls_pretty_print::{
-    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, FormatError, Layout,
-    LogicalOperatorPlacement, format_statement,
-    renderer::{IndentStyle, KeywordCase},
+    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, FormatError, IndentStyle, KeywordCase,
+    Layout, LogicalOperatorPlacement, format_statement,
 };
 use rayon::prelude::*;
 
@@ -174,6 +173,7 @@ fn check(sql: &str, config: &FormatConfig) -> Result<(), String> {
         return Ok(());
     };
     let mut problems = common::whitespace_problems(&output);
+    problems.extend(common::empty_statements(&output));
     // At width 40 some statements can't fit. A `::` cast doesn't break either, so in a compact
     // `select '...'::type` or `('...'::jsonb)['a']['b']` nothing can move to the next line.
     if config.line_width >= 80 && matches!(config.cast_style, CastStyle::Cast) {

@@ -48,6 +48,34 @@ fn check_gitlab_reporter_snapshot() {
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
+fn check_github_reporter_verbose_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "github",
+        "--verbose",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_gitlab_reporter_verbose_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "gitlab",
+        "--verbose",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
 fn check_junit_reporter_snapshot() {
     assert_snapshot!(run_check(&[
         "--reporter",
@@ -201,7 +229,7 @@ fn create_temp_sql_file(contents: &str) -> PathBuf {
 }
 
 #[cfg(target_os = "linux")]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn check_accepts_tls_connection_strings(test_db: PgPool) {
     let sql_file = create_temp_sql_file("select 1;\n");
     let connection_string = format!(
@@ -247,7 +275,7 @@ async fn check_accepts_tls_connection_strings(test_db: PgPool) {
 const UNKNOWN_COLUMN_PATH: &str = "tests/fixtures/unknown_column.sql";
 
 #[cfg(target_os = "linux")]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn check_fails_when_database_login_fails(test_db: PgPool) {
     let opts = test_db.connect_options();
     let port = opts.get_port().to_string();
@@ -416,7 +444,7 @@ fn check_without_database_succeeds_with_disable_connection_in_config() {
 }
 
 #[cfg(target_os = "linux")]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn check_reads_the_password_from_pgpassfile(test_db: PgPool) {
     use std::os::unix::fs::PermissionsExt;
 
@@ -538,6 +566,40 @@ fn check_uses_the_nearest_configuration_file() {
     );
 }
 
+/// Lines end at `\n` only, like in the LSP and in the diffs of `format`: a lone `\r` is a
+/// character of its line, in the header, the code frame and every reporter.
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_lone_carriage_return_does_not_end_a_line_snapshot() {
+    let root = write_tree(&[(
+        "migration.sql",
+        "select 1;\ralter tqjable t drop column id;\n",
+    )]);
+    let output = [
+        None,
+        Some("json"),
+        Some("gitlab"),
+        Some("junit"),
+        Some("github"),
+    ]
+    .map(|reporter| {
+        let mut args = vec!["--disable-db", "migration.sql"];
+        args.extend(
+            reporter
+                .iter()
+                .flat_map(|reporter| ["--reporter", reporter]),
+        );
+        let (_, output) = check_in(root.path(), &args, &[]);
+        let reporter = reporter.unwrap_or("default");
+        format!("{reporter}:\n{}", normalize_durations(&output))
+    })
+    .join("\n");
+    assert_snapshot!(output.replace('\r', "\\r"));
+}
+
 /// Writes `files` below a new temporary directory.
 fn write_tree(files: &[(&str, &str)]) -> tempfile::TempDir {
     let root = tempfile::tempdir().unwrap();
@@ -645,6 +707,25 @@ fn check_changed_fails_for_an_unknown_base() {
     let (success, output) = check_in(repo.path(), &["--changed", "--since", "unknown"], &[]);
     assert!(!success, "{output}");
     assert!(output.contains("git diff failed"), "{output}");
+}
+
+/// Outside a git repository, `--staged` and `--changed` say that they need one, instead of
+/// passing on what `git diff` says about its options there.
+#[test]
+fn staged_and_changed_need_a_git_repository() {
+    let root = write_tree(DROP_COLUMN_REPO);
+    for (args, argument) in [
+        (&["--staged"][..], "--staged"),
+        (&["--changed", "--since", "main"][..], "--changed"),
+    ] {
+        let (success, output) = check_in(root.path(), args, &[]);
+        assert!(!success, "{output}");
+        assert!(
+            output.contains(&format!("{argument} needs a git repository, but ")),
+            "{output}"
+        );
+        assert!(output.contains("is not inside one."), "{output}");
+    }
 }
 
 /// A staged or changed file that can't be read fails the run, also when `--max-diagnostics 0`
@@ -821,6 +902,115 @@ fn the_environment_does_not_replace_the_database_of_a_nested_configuration() {
             "with {envs:?}, the nested configuration did not use its own database:\n{output}"
         );
     }
+}
+
+/// `--search_path` replaces the `typecheck.searchPath` of the configuration file instead of being
+/// appended to it, like the client overrides of the language server.
+#[cfg(target_os = "linux")]
+#[pgls_test_utils::db_test]
+async fn the_search_path_argument_replaces_the_search_path_of_the_configuration_file(
+    test_db: PgPool,
+) {
+    for statement in [
+        "create schema other",
+        "create table public.items (a int)",
+        "create table other.items (b int)",
+    ] {
+        sqlx::query(statement).execute(&test_db).await.unwrap();
+    }
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "typecheck": { "searchPath": ["public"] } }"#,
+        ),
+        ("a.sql", "select b from items;\n"),
+    ]);
+    let opts = test_db.connect_options();
+    let port = opts.get_port().to_string();
+    let connection = [
+        "--host",
+        opts.get_host(),
+        "--port",
+        &port,
+        "--username",
+        "postgres",
+        "--password",
+        "postgres",
+        "--database",
+        opts.get_database().unwrap_or("postgres"),
+    ];
+
+    // The search path of the file finds `public.items`, which has no column `b`.
+    let (_, output) = check_in(root.path(), &[&connection[..], &["a.sql"]].concat(), &[]);
+    assert!(output.contains("lint/unknownColumn"), "{output}");
+
+    let (_, output) = check_in(
+        root.path(),
+        &[&connection[..], &["--search_path", "other", "a.sql"]].concat(),
+        &[],
+    );
+    assert!(!output.contains("database/connection"), "{output}");
+    assert!(!output.contains("lint/unknownColumn"), "{output}");
+}
+
+/// A connection argument such as `--host` replaces its part of the `connectionString` of the
+/// configuration file, which would otherwise win over it, like the client overrides of the
+/// language server.
+#[cfg(target_os = "linux")]
+#[test]
+fn connection_arguments_win_over_the_connection_string_of_the_configuration_file() {
+    // Nothing listens on ports 1 and 2.
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "connectionString": "postgres://postgres@127.0.0.1:1/from_the_file", "connTimeoutSecs": 1 } }"#,
+        ),
+        ("a.sql", "select 1;\n"),
+    ]);
+    let (success, output) = check_in(
+        root.path(),
+        &[
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "2",
+            "--database",
+            "from_the_arguments",
+            "a.sql",
+        ],
+        &[],
+    );
+    assert!(!success, "{output}");
+    assert!(
+        output.contains("127.0.0.1:2/from_the_arguments"),
+        "the arguments didn't replace the connection string:\n{output}"
+    );
+    assert!(!output.contains("from_the_file"), "{output}");
+}
+
+/// A connection argument replaces only its part of the `connectionString` of the configuration
+/// file: `--database` alone still connects to the host of the file, and reports that it can't.
+#[cfg(target_os = "linux")]
+#[test]
+fn a_connection_argument_keeps_the_rest_of_the_connection_string() {
+    // Nothing listens on port 1.
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "connectionString": "postgres://postgres@127.0.0.1:1/from_the_file", "connTimeoutSecs": 1 } }"#,
+        ),
+        ("a.sql", "select 1;\n"),
+    ]);
+    let (success, output) = check_in(
+        root.path(),
+        &["--database", "from_the_arguments", "a.sql"],
+        &[],
+    );
+    assert!(!success, "the connection was skipped:\n{output}");
+    assert!(
+        output.contains("127.0.0.1:1/from_the_arguments"),
+        "the argument didn't replace the database of the connection string:\n{output}"
+    );
 }
 
 /// Without a project configuration, `check` says that it uses the user configuration, on stderr

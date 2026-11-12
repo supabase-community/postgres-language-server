@@ -1,6 +1,6 @@
 use pgls_pretty_print::{
-    FormatConfig, Layout, LogicalOperatorPlacement, format_statement,
-    renderer::{IndentStyle, KeywordCase},
+    CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout, LogicalOperatorPlacement,
+    format_statement,
 };
 
 fn expanded_config() -> FormatConfig {
@@ -206,4 +206,404 @@ fn a_comment_before_on_in_a_grant_stays_before_on() {
         format_idempotently("grant r1 /* c */ to u", &FormatConfig::default()),
         "grant r1 /* c */ to u;"
     );
+}
+
+fn leading_comma_config() -> FormatConfig {
+    FormatConfig {
+        comma_style: CommaStyle::Leading,
+        ..Default::default()
+    }
+}
+
+#[test]
+fn a_fill_list_with_leading_commas_keeps_an_own_line_comment_before_the_comma() {
+    for sql in [
+        "select * from t where x in (1, 2\n-- c\n, 3)",
+        "select * from t where x in (1, 2,\n-- c\n3)",
+    ] {
+        assert_eq!(
+            format_idempotently(sql, &leading_comma_config()),
+            "select\n  *\nfrom\n  t\nwhere\n  x\n  in (\n    1, 2\n    -- c\n    , 3\n  );"
+        );
+    }
+    // The comment leads `y`, the first node of the item, not the operator the item's location
+    // points to.
+    assert_eq!(
+        format_idempotently(
+            "select * from t where x in (1, 2\n-- c\n, y + 3)",
+            &leading_comma_config()
+        ),
+        "select\n  *\nfrom\n  t\nwhere\n  x\n  in (\n    1, 2\n    -- c\n    , y + 3\n  );"
+    );
+    assert_eq!(
+        format_idempotently("select array[1, 2\n-- c\n, 3]", &leading_comma_config()),
+        "select\n  array[\n    1, 2\n    -- c\n    , 3\n  ];"
+    );
+    assert_eq!(
+        format_idempotently(
+            "grant select on t1, t2\n-- c\n, t3 to u",
+            &leading_comma_config()
+        ),
+        "grant select\n  on table t1, t2\n    -- c\n    , t3\n  to u;"
+    );
+}
+
+#[test]
+fn a_comment_before_a_comma_stays_before_the_comma() {
+    for config in [FormatConfig::default(), leading_comma_config()] {
+        assert_eq!(
+            format_idempotently("select f(a) /* c */, b + 1 /* d */, c from t", &config),
+            "select f(a) /* c */, b + 1 /* d */, c from t;"
+        );
+        assert_eq!(
+            format_idempotently("select * from t where x in (1 /* one */, 2)", &config),
+            "select * from t where x in (1 /* one */, 2);"
+        );
+    }
+    assert_eq!(
+        format_idempotently("select a /* c */, b from t", &expanded_config()),
+        "SELECT\n\ta /* c */,\n\tb\nFROM\n\tt\n;"
+    );
+}
+
+#[test]
+fn a_comment_before_a_clause_keyword_stays_before_the_keyword() {
+    for (sql, expected) in [
+        ("select a /* c */ from t", "select a /* c */ from t;"),
+        (
+            "select a from t /* c */ where x = 1",
+            "select a from t /* c */ where x = 1;",
+        ),
+        (
+            "select a from t\n-- c\nwhere x = 1",
+            "select\n  a\nfrom\n  t\n-- c\nwhere\n  x = 1;",
+        ),
+        (
+            "select a from t where x = 1 /* c */ group by a /* d */ having count(*) > 1 /* e */ \
+             order by a /* f */ limit 1 /* g */ offset 2",
+            "select\n  a\nfrom\n  t\nwhere\n  x = 1 /* c */\ngroup by a /* d */\nhaving\n  \
+             count(*) > 1 /* e */\norder by a /* f */\nlimit 1 /* g */\noffset 2;",
+        ),
+        (
+            "select a from t order by a /* c */ fetch first 3 rows only",
+            "select a from t order by a /* c */ limit 3;",
+        ),
+        (
+            "select 1 /* c */ union select 2",
+            "select 1 /* c */ union select 2;",
+        ),
+        (
+            "update t /* c */ set a = 1 /* d */ from u /* e */ where t.id = u.id /* f */ returning a",
+            "update t /* c */ set a = 1 /* d */ from u /* e */ where t.id = u.id /* f */ returning a;",
+        ),
+        (
+            "delete from t /* c */ using u /* d */ where t.id = u.id",
+            "delete from t /* c */ using u /* d */ where t.id = u.id;",
+        ),
+        (
+            "merge into t /* c */ using u on t.id = u.id when matched then do nothing",
+            "merge into t /* c */ using u on t.id = u.id when matched then do nothing;",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}
+
+#[test]
+fn a_comment_before_a_join_keyword_stays_before_the_keyword() {
+    for (sql, expected) in [
+        (
+            "select a from t /* c */ join u on t.id = u.id",
+            "select a from t /* c */ inner join u on t.id = u.id;",
+        ),
+        (
+            "select a from t /* c */ left join u on t.id = u.id",
+            "select a from t /* c */ left outer join u on t.id = u.id;",
+        ),
+        (
+            "select a from t join u /* c */ on t.id = u.id",
+            "select a from t inner join u /* c */ on t.id = u.id;",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}
+
+#[test]
+fn a_comment_before_as_stays_before_the_alias() {
+    for (sql, expected) in [
+        (
+            "select a /* c */ as x, b from t",
+            "select a /* c */ as x, b from t;",
+        ),
+        (
+            "select f(a) /* c */ as x, b from t",
+            "select f(a) /* c */ as x, b from t;",
+        ),
+        (
+            "select a from t /* c */ as x where true",
+            "select a from t /* c */ as x where true;",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}
+
+#[test]
+fn a_comment_before_a_comma_stays_before_the_comma_in_every_list() {
+    for config in [FormatConfig::default(), leading_comma_config()] {
+        for sql in [
+            "update t set a = 1 /* c */, b = 2;",
+            "select sum(x) over w1 from t window w1 as (order by a) /* c */, w2 as (order by b);",
+            "select f(a, b /* c */, variadic c) from t;",
+            "select distinct on (a /* c */, b) a from t;",
+            "alter foreign table t alter column a options (add x 'y' /* c */, add z 'w');",
+        ] {
+            let output = format_idempotently(sql, &config);
+            assert!(output.contains("/* c */,"), "{output}");
+        }
+    }
+    assert_eq!(
+        format_idempotently(
+            "create function f(a int /* c */, b int) returns int language sql as 'select 1'",
+            &FormatConfig::default()
+        ),
+        "create function f(a int /* c */, b int)\nreturns int\nlanguage sql\nas $$select 1$$;"
+    );
+    assert_eq!(
+        format_idempotently(
+            "alter table t add column a int /* c */, add column b int",
+            &FormatConfig::default()
+        ),
+        "alter table t\n  add column a int /* c */,\n  add column b int;"
+    );
+}
+
+#[test]
+fn lists_that_wrote_their_own_commas_follow_the_comma_style() {
+    assert_eq!(
+        format_idempotently(
+            "create table t (a int,\n-- c\nb int)",
+            &leading_comma_config()
+        ),
+        "create table t (\n  a int\n  -- c\n  , b int\n);"
+    );
+    assert_eq!(
+        format_idempotently(
+            "alter table t add column a int, add column b int",
+            &leading_comma_config()
+        ),
+        "alter table t\n  add column a int\n  , add column b int;"
+    );
+}
+
+#[test]
+fn a_comment_before_a_dml_keyword_stays_before_the_keyword() {
+    for (sql, expected) in [
+        (
+            "select a /* c */ into t2 from t",
+            "select a /* c */ into t2 from t;",
+        ),
+        (
+            "insert into t values (1) /* c */ on conflict do nothing",
+            "insert into t values (1) /* c */ on conflict do nothing;",
+        ),
+        (
+            "insert into t values (1) on conflict (a) /* c */ do update set b = 1 /* d */ where t.b > 0",
+            "insert into t values (1) on conflict (a) /* c */ do update set b = 1 /* d */ where t.b > 0;",
+        ),
+        (
+            "insert into t values (1) on conflict (a) /* c */ where a > 0 do nothing",
+            "insert into t values (1) on conflict (a) /* c */ where a > 0 do nothing;",
+        ),
+        (
+            "merge into t using u on t.id = u.id when matched then delete /* d */ \
+             when not matched then insert values (1)",
+            "merge into t\nusing u\non t.id = u.id\nwhen matched then delete /* d */\n\
+             when not matched by target then insert values (1);",
+        ),
+        (
+            "merge into t using u on t.id = u.id when matched and t.a > 0 /* c */ \
+             then update set a = 1",
+            "merge into t using u on t.id = u.id when matched and t.a > 0 /* c */ then update set a = 1;",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}
+
+#[test]
+fn a_comment_before_a_ddl_keyword_stays_before_the_keyword() {
+    for (sql, expected) in [
+        (
+            "create index i on t /* c */ using btree (a) /* d */ where a > 0",
+            "create index i on t /* c */ using btree (a) /* d */ where a > 0;",
+        ),
+        (
+            "create view v /* c */ as select 1",
+            "create view v /* c */\nas select 1;",
+        ),
+        (
+            "create table t2 /* c */ as select 1",
+            "create table t2 /* c */ as select 1;",
+        ),
+        (
+            "create table t (a int) /* c */ partition by range (a)",
+            "create table t (a int) /* c */\npartition by range(a);",
+        ),
+        (
+            "create policy p on t /* c */ for select to u /* d */ using (true) /* e */ \
+             with check (true)",
+            "create policy p\non t\nas permissive /* c */\nfor select\nto u /* d */\n\
+             using (true) /* e */\nwith check (true);",
+        ),
+    ] {
+        assert_eq!(format_idempotently(sql, &FormatConfig::default()), expected);
+    }
+}
+
+fn assert_comment_tokens(sql: &str, expected: &[&str]) {
+    for output in format_both_layouts(sql) {
+        let scan = pgls_query::scan(&output).unwrap();
+        let tokens: Vec<_> = scan
+            .tokens
+            .iter()
+            .map(|token| output[token.start as usize..token.end as usize].trim_end())
+            .collect();
+        assert!(
+            tokens
+                .windows(expected.len())
+                .any(|window| window == expected),
+            "expected consecutive tokens {expected:?} in:\n{output}"
+        );
+    }
+}
+
+#[test]
+fn consecutive_comments_stay_in_order_before_case_keywords() {
+    for (comments, first, second) in [
+        ("/* first */ /* second */", "/* first */", "/* second */"),
+        ("/* first */ -- second\n", "/* first */", "-- second"),
+        ("-- first\n/* second */", "-- first", "/* second */"),
+        ("\n-- first\n-- second\n", "-- first", "-- second"),
+    ] {
+        assert_comment_tokens(
+            &format!("select case when a then 1 {comments} else 2 end from t"),
+            &["1", first, second, "else", "2"],
+        );
+        assert_comment_tokens(
+            &format!("select case when a {comments} then 1 else 2 end from t"),
+            &["a", first, second, "then", "1"],
+        );
+        assert_comment_tokens(
+            &format!("select case when a then 1 else 2 {comments} end from t"),
+            &["2", first, second, "end"],
+        );
+    }
+}
+
+#[test]
+fn consecutive_comments_stay_in_order_before_grant_and_revoke_keywords() {
+    for (comments, first, second) in [
+        ("/* first */ /* second */", "/* first */", "/* second */"),
+        ("/* first */ -- second\n", "/* first */", "-- second"),
+        ("-- first\n/* second */", "-- first", "/* second */"),
+        ("\n-- first\n-- second\n", "-- first", "-- second"),
+    ] {
+        for (sql, previous, keyword) in [
+            (format!("grant select {comments} on t to u"), "select", "on"),
+            (format!("grant select on t {comments} to u"), "t", "to"),
+            (
+                format!("revoke select {comments} on t from u"),
+                "select",
+                "on",
+            ),
+            (format!("revoke select on t {comments} from u"), "t", "from"),
+            (format!("grant r1 {comments} to u"), "r1", "to"),
+            (format!("revoke r1 {comments} from u"), "r1", "from"),
+        ] {
+            assert_comment_tokens(&sql, &[previous, first, second, keyword]);
+        }
+    }
+}
+
+#[test]
+fn comments_before_end_follow_the_complete_branch_expression() {
+    for (expression, last_token) in [
+        ("f(2)", ")"),
+        ("array[1, 2]", "]"),
+        ("2::integer", ")"),
+        ("(select 2)", ")"),
+    ] {
+        for comments in ["/* last */", "\n-- last\n"] {
+            let comment = comments.trim();
+            for branch in ["then", "else"] {
+                let sql = if branch == "then" {
+                    format!("select case when a then {expression} {comments} end from t")
+                } else {
+                    format!("select case when a then 1 else {expression} {comments} end from t")
+                };
+                assert_comment_tokens(&sql, &[last_token, comment, "end"]);
+            }
+        }
+    }
+}
+
+#[test]
+fn comments_before_end_stay_with_the_case_they_close() {
+    for branch in ["then", "else"] {
+        let prefix = if branch == "then" {
+            "select case when a then"
+        } else {
+            "select case when a then 1 else"
+        };
+        for (inner, outer) in [
+            ("/* inner */", "/* outer */"),
+            ("\n-- inner\n", "\n-- outer\n"),
+        ] {
+            let sql = format!(
+                "{prefix} case when b then 'case end' else 3 {inner} end {outer} end from t"
+            );
+            assert_comment_tokens(&sql, &["3", inner.trim(), "end", outer.trim(), "end"]);
+        }
+    }
+}
+
+#[test]
+fn consecutive_comments_before_end_stay_after_the_inner_case() {
+    assert_comment_tokens(
+        "select case when a then 1 else case when b then 2 else 3 end \
+         /* first */ /* second */ end from t",
+        &["end", "/* first */", "/* second */", "end"],
+    );
+}
+
+#[test]
+fn keyword_names_do_not_change_case_end_ownership() {
+    for (expression, last_token) in [
+        ("t.end", "\"end\""),
+        ("t.case", "\"case\""),
+        ("(select 2 end)", ")"),
+        ("(select 2 as end)", ")"),
+        ("(select 2 case)", ")"),
+        ("(select 2 as case)", ")"),
+    ] {
+        assert_comment_tokens(
+            &format!("select case when a then {expression} /* last */ end from t"),
+            &[last_token, "/* last */", "end"],
+        );
+    }
+}
+
+#[test]
+fn comments_between_rows_stay_in_place_with_leading_commas() {
+    // A comment after a row's comma, then a comment on its own line: each stays with its row.
+    let sql = "select * from (values\n(1),  -- one\n-- two\n(2),  -- three\n(3)) as v(x)";
+    for line_width in [40, 80] {
+        let config = FormatConfig {
+            line_width,
+            ..leading_comma_config()
+        };
+        format_idempotently(sql, &config);
+    }
 }

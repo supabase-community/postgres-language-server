@@ -79,7 +79,7 @@ impl Fixture {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn relations_and_columns(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -102,7 +102,7 @@ async fn relations_and_columns(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn ctes_and_aliases(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -126,7 +126,50 @@ async fn ctes_and_aliases(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
+async fn roles_and_schemas(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted("grant usage on schema public, nope to anon, \"authenticated\", nobody"),
+        "grant usage on schema [public:namespace], nope \
+         to [anon:variable], [\"authenticated\":variable], nobody"
+    );
+    assert_eq!(
+        f.highlighted(
+            "grant select on all tables in schema /* c */ public to public, current_user"
+        ),
+        "grant select on all tables in schema /* c */ [public:namespace] to public, current_user"
+    );
+    assert_eq!(
+        f.highlighted("create schema if not exists public authorization owner"),
+        "create schema if not exists [public:namespace] authorization [owner:variable]"
+    );
+    assert_eq!(
+        f.highlighted("drop schema if exists nope, public cascade"),
+        "drop schema if exists nope, [public:namespace] cascade"
+    );
+    assert_eq!(
+        f.highlighted("set search_path to \"$user\", public, 'public'"),
+        "set search_path to \"$user\", [public:namespace], 'public'"
+    );
+    assert_eq!(f.highlighted("set role anon"), "set role [anon:variable]");
+    assert_eq!(
+        f.highlighted("alter table users set schema public"),
+        "alter table users set schema [public:namespace]"
+    );
+    assert_eq!(
+        f.highlighted("alter default privileges for role owner in schema public grant select on tables to anon"),
+        "alter default privileges for role [owner:variable] in schema [public:namespace] \
+         grant select on tables to [anon:variable]"
+    );
+    // A schema named like a column of the query is no schema.
+    assert_eq!(
+        f.highlighted("select schema, public from (select 1 as schema, 2 as public) s"),
+        "select [schema:property], [public:property] from (select 1 as schema, 2 as public) s"
+    );
+}
+
+#[pgls_test_utils::db_test]
 async fn functions_and_types(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -141,7 +184,36 @@ async fn functions_and_types(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
+async fn types_in_ddl(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted(
+            "create table t (id int8 primary key, m public.mood, n numeric(10, 2), \
+             at timestamp with time zone default now(), x nope)"
+        ),
+        "create table t (id [int8:type+] primary key, m [public:namespace].[mood:type], \
+         n [numeric:type+](10, 2), \
+         at [timestamp:type+] [with:type+] [time:type+] [zone:type+] default now(), x nope)"
+    );
+    assert_eq!(
+        f.highlighted("alter table users add column c mood, alter column name type varchar(20)"),
+        "alter table users add column c [mood:type], alter column name type [varchar:type+](20)"
+    );
+    assert_eq!(
+        f.highlighted(
+            "create function f(a mood, out b int) returns setof record language sql as 'select 1'"
+        ),
+        "create function f(a [mood:type], out b [int:type+]) returns setof [record:type+] \
+         language sql as 'select 1'"
+    );
+    assert_eq!(
+        f.highlighted("drop function make_point(int, integer)"),
+        "drop function make_point([int:type+], [integer:type+])"
+    );
+}
+
+#[pgls_test_utils::db_test]
 async fn enum_members(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -153,9 +225,14 @@ async fn enum_members(test_db: PgPool) {
         f.highlighted("select 'happy'::mood, 'happy'"),
         "select ['happy':enumMember]::[mood:type], 'happy'"
     );
+    // A constant continued on the next line gets a token per line.
+    assert_eq!(
+        f.highlighted("select current from users where current = 'ha'\n    'ppy'"),
+        "select [current:property] from [users:class] where [current:property] = ['ha':enumMember]\n    ['ppy':enumMember]"
+    );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_parameters(test_db: PgPool) {
     let f = fixture(&test_db).await;
     let param = |name: &str| FunctionParam {
@@ -178,7 +255,7 @@ async fn function_parameters(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn comments_inside_qualified_names(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -191,7 +268,7 @@ async fn comments_inside_qualified_names(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn multi_word_types(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -205,12 +282,41 @@ async fn multi_word_types(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn non_ascii_identifiers(test_db: PgPool) {
     let f = fixture(&test_db).await;
     // Postgres only folds ASCII letters, so `CAFÉ` is `cafÉ`.
     assert_eq!(
         f.highlighted(r#"select CAFÉ.größe, "Ölstand" from CAFÉ"#),
         r#"select [CAFÉ:class].[größe:property], ["Ölstand":property] from [CAFÉ:class]"#
+    );
+}
+
+#[pgls_test_utils::db_test]
+async fn merge(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    assert_eq!(
+        f.highlighted(
+            "merge into users u using posts p on p.user_id = u.id \
+             when matched and p.title <> u.name then update set name = p.title \
+             when not matched then insert (id, name) values (p.user_id, upper(p.title)) \
+             when not matched by source then delete"
+        ),
+        "merge into [users:class] [u:variable] using [posts:class] [p:variable] \
+         on [p:variable].[user_id:property] = [u:variable].[id:property] \
+         when matched and [p:variable].[title:property] <> [u:variable].[name:property] \
+         then update set name = [p:variable].[title:property] \
+         when not matched then insert (id, name) \
+         values ([p:variable].[user_id:property], [upper:function+]([p:variable].[title:property])) \
+         when not matched by source then delete"
+    );
+    assert_eq!(
+        f.highlighted(
+            "with c as (select id from posts) merge into public.users using c \
+             on c.id = users.id when matched then do nothing"
+        ),
+        "with [c:class] as (select [id:property] from [posts:class]) \
+         merge into [public:namespace].[users:class] using [c:class] \
+         on [c:class].[id:property] = [users:class].[id:property] when matched then do nothing"
     );
 }

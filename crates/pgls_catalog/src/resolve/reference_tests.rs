@@ -27,6 +27,10 @@ const SETUP: &str = r#"
     create procedure with_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
     create procedure with_inout(a int, out b int, inout c text) language plpgsql
         as $$ begin b := a; end $$;
+    create function db_same(a int, out b int, c int) language sql as 'select 1';
+    create procedure db_same(a int, b int, c int) language sql as 'select 1';
+    create function db_table(a int) returns table (b text) language sql as $$ select '1' $$;
+    create procedure db_table(a int, b int) language sql as 'select 1';
 "#;
 
 async fn catalog(test_db: &PgPool) -> (Catalog, Vec<String>) {
@@ -138,6 +142,8 @@ fn function_references_in(
                 }
                 Reference::Cte { name, .. } => format!("cte {name}"),
                 Reference::Alias { name, .. } => format!("alias {name}"),
+                Reference::Schema { name, .. } => format!("schema {name}"),
+                Reference::Role { name, .. } => format!("role {name}"),
                 Reference::Star { columns, .. } => {
                     let columns = columns
                         .iter()
@@ -160,7 +166,7 @@ fn function_references_in(
         .collect()
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -217,7 +223,7 @@ async fn function_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn procedure_call_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -256,11 +262,50 @@ async fn procedure_call_references(test_db: PgPool) {
     );
     // `CALL` only calls procedures.
     assert_eq!(references(&catalog, &search_path, "call pick(1)"), [""; 0]);
+    // It matches the output arguments of functions with the same name too, in the order of all
+    // their arguments. Postgres: procedure db_same(integer, integer, integer) is not unique
+    assert_eq!(
+        references(&catalog, &search_path, "call db_same(1, 2, 3)"),
+        [""; 0]
+    );
+    // Postgres: db_table(integer, unknown) is not a procedure
+    assert_eq!(
+        references(&catalog, &search_path, "call db_table(1, 'x')"),
+        [""; 0]
+    );
+    assert_eq!(
+        references(&catalog, &search_path, "call db_table(1, 2)"),
+        ["db_table => function public.db_table(integer, integer) <- a, b"]
+    );
+    // Functions created in the file.
+    for create in [
+        "create function same_name(a int, out b int) language sql as 'select 1'",
+        "create procedure same_name(a int, b int) language sql as 'select 1'",
+        "create function same_type(a int, out b text) language sql as 'select 1'",
+        "create procedure same_type(a int, b int) language sql as 'select 1'",
+    ] {
+        let create = pgls_query::parse(create).unwrap().into_root().unwrap();
+        file_catalog.apply(&create, &search_path);
+    }
+    // Postgres: procedure same_name(integer, integer) is not unique
+    assert_eq!(
+        references(&file_catalog, &search_path, "call same_name(1, 2)"),
+        [""; 0]
+    );
+    // Postgres: same_type(integer, unknown) is not a procedure
+    assert_eq!(
+        references(&file_catalog, &search_path, "call same_type(1, 'x')"),
+        [""; 0]
+    );
+    assert_eq!(
+        references(&file_catalog, &search_path, "call same_type(1, 2)"),
+        ["same_type => function public.same_type(integer, integer) <- a, b"]
+    );
 }
 
 /// A best-effort catalog keeps resolving functions and enum literals after a statement whose
 /// effects are unknown, which makes the lookups of a normal catalog unknown.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn best_effort_catalogs_ignore_unmodelled_statements(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let mut best_effort = catalog.clone().best_effort();
@@ -296,7 +341,7 @@ async fn best_effort_catalogs_ignore_unmodelled_statements(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn column_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -359,7 +404,7 @@ async fn column_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn cte_and_subquery_columns(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -392,7 +437,7 @@ async fn cte_and_subquery_columns(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn relation_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -418,7 +463,7 @@ async fn relation_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn cte_and_alias_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let names = |sql| -> Vec<String> {
@@ -456,7 +501,7 @@ fn stars_of(catalog: &Catalog, search_path: &[String], sql: &str) -> Vec<String>
         .collect()
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn star_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let stars = |sql| stars_of(&catalog, &search_path, sql);
@@ -493,16 +538,39 @@ async fn star_references(test_db: PgPool) {
         stars("select exists (select * from posts where user_id = users.id) from users"),
         ["* => star id, user_id, title"]
     );
-    // Unknown columns, duplicate column names, merged columns, and items without a name have
-    // no reference.
+    // Joins that merge columns expand to the merged columns first, by their bare name.
+    assert_eq!(
+        stars("select * from users join posts using (id)"),
+        ["* => star id, users.name, posts.user_id, posts.title"]
+    );
+    assert_eq!(
+        stars("select * from users natural join people"),
+        ["* => star id, users.name, people.current"]
+    );
+    assert_eq!(
+        stars("select * from users join posts using (id) right join people using (id)"),
+        ["* => star id, users.name, posts.user_id, posts.title, people.current"]
+    );
+    assert_eq!(
+        stars("select * from (users join posts using (id)) j"),
+        ["* => star id, name, user_id, title"]
+    );
+    // Unknown columns, duplicate column names, ambiguous merged columns, and items without a
+    // name have no reference.
     assert_eq!(stars("select * from nope"), [""; 0]);
     assert_eq!(stars("select * from users, nope"), [""; 0]);
     assert_eq!(
         stars("select j.* from (users join posts on true) j"),
         [""; 0]
     );
-    assert_eq!(stars("select * from users join posts using (id)"), [""; 0]);
-    assert_eq!(stars("select * from users natural join posts"), [""; 0]);
+    assert_eq!(
+        stars("select * from users join posts using (id), people"),
+        [""; 0]
+    );
+    assert_eq!(
+        stars("select * from users join posts using (nope)"),
+        [""; 0]
+    );
     assert_eq!(stars("select * from users, (select 1 as one)"), [""; 0]);
     assert_eq!(
         stars("select 1 from users where (users.*) is not null"),
@@ -512,7 +580,7 @@ async fn star_references(test_db: PgPool) {
 
 /// The rows of `INSERT ... VALUES` are resolved more than once, and each reference is only
 /// recorded once.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn references_are_recorded_once(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -529,7 +597,7 @@ async fn references_are_recorded_once(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn type_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -548,7 +616,7 @@ async fn type_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn enum_literal_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(
@@ -631,7 +699,7 @@ async fn enum_literal_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn enum_literals_coerced_to_a_common_or_resolved_type(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let enum_literals = |sql: &str| -> Vec<String> {
@@ -686,7 +754,7 @@ async fn enum_literals_coerced_to_a_common_or_resolved_type(test_db: PgPool) {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn parameter_references(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let param = |name: &str| FunctionParam {
@@ -719,7 +787,7 @@ async fn parameter_references(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn references_are_only_collected_on_request(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     let sql = "select pick(1), name from users";

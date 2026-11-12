@@ -1,30 +1,15 @@
 use pgls_query::protobuf::{ViewCheckOption, ViewStmt};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
+use super::prelude::*;
 
 pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
-    emit_view_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_view_stmt_no_semicolon(e: &mut EventEmitter, n: &ViewStmt) {
-    emit_view_stmt_impl(e, n, false);
-}
-
-fn emit_view_stmt_impl(e: &mut EventEmitter, n: &ViewStmt, with_semicolon: bool) {
-    e.group_start(GroupKind::ViewStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
 
     if n.replace {
         e.space();
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
     }
 
     if let Some(ref view) = n.view {
@@ -55,9 +40,12 @@ fn emit_view_stmt_impl(e: &mut EventEmitter, n: &ViewStmt, with_semicolon: bool)
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
-        emit_comma_separated_list(e, &n.aliases, |alias_node, emitter| {
-            let alias = assert_node_variant!(String, alias_node);
-            super::string::emit_identifier_maybe_quoted(emitter, &alias.sval);
+        emit_comma_separated_list(e, &n.aliases, |emitter, alias_node| {
+            let Some(NodeEnum::String(alias)) = alias_node.node.as_ref() else {
+                emit_node(emitter, alias_node);
+                return;
+            };
+            emit_identifier_maybe_quoted(emitter, &alias.sval);
         });
         e.indent_end();
         e.line(LineType::Soft);
@@ -67,23 +55,18 @@ fn emit_view_stmt_impl(e: &mut EventEmitter, n: &ViewStmt, with_semicolon: bool)
     if !n.options.is_empty() {
         e.line(LineType::Hard);
         e.indent_start();
-        e.token(TokenKind::WITH_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, super::emit_node);
+        emit_with_options(e, &n.options);
         e.indent_end();
     }
 
     // Query
     if let Some(ref query) = n.query {
+        emit_comments_before_keyword(e, "as", query);
         e.line(LineType::Hard);
         e.token(TokenKind::AS_KW);
         e.space();
 
-        if let Some(pgls_query::NodeEnum::SelectStmt(stmt)) = query.node.as_ref() {
-            super::emit_select_stmt_no_semicolon(e, stmt);
-        } else {
-            super::emit_node(query, e);
-        }
+        emit_node(e, query);
     }
 
     // WITH CHECK OPTION
@@ -114,10 +97,6 @@ fn emit_view_stmt_impl(e: &mut EventEmitter, n: &ViewStmt, with_semicolon: bool)
         ViewCheckOption::Undefined => {
             // Undefined, don't emit
         }
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
     }
 
     e.group_end();

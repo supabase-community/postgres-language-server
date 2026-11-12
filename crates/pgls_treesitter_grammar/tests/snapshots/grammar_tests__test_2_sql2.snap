@@ -16,7 +16,7 @@ program [0..64] 'update auth.users as u set email = 'my@mail.com' where u.id = 1
         alias [18..22] 'as u'
           keyword_as [18..20] 'as'
           any_identifier [21..22] 'u' (@end)
-      update_set_values [23..48] 'set email = 'my@mail.com''
+      update_set_values [23..48] 'set email = 'my@mail.com'' (@end)
         keyword_set [23..26] 'set'
         assignment [27..48] 'email = 'my@mail.com'' (@end)
           column_identifier [27..32] 'email' (@left)

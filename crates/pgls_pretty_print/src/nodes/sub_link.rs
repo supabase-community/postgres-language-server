@@ -1,10 +1,11 @@
 use pgls_query::protobuf::{SelectStmt, SubLink, SubLinkType};
 
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-use crate::{Layout, TokenKind};
+use crate::Layout;
+
+use super::prelude::*;
 
 pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
-    e.group_start(GroupKind::SubLink);
+    e.group_start();
 
     match n.sub_link_type {
         x if x == SubLinkType::ExistsSublink as i32 => {
@@ -20,12 +21,12 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::AllSublink as i32 => {
             // expr op ALL(subquery)
             if let Some(ref testexpr) = n.testexpr {
-                super::emit_node(testexpr, e);
+                emit_node(e, testexpr);
                 e.space();
 
                 // Emit operator if present
                 if !n.oper_name.is_empty() {
-                    emit_operator_from_list(e, &n.oper_name);
+                    emit_operator(e, &n.oper_name);
                     e.space();
                 }
             }
@@ -41,7 +42,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::AnySublink as i32 => {
             // expr op ANY(subquery) - includes IN which is = ANY
             if let Some(ref testexpr) = n.testexpr {
-                super::emit_node(testexpr, e);
+                emit_node(e, testexpr);
                 e.space();
 
                 // Special case: empty oper_name means it's IN not = ANY
@@ -49,7 +50,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
                     e.token(TokenKind::IN_KW);
                 } else {
                     // Regular ANY with operator
-                    emit_operator_from_list(e, &n.oper_name);
+                    emit_operator(e, &n.oper_name);
                     e.space();
                     e.token(TokenKind::ANY_KW);
                 }
@@ -67,11 +68,11 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::RowcompareSublink as i32 => {
             // (expr list) op (subquery)
             if let Some(ref testexpr) = n.testexpr {
-                super::emit_node(testexpr, e);
+                emit_node(e, testexpr);
                 e.space();
 
                 if !n.oper_name.is_empty() {
-                    emit_operator_from_list(e, &n.oper_name);
+                    emit_operator(e, &n.oper_name);
                     e.space();
                 }
             }
@@ -132,7 +133,6 @@ fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
     // Add indentation inside subquery parentheses
     e.line(LineType::Soft);
     e.indent_start();
-    // Check if this is a SelectStmt and emit without semicolon
     if let Some(pgls_query::NodeEnum::SelectStmt(select_stmt)) = node.node.as_ref() {
         // Expanded layout breaks between clauses. A subquery made of its select list alone, such
         // as `(select auth.uid())`, has none to break between, so it only breaks past the width.
@@ -144,11 +144,11 @@ fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
             e.configured_layout()
         };
         e.with_layout(layout, |e| {
-            super::emit_select_stmt_no_semicolon(e, select_stmt);
+            super::emit_select_stmt(e, select_stmt);
         });
     } else {
         // For other node types (e.g., VALUES), emit normally
-        super::emit_node(node, e);
+        emit_node(e, node);
     }
     e.indent_end();
     e.line(LineType::Soft);
@@ -169,22 +169,4 @@ fn has_select_list_only(n: &SelectStmt) -> bool {
         && n.with_clause.is_none()
         && n.larg.is_none()
         && n.rarg.is_none()
-}
-
-fn emit_operator_from_list(e: &mut EventEmitter, oper_name: &[pgls_query::protobuf::Node]) {
-    // The operator name is typically stored as a list of String nodes
-    // For most operators it's just one element like "=" or "<"
-    // For qualified operators like "pg_catalog.=" it could be multiple
-    if oper_name.is_empty() {
-        return;
-    }
-
-    // For simplicity, just take the last element which is usually the operator symbol
-    if let Some(last) = oper_name.last() {
-        if let Some(pgls_query::NodeEnum::String(s)) = last.node.as_ref() {
-            e.token(TokenKind::IDENT(s.sval.clone()));
-        } else {
-            super::emit_node(last, e);
-        }
-    }
 }

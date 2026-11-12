@@ -1,12 +1,9 @@
 use pgls_query::protobuf::{BoolTestType, BooleanTest};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_boolean_test(e: &mut EventEmitter, n: &BooleanTest) {
-    e.group_start(GroupKind::BooleanTest);
+    e.group_start();
 
     // Emit the argument
     if let Some(ref arg) = n.arg {
@@ -19,7 +16,7 @@ pub(super) fn emit_boolean_test(e: &mut EventEmitter, n: &BooleanTest) {
             e.token(TokenKind::L_PAREN);
         }
 
-        super::emit_node(arg, e);
+        emit_node(e, arg);
 
         if needs_parens {
             e.token(TokenKind::R_PAREN);

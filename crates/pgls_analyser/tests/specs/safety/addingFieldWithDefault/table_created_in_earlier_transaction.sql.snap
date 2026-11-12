@@ -1,0 +1,25 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The table was created in a transaction that committed, so other transactions can see it.
+-- expect_lint/addingFieldWithDefault
+BEGIN;
+CREATE TABLE users (id bigint);
+COMMIT;
+BEGIN;
+ALTER TABLE users ADD COLUMN token uuid DEFAULT gen_random_uuid();
+COMMIT;
+
+```
+
+# Diagnostics
+lint/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a column with a DEFAULT value causes a table rewrite.
+  
+  i This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.
+  
+  i Add the column without a default, then set the default in a separate statement.

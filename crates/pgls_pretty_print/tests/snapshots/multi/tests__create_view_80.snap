@@ -1029,7 +1029,7 @@ create table tt15v_log (
 create rule updlog
 as on update to tt15v
 do
-  insert into tt15v_log values (old, new, row(old, old) < row(new, new));;
+  insert into tt15v_log values (old, new, row(old, old) < row(new, new));
 
 create view tt18v
 as select

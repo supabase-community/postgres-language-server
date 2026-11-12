@@ -346,8 +346,10 @@ impl Settings {
 
         // inlay hints part
         if let Some(inlay_hints) = configuration.inlay_hints {
+            let inlay_hints = InlayHintsConfiguration::from(inlay_hints);
             self.inlay_hints = InlayHintsSettings {
-                enabled: InlayHintsConfiguration::from(inlay_hints).enabled,
+                enabled: inlay_hints.enabled,
+                parameter_names: inlay_hints.parameter_names,
             };
         }
 
@@ -736,11 +738,15 @@ impl Default for PglinterSettings {
 #[derive(Debug, Clone)]
 pub struct InlayHintsSettings {
     pub enabled: bool,
+    pub parameter_names: pgls_configuration::inlay_hints::ParameterNameHints,
 }
 
 impl Default for InlayHintsSettings {
     fn default() -> Self {
-        Self { enabled: true }
+        Self {
+            enabled: true,
+            parameter_names: Default::default(),
+        }
     }
 }
 
@@ -826,6 +832,9 @@ pub struct DatabaseSettings {
     pub password: Option<String>,
     pub database: String,
     pub conn_timeout_secs: Duration,
+    /// How long an executed statement may run. `None` keeps the `statement_timeout` of the
+    /// database.
+    pub statement_timeout: Option<Duration>,
     pub allow_statement_executions: bool,
     /// The patterns of `db.allowStatementExecutionsAgainst` that are not valid globs.
     pub invalid_statement_execution_patterns: Vec<String>,
@@ -882,6 +891,7 @@ impl std::fmt::Debug for DatabaseSettings {
             .field("password", &"[redacted]")
             .field("database", &self.database)
             .field("conn_timeout_secs", &self.conn_timeout_secs)
+            .field("statement_timeout", &self.statement_timeout)
             .field(
                 "allow_statement_executions",
                 &self.allow_statement_executions,
@@ -906,6 +916,7 @@ impl Default for DatabaseSettings {
             password: None,
             database: "postgres".to_string(),
             conn_timeout_secs: Duration::from_secs(10),
+            statement_timeout: Some(Duration::from_secs(60)),
             allow_statement_executions: false,
             invalid_statement_execution_patterns: Vec::new(),
             connection_string_error: None,
@@ -1013,6 +1024,11 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
                 .conn_timeout_secs
                 .map(|s| Duration::from_secs(s.into()))
                 .unwrap_or(d.conn_timeout_secs),
+            statement_timeout: match value.statement_timeout_secs {
+                Some(0) => None,
+                Some(secs) => Some(Duration::from_secs(secs.into())),
+                None => d.statement_timeout,
+            },
 
             allow_statement_executions,
             invalid_statement_execution_patterns,

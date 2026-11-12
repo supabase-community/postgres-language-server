@@ -21,8 +21,7 @@ static TYPECHECK_CATALOG: OnceLock<Arc<pgls_catalog::CatalogBase>> = OnceLock::n
 fn typecheck_catalog() -> Arc<pgls_catalog::CatalogBase> {
     TYPECHECK_CATALOG
         .get_or_init(|| {
-            let default_url = "postgresql://postgres:postgres@127.0.0.1:5432/postgres";
-            let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| default_url.into());
+            let database_url = pgls_test_utils::db::database_url();
             let runtime = tokio::runtime::Runtime::new().expect("failed to create test database runtime");
             let snapshot = runtime.block_on(async {
                 let pool = sqlx::postgres::PgPoolOptions::new()
@@ -30,12 +29,12 @@ fn typecheck_catalog() -> Arc<pgls_catalog::CatalogBase> {
                     .await
                     .unwrap_or_else(|error| {
                         panic!(
-                            "typecheck specs need the test database at {database_url}; run `docker compose up -d` ({error})"
+                            "typecheck specs need the test database at {database_url}; run `just db` ({error})"
                         )
                     });
                 pgls_catalog::Snapshot::load(&pool).await.unwrap_or_else(|error| {
                     panic!(
-                        "typecheck specs need the test database at {database_url}; run `docker compose up -d` ({error})"
+                        "typecheck specs need the test database at {database_url}; run `just db` ({error})"
                     )
                 })
             });
@@ -114,8 +113,9 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
         filter,
     });
     let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
+    let catalog = spec_catalog(&query, is_typecheck);
 
-    let results = analyse(&analyser, &query, is_typecheck);
+    let results = analyse(&analyser, &query, is_typecheck, catalog.clone());
 
     let mut snapshot = String::new();
     write_snapshot(&mut snapshot, query.as_str(), results.as_slice());
@@ -130,23 +130,80 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     let expectation = Expectation::from_file(&query);
     expectation.assert(results.as_slice());
 
-    assert_fixes_converge(&analyser, &query, is_typecheck);
+    assert_fixes_converge(&analyser, &query, is_typecheck, catalog);
 }
 
-fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDiagnostic> {
+/// A spec of a lint rule can set the server version with a `-- server_version: <major>` line.
+/// Its rules then see an otherwise empty database snapshot of that version.
+fn server_version_catalog(query: &str) -> Option<Arc<pgls_catalog::CatalogBase>> {
+    let major = query.lines().find_map(|line| {
+        line.trim()
+            .strip_prefix("-- server_version:")
+            .map(|major| major.trim().parse().expect("a major version"))
+    })?;
+    let snapshot = pgls_catalog::Snapshot {
+        version: pgls_catalog::Version {
+            version_num: Some(major * 10000),
+            major_version: Some(major),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    Some(Arc::new(pgls_catalog::CatalogBase::new(Arc::new(snapshot))))
+}
+
+/// The catalog of a spec: the built-in catalog of the test database for typecheck specs and for
+/// specs with a `-- catalog: builtin` line. A `-- server_version_num: 110000` line makes it the
+/// catalog of that server version, since the test database can be of any version. Other specs
+/// get the catalog of [`server_version_catalog`], if any.
+fn spec_catalog(query: &str, is_typecheck: bool) -> Option<Arc<pgls_catalog::CatalogBase>> {
+    let directive = |name: &str| {
+        query
+            .lines()
+            .find_map(|line| line.trim().strip_prefix(name).map(str::trim))
+    };
+    if !is_typecheck && directive("-- catalog:") != Some("builtin") {
+        return server_version_catalog(query);
+    }
+    let catalog = typecheck_catalog();
+    let Some(version) = directive("-- server_version_num:") else {
+        return Some(catalog);
+    };
+    let version_num: i64 = version
+        .parse()
+        .unwrap_or_else(|_| panic!("Invalid server_version_num `{version}`"));
+    let mut snapshot = pgls_catalog::Snapshot::clone(catalog.snapshot());
+    snapshot.version.version_num = Some(version_num);
+    snapshot.version.major_version = Some(version_num / 10_000);
+    Some(Arc::new(pgls_catalog::CatalogBase::new(Arc::new(snapshot))))
+}
+
+fn analyse(
+    analyser: &Analyser,
+    query: &str,
+    is_typecheck: bool,
+    catalog: Option<Arc<pgls_catalog::CatalogBase>>,
+) -> Vec<LinterDiagnostic> {
     let split = pgls_statement_splitter::split(query);
 
-    // Statements that don't parse are passed on as such, like the workspace does. The statements
-    // of a SQL function body follow the function, with its parameters in scope.
+    // Statements that don't parse are passed on as such, like the workspace does. Like there,
+    // placeholders such as psql variables are parsed as parameters. The statements of a SQL
+    // function body follow the function, with its parameters in scope.
     let mut stmts = Vec::new();
     let mut unparsable = Vec::new();
     for r in &split.ranges {
         let text = &query[*r];
-        match pgls_query::parse(text) {
+        // psql variables (`:name`, `:'name'`) become positional parameters, as in the workspace.
+        let conversion = pgls_lexer::convert_to_positional_params_with_metadata(text);
+        match pgls_query::parse(&conversion.sql) {
             Ok(ast) => {
                 let root = ast.into_root().expect("Failed to convert AST to root node");
                 let body = sql_function_body(&root, text, *r);
-                stmts.push(AnalysableStatement::new(root, *r).with_sql(text));
+                stmts.push(
+                    AnalysableStatement::new(root, *r)
+                        .with_sql(text)
+                        .with_identifier_parameters(conversion.has_identifier_parameters),
+                );
                 stmts.extend(body);
             }
             Err(_) => unparsable.push(UnparsableStatement {
@@ -156,11 +213,10 @@ fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDi
         }
     }
 
-    // Typecheck rules use the test database's built-in catalog; user schemas are filtered out.
     analyser.run(AnalyserParams {
         stmts,
         unparsable,
-        catalog_base: is_typecheck.then(typecheck_catalog),
+        catalog_base: catalog,
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
         sections: migration_sections(query),
@@ -171,10 +227,15 @@ fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDi
 
 /// Applies all fixes, safe and unsafe, until none is left, like `check --fix --unsafe`. That must
 /// end: a fixed statement must not get the same fix again.
-fn assert_fixes_converge(analyser: &Analyser, query: &str, is_typecheck: bool) {
+fn assert_fixes_converge(
+    analyser: &Analyser,
+    query: &str,
+    is_typecheck: bool,
+    catalog: Option<Arc<pgls_catalog::CatalogBase>>,
+) {
     let mut code = query.to_string();
     for _ in 0..10 {
-        let diagnostics = analyse(analyser, &code, is_typecheck);
+        let diagnostics = analyse(analyser, &code, is_typecheck, catalog.clone());
         let mut fixes: Vec<&RuleFix> = diagnostics
             .iter()
             .filter_map(LinterDiagnostic::get_fix)
@@ -198,7 +259,7 @@ fn assert_fixes_converge(analyser: &Analyser, query: &str, is_typecheck: bool) {
     panic!("the fixes still change the input after 10 passes:\n{code}");
 }
 
-/// The statements in the body of a `LANGUAGE sql` function, as the workspace extracts them.
+/// The statements in the body of a SQL function, as the workspace extracts them.
 fn sql_function_body(
     root: &pgls_query::NodeEnum,
     sql: &str,
@@ -207,18 +268,13 @@ fn sql_function_body(
     let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = root else {
         return Vec::new();
     };
-    let Some(body) = pgls_query_ext::utils::sql_function_body(root, sql) else {
-        return Vec::new();
-    };
     let function = pgls_catalog::resolve::FunctionContext::from_create_function(create_fn);
-    body.statements()
-        .into_iter()
+    pgls_query_ext::function_body::sql_function_body(root, sql)
+        .iter()
         .filter_map(|statement| {
-            let text = &body.body[statement];
-            let root = pgls_query::parse(text).ok()?.into_root()?;
+            let root = pgls_query::parse(&statement.sql).ok()?.into_root()?;
             Some(
-                AnalysableStatement::new(root, statement + body.range.start() + range.start())
-                    .with_sql(text)
+                AnalysableStatement::embedded(root, range.start(), statement)
                     .with_function(function.clone()),
             )
         })
@@ -307,16 +363,19 @@ fn write_snapshot(snapshot: &mut String, query: &str, diagnostics: &[LinterDiagn
     }
 }
 
-/// Writes the input with the fix applied. A fix must keep the input valid SQL.
+/// Writes the input with the fix applied. A fix must keep the input valid SQL, with its
+/// placeholders read as parameters.
 fn write_fix(snapshot: &mut String, query: &str, fix: &RuleFix) {
     let applicability = match fix.applicability {
         Applicability::Always => "safe",
         Applicability::MaybeIncorrect => "unsafe",
     };
     let fixed = fix.apply(query);
-    if pgls_query::parse(query).is_ok() {
+    let parses =
+        |sql: &str| pgls_query::parse(&pgls_lexer::convert_to_positional_params(sql)).is_ok();
+    if parses(query) {
         assert!(
-            pgls_query::parse(&fixed).is_ok(),
+            parses(&fixed),
             "the fix `{}` produces invalid SQL:\n{fixed}",
             fix.message
         );

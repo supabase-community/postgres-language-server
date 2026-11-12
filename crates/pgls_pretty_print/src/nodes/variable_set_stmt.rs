@@ -1,16 +1,10 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_comma_separated_list,
-};
-use pgls_query::{
-    NodeEnum,
-    protobuf::{Node, VariableSetStmt},
-};
+use pgls_query::protobuf::VariableSetStmt;
+
+use super::prelude::*;
 
 /// Emit a SET statement argument
 /// Special handling: AConst with string values should be emitted as unquoted identifiers
-fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
+fn emit_set_arg(e: &mut EventEmitter, node: &Node) {
     if let Some(NodeEnum::AConst(a_const)) = &node.node
         && let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val
     {
@@ -18,8 +12,8 @@ fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
         // but should be emitted without quotes. A value that an unquoted word cannot spell keeps
         // its quotes: unquoted, `SET datestyle = German` would set `german`.
         let val = &s.sval;
-        if !super::string::needs_quoting(val) {
-            e.group_start(GroupKind::String);
+        if !needs_quoting(val) {
+            e.group_start();
             e.token(TokenKind::IDENT(val.clone()));
             e.group_end();
             return;
@@ -28,7 +22,7 @@ fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
 
     // For all other cases (numbers, actual string literals with special chars, etc.),
     // use the normal emission
-    super::emit_node(node, e);
+    emit_node(e, node);
 }
 
 /// Emit a dot-separated variable name, quoting parts that need it
@@ -38,7 +32,7 @@ fn emit_variable_name(e: &mut EventEmitter, name: &str) {
         if i > 0 {
             e.token(TokenKind::DOT);
         }
-        if !super::string::needs_quoting(part) {
+        if !needs_quoting(part) {
             e.token(TokenKind::IDENT(part.to_string()));
         } else {
             // Quote the identifier
@@ -47,17 +41,9 @@ fn emit_variable_name(e: &mut EventEmitter, name: &str) {
     }
 }
 
-/// Emit the SET/RESET statement body without a semicolon (for use in ALTER ROLE SET, etc.)
-pub(super) fn emit_variable_set_stmt_no_semicolon(e: &mut EventEmitter, n: &VariableSetStmt) {
-    e.group_start(GroupKind::VariableSetStmt);
-    emit_variable_set_stmt_inner(e, n);
-    e.group_end();
-}
-
 pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) {
-    e.group_start(GroupKind::VariableSetStmt);
+    e.group_start();
     emit_variable_set_stmt_inner(e, n);
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
 
@@ -217,7 +203,7 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
             // Special syntax: SET SESSION CHARACTERISTICS AS TRANSACTION ...
             e.token(TokenKind::SESSION_KW);
             e.space();
-            super::emit_keyword(e, "characteristics");
+            emit_keyword(e, "characteristics");
             e.space();
             e.token(TokenKind::AS_KW);
             e.space();
@@ -234,11 +220,11 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
             // SET TRANSACTION SNAPSHOT 'snapshot_id'
             e.token(TokenKind::TRANSACTION_KW);
             e.space();
-            super::emit_keyword(e, "snapshot");
+            emit_keyword(e, "snapshot");
             e.space();
             // The snapshot id is in args as a string
             if !n.args.is_empty() {
-                super::emit_node(&n.args[0], e);
+                emit_node(e, &n.args[0]);
             }
         } else {
             // SET TRANSACTION
@@ -352,10 +338,10 @@ fn emit_transaction_option(e: &mut EventEmitter, def: &pgls_query::protobuf::Def
         }
         _ => {
             // Unknown transaction option - emit as identifier
-            super::emit_keyword(e, &def.defname);
+            emit_keyword(e, &def.defname);
             if let Some(ref arg) = def.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
     }

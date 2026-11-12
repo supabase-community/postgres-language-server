@@ -268,6 +268,14 @@ impl SnapshotManager {
         });
     }
 
+    /// Clear the snapshot for a specific connection.
+    #[cfg(feature = "db")]
+    pub fn clear_connection(&self, pool: &PgPool) {
+        let key: ConnectionKey = pool.into();
+        let mut schemas = self.db_schemas.write().unwrap();
+        schemas.remove(&key);
+    }
+
     /// Clear all connection-based snapshots.
     #[cfg(feature = "db")]
     pub fn clear_all_connections(&self) {
@@ -286,6 +294,8 @@ impl SnapshotManager {
 #[cfg(all(test, feature = "db"))]
 mod tests {
     use super::*;
+    use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+    use std::time::Instant;
 
     fn key(database: &str) -> ConnectionKey {
         ConnectionKey {
@@ -348,7 +358,7 @@ mod tests {
 
     /// A snapshot query that fails on a working connection, here because the role may not read
     /// `pg_proc`, isn't run again on every request, but only once its backoff ends.
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn failing_snapshot_queries_are_backed_off(test_db: sqlx::PgPool) {
         use sqlx::Executor;
 
@@ -404,7 +414,7 @@ mod tests {
 
     /// A snapshot that failed to load is loaded again right away with other connection options
     /// for the same database and user, e.g. without a startup `role` that may not read `pg_proc`.
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn failing_snapshot_queries_are_retried_with_other_options(test_db: sqlx::PgPool) {
         use sqlx::Executor;
 
@@ -432,5 +442,63 @@ mod tests {
             ConnectionKey::from(&unrestricted)
         );
         assert!(manager.load(&unrestricted).is_ok());
+    }
+
+    /// A pool for `database` on port `port` of localhost that waits at most `timeout` for a
+    /// connection. It only connects when it's used.
+    fn lazy_pool(port: u16, database: &str, timeout: Duration) -> PgPool {
+        let options = PgConnectOptions::new()
+            .host("127.0.0.1")
+            .port(port)
+            .username("postgres")
+            .database(database);
+        run_async(async move {
+            PgPoolOptions::new()
+                .acquire_timeout(timeout)
+                .connect_lazy_with(options)
+        })
+        .unwrap()
+    }
+
+    /// While the snapshot of a database that doesn't answer loads, the snapshots of the other
+    /// databases are still served.
+    #[test]
+    fn a_slow_database_does_not_block_the_others() {
+        // Never answers, like a database that hangs.
+        let hanging = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        hanging.set_nonblocking(true).unwrap();
+        let timeout = Duration::from_secs(3);
+        let slow = lazy_pool(hanging.local_addr().unwrap().port(), "slow", timeout);
+        let manager = SnapshotManager::new();
+        insert(&manager, "cached");
+        let cached = lazy_pool(key("cached").port, "cached", timeout);
+
+        std::thread::scope(|scope| {
+            let slow_load = scope.spawn(|| manager.load(&slow));
+
+            // Wait until the slow load connected, so that it's waiting for the database.
+            let start = Instant::now();
+            let _connection = loop {
+                match hanging.accept() {
+                    Ok((connection, _)) => break connection,
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        assert!(start.elapsed() < timeout, "the slow load didn't connect");
+                        std::thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(error) => panic!("{error}"),
+                }
+            };
+
+            let start = Instant::now();
+            assert!(manager.load(&cached).is_ok());
+            assert!(
+                start.elapsed() < Duration::from_secs(1),
+                "the cached snapshot waited for the slow database: {:?}",
+                start.elapsed()
+            );
+            assert!(!slow_load.is_finished());
+
+            assert!(slow_load.join().unwrap().is_err());
+        });
     }
 }

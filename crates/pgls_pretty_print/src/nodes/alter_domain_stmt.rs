@@ -1,11 +1,10 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterDomainStmt;
 
-use super::node_list::emit_dot_separated_list;
+use super::constraint::emit_domain_constraint;
+use super::prelude::*;
 
 pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) {
-    e.group_start(GroupKind::AlterDomainStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -34,7 +33,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
                 e.space();
                 e.token(TokenKind::DEFAULT_KW);
                 e.space();
-                super::emit_node(def, e);
+                emit_node(e, def);
             } else {
                 e.token(TokenKind::DROP_KW);
                 e.space();
@@ -59,7 +58,12 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             e.token(TokenKind::ADD_KW);
             if let Some(ref def) = n.def {
                 e.space();
-                super::emit_node(def, e);
+                match &def.node {
+                    Some(NodeEnum::Constraint(constraint)) => {
+                        emit_domain_constraint(e, constraint);
+                    }
+                    _ => emit_node(e, def),
+                }
             }
         }
         "X" => {
@@ -68,20 +72,13 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             e.token(TokenKind::CONSTRAINT_KW);
             if n.missing_ok {
                 e.space();
-                e.token(TokenKind::IF_KW);
-                e.space();
-                e.token(TokenKind::EXISTS_KW);
+                emit_if_exists(e);
             }
             if !n.name.is_empty() {
                 e.space();
-                super::emit_identifier_maybe_quoted(e, &n.name);
+                emit_identifier_maybe_quoted(e, &n.name);
             }
-            // behavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
-            // Only emit CASCADE explicitly; RESTRICT is the default
-            if n.behavior == 2 {
-                e.space();
-                e.token(TokenKind::CASCADE_KW);
-            }
+            emit_drop_behavior(e, n.behavior(), Separator::Space, Restrict::Omitted);
         }
         "V" => {
             e.token(TokenKind::VALIDATE_KW);
@@ -89,7 +86,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             e.token(TokenKind::CONSTRAINT_KW);
             if !n.name.is_empty() {
                 e.space();
-                super::emit_identifier_maybe_quoted(e, &n.name);
+                emit_identifier_maybe_quoted(e, &n.name);
             }
         }
         _ => {
@@ -97,8 +94,6 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
         }
     }
     e.indent_end();
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

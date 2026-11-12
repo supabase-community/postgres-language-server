@@ -1,8 +1,9 @@
 use pgls_analyse::{AnalysisFilter, Applicability, AppliesTo, GroupCategory, RuleGroup, RuleKey};
 
-use crate::linter_context::{AnalysedFileContext, LinterRuleContext, StatementContext};
+use crate::linter_context::{LinterRuleContext, StatementContext};
 use crate::linter_options::LinterOptions;
 use crate::linter_rule::{LinterDiagnostic, LinterRule};
+use pgls_walk::AnalysedFileContext;
 
 pub struct LinterRuleRegistryBuilder<'a> {
     filter: &'a AnalysisFilter<'a>,
@@ -74,7 +75,6 @@ pub struct LinterRegistryRuleParams<'a> {
     pub options: &'a LinterOptions,
     pub analysed_file_context: &'a AnalysedFileContext<'a>,
     pub statement: &'a StatementContext<'a>,
-    pub snapshot: Option<&'a pgls_catalog::Snapshot>,
 }
 
 /// Executor for rule as a generic function pointer
@@ -95,7 +95,6 @@ impl RegistryLinterRule {
             let ctx = LinterRuleContext::new(
                 params.root,
                 &options,
-                params.snapshot,
                 params.analysed_file_context,
                 params.statement,
             );

@@ -31,7 +31,8 @@ use crate::{
     },
     features::code_actions::{
         CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
-        EXECUTE_STATEMENT_MAX_ROWS, ExecuteStatementError, ExecuteStatementParams,
+        EXECUTE_STATEMENT_MAX_RESULT_SIZE, EXECUTE_STATEMENT_MAX_ROWS,
+        EXECUTE_STATEMENT_MAX_VALUE_SIZE, ExecuteStatementError, ExecuteStatementParams,
         ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
     },
     features::format::PullFileFormattingParams,
@@ -69,7 +70,7 @@ fn get_test_workspace(
     Ok((workspace, project_key))
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_diagnostics(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -407,7 +408,7 @@ fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_syntax_error(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -519,6 +520,55 @@ async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
     );
 }
 
+/// A comment between two tokens the parser combines through lookahead (`U&"..." UESCAPE`,
+/// `NOT IN`, `NOT BETWEEN`, `NULLS FIRST`, `WITH ORDINALITY`) used to break parsing in the
+/// libpg_query 17 branch.
+#[tokio::test]
+async fn comments_between_lookahead_tokens_are_no_syntax_error() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("lookahead-comments.sql");
+    let content = r#"select U&"d!0061t!+000061" /* c */ UESCAPE '!' from t;
+select 1 where 1 not /* c */ in (2);
+select 1 where 1 not /* c */ between 0 and 2;
+select * from t order by a nulls /* c */ first;
+select * from unnest(array[1]) with -- c
+ordinality;
+"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let syntax_errors = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "syntax")
+        })
+        .map(|diagnostic| diagnostic.location().span)
+        .collect::<Vec<_>>();
+    assert_eq!(syntax_errors, vec![]);
+}
+
 #[tokio::test]
 async fn format_preserves_named_parameters() {
     let mut conf = PartialConfiguration::init();
@@ -612,7 +662,7 @@ async fn correctly_ignores_files() {
 }
 
 #[cfg(all(test, not(target_os = "windows")))]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_dedupe_diagnostics(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -687,7 +737,7 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
 /// Without a trigger, plpgsql_check cannot check a trigger function, so the syntax error of
 /// libpg_query remains.
 #[cfg(all(test, not(target_os = "windows")))]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -748,7 +798,7 @@ async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
     assert_eq!(diagnostics[0].category().map(|c| c.name()), Some("syntax"));
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
     let conf = PartialConfiguration::init();
 
@@ -773,7 +823,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
             result _fetch_cycle_continuation_data := null;
         begin
             result.next_id := 0;
-            result.next_state := '{}'::jsonb
+            result.next_state := '{}'::jsonb;
 
             return result;
         end;
@@ -804,7 +854,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
     assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_positional_params(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -862,7 +912,7 @@ async fn test_positional_params(test_db: PgPool) {
 }
 
 #[cfg(all(test, not(target_os = "windows")))]
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_disable_plpgsql_check(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -968,7 +1018,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_disable_typecheck(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -1061,7 +1111,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
     test_db
         .execute("CREATE TABLE public.t (a INT);")
@@ -1135,7 +1185,7 @@ async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn named_identifier_params_skip_only_affected_typecheck(test_db: PgPool) {
     let connect_options = test_db.connect_options();
     let host = connect_options.get_host().to_string();
@@ -1262,7 +1312,7 @@ fn typecheck_diagnostics(
 
 /// Postgres treats non-ASCII characters as letters in identifiers, so diagnostics and hover
 /// cover the whole name.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn non_ascii_names_get_whole_spans(test_db: PgPool) {
     let content = "create table café (id int);\nselect a.größe from café a;\n";
     let diagnostics = typecheck_diagnostics(&test_db, content);
@@ -1314,7 +1364,7 @@ async fn non_ascii_names_get_whole_spans(test_db: PgPool) {
 
 /// GitHub issue #835: `RETURNS TABLE` columns are not parameters of the body, and `r.received_at`
 /// is a column of `r` even if an output column has the same name.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn sql_function_output_columns_are_not_parameters(test_db: PgPool) {
     test_db
         .execute("CREATE TABLE ev (id bigint PRIMARY KEY, received_at timestamptz NOT NULL);")
@@ -1367,7 +1417,7 @@ $$;
 
 /// GitHub issue #856: parameters of a SQL function are resolved by the static typecheck rules,
 /// not by EXPLAIN, which got array parameters and parameters in `extract(... from ...)` wrong.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn sql_function_bodies_are_not_explained(test_db: PgPool) {
     let content = r#"
 create or replace function interval_to_ms_config(p_interval interval)
@@ -1406,7 +1456,7 @@ $$;
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_named_params(_test_db: PgPool) {
     let conf = PartialConfiguration::init();
 
@@ -1655,7 +1705,32 @@ async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     assert_eq!(format_content(&formatted), formatted);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[tokio::test]
+async fn test_format_sql_function_bodies_with_quotes_and_atomic_bodies() {
+    let content = "create function f() returns text language sql as 'SELECT   ''a''';";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns text\nlanguage sql\nas $$\nselect 'a';\n$$;"
+    );
+    let content = "create function f(p int) returns int language sql begin atomic select p; select p + 1; end;";
+    let formatted = format_content(content);
+    assert_eq!(format_content(&formatted), formatted);
+}
+
+#[tokio::test]
+async fn test_format_continued_string_body_is_idempotent() {
+    // The two strings are one, `'select 1'`.
+    let content = "create function f() returns int language sql as 'select   1'\n'';";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $$\nselect 1;\n$$;"
+    );
+    assert_eq!(format_content(&formatted), formatted);
+}
+
+#[pgls_test_utils::db_test]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -1712,7 +1787,7 @@ async fn test_cstyle_comments(test_db: PgPool) {
     assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_search_path_configuration(test_db: PgPool) {
     // Setup test schemas and functions
     let setup_sql = r#"
@@ -1827,7 +1902,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_multi_line_completions(test_db: PgPool) {
     let setup = r#"
         create schema auth;
@@ -1906,7 +1981,61 @@ select * from auth.users;
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
+async fn completions_after_the_end_of_an_unterminated_statement(test_db: PgPool) {
+    test_db
+        .execute("create table completed_table (id int);")
+        .await
+        .expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+
+    // The statement ends before the space, and the cursor is after it.
+    let content = "select * from ";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let completions = workspace
+        .get_completions(crate::workspace::GetCompletionsParams {
+            project_key,
+            path: path.clone(),
+            position: TextSize::of(content),
+        })
+        .expect("Unable to request completions");
+
+    assert!(
+        completions
+            .items
+            .iter()
+            .any(|item| item.label == "completed_table"),
+        "{:?}",
+        completions.items
+    );
+}
+
+#[pgls_test_utils::db_test]
 async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
     test_db
         .execute("create schema auth; create table auth.users (id serial primary key);")
@@ -1995,6 +2124,18 @@ fn get_statement_execution_workspace(
     test_db: &PgPool,
     allow_statement_executions_against: &[String],
 ) -> (WorkspaceServer, ProjectKey) {
+    get_statement_execution_workspace_with_timeout(
+        test_db,
+        allow_statement_executions_against,
+        None,
+    )
+}
+
+fn get_statement_execution_workspace_with_timeout(
+    test_db: &PgPool,
+    allow_statement_executions_against: &[String],
+    statement_timeout_secs: Option<u16>,
+) -> (WorkspaceServer, ProjectKey) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         db: Some(PartialDatabaseConfiguration {
@@ -2009,6 +2150,7 @@ fn get_statement_execution_workspace(
             allow_statement_executions_against: Some(StringSet::from_iter(
                 allow_statement_executions_against.iter().cloned(),
             )),
+            statement_timeout_secs,
             ..Default::default()
         }),
         ..Default::default()
@@ -2083,7 +2225,7 @@ fn allow_test_host(test_db: &PgPool) -> Vec<String> {
     vec![format!("{}/*", test_db.connect_options().get_host())]
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool) {
     let (workspace, project_key) = get_statement_execution_workspace(&test_db, &[]);
 
@@ -2120,7 +2262,7 @@ async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool)
     assert!(!table_exists, "A disabled statement must not be executed");
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_ignores_invalid_patterns(test_db: PgPool) {
     let mut patterns = vec!["local[host/*".to_string()];
     patterns.extend(allow_test_host(&test_db));
@@ -2132,7 +2274,7 @@ async fn execute_statement_ignores_invalid_patterns(test_db: PgPool) {
     assert_eq!(result.rows, [[Some("1".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_rows(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2163,13 +2305,12 @@ async fn execute_statement_returns_rows(test_db: PgPool) {
                 vec![Some("2".into()), Some("two".into()), None, None, None],
             ],
             truncated: false,
-            rows_affected: None,
-            error: None,
+            ..Default::default()
         }
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_columns_without_rows(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2186,7 +2327,7 @@ async fn execute_statement_returns_columns_without_rows(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_truncates_rows(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2208,7 +2349,7 @@ async fn execute_statement_truncates_rows(test_db: PgPool) {
     assert_eq!(result.rows, [[Some("next".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_reports_rows_affected(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2247,7 +2388,7 @@ async fn execute_statement_reports_rows_affected(test_db: PgPool) {
     assert_eq!(result.rows_affected, None);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_sql_errors_without_disabling_the_database(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2273,7 +2414,7 @@ async fn execute_statement_returns_sql_errors_without_disabling_the_database(tes
     assert_eq!(result.rows, [[Some("1".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_locates_the_error_in_the_document(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2291,7 +2432,7 @@ async fn execute_statement_locates_the_error_in_the_document(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_detail_and_hint(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2308,7 +2449,7 @@ async fn execute_statement_returns_detail_and_hint(test_db: PgPool) {
     assert_eq!(error.hint.as_deref(), Some("the hint"));
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_rolls_back_the_transaction_it_opens(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2328,7 +2469,7 @@ async fn execute_statement_rolls_back_the_transaction_it_opens(test_db: PgPool) 
     assert_eq!(result.rows, [[Some("t".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_resets_session_settings(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2339,7 +2480,7 @@ async fn execute_statement_resets_session_settings(test_db: PgPool) {
     assert_eq!(result.rows, [[Some("\"$user\", public".to_string())]]);
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn executed_statements_do_not_affect_the_server_connections(test_db: PgPool) {
     let (workspace, project_key) =
         get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
@@ -2373,6 +2514,262 @@ async fn executed_statements_do_not_affect_the_server_connections(test_db: PgPoo
         "the connection is inside a transaction"
     );
     assert_eq!(row.get::<String, _>(1), "\"$user\", public");
+}
+
+#[pgls_test_utils::db_test]
+async fn execute_statement_times_out(test_db: PgPool) {
+    let (workspace, project_key) = get_statement_execution_workspace_with_timeout(
+        &test_db,
+        &allow_test_host(&test_db),
+        Some(1),
+    );
+
+    let start = Instant::now();
+    let (_, result) = execute_sql(&workspace, project_key, "select pg_sleep(10);");
+
+    assert_eq!(
+        result.error.map(|error| error.code).as_deref(),
+        Some("57014")
+    );
+    assert!(
+        start.elapsed() < Duration::from_secs(5),
+        "{:?}",
+        start.elapsed()
+    );
+}
+
+#[pgls_test_utils::db_test]
+async fn execute_statement_can_be_cancelled(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let path = PgLSPath::new("execute.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "select pg_sleep(30);".into(),
+            version: 1,
+        })
+        .unwrap();
+    let statement_id = workspace
+        .pull_code_actions(CodeActionsParams {
+            project_key,
+            path: path.clone(),
+            cursor_position: TextSize::new(0),
+            only: vec![],
+            skip: vec![],
+        })
+        .unwrap()
+        .actions
+        .into_iter()
+        .find_map(|action| match action.kind {
+            CodeActionKind::Command(CommandAction {
+                category: CommandActionCategory::ExecuteStatement(statement_id),
+            }) => Some(statement_id),
+            _ => None,
+        })
+        .unwrap();
+    let params = ExecuteStatementParams {
+        project_key,
+        path,
+        statement_id,
+    };
+
+    let start = Instant::now();
+    let result = std::thread::scope(|scope| {
+        let execution = scope.spawn(|| workspace.execute_statement(params.clone()));
+        std::thread::sleep(Duration::from_millis(500));
+        workspace
+            .cancel_statement_execution(params.clone())
+            .unwrap();
+        execution.join().unwrap().unwrap()
+    });
+
+    assert_eq!(
+        result.error.map(|error| error.code).as_deref(),
+        Some("57014")
+    );
+    assert!(
+        start.elapsed() < Duration::from_secs(10),
+        "{:?}",
+        start.elapsed()
+    );
+    assert!(workspace.running_statements.is_empty());
+}
+
+#[pgls_test_utils::db_test]
+async fn execute_statement_stops_a_truncated_query_early(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    // The first execution connects and loads the schema for the code actions, which isn't timed.
+    execute_sql(&workspace, project_key, "select 1 as one;");
+
+    // Without the cursor, Postgres would produce and send all 50 million rows.
+    let start = Instant::now();
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select generate_series(1, 50000000) as n",
+    );
+    let (_, next) = execute_sql(&workspace, project_key, "select 1 as one;");
+
+    assert!(result.truncated);
+    assert_eq!(result.rows.len(), EXECUTE_STATEMENT_MAX_ROWS);
+    assert_eq!(next.rows, [[Some("1".to_string())]]);
+    assert!(
+        start.elapsed() < Duration::from_secs(3),
+        "{:?}",
+        start.elapsed()
+    );
+}
+
+#[pgls_test_utils::db_test]
+async fn execute_statement_completes_a_truncated_command(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    execute_sql(&workspace, project_key, "create table inserted (id int);");
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "insert into inserted select generate_series(1, 1000) returning id;",
+    );
+    assert!(result.truncated);
+    assert_eq!(result.rows.len(), EXECUTE_STATEMENT_MAX_ROWS);
+
+    let (_, result) = execute_sql(&workspace, project_key, "select count(*) from inserted;");
+    assert_eq!(result.rows, [[Some("1000".to_string())]]);
+}
+
+#[pgls_test_utils::db_test]
+async fn execute_statement_cuts_long_values(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    // The cut falls into the middle of an `ä`.
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select repeat('x', 20000000) as big, 'x' || repeat('ä', 10000) as umlauts, 'short' as short;",
+    );
+
+    assert!(result.truncated_values);
+    let [big, umlauts, short] = result.rows[0].clone().try_into().unwrap();
+    let big = big.unwrap();
+    assert_eq!(big.len(), EXECUTE_STATEMENT_MAX_VALUE_SIZE + '…'.len_utf8());
+    assert!(big.ends_with('…'));
+    let umlauts = umlauts.unwrap();
+    assert_eq!(
+        umlauts.len(),
+        EXECUTE_STATEMENT_MAX_VALUE_SIZE - 1 + '…'.len_utf8()
+    );
+    assert!(umlauts.ends_with("ää…"));
+    assert_eq!(short.as_deref(), Some("short"));
+}
+
+#[pgls_test_utils::db_test]
+async fn execute_statement_caps_the_result_size(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "select repeat('x', 10000) as a, repeat('y', 10000) as b from generate_series(1, 150);",
+    );
+
+    assert!(result.truncated);
+    assert!(!result.truncated_values);
+    assert_eq!(
+        result.rows.len(),
+        EXECUTE_STATEMENT_MAX_RESULT_SIZE / (2 * EXECUTE_STATEMENT_MAX_VALUE_SIZE)
+    );
+    assert_eq!(result.message, "Showing the first 50 rows (truncated).");
+}
+
+#[pgls_test_utils::db_test]
+async fn execute_statement_refuses_copy_with_the_client(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    execute_sql(
+        &workspace,
+        project_key,
+        "create table copy_target (id int);",
+    );
+
+    let (_, result) = execute_sql(&workspace, project_key, "copy (select 1) to stdout;");
+    assert_eq!(
+        result.message,
+        "`COPY ... TO STDOUT` can't be executed from the editor. Use `\\copy` in psql, or a file on the database server."
+    );
+    let (_, result) = execute_sql(&workspace, project_key, "copy copy_target from stdin;");
+    assert!(
+        result
+            .message
+            .starts_with("`COPY ... FROM STDIN` can't be executed")
+    );
+
+    let (_, result) = execute_sql(&workspace, project_key, "select 1 as one;");
+    assert_eq!(result.rows, [[Some("1".to_string())]]);
+}
+
+#[pgls_test_utils::db_test]
+async fn execute_statement_returns_notices(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+
+    let (_, result) = execute_sql(
+        &workspace,
+        project_key,
+        "do $$ begin raise notice 'hello'; raise warning 'careful'; end $$;",
+    );
+
+    assert_eq!(result.notices, ["NOTICE: hello", "WARNING: careful"]);
+    assert_eq!(
+        result.message,
+        "Successfully executed statement. Rows affected: 0\nNOTICE: hello\nWARNING: careful"
+    );
+}
+
+#[pgls_test_utils::db_test]
+async fn executed_ddl_refreshes_the_snapshot(test_db: PgPool) {
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    let other = PgLSPath::new("other.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: other.clone(),
+            content: "select id from created_by_execute;".into(),
+            version: 1,
+        })
+        .unwrap();
+    let typecheck_findings = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: other.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| is_typecheck(diagnostic))
+            .count()
+    };
+    assert!(typecheck_findings() > 0, "the table should be unknown");
+
+    execute_sql(
+        &workspace,
+        project_key,
+        "create table created_by_execute (id int);",
+    );
+
+    assert_eq!(typecheck_findings(), 0);
 }
 
 /// A workspace that reads the section markers of a migration tool.
@@ -2519,6 +2916,98 @@ fn test_no_concurrently_fix_in_a_transaction() {
         titles,
         ["Suppress rule requireConcurrentIndexDeletion for this statement"]
     );
+}
+
+/// Code actions are requested on every cursor move. They reuse the analysis that the
+/// diagnostics made until the document or the settings change.
+#[test]
+fn code_actions_reuse_the_analysis() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "drop table users;".into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let cached = || {
+        let documents = workspace.documents.read().unwrap();
+        documents.get(&path).unwrap().cache().cached_analysis()
+    };
+    let lint_actions = || {
+        workspace
+            .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                project_key,
+                path: path.clone(),
+                cursor_position: 3.into(),
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull code actions")
+            .actions
+            .into_iter()
+            .filter(|action| matches!(action.kind, CodeActionKind::Edit(_)))
+            .map(|action| action.title)
+            .collect::<Vec<_>>()
+    };
+
+    workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics");
+    let analysis = cached().expect("the analysis of the diagnostics");
+    assert_eq!(
+        lint_actions(),
+        ["Suppress rule banDropTable for this statement"]
+    );
+    assert!(Arc::ptr_eq(&analysis, &cached().unwrap()));
+
+    // An edit drops the analysis.
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: path.clone(),
+            version: 2,
+            content: "drop table users;\ndrop table posts;".into(),
+        })
+        .expect("Unable to change test file");
+    assert!(cached().is_none());
+    assert_eq!(
+        lint_actions(),
+        ["Suppress rule banDropTable for this statement"]
+    );
+    let analysis = cached().expect("the analysis of the code actions");
+
+    // So does a change of the settings.
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(
+            r#"{"linter": {"rules": {"safety": {"banDropTable": "off"}}}}"#,
+        )
+        .unwrap(),
+    );
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: conf,
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+            replace: false,
+        })
+        .expect("Unable to update settings");
+    assert!(lint_actions().is_empty());
+    assert!(!Arc::ptr_eq(&analysis, &cached().unwrap()));
 }
 
 #[test]
@@ -2692,6 +3181,25 @@ fn test_concurrently_fix_is_unsafe_without_section_markers() {
     );
 }
 
+/// Statements with psql variables get fixes: the fixed statement is checked with the variables
+/// read as parameters, like the statement itself, and they stay as written.
+#[test]
+fn test_fix_file_fixes_statements_with_psql_variables() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let content = "create index users_tenant_idx on :\"schema\".users (email) where tenant = :'tenant' and plan = $plan;\n";
+    assert_eq!(
+        fixed(
+            &workspace,
+            project_key,
+            content,
+            FixFileMode::SafeAndUnsafeFixes,
+            &["safety/requireConcurrentIndexCreation"]
+        ),
+        "create index concurrently users_tenant_idx on :\"schema\".users (email) where tenant = :'tenant' and plan = $plan;\n"
+    );
+}
+
 #[test]
 fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
     let mut conf = PartialConfiguration::init();
@@ -2711,9 +3219,11 @@ fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
         FixFileMode::SafeAndUnsafeFixes,
         &[],
     );
+    // The table is created in the same transaction, so the CHECK constraint doesn't need
+    // NOT VALID.
     assert_eq!(
         once,
-        "create table if not exists t (a text[], b timestamptz /* local */, c jsonb, d text /* name */);\nalter table t add constraint t_a check (a is not null) not valid;\n"
+        "create table if not exists t (a text[], b timestamptz /* local */, c jsonb, d text /* name */);\nalter table t add constraint t_a check (a is not null);\n"
     );
     assert!(pgls_query::parse(&once).is_ok());
     assert_eq!(
@@ -2728,7 +3238,7 @@ fn test_fix_file_keeps_the_sql_valid_and_is_idempotent() {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
     test_db
         .execute(
@@ -2778,7 +3288,7 @@ async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints(test_db: PgPool) {
     test_db
         .execute(
@@ -2852,7 +3362,7 @@ async fn test_inlay_hints(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_semantic_tokens(test_db: PgPool) {
     test_db
         .execute("create table db_items (id int, label text);")
@@ -2905,14 +3415,19 @@ async fn test_semantic_tokens(test_db: PgPool) {
             .collect::<Vec<_>>()
     };
 
-    // The table and the enum created in the file, and the body of the SQL function.
+    // The table and the enum created in the file, the types of the DDL, and the body of the SQL
+    // function.
     assert_eq!(
         tokens(None),
         vec![
+            ("int", SemanticTokenKind::Type),
+            ("file_mood", SemanticTokenKind::Type),
             ("id", SemanticTokenKind::Property),
             ("file_items", SemanticTokenKind::Class),
             ("mood", SemanticTokenKind::Property),
             ("'up'", SemanticTokenKind::EnumMember),
+            ("int", SemanticTokenKind::Type),
+            ("text", SemanticTokenKind::Type),
             ("label", SemanticTokenKind::Property),
             ("public", SemanticTokenKind::Namespace),
             ("db_items", SemanticTokenKind::Class),
@@ -2937,7 +3452,7 @@ async fn test_semantic_tokens(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_hover_shows_resolved_references(test_db: PgPool) {
     test_db
         .execute(
@@ -3021,7 +3536,7 @@ async fn test_hover_shows_resolved_references(test_db: PgPool) {
 
 /// `DO`, `CALL`, and statements that don't parse have effects the catalog can't follow. The linter
 /// treats everything after them as unknown, but hints, tokens, and hover keep working.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_editor_features_after_unmodelled_statements(test_db: PgPool) {
     test_db
         .execute("create procedure db_proc(p int, label text) language sql as 'select 1';")
@@ -3125,7 +3640,7 @@ async fn test_editor_features_after_unmodelled_statements(test_db: PgPool) {
 
 /// Hover shows the objects as the statement sees them: created earlier in the file, changed by
 /// the file, or unchanged in the database, also after the file changes.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn hover_follows_the_ddl_before_the_statement(test_db: PgPool) {
     test_db
         .execute(
@@ -3207,7 +3722,7 @@ async fn hover_follows_the_ddl_before_the_statement(test_db: PgPool) {
 /// Hover and code actions on a file with thousands of statements, on a thread with the 2 MiB
 /// stack of the language server's tokio workers. They used to recurse once per statement before
 /// or after the cursor and overflow the stack, which aborts the server.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -3284,7 +3799,7 @@ async fn hover_and_code_actions_on_long_files(test_db: PgPool) {
     });
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_code_actions_expand_star(test_db: PgPool) {
     test_db
         .execute(r#"create table star_items (id int, "Label" text);"#)
@@ -3354,7 +3869,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     };
 
     // The columns of a table of the database and of one created in the file, qualified since
-    // there are two FROM items.
+    // there are two FROM items. After a dot, the keyword `select` needs no quotes.
     let actions = expand_actions("* from star_items");
     assert_eq!(actions.len(), 1, "{actions:?}");
     let (title, edit) = &actions[0];
@@ -3367,7 +3882,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         edit.edits,
         vec![TextEdit {
             range: range_of("*"),
-            new_text: r#"i.id, i."Label", t.id, t.item_id, t."select""#.into(),
+            new_text: r#"i.id, i."Label", t.id, t.item_id, t.select"#.into(),
         }]
     );
 
@@ -3379,7 +3894,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
         actions[0].1.edits,
         vec![TextEdit {
             range: range_of("t.*"),
-            new_text: r#"t.id, t.item_id, t."select""#.into(),
+            new_text: r#"t.id, t.item_id, t.select"#.into(),
         }]
     );
 
@@ -3405,7 +3920,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     assert!(expand_actions("* */").is_empty());
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -4438,7 +4953,7 @@ ALTER TABLE users DROP COLUMN email;
 
 /// When no configuration points at a database any more, its pool and snapshot are dropped, so that
 /// a reload or a removed folder doesn't keep every database ever configured in memory.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
     let workspace = WorkspaceServer::new();
     let project_key = workspace
@@ -4504,4 +5019,356 @@ async fn the_connection_of_a_removed_configuration_is_dropped(test_db: PgPool) {
         assert!(pools.pool.is_closed());
         assert!(pools.statement_pool.is_closed());
     }
+}
+
+#[test]
+fn database_spans_must_fit_the_statement() {
+    use super::database_span;
+
+    let at = |offset: u32| TextSize::from(offset);
+    let statement = "select 'é' from t";
+    let range = TextRange::new(at(100), at(100) + TextSize::of(statement));
+    // `'é'` is at 7..11.
+    assert_eq!(
+        database_span(Some(TextRange::new(at(7), at(11))), statement, range),
+        TextRange::new(at(107), at(111))
+    );
+    assert_eq!(database_span(None, statement, range), range);
+    // Inside `é`, or after the end of the statement.
+    assert_eq!(
+        database_span(Some(TextRange::new(at(9), at(11))), statement, range),
+        range
+    );
+    assert_eq!(
+        database_span(Some(TextRange::new(at(15), at(40))), statement, range),
+        range
+    );
+}
+
+#[pgls_test_utils::db_test]
+async fn test_inlay_hints_parameter_names_setting(test_db: PgPool) {
+    let path = PgLSPath::new("test.sql");
+    let content = "create function point(x int, y int) returns int language sql as 'select x + y';\n\
+        select point(1, 1 + 1), point(length('a'), null);\n";
+    let hints = |parameter_names| {
+        let mut conf = PartialConfiguration::init();
+        conf.merge_with(PartialConfiguration {
+            db: Some(PartialDatabaseConfiguration {
+                database: Some(
+                    test_db
+                        .connect_options()
+                        .get_database()
+                        .unwrap()
+                        .to_string(),
+                ),
+                ..Default::default()
+            }),
+            inlay_hints: Some(
+                pgls_configuration::inlay_hints::PartialInlayHintsConfiguration {
+                    parameter_names: Some(parameter_names),
+                    ..Default::default()
+                },
+            ),
+            ..Default::default()
+        });
+        let (workspace, project_key) =
+            get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        workspace
+            .pull_inlay_hints(PullInlayHintsParams {
+                project_key,
+                path: path.clone(),
+                range: TextRange::up_to(TextSize::of(content)),
+            })
+            .expect("Unable to pull inlay hints")
+            .hints
+            .into_iter()
+            .map(|hint| {
+                (
+                    &content[usize::from(hint.offset)..usize::from(hint.offset) + 1],
+                    hint.label,
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    use pgls_configuration::inlay_hints::ParameterNameHints;
+    assert_eq!(hints(ParameterNameHints::All).len(), 4);
+    assert_eq!(
+        hints(ParameterNameHints::Literals),
+        [("1", "x:".to_string()), ("n", "y:".to_string())]
+    );
+    assert!(hints(ParameterNameHints::None).is_empty());
+}
+
+/// Statements in `BEGIN ATOMIC` and `RETURN` bodies, and in `'...'` and `E'...'` bodies with
+/// escapes, get tokens, hover, and diagnostics at the right place in the file.
+#[pgls_test_utils::db_test]
+async fn test_sql_function_bodies(test_db: PgPool) {
+    test_db
+        .execute("create table body_users (id int, name text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create function atomic_fn(p int) returns int language sql\n\
+        begin atomic select p + id from body_users; end;\n\
+        create function return_fn(p int) returns int return p + 1;\n\
+        create function quoted_fn(p text) returns text language sql\n\
+        as 'select name || ''x'' || p from body_users where name = ''y'' and nope = 1';\n\
+        create function escaped_fn() returns text language sql\n\
+        as E'select \\'\\u00e9\\' || name from body_users where gone = 1';\n\
+        create function unicode_fn() returns text language sql\n\
+        as U&'select ''\\00e9'' || name from body_users where missing = 1';\n";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let tokens = workspace
+        .pull_semantic_tokens(PullSemanticTokensParams {
+            project_key,
+            path: path.clone(),
+            range: None,
+        })
+        .expect("Unable to pull semantic tokens")
+        .tokens
+        .into_iter()
+        .map(|token| (&content[token.range], token.kind))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        tokens,
+        vec![
+            ("int", SemanticTokenKind::Type),
+            ("int", SemanticTokenKind::Type),
+            ("p", SemanticTokenKind::Parameter),
+            ("id", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+            ("int", SemanticTokenKind::Type),
+            ("int", SemanticTokenKind::Type),
+            ("p", SemanticTokenKind::Parameter),
+            ("text", SemanticTokenKind::Type),
+            ("text", SemanticTokenKind::Type),
+            ("name", SemanticTokenKind::Property),
+            ("p", SemanticTokenKind::Parameter),
+            ("body_users", SemanticTokenKind::Class),
+            ("name", SemanticTokenKind::Property),
+            ("text", SemanticTokenKind::Type),
+            ("name", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+            ("text", SemanticTokenKind::Type),
+            ("name", SemanticTokenKind::Property),
+            ("body_users", SemanticTokenKind::Class),
+        ]
+    );
+
+    let hover = |needle: &str| {
+        let offset = content.find(needle).expect("needle in content") + 1;
+        workspace
+            .on_hover(OnHoverParams {
+                project_key,
+                path: path.clone(),
+                position: u32::try_from(offset).unwrap().into(),
+            })
+            .expect("Unable to hover")
+            .markdown_blocks
+    };
+    let blocks = hover("id from body_users; end");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.body_users.id"), "{blocks:?}");
+    let blocks = hover("name = ''y''");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.body_users.name"), "{blocks:?}");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+    let unknown_columns = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "lint/unknownColumn")
+        })
+        .map(|diagnostic| &content[diagnostic.location().span.expect("a span")])
+        .collect::<Vec<_>>();
+    assert_eq!(
+        unknown_columns,
+        ["nope", "gone", "missing"],
+        "{diagnostics:#?}"
+    );
+}
+
+/// Lint, hover and completions see the same catalog at each statement: after a down section,
+/// after a statement that doesn't parse, and after a statement on identifier parameters.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn lint_hover_and_completions_see_the_same_catalog(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Dbmate),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+
+    // Opens `content` without the `|`, and returns the typecheck diagnostics of the file, the
+    // completions at the `|`, and the hover on each needle.
+    let check = |content: &str, needles: &[&str]| {
+        let cursor = content.find('|').expect("cursor in content");
+        let content = content.replace('|', "");
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.clone(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        let typecheck: Vec<_> = workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .into_iter()
+            .filter(is_typecheck)
+            .map(|diagnostic| {
+                let span = diagnostic.location().span.expect("span");
+                content[span].to_string()
+            })
+            .collect();
+        let completions: Vec<_> = workspace
+            .get_completions(crate::workspace::GetCompletionsParams {
+                project_key,
+                path: path.clone(),
+                position: u32::try_from(cursor).unwrap().into(),
+            })
+            .expect("Unable to request completions")
+            .items
+            .into_iter()
+            .map(|item| item.label)
+            .collect();
+        let hovers: Vec<_> = needles
+            .iter()
+            .map(|needle| {
+                let offset = content.rfind(needle).expect("needle in content") + 2;
+                workspace
+                    .on_hover(OnHoverParams {
+                        project_key,
+                        path: path.clone(),
+                        position: u32::try_from(offset).unwrap().into(),
+                    })
+                    .expect("Unable to hover")
+                    .markdown_blocks
+                    .join("\n")
+            })
+            .collect();
+        workspace
+            .close_file(crate::workspace::CloseFileParams {
+                project_key,
+                path: path.clone(),
+            })
+            .expect("Unable to close test file");
+        (typecheck, completions, hovers)
+    };
+
+    // The changes of a down section don't carry into the next up section, also for its first
+    // statement.
+    let (typecheck, completions, hovers) = check(
+        "-- migrate:up\n\
+         create table walk_items (id int);\n\
+         -- migrate:down\n\
+         alter table walk_items add column down_only int;\n\
+         -- migrate:up\n\
+         select | from walk_items;\n\
+         select down_only from walk_items;\n",
+        &["walk_items;"],
+    );
+    assert_eq!(typecheck, ["down_only"]);
+    assert!(completions.contains(&"id".to_string()), "{completions:?}");
+    assert!(
+        !completions.contains(&"down_only".to_string()),
+        "{completions:?}"
+    );
+    assert!(hovers[0].contains("- id: int4"), "{hovers:?}");
+    assert!(!hovers[0].contains("down_only"), "{hovers:?}");
+
+    // A statement that doesn't parse may have created anything, but the objects created before
+    // it are still known.
+    let (typecheck, completions, hovers) = check(
+        "create table walk_parsed (id int);\n\
+         create tabel walk_unparsed (id int);\n\
+         select id from walk_unparsed;\n\
+         select | from walk_parsed;\n",
+        &["walk_parsed;"],
+    );
+    assert!(typecheck.is_empty(), "{typecheck:?}");
+    assert!(completions.contains(&"id".to_string()), "{completions:?}");
+    assert!(hovers[0].contains("- id: int4"), "{hovers:?}");
+
+    // The names of a statement with identifier parameters are placeholders: `:tbl` doesn't
+    // create a table `tbl`.
+    let (typecheck, completions, hovers) = check(
+        "create table :tbl (id int);\n\
+         select id from tbl;\n\
+         select | from tbl;\n",
+        &["tbl;"],
+    );
+    assert!(typecheck.is_empty(), "{typecheck:?}");
+    assert!(!completions.contains(&"id".to_string()), "{completions:?}");
+    assert_eq!(hovers, [""]);
 }

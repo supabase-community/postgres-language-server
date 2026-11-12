@@ -39,6 +39,7 @@ pgls_text_edit.workspace          = true
 pgls_text_size.workspace          = true
 pgls_tokenizer                    = { workspace = true }
 pgls_treesitter_grammar.workspace = true
+pgls_walk                         = { workspace = true }
 pgls_workspace_macros             = { workspace = true }
 regex                             = { workspace = true }
 rustc-hash                        = { workspace = true }
@@ -52,6 +53,7 @@ tree-sitter.workspace             = true
 
 # Optional DB dependencies
 futures            = { version = "0.3.31", optional = true }
+pgls_line_index    = { workspace = true, optional = true }
 pgls_pglinter      = { workspace = true, optional = true }
 pgls_plpgsql_check = { workspace = true, optional = true }
 pgls_splinter      = { workspace = true, optional = true }
@@ -65,6 +67,7 @@ db = [
   "dep:futures",
   "dep:sqlx",
   "dep:tokio",
+  "dep:pgls_line_index",
   "dep:pgls_pglinter",
   "dep:pgls_plpgsql_check",
   "dep:pgls_splinter",

@@ -1,9 +1,9 @@
 use std::path::Path;
 
-use pgls_analyser::{Direction, MigrationSection};
 use pgls_configuration::migrations::SectionMarkers;
 use pgls_diagnostics::{Diagnostic, MessageAndDescription};
 use pgls_text_size::{TextRange, TextSize};
+use pgls_walk::{Direction, MigrationSection};
 
 #[derive(Debug)]
 pub(crate) struct Migration {

@@ -1,12 +1,15 @@
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::alter_table_cmd_lock;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
 declare_lint_rule! {
     /// Enabling or disabling a trigger acquires a `SHARE ROW EXCLUSIVE` lock.
     ///
-    /// `ALTER TABLE ... ENABLE/DISABLE TRIGGER` blocks concurrent writes while the lock is held.
+    /// `ALTER TABLE ... ENABLE/DISABLE TRIGGER`, also `ENABLE ALWAYS` and `ENABLE REPLICA`, blocks
+    /// concurrent writes while the lock is held.
     /// This can cause downtime on busy tables.
     ///
     /// ## Examples
@@ -35,6 +38,8 @@ declare_lint_rule! {
 
 const TRIGGER_SUBTYPES: &[pgls_query::protobuf::AlterTableType] = &[
     pgls_query::protobuf::AlterTableType::AtEnableTrig,
+    pgls_query::protobuf::AlterTableType::AtEnableAlwaysTrig,
+    pgls_query::protobuf::AlterTableType::AtEnableReplicaTrig,
     pgls_query::protobuf::AlterTableType::AtDisableTrig,
     pgls_query::protobuf::AlterTableType::AtEnableTrigAll,
     pgls_query::protobuf::AlterTableType::AtDisableTrigAll,
@@ -48,25 +53,22 @@ impl LinterRule for AvoidEnableDisableTrigger {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && TRIGGER_SUBTYPES.contains(&cmd.subtype())
-                {
-                    diagnostics.push(
-                        LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Enabling or disabling a trigger acquires a "<Emphasis>"SHARE ROW EXCLUSIVE"</Emphasis>" lock."
-                            },
-                        )
-                        .detail(
-                            None,
-                            "This blocks concurrent writes. Consider the impact on busy tables and use SET lock_timeout.",
-                        ),
-                    );
-                }
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if TRIGGER_SUBTYPES.contains(&cmd.subtype()) {
+                let lock = alter_table_cmd_lock(cmd).name();
+                diagnostics.push(
+                    LinterDiagnostic::new(
+                        rule_category!(),
+                        None,
+                        markup! {
+                            "Enabling or disabling a trigger acquires a "<Emphasis>{lock}</Emphasis>" lock."
+                        },
+                    )
+                    .detail(
+                        None,
+                        "This blocks concurrent writes. Consider the impact on busy tables and use SET lock_timeout.",
+                    ),
+                );
             }
         }
 

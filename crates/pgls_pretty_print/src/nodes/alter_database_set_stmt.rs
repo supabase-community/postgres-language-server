@@ -1,9 +1,9 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterDatabaseSetStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_alter_database_set_stmt(e: &mut EventEmitter, n: &AlterDatabaseSetStmt) {
-    e.group_start(GroupKind::AlterDatabaseSetStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -11,7 +11,7 @@ pub(super) fn emit_alter_database_set_stmt(e: &mut EventEmitter, n: &AlterDataba
     e.space();
 
     if !n.dbname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.dbname);
+        emit_identifier_maybe_quoted(e, &n.dbname);
     }
 
     if let Some(ref setstmt) = n.setstmt {
