@@ -61,7 +61,7 @@ impl LinterRule for RequireConcurrentIndexCreation {
         let Some(relation) = &stmt.relation else {
             return diagnostics;
         };
-        if ctx.session().has_created_relation(relation, ctx.catalog()) {
+        if ctx.is_new_relation(relation) {
             return diagnostics;
         }
 
@@ -94,7 +94,5 @@ fn add_concurrently(
     {
         return None;
     }
-    let tokens = ctx.tokens()?;
-    let index = tokens.find(Token::Index)?;
-    fix::add_concurrently(ctx, &tokens, index)
+    fix::add_concurrently(ctx, &[Token::Index])
 }

@@ -13,11 +13,13 @@ use tower_lsp_server::ls_types::{
     MessageType, WorkspaceEdit,
 };
 
+use pgls_workspace::Workspace;
 use pgls_workspace::features::code_actions::{
     CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams, FixFileMode,
     FixFileParams,
 };
 use pgls_workspace::workspace::GetFileContentParams;
+use std::sync::Arc;
 
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn get_actions(
@@ -152,11 +154,28 @@ pub fn get_actions(
         })
         .collect();
 
+    // Editors ask for some kinds only, e.g. the quick fixes for a diagnostic.
     Ok(actions
         .into_iter()
         .chain(fix_all)
+        .filter(|action| is_requested(action.kind.as_ref(), requested))
         .map(CodeActionOrCommand::CodeAction)
         .collect())
+}
+
+/// Whether an action of `kind` is of one of the kinds in the request's `context.only`, see
+/// [`covers`]. The empty kind requests every action.
+fn is_requested(
+    kind: Option<&ls_types::CodeActionKind>,
+    requested: Option<&[ls_types::CodeActionKind]>,
+) -> bool {
+    let Some(requested) = requested else {
+        return true;
+    };
+    let kind = kind.map_or("", |kind| kind.as_str());
+    requested
+        .iter()
+        .any(|requested| requested.as_str().is_empty() || covers(requested, kind))
 }
 
 /// The kind of the action that applies all safe fixes, e.g. on save with
@@ -308,13 +327,19 @@ pub async fn execute_command(
             let path = session.file_path(&doc_url)?;
             let project_key = session.project_key(&path);
 
-            let result = session
-                .workspace
-                .execute_statement(ExecuteStatementParams {
-                    project_key,
-                    statement_id,
-                    path,
-                })?;
+            let params = ExecuteStatementParams {
+                project_key,
+                statement_id,
+                path,
+            };
+            // The statement runs on a blocking thread, so that the server keeps handling requests,
+            // `$/cancelRequest` included. That drops this future, and the guard then cancels the
+            // statement in the database.
+            let guard = CancelStatementOnDrop(Some((session.workspace.clone(), params.clone())));
+            let workspace = session.workspace.clone();
+            let result =
+                tokio::task::spawn_blocking(move || workspace.execute_statement(params)).await??;
+            guard.disarm();
 
             /*
              * Updating all diagnostics: the changes caused by the statement execution
@@ -364,9 +389,30 @@ pub async fn execute_command(
     }
 }
 
+/// Cancels the execution of a statement when dropped, unless disarmed.
+struct CancelStatementOnDrop(Option<(Arc<dyn Workspace>, ExecuteStatementParams)>);
+
+impl CancelStatementOnDrop {
+    fn disarm(mut self) {
+        self.0 = None;
+    }
+}
+
+impl Drop for CancelStatementOnDrop {
+    fn drop(&mut self) {
+        if let Some((workspace, params)) = self.0.take() {
+            tokio::task::spawn_blocking(move || {
+                if let Err(err) = workspace.cancel_statement_execution(params) {
+                    tracing::warn!("Could not cancel the statement execution: {err}");
+                }
+            });
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{FIX_ALL_KIND, covers, fix_all_edit};
+    use super::{FIX_ALL_KIND, covers, fix_all_edit, is_requested};
     use crate::adapters::{PositionEncoding, from_lsp};
     use pgls_line_index::{LineIndex, WideEncoding};
     use tower_lsp_server::ls_types::CodeActionKind;
@@ -379,6 +425,29 @@ mod tests {
         for kind in ["quickfix", "source.fix", "source.fixAll.other"] {
             assert!(!covers(&CodeActionKind::from(kind), FIX_ALL_KIND), "{kind}");
         }
+    }
+
+    #[test]
+    fn requested_kinds_are_hierarchical() {
+        let fix = CodeActionKind::from("quickfix.pgls.banDropTable".to_string());
+        let requested = |only: &[&str]| {
+            let only: Vec<_> = only
+                .iter()
+                .map(|kind| CodeActionKind::from(kind.to_string()))
+                .collect();
+            is_requested(Some(&fix), Some(&only))
+        };
+        assert!(is_requested(Some(&fix), None));
+        assert!(requested(&["quickfix"]));
+        assert!(requested(&["quickfix.pgls"]));
+        assert!(requested(&["source", "quickfix.pgls.banDropTable"]));
+        assert!(requested(&[""]));
+        assert!(!requested(&["quick"]));
+        assert!(!requested(&["source.fixAll"]));
+        assert!(!is_requested(
+            Some(&CodeActionKind::EMPTY),
+            Some(&[CodeActionKind::QUICKFIX])
+        ));
     }
 
     #[test]

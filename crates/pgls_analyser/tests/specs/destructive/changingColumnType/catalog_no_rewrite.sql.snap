@@ -1,0 +1,23 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- Binary coercible changes, and changes that keep the type, don't rewrite the table. The table is
+-- created in a transaction of its own, since a table created in the same transaction isn't
+-- reported either way.
+-- catalog: builtin
+-- expect_no_diagnostics
+begin;
+create table recipes (id int8, name varchar(20), body text, network cidr);
+commit;
+begin;
+alter table recipes alter column name type text;
+alter table recipes alter column body type varchar;
+alter table recipes alter column id type bigint;
+alter table recipes alter column network type inet;
+alter table recipes alter column name type text using name;
+commit;
+
+```
