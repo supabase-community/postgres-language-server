@@ -1,12 +1,18 @@
 use pgls_query::protobuf::CaseExpr;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
+
+/// Where the branches of a CASE line up in expanded layout.
+#[derive(Clone, Copy)]
+enum BranchPlacement {
+    /// Under the column the CASE starts at.
+    Aligned,
+    /// One level in from the line the CASE starts on.
+    Indented,
+}
 
 pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
-    emit_case_expr_impl(e, n, true);
+    emit_case(e, n, BranchPlacement::Aligned);
 }
 
 /// Emits a branch result, `then <result>` or `else <result>`.
@@ -16,17 +22,17 @@ pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
 /// and two indents, and a few levels run past the line width. A nested CASE is therefore indented
 /// from the line of its THEN or ELSE instead: its branches one level in, `end` under `then`.
 pub(super) fn emit_case_result(e: &mut EventEmitter, result: &pgls_query::protobuf::Node) {
-    super::emit_node_with(result, e, |node, e| match node {
-        pgls_query::NodeEnum::CaseExpr(case) => emit_case_expr_impl(e, case, false),
-        node => super::emit_node_enum(node, e),
+    emit_node_with(e, result, |e, node| match node {
+        pgls_query::NodeEnum::CaseExpr(case) => emit_case(e, case, BranchPlacement::Indented),
+        node => emit_node_enum(e, node),
     });
 }
 
-fn emit_case_expr_impl(e: &mut EventEmitter, n: &CaseExpr, align: bool) {
-    e.group_start(GroupKind::CaseExpr);
+fn emit_case(e: &mut EventEmitter, n: &CaseExpr, branches: BranchPlacement) {
+    e.group_start();
 
     let expanded = matches!(e.config().layout, crate::Layout::Expanded);
-    let align = expanded && align;
+    let align = expanded && matches!(branches, BranchPlacement::Aligned);
     if align {
         e.align_start();
     }
@@ -35,7 +41,7 @@ fn emit_case_expr_impl(e: &mut EventEmitter, n: &CaseExpr, align: bool) {
     // Optional test expression (for simple CASE)
     if let Some(ref arg) = n.arg {
         e.space();
-        super::emit_node(arg, e);
+        emit_node(e, arg);
     }
 
     // Indent WHEN/ELSE clauses inside CASE
@@ -43,14 +49,14 @@ fn emit_case_expr_impl(e: &mut EventEmitter, n: &CaseExpr, align: bool) {
 
     // WHEN clauses
     for when_clause in &n.args {
-        super::emit_layout_break(e);
-        super::emit_node(when_clause, e);
+        emit_layout_break(e);
+        emit_node(e, when_clause);
     }
 
     // ELSE clause
     if let Some(ref defresult) = n.defresult {
-        super::emit_comments_before_keyword(e, "else", defresult);
-        super::emit_layout_break(e);
+        emit_comments_before_keyword(e, "else", defresult);
+        emit_layout_break(e);
         e.token(TokenKind::ELSE_KW);
         e.space();
         emit_case_result(e, defresult);
@@ -58,7 +64,7 @@ fn emit_case_expr_impl(e: &mut EventEmitter, n: &CaseExpr, align: bool) {
 
     e.take_comments_before_case_end_at(n.location);
     e.indent_end();
-    super::emit_layout_break(e);
+    emit_layout_break(e);
     e.token(TokenKind::END_KW);
 
     if align {

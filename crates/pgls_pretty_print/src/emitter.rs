@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-pub use crate::codegen::group_kind::GroupKind;
 pub use crate::codegen::token_kind::TokenKind;
 use crate::{Comment, FormatConfig};
 
@@ -29,9 +28,7 @@ pub enum LayoutEvent {
         text: String,
         line_comment: bool,
     },
-    GroupStart {
-        kind: GroupKind,
-    },
+    GroupStart,
     GroupEnd,
     IndentStart,
     IndentEnd,
@@ -68,18 +65,10 @@ pub struct EventEmitter {
 }
 
 impl EventEmitter {
+    /// An emitter without comments, for unit tests that look at the events.
+    #[cfg(test)]
     pub fn new(config: FormatConfig) -> Self {
-        Self {
-            events: Vec::new(),
-            configured_layout: config.layout.clone(),
-            config,
-            leading_comments: HashMap::new(),
-            trailing_comments: HashMap::new(),
-            comments_before_case_end: HashMap::new(),
-            truncated_identifiers: HashMap::new(),
-            leading_line_comments_require_break: false,
-            comments_after_separator: Vec::new(),
-        }
+        Self::with_comments(config, HashMap::new(), HashMap::new())
     }
 
     // Later option PRs inspect this while deciding which layout events to emit.
@@ -329,8 +318,8 @@ impl EventEmitter {
         }
     }
 
-    pub fn group_start(&mut self, kind: GroupKind) {
-        self.events.push(LayoutEvent::GroupStart { kind });
+    pub fn group_start(&mut self) {
+        self.events.push(LayoutEvent::GroupStart);
     }
 
     pub fn group_end(&mut self) {

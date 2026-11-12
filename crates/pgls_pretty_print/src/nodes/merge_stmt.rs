@@ -1,13 +1,10 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::MergeStmt;
 
-use super::{emit_node, merge_action::emit_merge_when_clause};
+use super::emit_merge_when_clause;
+use super::prelude::*;
 
 pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
-    e.group_start(GroupKind::MergeStmt);
+    e.group_start();
 
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);
@@ -29,7 +26,7 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        emit_node(source, e);
+        emit_node(e, source);
     }
 
     // ON condition
@@ -37,7 +34,7 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();
-        emit_node(condition, e);
+        emit_node(e, condition);
     }
 
     // WHEN clauses
@@ -52,7 +49,7 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
         e.line(LineType::SoftOrSpace);
         super::returning_clause::emit_returning_keyword(e, returning);
         e.indent_start();
-        super::node_list::emit_comma_separated_list(e, &returning.exprs, super::emit_node);
+        emit_comma_separated_list(e, &returning.exprs, emit_node);
         e.indent_end();
     }
 

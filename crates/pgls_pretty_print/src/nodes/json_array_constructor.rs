@@ -1,23 +1,21 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::{JsonArrayAgg, JsonArrayConstructor, JsonArrayQueryConstructor};
 
-use super::json_value_expr::{emit_json_output, emit_json_value_expr};
+use super::emit_json_value_expr;
+use super::json_value_expr::emit_json_output;
+use super::prelude::*;
 
 pub(super) fn emit_json_array_constructor(e: &mut EventEmitter, n: &JsonArrayConstructor) {
-    e.group_start(GroupKind::JsonArrayConstructor);
+    e.group_start();
 
     e.token(TokenKind::JSON_ARRAY_KW);
     e.token(TokenKind::L_PAREN);
 
     if !n.exprs.is_empty() {
-        super::node_list::emit_comma_separated_list(e, &n.exprs, |node, emitter| {
+        emit_comma_separated_list(e, &n.exprs, |emitter, node| {
             if let Some(pgls_query::NodeEnum::JsonValueExpr(value)) = node.node.as_ref() {
                 emit_json_value_expr(emitter, value);
             } else {
-                super::emit_node(node, emitter);
+                emit_node(emitter, node);
             }
         });
     }
@@ -51,7 +49,7 @@ pub(super) fn emit_json_array_query_constructor(
     e: &mut EventEmitter,
     n: &JsonArrayQueryConstructor,
 ) {
-    e.group_start(GroupKind::JsonArrayQueryConstructor);
+    e.group_start();
 
     e.token(TokenKind::JSON_ARRAY_KW);
     e.token(TokenKind::L_PAREN);
@@ -59,7 +57,7 @@ pub(super) fn emit_json_array_query_constructor(
     let mut has_content = false;
 
     if let Some(ref query) = n.query {
-        super::emit_node(query, e);
+        emit_node(e, query);
         has_content = true;
     }
 
@@ -81,7 +79,7 @@ pub(super) fn emit_json_array_query_constructor(
 }
 
 pub(super) fn emit_json_array_agg(e: &mut EventEmitter, n: &JsonArrayAgg) {
-    e.group_start(GroupKind::JsonArrayAgg);
+    e.group_start();
 
     // Laid out like a function call: the arguments and clauses on one line when they fit,
     // otherwise on their own lines one level in, with `)` back on the call's line. The call has
@@ -91,7 +89,7 @@ pub(super) fn emit_json_array_agg(e: &mut EventEmitter, n: &JsonArrayAgg) {
         .as_ref()
         .is_some_and(|constructor| constructor.agg_filter.is_some() || constructor.over.is_some());
     if has_suffix {
-        e.group_start(GroupKind::List);
+        e.group_start();
     }
     e.token(TokenKind::JSON_ARRAYAGG_KW);
     e.token(TokenKind::L_PAREN);
@@ -112,7 +110,7 @@ pub(super) fn emit_json_array_agg(e: &mut EventEmitter, n: &JsonArrayAgg) {
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        super::node_list::emit_comma_separated_list(e, &constructor.agg_order, super::emit_node);
+        emit_comma_separated_list(e, &constructor.agg_order, emit_node);
     }
 
     // NULL ON NULL / ABSENT ON NULL goes inside the parentheses

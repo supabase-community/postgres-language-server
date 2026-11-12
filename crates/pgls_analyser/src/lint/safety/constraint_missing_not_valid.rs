@@ -1,5 +1,5 @@
 use crate::fix::StatementTokens;
-use crate::utils::{ConstraintSite, added_constraints, skips_validation};
+use crate::utils::{ConstraintSite, added_constraints, altered_relation, skips_validation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -44,6 +44,11 @@ impl LinterRule for ConstraintMissingNotValid {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        // Other transactions can't see a table created earlier in the transaction, so
+        // validating its rows blocks no one.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
+        }
         added_constraints(ctx.stmt())
             .filter(|(_, site)| *site == ConstraintSite::Table)
             .filter_map(|(constraint, _)| {

@@ -1,13 +1,10 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_comma_separated_list,
-};
 use pgls_query::protobuf::{JsonConstructorExpr, JsonConstructorType};
 use std::convert::TryFrom;
 
+use super::prelude::*;
+
 pub(super) fn emit_json_constructor_expr(e: &mut EventEmitter, n: &JsonConstructorExpr) {
-    e.group_start(GroupKind::JsonConstructorExpr);
+    e.group_start();
 
     let constructor =
         JsonConstructorType::try_from(n.r#type).unwrap_or(JsonConstructorType::Undefined);
@@ -19,7 +16,7 @@ pub(super) fn emit_json_constructor_expr(e: &mut EventEmitter, n: &JsonConstruct
     let mut has_content = false;
 
     if !n.args.is_empty() {
-        emit_comma_separated_list(e, &n.args, super::emit_node);
+        emit_comma_separated_list(e, &n.args, emit_node);
         has_content = true;
     }
 
@@ -27,7 +24,7 @@ pub(super) fn emit_json_constructor_expr(e: &mut EventEmitter, n: &JsonConstruct
         if has_content {
             e.space();
         }
-        super::emit_node(func, e);
+        emit_node(e, func);
         has_content = true;
     }
 
@@ -35,7 +32,7 @@ pub(super) fn emit_json_constructor_expr(e: &mut EventEmitter, n: &JsonConstruct
         if has_content {
             e.space();
         }
-        super::emit_node(coercion, e);
+        emit_node(e, coercion);
         has_content = true;
     }
 

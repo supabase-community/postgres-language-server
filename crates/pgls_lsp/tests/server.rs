@@ -545,7 +545,7 @@ async fn client_disconnecting_mid_request_does_not_panic() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_database_connection(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -669,7 +669,7 @@ async fn wait_for_diagnostics(
 /// The configuration file has neither a `db` nor a `typecheck` section and there is no environment
 /// configuration, so the client override layer is the only thing that can enable database features
 /// here — and clearing it has to disable them again.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool) -> Result<()> {
     const STATEMENT: &str = "select unknown from public.users;";
 
@@ -811,7 +811,7 @@ async fn server_shutdown() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_completions(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -984,7 +984,7 @@ async fn hover_text(server: &mut Server, position: Position) -> Result<String> {
 
 /// A query that fails on a working connection isn't reported as a connection failure: hover says
 /// why the schema couldn't be loaded.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn hover_reports_why_the_schema_could_not_be_loaded(test_db: PgPool) -> Result<()> {
     // The server's connections run as `test_login`, a role of the test migrations that isn't a
     // superuser. Both settings belong to the test's own database, which is dropped afterwards, so
@@ -1026,7 +1026,7 @@ async fn hover_reports_why_the_schema_could_not_be_loaded(test_db: PgPool) -> Re
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1108,7 +1108,7 @@ async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1226,7 +1226,7 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1401,7 +1401,7 @@ async fn test_completions_is_complete_when_no_db_configured() -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_issue_271(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1739,6 +1739,24 @@ async fn execute_statement_at(
     doc_url: &Uri,
     position: Position,
 ) -> Result<Option<Value>> {
+    let params = execute_statement_command(server, doc_url, position).await?;
+    let result = server
+        .request::<ExecuteCommandParams, Option<Value>>(
+            "workspace/executeCommand",
+            "_execStmt",
+            params,
+        )
+        .await?;
+
+    Ok(result.flatten())
+}
+
+/// The `pgls.executeStatement` command of the statement at `position`.
+async fn execute_statement_command(
+    server: &mut Server,
+    doc_url: &Uri,
+    position: Position,
+) -> Result<ExecuteCommandParams> {
     let code_actions_response = server
         .request::<CodeActionParams, CodeActionResponse>(
             "textDocument/codeAction",
@@ -1777,22 +1795,14 @@ async fn execute_statement_at(
         })
         .expect("Did not find executeStatement command!");
 
-    let result = server
-        .request::<ExecuteCommandParams, Option<Value>>(
-            "workspace/executeCommand",
-            "_execStmt",
-            ExecuteCommandParams {
-                command: exec_statement_command.0,
-                arguments: exec_statement_command.1,
-                ..Default::default()
-            },
-        )
-        .await?;
-
-    Ok(result.flatten())
+    Ok(ExecuteCommandParams {
+        command: exec_statement_command.0,
+        arguments: exec_statement_command.1,
+        ..Default::default()
+    })
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     let mut server = statement_execution_server(&test_db);
 
@@ -1859,7 +1869,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn execute_statement_returns_the_postgres_error_at_its_position(
     test_db: PgPool,
 ) -> Result<()> {
@@ -1908,7 +1918,7 @@ async fn execute_statement_returns_the_postgres_error_at_its_position(
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2036,7 +2046,7 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2144,7 +2154,77 @@ async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
+async fn cancel_request_cancels_the_executed_statement(test_db: PgPool) -> Result<()> {
+    let mut server = statement_execution_server(&test_db);
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    let doc_url = url!("test.sql");
+    server
+        .open_named_document("select pg_sleep(30);", doc_url.clone(), "sql")
+        .await?;
+    let params = execute_statement_command(&mut server, &doc_url, Position::new(0, 3)).await?;
+
+    let sleeping = async || {
+        sqlx::query_scalar::<_, i64>(
+            "select count(*) from pg_stat_activity where state = 'active' and query like '%pg_sleep(30)%' and pid <> pg_backend_pid()",
+        )
+        .fetch_one(&test_db)
+        .await
+        .unwrap()
+    };
+
+    // The executed statement runs on a blocking thread, so the server handles the cancel
+    // request while it waits for the database.
+    let execution = tokio::spawn(
+        server.service.ready().await.map_err(Error::msg)?.call(
+            Request::build("workspace/executeCommand")
+                .id("exec")
+                .params(to_value(params)?)
+                .finish(),
+        ),
+    );
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while sleeping().await == 0 {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    })
+    .await
+    .context("the statement did not start")?;
+
+    server
+        .notify(
+            "$/cancelRequest",
+            lsp::CancelParams {
+                id: lsp::NumberOrString::String("exec".into()),
+            },
+        )
+        .await?;
+
+    let response = execution.await?.map_err(Error::msg)?.unwrap();
+    assert_eq!(
+        response.error().map(|error| error.code),
+        Some(tower_lsp_server::jsonrpc::ErrorCode::RequestCancelled)
+    );
+
+    // The database cancels the statement as well.
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while sleeping().await > 0 {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    })
+    .await
+    .context("the statement still runs")?;
+
+    server.shutdown().await?;
+
+    Ok(())
+}
+
+#[pgls_test_utils::db_test]
 async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2303,7 +2383,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_issue_281(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2389,7 +2469,7 @@ async fn test_issue_281(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_issue_303(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2522,7 +2602,7 @@ async fn test_issue_303(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn multiple_projects(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2707,7 +2787,7 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn extends_config(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -2922,7 +3002,7 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_multiple_content_changes_single_request(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -3072,7 +3152,7 @@ ALTER TABLE ONLY "public"."campaign_contact_list"
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_plpgsql(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -3727,7 +3807,7 @@ async fn semantic_token_count(server: &mut Server) -> Result<usize> {
 
 /// Inlay hints and semantic tokens are refreshed when the schema cache is invalidated and when the
 /// configuration changes, and the configuration can turn them off.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_editor_features_refresh_and_settings(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -3925,7 +4005,7 @@ async fn wait_for_diagnostics_without_refresh(
 /// When inlay hints or semantic tokens were requested while the database could not be reached, the
 /// client is asked to request them again once a diagnostics run finds the database reachable, and
 /// not before.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_editor_features_refresh_when_the_database_becomes_reachable(
     test_db: PgPool,
 ) -> Result<()> {
@@ -4149,7 +4229,7 @@ async fn execute_statement_without_arguments_is_invalid() -> Result<()> {
 
 /// Inlay hints after multi-byte characters are positioned in UTF-16, and a range that ends past
 /// the end of the document, as some clients send, still gets them.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -4239,7 +4319,7 @@ async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> 
     Ok(())
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();

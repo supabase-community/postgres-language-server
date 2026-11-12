@@ -1,30 +1,26 @@
-use pgls_query::{NodeEnum, protobuf::ReindexStmt};
+use pgls_query::protobuf::ReindexStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_parenthesized_list,
-};
+use super::prelude::*;
 
 pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
-    e.group_start(GroupKind::ReindexStmt);
+    e.group_start();
 
     e.token(TokenKind::REINDEX_KW);
 
     // Handle options (CONCURRENTLY, VERBOSE, TABLESPACE, etc.)
     if !n.params.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.params, |node, emitter| {
+        emit_parenthesized_list(e, &n.params, |emitter, node| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 // Emit option name
-                super::emit_keyword(emitter, &def.defname);
+                emit_keyword(emitter, &def.defname);
                 // Emit option value if present
                 if let Some(ref arg) = def.arg {
                     emitter.space();
-                    super::emit_node(arg, emitter);
+                    emit_node(emitter, arg);
                 }
             } else {
-                super::emit_node(node, emitter);
+                emit_node(emitter, node);
             }
         });
     }
@@ -53,7 +49,7 @@ pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
     if let Some(ref relation) = n.relation {
         super::emit_range_var(e, relation);
     } else if !n.name.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.name);
+        emit_identifier_maybe_quoted(e, &n.name);
     }
 
     e.group_end();

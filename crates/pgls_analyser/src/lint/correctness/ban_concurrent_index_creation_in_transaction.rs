@@ -1,9 +1,9 @@
 use crate::utils::{alter_table_cmds, detaches_concurrently};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_catalog::is_reindex_concurrent;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::options::is_reindex_concurrent;
 
 declare_lint_rule! {
     /// Concurrent index operations are not allowed within a transaction.

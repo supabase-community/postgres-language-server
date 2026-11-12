@@ -1,12 +1,9 @@
 use pgls_query::protobuf::DropSubscriptionStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_drop_subscription_stmt(e: &mut EventEmitter, n: &DropSubscriptionStmt) {
-    e.group_start(GroupKind::DropSubscriptionStmt);
+    e.group_start();
 
     e.token(TokenKind::DROP_KW);
     e.space();
@@ -21,7 +18,7 @@ pub(super) fn emit_drop_subscription_stmt(e: &mut EventEmitter, n: &DropSubscrip
 
     if !n.subname.is_empty() {
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.subname);
+        emit_identifier_maybe_quoted(e, &n.subname);
     }
 
     // Add CASCADE or RESTRICT if specified

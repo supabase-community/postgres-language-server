@@ -1,13 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::CreateFdwStmt;
 
-use super::node_list::emit_parenthesized_list;
+use super::prelude::*;
 
 pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
-    e.group_start(GroupKind::CreateFdwStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -17,7 +13,7 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
     e.space();
     e.token(TokenKind::WRAPPER_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.fdwname);
+    emit_identifier_maybe_quoted(e, &n.fdwname);
 
     // Handler and validator functions
     if !n.func_options.is_empty() {
@@ -31,7 +27,7 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
                     if let Some(ref arg) = def_elem.arg {
                         e.token(TokenKind::HANDLER_KW);
                         e.space();
-                        super::emit_node(arg, e);
+                        emit_node(e, arg);
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
@@ -42,7 +38,7 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
                     if let Some(ref arg) = def_elem.arg {
                         e.token(TokenKind::VALIDATOR_KW);
                         e.space();
-                        super::emit_node(arg, e);
+                        emit_node(e, arg);
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
@@ -51,7 +47,7 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
                 }
                 _ => {
                     // Fallback for unknown options
-                    super::emit_node(opt, e);
+                    emit_node(e, opt);
                 }
             }
             e.space();
@@ -65,7 +61,7 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
         e.indent_start();
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |e, n| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });

@@ -1,18 +1,15 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
-};
-use pgls_query::{NodeEnum, protobuf::CreatePolicyStmt};
+use pgls_query::protobuf::CreatePolicyStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt) {
-    e.group_start(GroupKind::CreatePolicyStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
     e.token(TokenKind::POLICY_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.policy_name);
+    emit_identifier_maybe_quoted(e, &n.policy_name);
 
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);
@@ -43,7 +40,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
             "INSERT" => e.token(TokenKind::INSERT_KW),
             "UPDATE" => e.token(TokenKind::UPDATE_KW),
             "DELETE" => e.token(TokenKind::DELETE_KW),
-            _ => super::emit_keyword(e, &n.cmd_name),
+            _ => emit_keyword(e, &n.cmd_name),
         }
     }
 
@@ -51,7 +48,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TO_KW);
         e.space();
-        emit_comma_separated_list(e, &n.roles, |node, e| {
+        emit_comma_separated_list(e, &n.roles, |e, node| {
             if let Some(NodeEnum::RoleSpec(role)) = &node.node {
                 super::emit_role_spec(e, role);
             }
@@ -62,7 +59,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        super::emit_parenthesized_condition(e, GroupKind::CreatePolicyStmt, qual);
+        emit_parenthesized_condition(e, qual);
     }
 
     if let Some(ref with_check) = n.with_check {
@@ -71,7 +68,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         e.space();
         e.token(TokenKind::CHECK_KW);
         e.space();
-        super::emit_parenthesized_condition(e, GroupKind::CreatePolicyStmt, with_check);
+        emit_parenthesized_condition(e, with_check);
     }
 
     e.group_end();

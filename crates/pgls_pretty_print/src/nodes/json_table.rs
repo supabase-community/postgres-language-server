@@ -1,19 +1,13 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
-};
-use pgls_query::{
-    NodeEnum,
-    protobuf::{
-        JsonArgument, JsonBehavior, JsonBehaviorType, JsonQuotes, JsonTable, JsonTableColumn,
-        JsonTableColumnType, JsonTablePathSpec, JsonWrapper, TypeName,
-    },
+use pgls_query::protobuf::{
+    JsonArgument, JsonBehavior, JsonBehaviorType, JsonQuotes, JsonTable, JsonTableColumn,
+    JsonTableColumnType, JsonTablePathSpec, JsonWrapper, TypeName,
 };
 use std::convert::TryFrom;
 
+use super::prelude::*;
+
 pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
-    e.group_start(GroupKind::JsonTable);
+    e.group_start();
 
     if n.lateral {
         e.token(TokenKind::LATERAL_KW);
@@ -39,7 +33,7 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::PASSING_KW);
         e.space();
-        emit_comma_separated_list(e, &n.passing, |node, e| {
+        emit_comma_separated_list(e, &n.passing, |e, node| {
             let argument = assert_node_variant!(JsonArgument, node);
             emit_json_argument(e, argument);
         });
@@ -52,11 +46,11 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
         e.token(TokenKind::L_PAREN);
         e.indent_start();
         e.line(LineType::Soft);
-        emit_comma_separated_list(e, &n.columns, |node, e| {
+        emit_comma_separated_list(e, &n.columns, |e, node| {
             if let Some(NodeEnum::JsonTableColumn(col)) = node.node.as_ref() {
                 emit_json_table_column(e, col);
             } else {
-                super::emit_node(node, e);
+                emit_node(e, node);
             }
         });
         e.indent_end();
@@ -82,24 +76,24 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
 }
 
 pub(super) fn emit_json_table_path_spec(e: &mut EventEmitter, spec: &JsonTablePathSpec) {
-    e.group_start(GroupKind::JsonTablePathSpec);
+    e.group_start();
 
     if let Some(string_node) = spec.string.as_ref() {
-        super::emit_node(string_node, e);
+        emit_node(e, string_node);
     }
 
     if !spec.name.is_empty() {
         e.space();
         e.token(TokenKind::AS_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &spec.name);
+        emit_identifier_maybe_quoted(e, &spec.name);
     }
 
     e.group_end();
 }
 
 pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn) {
-    e.group_start(GroupKind::JsonTableColumn);
+    e.group_start();
 
     if col.coltype() == JsonTableColumnType::JtcNested {
         e.token(TokenKind::NESTED_KW);
@@ -117,11 +111,11 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
             e.token(TokenKind::L_PAREN);
             e.indent_start();
             e.line(LineType::Soft);
-            emit_comma_separated_list(e, &col.columns, |node, e| {
+            emit_comma_separated_list(e, &col.columns, |e, node| {
                 if let Some(NodeEnum::JsonTableColumn(nested)) = node.node.as_ref() {
                     emit_json_table_column(e, nested);
                 } else {
-                    super::emit_node(node, e);
+                    emit_node(e, node);
                 }
             });
             e.indent_end();
@@ -134,7 +128,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
     }
 
     if !col.name.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &col.name);
+        emit_identifier_maybe_quoted(e, &col.name);
     }
 
     if col.coltype() == JsonTableColumnType::JtcForOrdinality {
@@ -256,12 +250,12 @@ fn emit_inline_type_name(e: &mut EventEmitter, type_name: &TypeName) -> bool {
         return false;
     }
 
-    super::emit_identifier_maybe_quoted(e, parts[0]);
+    emit_identifier_maybe_quoted(e, parts[0]);
     true
 }
 
 pub(super) fn emit_json_argument(e: &mut EventEmitter, argument: &JsonArgument) {
-    e.group_start(GroupKind::JsonArgument);
+    e.group_start();
 
     if let Some(value) = argument.val.as_ref() {
         super::emit_json_value_expr(e, value);
@@ -271,14 +265,14 @@ pub(super) fn emit_json_argument(e: &mut EventEmitter, argument: &JsonArgument) 
         e.space();
         e.token(TokenKind::AS_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &argument.name);
+        emit_identifier_maybe_quoted(e, &argument.name);
     }
 
     e.group_end();
 }
 
 pub(super) fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) {
-    e.group_start(GroupKind::JsonBehavior);
+    e.group_start();
 
     match JsonBehaviorType::try_from(behavior.btype).unwrap_or(JsonBehaviorType::Undefined) {
         JsonBehaviorType::JsonBehaviorNull => e.token(TokenKind::NULL_KW),
@@ -301,7 +295,7 @@ pub(super) fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) 
             e.token(TokenKind::DEFAULT_KW);
             if let Some(expr) = behavior.expr.as_ref() {
                 e.space();
-                super::emit_node(expr, e);
+                emit_node(e, expr);
             } else {
                 debug_assert!(false, "DEFAULT json behavior requires an expression");
             }
@@ -313,7 +307,7 @@ pub(super) fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) 
 
     if behavior.coerce {
         e.space();
-        super::emit_identifier_maybe_quoted(e, "coerce");
+        emit_identifier_maybe_quoted(e, "coerce");
     }
 
     e.group_end();

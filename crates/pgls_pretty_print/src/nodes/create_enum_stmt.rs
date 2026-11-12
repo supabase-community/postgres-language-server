@@ -1,13 +1,9 @@
 use pgls_query::protobuf::CreateEnumStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_parenthesized_list,
-};
+use super::prelude::*;
 
 pub(super) fn emit_create_enum_stmt(e: &mut EventEmitter, n: &CreateEnumStmt) {
-    e.group_start(GroupKind::CreateEnumStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -16,7 +12,7 @@ pub(super) fn emit_create_enum_stmt(e: &mut EventEmitter, n: &CreateEnumStmt) {
     // Emit the type name (qualified name as a list)
     if !n.type_name.is_empty() {
         e.space();
-        super::node_list::emit_dot_separated_list(e, &n.type_name);
+        emit_dot_separated_list(e, &n.type_name);
     }
 
     e.space();
@@ -27,9 +23,9 @@ pub(super) fn emit_create_enum_stmt(e: &mut EventEmitter, n: &CreateEnumStmt) {
     // Emit the enum values list (as string literals with quotes)
     if !n.vals.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.vals, |n, e| {
+        emit_parenthesized_list(e, &n.vals, |e, n| {
             let s = assert_node_variant!(String, n);
-            super::string::emit_string_literal(e, s);
+            emit_string_literal(e, s);
         });
     }
 

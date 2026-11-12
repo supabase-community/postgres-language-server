@@ -8,6 +8,8 @@ use pgls_query::{
     protobuf::{AlterTableCmd, AlterTableStmt, CreateFunctionStmt, Node},
 };
 
+use crate::options::find_def_elem;
+
 /// The value of a `String` node.
 pub fn string_value(node: &Node) -> Option<&str> {
     match node.node.as_ref()? {
@@ -81,48 +83,43 @@ pub fn find_option_value<'a>(
     create_fn: &'a CreateFunctionStmt,
     option_name: &str,
 ) -> Option<&'a str> {
-    create_fn.options.iter().find_map(|option| {
-        let Some(NodeEnum::DefElem(option)) = &option.node else {
-            return None;
-        };
-        if option.defname != option_name {
-            return None;
-        }
-        match option.arg.as_deref()?.node.as_ref()? {
-            NodeEnum::String(value) => Some(value.sval.as_str()),
-            NodeEnum::List(list) => match list.items.as_slice() {
-                [item] => string_value(item),
-                _ => None,
-            },
+    let option = find_def_elem(&create_fn.options, option_name)?;
+    match option.arg.as_deref()?.node.as_ref()? {
+        NodeEnum::String(value) => Some(value.sval.as_str()),
+        NodeEnum::List(list) => match list.items.as_slice() {
+            [item] => string_value(item),
             _ => None,
-        }
-    })
+        },
+        _ => None,
+    }
 }
 
-/// [`find_option_value`], to change the value.
+/// [`find_option_value`], to change the value. Like [`find_def_elem`], it reads the last option
+/// with the name; Postgres rejects a repeated option of `CREATE FUNCTION`.
 pub fn find_option_value_mut<'a>(
     create_fn: &'a mut CreateFunctionStmt,
     option_name: &str,
 ) -> Option<&'a mut String> {
-    create_fn.options.iter_mut().find_map(|option| {
-        let Some(NodeEnum::DefElem(option)) = &mut option.node else {
-            return None;
-        };
-        if option.defname != option_name {
-            return None;
-        }
-        match option.arg.as_deref_mut()?.node.as_mut()? {
-            NodeEnum::String(value) => Some(&mut value.sval),
-            NodeEnum::List(list) => match list.items.as_mut_slice() {
-                [item] => match item.node.as_mut()? {
-                    NodeEnum::String(value) => Some(&mut value.sval),
-                    _ => None,
-                },
+    let option =
+        create_fn
+            .options
+            .iter_mut()
+            .rev()
+            .find_map(|option| match option.node.as_mut()? {
+                NodeEnum::DefElem(option) if option.defname == option_name => Some(option),
+                _ => None,
+            })?;
+    match option.arg.as_deref_mut()?.node.as_mut()? {
+        NodeEnum::String(value) => Some(&mut value.sval),
+        NodeEnum::List(list) => match list.items.as_mut_slice() {
+            [item] => match item.node.as_mut()? {
+                NodeEnum::String(value) => Some(&mut value.sval),
                 _ => None,
             },
             _ => None,
-        }
-    })
+        },
+        _ => None,
+    }
 }
 
 #[cfg(test)]

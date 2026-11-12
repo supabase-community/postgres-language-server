@@ -44,6 +44,7 @@ impl TestSetup<'_> {
             snapshot: &snapshot,
             identifiers: self.typed_identifiers,
             search_path: &[],
+            duplicate_assignments_reported: false,
         })
         .await;
 
@@ -99,7 +100,7 @@ impl TestSetup<'_> {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_arg_row_type(test_db: PgPool) {
     // A SQL function whose argument is a table's row type, e.g.
     // create function get_tbl_name(row_arg public.tbl) returns text
@@ -132,7 +133,7 @@ async fn function_arg_row_type(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_arg_view_row_type(test_db: PgPool) {
     // A view (like a table) exposes a composite row type, so a function
     // argument typed as the view must also resolve field access without a
@@ -164,7 +165,7 @@ async fn function_arg_view_row_type(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn invalid_column(test_db: PgPool) {
     TestSetup {
         name: "invalid_column",
@@ -186,7 +187,7 @@ async fn invalid_column(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_table_as_invalid_column(test_db: PgPool) {
     TestSetup {
         name: "create_table_as_invalid_column",
@@ -199,7 +200,7 @@ async fn create_table_as_invalid_column(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_table_as_invalid_relation(test_db: PgPool) {
     TestSetup {
         name: "create_table_as_invalid_relation",
@@ -212,7 +213,7 @@ async fn create_table_as_invalid_relation(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_materialized_view_as_invalid_column(test_db: PgPool) {
     TestSetup {
         name: "create_materialized_view_as_invalid_column",
@@ -225,7 +226,7 @@ async fn create_materialized_view_as_invalid_column(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_view_as_invalid_column(test_db: PgPool) {
     TestSetup {
         name: "create_view_as_invalid_column",
@@ -238,7 +239,7 @@ async fn create_view_as_invalid_column(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_as_valid_queries_do_not_execute_ddl(test_db: PgPool) {
     test_db
         .execute("CREATE TABLE t (a INT);")
@@ -280,7 +281,7 @@ async fn create_as_valid_queries_do_not_execute_ddl(test_db: PgPool) {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn invalid_type_in_function(test_db: PgPool) {
     // create or replace function clean_up(uid uuid)
     // returns void
@@ -337,7 +338,7 @@ async fn invalid_type_in_function(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn operator_does_not_exist(test_db: PgPool) {
     // tests the pattern: operator does not exist: X + Y
     // use boolean type which doesn't have + operator with text
@@ -368,7 +369,7 @@ async fn operator_does_not_exist(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_parameter_type_with_multiple_words(test_db: PgPool) {
     // the type "timestamp with time zone" has multiple words
     let setup = r#"
@@ -413,4 +414,126 @@ async fn function_parameter_type_with_multiple_words(test_db: PgPool) {
     }
     .test()
     .await;
+}
+
+#[pgls_test_utils::db_test]
+async fn merge_invalid_column(test_db: PgPool) {
+    TestSetup {
+        name: "merge_invalid_column",
+        query: "merge into users u using imports i on i.id = u.id when matched then update set name = i.nope;",
+        setup: Some(
+            r#"
+        create table public.users (id int8 primary key, name text);
+        create table public.imports (id int8, name text);
+    "#,
+        ),
+        test_db: &test_db,
+        typed_identifiers: vec![],
+    }
+    .test()
+    .await;
+}
+
+#[pgls_test_utils::db_test]
+async fn merge_is_not_executed(test_db: PgPool) {
+    test_db
+        .execute(
+            "create table public.users (id int8 primary key, name text);
+             create table public.imports (id int8, name text);
+             insert into public.imports values (1, 'a');",
+        )
+        .await
+        .expect("Failed to set up the tables");
+
+    TestSetup {
+        name: "merge_valid",
+        query: "merge into users u using imports i on i.id = u.id \
+                when matched then update set name = i.name \
+                when not matched then insert values (i.id, i.name);",
+        setup: None,
+        test_db: &test_db,
+        typed_identifiers: vec![],
+    }
+    .test()
+    .await;
+
+    let rows = sqlx::query_scalar::<_, i64>("select count(*) from public.users")
+        .fetch_one(&test_db)
+        .await
+        .expect("Failed to count the rows");
+    assert_eq!(rows, 0, "the MERGE must not insert the row");
+}
+
+/// Postgres reports a column assigned twice without a position. Once
+/// `banDuplicateColumnAssignments` reported it, only the other errors of the statement remain.
+#[pgls_test_utils::db_test]
+async fn duplicate_assignments_are_reported_once(test_db: PgPool) {
+    test_db
+        .execute(
+            "create table public.users (id int8 primary key, name text);
+             create table public.imports (id int8, name text);",
+        )
+        .await
+        .expect("Failed to set up the tables");
+    let snapshot = pgls_catalog::Snapshot::load(&test_db)
+        .await
+        .expect("Failed to load snapshot");
+
+    for sql in [
+        "merge into users u using imports i on u.id = i.id \
+         when matched then update set name = i.name, name = 'again'",
+        "update users set name = 'a', name = 'b'",
+    ] {
+        let reported = check(&test_db, &snapshot, sql, false).await;
+        assert!(
+            reported
+                .as_deref()
+                .is_some_and(|message| message.contains("multiple assignments to same column")),
+            "{sql}: {reported:?}"
+        );
+        assert_eq!(check(&test_db, &snapshot, sql, true).await, None, "{sql}");
+    }
+    // Other errors of the statement are still reported.
+    let other = check(
+        &test_db,
+        &snapshot,
+        "merge into users u using imports i on u.id = i.id \
+         when matched then update set name = i.nope, name = 'again'",
+        true,
+    )
+    .await;
+    assert!(
+        other
+            .as_deref()
+            .is_some_and(|message| message.contains("i.nope")),
+        "{other:?}"
+    );
+}
+
+/// The message of the error of `sql`, if any.
+async fn check(
+    test_db: &PgPool,
+    snapshot: &pgls_catalog::Snapshot,
+    sql: &str,
+    duplicate_assignments_reported: bool,
+) -> Option<String> {
+    let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+        .unwrap();
+    let tree = parser.parse(sql, None).unwrap();
+    check_sql(TypecheckParams {
+        conn: test_db,
+        sql,
+        ast: &root,
+        tree: &tree,
+        snapshot,
+        identifiers: vec![],
+        search_path: &[],
+        duplicate_assignments_reported,
+    })
+    .await
+    .unwrap()
+    .map(|diagnostic| pgls_diagnostics::PrintDescription(&diagnostic).to_string())
 }

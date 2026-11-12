@@ -1,18 +1,16 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::{
     JsonEncoding, JsonFormat, JsonFormatType, JsonOutput, JsonReturning, JsonValueExpr,
 };
 
+use super::prelude::*;
+
 pub(super) fn emit_json_value_expr(e: &mut EventEmitter, n: &JsonValueExpr) {
-    e.group_start(GroupKind::JsonValueExpr);
+    e.group_start();
 
     if let Some(ref raw_expr) = n.raw_expr {
-        super::emit_node(raw_expr, e);
+        emit_node(e, raw_expr);
     } else if let Some(ref formatted_expr) = n.formatted_expr {
-        super::emit_node(formatted_expr, e);
+        emit_node(e, formatted_expr);
     }
 
     if let Some(ref format) = n.format {
@@ -23,7 +21,7 @@ pub(super) fn emit_json_value_expr(e: &mut EventEmitter, n: &JsonValueExpr) {
 }
 
 pub(super) fn emit_json_output_node(e: &mut EventEmitter, n: &JsonOutput) {
-    e.group_start(GroupKind::JsonOutput);
+    e.group_start();
 
     e.token(TokenKind::RETURNING_KW);
 
@@ -60,22 +58,28 @@ pub(super) fn emit_json_output(e: &mut EventEmitter, output: &JsonOutput, has_co
 }
 
 pub(super) fn emit_json_format_node(e: &mut EventEmitter, format: &JsonFormat) {
-    e.group_start(GroupKind::JsonFormat);
+    e.group_start();
 
-    emit_json_format_without_prefix(e, format);
+    emit_json_format_after(e, format, Prefix::None);
 
     e.group_end();
 }
 
+/// What comes before a FORMAT clause.
+#[derive(Clone, Copy)]
+enum Prefix {
+    /// A space: the clause follows an expression on the same line.
+    Space,
+    /// Nothing: the clause is the whole node.
+    None,
+}
+
 pub(super) fn emit_json_format(e: &mut EventEmitter, format: &JsonFormat) {
-    emit_json_format_with_prefix(e, format, true);
+    emit_json_format_after(e, format, Prefix::Space);
 }
 
-fn emit_json_format_without_prefix(e: &mut EventEmitter, format: &JsonFormat) {
-    emit_json_format_with_prefix(e, format, false);
-}
-
-fn emit_json_format_with_prefix(e: &mut EventEmitter, format: &JsonFormat, prefix_space: bool) {
+fn emit_json_format_after(e: &mut EventEmitter, format: &JsonFormat, prefix: Prefix) {
+    let prefix_space = matches!(prefix, Prefix::Space);
     let mut wrote_any = false;
 
     match format.format_type() {
@@ -94,7 +98,7 @@ fn emit_json_format_with_prefix(e: &mut EventEmitter, format: &JsonFormat, prefi
             }
             e.token(TokenKind::FORMAT_KW);
             e.space();
-            super::emit_keyword(e, "jsonb");
+            emit_keyword(e, "jsonb");
             wrote_any = true;
         }
         JsonFormatType::Undefined | JsonFormatType::JsFormatDefault => {}
@@ -109,7 +113,7 @@ fn emit_json_format_with_prefix(e: &mut EventEmitter, format: &JsonFormat, prefi
 }
 
 pub(super) fn emit_json_returning_node(e: &mut EventEmitter, returning: &JsonReturning) {
-    e.group_start(GroupKind::JsonReturning);
+    e.group_start();
 
     let mut has_content = false;
     emit_json_returning_clause(e, returning, &mut has_content);
@@ -135,5 +139,5 @@ fn emit_encoding(e: &mut EventEmitter, label: &str, needs_space: bool) {
     }
     e.token(TokenKind::ENCODING_KW);
     e.space();
-    super::emit_keyword(e, label);
+    emit_keyword(e, label);
 }

@@ -368,7 +368,7 @@ mod tests {
         Ok((diagnostics, span_texts))
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_composite_types(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -401,7 +401,7 @@ mod tests {
         assert_eq!(diagnostics.len(), 0);
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_if_expr(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -440,7 +440,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_missing_var(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -470,7 +470,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("v_c"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_missing_col_if_stmt(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -502,7 +502,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("c"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_entire_body_broken(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -534,7 +534,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("DECLRE"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -569,7 +569,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("RAISE NOTICE '%', r.c;"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_stacked_diagnostics(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -603,7 +603,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("get stacked diagnostics"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_constant_refcursor(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -636,7 +636,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_constant_assignment(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -671,7 +671,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("call p1(10, b);"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_missing_procedure(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -699,7 +699,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("p1"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_dml_in_stable_function(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -729,7 +729,7 @@ mod tests {
         assert_eq!(diagnostics[0].advices.code.as_deref(), Some("0A000"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_record_field_assignment(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -766,7 +766,7 @@ mod tests {
         assert!(span_texts[0].is_some());
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_trigger_basic(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -826,7 +826,7 @@ mod tests {
         assert_eq!(span_texts[0].as_deref(), Some("audit_log"));
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_trigger_missing_column(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -887,7 +887,7 @@ mod tests {
         );
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_trigger_multiple_tables(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;

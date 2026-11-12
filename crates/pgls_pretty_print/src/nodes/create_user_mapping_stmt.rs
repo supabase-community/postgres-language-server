@@ -1,12 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_parenthesized_list,
-};
 use pgls_query::protobuf::CreateUserMappingStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUserMappingStmt) {
-    e.group_start(GroupKind::CreateUserMappingStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -34,14 +31,14 @@ pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUser
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SERVER_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.servername);
+        emit_identifier_maybe_quoted(e, &n.servername);
     }
 
     if !n.options.is_empty() {
         e.space();
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |e, n| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });

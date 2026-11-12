@@ -1,14 +1,9 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterForeignServerStmt;
 
-use super::{
-    node_list::emit_parenthesized_list,
-    string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str},
-};
+use super::prelude::*;
 
 pub(super) fn emit_alter_foreign_server_stmt(e: &mut EventEmitter, n: &AlterForeignServerStmt) {
-    e.group_start(GroupKind::AlterForeignServerStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -33,7 +28,7 @@ pub(super) fn emit_alter_foreign_server_stmt(e: &mut EventEmitter, n: &AlterFore
         e.indent_start();
         emit_keyword(e, "OPTIONS");
         e.space();
-        emit_parenthesized_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |e, n| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });

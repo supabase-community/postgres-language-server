@@ -1,20 +1,15 @@
 use pgls_query::protobuf::{DropBehavior, TruncateStmt};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::emit_comma_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_truncate_stmt(e: &mut EventEmitter, n: &TruncateStmt) {
-    e.group_start(GroupKind::TruncateStmt);
+    e.group_start();
 
     e.token(TokenKind::TRUNCATE_KW);
 
     if !n.relations.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.relations, super::emit_node);
+        emit_comma_separated_list(e, &n.relations, emit_node);
     }
 
     // RESTART IDENTITY / CONTINUE IDENTITY

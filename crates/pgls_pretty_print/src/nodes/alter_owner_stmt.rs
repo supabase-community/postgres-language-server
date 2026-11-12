@@ -1,17 +1,9 @@
-use pgls_query::{
-    NodeEnum,
-    protobuf::{AlterOwnerStmt, ObjectType},
-};
+use pgls_query::protobuf::{AlterOwnerStmt, ObjectType};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
-
-use super::node_list::emit_dot_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_alter_owner_stmt(e: &mut EventEmitter, n: &AlterOwnerStmt) {
-    e.group_start(GroupKind::AlterOwnerStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -31,7 +23,11 @@ pub(super) fn emit_alter_owner_stmt(e: &mut EventEmitter, n: &AlterOwnerStmt) {
             if let Some(ref object) = n.object {
                 e.space();
                 if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
-                    super::emit_object_with_args_for_aggregate(e, owa);
+                    super::emit_object_with_args_as(
+                        e,
+                        owa,
+                        super::ObjectArguments::AggregateSignature,
+                    );
                 } else {
                     emit_owner_object(e, object);
                 }
@@ -169,7 +165,7 @@ fn emit_object_type(e: &mut EventEmitter, object_type: ObjectType) {
 fn emit_owner_object(e: &mut EventEmitter, object: &pgls_query::Node) {
     match &object.node {
         Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
-        _ => super::emit_node(object, e),
+        _ => emit_node(e, object),
     }
 }
 
@@ -183,7 +179,7 @@ fn emit_owner_operator_collection(e: &mut EventEmitter, object: &pgls_query::Nod
             e.space();
             e.token(TokenKind::USING_KW);
             e.space();
-            super::emit_node(method_node, e);
+            emit_node(e, method_node);
             return;
         }
     }

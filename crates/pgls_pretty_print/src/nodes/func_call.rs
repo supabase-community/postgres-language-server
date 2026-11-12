@@ -1,17 +1,9 @@
-use crate::{
-    CommaStyle, TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
-};
-use pgls_query::{
-    Node, NodeEnum,
-    protobuf::{CoercionForm, FuncCall, a_const::Val},
-};
+use pgls_query::protobuf::a_const::Val;
+use pgls_query::protobuf::{CoercionForm, FuncCall};
 
-use super::string::{
-    emit_identifier, needs_quoting, needs_quoting_as_column_name,
-    needs_quoting_as_function_or_type_name, needs_quoting_as_label,
-};
+use crate::CommaStyle;
+
+use super::prelude::*;
 
 /// Get the last part of the function name (the actual function name without schema)
 fn get_last_func_name(n: &FuncCall) -> Option<&str> {
@@ -55,58 +47,38 @@ fn configured_argument_group_size(e: &EventEmitter, n: &FuncCall) -> Option<usiz
 }
 
 fn emit_grouped_arguments(e: &mut EventEmitter, args: &[pgls_query::Node], group_size: usize) {
-    let leading = matches!(e.config().comma_style, CommaStyle::Leading);
+    // Within a group, trailing commas fill. Leading commas break before every argument of a group
+    // that doesn't fit on its line.
+    let within_group = match e.config().comma_style {
+        CommaStyle::Leading => ListSeparatorSpacing::SoftOrSpace,
+        CommaStyle::Trailing => ListSeparatorSpacing::Fill,
+    };
 
     for (group_index, arguments) in args.chunks(group_size).enumerate() {
         if group_index > 0 {
-            emit_grouped_comma(e, leading, arguments.first(), LineType::SoftOrSpace);
+            emit_list_comma(e, arguments.first(), ListSeparatorSpacing::SoftOrSpace);
         }
 
-        e.group_start(GroupKind::FunctionArgumentGroup);
+        e.group_start();
         for (argument_index, argument) in arguments.iter().enumerate() {
             if argument_index > 0 {
                 // `Fill` keeps the pair on one line when it fits and falls back to one
                 // argument per line when it does not, instead of exceeding the line width.
-                emit_grouped_comma(e, leading, Some(argument), LineType::Fill);
+                emit_list_comma(e, Some(argument), within_group);
             }
-            super::emit_node(argument, e);
+            emit_node(e, argument);
         }
         e.group_end();
     }
 }
 
-/// Emit the comma before a grouped argument, honoring `commaStyle` the same way
-/// `emit_comma_separated_list_with_spacing` does: leading puts the break opportunity
-/// before the comma (`\n, column`), trailing puts it after.
-fn emit_grouped_comma(
-    e: &mut EventEmitter,
-    leading: bool,
-    argument: Option<&pgls_query::Node>,
-    break_type: LineType,
-) {
-    if leading {
-        if let Some(location) = argument
-            .and_then(|arg| arg.node.as_ref())
-            .and_then(|node| crate::codegen::node_location::node_location(&node.to_ref()))
-        {
-            e.take_own_line_leading_comments_at(location);
-        }
-        e.line(LineType::Soft);
-        e.token(TokenKind::COMMA);
-        e.space();
-    } else {
-        e.token(TokenKind::COMMA);
-        e.line(break_type);
-    }
-}
-
 pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
-    e.group_start(GroupKind::FuncCall);
+    e.group_start();
     // The name and arguments have a group of their own when a clause follows them, so that
     // `count(*)` stays together and the line breaks before FILTER, WITHIN GROUP or OVER first.
     let has_suffix = n.over.is_some() || n.agg_filter.is_some() || n.agg_within_group;
     if has_suffix {
-        e.group_start(GroupKind::List);
+        e.group_start();
     }
 
     // The grammar turns SQL-standard syntax such as `EXTRACT(year FROM d)` or `ts AT TIME ZONE z`
@@ -136,7 +108,7 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         e.token(TokenKind::GROUP_KW);
         e.space();
         // Wrap in group for compact formatting
-        e.group_start(GroupKind::List);
+        e.group_start();
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
@@ -144,7 +116,7 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        emit_comma_separated_list(e, &n.agg_order, super::emit_node);
+        emit_comma_separated_list(e, &n.agg_order, emit_node);
         e.indent_end();
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
@@ -164,7 +136,7 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         e.space();
         e.token(TokenKind::OVER_KW);
         e.space();
-        e.group_start(GroupKind::List);
+        e.group_start();
         super::emit_window_def(e, over);
         e.group_end();
     }
@@ -177,14 +149,14 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
 pub(super) fn emit_filter_clause(e: &mut EventEmitter, filter: &Node) {
     e.token(TokenKind::FILTER_KW);
     e.space();
-    e.group_start(GroupKind::List);
+    e.group_start();
     e.token(TokenKind::L_PAREN);
     e.indent_start();
     e.line(LineType::Soft);
     e.token(TokenKind::WHERE_KW);
     e.space();
     e.indent_start();
-    super::emit_node(filter, e);
+    emit_node(e, filter);
     e.indent_end();
     e.indent_end();
     e.line(LineType::Soft);
@@ -223,7 +195,7 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
                         e.token(TokenKind::COMMA);
                         e.line(LineType::SoftOrSpace);
                     }
-                    super::emit_node(arg, e);
+                    emit_node(e, arg);
                 }
 
                 if n.args.len() > 1 {
@@ -234,11 +206,11 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
                 // Emit VARIADIC with the last argument
                 e.token(TokenKind::VARIADIC_KW);
                 e.space();
-                super::emit_node(n.args.last().unwrap(), e);
+                emit_node(e, n.args.last().unwrap());
             } else if let Some(group_size) = configured_argument_group_size(e, n) {
                 emit_grouped_arguments(e, &n.args, group_size);
             } else {
-                emit_comma_separated_list(e, &n.args, super::emit_node);
+                emit_comma_separated_list(e, &n.args, emit_node);
             }
         }
 
@@ -252,9 +224,7 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
             e.token(TokenKind::BY_KW);
             e.space();
             e.indent_start();
-            emit_comma_separated_list(e, &n.agg_order, |node, emitter| {
-                super::emit_node(node, emitter)
-            });
+            emit_comma_separated_list(e, &n.agg_order, emit_node);
             e.indent_end();
         }
 
@@ -336,78 +306,78 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
     match (name, args) {
         ("extract", [field, source]) => {
             e.token(TokenKind::EXTRACT_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             // The arguments stay together on the indented line when they fit there.
-            e.group_start(GroupKind::List);
+            e.group_start();
             emit_extract_field(e, field);
             e.space();
             e.token(TokenKind::FROM_KW);
             e.line(LineType::SoftOrSpace);
-            super::emit_node(source, e);
+            emit_node(e, source);
             e.group_end();
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         ("overlay", [string, replacement, start, rest @ ..]) if rest.len() <= 1 => {
             e.token(TokenKind::OVERLAY_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             // The arguments stay together on the indented line when they fit there.
-            e.group_start(GroupKind::List);
-            super::emit_node(string, e);
+            e.group_start();
+            emit_node(e, string);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::PLACING_KW);
             e.space();
-            super::emit_node(replacement, e);
+            emit_node(e, replacement);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::FROM_KW);
             e.space();
-            super::emit_node(start, e);
+            emit_node(e, start);
             if let [length] = rest {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::FOR_KW);
                 e.space();
-                super::emit_node(length, e);
+                emit_node(e, length);
             }
             e.group_end();
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         // Stored as position(string, substring), written POSITION(substring IN string). Both
         // operands are `b_expr`, which an operator expression is not.
         ("position", [string, substring]) => {
             e.token(TokenKind::POSITION_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             // The arguments stay together on the indented line when they fit there.
-            e.group_start(GroupKind::List);
+            e.group_start();
             emit_parenthesized_unless_simple(e, substring);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::IN_KW);
             e.space();
             emit_parenthesized_unless_simple(e, string);
             e.group_end();
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         ("substring", [string, start, rest @ ..]) if rest.len() <= 1 => {
             e.token(TokenKind::SUBSTRING_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             // The arguments stay together on the indented line when they fit there.
-            e.group_start(GroupKind::List);
-            super::emit_node(string, e);
+            e.group_start();
+            emit_node(e, string);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::FROM_KW);
             e.space();
-            super::emit_node(start, e);
+            emit_node(e, start);
             if let [length] = rest {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::FOR_KW);
                 e.space();
-                super::emit_node(length, e);
+                emit_node(e, length);
             }
             e.group_end();
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         // Stored as btrim(string[, characters]), written TRIM(BOTH characters FROM string).
         ("btrim" | "ltrim" | "rtrim", [string, rest @ ..]) if rest.len() <= 1 => {
             e.token(TokenKind::TRIM_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             match name {
                 "ltrim" => {
                     e.token(TokenKind::LEADING_KW);
@@ -420,27 +390,27 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
                 _ => {}
             }
             if let [characters] = rest {
-                super::emit_node(characters, e);
+                emit_node(e, characters);
                 e.space();
                 e.token(TokenKind::FROM_KW);
                 e.space();
             }
-            super::emit_node(string, e);
-            super::close_call_arguments(e);
+            emit_node(e, string);
+            close_call_arguments(e);
         }
         ("normalize", [string, rest @ ..]) => {
             let Some(form) = optional_normalization_form(rest) else {
                 return false;
             };
             e.token(TokenKind::NORMALIZE_KW);
-            super::open_call_arguments(e);
-            super::emit_node(string, e);
+            open_call_arguments(e);
+            emit_node(e, string);
             if let Some(form) = form {
                 e.token(TokenKind::COMMA);
                 e.line(LineType::SoftOrSpace);
                 e.token(form);
             }
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         ("is_normalized", [string, rest @ ..]) => {
             let Some(form) = optional_normalization_form(rest) else {
@@ -483,11 +453,11 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
         }
         ("overlaps", [_, _, _, _]) => {
             e.token(TokenKind::L_PAREN);
-            emit_parenthesized_list(e, &args[..2], super::emit_node);
+            emit_parenthesized_list(e, &args[..2], emit_node);
             e.space();
             e.token(TokenKind::OVERLAPS_KW);
             e.space();
-            emit_parenthesized_list(e, &args[2..], super::emit_node);
+            emit_parenthesized_list(e, &args[2..], emit_node);
             e.token(TokenKind::R_PAREN);
         }
         ("pg_collation_for", [expr]) => {
@@ -496,22 +466,22 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
             e.token(TokenKind::FOR_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
-            super::emit_node(expr, e);
+            emit_node(e, expr);
             e.token(TokenKind::R_PAREN);
         }
         // The XML document is a `c_expr`.
         ("xmlexists", [xpath, document]) => {
             e.token(TokenKind::XMLEXISTS_KW);
-            super::open_call_arguments(e);
+            open_call_arguments(e);
             // The arguments stay together on the indented line when they fit there.
-            e.group_start(GroupKind::List);
-            super::emit_node(xpath, e);
+            e.group_start();
+            emit_node(e, xpath);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::PASSING_KW);
             e.space();
             emit_parenthesized_unless_simple(e, document);
             e.group_end();
-            super::close_call_arguments(e);
+            close_call_arguments(e);
         }
         ("system_user", []) => e.token(TokenKind::SYSTEM_USER_KW),
         _ => return false,
@@ -553,21 +523,21 @@ fn emit_extract_field(e: &mut EventEmitter, node: &Node) {
         && let Some(Val::Sval(field)) = &a_const.val
         && !needs_quoting(&field.sval)
     {
-        super::emit_keyword(e, &field.sval);
+        emit_keyword(e, &field.sval);
         return;
     }
 
-    super::emit_node(node, e);
+    emit_node(e, node);
 }
 
 /// Emits an operand of SQL-standard syntax, in parentheses unless it is a single term that binds
 /// tighter than any operator.
 fn emit_parenthesized_unless_simple(e: &mut EventEmitter, node: &Node) {
-    if super::type_cast::needs_parentheses(node) {
+    if needs_parentheses(node, Position::Postfix) {
         e.token(TokenKind::L_PAREN);
-        super::emit_node(node, e);
+        emit_node(e, node);
         e.token(TokenKind::R_PAREN);
     } else {
-        super::emit_node(node, e);
+        emit_node(e, node);
     }
 }

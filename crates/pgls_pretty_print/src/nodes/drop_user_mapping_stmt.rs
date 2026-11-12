@@ -1,12 +1,9 @@
 use pgls_query::protobuf::DropUserMappingStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_drop_user_mapping_stmt(e: &mut EventEmitter, n: &DropUserMappingStmt) {
-    e.group_start(GroupKind::DropUserMappingStmt);
+    e.group_start();
 
     e.token(TokenKind::DROP_KW);
     e.space();
@@ -33,7 +30,7 @@ pub(super) fn emit_drop_user_mapping_stmt(e: &mut EventEmitter, n: &DropUserMapp
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SERVER_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.servername);
+        emit_identifier_maybe_quoted(e, &n.servername);
     }
 
     e.group_end();

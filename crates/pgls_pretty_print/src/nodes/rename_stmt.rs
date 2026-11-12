@@ -1,19 +1,10 @@
-use pgls_query::{
-    NodeEnum,
-    protobuf::{DropBehavior, ObjectType, RenameStmt},
-};
+use pgls_query::protobuf::{DropBehavior, ObjectType, RenameStmt};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::{
-    emit_identifier_maybe_quoted, emit_node, emit_range_var, node_list::emit_dot_separated_list,
-};
+use super::emit_range_var;
+use super::prelude::*;
 
 pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
-    e.group_start(GroupKind::RenameStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -254,7 +245,7 @@ fn emit_object_name(e: &mut EventEmitter, object: &pgls_query::Node) {
     match &object.node {
         // Qualified names (`any_name`) arrive as a list of strings
         Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
-        _ => emit_node(object, e),
+        _ => emit_node(e, object),
     }
 }
 
@@ -275,9 +266,9 @@ fn emit_aggregate_head(e: &mut EventEmitter, n: &RenameStmt) {
     if let Some(ref object) = n.object {
         e.space();
         if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
-            super::emit_object_with_args_for_aggregate(e, owa);
+            super::emit_object_with_args_as(e, owa, super::ObjectArguments::AggregateSignature);
         } else {
-            emit_node(object, e);
+            emit_node(e, object);
         }
     }
 }
@@ -303,7 +294,7 @@ fn emit_operator_collection_head(e: &mut EventEmitter, n: &RenameStmt) -> bool {
             e.space();
             e.token(TokenKind::USING_KW);
             e.space();
-            emit_node(method_node, e);
+            emit_node(e, method_node);
             return true;
         }
     }

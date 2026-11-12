@@ -1,13 +1,9 @@
 use pgls_query::protobuf::{DropBehavior, GrantStmt, GrantTargetType, ObjectType};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_fill_comma_separator, emit_parenthesized_list},
-};
+use super::prelude::*;
 
 pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
-    e.group_start(GroupKind::GrantStmt);
+    e.group_start();
 
     // GRANT or REVOKE
     if n.is_grant {
@@ -32,7 +28,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     if n.privileges.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else {
-        emit_grant_list(e, &n.privileges, |node, e| {
+        emit_grant_list(e, &n.privileges, |e, node| {
             if let Some(pgls_query::NodeEnum::AccessPriv(priv_node)) = &node.node {
                 emit_access_priv(e, priv_node);
             }
@@ -43,7 +39,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     e.indent_start();
 
     if let Some(object) = n.objects.first() {
-        super::emit_comments_before_keyword(e, "on", object);
+        emit_comments_before_keyword(e, "on", object);
     }
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);
@@ -185,12 +181,12 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
 
     // Object names
     if !n.objects.is_empty() {
-        emit_grant_list(e, &n.objects, super::emit_node);
+        emit_grant_list(e, &n.objects, emit_node);
     }
 
     // TO/FROM - allow line break before this clause
     if let Some(grantee) = n.grantees.first() {
-        super::emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
+        emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
     }
     e.line(LineType::SoftOrSpace);
 
@@ -204,7 +200,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
 
     // Grantees
     if !n.grantees.is_empty() {
-        emit_grant_list(e, &n.grantees, super::emit_node);
+        emit_grant_list(e, &n.grantees, emit_node);
     }
 
     // WITH GRANT OPTION (for grant)
@@ -246,19 +242,19 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
 /// such as `insert (a, b)` that breaks closes its parenthesis under the line that opened it.
 pub(super) fn emit_grant_list<F>(e: &mut EventEmitter, nodes: &[pgls_query::Node], render: F)
 where
-    F: Fn(&pgls_query::Node, &mut EventEmitter),
+    F: Fn(&mut EventEmitter, &pgls_query::Node),
 {
     let Some((first, rest)) = nodes.split_first() else {
         return;
     };
 
-    e.group_start(GroupKind::List);
-    render(first, e);
+    e.group_start();
+    render(e, first);
     if !rest.is_empty() {
         e.indent_start();
         for node in rest {
-            emit_fill_comma_separator(e);
-            render(node, e);
+            emit_list_comma(e, Some(node), ListSeparatorSpacing::Fill);
+            render(e, node);
         }
         e.indent_end();
     }
@@ -269,12 +265,12 @@ fn emit_access_priv(e: &mut EventEmitter, priv_node: &pgls_query::protobuf::Acce
     if priv_node.priv_name.is_empty() && !priv_node.cols.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else if !priv_node.priv_name.is_empty() {
-        super::emit_keywords(e, &priv_node.priv_name);
+        emit_keywords(e, &priv_node.priv_name);
     }
 
     // Handle column privileges
     if !priv_node.cols.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &priv_node.cols, super::emit_node);
+        emit_parenthesized_list(e, &priv_node.cols, emit_node);
     }
 }

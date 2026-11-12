@@ -1,11 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::DeleteStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_delete_stmt(e: &mut EventEmitter, n: &DeleteStmt) {
-    e.group_start(GroupKind::DeleteStmt);
+    e.group_start();
 
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);
@@ -26,13 +24,13 @@ pub(super) fn emit_delete_stmt(e: &mut EventEmitter, n: &DeleteStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        super::node_list::emit_comma_separated_list(e, &n.using_clause, super::emit_node);
+        emit_comma_separated_list(e, &n.using_clause, emit_node);
     }
 
     if let Some(ref where_clause) = n.where_clause {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, where_clause);
+        emit_clause_condition(e, where_clause);
     }
 
     if let Some(returning) = &n.returning_clause {

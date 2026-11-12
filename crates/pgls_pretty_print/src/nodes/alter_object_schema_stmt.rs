@@ -1,14 +1,9 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
+use pgls_query::protobuf::{AlterObjectSchemaStmt, ObjectType};
 
-use super::node_list::emit_dot_separated_list;
-use pgls_query::{
-    NodeEnum,
-    protobuf::{AlterObjectSchemaStmt, ObjectType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjectSchemaStmt) {
-    e.group_start(GroupKind::AlterObjectSchemaStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -107,15 +102,19 @@ pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjec
             ObjectType::ObjectAggregate => {
                 // Aggregate needs (*) for "any argument types"
                 if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
-                    super::emit_object_with_args_for_aggregate(e, owa);
+                    super::emit_object_with_args_as(
+                        e,
+                        owa,
+                        super::ObjectArguments::AggregateSignature,
+                    );
                 } else {
-                    super::emit_node(object, e);
+                    emit_node(e, object);
                 }
             }
             _ => match &object.node {
                 // Qualified names (`any_name`) arrive as a list of strings
                 Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
-                _ => super::emit_node(object, e),
+                _ => emit_node(e, object),
             },
         }
     }
@@ -127,7 +126,7 @@ pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjec
         e.space();
         e.token(TokenKind::SCHEMA_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.newschema);
+        emit_identifier_maybe_quoted(e, &n.newschema);
     }
 
     e.group_end();
@@ -142,9 +141,9 @@ fn emit_operator_collection_object(e: &mut EventEmitter, object: &pgls_query::No
         e.space();
         e.token(TokenKind::USING_KW);
         e.space();
-        super::emit_node(method_node, e);
+        emit_node(e, method_node);
         return;
     }
 
-    super::emit_node(object, e);
+    emit_node(e, object);
 }

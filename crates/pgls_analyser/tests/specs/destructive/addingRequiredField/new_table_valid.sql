@@ -1,0 +1,6 @@
+-- Other transactions can't see a table created earlier in the transaction.
+-- expect_no_diagnostics
+BEGIN;
+CREATE TABLE users (id bigint);
+ALTER TABLE users ADD COLUMN email text NOT NULL;
+COMMIT;
