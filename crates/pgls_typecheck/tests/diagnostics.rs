@@ -100,7 +100,7 @@ impl TestSetup<'_> {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_arg_row_type(test_db: PgPool) {
     // A SQL function whose argument is a table's row type, e.g.
     // create function get_tbl_name(row_arg public.tbl) returns text
@@ -133,7 +133,7 @@ async fn function_arg_row_type(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_arg_view_row_type(test_db: PgPool) {
     // A view (like a table) exposes a composite row type, so a function
     // argument typed as the view must also resolve field access without a
@@ -165,7 +165,7 @@ async fn function_arg_view_row_type(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn invalid_column(test_db: PgPool) {
     TestSetup {
         name: "invalid_column",
@@ -187,7 +187,7 @@ async fn invalid_column(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_table_as_invalid_column(test_db: PgPool) {
     TestSetup {
         name: "create_table_as_invalid_column",
@@ -200,7 +200,7 @@ async fn create_table_as_invalid_column(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_table_as_invalid_relation(test_db: PgPool) {
     TestSetup {
         name: "create_table_as_invalid_relation",
@@ -213,7 +213,7 @@ async fn create_table_as_invalid_relation(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_materialized_view_as_invalid_column(test_db: PgPool) {
     TestSetup {
         name: "create_materialized_view_as_invalid_column",
@@ -226,7 +226,7 @@ async fn create_materialized_view_as_invalid_column(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_view_as_invalid_column(test_db: PgPool) {
     TestSetup {
         name: "create_view_as_invalid_column",
@@ -239,7 +239,7 @@ async fn create_view_as_invalid_column(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn create_as_valid_queries_do_not_execute_ddl(test_db: PgPool) {
     test_db
         .execute("CREATE TABLE t (a INT);")
@@ -281,7 +281,7 @@ async fn create_as_valid_queries_do_not_execute_ddl(test_db: PgPool) {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn invalid_type_in_function(test_db: PgPool) {
     // create or replace function clean_up(uid uuid)
     // returns void
@@ -338,7 +338,7 @@ async fn invalid_type_in_function(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn operator_does_not_exist(test_db: PgPool) {
     // tests the pattern: operator does not exist: X + Y
     // use boolean type which doesn't have + operator with text
@@ -369,7 +369,7 @@ async fn operator_does_not_exist(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_parameter_type_with_multiple_words(test_db: PgPool) {
     // the type "timestamp with time zone" has multiple words
     let setup = r#"
@@ -416,7 +416,7 @@ async fn function_parameter_type_with_multiple_words(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn merge_invalid_column(test_db: PgPool) {
     TestSetup {
         name: "merge_invalid_column",
@@ -434,7 +434,7 @@ async fn merge_invalid_column(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn merge_is_not_executed(test_db: PgPool) {
     test_db
         .execute(
@@ -466,7 +466,7 @@ async fn merge_is_not_executed(test_db: PgPool) {
 
 /// Postgres reports a column assigned twice without a position. Once
 /// `banDuplicateColumnAssignments` reported it, only the other errors of the statement remain.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn duplicate_assignments_are_reported_once(test_db: PgPool) {
     test_db
         .execute(

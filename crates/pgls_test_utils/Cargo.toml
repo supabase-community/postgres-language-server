@@ -21,8 +21,10 @@ clap   = { version = "4.5.23", features = ["derive"] }
 dotenv = "0.15.0"
 uuid   = { version = "1.11.0", features = ["v4"] }
 
+pgls_test_macros.workspace        = true
 pgls_treesitter_grammar.workspace = true
 sqlx.workspace                    = true
+tokio.workspace                   = true
 tree-sitter.workspace             = true
 
 [lints]

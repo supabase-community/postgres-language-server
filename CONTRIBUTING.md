@@ -16,13 +16,13 @@ just install-tools
 # check out the libpg_query submodule and install the JS dependencies; run this in every new worktree too
 just setup
 
-# start the Postgres database the tests and the sqlx queries run against
-docker compose up -d
+# start the Postgres database the tests and the sqlx queries run against, and wait until it's ready
+just db
 ```
 
 If you use Nix, `nix develop` provides all tools, including libclang, which the `libpg_query` bindings need.
 
-The test database listens on `postgresql://postgres:postgres@127.0.0.1:5432/postgres` (see `.env`).
+The test database listens on `postgresql://postgres:postgres@127.0.0.1:5432/postgres` (see `.env`). All checkouts and worktrees share it. `just db` rebuilds the image when the `Dockerfile` changed; the Docker build cache makes that fast otherwise. Tests that need the database use `#[pgls_test_utils::db_test]`.
 
 ## Running and debugging
 

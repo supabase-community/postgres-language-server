@@ -837,12 +837,12 @@ const MERGE_CASES: &[(&str, i32, Expect)] = &[
     ),
 ];
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn agrees_with_postgres(pool: PgPool) {
     check_cases(&pool, CASES).await;
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn merge_agrees_with_postgres(pool: PgPool) {
     let (version,): (String,) = sqlx::query_as("select current_setting('server_version_num')")
         .fetch_one(&pool)

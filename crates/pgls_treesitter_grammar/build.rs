@@ -1,7 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 
 fn main() {
     let manifest_dir =
@@ -84,7 +84,49 @@ fn read_stamp(stamp_path: &Path) -> String {
         .unwrap_or_default()
 }
 
+/// How often the build script runs `tree-sitter generate` before it gives up. The generator needs
+/// about 2.5 GB of memory and up to four minutes on a loaded machine. When it gets killed, e.g. by
+/// the OOM killer while several worktrees build at once, it exits without any output, and running
+/// it again is the fix.
+const GENERATE_ATTEMPTS_MAX: u32 = 3;
+
 fn generate_grammar(grammar_file: &Path, config_file: &Path, generated_dir: &Path) {
+    for attempt in 1..=GENERATE_ATTEMPTS_MAX {
+        let failure = match run_generate(grammar_file, config_file, generated_dir) {
+            Ok(()) => return,
+            Err(failure) => failure,
+        };
+
+        if failure.is_transient() && attempt < GENERATE_ATTEMPTS_MAX {
+            println!(
+                "cargo:warning=tree-sitter generate failed without an error ({}), attempt {attempt} of {GENERATE_ATTEMPTS_MAX}; trying again",
+                failure.status
+            );
+            continue;
+        }
+
+        panic!(
+            "Failed to generate the tree-sitter grammar (attempt {attempt} of {GENERATE_ATTEMPTS_MAX}).\n\
+             command: tree-sitter generate grammar.js --output {}\n\
+             {}{}\nstdout:\n{}\nstderr:\n{}",
+            generated_dir.display(),
+            failure.status,
+            if failure.status.code().is_none() {
+                " (killed by a signal; tree-sitter generate needs about 2.5 GB of memory, so check for the OOM killer)"
+            } else {
+                ""
+            },
+            String::from_utf8_lossy(&failure.stdout),
+            String::from_utf8_lossy(&failure.stderr),
+        );
+    }
+}
+
+fn run_generate(
+    grammar_file: &Path,
+    config_file: &Path,
+    generated_dir: &Path,
+) -> Result<(), GenerateFailure> {
     // tree-sitter generate updates tree-sitter.json in its working directory.
     // Use an isolated temp workdir under OUT_DIR to avoid mutating repository files.
     let generator_workdir = generated_dir.join("tree-sitter-workdir");
@@ -118,18 +160,31 @@ fn generate_grammar(grammar_file: &Path, config_file: &Path, generated_dir: &Pat
     let _ = std::fs::remove_dir_all(&generator_workdir);
 
     match output {
-        Ok(result) if result.status.success() => {}
-        Ok(result) => {
-            panic!(
-                "Failed to generate tree-sitter grammar.\nstdout:\n{}\nstderr:\n{}",
-                String::from_utf8_lossy(&result.stdout),
-                String::from_utf8_lossy(&result.stderr)
-            );
-        }
+        Ok(result) if result.status.success() => Ok(()),
+        Ok(result) => Err(GenerateFailure {
+            status: result.status,
+            stdout: result.stdout,
+            stderr: result.stderr,
+        }),
         Err(error) => {
             panic!(
                 "tree-sitter CLI not found ({error}). Please install it with: `just install-tools`"
             );
         }
+    }
+}
+
+struct GenerateFailure {
+    status: ExitStatus,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+}
+
+impl GenerateFailure {
+    /// A generator that got killed, or failed without saying why. A real error in the grammar
+    /// exits with a code and a message on stderr.
+    fn is_transient(&self) -> bool {
+        self.status.code().is_none()
+            || (self.stdout.trim_ascii().is_empty() && self.stderr.trim_ascii().is_empty())
     }
 }

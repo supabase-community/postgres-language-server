@@ -54,8 +54,7 @@ async fn snapshot_bytes(url: &str) -> usize {
 #[tokio::test]
 #[ignore]
 async fn measure_snapshot_memory() {
-    let url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgresql://postgres:postgres@127.0.0.1:5432/postgres".to_string());
+    let url = pgls_test_utils::db::database_url();
     snapshot_bytes(&url).await;
 
     // A larger schema: 500 tables with 10 columns each, 200 functions, 50 views and 20 enums.

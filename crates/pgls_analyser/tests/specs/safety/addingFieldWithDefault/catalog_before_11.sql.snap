@@ -1,0 +1,22 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- Before Postgres 11, every default rewrites the table.
+-- catalog: builtin
+-- server_version_num: 100000
+-- expect_lint/addingFieldWithDefault
+ALTER TABLE users ADD COLUMN status text DEFAULT 'active';
+
+```
+
+# Diagnostics
+lint/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a column with a DEFAULT value causes a table rewrite.
+  
+  i This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.
+  
+  i Add the column without a default, then set the default in a separate statement.

@@ -6,7 +6,7 @@ use pgls_catalog::{
     resolve::{Finding, FunctionContext, Resolution, ResolveParams, resolve},
 };
 
-use pgls_query::protobuf::{ScanToken, Token};
+use pgls_query::protobuf::{RangeVar, ScanToken, Token};
 
 use crate::fix::StatementTokens;
 use crate::linter_rule::LinterRule;
@@ -83,6 +83,15 @@ where
     /// statement.
     pub fn session(&self) -> &Session {
         self.file_context.session()
+    }
+
+    /// Whether the relation was created earlier in the current transaction. Other transactions
+    /// can't see it until the transaction commits, so its locks, scans and rewrites block no
+    /// one. A relation that an earlier transaction created and committed isn't new. The name is
+    /// resolved with the catalog, see [`Session::has_created_relation`].
+    pub fn is_new_relation(&self, relation: &RangeVar) -> bool {
+        self.session()
+            .has_created_relation(relation, self.catalog())
     }
 
     /// Name resolution of the current statement against the catalog.

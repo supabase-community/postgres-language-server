@@ -165,7 +165,7 @@ mod tests {
             .map(|item| item.completion_text.map_or(item.label, |text| text.text))
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn quotes_names_that_need_it(pool: PgPool) {
         pool.execute(
             r#"
@@ -245,7 +245,7 @@ mod tests {
     }
 
     /// The range to replace is in bytes, like the cursor, also after multibyte characters.
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn replaces_at_the_cursor_after_multibyte_characters(pool: PgPool) {
         pool.execute("create schema private; create table people (name text);")
             .await
