@@ -1,10 +1,7 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::JsonAggConstructor;
 
 use super::json_value_expr::emit_json_output;
+use super::prelude::*;
 
 pub(super) fn emit_json_agg_constructor(e: &mut EventEmitter, n: &JsonAggConstructor) {
     e.group_start(GroupKind::JsonAggConstructor);
@@ -16,7 +13,7 @@ pub(super) fn emit_json_agg_constructor(e: &mut EventEmitter, n: &JsonAggConstru
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        super::node_list::emit_comma_separated_list(e, &n.agg_order, super::emit_node);
+        emit_comma_separated_list(e, &n.agg_order, emit_node);
         has_content = true;
     }
 

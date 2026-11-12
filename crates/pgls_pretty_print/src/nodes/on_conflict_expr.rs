@@ -1,8 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::{OnConflictAction, OnConflictExpr};
+
+use super::prelude::*;
 
 pub(super) fn emit_on_conflict_expr(e: &mut EventEmitter, n: &OnConflictExpr) {
     e.group_start(GroupKind::OnConflictExpr);
@@ -13,7 +11,7 @@ pub(super) fn emit_on_conflict_expr(e: &mut EventEmitter, n: &OnConflictExpr) {
 
     if !n.arbiter_elems.is_empty() {
         e.space();
-        super::node_list::emit_parenthesized_list(e, &n.arbiter_elems, super::emit_node);
+        emit_parenthesized_list(e, &n.arbiter_elems, emit_node);
     }
 
     if n.constraint != 0 {
@@ -22,13 +20,13 @@ pub(super) fn emit_on_conflict_expr(e: &mut EventEmitter, n: &OnConflictExpr) {
         e.space();
         e.token(TokenKind::CONSTRAINT_KW);
         e.space();
-        super::emit_identifier(e, &format!("constraint#{}", n.constraint));
+        emit_identifier(e, &format!("constraint#{}", n.constraint));
     }
 
     if let Some(ref arbiter_where) = n.arbiter_where {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, arbiter_where);
+        emit_clause_condition(e, arbiter_where);
     }
 
     e.space();
@@ -52,20 +50,20 @@ pub(super) fn emit_on_conflict_expr(e: &mut EventEmitter, n: &OnConflictExpr) {
             if let Some(ref where_clause) = n.on_conflict_where {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::WHERE_KW);
-                super::emit_clause_condition(e, where_clause);
+                emit_clause_condition(e, where_clause);
             }
         }
         OnConflictAction::OnconflictNone | OnConflictAction::Undefined => {
             e.space();
-            super::emit_identifier(e, "on_conflict#undefined");
+            emit_identifier(e, "on_conflict#undefined");
         }
     }
 
     if n.excl_rel_index >= 0 && !n.excl_rel_tlist.is_empty() {
         e.line(LineType::SoftOrSpace);
-        super::emit_identifier(e, &format!("excluded_relation#{}", n.excl_rel_index));
+        emit_identifier(e, &format!("excluded_relation#{}", n.excl_rel_index));
         e.space();
-        super::node_list::emit_comma_separated_list(e, &n.excl_rel_tlist, super::emit_node);
+        emit_comma_separated_list(e, &n.excl_rel_tlist, emit_node);
     }
 
     e.group_end();

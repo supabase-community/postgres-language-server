@@ -58,6 +58,26 @@ fn skips_hidden_vendored_and_ignored_folders() {
     assert!(!truncated);
 }
 
+/// Without `vcs_ignore_files`, `.gitignore` files don't apply, but `.ignore` files still do.
+#[test]
+fn honours_gitignore_files_only_if_asked() {
+    let root = tree(&[
+        "build/postgres-language-server.jsonc",
+        "vendor/postgres-language-server.jsonc",
+    ]);
+    std::fs::write(root.path().join(".gitignore"), "build/\n").unwrap();
+    std::fs::write(root.path().join(".ignore"), "vendor/\n").unwrap();
+
+    let (files, _) = find(
+        root.path(),
+        FindFiles {
+            vcs_ignore_files: false,
+            ..FindFiles::new(CONFIG)
+        },
+    );
+    assert_eq!(files, ["build/postgres-language-server.jsonc"]);
+}
+
 /// A skipped directory is not searched, unless a directory between the root and it has one of the
 /// files: the file there decides what applies below it.
 #[test]

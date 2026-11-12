@@ -62,7 +62,6 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
         position,
         snapshot: &snapshot,
         stmt_sql: &sql,
-        ast: ast.as_ref(),
         ts_tree: &tree,
         references: &references,
     })
@@ -854,6 +853,21 @@ async fn test_procedure_hover_in_call(test_db: PgPool) {
 }
 
 #[pgls_test_utils::db_test]
+async fn test_schema_hover_in_call(test_db: PgPool) {
+    let setup = r#"
+        create schema app;
+        create procedure app.hover_proc(a int, b text) language sql as 'select 1';
+    "#;
+
+    let query = format!(
+        "call a{}pp.hover_proc(1, 'x')",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("schema_in_call", query, Some(setup), &test_db).await;
+}
+
+#[pgls_test_utils::db_test]
 async fn test_procedure_hover_in_call_with_output_parameters(test_db: PgPool) {
     let setup = r#"
         create procedure hover_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
@@ -905,4 +919,111 @@ async fn test_column_hover_on_last_part_of_quoted_name(test_db: PgPool) {
         &test_db,
     )
     .await;
+}
+
+const MERGE_SETUP: &str = r#"
+    create table hover_users (id serial primary key, name text not null);
+    create table hover_posts (post_id int, title text);
+"#;
+
+/// Hovers `sql` with the cursor after `needle`.
+async fn test_merge_hover(name: &str, sql: &str, needle: &str, test_db: &PgPool) {
+    let position = sql.find(needle).unwrap() + needle.len();
+    let query = format!(
+        "{}{}{}",
+        &sql[..position],
+        QueryWithCursorPosition::cursor_marker(),
+        &sql[position..]
+    );
+    test_hover_at_cursor(name, query, Some(MERGE_SETUP), test_db).await;
+}
+
+const MERGE: &str = "merge into hover_users u using hover_posts p on p.post_id = u.id \
+    when matched and p.title <> u.name then update set name = p.title \
+    when not matched then insert (id, name) values (p.post_id, p.title)";
+
+#[pgls_test_utils::db_test]
+async fn test_merge_hover_source_table(test_db: PgPool) {
+    test_merge_hover("merge_source_table", MERGE, "using hover_po", &test_db).await;
+}
+
+#[pgls_test_utils::db_test]
+async fn test_merge_hover_join_condition_column(test_db: PgPool) {
+    test_merge_hover("merge_join_condition_column", MERGE, "u.i", &test_db).await;
+}
+
+#[pgls_test_utils::db_test]
+async fn test_merge_hover_update_value_column(test_db: PgPool) {
+    test_merge_hover("merge_update_value_column", MERGE, "name = p.ti", &test_db).await;
+}
+
+#[pgls_test_utils::db_test]
+async fn test_merge_hover_insert_value_column(test_db: PgPool) {
+    test_merge_hover("merge_insert_value_column", MERGE, "values (p.po", &test_db).await;
+}
+
+/// The source `s` has a column `s`, which the qualifier `s` must not show.
+const QUALIFIER_SETUP: &str = r#"
+    create table hover_t (id int, name text);
+    create table s (id int, title text, s date);
+"#;
+
+/// Hovers `sql` with the cursor after `needle`.
+async fn test_qualifier_hover(name: &str, sql: &str, needle: &str, test_db: &PgPool) {
+    let position = sql.find(needle).unwrap() + needle.len();
+    let query = format!(
+        "{}{}{}",
+        &sql[..position],
+        QueryWithCursorPosition::cursor_marker(),
+        &sql[position..]
+    );
+    test_hover_at_cursor(name, query, Some(QUALIFIER_SETUP), test_db).await;
+}
+
+#[pgls_test_utils::db_test]
+async fn test_merge_hover_update_value_qualifier(test_db: PgPool) {
+    test_qualifier_hover(
+        "merge_update_value_qualifier",
+        "merge into hover_t using s on s.id = hover_t.id when matched then update set name = s.title",
+        "name = ",
+        &test_db,
+    )
+    .await;
+}
+
+#[pgls_test_utils::db_test]
+async fn test_merge_hover_insert_value_qualifier(test_db: PgPool) {
+    test_qualifier_hover(
+        "merge_insert_value_qualifier",
+        "merge into hover_t using s on s.id = hover_t.id \
+         when not matched then insert (id, name) values (s.id, s.title)",
+        "values (s.id, ",
+        &test_db,
+    )
+    .await;
+}
+
+#[pgls_test_utils::db_test]
+async fn test_update_hover_value_qualifier(test_db: PgPool) {
+    test_qualifier_hover(
+        "update_value_qualifier",
+        "update hover_t set name = s.title from s where s.id = hover_t.id",
+        "name = ",
+        &test_db,
+    )
+    .await;
+}
+
+#[pgls_test_utils::db_test]
+async fn test_column_hover_cte_column_list(test_db: PgPool) {
+    let setup = r#"
+        create table hover_users (id serial primary key, name text not null);
+    "#;
+
+    let query = format!(
+        "with c(label) as (select name from hover_users) select lab{}el from c",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("column_cte_column_list", query, Some(setup), &test_db).await;
 }

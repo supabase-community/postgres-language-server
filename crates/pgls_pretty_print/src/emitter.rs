@@ -54,6 +54,8 @@ pub struct EventEmitter {
     leading_comments: HashMap<i32, Vec<Comment>>,
     /// Comments still waiting to be emitted after a node, by source location.
     trailing_comments: HashMap<i32, Vec<Comment>>,
+    /// Comments waiting for the END of the CASE at this source location.
+    comments_before_case_end: HashMap<i32, Vec<Comment>>,
     /// Boolean operands need standalone line comments to start their own line, otherwise a
     /// comment can join the preceding operand and drift on the next formatting pass.
     leading_line_comments_require_break: bool,
@@ -66,17 +68,10 @@ pub struct EventEmitter {
 }
 
 impl EventEmitter {
+    /// An emitter without comments, for unit tests that look at the events.
+    #[cfg(test)]
     pub fn new(config: FormatConfig) -> Self {
-        Self {
-            events: Vec::new(),
-            configured_layout: config.layout.clone(),
-            config,
-            leading_comments: HashMap::new(),
-            trailing_comments: HashMap::new(),
-            truncated_identifiers: HashMap::new(),
-            leading_line_comments_require_break: false,
-            comments_after_separator: Vec::new(),
-        }
+        Self::with_comments(config, HashMap::new(), HashMap::new())
     }
 
     // Later option PRs inspect this while deciding which layout events to emit.
@@ -108,10 +103,24 @@ impl EventEmitter {
             config,
             leading_comments,
             trailing_comments,
+            comments_before_case_end: HashMap::new(),
             truncated_identifiers: HashMap::new(),
             leading_line_comments_require_break: false,
             comments_after_separator: Vec::new(),
         }
+    }
+
+    /// Comments anchored to a CASE's closing keyword rather than to a node inside its last branch.
+    pub(crate) fn set_comments_before_case_end(&mut self, comments: HashMap<i32, Vec<Comment>>) {
+        self.comments_before_case_end = comments;
+    }
+
+    pub(crate) fn take_comments_before_case_end_at(&mut self, location: i32) {
+        let comments = self
+            .comments_before_case_end
+            .remove(&location)
+            .unwrap_or_default();
+        self.emit_trailing_comments(comments);
     }
 
     /// Identifiers of the source that the parser truncated, by their truncated name. The emitter
@@ -290,6 +299,11 @@ impl EventEmitter {
     pub fn pending_comments(&self) -> usize {
         self.leading_comments.values().map(Vec::len).sum::<usize>()
             + self.trailing_comments.values().map(Vec::len).sum::<usize>()
+            + self
+                .comments_before_case_end
+                .values()
+                .map(Vec::len)
+                .sum::<usize>()
             + self.comments_after_separator.len()
     }
 

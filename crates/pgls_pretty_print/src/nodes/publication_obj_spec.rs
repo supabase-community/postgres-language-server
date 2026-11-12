@@ -1,6 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::protobuf::PublicationObjSpec;
+
+use super::prelude::*;
 
 pub(super) fn emit_publication_obj_spec(e: &mut EventEmitter, n: &PublicationObjSpec) {
     e.group_start(GroupKind::PublicationObjSpec);
@@ -16,7 +16,7 @@ pub(super) fn emit_publication_obj_spec(e: &mut EventEmitter, n: &PublicationObj
             e.token(TokenKind::SCHEMA_KW);
             if !n.name.is_empty() {
                 e.space();
-                super::emit_identifier_maybe_quoted(e, &n.name);
+                emit_identifier_maybe_quoted(e, &n.name);
             }
         }
         3 => {

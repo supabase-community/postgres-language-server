@@ -5,8 +5,9 @@
 //! known, a construct the resolver doesn't model), it stays silent.
 //!
 //! Not modelled yet, so never reported: the columns of scalar functions in `FROM`, `NATURAL`
-//! joins, `XMLTABLE`/`JSON_TABLE` and `TABLESAMPLE`, the `ORDER BY` of set operations, recursive
-//! CTEs and `SEARCH`/`CYCLE`, and statements with psql identifier parameters (`:schema.table`).
+//! joins of items whose columns are not known, `XMLTABLE`/`JSON_TABLE` and `TABLESAMPLE`, the
+//! `ORDER BY` of set operations, recursive CTEs and `SEARCH`/`CYCLE`, and statements with psql
+//! identifier parameters (`:schema.table`).
 //!
 //! It also decides whether a statement is [`Resolution::database_only`]: whether everything it
 //! references comes unchanged from the database, so that checking it against the database gives
@@ -21,17 +22,19 @@ mod nodes;
 #[cfg(all(test, feature = "db"))]
 mod reference_tests;
 mod resolver;
+mod roles_and_schemas;
 mod scope;
 mod span;
 #[cfg(test)]
 mod tests;
 #[cfg(all(test, feature = "db"))]
 mod type_tests;
+mod utils;
 
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
 
-use crate::lookup::{CatalogView, Lookup};
+use crate::lookup::CatalogView;
 use crate::typing::{QueryColumns, Type};
 use resolver::Resolver;
 
@@ -113,6 +116,15 @@ pub enum FindingKind {
         expected: usize,
         found: usize,
     },
+    /// A value other than `DEFAULT` is assigned to a generated column or to a
+    /// `GENERATED ALWAYS` identity column.
+    GeneratedColumnAssignment {
+        column: String,
+        /// Whether INSERT assigns it, rather than UPDATE or `ON CONFLICT DO UPDATE`.
+        insert: bool,
+        /// Whether the column is an identity column, rather than a generated column.
+        identity: bool,
+    },
     UnknownType {
         schema: Option<String>,
         name: String,
@@ -120,6 +132,8 @@ pub enum FindingKind {
     MissingFromClauseEntry {
         name: String,
     },
+    /// A MERGE, or `merge_action()`, that Postgres rejects while parsing it.
+    InvalidMerge(MergeError),
     /// The final statement of a SQL function doesn't return what the function is declared to
     /// return.
     FunctionReturnMismatch {
@@ -127,6 +141,25 @@ pub enum FindingKind {
         declared: String,
         mismatch: ReturnMismatch,
     },
+}
+
+/// What makes a MERGE invalid, from [`transformMergeStmt`] and [`transformMergeSupportFunc`].
+/// Postgres raises `42601 syntax_error` for all of them but `DuplicateName`, which raises
+/// `42712 duplicate_alias`.
+///
+/// [`transformMergeStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L107
+/// [`transformMergeSupportFunc`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1388
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MergeError {
+    /// `WITH RECURSIVE` before MERGE.
+    RecursiveWith,
+    /// A `WHEN` clause after a `WHEN` clause of the same kind without condition, which matches
+    /// every row first.
+    UnreachableWhen,
+    /// The target and the source have the same name.
+    DuplicateName { name: String },
+    /// `merge_action()` outside the RETURNING list of MERGE.
+    MergeActionOutsideReturning,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -204,7 +237,8 @@ pub enum Reference {
         span: Option<TextRange>,
         relation: crate::RelationInfo,
     },
-    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`.
+    /// The type of a cast, like `int` in `x::int` or `date` in `date 'today'`, or a type in DDL,
+    /// like a column type in `CREATE TABLE` or a parameter type in `CREATE FUNCTION`.
     Type {
         /// The location of the type name in the statement.
         location: i32,
@@ -240,6 +274,23 @@ pub enum Reference {
     /// The name of a common table expression, where the WITH clause defines it and where FROM
     /// references it.
     Cte {
+        /// The location of the name in the statement.
+        location: i32,
+        /// The span of the name.
+        span: Option<TextRange>,
+        name: String,
+    },
+    /// A schema named on its own rather than as the qualifier of a name, like `app` in
+    /// `create schema app`, `grant usage on schema app to reader`, or `set search_path to app`.
+    Schema {
+        /// The location of the name in the statement.
+        location: i32,
+        /// The span of the name.
+        span: Option<TextRange>,
+        name: String,
+    },
+    /// A role of the database, like `reader` in `grant select on t to reader`.
+    Role {
         /// The location of the name in the statement.
         location: i32,
         /// The span of the name.
@@ -288,6 +339,8 @@ impl Reference {
             | Self::EnumLiteral { location, .. }
             | Self::Cte { location, .. }
             | Self::Alias { location, .. }
+            | Self::Schema { location, .. }
+            | Self::Role { location, .. }
             | Self::Star { location, .. } => *location,
         }
     }
@@ -302,6 +355,8 @@ impl Reference {
             | Self::EnumLiteral { span, .. }
             | Self::Cte { span, .. }
             | Self::Alias { span, .. }
+            | Self::Schema { span, .. }
+            | Self::Role { span, .. }
             | Self::Star { span, .. } => *span,
         }
     }
@@ -339,6 +394,7 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         resolver.references = Some(Vec::new());
     }
     nodes::resolve_node_enum(&mut resolver, params.stmt);
+    roles_and_schemas::record_roles_and_schemas(&mut resolver, params.stmt);
     resolver.check_function_params();
 
     let mut findings: Vec<Finding> = Vec::new();
@@ -389,10 +445,7 @@ pub(crate) fn resolve_unknown_outputs(
         .iter()
         .any(|column| column.ty == Some(Type::UnknownLiteral))
     {
-        let text = match catalog.type_(Some("pg_catalog"), "text", &[]) {
-            Lookup::Found(info) => info.id.map(Type::Named),
-            _ => None,
-        };
+        let text = catalog.builtin_type("text").map(Type::Named);
         for column in &mut columns {
             if column.ty == Some(Type::UnknownLiteral) {
                 column.ty = text.clone();
@@ -406,7 +459,10 @@ pub(crate) fn resolve_unknown_outputs(
 fn supports_database_check(stmt: &NodeEnum) -> bool {
     match stmt {
         NodeEnum::SelectStmt(select) => select.into_clause.is_none(),
-        NodeEnum::InsertStmt(_) | NodeEnum::UpdateStmt(_) | NodeEnum::DeleteStmt(_) => true,
+        NodeEnum::InsertStmt(_)
+        | NodeEnum::UpdateStmt(_)
+        | NodeEnum::DeleteStmt(_)
+        | NodeEnum::MergeStmt(_) => true,
         NodeEnum::CreateTableAsStmt(stmt) => matches!(
             stmt.query.as_deref().and_then(|query| query.node.as_ref()),
             Some(NodeEnum::SelectStmt(_))

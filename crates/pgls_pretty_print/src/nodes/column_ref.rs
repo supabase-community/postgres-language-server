@@ -1,8 +1,6 @@
 use pgls_query::protobuf::ColumnRef;
 
-use crate::emitter::{EventEmitter, GroupKind};
-
-use super::node_list::emit_dot_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_column_ref(e: &mut EventEmitter, n: &ColumnRef) {
     e.group_start(GroupKind::ColumnRef);

@@ -1,0 +1,86 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+create table t (a int, b int, constraint t_pk primary key (a), unique nulls not distinct (b), foreign key (b) references u (id) on delete no action deferrable, check (a > b));
+-----------------------
+program [0..175] 'create table t (a int, b int, constraint t_pk primary key (a), unique nulls not distinct (b), foreign key (b) references u (id) on delete no action deferrable, check (a > b));'
+  statement [0..174] 'create table t (a int, b int, constraint t_pk primary key (a), unique nulls not distinct (b), foreign key (b) references u (id) on delete no action deferrable, check (a > b))'
+    create_table [0..174] 'create table t (a int, b int, constraint t_pk primary key (a), unique nulls not distinct (b), foreign key (b) references u (id) on delete no action deferrable, check (a > b))'
+      keyword_create [0..6] 'create'
+      keyword_table [7..12] 'table'
+      object_reference [13..14] 't'
+        any_identifier [13..14] 't' (@object_reference_1of1)
+      column_definitions [15..174] '(a int, b int, constraint t_pk primary key (a), unique nulls not distinct (b), foreign key (b) references u (id) on delete no action deferrable, check (a > b))' (@end)
+        ( [15..16] '('
+        column_definition [16..21] 'a int'
+          any_identifier [16..17] 'a'
+          type [18..21] 'int' (@end)
+            int [18..21] 'int'
+              keyword_int [18..21] 'int'
+        , [21..22] ','
+        column_definition [23..28] 'b int'
+          any_identifier [23..24] 'b'
+          type [25..28] 'int' (@end)
+            int [25..28] 'int'
+              keyword_int [25..28] 'int'
+        , [28..29] ','
+        constraint [30..61] 'constraint t_pk primary key (a)'
+          constraint_name [30..45] 'constraint t_pk'
+            keyword_constraint [30..40] 'constraint'
+            any_identifier [41..45] 't_pk' (@end)
+          keyword_primary [46..53] 'primary'
+          keyword_key [54..57] 'key'
+          ordered_columns [58..61] '(a)' (@end)
+            ( [58..59] '('
+            column [59..60] 'a'
+              column_identifier [59..60] 'a' (@name)
+            ) [60..61] ')' (@end)
+        , [61..62] ','
+        constraint [63..92] 'unique nulls not distinct (b)'
+          keyword_unique [63..69] 'unique'
+          keyword_nulls [70..75] 'nulls'
+          keyword_not [76..79] 'not'
+          keyword_distinct [80..88] 'distinct'
+          ordered_columns [89..92] '(b)' (@end)
+            ( [89..90] '('
+            column [90..91] 'b'
+              column_identifier [90..91] 'b' (@name)
+            ) [91..92] ')' (@end)
+        , [92..93] ','
+        constraint [94..158] 'foreign key (b) references u (id) on delete no action deferrable'
+          keyword_foreign [94..101] 'foreign'
+          keyword_key [102..105] 'key'
+          ordered_columns [106..109] '(b)' (@end)
+            ( [106..107] '('
+            column [107..108] 'b'
+              column_identifier [107..108] 'b' (@name)
+            ) [108..109] ')' (@end)
+          foreign_key_references [110..147] 'references u (id) on delete no action'
+            keyword_references [110..120] 'references'
+            table_reference [121..122] 'u' (@end)
+              any_identifier [121..122] 'u' (@table_reference_1of1)
+            ( [123..124] '('
+            column_identifier [124..126] 'id'
+            ) [126..127] ')' (@end)
+            referential_action [128..147] 'on delete no action'
+              keyword_on [128..130] 'on'
+              keyword_delete [131..137] 'delete'
+              keyword_no [138..140] 'no'
+              keyword_action [141..147] 'action' (@end)
+          constraint_attributes [148..158] 'deferrable'
+            constraint_attribute [148..158] 'deferrable' (@end)
+              keyword_deferrable [148..158] 'deferrable' (@end)
+        , [158..159] ','
+        constraint [160..173] 'check (a > b)'
+          keyword_check [160..165] 'check'
+          ( [166..167] '('
+          binary_expression [167..172] 'a > b'
+            object_reference [167..168] 'a' (@binary_expr_left)
+              any_identifier [167..168] 'a' (@object_reference_1of1)
+            > [169..170] '>' (@binary_expr_operator)
+            object_reference [171..172] 'b' (@end)
+              any_identifier [171..172] 'b' (@object_reference_1of1)
+          ) [172..173] ')' (@end)
+        ) [173..174] ')' (@end)
+  ; [174..175] ';'

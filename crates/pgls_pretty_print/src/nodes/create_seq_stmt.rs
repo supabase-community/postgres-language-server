@@ -1,21 +1,8 @@
 use pgls_query::protobuf::CreateSeqStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::emit_space_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
-    emit_create_seq_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_create_seq_stmt_no_semicolon(e: &mut EventEmitter, n: &CreateSeqStmt) {
-    emit_create_seq_stmt_impl(e, n, false);
-}
-
-fn emit_create_seq_stmt_impl(e: &mut EventEmitter, n: &CreateSeqStmt, with_semicolon: bool) {
     e.group_start(GroupKind::CreateSeqStmt);
 
     e.token(TokenKind::CREATE_KW);
@@ -55,17 +42,14 @@ fn emit_create_seq_stmt_impl(e: &mut EventEmitter, n: &CreateSeqStmt, with_semic
         emit_space_separated_list(e, &n.options, |opt, e| {
             // Use specialized sequence option emission
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {
-                super::emit_with_comments_at(e, def_elem.location, |e| {
+                emit_with_comments_at(e, def_elem.location, |e| {
                     super::emit_sequence_option(e, def_elem);
                 });
             } else {
-                super::emit_node(opt, e);
+                emit_node(opt, e);
             }
         });
     }
 
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
-    }
     e.group_end();
 }

@@ -1,3 +1,4 @@
+use crate::utils::added_constraints;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -40,35 +41,13 @@ impl LinterRule for AvoidAddingExclusionConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut diagnostics = vec![];
-
-        match &ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => {
-                for cmd in &stmt.cmds {
-                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                        && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddConstraint
-                        && let Some(pgls_query::NodeEnum::Constraint(constraint)) =
-                            cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                        && constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
-                    {
-                        diagnostics.push(exclusion_diagnostic());
-                    }
-                }
-            }
-            pgls_query::NodeEnum::CreateStmt(stmt) => {
-                for constraint_node in &stmt.constraints {
-                    if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
-                        &constraint_node.node
-                        && constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
-                    {
-                        diagnostics.push(exclusion_diagnostic());
-                    }
-                }
-            }
-            _ => {}
-        }
-
-        diagnostics
+        // An exclusion constraint is always a table constraint, never inline on a column.
+        added_constraints(ctx.stmt())
+            .filter(|(constraint, _)| {
+                constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
+            })
+            .map(|_| exclusion_diagnostic())
+            .collect()
     }
 }
 

@@ -1,8 +1,7 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-use pgls_query::{NodeEnum, protobuf::AlterDefaultPrivilegesStmt};
+use pgls_query::protobuf::AlterDefaultPrivilegesStmt;
 
 use super::grant_stmt::emit_grant_list;
+use super::prelude::*;
 
 pub(super) fn emit_alter_default_privileges_stmt(
     e: &mut EventEmitter,
@@ -31,9 +30,9 @@ pub(super) fn emit_alter_default_privileges_stmt(
                     e.space();
                     if let Some(ref arg) = def.arg {
                         if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
-                            emit_grant_list(e, &list.items, super::emit_node);
+                            emit_grant_list(e, &list.items, emit_node);
                         } else {
-                            super::emit_node(arg, e);
+                            emit_node(arg, e);
                         }
                     }
                 }
@@ -45,16 +44,16 @@ pub(super) fn emit_alter_default_privileges_stmt(
                     e.space();
                     if let Some(ref arg) = def.arg {
                         if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
-                            emit_grant_list(e, &list.items, super::emit_node);
+                            emit_grant_list(e, &list.items, emit_node);
                         } else {
-                            super::emit_node(arg, e);
+                            emit_node(arg, e);
                         }
                     }
                 }
                 _ => {
                     // Unknown option - emit as-is
                     e.space();
-                    super::emit_node(opt, e);
+                    emit_node(opt, e);
                 }
             }
         }
@@ -63,7 +62,7 @@ pub(super) fn emit_alter_default_privileges_stmt(
     // The actual GRANT/REVOKE statement
     if let Some(ref action) = n.action {
         e.line(LineType::SoftOrSpace);
-        super::emit_node_enum(&NodeEnum::GrantStmt(action.clone()), e);
+        emit_node_enum(&NodeEnum::GrantStmt(action.clone()), e);
     }
 
     e.indent_end();

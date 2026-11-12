@@ -1,10 +1,6 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::{LockClauseStrength, LockWaitPolicy, LockingClause};
 
-use super::{emit_node, node_list::emit_comma_separated_list, string::emit_keyword};
+use super::prelude::*;
 
 pub(super) fn emit_locking_clause(e: &mut EventEmitter, n: &LockingClause) {
     e.group_start(GroupKind::LockingClause);

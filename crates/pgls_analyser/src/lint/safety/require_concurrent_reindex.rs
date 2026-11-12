@@ -1,10 +1,8 @@
-use crate::{
-    LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix,
-    linter_context::is_reindex_concurrent,
-};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::options::{find_def_elem, is_reindex_concurrent};
 
 declare_lint_rule! {
     /// `REINDEX` without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock on the table.
@@ -80,15 +78,13 @@ fn add_concurrently(
 ) -> Option<RuleFix> {
     use pgls_query::protobuf::Token;
 
-    let has_concurrently_option = stmt.params.iter().any(|param| {
-        matches!(&param.node, Some(pgls_query::NodeEnum::DefElem(def)) if def.defname.eq_ignore_ascii_case("concurrently"))
-    });
-    if has_concurrently_option || is_system_catalog(stmt) {
+    if find_def_elem(&stmt.params, "concurrently").is_some() || is_system_catalog(stmt) {
         return None;
     }
-    let tokens = ctx.tokens()?;
-    let kind = tokens.find_any(&[Token::Index, Token::Table, Token::Schema, Token::Database])?;
-    fix::add_concurrently(ctx, &tokens, kind)
+    fix::add_concurrently(
+        ctx,
+        &[Token::Index, Token::Table, Token::Schema, Token::Database],
+    )
 }
 
 /// Whether the statement reindexes system catalogs, which fails with `CONCURRENTLY`. With

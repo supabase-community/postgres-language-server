@@ -1,5 +1,6 @@
-use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::protobuf::WindowFuncRunCondition;
+
+use super::prelude::*;
 
 pub(super) fn emit_window_func_run_condition(e: &mut EventEmitter, n: &WindowFuncRunCondition) {
     e.group_start(GroupKind::WindowFuncRunCondition);
@@ -17,11 +18,11 @@ pub(super) fn emit_window_func_run_condition(e: &mut EventEmitter, n: &WindowFun
         label.push_str(&format!("@{}", n.inputcollid));
     }
 
-    super::emit_identifier(e, &label);
+    emit_identifier(e, &label);
 
     if let Some(arg) = n.arg.as_ref() {
         e.space();
-        super::emit_node(arg, e);
+        emit_node(arg, e);
     }
 
     e.group_end();

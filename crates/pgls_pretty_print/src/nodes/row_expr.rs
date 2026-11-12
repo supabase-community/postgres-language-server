@@ -1,11 +1,6 @@
 use pgls_query::protobuf::{CoercionForm, RowExpr};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::node_list::emit_parenthesized_list;
+use super::prelude::*;
 
 pub(super) fn emit_row_expr(e: &mut EventEmitter, n: &RowExpr) {
     e.group_start(GroupKind::RowExpr);
@@ -20,13 +15,13 @@ pub(super) fn emit_row_expr(e: &mut EventEmitter, n: &RowExpr) {
         e.token(TokenKind::ROW_KW);
     }
 
-    emit_parenthesized_list(e, &n.args, super::emit_node);
+    emit_parenthesized_list(e, &n.args, emit_node);
 
     if !n.colnames.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::AS_KW);
         e.space();
-        emit_parenthesized_list(e, &n.colnames, super::emit_node);
+        emit_parenthesized_list(e, &n.colnames, emit_node);
     }
 
     e.group_end();
