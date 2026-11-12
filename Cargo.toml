@@ -82,6 +82,7 @@ pgls_hover                  = { path = "./crates/pgls_hover", version = "0.0.0" 
 pgls_inlay_hints            = { path = "./crates/pgls_inlay_hints", version = "0.0.0" }
 pgls_lexer                  = { path = "./crates/pgls_lexer", version = "0.0.0" }
 pgls_lexer_codegen          = { path = "./crates/pgls_lexer_codegen", version = "0.0.0" }
+pgls_line_index             = { path = "./crates/pgls_line_index", version = "0.0.0" }
 pgls_lsp                    = { path = "./crates/pgls_lsp", version = "0.0.0" }
 pgls_markup                 = { path = "./crates/pgls_markup", version = "0.0.0" }
 pgls_matcher                = { path = "./crates/pgls_matcher", version = "0.0.0" }

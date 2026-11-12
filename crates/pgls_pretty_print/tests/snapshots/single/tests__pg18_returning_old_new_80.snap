@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/pg18_returning_old_new.sql
+---
+update products
+set price = price * 1.1
+where
+  category = 'books'
+returning with (old as o, new as n) o.price as old_price,
+n.price as new_price;

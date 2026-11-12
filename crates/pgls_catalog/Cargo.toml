@@ -19,7 +19,9 @@ schema = ["dep:schemars"]
 [dependencies]
 futures-util   = { version = "0.3.31", optional = true }
 globset        = "0.4.16"
+pgls_lexer     = { workspace = true }
 pgls_query     = { workspace = true }
+pgls_query_ext = { workspace = true }
 pgls_text_size = { workspace = true }
 rustc-hash     = { workspace = true }
 schemars       = { workspace = true, optional = true }
@@ -29,8 +31,9 @@ sqlx           = { workspace = true, optional = true }
 strum          = { workspace = true }
 
 [dev-dependencies]
-insta           = { workspace = true }
-pgls_test_utils = { workspace = true }
+insta                 = { workspace = true }
+pgls_postgres_regress = { workspace = true }
+pgls_test_utils       = { workspace = true }
 
 [lib]
 doctest = false
