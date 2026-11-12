@@ -111,13 +111,12 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
                 || ends_with_structural_separator(line_prefix));
 
         let anchor = keyword_after.get(&source_comment.start);
+        // A comma only anchors a comment within the line of the item before it.
+        let within_line =
+            !(source_comment.comment.own_line || source_comment.comment.text.contains('\n'));
         source_comment.comment.before_keyword = anchor
             .map(|anchor| anchor.keyword.clone())
-            .filter(|keyword| {
-                keyword != ","
-                    || !(source_comment.comment.own_line
-                        || source_comment.comment.text.contains('\n'))
-            });
+            .filter(|keyword| keyword != "," || within_line);
         if let Some(case_location) = anchor.and_then(|anchor| anchor.case_location) {
             attached
                 .before_case_end_by_location
@@ -298,8 +297,7 @@ fn keywords_after_comments(
         };
         previous_token = kind;
         if !pending_comments.is_empty()
-            && (token.keyword_kind != KeywordKind::NoKeyword as i32
-                || kind == Some(Token::Ascii44))
+            && (token.keyword_kind != KeywordKind::NoKeyword as i32 || kind == Some(Token::Ascii44))
             && locations.binary_search(&token.start).is_err()
             && let Some(keyword) = sql.get(token.start as usize..token.end as usize)
         {
