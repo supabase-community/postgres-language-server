@@ -1244,7 +1244,8 @@
 <p><strong>Sources</strong>: inspired by <a href="https://github.com/flvmnt/pgfence"><code>pgfence/enable-disable-trigger</code></a></p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>Enabling or disabling a trigger acquires a <code>SHARE ROW EXCLUSIVE</code> lock.</p>
-<p><code>ALTER TABLE ... ENABLE/DISABLE TRIGGER</code> blocks concurrent writes while the lock is held.
+<p><code>ALTER TABLE ... ENABLE/DISABLE TRIGGER</code>, also <code>ENABLE ALWAYS</code> and <code>ENABLE REPLICA</code>, blocks
+concurrent writes while the lock is held.
 This can cause downtime on busy tables.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
