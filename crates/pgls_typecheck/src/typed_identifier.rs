@@ -290,7 +290,7 @@ mod tests {
     use pgls_catalog::Snapshot;
     use sqlx::{Executor, PgPool};
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn test_apply_identifiers(test_db: PgPool) {
         let input = "select v_test + fn_name.custom_type.v_test2 + $3 + custom_type.v_test3 + fn_name.v_test2 + enum_type";
 
@@ -391,7 +391,7 @@ mod tests {
         );
     }
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn test_apply_identifiers_table_row_type(test_db: PgPool) {
         // A SQL function argument may be a table's row (composite) type, e.g.
         // `CREATE FUNCTION f(row_arg public.tbl) ... SELECT row_arg.name`.
@@ -452,7 +452,7 @@ mod tests {
         );
     }
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn test_row_type_excludes_system_columns(test_db: PgPool) {
         // System columns (e.g. `ctid`) are not real fields of a table's row
         // type, so they must not be loaded as attributes: a reference to one is
@@ -498,7 +498,7 @@ mod tests {
         assert_eq!(replacement.text_replacement.text(), "select row_arg.ctid");
     }
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn test_qualified_column_is_not_a_parameter(pool: PgPool) {
         // create function next_after(received_at timestamptz) returns bigint as $$
         //   select r.id from ev r where r.received_at > received_at order by r.received_at
@@ -534,7 +534,7 @@ mod tests {
         );
     }
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn test_longer_identifiers(pool: PgPool) {
         // create or replace function retrieve(uid uuid, mail text)
         // returns uuid

@@ -68,7 +68,7 @@ Valid code that may be dangerous against a live database: locks, rewrites, or bl
 | [addingNotNullField](./rules/adding-not-null-field.md) ✅ 🛠 | Setting a column NOT NULL blocks reads while the table is scanned. |
 | [addingPrimaryKeyConstraint](./rules/adding-primary-key-constraint.md) ✅ 🛠 | Adding a primary key constraint results in locks and table rewrites. |
 | [avoidAddingExclusionConstraint](./rules/avoid-adding-exclusion-constraint.md) ✅ 🛠 | Adding an exclusion constraint acquires an `ACCESS EXCLUSIVE` lock. |
-| [avoidAttachingPartition](./rules/avoid-attaching-partition.md) ✅ 🛠 | Attaching a partition acquires an `ACCESS EXCLUSIVE` lock on the partition. |
+| [avoidAttachingPartition](./rules/avoid-attaching-partition.md) ✅ 🛠 | Attaching a partition acquires an `ACCESS EXCLUSIVE` lock on the parent table. |
 | [avoidCreateTrigger](./rules/avoid-create-trigger.md) 🛠 | Creating a trigger acquires a `SHARE ROW EXCLUSIVE` lock on the table. |
 | [avoidEnableDisableTrigger](./rules/avoid-enable-disable-trigger.md) 🛠 | Enabling or disabling a trigger acquires a `SHARE ROW EXCLUSIVE` lock. |
 | [avoidWideLockWindow](./rules/avoid-wide-lock-window.md) ✅ 🛠 | Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window. |

@@ -68,7 +68,7 @@ impl Fixture {
     }
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn positional_arguments(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -77,7 +77,7 @@ async fn positional_arguments(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn nested_calls_and_from_functions(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -86,7 +86,7 @@ async fn nested_calls_and_from_functions(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn named_arguments_get_no_hints(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -95,7 +95,7 @@ async fn named_arguments_get_no_hints(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn mixed_calls_hint_the_positional_arguments(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -104,7 +104,7 @@ async fn mixed_calls_hint_the_positional_arguments(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn arguments_named_like_the_parameter_get_no_hints(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -118,7 +118,7 @@ async fn arguments_named_like_the_parameter_get_no_hints(test_db: PgPool) {
 }
 
 /// Postgres only folds ASCII letters in unquoted identifiers, so `Ö` is not `ö`.
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn non_ascii_arguments_named_like_the_parameter(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -127,7 +127,7 @@ async fn non_ascii_arguments_named_like_the_parameter(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn unnamed_parameters_get_no_hints(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -136,7 +136,7 @@ async fn unnamed_parameters_get_no_hints(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn only_named_parameters_get_hints(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -145,7 +145,7 @@ async fn only_named_parameters_get_hints(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn calls_in_a_long_statement(test_db: PgPool) {
     let f = fixture(&test_db).await;
     let items = |hinted: bool| {
@@ -166,7 +166,7 @@ async fn calls_in_a_long_statement(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn variadic_arguments(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -179,13 +179,13 @@ async fn variadic_arguments(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn default_arguments(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(f.hinted("select greet('a')"), "select greet(name: 'a')");
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn ambiguous_and_unknown_calls_get_no_hints(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(f.hinted("select amb('1', '2')"), "select amb('1', '2')");
@@ -199,7 +199,7 @@ async fn ambiguous_and_unknown_calls_get_no_hints(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn sql_syntax_gets_no_hints(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -208,7 +208,7 @@ async fn sql_syntax_gets_no_hints(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn procedure_calls_pass_output_arguments(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -217,7 +217,7 @@ async fn procedure_calls_pass_output_arguments(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn only_ascii_letters_of_unquoted_arguments_are_downcased(test_db: PgPool) {
     test_db
         .execute(r#"create function accent("Éa" int) returns int language sql as 'select 1'"#)
@@ -231,7 +231,7 @@ async fn only_ascii_letters_of_unquoted_arguments_are_downcased(test_db: PgPool)
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn merge(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -246,7 +246,7 @@ async fn merge(test_db: PgPool) {
     );
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn literals_only(test_db: PgPool) {
     let f = Fixture {
         parameter_names: ParameterNameHints::Literals,

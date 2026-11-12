@@ -47,7 +47,7 @@ mod tests {
 
     use pgls_test_utils::QueryWithCursorPosition;
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn autocompletes_schemas(pool: PgPool) {
         let setup = r#"
             create schema private;
@@ -96,7 +96,7 @@ mod tests {
         .await;
     }
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn suggests_tables_and_schemas_with_matching_keys(pool: PgPool) {
         let setup = r#"
             create schema ultimate;
@@ -125,7 +125,7 @@ mod tests {
         .await;
     }
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn completes_schemas_in_alter_default_privileges(pool: PgPool) {
         pool.execute("create schema private;").await.unwrap();
 

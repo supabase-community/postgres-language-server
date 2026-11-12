@@ -1,6 +1,0 @@
--- Other transactions can't see a table created earlier in the transaction.
--- expect_no_diagnostics
-BEGIN;
-CREATE TABLE orders (id bigint, amount int);
-ALTER TABLE orders ADD CONSTRAINT orders_amount_check CHECK (amount > 0);
-COMMIT;

@@ -101,7 +101,7 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
     });
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_function_hover_builtin_count(test_db: PgPool) {
     let query = format!(
         "select cou{}nt(*) from users",
@@ -111,7 +111,7 @@ async fn test_function_hover_builtin_count(test_db: PgPool) {
     test_hover_at_cursor("builtin_count", query, None, &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_function_hover_builtin_now(test_db: PgPool) {
     let query = format!(
         "select n{}ow() from users",
@@ -121,7 +121,7 @@ async fn test_function_hover_builtin_now(test_db: PgPool) {
     test_hover_at_cursor("builtin_now", query, None, &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_function_hover_builtin_max(test_db: PgPool) {
     let query = format!(
         "select m{}ax(id) from users",
@@ -131,7 +131,7 @@ async fn test_function_hover_builtin_max(test_db: PgPool) {
     test_hover_at_cursor("builtin_max", query, None, &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_function_hover_custom_function(test_db: PgPool) {
     let setup = r#"
         create or replace function custom_add(a integer, b integer)
@@ -153,7 +153,7 @@ async fn test_function_hover_custom_function(test_db: PgPool) {
     test_hover_at_cursor("custom_function", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_function_hover_with_schema(test_db: PgPool) {
     let setup = r#"
         create schema test_schema;
@@ -174,7 +174,7 @@ async fn test_function_hover_with_schema(test_db: PgPool) {
     test_hover_at_cursor("function_with_schema", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_with_table_ref(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -191,7 +191,7 @@ async fn test_column_hover_with_table_ref(test_db: PgPool) {
     test_hover_at_cursor("column_hover", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_in_join(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -214,7 +214,7 @@ async fn test_column_hover_in_join(test_db: PgPool) {
     test_hover_at_cursor("column_hover_join", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_table_hover_works(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -231,7 +231,7 @@ async fn test_table_hover_works(test_db: PgPool) {
     test_hover_at_cursor("table_hover", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_table_hover_select_star(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -248,7 +248,7 @@ async fn test_table_hover_select_star(test_db: PgPool) {
     test_hover_at_cursor("table_hover_select_star", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_table_hover_shows_nullable_and_basic_defaults(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -274,7 +274,7 @@ async fn test_table_hover_shows_nullable_and_basic_defaults(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_no_hover_on_keyword(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -291,7 +291,7 @@ async fn test_no_hover_on_keyword(test_db: PgPool) {
     test_hover_at_cursor("no_hover_keyword", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn shortens_lengthy_functions(test_db: PgPool) {
     let setup = r#"
         create or replace function public.func(cool_stuff text,       something_else int,a_third_thing text)
@@ -353,7 +353,7 @@ async fn shortens_lengthy_functions(test_db: PgPool) {
     test_hover_at_cursor("lenghty_function", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_role_hover_create_role(test_db: PgPool) {
     let query = format!(
         "create role alternate_ow{}ner with superuser createdb login",
@@ -363,7 +363,7 @@ async fn test_role_hover_create_role(test_db: PgPool) {
     test_hover_at_cursor("role_create", query, None, &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_role_hover_alter_role(test_db: PgPool) {
     let query = format!(
         "alter role test_log{}in set work_mem = '256MB'",
@@ -373,7 +373,7 @@ async fn test_role_hover_alter_role(test_db: PgPool) {
     test_hover_at_cursor("role_alter", query, None, &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_table_hover_with_quoted_schema(test_db: PgPool) {
     let setup = r#"
         create schema auth;
@@ -391,7 +391,7 @@ async fn test_table_hover_with_quoted_schema(test_db: PgPool) {
     test_hover_at_cursor("table_hover_quoted_schema", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_function_hover_with_quoted_schema(test_db: PgPool) {
     let setup = r#"
         create schema auth;
@@ -414,7 +414,7 @@ async fn test_function_hover_with_quoted_schema(test_db: PgPool) {
     test_hover_at_cursor("function_hover_quoted_schema", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_with_quoted_schema_table(test_db: PgPool) {
     let setup = r#"
         create schema auth;
@@ -440,7 +440,7 @@ async fn test_column_hover_with_quoted_schema_table(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_table_hover_with_quoted_table_name(test_db: PgPool) {
     let setup = r#"
         create schema auth;
@@ -464,7 +464,7 @@ async fn test_table_hover_with_quoted_table_name(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_with_quoted_column_name(test_db: PgPool) {
     let setup = r#"
         create schema auth;
@@ -488,7 +488,7 @@ async fn test_column_hover_with_quoted_column_name(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_with_quoted_column_name_with_table(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -517,7 +517,7 @@ async fn test_column_hover_with_quoted_column_name_with_table(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn hover_on_schemas(test_db: PgPool) {
     let setup = r#"
         create schema auth;
@@ -536,7 +536,7 @@ async fn hover_on_schemas(test_db: PgPool) {
     test_hover_at_cursor("hover_on_schemas", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_policy_table_hover(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -555,7 +555,7 @@ async fn test_policy_table_hover(test_db: PgPool) {
     test_hover_at_cursor("create_policy", query, None, &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_revoke_table_hover(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -574,7 +574,7 @@ async fn test_revoke_table_hover(test_db: PgPool) {
     test_hover_at_cursor("revoke_select", query, None, &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_grant_table_hover(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -593,7 +593,7 @@ async fn test_grant_table_hover(test_db: PgPool) {
     test_hover_at_cursor("grant_select", query, None, &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn hover_on_composite_type(test_db: PgPool) {
     let setup = r#"create type compfoo as (f1 int, f2 text);"#;
 
@@ -611,7 +611,7 @@ async fn hover_on_composite_type(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn hover_on_enum_type(test_db: PgPool) {
     let setup = r#"create type compfoo as ENUM ('yes', 'no');"#;
 
@@ -623,7 +623,7 @@ async fn hover_on_enum_type(test_db: PgPool) {
     test_hover_at_cursor("hover_custom_type_enum", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn hover_type_in_select_clause(test_db: PgPool) {
     let setup = r#"create type compfoo as (f1 int, f2 text);"#;
 
@@ -635,7 +635,7 @@ async fn hover_type_in_select_clause(test_db: PgPool) {
     test_hover_at_cursor("hover_type_in_select_clause", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn no_hover_results_over_params(test_db: PgPool) {
     let setup = r#"
         create table users (
@@ -676,7 +676,7 @@ async fn no_hover_results_over_params(test_db: PgPool) {
     }
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_function_hover_overload(test_db: PgPool) {
     let setup = r#"
         create function pick(i integer) returns integer language sql immutable as 'select i';
@@ -688,7 +688,7 @@ async fn test_function_hover_overload(test_db: PgPool) {
     test_hover_at_cursor("function_overload", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_function_hover_ambiguous_overload_falls_back(test_db: PgPool) {
     let setup = r#"
         create function amb(a integer, b text) returns integer language sql immutable as 'select 1';
@@ -703,7 +703,7 @@ async fn test_function_hover_ambiguous_overload_falls_back(test_db: PgPool) {
     test_hover_at_cursor("function_ambiguous_overload", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_resolved_alias_in_join(test_db: PgPool) {
     let setup = r#"
         create table hover_users (id serial primary key, name text not null);
@@ -724,7 +724,7 @@ async fn test_column_hover_resolved_alias_in_join(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_resolved_unqualified_in_join(test_db: PgPool) {
     let setup = r#"
         create table hover_users (id serial primary key, name text not null);
@@ -745,7 +745,7 @@ async fn test_column_hover_resolved_unqualified_in_join(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_cte_column(test_db: PgPool) {
     let setup = r#"
         create table hover_users (id serial primary key, name text not null);
@@ -759,7 +759,7 @@ async fn test_column_hover_cte_column(test_db: PgPool) {
     test_hover_at_cursor("column_cte", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_table_hover_resolved_by_search_path(test_db: PgPool) {
     let setup = r#"
         create schema other;
@@ -789,7 +789,7 @@ const MIXED_CASE_TABLES: &str = r#"
 
 // The statements don't parse, so hover finds the tables by name instead of by reference.
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_table_hover_unquoted_name_is_downcased(test_db: PgPool) {
     let query = format!(
         "select * from MyTa{}ble where",
@@ -805,7 +805,7 @@ async fn test_table_hover_unquoted_name_is_downcased(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_table_hover_quoted_name_keeps_its_case(test_db: PgPool) {
     let query = format!(
         r#"select * from "MyTa{}ble" where"#,
@@ -821,7 +821,7 @@ async fn test_table_hover_quoted_name_keeps_its_case(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_table_hover_quoted_name_with_escaped_quote(test_db: PgPool) {
     let query = format!(
         r#"select * from "a""{}b" where"#,
@@ -837,7 +837,7 @@ async fn test_table_hover_quoted_name_with_escaped_quote(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_procedure_hover_in_call(test_db: PgPool) {
     let setup = r#"
         create procedure hover_proc(a int, b text) language sql as 'select 1';
@@ -852,7 +852,7 @@ async fn test_procedure_hover_in_call(test_db: PgPool) {
     test_hover_at_cursor("procedure_in_call", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_schema_hover_in_call(test_db: PgPool) {
     let setup = r#"
         create schema app;
@@ -867,7 +867,7 @@ async fn test_schema_hover_in_call(test_db: PgPool) {
     test_hover_at_cursor("schema_in_call", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_procedure_hover_in_call_with_output_parameters(test_db: PgPool) {
     let setup = r#"
         create procedure hover_out(a int, out b int) language plpgsql as $$ begin b := a; end $$;
@@ -887,7 +887,7 @@ async fn test_procedure_hover_in_call_with_output_parameters(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_not_on_qualifier(test_db: PgPool) {
     let setup = r#"
         create table hover_users (id serial primary key, name text not null);
@@ -901,7 +901,7 @@ async fn test_column_hover_not_on_qualifier(test_db: PgPool) {
     test_hover_at_cursor("column_not_on_qualifier", query, Some(setup), &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_on_last_part_of_quoted_name(test_db: PgPool) {
     let setup = r#"
         create table "Hover.Users" ("Id" int primary key);
@@ -942,22 +942,22 @@ const MERGE: &str = "merge into hover_users u using hover_posts p on p.post_id =
     when matched and p.title <> u.name then update set name = p.title \
     when not matched then insert (id, name) values (p.post_id, p.title)";
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_merge_hover_source_table(test_db: PgPool) {
     test_merge_hover("merge_source_table", MERGE, "using hover_po", &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_merge_hover_join_condition_column(test_db: PgPool) {
     test_merge_hover("merge_join_condition_column", MERGE, "u.i", &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_merge_hover_update_value_column(test_db: PgPool) {
     test_merge_hover("merge_update_value_column", MERGE, "name = p.ti", &test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_merge_hover_insert_value_column(test_db: PgPool) {
     test_merge_hover("merge_insert_value_column", MERGE, "values (p.po", &test_db).await;
 }
@@ -980,7 +980,7 @@ async fn test_qualifier_hover(name: &str, sql: &str, needle: &str, test_db: &PgP
     test_hover_at_cursor(name, query, Some(QUALIFIER_SETUP), test_db).await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_merge_hover_update_value_qualifier(test_db: PgPool) {
     test_qualifier_hover(
         "merge_update_value_qualifier",
@@ -991,7 +991,7 @@ async fn test_merge_hover_update_value_qualifier(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_merge_hover_insert_value_qualifier(test_db: PgPool) {
     test_qualifier_hover(
         "merge_insert_value_qualifier",
@@ -1003,7 +1003,7 @@ async fn test_merge_hover_insert_value_qualifier(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_update_hover_value_qualifier(test_db: PgPool) {
     test_qualifier_hover(
         "update_value_qualifier",
@@ -1014,7 +1014,7 @@ async fn test_update_hover_value_qualifier(test_db: PgPool) {
     .await;
 }
 
-#[pgls_test_utils::db_test]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_column_hover_cte_column_list(test_db: PgPool) {
     let setup = r#"
         create table hover_users (id serial primary key, name text not null);

@@ -32,8 +32,7 @@ The following features are available today:
 
 ```bash
 nix develop     # or skip if not using Nix
-just setup
-just db
+docker-compose up -d
 ```
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the development workflow and [ARCHITECTURE.md](./ARCHITECTURE.md) for an overview of the code base.

@@ -1,4 +1,0 @@
--- expect_no_diagnostics
--- The foreign key takes SHARE ROW EXCLUSIVE on orders, not ACCESS EXCLUSIVE.
-alter table users add column email text;
-alter table orders add constraint orders_user_fk foreign key (user_id) references users (id) not valid;

@@ -1,8 +1,9 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::{TransactionMode, ends_transaction_block};
+use pgls_catalog::TransactionMode;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::protobuf::{TransactionStmt, TransactionStmtKind};
 
 declare_lint_rule! {
     /// A transaction is started but never committed or rolled back.
@@ -50,18 +51,21 @@ impl LinterRule for BanUncommittedTransaction {
             return vec![];
         }
 
-        if !ctx.session().opens_transaction_block(ctx.stmt()) {
+        let pgls_query::NodeEnum::TransactionStmt(stmt) = ctx.stmt() else {
+            return vec![];
+        };
+        if !starts_transaction(stmt) {
             return vec![];
         }
 
-        // Each walk ends at the end of the transaction block that the statement opens, so the
-        // walks of a file cover each statement once.
         let file_context = ctx.file_context();
-        if file_context
-            .later_stmts()
-            .iter()
-            .any(ends_transaction_block)
-        {
+        let is_ended = file_context.later_stmts().iter().any(|stmt| {
+            matches!(
+                stmt,
+                pgls_query::NodeEnum::TransactionStmt(stmt) if starts_transaction(stmt) || ends_transaction(stmt)
+            )
+        });
+        if is_ended {
             return vec![];
         }
 
@@ -85,4 +89,22 @@ impl LinterRule for BanUncommittedTransaction {
             ),
         ]
     }
+}
+
+/// `COMMIT AND CHAIN` and `ROLLBACK AND CHAIN` immediately start a new transaction.
+fn starts_transaction(stmt: &TransactionStmt) -> bool {
+    match stmt.kind() {
+        TransactionStmtKind::TransStmtBegin | TransactionStmtKind::TransStmtStart => true,
+        TransactionStmtKind::TransStmtCommit | TransactionStmtKind::TransStmtRollback => stmt.chain,
+        _ => false,
+    }
+}
+
+fn ends_transaction(stmt: &TransactionStmt) -> bool {
+    matches!(
+        stmt.kind(),
+        TransactionStmtKind::TransStmtCommit
+            | TransactionStmtKind::TransStmtRollback
+            | TransactionStmtKind::TransStmtPrepare
+    )
 }

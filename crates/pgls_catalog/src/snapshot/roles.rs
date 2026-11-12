@@ -36,7 +36,7 @@ mod tests {
 
     use crate::snapshot::Snapshot;
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn loads_roles(test_db: PgPool) {
         let cache = Snapshot::load(&test_db)
             .await
@@ -63,7 +63,7 @@ mod tests {
         assert!(!login_role.can_bypass_rls);
     }
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn loads_comments(test_db: PgPool) {
         let setup = r#"
             comment on role owner is 'test';

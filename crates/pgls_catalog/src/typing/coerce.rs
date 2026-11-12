@@ -306,7 +306,7 @@ mod tests {
     use sqlx::PgPool;
     use std::sync::Arc;
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn postgres_cast_pathways(test_db: PgPool) {
         let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
         let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));

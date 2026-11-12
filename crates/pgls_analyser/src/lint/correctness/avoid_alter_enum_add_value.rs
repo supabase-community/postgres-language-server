@@ -1,6 +1,5 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_catalog::CatalogView;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -12,7 +11,7 @@ declare_lint_rule! {
     /// new enum value cannot be used in the same transaction until it is committed.
     ///
     /// The rule is silent in migration sections that run without a transaction, like dbmate's
-    /// `-- migrate:up transaction:false`, and when the database runs Postgres 12 or later.
+    /// `-- migrate:up transaction:false`.
     ///
     /// ## Examples
     ///
@@ -46,7 +45,6 @@ impl LinterRule for AvoidAlterEnumAddValue {
         if let pgls_query::NodeEnum::AlterEnumStmt(stmt) = &ctx.stmt()
             && stmt.old_val.is_empty()
             && ctx.session().in_transaction() != Some(false)
-            && ctx.catalog().server_version_at_least(12) != Some(true)
         {
             diagnostics.push(
                 LinterDiagnostic::new(

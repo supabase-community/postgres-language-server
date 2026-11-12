@@ -1,6 +1,6 @@
 use pgls_query::{NodeEnum, protobuf::RangeVar};
 
-use super::{LockMode, Session, TransactionMode, alter_table_lock};
+use super::{Session, TransactionMode};
 use crate::Catalog;
 
 /// Applies a statement with a catalog that knows nothing but the statement, so unqualified
@@ -40,9 +40,9 @@ fn transaction_boundaries_reset_state_and_timeouts() {
     apply(&mut s, "CREATE TABLE made (id int)");
     assert!(s.has_lock_timeout() && created(&s, "", "made"));
     apply(&mut s, "BEGIN");
-    assert!(s.in_explicit_transaction());
+    assert_eq!(s.transaction_depth(), 1);
     apply(&mut s, "COMMIT");
-    assert!(!s.in_explicit_transaction());
+    assert_eq!(s.transaction_depth(), 0);
     assert!(!s.has_lock_timeout() && !created(&s, "", "made"));
     apply(&mut s, "SET statement_timeout='1s'");
     apply(&mut s, "ROLLBACK");
@@ -109,161 +109,44 @@ fn not_valid_and_access_exclusive_are_tracked() {
         "ALTER TABLE things ADD CONSTRAINT things_fk FOREIGN KEY (id) REFERENCES other(id) NOT VALID",
     );
     assert!(not_valid(&s, "things", "things_fk"));
-    // A foreign key takes SHARE ROW EXCLUSIVE on both tables.
-    assert!(!s.is_holding_access_exclusive());
-    let locks = |s: &Session, q: &str| {
-        let n = pgls_query::parse(q).unwrap().into_root().unwrap();
-        s.table_locks(&n, &Catalog::new(None))
-            .into_iter()
-            .map(|lock| (lock.mode, lock.schema, lock.name))
-            .collect::<Vec<_>>()
+    let parsed = pgls_query::parse("ALTER TABLE things ADD COLUMN name text")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    let NodeEnum::AlterTableStmt(stmt) = parsed else {
+        panic!()
     };
     assert_eq!(
-        locks(&s, "ALTER TABLE things ADD COLUMN name text"),
-        [(LockMode::AccessExclusive, "app".into(), "things".into())]
+        s.access_exclusive_table_for_alter(&stmt, &Catalog::new(None)),
+        Some(("app".into(), "things".into()))
     );
-    apply(&mut s, "ALTER TABLE things ADD COLUMN name text");
+    s.apply(&NodeEnum::AlterTableStmt(stmt), &Catalog::new(None));
     assert!(s.is_holding_access_exclusive());
     assert_eq!(s.access_exclusive_tables().len(), 1);
     apply(&mut s, "CREATE TABLE fresh (id int)");
-    assert_eq!(locks(&s, "ALTER TABLE fresh ADD COLUMN x int"), []);
-    assert_eq!(
-        locks(&s, "ALTER TABLE things VALIDATE CONSTRAINT x"),
-        [(
-            LockMode::ShareUpdateExclusive,
-            "app".into(),
-            "things".into()
-        )]
-    );
-    // Attaching a partition locks the partition ACCESS EXCLUSIVE.
-    assert_eq!(
-        locks(
-            &s,
-            "ALTER TABLE things ATTACH PARTITION things_2024 FOR VALUES FROM (1) TO (2)"
-        ),
-        [
-            (
-                LockMode::ShareUpdateExclusive,
-                "app".into(),
-                "things".into()
-            ),
-            (
-                LockMode::AccessExclusive,
-                "app".into(),
-                "things_2024".into()
-            )
-        ]
-    );
-    assert_eq!(
-        locks(
-            &s,
-            "ALTER TABLE things ADD CONSTRAINT f FOREIGN KEY (id) REFERENCES public.other (id)"
-        ),
-        [
-            (LockMode::ShareRowExclusive, "app".into(), "things".into()),
-            (LockMode::ShareRowExclusive, "public".into(), "other".into())
-        ]
-    );
-    assert_eq!(
-        locks(&s, "CREATE INDEX CONCURRENTLY i ON things (id)"),
-        [(
-            LockMode::ShareUpdateExclusive,
-            "app".into(),
-            "things".into()
-        )]
-    );
-}
-
-#[test]
-fn alter_table_takes_the_strongest_lock_of_its_subcommands() {
-    let lock = |q: &str| {
-        let Some(NodeEnum::AlterTableStmt(stmt)) = pgls_query::parse(q).unwrap().into_root() else {
-            panic!("not an ALTER TABLE: {q}")
-        };
-        alter_table_lock(&stmt)
+    let fresh = pgls_query::parse("ALTER TABLE fresh ADD COLUMN x int")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    let NodeEnum::AlterTableStmt(stmt) = fresh else {
+        panic!()
     };
-    use LockMode::*;
-    for (q, mode) in [
-        ("ALTER TABLE t ADD COLUMN a int", AccessExclusive),
-        ("ALTER TABLE t VALIDATE CONSTRAINT c", ShareUpdateExclusive),
-        (
-            "ALTER TABLE t ALTER COLUMN a SET STATISTICS 100",
-            ShareUpdateExclusive,
-        ),
-        (
-            "ALTER TABLE t ALTER COLUMN a SET (n_distinct = 10)",
-            ShareUpdateExclusive,
-        ),
-        ("ALTER TABLE t CLUSTER ON i", ShareUpdateExclusive),
-        ("ALTER TABLE t SET WITHOUT CLUSTER", ShareUpdateExclusive),
-        ("ALTER TABLE t ENABLE TRIGGER tr", ShareRowExclusive),
-        ("ALTER TABLE t ENABLE ALWAYS TRIGGER tr", ShareRowExclusive),
-        ("ALTER TABLE t ENABLE REPLICA TRIGGER tr", ShareRowExclusive),
-        ("ALTER TABLE t DISABLE TRIGGER ALL", ShareRowExclusive),
-        (
-            "ALTER TABLE t ADD CONSTRAINT f FOREIGN KEY (a) REFERENCES o (id)",
-            ShareRowExclusive,
-        ),
-        (
-            "ALTER TABLE t ADD CONSTRAINT c CHECK (a > 0)",
-            AccessExclusive,
-        ),
-        ("ALTER TABLE t ADD CONSTRAINT u UNIQUE (a)", AccessExclusive),
-        (
-            "ALTER TABLE t ATTACH PARTITION p FOR VALUES IN (1)",
-            ShareUpdateExclusive,
-        ),
-        ("ALTER TABLE t DETACH PARTITION p", AccessExclusive),
-        (
-            "ALTER TABLE t DETACH PARTITION p CONCURRENTLY",
-            ShareUpdateExclusive,
-        ),
-        (
-            "ALTER TABLE t DETACH PARTITION p FINALIZE",
-            ShareUpdateExclusive,
-        ),
-        ("ALTER TABLE t SET (fillfactor = 70)", ShareUpdateExclusive),
-        (
-            "ALTER TABLE t RESET (autovacuum_enabled)",
-            ShareUpdateExclusive,
-        ),
-        (
-            "ALTER TABLE t SET (toast.autovacuum_enabled = false)",
-            ShareUpdateExclusive,
-        ),
-        (
-            "ALTER TABLE t SET (user_catalog_table = true)",
-            AccessExclusive,
-        ),
-        (
-            "ALTER VIEW v SET (security_barrier = true)",
-            AccessExclusive,
-        ),
-        (
-            "ALTER TABLE t SET (fillfactor = 70, user_catalog_table = true)",
-            AccessExclusive,
-        ),
-        // Postgres rejects the option later, without a stronger lock.
-        (
-            "ALTER TABLE t SET (no_such_option = 1)",
-            ShareUpdateExclusive,
-        ),
-        ("ALTER TABLE t ALTER COLUMN a SET NOT NULL", AccessExclusive),
-        ("ALTER TABLE t OWNER TO r", AccessExclusive),
-        // The strongest lock of the subcommands.
-        (
-            "ALTER TABLE t VALIDATE CONSTRAINT c, ENABLE TRIGGER tr",
-            ShareRowExclusive,
-        ),
-        (
-            "ALTER TABLE t VALIDATE CONSTRAINT c, ADD COLUMN a int",
-            AccessExclusive,
-        ),
-    ] {
-        assert_eq!(lock(q), mode, "{q}");
-    }
+    assert_eq!(
+        s.access_exclusive_table_for_alter(&stmt, &Catalog::new(None)),
+        None
+    );
+    let validate = pgls_query::parse("ALTER TABLE things VALIDATE CONSTRAINT x")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    let NodeEnum::AlterTableStmt(stmt) = validate else {
+        panic!()
+    };
+    assert_eq!(
+        s.access_exclusive_table_for_alter(&stmt, &Catalog::new(None)),
+        None
+    );
 }
-
 #[test]
 fn dangerous_lock_statements() {
     let s = Session::new(vec!["public".into()]);
@@ -276,9 +159,6 @@ fn dangerous_lock_statements() {
         "REINDEX TABLE t",
         "ALTER TABLE t RENAME TO x",
         "REFRESH MATERIALIZED VIEW t",
-        "ALTER TABLE t ENABLE TRIGGER tr",
-        // The partition is locked ACCESS EXCLUSIVE.
-        "ALTER TABLE t ATTACH PARTITION p FOR VALUES IN (1)",
     ] {
         assert!(dangerous(&s, q), "{q}");
     }
@@ -287,10 +167,6 @@ fn dangerous_lock_statements() {
         "VACUUM t",
         "REINDEX TABLE CONCURRENTLY t",
         "REFRESH MATERIALIZED VIEW CONCURRENTLY t",
-        // SHARE UPDATE EXCLUSIVE doesn't block reads or writes.
-        "ALTER TABLE t VALIDATE CONSTRAINT c",
-        "ALTER TABLE t SET (autovacuum_enabled = false)",
-        "ALTER TABLE t DETACH PARTITION p CONCURRENTLY",
     ] {
         assert!(!dangerous(&s, q), "{q}");
     }
@@ -376,59 +252,6 @@ fn check_function_bodies() {
     apply(&mut s, "SET check_function_bodies = off");
     apply(&mut s, "RESET ALL");
     assert!(s.check_function_bodies());
-}
-
-#[test]
-fn transaction_blocks_follow_postgres() {
-    let mut s =
-        Session::new(vec!["public".into()]).with_transaction_mode(TransactionMode::Autocommit);
-    let opens = |s: &Session, q: &str| {
-        s.opens_transaction_block(&pgls_query::parse(q).unwrap().into_root().unwrap())
-    };
-    // A `BEGIN` in a transaction block only warns, and one `COMMIT` ends the block.
-    assert!(opens(&s, "BEGIN"));
-    apply(&mut s, "BEGIN");
-    assert!(!opens(&s, "BEGIN"));
-    apply(&mut s, "BEGIN");
-    apply(&mut s, "COMMIT");
-    assert_eq!(s.in_transaction(), Some(false));
-
-    // Savepoints don't open or end the block.
-    apply(&mut s, "SAVEPOINT a");
-    assert_eq!(s.in_transaction(), Some(false));
-    apply(&mut s, "BEGIN");
-    apply(&mut s, "SAVEPOINT a");
-    apply(&mut s, "RELEASE SAVEPOINT a");
-    assert_eq!(s.in_transaction(), Some(true));
-    apply(&mut s, "SAVEPOINT b");
-    apply(&mut s, "COMMIT");
-    assert_eq!(s.in_transaction(), Some(false));
-
-    // `AND CHAIN` ends the transaction and opens the next block right away.
-    apply(&mut s, "BEGIN");
-    apply(&mut s, "ALTER TABLE users ADD COLUMN name text");
-    apply(&mut s, "SET LOCAL search_path = other");
-    assert!(opens(&s, "COMMIT AND CHAIN") && opens(&s, "ROLLBACK AND CHAIN"));
-    assert!(!opens(&s, "COMMIT"));
-    apply(&mut s, "COMMIT AND CHAIN");
-    assert_eq!(s.in_transaction(), Some(true));
-    assert!(!s.is_holding_access_exclusive());
-    assert_eq!(s.search_path(), ["public"]);
-    apply(&mut s, "SET search_path = other");
-    apply(&mut s, "ROLLBACK AND CHAIN");
-    assert_eq!(s.in_transaction(), Some(true));
-    assert_eq!(s.search_path(), ["public"]);
-
-    // `PREPARE TRANSACTION` ends the block and keeps its settings, like `COMMIT`.
-    apply(&mut s, "SET search_path = other");
-    apply(&mut s, "PREPARE TRANSACTION 'tx'");
-    assert_eq!(s.in_transaction(), Some(false));
-    assert_eq!(s.search_path(), ["other"]);
-
-    // Outside of a transaction block, Postgres rejects `AND CHAIN`.
-    assert!(!opens(&s, "COMMIT AND CHAIN"));
-    apply(&mut s, "COMMIT AND CHAIN");
-    assert_eq!(s.in_transaction(), Some(false));
 }
 
 #[test]

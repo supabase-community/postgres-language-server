@@ -483,7 +483,7 @@ mod common_type_tests {
     use sqlx::{Executor, PgPool};
     use std::sync::Arc;
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn postgres_common_types(test_db: PgPool) {
         test_db
             .execute("CREATE DOMAIN public.typing_int_domain AS int4")
@@ -575,7 +575,7 @@ mod polymorphic_tests {
     use sqlx::PgPool;
     use std::sync::Arc;
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn resolves_builtin_polymorphic_families(test_db: PgPool) {
         let snapshot = Snapshot::load(&test_db).await.expect("snapshot");
         let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));

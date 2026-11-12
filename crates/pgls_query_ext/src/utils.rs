@@ -72,12 +72,6 @@ pub fn cmd_def(cmd: &AlterTableCmd) -> Option<&NodeEnum> {
     cmd.def.as_ref()?.node.as_ref()
 }
 
-/// Whether the subcommand is `DETACH PARTITION ... CONCURRENTLY`, the only subcommand that
-/// Postgres can run concurrently.
-pub fn detaches_concurrently(cmd: &AlterTableCmd) -> bool {
-    matches!(cmd_def(cmd), Some(NodeEnum::PartitionCmd(partition)) if partition.concurrent)
-}
-
 /// The string value of a `CREATE FUNCTION` option, like `language`, or `as` with the body.
 ///
 /// The argument is a string or, for `as`, a list of strings. A list of two strings is the

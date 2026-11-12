@@ -74,51 +74,6 @@ pub fn array_element(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<TypeId
     }
 }
 
-/// A serial pseudo-type. In a column of `CREATE TABLE` or `ALTER TABLE ... ADD COLUMN`,
-/// Postgres turns it into an integer column with a sequence as its default.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SerialType {
-    /// `smallserial` or `serial2`.
-    SmallSerial,
-    /// `serial` or `serial4`.
-    Serial,
-    /// `bigserial` or `serial8`.
-    BigSerial,
-}
-
-impl SerialType {
-    /// The integer type that the column gets, e.g. `int4` for `serial`.
-    pub fn integer_type(self) -> &'static str {
-        match self {
-            Self::SmallSerial => "int2",
-            Self::Serial => "int4",
-            Self::BigSerial => "int8",
-        }
-    }
-}
-
-/// The serial pseudo-type that a column type names, if any. Port of the check in
-/// [`transformColumnDefinition`]: only a single unqualified name without `%TYPE` is a serial
-/// type, so `pg_catalog.serial` is not (and doesn't exist), and a type named `serial` that the
-/// user created can't be used for a column. Postgres rejects arrays of a serial type, so
-/// `serial[]` is none.
-///
-/// [`transformColumnDefinition`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L604
-pub fn serial_type(type_name: &protobuf::TypeName) -> Option<SerialType> {
-    let [name] = type_name.names.as_slice() else {
-        return None;
-    };
-    if type_name.pct_type || !type_name.array_bounds.is_empty() {
-        return None;
-    }
-    match pgls_query_ext::utils::string_value(name)? {
-        "smallserial" | "serial2" => Some(SerialType::SmallSerial),
-        "serial" | "serial4" => Some(SerialType::Serial),
-        "bigserial" | "serial8" => Some(SerialType::BigSerial),
-        _ => None,
-    }
-}
-
 /// Resolves a parser type name and returns its identity plus its SETOF flag. Port of
 /// [`LookupTypeNameExtended`], without typmods, which are not checked.
 ///
@@ -238,7 +193,7 @@ mod tests {
     use sqlx::PgPool;
     use std::sync::Arc;
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn formats_postgres_builtin_types(test_db: PgPool) {
         let snapshot = Snapshot::load(&test_db).await.unwrap();
         let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
@@ -263,53 +218,5 @@ mod tests {
             format_type(&catalog, &Type::Record(vec![])).as_deref(),
             Some("record")
         );
-    }
-}
-
-#[cfg(test)]
-mod serial_tests {
-    use super::{SerialType, serial_type};
-    use pgls_query::NodeEnum;
-
-    fn column_serial_type(column_type: &str) -> Option<SerialType> {
-        let sql = format!("create table t (a {column_type})");
-        let Some(NodeEnum::CreateStmt(stmt)) = pgls_query::parse(&sql).unwrap().into_root() else {
-            panic!("not a create table: {sql}");
-        };
-        let Some(NodeEnum::ColumnDef(column)) = &stmt.table_elts[0].node else {
-            panic!("not a column: {sql}");
-        };
-        serial_type(column.type_name.as_ref().unwrap())
-    }
-
-    #[test]
-    fn serial_types_are_single_unqualified_names() {
-        for (column_type, expected) in [
-            ("smallserial", SerialType::SmallSerial),
-            ("serial2", SerialType::SmallSerial),
-            ("serial", SerialType::Serial),
-            ("serial4", SerialType::Serial),
-            ("SERIAL", SerialType::Serial),
-            ("bigserial", SerialType::BigSerial),
-            ("serial8", SerialType::BigSerial),
-        ] {
-            assert_eq!(
-                column_serial_type(column_type),
-                Some(expected),
-                "{column_type}"
-            );
-        }
-        for column_type in [
-            "int4",
-            "pg_catalog.serial",
-            "myschema.bigserial",
-            "serial[]",
-            "\"Serial\"",
-        ] {
-            assert_eq!(column_serial_type(column_type), None, "{column_type}");
-        }
-        assert_eq!(SerialType::SmallSerial.integer_type(), "int2");
-        assert_eq!(SerialType::Serial.integer_type(), "int4");
-        assert_eq!(SerialType::BigSerial.integer_type(), "int8");
     }
 }

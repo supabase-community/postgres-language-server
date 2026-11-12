@@ -22,4 +22,4 @@ lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━
 
   × CREATE SUBSCRIPTION ... WITH (create_slot = true) cannot run inside a transaction block.
   
-  i Run CREATE SUBSCRIPTION ... WITH (create_slot = true) outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
+  i Run CREATE SUBSCRIPTION ... WITH (create_slot = true) outside of a transaction, e.g. in a migration of its own that runs without a transaction.

@@ -669,24 +669,22 @@ pub(super) fn column_info(
     column: &protobuf::ColumnDef,
     search_path: &[String],
 ) -> ColumnInfo {
-    // Postgres checks for the serial pseudo-types before it looks the name up, and turns them
-    // into integer columns. They aren't types, so a lookup wouldn't find them.
-    let (type_name, type_id) = match column.type_name.as_ref() {
-        Some(name) => match crate::serial_type(name) {
-            Some(serial) => {
-                let integer_type = serial.integer_type();
-                (
-                    Some(integer_type.to_owned()),
-                    catalog.builtin_type(integer_type),
-                )
-            }
-            None => (
-                type_label(name),
-                crate::normalize_type_name(catalog, name, search_path).0,
-            ),
-        },
-        None => (None, None),
-    };
+    let type_id = column
+        .type_name
+        .as_ref()
+        .and_then(|name| crate::normalize_type_name(catalog, name, search_path).0)
+        .or_else(|| {
+            // Serial pseudo-types are rewritten to integer columns by PostgreSQL, but they
+            // are not pg_type entries and therefore cannot be normalized by name lookup.
+            let internal_name = match column.type_name.as_ref().and_then(type_label).as_deref() {
+                Some("serial") => "int4",
+                Some("bigserial") => "int8",
+                Some("smallserial") => "int2",
+                _ => return None,
+            };
+            catalog.builtin_type(internal_name)
+        });
+    let type_name = column.type_name.as_ref().and_then(type_label);
     let (generated, identity) = column_kinds(column);
     ColumnInfo {
         generated,

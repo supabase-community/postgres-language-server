@@ -1,4 +1,4 @@
-use crate::utils::{added_constraints, altered_relation};
+use crate::utils::added_constraints;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -48,8 +48,15 @@ impl LinterRule for DisallowUniqueConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() else {
+            return vec![];
+        };
         // A table created earlier in the transaction is not visible to other sessions yet.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+        if stmt
+            .relation
+            .as_ref()
+            .is_some_and(|relation| ctx.session().has_created_relation(relation, ctx.catalog()))
+        {
             return vec![];
         }
 

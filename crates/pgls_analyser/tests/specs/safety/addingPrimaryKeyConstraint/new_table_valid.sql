@@ -1,6 +1,0 @@
--- Other transactions can't see a table created earlier in the transaction.
--- expect_no_diagnostics
-BEGIN;
-CREATE TABLE users (id bigint, email text);
-ALTER TABLE users ADD PRIMARY KEY (id);
-COMMIT;

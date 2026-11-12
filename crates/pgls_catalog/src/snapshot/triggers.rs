@@ -145,7 +145,7 @@ mod tests {
         triggers::{TriggerAffected, TriggerEvent, TriggerTiming},
     };
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn loads_triggers(test_db: PgPool) {
         let setup = r#"
                 create table public.users (
@@ -228,7 +228,7 @@ mod tests {
         assert_eq!(delete_trigger.proc_name, "log_user_insert");
     }
 
-    #[pgls_test_utils::db_test]
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn loads_instead_and_truncate_triggers(test_db: PgPool) {
         let setup = r#"
         create table public.docs (

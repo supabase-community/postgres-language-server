@@ -1,4 +1,4 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use crate::{AnalysedFileContext, LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::TransactionMode;
 use pgls_console::markup;
@@ -52,7 +52,8 @@ impl LinterRule for TransactionNesting {
             match stmt.kind() {
                 pgls_query::protobuf::TransactionStmtKind::TransStmtBegin
                 | pgls_query::protobuf::TransactionStmtKind::TransStmtStart => {
-                    if ctx.session().in_explicit_transaction() {
+                    // Check if there's already a BEGIN in previous statements
+                    if has_transaction_start_before(ctx.file_context()) {
                         diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
@@ -96,7 +97,7 @@ fn explicit_transaction_nesting(
     ctx: &LinterRuleContext<TransactionNesting>,
     stmt: &pgls_query::protobuf::TransactionStmt,
 ) -> Vec<LinterDiagnostic> {
-    let in_transaction = ctx.session().in_explicit_transaction();
+    let in_transaction = ctx.session().transaction_depth() > 0;
     match stmt.kind() {
         pgls_query::protobuf::TransactionStmtKind::TransStmtBegin
         | pgls_query::protobuf::TransactionStmtKind::TransStmtStart
@@ -136,4 +137,19 @@ fn explicit_transaction_nesting(
         }
         _ => vec![],
     }
+}
+
+fn has_transaction_start_before(file_context: &AnalysedFileContext) -> bool {
+    for stmt in file_context.previous_stmts() {
+        if let pgls_query::NodeEnum::TransactionStmt(tx_stmt) = stmt {
+            match tx_stmt.kind() {
+                pgls_query::protobuf::TransactionStmtKind::TransStmtBegin
+                | pgls_query::protobuf::TransactionStmtKind::TransStmtStart => return true,
+                pgls_query::protobuf::TransactionStmtKind::TransStmtCommit
+                | pgls_query::protobuf::TransactionStmtKind::TransStmtRollback => return false,
+                _ => {}
+            }
+        }
+    }
+    false
 }

@@ -8,8 +8,7 @@
 ## Description
 Enabling or disabling a trigger acquires a `SHARE ROW EXCLUSIVE` lock.
 
-`ALTER TABLE ... ENABLE/DISABLE TRIGGER`, also `ENABLE ALWAYS` and `ENABLE REPLICA`, blocks
-concurrent writes while the lock is held.
+`ALTER TABLE ... ENABLE/DISABLE TRIGGER` blocks concurrent writes while the lock is held.
 This can cause downtime on busy tables.
 
 ## Examples

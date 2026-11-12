@@ -13,7 +13,7 @@ transaction block at all. On Postgres 12+, the operation is fast (metadata-only)
 new enum value cannot be used in the same transaction until it is committed.
 
 The rule is silent in migration sections that run without a transaction, like dbmate's
-`-- migrate:up transaction:false`, and when the database runs Postgres 12 or later.
+`-- migrate:up transaction:false`.
 
 ## Examples
 

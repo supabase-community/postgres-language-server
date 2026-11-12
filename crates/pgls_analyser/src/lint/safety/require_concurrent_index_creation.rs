@@ -61,7 +61,7 @@ impl LinterRule for RequireConcurrentIndexCreation {
         let Some(relation) = &stmt.relation else {
             return diagnostics;
         };
-        if ctx.is_new_relation(relation) {
+        if ctx.session().has_created_relation(relation, ctx.catalog()) {
             return diagnostics;
         }
 

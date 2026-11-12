@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, altered_relation, cmd_def};
+use crate::utils::{alter_table_cmds, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::CatalogView;
@@ -71,11 +71,6 @@ impl LinterRule for AddingNotNullField {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        // Other transactions can't see a table created earlier in the transaction, so its
-        // scan blocks no one.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
-            return vec![];
-        }
         let mut diagnostics = Vec::new();
 
         // `NOT NULL ... NOT VALID` is new in Postgres 18.

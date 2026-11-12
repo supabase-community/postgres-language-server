@@ -25,7 +25,7 @@ lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━
 
   × REINDEX TABLE cannot run inside a transaction block.
   
-  i Run REINDEX TABLE outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
+  i Run REINDEX TABLE outside of a transaction, e.g. in a migration of its own that runs without a transaction.
   
 
 
@@ -33,4 +33,4 @@ lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━
 
   × CLUSTER cannot run inside a transaction block.
   
-  i Run CLUSTER outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
+  i Run CLUSTER outside of a transaction, e.g. in a migration of its own that runs without a transaction.

@@ -29,7 +29,7 @@ lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━
 
   × VACUUM cannot run inside a transaction block.
   
-  i Run VACUUM outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
+  i Run VACUUM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
   
 
 
@@ -37,7 +37,7 @@ lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━
 
   × VACUUM cannot run inside a transaction block.
   
-  i Run VACUUM outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
+  i Run VACUUM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
   
   i The migration tool sends the statements to Postgres as one query, and Postgres runs a query with more than one statement in a transaction block. Put the statement in a section of its own.
   
@@ -47,6 +47,6 @@ lint/banNonTransactionalStatementInTransaction ━━━━━━━━━━━
 
   × VACUUM cannot run inside a transaction block.
   
-  i Run VACUUM outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
+  i Run VACUUM outside of a transaction, e.g. in a migration of its own that runs without a transaction.
   
   i The migration tool sends the statements to Postgres as one query, and Postgres runs a query with more than one statement in a transaction block. Put the statement in a section of its own.

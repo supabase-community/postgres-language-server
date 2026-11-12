@@ -587,7 +587,7 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avoid_alter_enum_add_value:
         Option<RuleConfiguration<pgls_analyser::options::AvoidAlterEnumAddValue>>,
-    #[doc = "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the partition."]
+    #[doc = "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avoid_attaching_partition:
         Option<RuleConfiguration<pgls_analyser::options::AvoidAttachingPartition>>,

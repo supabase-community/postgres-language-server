@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
+use crate::utils::{alter_table_cmds, cmd_def, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -35,10 +35,6 @@ impl LinterRule for AddingRequiredField {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        // No other transaction has written to a table created earlier in the transaction.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
-            return vec![];
-        }
         let commands: Vec<&AlterTableCmd> = alter_table_cmds(ctx.stmt()).collect();
 
         // Columns made NOT NULL by `ADD CONSTRAINT ... NOT NULL column` (Postgres 18) in the

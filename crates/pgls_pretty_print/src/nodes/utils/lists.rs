@@ -24,18 +24,17 @@ pub(crate) enum ListSeparatorSpacing {
 /// Emits the comma before `next`, honouring `commaStyle`. With trailing commas the break follows
 /// the comma: `a,\nb`. With leading commas it comes first, `a\n, b`, and an own-line comment written
 /// before `next` stays before the comma rather than following it.
-///
-/// A fill list leaves such comments to `next`.
 pub(crate) fn emit_list_comma(
     e: &mut EventEmitter,
     next: Option<&Node>,
     spacing: ListSeparatorSpacing,
 ) {
     if matches!(e.config().comma_style, CommaStyle::Leading) {
-        if !matches!(spacing, ListSeparatorSpacing::Fill)
-            && let Some(location) = next
-                .and_then(|node| node.node.as_ref())
-                .and_then(|node| crate::codegen::node_location::node_location(&node.to_ref()))
+        // The comments lead the first node of `next`, which is not the node's own location when
+        // that points into it, such as the operator of `a + 1`.
+        if let Some(location) = next
+            .and_then(|node| node.node.as_ref())
+            .and_then(crate::comments::first_node_location)
         {
             e.take_own_line_leading_comments_at(location);
         }
