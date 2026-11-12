@@ -594,3 +594,16 @@ fn keyword_names_do_not_change_case_end_ownership() {
         );
     }
 }
+
+#[test]
+fn comments_between_rows_stay_in_place_with_leading_commas() {
+    // A comment after a row's comma, then a comment on its own line: each stays with its row.
+    let sql = "select * from (values\n(1),  -- one\n-- two\n(2),  -- three\n(3)) as v(x)";
+    for line_width in [40, 80] {
+        let config = FormatConfig {
+            line_width,
+            ..leading_comma_config()
+        };
+        format_idempotently(sql, &config);
+    }
+}
