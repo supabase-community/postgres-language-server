@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, cmd_def};
+use crate::utils::{alter_table_cmds, cmd_def, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::{Behavior, CatalogView, Lookup};
@@ -59,23 +59,14 @@ impl LinterRule for AddingFieldWithDefault {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
                 && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd)
             {
-                let has_default = col_def.constraints.iter().any(|constraint| {
-                    if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
-                        c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault
-                    } else {
-                        false
-                    }
-                });
+                let has_default = column_constraints(col_def)
+                    .any(|c| c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault);
 
                 // A virtual generated column ('v', Postgres 18) is computed on read and
                 // needs no rewrite.
-                let has_stored_generated = col_def.constraints.iter().any(|constraint| {
-                    if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
-                        c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
-                            && c.generated_kind == "s"
-                    } else {
-                        false
-                    }
+                let has_stored_generated = column_constraints(col_def).any(|c| {
+                    c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
+                        && c.generated_kind == "s"
                 });
 
                 if has_stored_generated {
@@ -94,17 +85,11 @@ impl LinterRule for AddingFieldWithDefault {
                     // For PG 11+, check if the default is volatile
                     if pg_version.is_some_and(|v| v >= 110000) {
                         // Check if default is non-volatile
-                        let is_safe_default = col_def.constraints.iter().any(|constraint| {
-                            if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node
-                                && c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault
-                                && let Some(raw_expr) = &c.raw_expr
-                            {
-                                return is_safe_default_expr(
-                                    &raw_expr.node.as_ref().map(|n| Box::new(n.clone())),
-                                    ctx,
-                                );
-                            }
-                            false
+                        let is_safe_default = column_constraints(col_def).any(|c| {
+                            c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault
+                                && c.raw_expr.as_ref().is_some_and(|raw_expr| {
+                                    is_safe_default_expr(raw_expr.node.as_ref(), ctx)
+                                })
                         });
 
                         if !is_safe_default {
@@ -143,18 +128,17 @@ impl LinterRule for AddingFieldWithDefault {
 }
 
 fn is_safe_default_expr(
-    expr: &Option<Box<pgls_query::NodeEnum>>,
+    expr: Option<&pgls_query::NodeEnum>,
     ctx: &LinterRuleContext<AddingFieldWithDefault>,
 ) -> bool {
     match expr {
-        Some(node) => match node.as_ref() {
+        Some(node) => match node {
             // Constants are always safe
             pgls_query::NodeEnum::AConst(_) => true,
             // Type casts of constants are safe
-            pgls_query::NodeEnum::TypeCast(tc) => is_safe_default_expr(
-                &tc.arg.as_ref().and_then(|a| a.node.clone()).map(Box::new),
-                ctx,
-            ),
+            pgls_query::NodeEnum::TypeCast(tc) => {
+                is_safe_default_expr(tc.arg.as_ref().and_then(|a| a.node.as_ref()), ctx)
+            }
             // function calls might be safe if they are non-volatile and have no args
             pgls_query::NodeEnum::FuncCall(fc) => {
                 // must have no args

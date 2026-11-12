@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, cmd_def};
+use crate::utils::{alter_table_cmds, cmd_def, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -71,16 +71,7 @@ impl LinterRule for AddingForeignKeyConstraint {
                 pgls_query::protobuf::AlterTableType::AtAddColumn => {
                     if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd) {
                         // check constraints on the column
-                        let constraints: Vec<_> = col_def
-                            .constraints
-                            .iter()
-                            .filter_map(|constraint| match &constraint.node {
-                                Some(pgls_query::NodeEnum::Constraint(constraint)) => {
-                                    Some(constraint.as_ref())
-                                }
-                                _ => None,
-                            })
-                            .collect();
+                        let constraints: Vec<_> = column_constraints(col_def).collect();
                         for (index, constr) in constraints.iter().enumerate() {
                             let following = constraints.get(index + 1..).unwrap_or_default();
                             if !is_not_enforced(following)

@@ -84,9 +84,10 @@ fn add_concurrently(
     if has_concurrently_option || is_system_catalog(stmt) {
         return None;
     }
-    let tokens = ctx.tokens()?;
-    let kind = tokens.find_any(&[Token::Index, Token::Table, Token::Schema, Token::Database])?;
-    fix::add_concurrently(ctx, &tokens, kind)
+    fix::add_concurrently(
+        ctx,
+        &[Token::Index, Token::Table, Token::Schema, Token::Database],
+    )
 }
 
 /// Whether the statement reindexes system catalogs, which fails with `CONCURRENTLY`. With

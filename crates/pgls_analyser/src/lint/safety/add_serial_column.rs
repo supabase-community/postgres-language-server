@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, cmd_def, dotted_name};
+use crate::utils::{alter_table_cmds, cmd_def, column_constraints, dotted_name};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -70,16 +70,12 @@ impl LinterRule for AddSerialColumn {
                 }
 
                 // Check for GENERATED ALWAYS AS ... STORED
-                let has_stored_generated = col_def.constraints.iter().any(|constraint| {
-                    if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
-                        c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
-                            && c.generated_when == "a" // 'a' = ALWAYS
-                            // 's' = STORED. A VIRTUAL column (Postgres 18) is computed on
-                            // read and needs no rewrite.
-                            && c.generated_kind == "s"
-                    } else {
-                        false
-                    }
+                let has_stored_generated = column_constraints(col_def).any(|c| {
+                    c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
+                        && c.generated_when == "a" // 'a' = ALWAYS
+                        // 's' = STORED. A VIRTUAL column (Postgres 18) is computed on
+                        // read and needs no rewrite.
+                        && c.generated_kind == "s"
                 });
 
                 if has_stored_generated {

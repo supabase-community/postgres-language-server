@@ -176,7 +176,7 @@ fn report_assignments(
         (
             Column {
                 name: target.name.clone(),
-                span: token_range(tokens, target.location),
+                span: tokens.and_then(|tokens| tokens.range_at(target.location)),
             },
             target.indirection.is_empty(),
         )
@@ -319,7 +319,7 @@ fn column_definitions(elements: &[Node], tokens: Option<StatementTokens>) -> Vec
         .filter_map(|element| match &element.node {
             Some(NodeEnum::ColumnDef(column)) => Some(Column {
                 name: column.colname.clone(),
-                span: token_range(tokens, column.location),
+                span: tokens.and_then(|tokens| tokens.range_at(column.location)),
             }),
             _ => None,
         })
@@ -345,7 +345,7 @@ fn added_columns(stmt: &AlterTableStmt, tokens: Option<StatementTokens>) -> Vec<
         }
         columns.push(Column {
             name: column.colname.clone(),
-            span: token_range(tokens, column.location),
+            span: tokens.and_then(|tokens| tokens.range_at(column.location)),
         });
     }
     columns
@@ -464,32 +464,7 @@ fn list_element_ranges(tokens: StatementTokens, location: i32) -> Option<Vec<Tex
         .map_while(|index| Some((index, tokens.kind(index)?)))
         .find(|(_, kind)| *kind == Token::Ascii40)?
         .0;
-    let close = tokens.closing_paren(open)?;
-    let mut ranges = Vec::new();
-    let mut element: Option<TextRange> = None;
-    let mut depth = 0usize;
-    for index in open + 1..close {
-        match tokens.kind(index)? {
-            Token::Ascii44 if depth == 0 => ranges.push(element.take()?),
-            kind => {
-                match kind {
-                    Token::Ascii40 => depth += 1,
-                    Token::Ascii41 => depth = depth.saturating_sub(1),
-                    _ => {}
-                }
-                let range = tokens.range(index);
-                element = Some(element.map_or(range, |element| element.cover(range)));
-            }
-        }
-    }
-    ranges.push(element?);
-    Some(ranges)
-}
-
-/// The range of the token at `location`, e.g. the name of a column definition.
-fn token_range(tokens: Option<StatementTokens>, location: i32) -> Option<TextRange> {
-    let tokens = tokens?;
-    Some(tokens.range(tokens.at(location)?))
+    tokens.list_elements(open + 1, tokens.closing_paren(open)?)
 }
 
 /// The range of the select list entry that starts at `location`: up to the next `,` outside
