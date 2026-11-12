@@ -319,6 +319,8 @@ Each test file should:
 2. Include one `-- expect_lint/<ruleName>` line per expected diagnostic, or `-- expect_no_diagnostics`. Only the number of diagnostics per rule is checked.
 3. Contain valid SQL that should either trigger or not trigger your rule
 
+Rules outside the `typecheck` group run without a catalog. A `-- catalog: builtin` line gives them the built-in catalog of the test database (from `docker-compose up -d`), with the tables, functions and types that the file creates on top. A `-- server_version_num: 110000` line makes it the catalog of that server version.
+
 **Example test structure for `addSerialColumn` rule:**
 
 ```

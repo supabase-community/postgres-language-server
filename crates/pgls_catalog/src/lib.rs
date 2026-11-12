@@ -23,6 +23,7 @@ mod catalog;
 mod identifier;
 mod lookup;
 pub mod resolve;
+pub use resolve::contains_volatile_functions;
 mod session;
 pub mod snapshot;
 pub mod typing;
