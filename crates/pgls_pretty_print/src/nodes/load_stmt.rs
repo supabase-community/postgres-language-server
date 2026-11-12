@@ -17,6 +17,5 @@ pub(super) fn emit_load_stmt(e: &mut EventEmitter, n: &LoadStmt) {
         emit_single_quoted_str(e, &n.filename);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

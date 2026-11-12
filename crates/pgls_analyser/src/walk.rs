@@ -86,12 +86,24 @@ pub fn walk_statements(
             };
             &params.unparsable[starts(unit.start)..starts(unit.end)]
         };
-        let last_end = unit_unparsable
+        // The last statement of the unit, including those that don't parse. The statements of a
+        // function body end within their `CREATE FUNCTION`.
+        let last = stmts
             .iter()
-            .map(|skipped| skipped.range.end())
-            .chain(stmts.last().map(|stmt| stmt.range.end()))
-            .max()
-            .unwrap_or_default();
+            .filter(|stmt| stmt.function.is_none())
+            .map(|stmt| (stmt.range, stmt.sql.as_deref()))
+            .chain(
+                unit_unparsable
+                    .iter()
+                    .map(|skipped| (skipped.range, Some(skipped.sql.as_str()))),
+            )
+            .max_by_key(|(range, _)| range.end());
+        let last_end = last.map_or(TextSize::default(), |(range, _)| range.end());
+        // Without the text of the last statement, assume that it ends with a semicolon. Lint
+        // still checks the fixes that rely on it on the file.
+        let terminated = last
+            .and_then(|(_, sql)| sql)
+            .is_none_or(|sql| sql.trim_end().ends_with(';'));
         // The starts of the statements the unit runs, in order, including those that don't
         // parse, but not those in function bodies.
         let mut starts: Vec<TextSize> = stmts
@@ -126,6 +138,7 @@ pub fn walk_statements(
                 .with_positions(
                     stmts.iter().map(|stmt| stmt.range.start()).collect(),
                     last_end,
+                    terminated,
                 )
                 .with_stmt_count(stmt_count(TextRange::new(unit.start, unit.end)));
         let mut implicit_block = None;

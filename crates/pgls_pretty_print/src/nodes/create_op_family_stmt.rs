@@ -24,7 +24,5 @@ pub(super) fn emit_create_op_family_stmt(e: &mut EventEmitter, n: &CreateOpFamil
     e.space();
     super::emit_identifier_maybe_quoted(e, &n.amname);
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

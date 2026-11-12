@@ -14,8 +14,11 @@ which holds an ACCESS EXCLUSIVE lock on the table and blocks all reads and write
 In Postgres 11+, this behavior was optimized for non-volatile defaults. However:
 
 - Volatile default values (like random() or custom functions) still cause table rewrites
-- Generated columns (GENERATED ALWAYS AS) always require table rewrites
+- Stored generated columns (GENERATED ALWAYS AS ... STORED) always require table rewrites
 - Non-volatile defaults are safe in Postgres 11+
+
+Virtual generated columns (Postgres 18) are computed when rows are read, so adding one
+doesn't rewrite the table.
 
 ## Examples
 

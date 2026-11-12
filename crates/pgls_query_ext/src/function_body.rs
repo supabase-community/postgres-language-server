@@ -291,7 +291,7 @@ fn string_body(
         if as_token.token() != Token::As || string.token() != Token::Sconst {
             return None;
         }
-        string_constant(&value, token_range(string)?, sql)
+        string_constant(value, token_range(string)?, sql)
     })
 }
 
@@ -459,7 +459,9 @@ fn atomic_body(
 ) -> Vec<EmbeddedStatement> {
     let Some(start) = tokens
         .windows(2)
-        .position(|pair| pair[0].token() == Token::BeginP && pair[1].token() == Token::Atomic)
+        .position(|pair| {
+            matches!(pair, [begin, atomic] if begin.token() == Token::BeginP && atomic.token() == Token::Atomic)
+        })
     else {
         return Vec::new();
     };

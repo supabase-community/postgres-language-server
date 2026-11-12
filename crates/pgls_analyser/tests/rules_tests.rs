@@ -136,8 +136,9 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
 fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDiagnostic> {
     let split = pgls_statement_splitter::split(query);
 
-    // Statements that don't parse are passed on as such, like the workspace does. The statements
-    // of a SQL function body follow the function, with its parameters in scope.
+    // Statements that don't parse are passed on as such, like the workspace does. Like there,
+    // placeholders such as psql variables are parsed as parameters. The statements of a SQL
+    // function body follow the function, with its parameters in scope.
     let mut stmts = Vec::new();
     let mut unparsable = Vec::new();
     for r in &split.ranges {
@@ -170,6 +171,7 @@ fn analyse(analyser: &Analyser, query: &str, is_typecheck: bool) -> Vec<LinterDi
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
         sections: migration_sections(query),
+        source: Some(query.to_owned()),
         ..Default::default()
     })
 }
@@ -307,16 +309,19 @@ fn write_snapshot(snapshot: &mut String, query: &str, diagnostics: &[LinterDiagn
     }
 }
 
-/// Writes the input with the fix applied. A fix must keep the input valid SQL.
+/// Writes the input with the fix applied. A fix must keep the input valid SQL, with its
+/// placeholders read as parameters.
 fn write_fix(snapshot: &mut String, query: &str, fix: &RuleFix) {
     let applicability = match fix.applicability {
         Applicability::Always => "safe",
         Applicability::MaybeIncorrect => "unsafe",
     };
     let fixed = fix.apply(query);
-    if pgls_query::parse(query).is_ok() {
+    let parses =
+        |sql: &str| pgls_query::parse(&pgls_lexer::convert_to_positional_params(sql)).is_ok();
+    if parses(query) {
         assert!(
-            pgls_query::parse(&fixed).is_ok(),
+            parses(&fixed),
             "the fix `{}` produces invalid SQL:\n{fixed}",
             fix.message
         );

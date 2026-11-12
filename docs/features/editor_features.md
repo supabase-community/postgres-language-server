@@ -63,15 +63,17 @@ The language server provides semantic tokens for the names that resolve to exact
 | --- | --- | --- |
 | Schema | `namespace` | `public` in `public.users` |
 | Table, view, or other relation | `class` | `users` in `from users`, `users.id` |
+| Common table expression | `class` | `recent` in `with recent as (...)`, `from recent`, `recent.id` |
+| Alias of a table or CTE | `variable` | `u` in `from users u` and in `u.name` |
 | Column | `property` | `name`, `u.name`, `public.users.id` |
 | Function | `function` | the overload that a call resolves to |
-| Type | `type` | `int8` in `x::int8`, `cast(x as text)`, `date 'today'` |
+| Type | `type` | `int8` in `x::int8`, `cast(x as text)`, `date 'today'`, column types in `create table`, function signatures |
 | Parameter of a SQL function, in its body | `parameter` | `id`, `fn.id`, `$1` |
 | Enum value | `enumMember` | `'active'` in `status = 'active'` |
 
 Objects in `pg_catalog` and `information_schema` carry the `defaultLibrary` modifier. Names that match no object or several get no token and keep the highlighting of your editor's grammar.
 
-String literals are enum values only where the enum type is certain: casts (`'active'::status`), comparisons with an enum column or value (`=`, `<>`, `IN`, `BETWEEN`, `IS DISTINCT FROM`, `NULLIF`), arguments of function parameters with the enum type, and values assigned to enum columns in `INSERT ... VALUES`, `UPDATE ... SET`, and `ON CONFLICT DO UPDATE SET`.
+String literals are enum values only where the enum type is certain: casts (`'active'::status`), comparisons with an enum column or value (`=`, `<>`, `IN`, `BETWEEN`, `IS DISTINCT FROM`, `NULLIF`, a simple `CASE`, and `= ANY('{active,blocked}')`), arguments of function parameters with the enum type or a polymorphic type that the other arguments make the enum (`array_position(statuses, 'active')`), the results of `CASE` and the arguments of `COALESCE` whose common type is the enum, and values assigned to enum columns in `INSERT ... VALUES`, `INSERT ... SELECT`, `UPDATE ... SET`, and `ON CONFLICT DO UPDATE SET`.
 
 ## Expand `*`
 
@@ -97,6 +99,8 @@ Inlay hints and semantic highlighting are on by default. Turn them off for a pro
   "semanticTokens": { "enabled": false }
 }
 ```
+
+To keep the hints only where they help most, show parameter names for constant arguments only (`make_point(x: 1, y: 2)`, but not `make_point(a + 1, b)`) with `"inlayHints": { "parameterNames": "literals" }`. The other values are `"all"`, the default, and `"none"`.
 
 Without semantic tokens, your editor keeps the highlighting of its SQL grammar. Most editors can also turn these features off on their side, e.g. `editor.inlayHints.enabled` and `editor.semanticHighlighting.enabled` in VS Code.
 

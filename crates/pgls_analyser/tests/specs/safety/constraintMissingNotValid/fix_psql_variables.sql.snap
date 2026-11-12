@@ -1,0 +1,28 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- An identifier placeholder: the fix is checked with the placeholder read as an identifier.
+-- expect_lint/constraintMissingNotValid
+alter table :"schema".distributors add constraint distfk foreign key (address) references addresses (address);
+
+```
+
+# Diagnostics
+lint/constraintMissingNotValid  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
+  
+  i Add the constraint as NOT VALID in one transaction, then run VALIDATE CONSTRAINT in a separate transaction.
+  
+
+
+## Fix (unsafe): Add NOT VALID
+```
+-- An identifier placeholder: the fix is checked with the placeholder read as an identifier.
+-- expect_lint/constraintMissingNotValid
+alter table :"schema".distributors add constraint distfk foreign key (address) references addresses (address) not valid;
+
+```
