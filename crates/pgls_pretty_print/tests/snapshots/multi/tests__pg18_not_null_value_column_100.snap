@@ -1,0 +1,15 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/pg18_not_null_value_column.sql
+---
+create table measurements (
+  value int,
+  constraint measurements_value_nn not null value
+);
+
+alter table measurements
+  add constraint measurements_value_nn2 not null value no inherit not valid;
+
+alter domain positive_int add constraint positive_int_nn not null;
+
+alter domain positive_int add not null;

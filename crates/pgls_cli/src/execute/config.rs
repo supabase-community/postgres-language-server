@@ -72,6 +72,13 @@ pub struct VcsTargeting {
     pub changed: bool,
 }
 
+impl VcsTargeting {
+    /// Whether the files to process come from git, with `--staged` or `--changed`.
+    pub fn is_targeted(&self) -> bool {
+        self.staged || self.changed
+    }
+}
+
 impl From<(bool, bool)> for VcsTargeting {
     fn from(value: (bool, bool)) -> Self {
         Self {

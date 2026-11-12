@@ -1,0 +1,7 @@
+---
+source: crates/pgls_typecheck/tests/diagnostics.rs
+expression: content
+---
+merge into users u using imports i on i.id = u.id when matched then update set name = ~~~i~~~.nope;
+
+column i.nope does not exist
