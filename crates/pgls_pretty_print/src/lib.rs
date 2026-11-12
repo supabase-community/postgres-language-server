@@ -293,7 +293,7 @@ mod tests {
             .expect("second pass")
             .formatted;
 
-        assert!(first.contains("order by -- WHERE"));
+        assert!(first.contains("-- WHERE\n--  a is active\norder by a"));
         assert_eq!(first, second);
     }
 
