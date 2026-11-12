@@ -452,7 +452,7 @@ select 1;
 
 begin;
 
-declare c cursor for select unique2 from tenk1 order by unique2;;
+declare c cursor for select unique2 from tenk1 order by unique2;
 
 savepoint one;
 
@@ -468,7 +468,7 @@ fetch forward 10 from c;
 
 close c;
 
-declare c cursor for select unique2 / 0 from tenk1 order by unique2;;
+declare c cursor for select unique2 / 0 from tenk1 order by unique2;
 
 savepoint two;
 
@@ -602,7 +602,7 @@ insert into trans_abc values (5);
 
 insert into trans_abc values (10);
 
-declare foo cursor for select * from trans_abc;;
+declare foo cursor for select * from trans_abc;
 
 fetch next from foo;
 
@@ -622,7 +622,7 @@ insert into trans_abc values (10);
 
 insert into trans_abc values (15);
 
-declare foo cursor for select * from trans_abc;;
+declare foo cursor for select * from trans_abc;
 
 fetch next from foo;
 
@@ -655,9 +655,9 @@ END $$;
 
 begin;
 
-declare ok cursor for select * from int8_tbl;;
+declare ok cursor for select * from int8_tbl;
 
-declare ctt cursor for select create_temp_tab();;
+declare ctt cursor for select create_temp_tab();
 
 fetch next from ok;
 

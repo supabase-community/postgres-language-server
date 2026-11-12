@@ -1,19 +1,16 @@
 use std::cell::OnceCell;
 
 use pgls_analyse::{GroupCategory, RuleCategory, RuleGroup, RuleMetadata};
-use pgls_catalog::Snapshot;
 use pgls_catalog::{
     Catalog, Session,
-    resolve::{FunctionContext, Resolution, ResolveParams, resolve},
+    resolve::{Finding, FunctionContext, Resolution, ResolveParams, resolve},
 };
 
-pub(crate) use pgls_catalog::{is_reindex_concurrent, is_vacuum_full};
-
-use pgls_query::protobuf::{ScanToken, Token};
+use pgls_query::protobuf::{RangeVar, ScanToken, Token};
 
 use crate::fix::StatementTokens;
 use crate::linter_rule::LinterRule;
-use pgls_text_size::TextSize;
+use pgls_walk::AnalysedFileContext;
 
 /// The kind of file being analysed.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -30,7 +27,6 @@ pub enum FileKind {
 pub struct LinterRuleContext<'a, R: LinterRule> {
     stmt: &'a pgls_query::NodeEnum,
     options: &'a R::Options,
-    snapshot: Option<&'a Snapshot>,
     file_context: &'a AnalysedFileContext<'a>,
     statement: &'a StatementContext<'a>,
 }
@@ -42,14 +38,12 @@ where
     pub fn new(
         stmt: &'a pgls_query::NodeEnum,
         options: &'a R::Options,
-        snapshot: Option<&'a Snapshot>,
         file_context: &'a AnalysedFileContext,
         statement: &'a StatementContext<'a>,
     ) -> Self {
         Self {
             stmt,
             options,
-            snapshot,
             file_context,
             statement,
         }
@@ -79,10 +73,6 @@ where
         self.statement.sql
     }
 
-    pub fn snapshot(&self) -> Option<&Snapshot> {
-        self.snapshot
-    }
-
     /// The catalog as it is before the current statement: the database snapshot plus the
     /// changes made by the statements before it.
     pub fn catalog(&self) -> &Catalog {
@@ -95,12 +85,28 @@ where
         self.file_context.session()
     }
 
+    /// Whether the relation was created earlier in the current transaction. Other transactions
+    /// can't see it until the transaction commits, so its locks, scans and rewrites block no
+    /// one. A relation that an earlier transaction created and committed isn't new. The name is
+    /// resolved with the catalog, see [`Session::has_created_relation`].
+    pub fn is_new_relation(&self, relation: &RangeVar) -> bool {
+        self.session()
+            .has_created_relation(relation, self.catalog())
+    }
+
     /// Name resolution of the current statement against the catalog.
     ///
     /// Returns `None` without a database snapshot: typecheck rules only run with a database
     /// connection. The resolution is computed once per statement and shared by all rules.
     pub fn resolution(&self) -> Option<&Resolution> {
         self.statement.resolution(self.file_context)
+    }
+
+    /// The findings of the name resolution of the current statement, see [`Self::resolution`].
+    pub fn findings(&self) -> impl Iterator<Item = &Finding> {
+        self.resolution()
+            .into_iter()
+            .flat_map(|resolution| &resolution.findings)
     }
 
     /// The SQL function whose body the current statement is in, if it is in one.
@@ -200,181 +206,5 @@ impl<'a> StatementContext<'a> {
                 }))
             })
             .as_ref()
-    }
-}
-
-/// State of the file being analysed, as seen by the current statement.
-///
-/// In a file with migration sections, the file context is that of the current section.
-pub struct AnalysedFileContext<'a> {
-    pub stmts: &'a [pgls_query::NodeEnum],
-    pos: usize,
-    stmt_count: usize,
-    catalog: Catalog,
-    session: Session,
-    /// Where each statement starts, and where the last statement ends, including the ones that
-    /// don't parse.
-    starts: Vec<TextSize>,
-    end: Option<TextSize>,
-}
-
-impl<'a> AnalysedFileContext<'a> {
-    pub fn new(stmts: &'a [pgls_query::NodeEnum], catalog: Catalog, session: Session) -> Self {
-        Self {
-            stmts,
-            pos: 0,
-            stmt_count: stmts.len(),
-            catalog,
-            session,
-            starts: Vec::new(),
-            end: None,
-        }
-    }
-
-    /// Sets where the statements start in the file, and where the last one ends.
-    pub fn with_positions(mut self, starts: Vec<TextSize>, end: TextSize) -> Self {
-        self.starts = starts;
-        self.end = Some(end);
-        self
-    }
-
-    /// Where the last statement of the file, or of the section, ends, relative to the start of
-    /// the current statement. Fixes can insert text there.
-    pub fn end_offset(&self) -> Option<TextSize> {
-        self.end?.checked_sub(*self.starts.get(self.pos)?)
-    }
-
-    /// Sets the number of statements of the file, if it differs from the parsed statements, e.g.
-    /// because some don't parse.
-    pub fn with_stmt_count(mut self, stmt_count: usize) -> Self {
-        self.stmt_count = stmt_count;
-        self
-    }
-
-    pub fn previous_stmts(&self) -> &[pgls_query::NodeEnum] {
-        &self.stmts[0..self.pos]
-    }
-
-    /// The number of statements that the file runs, including those that don't parse.
-    /// Statements in function bodies don't count.
-    pub fn stmt_count(&self) -> usize {
-        self.stmt_count
-    }
-
-    /// Whether the next statement runs in a transaction block. Without migration sections we
-    /// don't know whether the migration tool runs the file in a transaction. Migration tools
-    /// usually do, so a file with more than one statement is assumed to.
-    pub fn in_transaction(&self) -> bool {
-        self.session
-            .in_transaction()
-            .unwrap_or_else(|| self.stmt_count() > 1)
-    }
-
-    pub fn catalog(&self) -> &Catalog {
-        &self.catalog
-    }
-
-    pub fn session(&self) -> &Session {
-        &self.session
-    }
-
-    /// The catalog after the statements.
-    pub fn into_catalog(self) -> Catalog {
-        self.catalog
-    }
-
-    /// Records a statement that may have changed the catalog in ways it can't model, e.g. one
-    /// that doesn't parse.
-    pub fn taint_catalog(&mut self) {
-        self.catalog.taint();
-    }
-
-    /// The next statements are part of a query with more than one statement, see
-    /// [`Session::begin_implicit_block`].
-    pub fn begin_implicit_block(&mut self) {
-        self.session.begin_implicit_block();
-    }
-
-    /// The query started with [`Self::begin_implicit_block`] ended.
-    pub fn end_implicit_block(&mut self) {
-        self.session.end_implicit_block();
-    }
-
-    /// Moves to the next statement.
-    ///
-    /// Executed statements (`applies_effects`) update the catalog and the session. Statements
-    /// in the bodies of SQL functions are only analysed, not executed.
-    pub fn next(&mut self, applies_effects: bool) {
-        if applies_effects && self.pos < self.stmts.len() {
-            let stmt = &self.stmts[self.pos];
-            self.catalog.apply(stmt, self.session.search_path());
-            self.session.apply(stmt);
-        }
-        self.pos += 1;
-    }
-}
-
-/// The name of a built-in type, e.g. `varchar` for `varchar(10)` and `pg_catalog.varchar`, but
-/// not for `myschema.varchar`. Unqualified names are built-in types if they exist, since
-/// `pg_catalog` comes first on the search path.
-pub(crate) fn builtin_type_name(type_name: &pgls_query::protobuf::TypeName) -> Option<&str> {
-    let names: Vec<&str> = type_name
-        .names
-        .iter()
-        .map(|name| match &name.node {
-            Some(pgls_query::NodeEnum::String(name)) => Some(name.sval.as_str()),
-            _ => None,
-        })
-        .collect::<Option<_>>()?;
-    match names.as_slice() {
-        [name] | ["pg_catalog", name] => Some(name),
-        _ => None,
-    }
-}
-
-/// The object type as a noun with its article, e.g. "a view", for diagnostic messages.
-pub(crate) fn object_type_noun(object_type: pgls_query::protobuf::ObjectType) -> &'static str {
-    use pgls_query::protobuf::ObjectType;
-    match object_type {
-        ObjectType::ObjectAggregate => "an aggregate",
-        ObjectType::ObjectAttribute => "an attribute",
-        ObjectType::ObjectCollation => "a collation",
-        ObjectType::ObjectColumn => "a column",
-        ObjectType::ObjectConversion => "a conversion",
-        ObjectType::ObjectDatabase => "a database",
-        ObjectType::ObjectDomain => "a domain",
-        ObjectType::ObjectDomconstraint | ObjectType::ObjectTabconstraint => "a constraint",
-        ObjectType::ObjectEventTrigger => "an event trigger",
-        ObjectType::ObjectExtension => "an extension",
-        ObjectType::ObjectFdw => "a foreign-data wrapper",
-        ObjectType::ObjectForeignServer => "a foreign server",
-        ObjectType::ObjectForeignTable => "a foreign table",
-        ObjectType::ObjectFunction => "a function",
-        ObjectType::ObjectIndex => "an index",
-        ObjectType::ObjectLanguage => "a language",
-        ObjectType::ObjectMatview => "a materialized view",
-        ObjectType::ObjectOpclass => "an operator class",
-        ObjectType::ObjectOperator => "an operator",
-        ObjectType::ObjectOpfamily => "an operator family",
-        ObjectType::ObjectPolicy => "a policy",
-        ObjectType::ObjectProcedure => "a procedure",
-        ObjectType::ObjectPublication => "a publication",
-        ObjectType::ObjectRole => "a role",
-        ObjectType::ObjectRoutine => "a routine",
-        ObjectType::ObjectRule => "a rule",
-        ObjectType::ObjectSchema => "a schema",
-        ObjectType::ObjectSequence => "a sequence",
-        ObjectType::ObjectStatisticExt => "a statistics object",
-        ObjectType::ObjectSubscription => "a subscription",
-        ObjectType::ObjectTable => "a table",
-        ObjectType::ObjectTablespace => "a tablespace",
-        ObjectType::ObjectTrigger => "a trigger",
-        ObjectType::ObjectTsconfiguration => "a text search configuration",
-        ObjectType::ObjectTsdictionary => "a text search dictionary",
-        ObjectType::ObjectTsparser => "a text search parser",
-        ObjectType::ObjectTstemplate => "a text search template",
-        ObjectType::ObjectType => "a type",
-        ObjectType::ObjectView => "a view",
-        _ => "an object",
     }
 }

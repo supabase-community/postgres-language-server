@@ -1,4 +1,4 @@
-use pgls_catalog::{Snapshot, Table};
+use pgls_catalog::{NamePosition, Snapshot, Table};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::with_schema_or_alias;
+use super::helper::{Qualifier, with_schema_or_alias};
 
 pub fn complete_tables<'a>(
     ctx: &'a TreesitterContext,
@@ -42,7 +42,12 @@ pub fn complete_tables<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, table: &Table) -> CompletionText {
-    let text = with_schema_or_alias(ctx, table.name.as_str(), Some(table.schema.as_str()));
+    let text = with_schema_or_alias(
+        ctx,
+        table.name.as_str(),
+        Some(Qualifier::Schema(table.schema.as_str())),
+        NamePosition::ColId,
+    );
 
     let range = get_range_to_replace(ctx);
 
@@ -63,13 +68,13 @@ mod tests {
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
             CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
-            assert_complete_results, assert_no_complete_results, get_test_deps, get_test_params,
+            assert_complete_results, get_test_deps, get_test_params,
         },
     };
 
     use pgls_test_utils::QueryWithCursorPosition;
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn autocompletes_simple_table(pool: PgPool) {
         let setup = r#"
             create table users (
@@ -99,7 +104,7 @@ mod tests {
         )
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn autocompletes_table_alphanumerically(pool: PgPool) {
         let setup = r#"
             create table addresses (
@@ -158,7 +163,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn autocompletes_table_with_schema(pool: PgPool) {
         let setup = r#"
             create schema customer_support;
@@ -220,7 +225,7 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn prefers_table_in_from_clause(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -257,7 +262,7 @@ mod tests {
         assert_eq!(kind, CompletionItemKind::Table);
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_update(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -275,7 +280,33 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
+    async fn suggests_tables_in_inherits_and_references(pool: PgPool) {
+        pool.execute("create table public.parents (id int primary key);")
+            .await
+            .unwrap();
+
+        for sql in [
+            "create table t (a int) inherits ({})",
+            "create table t (a int) inherits (parents, {})",
+            "create table t (a int references {})",
+            "create table t (a int, foreign key (a) references {})",
+        ] {
+            let query = sql.replace("{}", &QueryWithCursorPosition::cursor_marker().to_string());
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::LabelAndKind(
+                    "parents".into(),
+                    CompletionItemKind::Table,
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+    }
+
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_delete(pool: PgPool) {
         let setup = r#"
           create table coos (
@@ -286,8 +317,12 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(
+        assert_complete_results(
             format!("delete {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("from".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
+            ],
             None,
             &pool,
         )
@@ -332,7 +367,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_join(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -362,7 +397,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_drop_statements(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -388,7 +423,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_alter_statements(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -414,7 +449,7 @@ mod tests {
             .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn suggests_tables_in_insert_into(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -471,7 +506,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn after_quoted_schemas(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -557,7 +592,7 @@ mod tests {
         .await;
     }
 
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[pgls_test_utils::db_test]
     async fn completes_tables_in_policies(pool: PgPool) {
         let setup = r#"
             create schema auth;

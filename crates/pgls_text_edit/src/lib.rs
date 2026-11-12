@@ -7,8 +7,11 @@
     unused_lifetimes,
     semicolon_in_expressions_from_macros
 )]
+// Fixes and code actions build their edits from the client's SQL, so a panic on unexpected input
+// takes down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
-use std::{cmp::Ordering, num::NonZeroU32};
+use std::{cmp::Ordering, num::NonZeroU32, ops::Range};
 
 use pgls_text_size::{TextRange, TextSize};
 pub use similar::ChangeTag;
@@ -121,6 +124,14 @@ impl TextEdit {
         for op in &self.ops {
             match op {
                 CompressedOp::DiffOp(DiffOp::Equal { range }) => {
+                    debug_assert_eq!(
+                        old_string.get(Range::<usize>::from(TextRange::at(
+                            input_position,
+                            range.len()
+                        ))),
+                        Some(&self.dictionary[*range]),
+                        "the edit was made for another text"
+                    );
                     output.push_str(&self.dictionary[*range]);
                     input_position += range.len();
                 }
@@ -128,6 +139,14 @@ impl TextEdit {
                     output.push_str(&self.dictionary[*range]);
                 }
                 CompressedOp::DiffOp(DiffOp::Delete { range }) => {
+                    debug_assert_eq!(
+                        old_string.get(Range::<usize>::from(TextRange::at(
+                            input_position,
+                            range.len()
+                        ))),
+                        Some(&self.dictionary[*range]),
+                        "the edit was made for another text"
+                    );
                     input_position += range.len();
                 }
                 CompressedOp::EqualLines { line_count } => {
@@ -142,6 +161,11 @@ impl TextEdit {
                 }
             }
         }
+        debug_assert_eq!(
+            input_position,
+            TextSize::of(old_string),
+            "the edit doesn't cover the whole text"
+        );
 
         output
     }
@@ -196,6 +220,10 @@ impl TextEditBuilder {
 
         match index {
             Ok(index) => {
+                #[expect(
+                    clippy::indexing_slicing,
+                    reason = "`binary_search_by` returns the index of an element in `Ok`"
+                )]
                 let range = self.index[index];
                 let len = value_len.min(range.len());
                 TextRange::at(range.start(), len)

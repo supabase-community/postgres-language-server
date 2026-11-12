@@ -1,0 +1,26 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+create table t (id int, constraint t_fk foreign
+-----------------------
+program [0..47] 'create table t (id int, constraint t_fk foreign'
+  statement [0..47] 'create table t (id int, constraint t_fk foreign'
+    create_table [0..47] 'create table t (id int, constraint t_fk foreign'
+      keyword_create [0..6] 'create'
+      keyword_table [7..12] 'table'
+      object_reference [13..14] 't'
+        any_identifier [13..14] 't' (@object_reference_1of1)
+      column_definitions [15..47] '(id int, constraint t_fk foreign' (@end)
+        ( [15..16] '('
+        column_definition [16..22] 'id int'
+          any_identifier [16..18] 'id'
+          type [19..22] 'int' (@end)
+            int [19..22] 'int'
+              keyword_int [19..22] 'int'
+        , [22..23] ','
+        constraint [24..47] 'constraint t_fk foreign'
+          constraint_name [24..39] 'constraint t_fk'
+            keyword_constraint [24..34] 'constraint'
+            any_identifier [35..39] 't_fk' (@end)
+          keyword_foreign [40..47] 'foreign'

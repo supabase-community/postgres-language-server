@@ -24,10 +24,12 @@ pub struct StdinPayload {
     pub content: String,
 }
 
+/// Checks or formats the code piped to stdin and prints the result to stdout. Its diagnostics
+/// are printed to stderr; the report counts them for the exit code of the command.
 pub fn run_stdin(
     session: &mut CliSession,
     config: &ExecutionConfig,
     payload: StdinPayload,
-) -> Result<(), CliDiagnostic> {
+) -> Result<Report, CliDiagnostic> {
     stdin::process(session, config, payload)
 }
