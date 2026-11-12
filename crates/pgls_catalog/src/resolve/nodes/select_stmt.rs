@@ -14,7 +14,7 @@ use super::{
     with_clause::resolve_with_clause,
 };
 use crate::resolve::column_name::target_name;
-use crate::resolve::{expr::infer_expr, scope::Columns};
+use crate::resolve::{expr::infer_expr, scope::Columns, utils::resolve_expr};
 
 #[cfg(test)]
 thread_local! {
@@ -146,10 +146,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     resolve_list(r, &n.target_list);
     record_star_references(r, &n.target_list);
     for node in n.where_clause.iter().chain(&n.having_clause) {
-        resolve_node(r, node);
-        if let Some(expr) = node.node.as_ref() {
-            infer_expr(r, expr);
-        }
+        resolve_expr(r, node);
     }
     r.set_output_names_visible(true);
     for node in &n.group_clause {
@@ -196,10 +193,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
         }
     }
     for node in n.limit_offset.iter().chain(&n.limit_count) {
-        resolve_node(r, node);
-        if let Some(expr) = node.node.as_ref() {
-            infer_expr(r, expr);
-        }
+        resolve_expr(r, node);
     }
 
     let columns = target_list_columns(r, &n.target_list);

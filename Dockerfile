@@ -1,28 +1,26 @@
 FROM postgres:15
 
+# The slow steps come first, in layers of their own, so that changing the configuration below
+# doesn't rebuild them. The pglinter layer takes most of the 15-20 minutes of a build.
+
 # Install build dependencies
 RUN apt-get update && \
     apt-get install -y postgresql-server-dev-15 gcc make git curl pkg-config libssl-dev libclang-dev clang libicu-dev openssl && \
-    mkdir -p /etc/postgresql/ssl && \
-    openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes \
-      -subj "/CN=localhost" \
-      -keyout /etc/postgresql/ssl/server.key \
-      -out /etc/postgresql/ssl/server.crt && \
-    chmod 600 /etc/postgresql/ssl/server.key && \
-    chmod 644 /etc/postgresql/ssl/server.crt && \
-    chown postgres:postgres /etc/postgresql/ssl/server.key /etc/postgresql/ssl/server.crt && \
-    # Install plpgsql_check (C extension - simple make install)
-    # Pin to v2.7.11 for stability with PG15
-    cd /tmp && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install plpgsql_check (C extension - simple make install)
+# Pin to v2.7.11 for stability with PG15
+RUN cd /tmp && \
     git clone --branch v2.7.11 --depth 1 https://github.com/okbob/plpgsql_check.git && \
     cd plpgsql_check && \
     make && \
     make install && \
     cd /tmp && \
-    rm -rf /tmp/plpgsql_check && \
-    # Install Rust for pglinter (pgrx-based extension)
-    # pgrx 0.18.0 requires Rust 1.89+
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain 1.89.0 && \
+    rm -rf /tmp/plpgsql_check
+
+# Install Rust for pglinter (pgrx-based extension)
+# pgrx 0.18.0 requires Rust 1.89+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain 1.89.0 && \
     . $HOME/.cargo/env && \
     # Install cargo-pgrx (version must match pglinter's pgrx dependency)
     cargo install cargo-pgrx --version 0.18.0 --locked && \
@@ -34,8 +32,16 @@ RUN apt-get update && \
     cd pglinter && \
     cargo pgrx install --pg-config $(which pg_config) --release && \
     # Cleanup Rust toolchains and temporary sources
-    rm -rf /tmp/pglinter $HOME/.cargo $HOME/.rustup && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /tmp/pglinter $HOME/.cargo $HOME/.rustup
+
+RUN mkdir -p /etc/postgresql/ssl && \
+    openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes \
+      -subj "/CN=localhost" \
+      -keyout /etc/postgresql/ssl/server.key \
+      -out /etc/postgresql/ssl/server.crt && \
+    chmod 600 /etc/postgresql/ssl/server.key && \
+    chmod 644 /etc/postgresql/ssl/server.crt && \
+    chown postgres:postgres /etc/postgresql/ssl/server.key /etc/postgresql/ssl/server.crt
 
 RUN printf "\nssl = on\nssl_cert_file = '/etc/postgresql/ssl/server.crt'\nssl_key_file = '/etc/postgresql/ssl/server.key'\n" >> /usr/share/postgresql/postgresql.conf.sample
 
@@ -51,3 +57,9 @@ RUN echo "\\c template1" > /docker-entrypoint-initdb.d/01-create-extension.sql &
     echo "CREATE SCHEMA IF NOT EXISTS extensions;" >> /docker-entrypoint-initdb.d/01-create-extension.sql && \
     echo "CREATE EXTENSION IF NOT EXISTS plpgsql_check SCHEMA extensions;" >> /docker-entrypoint-initdb.d/01-create-extension.sql && \
     echo "CREATE EXTENSION IF NOT EXISTS pglinter SCHEMA extensions;" >> /docker-entrypoint-initdb.d/01-create-extension.sql
+
+# Several worktrees run their tests against one database at the same time. Each test of the
+# workspace and the language server opens up to 20 connections of its own, so the default of 100
+# runs out and the tests fail with `PoolTimedOut`. A command-line setting also applies to a
+# database volume that was initialised by an older image.
+CMD ["postgres", "-c", "max_connections=500"]

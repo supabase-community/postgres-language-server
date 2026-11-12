@@ -2,6 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{AlterTableType, ConstrType, IndexStmt, Node, ObjectType},
 };
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 use crate::catalog::{Catalog, Entry, key};
 use crate::lookup::{IndexInfo, Lookup, Origin, RelationKind};
@@ -84,24 +85,19 @@ pub(super) fn creates_implicit_indexes(stmt: &NodeEnum) -> bool {
                     _ => false,
                 })
         }
-        NodeEnum::AlterTableStmt(n) => n.cmds.iter().any(|command| {
-            let Some(NodeEnum::AlterTableCmd(command)) = &command.node else {
-                return false;
-            };
-            match command.subtype() {
-                AlterTableType::AtAddIndex
-                | AlterTableType::AtAddIndexConstraint
-                | AlterTableType::AtAttachPartition => true,
-                AlterTableType::AtAddConstraint => matches!(
-                    command.def.as_ref().and_then(|def| def.node.as_ref()),
-                    Some(NodeEnum::Constraint(constraint)) if constraint_creates_index(constraint)
-                ),
-                AlterTableType::AtAddColumn => matches!(
-                    command.def.as_ref().and_then(|def| def.node.as_ref()),
-                    Some(NodeEnum::ColumnDef(column)) if column_creates_index(&column.constraints)
-                ),
-                _ => false,
-            }
+        NodeEnum::AlterTableStmt(n) => alter_table_cmds(n).any(|command| match command.subtype() {
+            AlterTableType::AtAddIndex
+            | AlterTableType::AtAddIndexConstraint
+            | AlterTableType::AtAttachPartition => true,
+            AlterTableType::AtAddConstraint => matches!(
+                cmd_def(command),
+                Some(NodeEnum::Constraint(constraint)) if constraint_creates_index(constraint)
+            ),
+            AlterTableType::AtAddColumn => matches!(
+                cmd_def(command),
+                Some(NodeEnum::ColumnDef(column)) if column_creates_index(&column.constraints)
+            ),
+            _ => false,
         }),
         NodeEnum::RenameStmt(n) => n.rename_type() == ObjectType::ObjectTabconstraint,
         _ => false,

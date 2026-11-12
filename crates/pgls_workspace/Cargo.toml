@@ -39,6 +39,7 @@ pgls_text_edit.workspace          = true
 pgls_text_size.workspace          = true
 pgls_tokenizer                    = { workspace = true }
 pgls_treesitter_grammar.workspace = true
+pgls_walk                         = { workspace = true }
 pgls_workspace_macros             = { workspace = true }
 regex                             = { workspace = true }
 rustc-hash                        = { workspace = true }

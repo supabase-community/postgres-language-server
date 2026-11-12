@@ -84,7 +84,7 @@ impl FromStr for IndentStyle {
     }
 }
 
-impl From<IndentStyle> for pgls_pretty_print::renderer::IndentStyle {
+impl From<IndentStyle> for pgls_pretty_print::IndentStyle {
     fn from(style: IndentStyle) -> Self {
         match style {
             IndentStyle::Spaces => Self::Spaces,
@@ -117,7 +117,7 @@ impl FromStr for KeywordCase {
     }
 }
 
-impl From<KeywordCase> for pgls_pretty_print::renderer::KeywordCase {
+impl From<KeywordCase> for pgls_pretty_print::KeywordCase {
     fn from(case: KeywordCase) -> Self {
         match case {
             KeywordCase::Upper => Self::Upper,
