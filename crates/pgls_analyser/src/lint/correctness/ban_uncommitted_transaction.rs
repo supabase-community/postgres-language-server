@@ -60,6 +60,7 @@ impl LinterRule for BanUncommittedTransaction {
         if file_context
             .later_stmts()
             .iter()
+            .copied()
             .any(ends_transaction_block)
         {
             return vec![];
