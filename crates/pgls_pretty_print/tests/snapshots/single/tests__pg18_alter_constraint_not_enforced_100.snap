@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/pg18_alter_constraint_not_enforced.sql
+---
+alter table orders
+  alter constraint orders_customer_fk not enforced;

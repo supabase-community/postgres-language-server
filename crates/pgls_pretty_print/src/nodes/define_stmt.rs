@@ -1,14 +1,6 @@
-use pgls_query::NodeEnum;
-use pgls_query::protobuf::{DefElem, DefineStmt, List, Node, ObjectType};
+use pgls_query::protobuf::{DefElem, DefineStmt, List, ObjectType};
 
-use super::string::emit_identifier_maybe_quoted;
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{
-        emit_comma_separated_list, emit_dot_separated_list, emit_parenthesized_list,
-    },
-};
+use super::prelude::*;
 
 /// Emit collation definition (FROM clause or parenthesized options)
 fn emit_collation_definition(e: &mut EventEmitter, definition: &[Node]) {
@@ -43,9 +35,9 @@ fn emit_collation_definition(e: &mut EventEmitter, definition: &[Node]) {
                             e.token(TokenKind::DOT);
                         }
                         if let Some(pgls_query::NodeEnum::String(s)) = &item.node {
-                            super::emit_string_identifier(e, s);
+                            emit_string_identifier(e, s);
                         } else {
-                            super::emit_node(item, e);
+                            emit_node(e, item);
                         }
                     }
                 }
@@ -61,10 +53,9 @@ fn emit_collation_definition(e: &mut EventEmitter, definition: &[Node]) {
         for def_node in definition {
             if let Some(pgls_query::NodeEnum::DefElem(_)) = &def_node.node {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(def_node), ListSeparatorSpacing::SoftOrSpace);
                 }
-                super::emit_node(def_node, e);
+                emit_node(e, def_node);
                 first = false;
             }
         }
@@ -75,63 +66,26 @@ fn emit_collation_definition(e: &mut EventEmitter, definition: &[Node]) {
 }
 
 pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
-    e.group_start(GroupKind::DefineStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
 
     if n.replace {
         e.space();
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
     }
 
     e.space();
 
     let kind = n.kind();
-    match kind {
-        ObjectType::ObjectAggregate => e.token(TokenKind::AGGREGATE_KW),
-        ObjectType::ObjectOperator => e.token(TokenKind::OPERATOR_KW),
-        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
-        ObjectType::ObjectCollation => e.token(TokenKind::COLLATION_KW),
-        ObjectType::ObjectTsdictionary => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::DICTIONARY_KW);
-        }
-        ObjectType::ObjectTsconfiguration => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::CONFIGURATION_KW);
-        }
-        ObjectType::ObjectTsparser => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::PARSER_KW);
-        }
-        ObjectType::ObjectTstemplate => {
-            e.token(TokenKind::TEXT_KW);
-            e.space();
-            e.token(TokenKind::SEARCH_KW);
-            e.space();
-            e.token(TokenKind::TEMPLATE_KW);
-        }
-        _ => e.token(TokenKind::IDENT(format!("{kind:?}"))),
+    match object_type_keywords(kind) {
+        Some(keywords) => emit_keywords(e, keywords),
+        None => e.token(TokenKind::IDENT(format!("{kind:?}"))),
     }
 
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     let is_operator = kind == ObjectType::ObjectOperator;
@@ -154,7 +108,7 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
         if kind == ObjectType::ObjectAggregate {
             emit_aggregate_args(e, &n.args);
         } else {
-            emit_comma_separated_list(e, &n.args, super::emit_node);
+            emit_comma_separated_list(e, &n.args, emit_node);
         }
         e.indent_end();
         e.line(LineType::Soft);
@@ -164,11 +118,11 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
     if is_operator {
         if !n.definition.is_empty() {
             e.space();
-            emit_parenthesized_list(e, &n.definition, |node, emitter| {
+            emit_parenthesized_list(e, &n.definition, |emitter, node| {
                 if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                     emit_operator_def_elem(emitter, def);
                 } else {
-                    super::emit_node(node, emitter);
+                    emit_node(emitter, node);
                 }
             });
         }
@@ -179,37 +133,17 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
         e.token(TokenKind::L_PAREN);
         e.indent_start();
         e.line(LineType::Soft);
-        emit_comma_separated_list(e, &n.definition, super::emit_node);
+        emit_comma_separated_list(e, &n.definition, emit_node);
         e.indent_end();
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
 
-fn emit_operator_name(e: &mut EventEmitter, defnames: &[Node]) {
-    for (idx, node) in defnames.iter().enumerate() {
-        if idx > 0 {
-            e.token(TokenKind::DOT);
-        }
-
-        match node.node.as_ref() {
-            Some(NodeEnum::String(s)) => {
-                if idx == defnames.len() - 1 {
-                    e.token(TokenKind::IDENT(s.sval.clone()));
-                } else {
-                    emit_identifier_maybe_quoted(e, &s.sval);
-                }
-            }
-            _ => super::emit_node(node, e),
-        }
-    }
-}
-
 fn emit_operator_def_elem(e: &mut EventEmitter, def: &DefElem) {
-    super::emit_keyword(e, &def.defname);
+    emit_keyword(e, &def.defname);
 
     if let Some(ref arg) = def.arg {
         e.space();
@@ -222,7 +156,7 @@ fn emit_operator_def_elem(e: &mut EventEmitter, def: &DefElem) {
 fn emit_operator_def_arg(e: &mut EventEmitter, arg: &Node) {
     match arg.node.as_ref() {
         Some(NodeEnum::List(list)) => emit_operator_list(e, list),
-        _ => super::emit_node(arg, e),
+        _ => emit_node(e, arg),
     }
 }
 
@@ -234,7 +168,7 @@ fn emit_operator_list(e: &mut EventEmitter, list: &List) {
 
         match item.node.as_ref() {
             Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-            _ => super::emit_node(item, e),
+            _ => emit_node(e, item),
         }
     }
 }
@@ -254,8 +188,7 @@ fn emit_aggregate_args(e: &mut EventEmitter, args: &[Node]) {
         match arg.node.as_ref() {
             Some(NodeEnum::TypeName(type_name)) => {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(arg), ListSeparatorSpacing::SoftOrSpace);
                 }
                 super::emit_type_name(e, type_name);
                 first = false;
@@ -279,18 +212,16 @@ fn emit_aggregate_args(e: &mut EventEmitter, args: &[Node]) {
                 // A None node in aggregate args represents * (any type)
                 // e.g., CREATE AGGREGATE my_agg (*)
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, None, ListSeparatorSpacing::SoftOrSpace);
                 }
                 e.token(TokenKind::IDENT("*".to_string()));
                 first = false;
             }
             Some(_) => {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(arg), ListSeparatorSpacing::SoftOrSpace);
                 }
-                super::emit_node(arg, e);
+                emit_node(e, arg);
                 first = false;
             }
         }

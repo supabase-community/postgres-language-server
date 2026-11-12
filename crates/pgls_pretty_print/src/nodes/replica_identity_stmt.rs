@@ -1,12 +1,9 @@
 use pgls_query::protobuf::ReplicaIdentityStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
+use super::prelude::*;
 
 pub(super) fn emit_replica_identity_stmt(e: &mut EventEmitter, n: &ReplicaIdentityStmt) {
-    e.group_start(GroupKind::ReplicaIdentityStmt);
+    e.group_start();
 
     e.token(TokenKind::REPLICA_KW);
     e.space();
@@ -31,7 +28,7 @@ pub(super) fn emit_replica_identity_stmt(e: &mut EventEmitter, n: &ReplicaIdenti
             e.token(TokenKind::INDEX_KW);
             if !n.name.is_empty() {
                 e.line(LineType::SoftOrSpace);
-                super::emit_identifier_maybe_quoted(e, &n.name);
+                emit_identifier_maybe_quoted(e, &n.name);
             }
         }
         _ => {

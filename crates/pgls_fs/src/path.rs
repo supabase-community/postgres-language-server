@@ -8,7 +8,7 @@ use std::{
     io,
     io::Write,
     ops::{Deref, DerefMut},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use crate::ConfigName;
@@ -152,18 +152,8 @@ impl PgLSPath {
 
     /// Accepts a file opened in read mode and saves into it
     pub fn save(&mut self, content: &str) -> Result<(), std::io::Error> {
-        let mut file_to_write = File::create(&self.path).unwrap();
-        // TODO: handle error with diagnostic
+        let mut file_to_write = File::create(&self.path)?;
         file_to_write.write_all(content.as_bytes())
-    }
-
-    /// Returns the contents of a file, if it exists
-    ///
-    /// ## Error
-    /// If Postgres Language Server doesn't have permissions to read the file
-    pub fn get_buffer_from_file(&mut self) -> String {
-        // we assume we have permissions
-        read_to_string(&self.path).expect("cannot read the file to format")
     }
 
     /// Small wrapper for [read_to_string]
@@ -205,4 +195,72 @@ impl schemars::JsonSchema for FileKinds {
     fn json_schema(r#gen: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
         <Vec<FileKind>>::json_schema(r#gen)
     }
+}
+
+/// Normalizes a path, resolving `..` and `.` segments without requiring the path to exist or
+/// following symlinks.
+pub fn normalize_path(path: &Path) -> PathBuf {
+    let mut components = Vec::new();
+    let mut prefix_component = None;
+    let mut is_absolute = false;
+
+    for component in path.components() {
+        match component {
+            std::path::Component::Prefix(_prefix) => {
+                prefix_component = Some(component);
+                components.clear();
+            }
+            std::path::Component::RootDir => {
+                is_absolute = true;
+                components.clear();
+            }
+            std::path::Component::ParentDir => {
+                if !components.is_empty() {
+                    components.pop();
+                } else if !is_absolute && prefix_component.is_none() {
+                    // Only keep parent dir if we're not absolute and have no prefix
+                    components.push(component.as_os_str());
+                }
+            }
+            std::path::Component::Normal(c) => {
+                components.push(c);
+            }
+            std::path::Component::CurDir => {
+                // Skip current directory components
+            }
+        }
+    }
+
+    let mut result = PathBuf::new();
+
+    // Add prefix component (like C: on Windows)
+    if let Some(prefix) = prefix_component {
+        result.push(prefix.as_os_str());
+    }
+
+    // Add root directory if path is absolute
+    if is_absolute {
+        result.push(std::path::Component::RootDir.as_os_str());
+    }
+
+    // Add normalized components
+    for component in components {
+        result.push(component);
+    }
+
+    // Handle edge cases
+    if result.as_os_str().is_empty() {
+        if prefix_component.is_some() || is_absolute {
+            // This shouldn't happen with proper input, but fallback to original path's root
+            return path
+                .ancestors()
+                .last()
+                .unwrap_or(Path::new(""))
+                .to_path_buf();
+        } else {
+            return PathBuf::from(".");
+        }
+    }
+
+    result
 }

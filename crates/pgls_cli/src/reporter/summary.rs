@@ -3,7 +3,7 @@ use crate::reporter::terminal::{ConsoleDiagnosticSummary, ConsoleTraversalSummar
 use crate::reporter::{Report, ReportConfig, ReportWriter};
 use pgls_console::fmt::{Display, Formatter};
 use pgls_console::{Console, ConsoleExt, markup};
-use pgls_diagnostics::{Error, Resource, Severity};
+use pgls_diagnostics::{Resource, Severity};
 use std::collections::BTreeMap;
 
 pub(crate) struct SummaryReportWriter;
@@ -57,7 +57,7 @@ fn collect_file_diagnostics(report: &Report, config: &ReportConfig) -> FileDiagn
     let mut files: BTreeMap<String, DiagnosticCounts> = BTreeMap::new();
 
     for diagnostic in &report.diagnostics {
-        if !should_emit(config, diagnostic) {
+        if !config.should_emit(diagnostic) {
             continue;
         }
 
@@ -70,18 +70,6 @@ fn collect_file_diagnostics(report: &Report, config: &ReportConfig) -> FileDiagn
     }
 
     FileDiagnostics(files)
-}
-
-fn should_emit(config: &ReportConfig, diagnostic: &Error) -> bool {
-    if diagnostic.severity() < config.diagnostic_level {
-        return false;
-    }
-
-    if diagnostic.tags().is_verbose() {
-        config.verbose
-    } else {
-        true
-    }
 }
 
 impl Display for FileDiagnostics {

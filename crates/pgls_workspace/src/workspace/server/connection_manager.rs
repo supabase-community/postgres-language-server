@@ -13,10 +13,19 @@ use crate::{
 };
 
 use super::connection_key::ConnectionKey;
+use super::last_used::LastUsed;
 use super::pgpass::{PassfileTarget, password_from_passfile};
 
 const INITIAL_FAILURE_BACKOFF: Duration = Duration::from_secs(5);
 const MAX_FAILURE_BACKOFF: Duration = Duration::from_secs(60);
+
+/// How long a pool, and each of its connections, may stay unused before it is closed. An open
+/// connection holds a backend process on the server, and a project that isn't edited for a while
+/// shouldn't keep one. Reconnecting takes a few milliseconds on the next use.
+const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+
+/// How often [`ConnectionManager::get_pools`] looks for idle pools at most.
+const IDLE_SWEEP_INTERVAL: Duration = Duration::from_secs(60);
 
 /// Fingerprints the connection parameters that [`ConnectionKey`] does not cover, so that a change
 /// to one of them invalidates the cached pool instead of being silently ignored. Hashing keeps the
@@ -82,12 +91,22 @@ pub(crate) struct DatabasePools {
     pub(crate) statement_pool: PgPool,
 }
 
+impl DatabasePools {
+    /// Closes both pools: they open no new connections, and their idle connections close once
+    /// the last clone, e.g. of a statement execution that is still running, is dropped.
+    fn close(&self) {
+        // `close` marks a pool as closed before its future is polled; the future would only wait
+        // for the connections that are in use.
+        drop(self.pool.close());
+        drop(self.statement_pool.close());
+    }
+}
+
 /// Cached connection pool with last access time
 struct CachedPool {
     pools: DatabasePools,
     settings_fingerprint: u64,
-    last_accessed: Instant,
-    idle_timeout: Duration,
+    last_used: LastUsed,
 }
 
 struct CachedFailure {
@@ -98,10 +117,17 @@ struct CachedFailure {
     next_retry_at: Instant,
 }
 
-#[derive(Default)]
 pub struct ConnectionManager {
     pools: RwLock<HashMap<ConnectionKey, CachedPool>>,
     failures: RwLock<HashMap<ConnectionKey, CachedFailure>>,
+    /// When the pools were last checked for idle ones.
+    last_idle_sweep: LastUsed,
+}
+
+impl Default for ConnectionManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ConnectionManager {
@@ -109,7 +135,77 @@ impl ConnectionManager {
         Self {
             pools: RwLock::new(HashMap::new()),
             failures: RwLock::new(HashMap::new()),
+            last_idle_sweep: LastUsed::now(),
         }
+    }
+
+    /// Closes and drops the pools and drops the failures of the connections for which `is_used`
+    /// is false, e.g. because no configuration points at them any more. That includes the pool
+    /// for executed statements.
+    pub(crate) fn retain(&self, is_used: impl Fn(&ConnectionKey) -> bool) {
+        self.pools.write().unwrap().retain(|key, cached| {
+            let used = is_used(key);
+            if !used {
+                cached.pools.close();
+                tracing::debug!(
+                    "Closing the pool of {}:{}/{}, which no configuration uses",
+                    key.host,
+                    key.port,
+                    key.database
+                );
+            }
+            used
+        });
+        self.failures.write().unwrap().retain(|key, _| is_used(key));
+    }
+
+    /// The number of cached pools.
+    #[cfg(test)]
+    pub(crate) fn pool_count(&self) -> usize {
+        self.pools.read().unwrap().len()
+    }
+
+    /// The cached pools of every database.
+    #[cfg(test)]
+    pub(crate) fn cached_pools(&self) -> Vec<DatabasePools> {
+        self.pools
+            .read()
+            .unwrap()
+            .values()
+            .map(|cached| cached.pools.clone())
+            .collect()
+    }
+
+    /// Closes the pools that weren't used for [`POOL_IDLE_TIMEOUT`], looking at most once per
+    /// [`IDLE_SWEEP_INTERVAL`].
+    fn close_idle_pools(&self) {
+        if self.last_idle_sweep.idle_for() < IDLE_SWEEP_INTERVAL {
+            return;
+        }
+        self.last_idle_sweep.touch();
+        let has_idle = self
+            .pools
+            .read()
+            .unwrap()
+            .values()
+            .any(|pool| pool.last_used.idle_for() > POOL_IDLE_TIMEOUT);
+        if !has_idle {
+            return;
+        }
+        self.pools.write().unwrap().retain(|key, pool| {
+            let idle_for = pool.last_used.idle_for();
+            let idle = idle_for > POOL_IDLE_TIMEOUT;
+            if idle {
+                pool.pools.close();
+                tracing::debug!(
+                    "Closing the pool of {}:{}/{}, unused for {idle_for:?}",
+                    key.host,
+                    key.port,
+                    key.database
+                );
+            }
+            !idle
+        });
     }
 
     #[cfg(test)]
@@ -134,11 +230,13 @@ impl ConnectionManager {
             return None;
         }
 
+        self.close_idle_pools();
         {
             if let Ok(pools) = self.pools.read()
                 && let Some(cached_pool) = pools.get(&key)
                 && cached_pool.settings_fingerprint == settings_fingerprint
             {
+                cached_pool.last_used.touch();
                 return Some(cached_pool.pools.clone());
             }
         }
@@ -154,25 +252,10 @@ impl ConnectionManager {
         }
 
         // Double-check after acquiring write lock
-        if let Some(cached_pool) = pools.get_mut(&key) {
-            cached_pool.last_accessed = Instant::now();
+        if let Some(cached_pool) = pools.get(&key) {
+            cached_pool.last_used.touch();
             return Some(cached_pool.pools.clone());
         }
-
-        // Clean up idle connections before creating new ones to avoid unbounded growth
-        let now = Instant::now();
-        pools.retain(|k, cached_pool| {
-            let idle_duration = now.duration_since(cached_pool.last_accessed);
-            if idle_duration > cached_pool.idle_timeout && k != &key {
-                tracing::debug!(
-                    "Removing idle database connection (idle for {:?})",
-                    idle_duration
-                );
-                false
-            } else {
-                true
-            }
-        });
 
         // Create a new pool
         let config = if let Some(uri) = settings.connection_string.as_ref() {
@@ -198,6 +281,7 @@ impl ConnectionManager {
             PoolOptions::<Postgres>::new()
                 .acquire_timeout(timeout)
                 .acquire_slow_threshold(Duration::from_secs(2))
+                .idle_timeout(POOL_IDLE_TIMEOUT)
         };
         let database_pools = DatabasePools {
             pool: pool_options().connect_lazy_with(config.clone()),
@@ -209,9 +293,7 @@ impl ConnectionManager {
         let cached_pool = CachedPool {
             pools: database_pools.clone(),
             settings_fingerprint,
-            last_accessed: Instant::now(),
-            // TODO: add this to the db settings, for now default to five minutes
-            idle_timeout: Duration::from_secs(60 * 5),
+            last_used: LastUsed::now(),
         };
 
         pools.insert(key, cached_pool);
@@ -427,6 +509,67 @@ mod tests {
         assert!(!manager.connection_is_in_backoff(&key, new_fingerprint));
         assert!(!manager.failures.read().unwrap().contains_key(&key));
         assert!(manager.get_pool(&settings).is_some());
+    }
+
+    #[tokio::test]
+    async fn unused_connections_are_dropped() {
+        let manager = ConnectionManager::new();
+        let used = settings();
+        let unused = DatabaseSettings {
+            database: "other".to_string(),
+            ..settings()
+        };
+        manager.get_pool(&used).unwrap();
+        let unused_pools = manager.get_pools(&unused).unwrap();
+        manager.record_failure(
+            &ConnectionKey::from(&unused),
+            settings_fingerprint(&unused),
+            &authentication_failed(),
+            "authentication failed",
+        );
+
+        let used_key = ConnectionKey::from(&used);
+        manager.retain(|key| key == &used_key);
+
+        let pools = manager.pools.read().unwrap();
+        assert_eq!(pools.keys().collect::<Vec<_>>(), [&used_key]);
+        assert!(manager.failures.read().unwrap().is_empty());
+        // Both pools of the database are closed, also the one for executed statements, even
+        // though a clone of them is still alive.
+        assert!(unused_pools.pool.is_closed());
+        assert!(unused_pools.statement_pool.is_closed());
+        let used_pools = &pools[&used_key].pools;
+        assert!(!used_pools.pool.is_closed());
+        assert!(!used_pools.statement_pool.is_closed());
+    }
+
+    #[tokio::test]
+    async fn idle_pools_are_closed() {
+        let manager = ConnectionManager::new();
+        let idle = DatabaseSettings {
+            database: "idle".to_string(),
+            ..settings()
+        };
+        let busy = settings();
+        let idle_pools = manager.get_pools(&idle).unwrap();
+        manager.get_pool(&busy).unwrap();
+        manager.pools.read().unwrap()[&ConnectionKey::from(&idle)]
+            .last_used
+            .backdate(POOL_IDLE_TIMEOUT * 2);
+
+        // The sweep runs at most once per interval.
+        manager.get_pool(&busy).unwrap();
+        assert_eq!(manager.pools.read().unwrap().len(), 2);
+
+        manager.last_idle_sweep.backdate(IDLE_SWEEP_INTERVAL * 2);
+        manager.get_pool(&busy).unwrap();
+        let pools = manager.pools.read().unwrap();
+        assert_eq!(
+            pools.keys().collect::<Vec<_>>(),
+            [&ConnectionKey::from(&busy)]
+        );
+        assert!(idle_pools.pool.is_closed());
+        assert!(idle_pools.statement_pool.is_closed());
     }
 
     fn authentication_failed() -> DatabaseConnectionError {
