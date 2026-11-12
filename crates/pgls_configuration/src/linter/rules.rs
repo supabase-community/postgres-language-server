@@ -313,6 +313,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Error,
     },
     LinterRuleMetadata {
+        group: "typecheck",
+        name: "generatedColumnAssignment",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
         group: "correctness",
         name: "identifierTooLong",
         recommended: true,
@@ -333,6 +339,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     LinterRuleMetadata {
         group: "correctness",
         name: "invalidDropTypeSignature",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "invalidMerge",
         recommended: true,
         severity: Severity::Error,
     },
@@ -709,6 +721,10 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_return_type_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::FunctionReturnTypeMismatch>>,
+    #[doc = "An INSERT or UPDATE assigns a value to a generated column or a GENERATED ALWAYS identity column."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub generated_column_assignment:
+        Option<RuleConfiguration<pgls_analyser::options::GeneratedColumnAssignment>>,
     #[doc = "Identifiers longer than 63 bytes are silently truncated."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identifier_too_long: Option<RuleConfiguration<pgls_analyser::options::IdentifierTooLong>>,
@@ -723,6 +739,9 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invalid_drop_type_signature:
         Option<RuleConfiguration<pgls_analyser::options::InvalidDropTypeSignature>>,
+    #[doc = "A MERGE, or merge_action(), that Postgres rejects."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_merge: Option<RuleConfiguration<pgls_analyser::options::InvalidMerge>>,
     #[doc = "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_timeout_warning: Option<RuleConfiguration<pgls_analyser::options::LockTimeoutWarning>>,
@@ -990,6 +1009,10 @@ impl Rules {
                 .function_return_type_mismatch
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "generatedColumnAssignment" => self
+                .generated_column_assignment
+                .as_ref()
+                .map(RuleConfiguration::level),
             "identifierTooLong" => self
                 .identifier_too_long
                 .as_ref()
@@ -1003,6 +1026,7 @@ impl Rules {
                 .invalid_drop_type_signature
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "invalidMerge" => self.invalid_merge.as_ref().map(RuleConfiguration::level),
             "lockTimeoutWarning" => self
                 .lock_timeout_warning
                 .as_ref()
@@ -1292,6 +1316,10 @@ impl Rules {
                 .function_return_type_mismatch
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "generatedColumnAssignment" => self
+                .generated_column_assignment
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "identifierTooLong" => self
                 .identifier_too_long
                 .as_ref()
@@ -1306,6 +1334,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "invalidDropTypeSignature" => self
                 .invalid_drop_type_signature
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "invalidMerge" => self
+                .invalid_merge
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "lockTimeoutWarning" => self

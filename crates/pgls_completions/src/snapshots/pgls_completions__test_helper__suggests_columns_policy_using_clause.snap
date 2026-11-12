@@ -83,6 +83,16 @@ castcontext - pg_catalog.pg_cast.castcontext (Column)
 
 create policy "my_pol" on public.instruments for select using (id = 1 and created_at |)
 create policy "my_pol" on public.instruments for select using (id = 1 and created_at > |)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
 create policy "my_pol" on public.instruments for select using (id = 1 and created_at > '|)
 create policy "my_pol" on public.instruments for select using (id = 1 and created_at > '2025-01-01' |)
 
@@ -157,5 +167,15 @@ castcontext - pg_catalog.pg_cast.castcontext (Column)
 
 create policy "my_pol" on public.instruments for insert with check (id = 1 and created_at |)
 create policy "my_pol" on public.instruments for insert with check (id = 1 and created_at > |)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
 create policy "my_pol" on public.instruments for insert with check (id = 1 and created_at > '|)
 create policy "my_pol" on public.instruments for insert with check (id = 1 and created_at > '2025-01-01' |)
