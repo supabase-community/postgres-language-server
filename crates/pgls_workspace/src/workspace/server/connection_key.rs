@@ -3,7 +3,7 @@ use sqlx::PgPool;
 use crate::settings::DatabaseSettings;
 
 /// A unique identifier for database connection settings
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct ConnectionKey {
     pub host: String,
     pub port: u16,
