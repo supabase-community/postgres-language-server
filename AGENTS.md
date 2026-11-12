@@ -119,6 +119,7 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_hover` - Hover information provider
 - `pgls_semantic_tokens` - Semantic highlighting of resolved names
 - `pgls_analyser` & `pgls_analyse` - Linting and analysis framework
+- `pgls_walk` - The walk over a file's statements that lint and the editor features share: the catalog and session as each statement sees them
 - `pgls_typecheck` - EXPLAIN fallback for typecheck
 - `pgls_catalog` - Database snapshot, the file's DDL on top of it, name resolution, and type inference
 
