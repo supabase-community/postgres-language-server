@@ -1,8 +1,9 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::is_reindex_concurrent;
+use pgls_catalog::{CatalogView, Lookup};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::options::{find_def_elem, is_reindex_concurrent};
 
 declare_lint_rule! {
     /// `REINDEX` without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock on the table.
@@ -78,36 +79,50 @@ fn add_concurrently(
 ) -> Option<RuleFix> {
     use pgls_query::protobuf::Token;
 
-    let has_concurrently_option = stmt.params.iter().any(|param| {
-        matches!(&param.node, Some(pgls_query::NodeEnum::DefElem(def)) if def.defname.eq_ignore_ascii_case("concurrently"))
-    });
-    if has_concurrently_option || is_system_catalog(stmt) {
+    if find_def_elem(&stmt.params, "concurrently").is_some() || is_system_catalog(ctx, stmt) {
         return None;
     }
-    let tokens = ctx.tokens()?;
-    let kind = tokens.find_any(&[Token::Index, Token::Table, Token::Schema, Token::Database])?;
-    fix::add_concurrently(ctx, &tokens, kind)
+    fix::add_concurrently(
+        ctx,
+        &[Token::Index, Token::Table, Token::Schema, Token::Database],
+    )
 }
 
 /// Whether the statement reindexes system catalogs, which fails with `CONCURRENTLY`. With
-/// `CONCURRENTLY`, `REINDEX SCHEMA pg_catalog` skips all of them. Unqualified names that start
-/// with `pg_` likely name a system catalog, since `pg_catalog` comes first on the search path.
-fn is_system_catalog(stmt: &pgls_query::protobuf::ReindexStmt) -> bool {
+/// `CONCURRENTLY`, `REINDEX SCHEMA pg_catalog` skips all of them. The schema of a table comes
+/// from the catalog. The snapshot has no system indexes, so unqualified index names, and table
+/// names that the catalog doesn't know, are system catalogs if they start with `pg_`, since
+/// `pg_catalog` comes first on the search path.
+fn is_system_catalog(
+    ctx: &LinterRuleContext<RequireConcurrentReindex>,
+    stmt: &pgls_query::protobuf::ReindexStmt,
+) -> bool {
     use pgls_query::protobuf::ReindexObjectType;
 
     let is_system_schema = |schema: &str| matches!(schema, "pg_catalog" | "pg_toast");
-    match stmt.kind() {
-        ReindexObjectType::ReindexObjectSystem => true,
-        ReindexObjectType::ReindexObjectSchema => is_system_schema(&stmt.name),
-        ReindexObjectType::ReindexObjectIndex | ReindexObjectType::ReindexObjectTable => {
-            stmt.relation.as_ref().is_some_and(|relation| {
-                if relation.schemaname.is_empty() {
-                    relation.relname.starts_with("pg_")
-                } else {
-                    is_system_schema(&relation.schemaname)
-                }
-            })
+    let Some(relation) = stmt.relation.as_ref() else {
+        return stmt.kind() == ReindexObjectType::ReindexObjectSystem
+            || (stmt.kind() == ReindexObjectType::ReindexObjectSchema
+                && is_system_schema(&stmt.name));
+    };
+    if !relation.schemaname.is_empty() {
+        return is_system_schema(&relation.schemaname);
+    }
+    let guess = relation.relname.starts_with("pg_");
+    if stmt.kind() != ReindexObjectType::ReindexObjectTable {
+        return guess;
+    }
+    let catalog = ctx.catalog();
+    match catalog.relation_of(relation, ctx.session().search_path()) {
+        Lookup::Found(table) if is_system_schema(&table.schema) => true,
+        // A system catalog of the same name would come first, unless the catalog knows that
+        // there is none.
+        Lookup::Found(_) => {
+            guess
+                && !catalog
+                    .relation(Some("pg_catalog"), &relation.relname, &[])
+                    .is_missing()
         }
-        _ => false,
+        Lookup::Missing | Lookup::Unknown => guess,
     }
 }

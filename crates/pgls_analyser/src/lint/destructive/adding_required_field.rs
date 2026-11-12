@@ -1,9 +1,9 @@
-use crate::utils::{alter_table_cmds, cmd_def};
+use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, ConstrType, TypeName};
+use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, ConstrType};
 use pgls_query_ext::utils::string_value;
 
 declare_lint_rule! {
@@ -35,6 +35,10 @@ impl LinterRule for AddingRequiredField {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        // No other transaction has written to a table created earlier in the transaction.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
+        }
         let commands: Vec<&AlterTableCmd> = alter_table_cmds(ctx.stmt()).collect();
 
         // Columns made NOT NULL by `ADD CONSTRAINT ... NOT NULL column` (Postgres 18) in the
@@ -82,13 +86,8 @@ impl LinterRule for AddingRequiredField {
 /// Whether a new column is NOT NULL and gets no value from Postgres: no default, not generated,
 /// not an identity column, and not `serial`.
 fn is_required(column: &ColumnDef, not_null_columns: &[&str]) -> bool {
-    let constraint_types: Vec<ConstrType> = column
-        .constraints
-        .iter()
-        .filter_map(|constraint| match &constraint.node {
-            Some(pgls_query::NodeEnum::Constraint(constraint)) => Some(constraint.contype()),
-            _ => None,
-        })
+    let constraint_types: Vec<ConstrType> = column_constraints(column)
+        .map(|constraint| constraint.contype())
         .collect();
     let is_not_null = constraint_types.contains(&ConstrType::ConstrNotnull)
         || not_null_columns.contains(&column.colname.as_str());
@@ -97,22 +96,9 @@ fn is_required(column: &ColumnDef, not_null_columns: &[&str]) -> bool {
             contype,
             ConstrType::ConstrDefault | ConstrType::ConstrGenerated | ConstrType::ConstrIdentity
         )
-    }) || column.type_name.as_ref().is_some_and(is_serial);
+    }) || column
+        .type_name
+        .as_ref()
+        .is_some_and(|type_name| pgls_catalog::serial_type(type_name).is_some());
     is_not_null && !has_value
-}
-
-/// `serial` types get a default from a sequence. Like Postgres, only an unqualified name without
-/// `%TYPE` is a serial type, see
-/// [`transformColumnDefinition`](https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L604).
-fn is_serial(type_name: &TypeName) -> bool {
-    let [name] = type_name.names.as_slice() else {
-        return false;
-    };
-    !type_name.pct_type
-        && string_value(name).is_some_and(|name| {
-            matches!(
-                name,
-                "smallserial" | "serial" | "bigserial" | "serial2" | "serial4" | "serial8"
-            )
-        })
 }

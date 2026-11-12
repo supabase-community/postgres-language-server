@@ -6,8 +6,8 @@
 //!
 //! Not modelled yet, so never reported: the columns of scalar functions in `FROM`, `NATURAL`
 //! joins of items whose columns are not known, `XMLTABLE`/`JSON_TABLE` and `TABLESAMPLE`, the
-//! `ORDER BY` of set operations, recursive CTEs and `SEARCH`/`CYCLE`, and statements with psql
-//! identifier parameters (`:schema.table`).
+//! `ORDER BY` of set operations, recursive CTEs, and statements with psql identifier parameters
+//! (`:schema.table`).
 //!
 //! It also decides whether a statement is [`Resolution::database_only`]: whether everything it
 //! references comes unchanged from the database, so that checking it against the database gives
@@ -30,6 +30,8 @@ mod tests;
 #[cfg(all(test, feature = "db"))]
 mod type_tests;
 mod utils;
+mod volatility;
+pub use volatility::contains_volatile_functions;
 
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;

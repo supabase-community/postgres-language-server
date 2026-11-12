@@ -84,43 +84,33 @@ fn record_schema_names(r: &mut Resolver, stmt: &NodeEnum) {
     if names.is_empty() {
         return;
     }
-    let Some(sql) = r.sql() else {
+    let Some(scanned) = r.tokens() else {
         return;
     };
-    let Ok(scanned) = pgls_query::scan(sql) else {
-        return;
-    };
-    let tokens: Vec<_> = scanned
-        .tokens
-        .iter()
-        .filter(|token| !matches!(token.token(), Token::SqlComment | Token::CComment))
-        .collect();
+    let tokens = scanned.tokens();
     let mut found = Vec::new();
     for (i, token) in tokens.iter().enumerate() {
-        if !matches!(token.token(), Token::Schema | Token::Schemas) {
+        if !matches!(token.kind, Token::Schema | Token::Schemas) {
             continue;
         }
         let mut j = i + 1;
         while tokens
             .get(j)
-            .is_some_and(|token| matches!(token.token(), Token::IfP | Token::Not | Token::Exists))
+            .is_some_and(|token| matches!(token.kind, Token::IfP | Token::Not | Token::Exists))
         {
             j += 1;
         }
         // A comma-separated list of names.
         while let Some(token) = tokens.get(j) {
-            let Some(text) = sql.get(
-                usize::try_from(token.start).unwrap_or_default()
-                    ..usize::try_from(token.end).unwrap_or_default(),
-            ) else {
-                break;
-            };
-            let name = crate::identifier_name(text);
+            let name = crate::identifier_name(scanned.text(token));
             if !names.contains(&name) {
                 break;
             }
-            found.push((name, token.start));
-            if tokens.get(j + 1).map(|token| token.token()) != Some(Token::Ascii44) {
+            let Ok(location) = i32::try_from(token.start) else {
+                break;
+            };
+            found.push((name, location));
+            if tokens.get(j + 1).map(|token| token.kind) != Some(Token::Ascii44) {
                 break;
             }
             j += 2;

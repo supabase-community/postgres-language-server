@@ -1,4 +1,6 @@
-use crate::utils::{alter_table_cmds, cmd_def};
+use crate::utils::{
+    alter_table_cmds, altered_relation, cmd_def, column_constraints, skips_validation,
+};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -57,6 +59,12 @@ impl LinterRule for AddingForeignKeyConstraint {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
+        // Other transactions can't see a table created earlier in the transaction, so the scan
+        // blocks no one. The referenced table is locked until the end of the transaction, like
+        // by `CREATE TABLE ... REFERENCES`, and NOT VALID wouldn't change that.
+        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+            return vec![];
+        }
         let mut diagnostics = Vec::new();
 
         for cmd in alter_table_cmds(ctx.stmt()) {
@@ -71,16 +79,7 @@ impl LinterRule for AddingForeignKeyConstraint {
                 pgls_query::protobuf::AlterTableType::AtAddColumn => {
                     if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd) {
                         // check constraints on the column
-                        let constraints: Vec<_> = col_def
-                            .constraints
-                            .iter()
-                            .filter_map(|constraint| match &constraint.node {
-                                Some(pgls_query::NodeEnum::Constraint(constraint)) => {
-                                    Some(constraint.as_ref())
-                                }
-                                _ => None,
-                            })
-                            .collect();
+                        let constraints: Vec<_> = column_constraints(col_def).collect();
                         for (index, constr) in constraints.iter().enumerate() {
                             let following = constraints.get(index + 1..).unwrap_or_default();
                             if !is_not_enforced(following)
@@ -157,7 +156,7 @@ fn check_foreign_key_constraint(
     }
 
     // NOT VALID constraints are safe, and so are NOT ENFORCED ones, which are never validated
-    if constraint.skip_validation {
+    if skips_validation(constraint) {
         return None;
     }
 

@@ -4,6 +4,7 @@ use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{AlterTableCmd, AlterTableType};
+use pgls_query_ext::options::find_def_elem;
 
 /// `ATTRIBUTE_IDENTITY_ALWAYS`, how Postgres encodes `GENERATED ALWAYS`.
 const IDENTITY_ALWAYS: u8 = b'a';
@@ -89,22 +90,13 @@ fn breaking_change(cmd: &AlterTableCmd) -> Option<(&str, &'static str)> {
             let pgls_query::NodeEnum::List(options) = cmd_def(cmd)? else {
                 return None;
             };
-            options
-                .items
-                .iter()
-                .any(|option| match &option.node {
-                    Some(pgls_query::NodeEnum::DefElem(option))
-                        if option.defname == "generated" =>
-                    {
-                        matches!(
-                            option.arg.as_ref().and_then(|arg| arg.node.as_ref()),
-                            Some(pgls_query::NodeEnum::Integer(value))
-                                if value.ival == i32::from(IDENTITY_ALWAYS)
-                        )
-                    }
-                    _ => false,
-                })
-                .then_some((&cmd.name, always))
+            let generated = find_def_elem(&options.items, "generated")?;
+            matches!(
+                generated.arg.as_ref().and_then(|arg| arg.node.as_ref()),
+                Some(pgls_query::NodeEnum::Integer(value))
+                    if value.ival == i32::from(IDENTITY_ALWAYS)
+            )
+            .then_some((&cmd.name, always))
         }
         _ => None,
     }

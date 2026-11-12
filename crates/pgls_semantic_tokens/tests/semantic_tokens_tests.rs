@@ -79,7 +79,7 @@ impl Fixture {
     }
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn relations_and_columns(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -102,7 +102,7 @@ async fn relations_and_columns(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn ctes_and_aliases(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -126,7 +126,7 @@ async fn ctes_and_aliases(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn roles_and_schemas(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -169,7 +169,7 @@ async fn roles_and_schemas(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn functions_and_types(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -184,7 +184,7 @@ async fn functions_and_types(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn types_in_ddl(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -213,7 +213,7 @@ async fn types_in_ddl(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn enum_members(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -232,7 +232,7 @@ async fn enum_members(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn function_parameters(test_db: PgPool) {
     let f = fixture(&test_db).await;
     let param = |name: &str| FunctionParam {
@@ -255,7 +255,7 @@ async fn function_parameters(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn comments_inside_qualified_names(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -268,7 +268,7 @@ async fn comments_inside_qualified_names(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn multi_word_types(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
@@ -282,7 +282,7 @@ async fn multi_word_types(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn non_ascii_identifiers(test_db: PgPool) {
     let f = fixture(&test_db).await;
     // Postgres only folds ASCII letters, so `CAFÉ` is `cafÉ`.
@@ -292,7 +292,7 @@ async fn non_ascii_identifiers(test_db: PgPool) {
     );
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn merge(test_db: PgPool) {
     let f = fixture(&test_db).await;
     assert_eq!(
