@@ -26,6 +26,7 @@ create table auth.posts (
 d|
 
 Results:
+delete - delete (Keyword)
 drop - drop (Keyword)
 update - update (Keyword)
 
@@ -34,6 +35,8 @@ update - update (Keyword)
 drop |
 
 Results:
+function - function (Keyword)
+index - index (Keyword)
 table - table (Keyword)
 
 --------------
@@ -42,6 +45,7 @@ drop t|
 
 Results:
 table - table (Keyword)
+function - function (Keyword)
 
 --------------
 
@@ -113,3 +117,9 @@ posts - auth.posts (Table)
 --------------
 
 drop table if exists auth.posts |
+
+Results:
+cascade - cascade (Keyword)
+restrict - restrict (Keyword)
+
+--------------

@@ -1,0 +1,18 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+grant usage, update to bob;
+-----------------------
+program [0..27] 'grant usage, update to bob;'
+  statement [0..26] 'grant usage, update to bob'
+    grant_statement [0..26] 'grant usage, update to bob'
+      keyword_grant [0..5] 'grant'
+      grantables [6..19] 'usage, update'
+        role_identifier [6..11] 'usage'
+        , [11..12] ','
+        role_identifier [13..19] 'update'
+      keyword_to [20..22] 'to'
+      role_specification [23..26] 'bob'
+        role_identifier [23..26] 'bob' (@end)
+  ; [26..27] ';'

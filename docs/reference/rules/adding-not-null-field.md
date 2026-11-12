@@ -9,11 +9,17 @@
 Setting a column NOT NULL blocks reads while the table is scanned.
 
 Setting NOT NULL on an existing column scans the table under an ACCESS EXCLUSIVE lock,
-blocking reads and writes. On PostgreSQL 12+, a validated CHECK (column IS NOT NULL)
-constraint allows PostgreSQL to skip this scan.
+blocking reads and writes. This applies to `ALTER COLUMN ... SET NOT NULL` and, on
+Postgres 18, to adding a NOT NULL constraint with `ADD CONSTRAINT ... NOT NULL` without
+`NOT VALID`.
 
-Instead of using SET NOT NULL, consider using a CHECK constraint with NOT VALID, then
-validating it in a separate transaction. This allows reads and writes to continue.
+On Postgres 18, add the NOT NULL constraint as NOT VALID, then validate it in a separate
+transaction. Validating only takes a SHARE UPDATE EXCLUSIVE lock, so reads and writes can
+continue.
+
+Before Postgres 18, a validated CHECK (column IS NOT NULL) constraint lets SET NOT NULL
+skip the scan (Postgres 12+). Add the CHECK constraint as NOT VALID and validate it in a
+separate transaction first.
 
 ## Examples
 
@@ -39,7 +45,38 @@ code-block.sql:1:1 lint/addingNotNullField ━━━━━━━━━━━━�
 
 ```
 
+```sql
+ALTER TABLE "core_recipe" ADD CONSTRAINT foo_not_null NOT NULL "foo";
+```
+
+```sh
+code-block.sql:1:1 lint/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Setting a column NOT NULL blocks reads while the table is scanned.
+  
+  > 1 │ ALTER TABLE "core_recipe" ADD CONSTRAINT foo_not_null NOT NULL "foo";
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+  i This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.
+  
+  i Add the constraint with ADD CONSTRAINT ... NOT NULL ... NOT VALID, then VALIDATE it in a separate transaction.
+  
+
+```
+
 ### Valid
+
+On Postgres 18:
+
+```sql
+-- First add the NOT NULL constraint as NOT VALID
+ALTER TABLE "core_recipe" ADD CONSTRAINT foo_not_null NOT NULL "foo" NOT VALID;
+-- Then validate it in a separate transaction
+ALTER TABLE "core_recipe" VALIDATE CONSTRAINT foo_not_null;
+```
+
+Before Postgres 18:
 
 ```sql
 -- First add a CHECK constraint as NOT VALID

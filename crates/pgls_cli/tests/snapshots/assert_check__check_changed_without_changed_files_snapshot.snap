@@ -1,0 +1,8 @@
+---
+source: crates/pgls_cli/tests/assert_check.rs
+expression: "run_check_with(&[\"--changed\", \"--since\", \"HEAD\", \"--log-level\", \"none\"], None,\nSome(repo.path()))"
+---
+status: success
+stdout:
+Checked 0 files in <duration>.
+stderr:

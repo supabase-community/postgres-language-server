@@ -186,20 +186,13 @@ impl ToOwned for LineIndex {
 pub struct LineIndexBuf(Vec<TextSize>);
 
 impl LineIndexBuf {
+    /// The starts of the lines of `source`. Lines end at `\n`, like in [`pgls_line_index`], so
+    /// the line numbers match those of the LSP and of the CLI's diffs.
     pub fn from_source_text(source: &str) -> Self {
         Self(
-            std::iter::once(0)
-                .chain(source.match_indices(&['\n', '\r']).filter_map(|(i, _)| {
-                    let bytes = source.as_bytes();
-
-                    match bytes[i] {
-                        // Filter out the `\r` in `\r\n` to avoid counting the line break twice
-                        b'\r' if i + 1 < bytes.len() && bytes[i + 1] == b'\n' => None,
-                        _ => Some(i + 1),
-                    }
-                }))
-                .map(|i| TextSize::try_from(i).expect("integer overflow"))
-                .collect(),
+            pgls_line_index::LineIndex::new(source)
+                .line_starts()
+                .to_vec(),
         )
     }
 }
@@ -433,18 +426,11 @@ mod tests {
     }
 
     #[test]
-    fn line_starts_with_carriage_return() {
-        let input = "a\rb\rc";
+    fn a_lone_carriage_return_does_not_end_a_line() {
+        let input = "a\rb\rc\nd";
         let LineIndexBuf(starts) = LineIndexBuf::from_source_text(input);
 
-        assert_eq!(
-            vec![
-                TextSize::from(0u32),
-                TextSize::from(2u32),
-                TextSize::from(4u32)
-            ],
-            starts
-        );
+        assert_eq!(vec![TextSize::from(0u32), TextSize::from(6u32)], starts);
     }
 
     #[test]

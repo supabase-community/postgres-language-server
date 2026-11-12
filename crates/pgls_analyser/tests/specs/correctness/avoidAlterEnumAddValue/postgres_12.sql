@@ -1,0 +1,5 @@
+-- Since Postgres 12, ALTER TYPE ... ADD VALUE can run in a transaction block.
+-- catalog: builtin
+-- server_version_num: 120000
+-- expect_no_diagnostics
+alter type my_enum add value 'new_value';
