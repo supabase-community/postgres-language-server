@@ -1,0 +1,11 @@
+alter table users add column age int not null default 0;
+alter table users alter column name set data type text;
+alter table users alter column name set not null;
+alter table users alter column name drop default;
+alter table users drop column name cascade;
+alter table users rename column name to full_name;
+alter table users rename to people;
+alter table users add constraint users_age_check check (age > 0);
+alter table users drop constraint users_age_check;
+alter table only users owner to postgres;
+alter table users set schema private;

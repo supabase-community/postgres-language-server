@@ -1,18 +1,18 @@
 //! The walk over the statements of a document for the editor features: hover, completions,
 //! inlay hints, semantic tokens and the expand-`*` action.
 //!
-//! It is lint's walk, [`pgls_analyser::walk_statements`], resumed from the checkpoints that the
+//! It is lint's walk, [`pgls_walk::walk_statements`], resumed from the checkpoints that the
 //! document keeps, and what it resolves is kept for the next requests, see
 //! [`super::document_cache::WalkCache`]. A request that only needs what is cached doesn't walk.
 
 use std::sync::Arc;
 
-use pgls_analyser::{AnalysableStatement, AnalysedFileContext, MigrationSection, WalkParams};
 use pgls_catalog::{
     Catalog, CatalogBase, Origin, Snapshot,
     resolve::{ColumnSource, Reference, ResolveParams, resolve},
 };
 use pgls_text_size::{TextRange, TextSize};
+use pgls_walk::{AnalysableStatement, AnalysedFileContext, MigrationSection, WalkParams};
 
 use super::{
     WorkspaceServer,
@@ -138,7 +138,7 @@ impl WorkspaceServer {
             std::sync::atomic::Ordering::Relaxed,
         );
 
-        let walk = pgls_analyser::walk_statements(
+        let walk = pgls_walk::walk_statements(
             WalkParams {
                 stmts: &stmts,
                 unparsable: &unparsable,
@@ -380,7 +380,10 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             }
             // Parameters belong to a function of the file.
             Reference::Parameter { .. } => false,
-            // The columns of a `*` can come from objects that the file changed.
-            Reference::Star { .. } => false,
+            // The columns of a `*` can come from objects that the file changed, and so can the
+            // relations behind CTEs and aliases.
+            Reference::Star { .. } | Reference::Cte { .. } | Reference::Alias { .. } => false,
+            // The catalog doesn't tell where schemas and roles come from.
+            Reference::Schema { .. } | Reference::Role { .. } => false,
         })
 }

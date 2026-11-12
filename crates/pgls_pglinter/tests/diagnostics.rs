@@ -198,7 +198,7 @@ impl TestSetup<'_> {
 }
 
 /// Test that pglinter extension can be created
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn extension_check(test_db: PgPool) {
     // Create required extensions (pglinter may depend on plpgsql_check)
     sqlx::raw_sql("CREATE EXTENSION IF NOT EXISTS plpgsql_check")
@@ -224,7 +224,7 @@ async fn extension_check(test_db: PgPool) {
 /// Test B001: Table without primary key
 /// Note: pglinter checks ALL tables in the database globally, not just specific tables.
 /// So this test verifies that B001 fires when any table lacks a primary key.
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn table_without_primary_key(test_db: PgPool) {
     TestSetup {
         name: "table_without_primary_key",
@@ -242,7 +242,7 @@ async fn table_without_primary_key(test_db: PgPool) {
 }
 
 /// Test B005: Objects with uppercase names
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn objects_with_uppercase(test_db: PgPool) {
     TestSetup {
         name: "objects_with_uppercase",
@@ -260,7 +260,7 @@ async fn objects_with_uppercase(test_db: PgPool) {
 }
 
 /// Test B003: Foreign key without index
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn fk_without_index(test_db: PgPool) {
     TestSetup {
         name: "fk_without_index",
@@ -283,7 +283,7 @@ async fn fk_without_index(test_db: PgPool) {
 }
 
 /// Test multiple issues at once
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn multiple_issues(test_db: PgPool) {
     TestSetup {
         name: "multiple_issues",

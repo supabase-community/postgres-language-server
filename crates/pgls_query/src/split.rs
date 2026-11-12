@@ -10,7 +10,7 @@ use crate::error::*;
 /// ```rust
 /// let query = r#"select /*;*/ 1; select "2;", (select 3);"#;
 /// let statements = pgls_query::split_with_parser(query).unwrap();
-/// assert_eq!(statements, vec!["select /*;*/ 1", r#" select "2;", (select 3)"#]);
+/// assert_eq!(statements, vec!["select /*;*/ 1", r#"select "2;", (select 3)"#]);
 /// ```
 ///
 /// However, `split_with_parser` will fail on malformed statements

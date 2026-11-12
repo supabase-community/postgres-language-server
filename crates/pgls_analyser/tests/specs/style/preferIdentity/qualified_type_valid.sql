@@ -1,0 +1,6 @@
+-- Like Postgres, only an unqualified name is a serial type.
+-- expect_no_diagnostics
+create table counters (
+    a myschema.serial,
+    b serial.counter
+);
