@@ -13,7 +13,7 @@ use pgls_query::{
 use super::{
     Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
     column_name::figure_column_name_with,
-    scope::{Columns, Cte, Level},
+    scope::{Cte, Level},
     span::Tokens,
 };
 use crate::TypeKind;
@@ -40,9 +40,6 @@ pub(super) struct Resolver<'a> {
     pub references: Option<Vec<Reference>>,
     /// The location and kind of each reference in `references`.
     recorded: FxHashSet<(i32, Discriminant<Reference>)>,
-    /// The name of the first output column of each scalar subquery resolved so far, by the
-    /// location of the subquery.
-    subquery_columns: FxHashMap<i32, String>,
     /// The output columns of the subqueries of sublinks resolved so far, by the address of the
     /// subquery's node, so that typing a sublink doesn't resolve its subquery again. Resolving
     /// it again at every level of nested subqueries took time exponential in their depth.
@@ -72,7 +69,6 @@ impl<'a> Resolver<'a> {
             output: None,
             references: None,
             recorded: FxHashSet::default(),
-            subquery_columns: FxHashMap::default(),
             subquery_outputs: FxHashMap::default(),
             in_merge_returning: false,
         }
@@ -145,16 +141,6 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    /// Remembers the output columns of the scalar subquery `link`, which name an unnamed select
-    /// list entry that is the subquery.
-    pub fn set_subquery_columns(&mut self, link: &protobuf::SubLink, columns: Columns) {
-        if link.sub_link_type() == protobuf::SubLinkType::ExprSublink
-            && let Some(first) = columns.and_then(|columns| columns.into_iter().next())
-        {
-            self.subquery_columns.insert(link.location, first);
-        }
-    }
-
     /// The column name Postgres chooses for an unnamed select list entry, see
     /// [`figure_column_name`]. Scalar subqueries the resolver has resolved are named after their
     /// first output column, which is also known when it is a `*`, as in `(select * from t)`.
@@ -162,7 +148,8 @@ impl<'a> Resolver<'a> {
     /// [`figure_column_name`]: super::figure_column_name
     pub fn column_name(&self, value: &NodeEnum) -> Option<String> {
         figure_column_name_with(value, &|link| {
-            self.subquery_columns.get(&link.location).cloned()
+            let output = self.subquery_output(link.subselect.as_deref()?)?;
+            Some(output.as_ref()?.first()?.name.clone())
         })
     }
 
