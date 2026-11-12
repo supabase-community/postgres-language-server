@@ -266,6 +266,19 @@ pub struct DatabaseConnectionError {
     pub(crate) connection_failure: bool,
 }
 
+impl DatabaseConnectionError {
+    /// The error message, e.g. the one Postgres sent.
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    /// Whether the database could not be reached or refused the connection, as opposed to a query
+    /// failing on a working connection, e.g. for a missing permission.
+    pub fn is_connection_failure(&self) -> bool {
+        self.connection_failure
+    }
+}
+
 #[cfg(feature = "db")]
 impl From<sqlx::Error> for WorkspaceError {
     fn from(err: sqlx::Error) -> Self {

@@ -14,7 +14,7 @@ pub struct PullSemanticTokensParams {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Default)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullSemanticTokensResult {
-    /// The tokens, ordered by their start. Tokens don't overlap.
+    /// The tokens, ordered by their start. Tokens don't overlap, and each is on a single line.
     pub tokens: Vec<SemanticToken>,
 }
 
@@ -36,7 +36,7 @@ pub struct SemanticToken {
 pub enum SemanticTokenKind {
     /// A schema.
     Namespace,
-    /// A table, view, or other relation.
+    /// A table, view, or other relation, or a common table expression.
     Class,
     /// A column.
     Property,
@@ -46,6 +46,8 @@ pub enum SemanticTokenKind {
     Parameter,
     /// A string literal that is coerced to an enum type.
     EnumMember,
+    /// The alias of a FROM item, or a role.
+    Variable,
 }
 
 impl From<pgls_semantic_tokens::SemanticTokenKind> for SemanticTokenKind {
@@ -59,6 +61,7 @@ impl From<pgls_semantic_tokens::SemanticTokenKind> for SemanticTokenKind {
             Kind::Type => Self::Type,
             Kind::Parameter => Self::Parameter,
             Kind::EnumMember => Self::EnumMember,
+            Kind::Variable => Self::Variable,
         }
     }
 }

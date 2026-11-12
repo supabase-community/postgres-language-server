@@ -2,6 +2,7 @@ mod insert_columns;
 mod object_references;
 mod parameters;
 mod relations;
+mod returning_aliases;
 mod select_columns;
 mod table_aliases;
 mod where_columns;
@@ -12,6 +13,7 @@ pub use insert_columns::*;
 pub use object_references::*;
 pub use parameters::*;
 pub use relations::*;
+pub use returning_aliases::*;
 pub use select_columns::*;
 pub use table_aliases::*;
 pub use where_columns::*;
@@ -21,6 +23,7 @@ pub enum QueryResult<'a> {
     Relation(RelationMatch<'a>),
     Parameter(ParameterMatch<'a>),
     TableAliases(TableAliasMatch<'a>),
+    ReturningAliases(ReturningAliasMatch<'a>),
     SelectClauseColumns(SelectColumnMatch<'a>),
     InsertClauseColumns(InsertColumnMatch<'a>),
     WhereClauseColumns(WhereColumnMatch<'a>),
@@ -48,6 +51,11 @@ impl QueryResult<'_> {
             QueryResult::TableAliases(m) => {
                 let start = m.table.start_position();
                 let end = m.alias.end_position();
+                start >= range.start_point && end <= range.end_point
+            }
+            QueryResult::ReturningAliases(m) => {
+                let start = m.table.start_position();
+                let end = m.returning.end_position();
                 start >= range.start_point && end <= range.end_point
             }
             Self::SelectClauseColumns(cm) => {

@@ -6,10 +6,12 @@ use std::sync::Arc;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{Catalog, Entry, Key, key};
-use crate::lookup::{FunctionInfo, FunctionKind, Origin, RelationInfo, RelationKind, TypeInfo};
+use crate::lookup::{
+    FunctionInfo, FunctionKind, IndexInfo, Origin, RelationInfo, RelationKind, TypeInfo,
+};
 use crate::snapshot::{
-    Column, ColumnClassKind, Function, PostgresType, PostgresTypeAttribute, ProcKind, Schema,
-    Sequence, Snapshot, Table, TableKind, TypeAttributes,
+    Column, ColumnClassKind, Function, Index, PostgresType, PostgresTypeAttribute, ProcKind,
+    Schema, Sequence, Snapshot, Table, TableKind, TypeAttributes,
 };
 use crate::typing::{Type, TypeId};
 use crate::{FunctionArgumentMode, TypeKind};
@@ -26,6 +28,7 @@ impl Catalog {
             && self.relations.is_empty()
             && self.types.is_empty()
             && self.functions.is_empty()
+            && self.indexes.is_empty()
         {
             return Some(Arc::clone(base.snapshot()));
         }
@@ -99,6 +102,22 @@ impl Catalog {
                 !dropped_functions.contains(&(function.schema.as_str(), function.name.as_str()))
             });
         }
+
+        let mut replaced_indexes = FxHashSet::default();
+        let mut defined_indexes = Vec::new();
+        for ((schema, name), entry) in &self.indexes {
+            match entry {
+                Entry::Defined(index) if index.origin == Origin::File => {
+                    replaced_indexes.insert((schema.as_str(), name.as_str()));
+                    defined_indexes.push(index.as_ref());
+                }
+                Entry::Dropped => {
+                    replaced_indexes.insert((schema.as_str(), name.as_str()));
+                }
+                _ => {}
+            }
+        }
+        builder.define_indexes(&replaced_indexes, &defined_indexes);
 
         Some(Arc::new(builder.snapshot))
     }
@@ -236,6 +255,25 @@ impl Builder {
             .retain(|trigger| !is_dropped(&trigger.table_schema, &trigger.table_name));
     }
 
+    /// Replaces the indexes of `replaced`, the schemas and names of the indexes that the file
+    /// defines or drops, with those it `defines`.
+    fn define_indexes(&mut self, replaced: &FxHashSet<(&str, &str)>, defines: &[&IndexInfo]) {
+        if !replaced.is_empty() {
+            self.snapshot
+                .indexes
+                .retain(|index| !replaced.contains(&(index.schema.as_str(), index.name.as_str())));
+        }
+        for index in defines {
+            let id = self.next_id();
+            self.snapshot.indexes.push(Index {
+                id,
+                schema: index.schema.clone(),
+                name: index.name.clone(),
+                table_name: index.table.clone(),
+            });
+        }
+    }
+
     /// Adds the table of a relation, or finds the one of the database. Returns its id and the
     /// class of its columns when the columns are known, for [`Self::define_columns`].
     fn define_relation(&mut self, relation: &RelationInfo) -> Option<(i64, ColumnClassKind)> {
@@ -301,6 +339,8 @@ impl Builder {
                 let column = match previous.remove(&column.name) {
                     Some(mut previous) if previous.type_name == column.type_name => {
                         previous.number = number as i64 + 1;
+                        previous.generated = column.generated;
+                        previous.identity = column.identity;
                         previous
                     }
                     _ => Column {
@@ -324,6 +364,8 @@ impl Builder {
                         is_primary_key: false,
                         is_unique: false,
                         default_expr: None,
+                        generated: column.generated,
+                        identity: column.identity,
                         varchar_length: None,
                         comment: None,
                     },
@@ -464,6 +506,7 @@ impl Builder {
                 .and_then(|s| s.return_type.as_ref())
                 .and_then(|id| self.id_for(id)),
             args: crate::snapshot::FunctionArgs { args },
+            behavior: info.volatility.unwrap_or_default(),
             ..Default::default()
         });
     }

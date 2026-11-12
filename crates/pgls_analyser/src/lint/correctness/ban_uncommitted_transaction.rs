@@ -1,9 +1,8 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::TransactionMode;
+use pgls_catalog::{TransactionMode, ends_transaction_block};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{TransactionStmt, TransactionStmtKind};
 
 declare_lint_rule! {
     /// A transaction is started but never committed or rolled back.
@@ -51,22 +50,19 @@ impl LinterRule for BanUncommittedTransaction {
             return vec![];
         }
 
-        let pgls_query::NodeEnum::TransactionStmt(stmt) = ctx.stmt() else {
-            return vec![];
-        };
-        if !starts_transaction(stmt) {
+        if !ctx.session().opens_transaction_block(ctx.stmt()) {
             return vec![];
         }
 
+        // Each walk ends at the end of the transaction block that the statement opens, so the
+        // walks of a file cover each statement once.
         let file_context = ctx.file_context();
-        let later_stmts = &file_context.stmts[file_context.previous_stmts().len() + 1..];
-        let is_ended = later_stmts.iter().any(|stmt| {
-            matches!(
-                stmt,
-                pgls_query::NodeEnum::TransactionStmt(stmt) if starts_transaction(stmt) || ends_transaction(stmt)
-            )
-        });
-        if is_ended {
+        if file_context
+            .later_stmts()
+            .iter()
+            .copied()
+            .any(ends_transaction_block)
+        {
             return vec![];
         }
 
@@ -85,27 +81,9 @@ impl LinterRule for BanUncommittedTransaction {
             .note("Add a COMMIT or ROLLBACK statement to complete the transaction.")
             .maybe_fix(
                 file_context
-                    .end_offset()
-                    .map(|end| RuleFix::new("Add COMMIT at the end").insert(end, "\ncommit;")),
+                    .append_statement("commit;")
+                    .map(|(at, text)| RuleFix::new("Add COMMIT at the end").insert(at, text)),
             ),
         ]
     }
-}
-
-/// `COMMIT AND CHAIN` and `ROLLBACK AND CHAIN` immediately start a new transaction.
-fn starts_transaction(stmt: &TransactionStmt) -> bool {
-    match stmt.kind() {
-        TransactionStmtKind::TransStmtBegin | TransactionStmtKind::TransStmtStart => true,
-        TransactionStmtKind::TransStmtCommit | TransactionStmtKind::TransStmtRollback => stmt.chain,
-        _ => false,
-    }
-}
-
-fn ends_transaction(stmt: &TransactionStmt) -> bool {
-    matches!(
-        stmt.kind(),
-        TransactionStmtKind::TransStmtCommit
-            | TransactionStmtKind::TransStmtRollback
-            | TransactionStmtKind::TransStmtPrepare
-    )
 }
