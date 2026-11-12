@@ -20,7 +20,9 @@ pub struct Comment {
     /// rather than moving onto the next item's line.
     pub after_separator: bool,
     /// The keyword following this comment's consecutive comment group, in lower case, when no
-    /// node starts there, such as `else` in `then 'x' /* why */ else 'y'`.
+    /// node starts there, such as `else` in `then 'x' /* why */ else 'y'`. A comma counts too,
+    /// `,`, for a comment within the line of the item before it, as in
+    /// `(1, 'a') /* why */, (2, 'b')`. On a line of its own, it documents the next item.
     ///
     /// For clause keywords, the comment is attached to the following node, but the parent emits
     /// the keyword first. A parent that knows the keyword takes such comments before writing it,
@@ -107,7 +109,12 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
                 || ends_with_structural_separator(line_prefix));
 
         let anchor = keyword_after.get(&source_comment.start);
-        source_comment.comment.before_keyword = anchor.map(|anchor| anchor.keyword.clone());
+        // A comma only anchors a comment within the line of the item before it.
+        let within_line =
+            !(source_comment.comment.own_line || source_comment.comment.text.contains('\n'));
+        source_comment.comment.before_keyword = anchor
+            .map(|anchor| anchor.keyword.clone())
+            .filter(|keyword| keyword != "," || within_line);
         if let Some(case_location) = anchor.and_then(|anchor| anchor.case_location) {
             attached
                 .before_case_end_by_location
@@ -238,7 +245,8 @@ struct KeywordAnchor {
 }
 
 /// Anchors every comment in a consecutive group to the following keyword, when no node starts
-/// there. Matching CASE and END tokens identifies the expression that owns a closing comment.
+/// there. A comma counts as such a keyword, but anchors only the comment right before it. Matching
+/// CASE and END tokens identifies the expression that owns a closing comment.
 fn keywords_after_comments(
     sql: &str,
     locations: &[i32],
@@ -285,13 +293,22 @@ fn keywords_after_comments(
             _ => None,
         };
         previous_token = kind;
+        let is_comma = kind == Some(Token::Ascii44);
         if !pending_comments.is_empty()
-            && token.keyword_kind != KeywordKind::NoKeyword as i32
+            && (token.keyword_kind != KeywordKind::NoKeyword as i32 || is_comma)
             && locations.binary_search(&token.start).is_err()
             && let Some(keyword) = sql.get(token.start as usize..token.end as usize)
         {
-            let group_start = pending_comments[0];
-            for &comment_start in &pending_comments {
+            // A comma anchors only the comment right before it, in a group of its own: the
+            // comments before it may belong to different items, and placing them together moves
+            // them on every pass.
+            let anchored = if is_comma {
+                &pending_comments[pending_comments.len() - 1..]
+            } else {
+                &pending_comments[..]
+            };
+            let group_start = anchored[0];
+            for &comment_start in anchored {
                 keywords.insert(
                     comment_start,
                     KeywordAnchor {
@@ -513,6 +530,24 @@ mod tests {
             .next()
             .expect("one entry");
         assert_eq!(comments[0].before_keyword.as_deref(), Some("else"));
+    }
+
+    #[test]
+    fn a_comment_before_a_comma_records_the_comma_when_it_is_within_the_line_of_the_item() {
+        for (sql, expected) in [
+            ("SELECT a /* why */, b", Some(",")),
+            ("SELECT a\n/* why */, b", None),
+            ("SELECT a /* why\n */, b", None),
+        ] {
+            let attached = attach_comments(sql, &parse(sql));
+
+            let comments = attached
+                .leading_by_location
+                .values()
+                .next()
+                .expect("one entry");
+            assert_eq!(comments[0].before_keyword.as_deref(), expected, "{sql}");
+        }
     }
 
     #[test]

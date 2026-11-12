@@ -248,6 +248,24 @@ fn a_fill_list_with_leading_commas_keeps_an_own_line_comment_before_the_comma() 
     );
 }
 
+#[test]
+fn a_comment_before_a_comma_stays_before_the_comma() {
+    for config in [FormatConfig::default(), leading_comma_config()] {
+        assert_eq!(
+            format_idempotently("select f(a) /* c */, b + 1 /* d */, c from t", &config),
+            "select f(a) /* c */, b + 1 /* d */, c from t;"
+        );
+        assert_eq!(
+            format_idempotently("select * from t where x in (1 /* one */, 2)", &config),
+            "select * from t where x in (1 /* one */, 2);"
+        );
+    }
+    assert_eq!(
+        format_idempotently("select a /* c */, b from t", &expanded_config()),
+        "SELECT\n\ta /* c */,\n\tb\nFROM\n\tt\n;"
+    );
+}
+
 fn assert_comment_tokens(sql: &str, expected: &[&str]) {
     for output in format_both_layouts(sql) {
         let scan = pgls_query::scan(&output).unwrap();
@@ -378,5 +396,18 @@ fn keyword_names_do_not_change_case_end_ownership() {
             &format!("select case when a then {expression} /* last */ end from t"),
             &[last_token, "/* last */", "end"],
         );
+    }
+}
+
+#[test]
+fn comments_between_rows_stay_in_place_with_leading_commas() {
+    // A comment after a row's comma, then a comment on its own line: each stays with its row.
+    let sql = "select * from (values\n(1),  -- one\n-- two\n(2),  -- three\n(3)) as v(x)";
+    for line_width in [40, 80] {
+        let config = FormatConfig {
+            line_width,
+            ..leading_comma_config()
+        };
+        format_idempotently(sql, &config);
     }
 }
