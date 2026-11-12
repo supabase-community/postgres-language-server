@@ -3,11 +3,11 @@ use pgls_query::protobuf::{SortBy, SortByDir, SortByNulls};
 use super::prelude::*;
 
 pub(super) fn emit_sort_by(e: &mut EventEmitter, n: &SortBy) {
-    e.group_start(GroupKind::SortBy);
+    e.group_start();
 
     // Emit the expression being sorted
     if let Some(ref node) = n.node {
-        emit_node(node, e);
+        emit_node(e, node);
     }
 
     // Add sort direction
@@ -65,12 +65,12 @@ pub(super) fn emit_sort_by(e: &mut EventEmitter, n: &SortBy) {
 }
 
 fn emit_operator_name(e: &mut EventEmitter, use_op: &[pgls_query::protobuf::Node]) {
-    emit_dot_separated_list_with(e, use_op, |node, e| {
+    emit_dot_separated_list_with(e, use_op, |e, node| {
         if let Some(pgls_query::NodeEnum::String(s)) = node.node.as_ref() {
             // Operator name - emit as identifier
             e.token(TokenKind::IDENT(s.sval.clone()));
         } else {
-            emit_node(node, e);
+            emit_node(e, node);
         }
     });
 }

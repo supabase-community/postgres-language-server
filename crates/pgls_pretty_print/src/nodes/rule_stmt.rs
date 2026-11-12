@@ -3,7 +3,7 @@ use pgls_query::protobuf::RuleStmt;
 use super::prelude::*;
 
 pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
-    e.group_start(GroupKind::RuleStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
 
@@ -64,7 +64,7 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
     if n.actions.is_empty() {
         e.token(TokenKind::NOTHING_KW);
     } else if n.actions.len() == 1 {
-        emit_node(&n.actions[0], e);
+        emit_node(e, &n.actions[0]);
     } else {
         e.token(TokenKind::L_PAREN);
         emit_semicolon_separated_list(e, &n.actions, emit_node);

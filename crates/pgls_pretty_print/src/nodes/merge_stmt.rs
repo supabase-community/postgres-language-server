@@ -4,7 +4,7 @@ use super::emit_merge_when_clause;
 use super::prelude::*;
 
 pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
-    e.group_start(GroupKind::MergeStmt);
+    e.group_start();
 
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);
@@ -26,7 +26,7 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        emit_node(source, e);
+        emit_node(e, source);
     }
 
     // ON condition
@@ -34,7 +34,7 @@ pub(super) fn emit_merge_stmt(e: &mut EventEmitter, n: &MergeStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();
-        emit_node(condition, e);
+        emit_node(e, condition);
     }
 
     // WHEN clauses

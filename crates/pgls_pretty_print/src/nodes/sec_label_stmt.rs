@@ -3,7 +3,7 @@ use pgls_query::protobuf::{ObjectType, SecLabelStmt};
 use super::prelude::*;
 
 pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
-    e.group_start(GroupKind::SecLabelStmt);
+    e.group_start();
 
     emit_keyword(e, "SECURITY");
     e.space();
@@ -58,12 +58,12 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
         // Aggregate needs (*) for "any argument types"
         if n.objtype() == ObjectType::ObjectAggregate {
             if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
-                super::emit_object_with_args_for_aggregate(e, owa);
+                super::emit_object_with_args_as(e, owa, super::ObjectArguments::AggregateSignature);
             } else {
-                emit_node(object, e);
+                emit_node(e, object);
             }
         } else {
-            emit_node(object, e);
+            emit_node(e, object);
         }
     }
 

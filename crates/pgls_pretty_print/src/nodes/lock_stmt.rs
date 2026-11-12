@@ -3,7 +3,7 @@ use pgls_query::protobuf::LockStmt;
 use super::prelude::*;
 
 pub(super) fn emit_lock_stmt(e: &mut EventEmitter, n: &LockStmt) {
-    e.group_start(GroupKind::LockStmt);
+    e.group_start();
 
     e.token(TokenKind::LOCK_KW);
     e.space();

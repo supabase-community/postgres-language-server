@@ -3,7 +3,7 @@ use pgls_query::protobuf::{AlterObjectDependsStmt, ObjectType};
 use super::prelude::*;
 
 pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObjectDependsStmt) {
-    e.group_start(GroupKind::AlterObjectDependsStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -19,7 +19,7 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
 
     // Object name
     if let Some(ref object) = n.object {
-        emit_node(object, e);
+        emit_node(e, object);
     }
 
     e.line(LineType::SoftOrSpace);

@@ -3,7 +3,7 @@ use pgls_query::protobuf::{CommonTableExpr, CteMaterialize};
 use super::prelude::*;
 
 pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) {
-    e.group_start(GroupKind::CommonTableExpr);
+    e.group_start();
 
     // CTE name
     emit_identifier_maybe_quoted(e, &n.ctename);
@@ -42,7 +42,7 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
     e.line(LineType::Soft);
 
     if let Some(ref query) = n.ctequery {
-        emit_node(query, e);
+        emit_node(e, query);
     }
 
     e.indent_end();

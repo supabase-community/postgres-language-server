@@ -3,11 +3,11 @@ use pgls_query::protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParame
 use super::prelude::*;
 
 pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunctionStmt) {
-    e.group_start(GroupKind::CreateFunctionStmt);
+    e.group_start();
 
     // Inner group for signature (CREATE [OR REPLACE] FUNCTION name(params))
     // This allows the signature to fit on one line while RETURNS/options break
-    e.group_start(GroupKind::CreateFunctionStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -93,7 +93,7 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
         match sql_body.node.as_ref() {
             Some(pgls_query::NodeEnum::ReturnStmt(_)) => {
                 e.line(LineType::Hard);
-                emit_node(sql_body, e);
+                emit_node(e, sql_body);
             }
             _ => {
                 e.line(LineType::Hard);
@@ -108,7 +108,7 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
                 // line of its own when that statement breaks.
                 for stmt in begin_atomic_statements(sql_body) {
                     e.line(LineType::Hard);
-                    emit_node_with(stmt, e, |stmt, e| super::emit_statement(e, stmt));
+                    emit_node_with(e, stmt, super::emit_statement);
                 }
                 e.indent_end();
                 e.line(LineType::Hard);
@@ -212,7 +212,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                             // Use dollar quotes for function bodies (they handle embedded quotes better)
                             emit_body_literal(e, &s.sval);
                         } else {
-                            emit_node(&list.items[0], e);
+                            emit_node(e, &list.items[0]);
                         }
                     } else if list.items.len() == 2 {
                         // Two items: library and symbol for C functions
@@ -220,21 +220,21 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                         if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
                             emit_string_literal(e, s);
                         } else {
-                            emit_node(&list.items[0], e);
+                            emit_node(e, &list.items[0]);
                         }
                         e.token(TokenKind::COMMA);
                         e.space();
                         if let Some(pgls_query::NodeEnum::String(s)) = &list.items[1].node {
                             emit_string_literal(e, s);
                         } else {
-                            emit_node(&list.items[1], e);
+                            emit_node(e, &list.items[1]);
                         }
                     } else {
                         // Fallback: emit the list as-is
-                        emit_node(arg, e);
+                        emit_node(e, arg);
                     }
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -246,7 +246,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                     // Language names like 'sql', 'plpgsql', 'c' don't need quotes
                     emit_identifier_maybe_quoted(e, &s.sval);
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -261,7 +261,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                         _ => emit_keyword(e, &s.sval),
                     }
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -297,7 +297,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                         e.token(TokenKind::INVOKER_KW);
                     }
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -325,7 +325,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
                     emit_keyword(e, &s.sval);
                 } else {
-                    emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -333,27 +333,27 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
             e.token(TokenKind::COST_KW);
             e.space();
             if let Some(ref arg) = d.arg {
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "rows" => {
             e.token(TokenKind::ROWS_KW);
             e.space();
             if let Some(ref arg) = d.arg {
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "support" => {
             e.token(TokenKind::IDENT("support".to_string()));
             e.space();
             if let Some(ref arg) = d.arg {
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "set" => {
             // The arg is a VariableSetStmt which will emit SET/RESET itself
             if let Some(ref arg) = d.arg {
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "transform" => {
@@ -363,7 +363,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
             if let Some(ref arg) = d.arg
                 && let Some(pgls_query::NodeEnum::List(list)) = &arg.node
             {
-                e.group_start(GroupKind::List);
+                e.group_start();
                 e.indent_start();
                 for (index, item) in list.items.iter().enumerate() {
                     if index > 0 {
@@ -374,7 +374,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                     e.space();
                     e.token(TokenKind::TYPE_KW);
                     e.space();
-                    emit_node(item, e);
+                    emit_node(e, item);
                 }
                 e.indent_end();
                 e.group_end();
@@ -393,7 +393,7 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
             emit_keyword(e, &d.defname);
             if let Some(ref arg) = d.arg {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
     }

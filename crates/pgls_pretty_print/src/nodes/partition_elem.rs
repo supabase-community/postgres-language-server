@@ -3,7 +3,7 @@ use pgls_query::protobuf::PartitionElem;
 use super::prelude::*;
 
 pub(super) fn emit_partition_elem(e: &mut EventEmitter, n: &PartitionElem) {
-    e.group_start(GroupKind::PartitionElem);
+    e.group_start();
 
     // Emit column name if present
     if !n.name.is_empty() {
@@ -11,7 +11,7 @@ pub(super) fn emit_partition_elem(e: &mut EventEmitter, n: &PartitionElem) {
     } else if let Some(ref expr) = n.expr {
         // Emit expression wrapped in parentheses (required by PostgreSQL syntax)
         e.token(TokenKind::L_PAREN);
-        emit_node(expr, e);
+        emit_node(e, expr);
         e.token(TokenKind::R_PAREN);
     }
 

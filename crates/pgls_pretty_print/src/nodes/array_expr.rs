@@ -3,7 +3,7 @@ use pgls_query::protobuf::ArrayExpr;
 use super::prelude::*;
 
 pub(super) fn emit_array_expr(e: &mut EventEmitter, n: &ArrayExpr) {
-    e.group_start(GroupKind::ArrayExpr);
+    e.group_start();
 
     e.token(TokenKind::ARRAY_KW);
     e.token(TokenKind::L_BRACK);

@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreatePolicyStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt) {
-    e.group_start(GroupKind::CreatePolicyStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -48,7 +48,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TO_KW);
         e.space();
-        emit_comma_separated_list(e, &n.roles, |node, e| {
+        emit_comma_separated_list(e, &n.roles, |e, node| {
             if let Some(NodeEnum::RoleSpec(role)) = &node.node {
                 super::emit_role_spec(e, role);
             }
@@ -59,7 +59,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        emit_parenthesized_condition(e, GroupKind::CreatePolicyStmt, qual);
+        emit_parenthesized_condition(e, qual);
     }
 
     if let Some(ref with_check) = n.with_check {
@@ -68,7 +68,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         e.space();
         e.token(TokenKind::CHECK_KW);
         e.space();
-        emit_parenthesized_condition(e, GroupKind::CreatePolicyStmt, with_check);
+        emit_parenthesized_condition(e, with_check);
     }
 
     e.group_end();

@@ -3,10 +3,10 @@ use pgls_query::protobuf::{CoercionForm, MultiAssignRef, ResTarget};
 use super::prelude::*;
 
 pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
-    e.group_start(GroupKind::ResTarget);
+    e.group_start();
 
     if let Some(ref val) = n.val {
-        emit_node(val, e);
+        emit_node(e, val);
 
         if !n.name.is_empty() {
             let case_alias_in_expanded_layout =
@@ -14,7 +14,7 @@ pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
                     && matches!(e.config().layout, crate::Layout::Expanded);
 
             if is_window_expression(val) {
-                e.group_start(GroupKind::List);
+                e.group_start();
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AS_KW);
                 e.space();
@@ -40,7 +40,7 @@ pub(super) fn emit_set_clause(e: &mut EventEmitter, n: &ResTarget) {
     // The SET list emits its ResTargets itself rather than through emit_node, so this is the only
     // place that can emit the comments written next to an assignment.
     emit_with_comments_at(e, n.location, |e| {
-        e.group_start(GroupKind::ResTarget);
+        e.group_start();
 
         if !n.name.is_empty() {
             emit_column_name_with_indirection(e, n);
@@ -49,7 +49,7 @@ pub(super) fn emit_set_clause(e: &mut EventEmitter, n: &ResTarget) {
                 e.space();
                 e.token(TokenKind::IDENT("=".to_string()));
                 e.space();
-                emit_node(val, e);
+                emit_node(e, val);
             }
         }
 
@@ -122,10 +122,10 @@ fn emit_multi_assign_clause(
         })
         .unwrap_or(false);
 
-    e.group_start(GroupKind::ResTarget);
+    e.group_start();
 
     // Target columns - wrap in group for compact formatting
-    e.group_start(GroupKind::List);
+    e.group_start();
     e.token(TokenKind::L_PAREN);
     e.line(LineType::Soft);
     e.indent_start();
@@ -150,7 +150,7 @@ fn emit_multi_assign_clause(
     // Source expressions - wrap in group for compact formatting
     if expand_tuple {
         if let Some(row_expr) = maybe_row_expr {
-            e.group_start(GroupKind::List);
+            e.group_start();
             e.token(TokenKind::L_PAREN);
             e.line(LineType::Soft);
             e.indent_start();
@@ -159,7 +159,7 @@ fn emit_multi_assign_clause(
                     e.token(TokenKind::COMMA);
                     e.line(LineType::SoftOrSpace);
                 }
-                emit_node(expr, e);
+                emit_node(e, expr);
             }
             e.indent_end();
             e.line(LineType::Soft);
@@ -167,7 +167,7 @@ fn emit_multi_assign_clause(
             e.group_end();
         }
     } else {
-        emit_node(source_node, e);
+        emit_node(e, source_node);
     }
 
     e.group_end();
@@ -189,7 +189,7 @@ pub(super) fn emit_column_name_with_indirection(e: &mut EventEmitter, n: &ResTar
                 e.token(TokenKind::DOT);
                 emit_string_identifier(e, s);
             }
-            Some(n) => emit_node_enum(n, e),
+            Some(n) => emit_node_enum(e, n),
             None => {}
         }
     }
@@ -200,7 +200,7 @@ pub(super) fn emit_column_name(e: &mut EventEmitter, n: &ResTarget) {
     // The INSERT column list emits its ResTargets itself rather than through emit_node, so this is
     // the only place that can emit the comments written next to a column name.
     emit_with_comments_at(e, n.location, |e| {
-        e.group_start(GroupKind::ResTarget);
+        e.group_start();
         emit_column_name_with_indirection(e, n);
         e.group_end();
     });

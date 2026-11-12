@@ -3,7 +3,7 @@ use pgls_query::protobuf::{XmlOptionType, XmlSerialize};
 use super::prelude::*;
 
 pub(super) fn emit_xml_serialize(e: &mut EventEmitter, n: &XmlSerialize) {
-    e.group_start(GroupKind::XmlSerialize);
+    e.group_start();
 
     emit_keyword(e, "xmlserialize");
     open_call_arguments(e);
@@ -22,7 +22,7 @@ pub(super) fn emit_xml_serialize(e: &mut EventEmitter, n: &XmlSerialize) {
 
     // Expression to serialize
     if let Some(ref expr) = n.expr {
-        emit_node(expr, e);
+        emit_node(e, expr);
     }
 
     // AS type

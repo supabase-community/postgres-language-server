@@ -305,7 +305,7 @@ use alter_seq_stmt::emit_alter_seq_stmt;
 use alter_stats_stmt::emit_alter_stats_stmt;
 use alter_subscription_stmt::emit_alter_subscription_stmt;
 use alter_system_stmt::emit_alter_system_stmt;
-use alter_table_cmd::{emit_alter_table_cmd, emit_alter_table_cmd_for_type};
+use alter_table_cmd::{emit_alter_table_cmd, emit_alter_table_cmd_of};
 use alter_table_move_all_stmt::emit_alter_table_move_all_stmt;
 use alter_table_space_options_stmt::emit_alter_table_space_options_stmt;
 use alter_table_stmt::emit_alter_table_stmt;
@@ -456,7 +456,7 @@ use next_value_expr::emit_next_value_expr;
 use notify_stmt::emit_notify_stmt;
 use null_if_expr::emit_null_if_expr;
 use null_test::emit_null_test;
-use object_with_args::{emit_object_with_args, emit_object_with_args_for_aggregate};
+use object_with_args::{ObjectArguments, emit_object_with_args, emit_object_with_args_as};
 use oid_list::emit_oid_list;
 use on_conflict_clause::emit_on_conflict_clause;
 use on_conflict_expr::emit_on_conflict_expr;
@@ -537,7 +537,7 @@ use with_clause::emit_with_clause;
 use xml_expr::emit_xml_expr;
 use xml_serialize::emit_xml_serialize;
 
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::EventEmitter;
 use pgls_query::{NodeEnum, protobuf::Node};
 
 use utils::comments::emit_node_with;
@@ -552,17 +552,17 @@ use utils::comments::emit_node_with;
 /// The terminator goes in a group around the statement, so that `isolate_semicolon` puts it on
 /// its own line exactly when the statement breaks.
 pub(crate) fn emit_statement(e: &mut EventEmitter, stmt: &NodeEnum) {
-    e.group_start(GroupKind::RawStmt);
-    emit_node_enum(stmt, e);
+    e.group_start();
+    emit_node_enum(e, stmt);
     e.token(crate::TokenKind::SEMICOLON);
     e.group_end();
 }
 
-pub(crate) fn emit_node(node: &Node, e: &mut EventEmitter) {
-    emit_node_with(node, e, emit_node_enum);
+pub(crate) fn emit_node(e: &mut EventEmitter, node: &Node) {
+    emit_node_with(e, node, emit_node_enum);
 }
 
-pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
+pub(crate) fn emit_node_enum(e: &mut EventEmitter, node: &NodeEnum) {
     match &node {
         NodeEnum::RawStmt(n) => emit_raw_stmt(e, n),
         NodeEnum::SelectStmt(n) => emit_select_stmt(e, n),
@@ -779,7 +779,7 @@ pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         // Planner node: the expression evaluated against the OLD or NEW row.
         NodeEnum::ReturningExpr(n) => {
             if let Some(expr) = &n.retexpr {
-                emit_node(expr, e);
+                emit_node(e, expr);
             }
         }
         NodeEnum::DeallocateStmt(n) => emit_deallocate_stmt(e, n),
@@ -835,7 +835,7 @@ pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::WindowFunc(n) => emit_window_func(e, n),
         NodeEnum::WindowFuncRunCondition(n) => emit_window_func_run_condition(e, n),
         NodeEnum::WindowDef(n) => {
-            e.group_start(GroupKind::WindowDef);
+            e.group_start();
             emit_window_def(e, n);
             e.group_end();
         }
@@ -866,7 +866,7 @@ mod tests {
             attached.leading_by_location,
             attached.trailing_by_location,
         );
-        super::emit_node_enum(&ast, &mut e);
+        super::emit_node_enum(&mut e, &ast);
 
         let comments: Vec<&LayoutEvent> = e
             .events

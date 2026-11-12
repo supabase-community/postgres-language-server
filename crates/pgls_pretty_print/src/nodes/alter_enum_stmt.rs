@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterEnumStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_enum_stmt(e: &mut EventEmitter, n: &AlterEnumStmt) {
-    e.group_start(GroupKind::AlterEnumStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

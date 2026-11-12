@@ -5,7 +5,7 @@ use super::emit_role_spec;
 use super::prelude::*;
 
 pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
-    e.group_start(GroupKind::AlterRoleStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -44,7 +44,7 @@ pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
             && let Some(ref arg) = def.arg
         {
             e.space();
-            emit_node(arg, e);
+            emit_node(e, arg);
         }
     } else {
         // Standard ALTER ROLE syntax

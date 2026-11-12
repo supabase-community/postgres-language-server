@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateOpClassStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_op_class_stmt(e: &mut EventEmitter, n: &CreateOpClassStmt) {
-    e.group_start(GroupKind::CreateOpClassStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();

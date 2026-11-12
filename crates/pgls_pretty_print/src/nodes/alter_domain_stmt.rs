@@ -4,7 +4,7 @@ use super::constraint::emit_domain_constraint;
 use super::prelude::*;
 
 pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) {
-    e.group_start(GroupKind::AlterDomainStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -33,7 +33,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
                 e.space();
                 e.token(TokenKind::DEFAULT_KW);
                 e.space();
-                emit_node(def, e);
+                emit_node(e, def);
             } else {
                 e.token(TokenKind::DROP_KW);
                 e.space();
@@ -62,7 +62,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
                     Some(NodeEnum::Constraint(constraint)) => {
                         emit_domain_constraint(e, constraint);
                     }
-                    _ => emit_node(def, e),
+                    _ => emit_node(e, def),
                 }
             }
         }

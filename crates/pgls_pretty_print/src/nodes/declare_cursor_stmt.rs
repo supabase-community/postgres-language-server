@@ -12,7 +12,7 @@ const CURSOR_OPT_ASENSITIVE: i32 = 1 << 4; // 0x10
 const CURSOR_OPT_HOLD: i32 = 1 << 5; // 0x20
 
 pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorStmt) {
-    e.group_start(GroupKind::DeclareCursorStmt);
+    e.group_start();
 
     e.token(TokenKind::DECLARE_KW);
 
@@ -62,7 +62,7 @@ pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorSt
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FOR_KW);
         e.space();
-        emit_node(query, e);
+        emit_node(e, query);
     }
 
     e.group_end();

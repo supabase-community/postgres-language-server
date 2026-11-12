@@ -3,7 +3,7 @@ use pgls_query::protobuf::CopyStmt;
 use super::prelude::*;
 
 pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
-    e.group_start(GroupKind::CopyStmt);
+    e.group_start();
 
     e.token(TokenKind::COPY_KW);
     e.space();
@@ -15,7 +15,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
         // Column list - wrap in group for compact formatting
         if !n.attlist.is_empty() {
             e.space();
-            e.group_start(GroupKind::List);
+            e.group_start();
             e.token(TokenKind::L_PAREN);
             e.line(LineType::Soft);
             e.indent_start();
@@ -27,7 +27,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
         }
     } else if let Some(ref query) = n.query {
         e.token(TokenKind::L_PAREN);
-        emit_node(query, e);
+        emit_node(e, query);
         e.token(TokenKind::R_PAREN);
     }
 
@@ -57,11 +57,11 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.group_start(GroupKind::List);
+        e.group_start();
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
-        emit_comma_separated_list(e, &n.options, |n, e| {
+        emit_comma_separated_list(e, &n.options, |e, n| {
             let def_elem = assert_node_variant!(DefElem, n);
             emit_copy_option(e, def_elem);
         });
@@ -84,7 +84,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
 /// Emit COPY options with proper SQL syntax
 /// Boolean options like HEADER, FREEZE, etc. when true are emitted without a value
 fn emit_copy_option(e: &mut EventEmitter, n: &pgls_query::protobuf::DefElem) {
-    e.group_start(GroupKind::DefElem);
+    e.group_start();
 
     emit_keyword(e, &n.defname);
 
@@ -114,7 +114,7 @@ fn emit_copy_option(e: &mut EventEmitter, n: &pgls_query::protobuf::DefElem) {
             }
             _ => {
                 e.space();
-                emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
     }

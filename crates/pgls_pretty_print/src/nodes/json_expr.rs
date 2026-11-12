@@ -3,7 +3,7 @@ use pgls_query::protobuf::{JsonExpr, JsonExprOp, JsonWrapper};
 use super::prelude::*;
 
 pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
-    e.group_start(GroupKind::JsonExpr);
+    e.group_start();
 
     e.token(token_for_op(n.op()));
     e.token(TokenKind::L_PAREN);
@@ -11,10 +11,10 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
     let mut wrote_value = false;
 
     if let Some(ref formatted_expr) = n.formatted_expr {
-        emit_node(formatted_expr, e);
+        emit_node(e, formatted_expr);
         wrote_value = true;
     } else if let Some(ref xpr) = n.xpr {
-        emit_node(xpr, e);
+        emit_node(e, xpr);
         wrote_value = true;
     }
 
@@ -23,7 +23,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
             e.token(TokenKind::COMMA);
             e.space();
         }
-        emit_node(path_spec, e);
+        emit_node(e, path_spec);
         wrote_value = true;
     }
 
@@ -56,7 +56,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
                 e.space();
             }
 
-            emit_node(value, e);
+            emit_node(e, value);
 
             if let Some(ref inner) = name.node {
                 match inner {
@@ -70,7 +70,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
                         e.space();
                         e.token(TokenKind::AS_KW);
                         e.space();
-                        emit_node_enum(inner, e);
+                        emit_node_enum(e, inner);
                     }
                 }
             }

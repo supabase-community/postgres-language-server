@@ -3,11 +3,11 @@ use pgls_query::protobuf::RangeTableSample;
 use super::prelude::*;
 
 pub(super) fn emit_range_table_sample(e: &mut EventEmitter, n: &RangeTableSample) {
-    e.group_start(GroupKind::RangeTableSample);
+    e.group_start();
 
     // Relation (table)
     if let Some(ref relation) = n.relation {
-        emit_node(relation, e);
+        emit_node(e, relation);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -29,7 +29,7 @@ pub(super) fn emit_range_table_sample(e: &mut EventEmitter, n: &RangeTableSample
         e.token(TokenKind::REPEATABLE_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
-        emit_node(repeatable, e);
+        emit_node(e, repeatable);
         e.token(TokenKind::R_PAREN);
     }
 

@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterCollationStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_collation_stmt(e: &mut EventEmitter, n: &AlterCollationStmt) {
-    e.group_start(GroupKind::AlterCollationStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();

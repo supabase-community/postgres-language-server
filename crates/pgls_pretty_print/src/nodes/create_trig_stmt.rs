@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateTrigStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
-    e.group_start(GroupKind::CreateTrigStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -135,7 +135,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
         e.token(TokenKind::WHEN_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
-        emit_node(when, e);
+        emit_node(e, when);
         e.token(TokenKind::R_PAREN);
     }
 
@@ -157,7 +157,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
 }
 
 fn emit_trigger_transitions(e: &mut EventEmitter, rels: &[pgls_query::Node]) {
-    emit_space_separated_list(e, rels, |rel, e| {
+    emit_space_separated_list(e, rels, |e, rel| {
         let transition = assert_node_variant!(TriggerTransition, rel);
 
         if transition.is_new {

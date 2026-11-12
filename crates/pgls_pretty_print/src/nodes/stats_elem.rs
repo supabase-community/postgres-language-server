@@ -3,13 +3,13 @@ use pgls_query::protobuf::StatsElem;
 use super::prelude::*;
 
 pub(super) fn emit_stats_elem(e: &mut EventEmitter, n: &StatsElem) {
-    e.group_start(GroupKind::StatsElem);
+    e.group_start();
 
     if let Some(ref expr) = n.expr {
         // Expression-based stats entries require parentheses
         // e.g., CREATE STATISTICS ... ON (a || b) FROM ...
         e.token(TokenKind::L_PAREN);
-        emit_node(expr, e);
+        emit_node(e, expr);
         e.token(TokenKind::R_PAREN);
     } else if !n.name.is_empty() {
         emit_identifier_maybe_quoted(e, &n.name);

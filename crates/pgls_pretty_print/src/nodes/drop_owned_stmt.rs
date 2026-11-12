@@ -3,7 +3,7 @@ use pgls_query::protobuf::DropOwnedStmt;
 use super::prelude::*;
 
 pub(super) fn emit_drop_owned_stmt(e: &mut EventEmitter, n: &DropOwnedStmt) {
-    e.group_start(GroupKind::DropOwnedStmt);
+    e.group_start();
 
     e.token(TokenKind::DROP_KW);
     e.space();

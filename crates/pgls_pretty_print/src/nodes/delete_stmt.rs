@@ -3,7 +3,7 @@ use pgls_query::protobuf::DeleteStmt;
 use super::prelude::*;
 
 pub(super) fn emit_delete_stmt(e: &mut EventEmitter, n: &DeleteStmt) {
-    e.group_start(GroupKind::DeleteStmt);
+    e.group_start();
 
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);

@@ -3,7 +3,7 @@ use pgls_query::protobuf::CteSearchClause;
 use super::prelude::*;
 
 pub(super) fn emit_ctesearch_clause(e: &mut EventEmitter, n: &CteSearchClause) {
-    e.group_start(GroupKind::CtesearchClause);
+    e.group_start();
 
     e.token(TokenKind::SEARCH_KW);
     e.space();

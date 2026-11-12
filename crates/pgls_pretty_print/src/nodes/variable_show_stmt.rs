@@ -3,7 +3,7 @@ use pgls_query::protobuf::VariableShowStmt;
 use super::prelude::*;
 
 pub(super) fn emit_variable_show_stmt(e: &mut EventEmitter, n: &VariableShowStmt) {
-    e.group_start(GroupKind::VariableShowStmt);
+    e.group_start();
 
     e.token(TokenKind::SHOW_KW);
 

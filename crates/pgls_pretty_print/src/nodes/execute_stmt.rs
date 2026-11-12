@@ -3,7 +3,7 @@ use pgls_query::protobuf::ExecuteStmt;
 use super::prelude::*;
 
 pub(super) fn emit_execute_stmt(e: &mut EventEmitter, n: &ExecuteStmt) {
-    e.group_start(GroupKind::ExecuteStmt);
+    e.group_start();
 
     e.token(TokenKind::EXECUTE_KW);
     e.space();

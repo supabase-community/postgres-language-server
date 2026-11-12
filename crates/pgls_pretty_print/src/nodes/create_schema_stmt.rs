@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateSchemaStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_schema_stmt(e: &mut EventEmitter, n: &CreateSchemaStmt) {
-    e.group_start(GroupKind::CreateSchemaStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();

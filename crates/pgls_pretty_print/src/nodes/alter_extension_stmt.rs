@@ -3,7 +3,7 @@ use pgls_query::protobuf::AlterExtensionStmt;
 use super::prelude::*;
 
 pub(super) fn emit_alter_extension_stmt(e: &mut EventEmitter, n: &AlterExtensionStmt) {
-    e.group_start(GroupKind::AlterExtensionStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -41,7 +41,7 @@ pub(super) fn emit_alter_extension_stmt(e: &mut EventEmitter, n: &AlterExtension
                         if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
                             emit_string_literal(e, s);
                         } else {
-                            emit_node(arg, e);
+                            emit_node(e, arg);
                         }
                     }
                 }

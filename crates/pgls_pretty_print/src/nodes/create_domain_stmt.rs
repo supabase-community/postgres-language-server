@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateDomainStmt;
 use super::prelude::*;
 
 pub(super) fn emit_create_domain_stmt(e: &mut EventEmitter, n: &CreateDomainStmt) {
-    e.group_start(GroupKind::CreateDomainStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -34,7 +34,7 @@ pub(super) fn emit_create_domain_stmt(e: &mut EventEmitter, n: &CreateDomainStmt
         e.indent_start();
         for constraint in &n.constraints {
             e.line(LineType::SoftOrSpace);
-            emit_node(constraint, e);
+            emit_node(e, constraint);
         }
         e.indent_end();
     }

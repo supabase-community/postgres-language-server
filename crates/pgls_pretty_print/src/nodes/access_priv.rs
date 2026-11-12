@@ -3,7 +3,7 @@ use pgls_query::protobuf::AccessPriv;
 use super::prelude::*;
 
 pub(super) fn emit_access_priv(e: &mut EventEmitter, n: &AccessPriv) {
-    e.group_start(GroupKind::AccessPriv);
+    e.group_start();
 
     if !n.priv_name.is_empty() {
         // Privilege names, `alter system` included, follow the keyword case.

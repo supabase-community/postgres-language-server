@@ -6,7 +6,7 @@ use super::prelude::*;
 /// These are internal planner representations with function OIDs
 /// We emit a simple fallback representation
 pub(super) fn emit_func_expr(e: &mut EventEmitter, n: &FuncExpr) {
-    e.group_start(GroupKind::FuncExpr);
+    e.group_start();
 
     // FuncExpr is the planner's representation of function calls
     // Without access to pg_proc, we emit a placeholder with the OID
