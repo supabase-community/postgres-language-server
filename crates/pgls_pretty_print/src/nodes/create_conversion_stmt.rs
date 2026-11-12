@@ -1,12 +1,6 @@
-use super::{
-    node_list::emit_dot_separated_list,
-    string::{emit_keyword, emit_single_quoted_str},
-};
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::CreateConversionStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_conversion_stmt(e: &mut EventEmitter, n: &CreateConversionStmt) {
     e.group_start(GroupKind::CreateConversionStmt);
@@ -39,8 +33,6 @@ pub(super) fn emit_create_conversion_stmt(e: &mut EventEmitter, n: &CreateConver
 
     // Function name
     emit_dot_separated_list(e, &n.func_name);
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

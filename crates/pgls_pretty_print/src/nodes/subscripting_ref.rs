@@ -1,10 +1,6 @@
-use pgls_query::NodeEnum;
 use pgls_query::protobuf::SubscriptingRef;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_subscripting_ref(e: &mut EventEmitter, n: &SubscriptingRef) {
     e.group_start(GroupKind::SubscriptingRef);
@@ -23,7 +19,7 @@ pub(super) fn emit_subscripting_ref(e: &mut EventEmitter, n: &SubscriptingRef) {
     }
 
     if let Some(ref base) = n.refexpr {
-        super::emit_node(base, e);
+        emit_node(base, e);
     }
 
     if needs_parens {
@@ -38,19 +34,19 @@ pub(super) fn emit_subscripting_ref(e: &mut EventEmitter, n: &SubscriptingRef) {
         let upper_entry = n.refupperindexpr.get(i);
 
         if let Some(lower_node) = lower_entry.and_then(|node| node.node.as_ref().map(|_| node)) {
-            super::emit_node(lower_node, e);
+            emit_node(lower_node, e);
         }
 
         if lower_entry.is_some() {
             e.token(TokenKind::IDENT(":".to_string()));
             if let Some(upper_node) = upper_entry.and_then(|node| node.node.as_ref().map(|_| node))
             {
-                super::emit_node(upper_node, e);
+                emit_node(upper_node, e);
             }
         } else if let Some(upper_node) =
             upper_entry.and_then(|node| node.node.as_ref().map(|_| node))
         {
-            super::emit_node(upper_node, e);
+            emit_node(upper_node, e);
         }
 
         e.token(TokenKind::R_BRACK);

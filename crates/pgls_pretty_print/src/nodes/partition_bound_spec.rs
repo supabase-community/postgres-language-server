@@ -1,11 +1,6 @@
 use pgls_query::protobuf::PartitionBoundSpec;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
-
-use super::node_list::emit_parenthesized_list;
+use super::prelude::*;
 
 pub(super) fn emit_partition_bound_spec(e: &mut EventEmitter, n: &PartitionBoundSpec) {
     e.group_start(GroupKind::PartitionBoundSpec);
@@ -33,13 +28,13 @@ pub(super) fn emit_partition_bound_spec(e: &mut EventEmitter, n: &PartitionBound
                 e.space();
                 e.token(TokenKind::FROM_KW);
                 e.space();
-                emit_parenthesized_list(e, &n.lowerdatums, super::emit_node);
+                emit_parenthesized_list(e, &n.lowerdatums, emit_node);
             }
             if !n.upperdatums.is_empty() {
                 e.space();
                 e.token(TokenKind::TO_KW);
                 e.space();
-                emit_parenthesized_list(e, &n.upperdatums, super::emit_node);
+                emit_parenthesized_list(e, &n.upperdatums, emit_node);
             }
         }
         "l" => {
@@ -47,7 +42,7 @@ pub(super) fn emit_partition_bound_spec(e: &mut EventEmitter, n: &PartitionBound
             e.space();
             e.token(TokenKind::IN_KW);
             e.space();
-            emit_parenthesized_list(e, &n.listdatums, super::emit_node);
+            emit_parenthesized_list(e, &n.listdatums, emit_node);
         }
         "h" => {
             // HASH partition
@@ -55,12 +50,12 @@ pub(super) fn emit_partition_bound_spec(e: &mut EventEmitter, n: &PartitionBound
             e.token(TokenKind::WITH_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
-            super::emit_keyword(e, "modulus");
+            emit_keyword(e, "modulus");
             e.space();
             e.token(TokenKind::IDENT(n.modulus.to_string()));
             e.token(TokenKind::COMMA);
             e.space();
-            super::emit_keyword(e, "remainder");
+            emit_keyword(e, "remainder");
             e.space();
             e.token(TokenKind::IDENT(n.remainder.to_string()));
             e.token(TokenKind::R_PAREN);

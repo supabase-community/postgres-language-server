@@ -1,20 +1,8 @@
 use pgls_query::protobuf::{DropBehavior, GrantStmt, GrantTargetType, ObjectType};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_fill_comma_separator, emit_parenthesized_list},
-};
+use super::prelude::*;
 
 pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
-    emit_grant_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_grant_stmt_no_semicolon(e: &mut EventEmitter, n: &GrantStmt) {
-    emit_grant_stmt_impl(e, n, false);
-}
-
-fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: bool) {
     e.group_start(GroupKind::GrantStmt);
 
     // GRANT or REVOKE
@@ -51,7 +39,7 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
     e.indent_start();
 
     if let Some(object) = n.objects.first() {
-        super::emit_comments_before_keyword(e, "on", object);
+        emit_comments_before_keyword(e, "on", object);
     }
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);
@@ -110,6 +98,12 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
             }
             ObjectType::ObjectSchema => {
                 e.token(TokenKind::SCHEMAS_KW);
+            }
+            // Since Postgres 18
+            ObjectType::ObjectLargeobject => {
+                e.token(TokenKind::LARGE_KW);
+                e.space();
+                e.token(TokenKind::OBJECTS_KW);
             }
             _ => {}
         }
@@ -187,12 +181,12 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
 
     // Object names
     if !n.objects.is_empty() {
-        emit_grant_list(e, &n.objects, super::emit_node);
+        emit_grant_list(e, &n.objects, emit_node);
     }
 
     // TO/FROM - allow line break before this clause
     if let Some(grantee) = n.grantees.first() {
-        super::emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
+        emit_comments_before_keyword(e, if n.is_grant { "to" } else { "from" }, grantee);
     }
     e.line(LineType::SoftOrSpace);
 
@@ -206,7 +200,7 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
 
     // Grantees
     if !n.grantees.is_empty() {
-        emit_grant_list(e, &n.grantees, super::emit_node);
+        emit_grant_list(e, &n.grantees, emit_node);
     }
 
     // WITH GRANT OPTION (for grant)
@@ -237,10 +231,6 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
 
     e.indent_end();
 
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
-    }
-
     e.group_end();
 }
 
@@ -263,7 +253,7 @@ where
     if !rest.is_empty() {
         e.indent_start();
         for node in rest {
-            emit_fill_comma_separator(e);
+            emit_list_comma(e, Some(node), ListSeparatorSpacing::Fill);
             render(node, e);
         }
         e.indent_end();
@@ -275,12 +265,12 @@ fn emit_access_priv(e: &mut EventEmitter, priv_node: &pgls_query::protobuf::Acce
     if priv_node.priv_name.is_empty() && !priv_node.cols.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else if !priv_node.priv_name.is_empty() {
-        super::emit_keywords(e, &priv_node.priv_name);
+        emit_keywords(e, &priv_node.priv_name);
     }
 
     // Handle column privileges
     if !priv_node.cols.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &priv_node.cols, super::emit_node);
+        emit_parenthesized_list(e, &priv_node.cols, emit_node);
     }
 }

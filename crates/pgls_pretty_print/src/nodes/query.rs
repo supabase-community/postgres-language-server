@@ -1,11 +1,12 @@
-use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::protobuf::{CmdType, Query, QuerySource};
+
+use super::prelude::*;
 
 pub(super) fn emit_query(e: &mut EventEmitter, n: &Query) {
     e.group_start(GroupKind::Query);
 
     if let Some(ref utility) = n.utility_stmt {
-        super::emit_node(utility, e);
+        emit_node(utility, e);
         e.group_end();
         return;
     }
@@ -30,11 +31,11 @@ pub(super) fn emit_query(e: &mut EventEmitter, n: &Query) {
         QuerySource::Undefined => "unspecified",
     };
 
-    super::emit_identifier(e, &format!("query#{cmd}_{source}"));
+    emit_identifier(e, &format!("query#{cmd}_{source}"));
 
     if n.result_relation >= 0 {
         e.space();
-        super::emit_identifier(e, &format!("result_rel#{}", n.result_relation));
+        emit_identifier(e, &format!("result_rel#{}", n.result_relation));
     }
 
     e.group_end();

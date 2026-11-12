@@ -7,6 +7,9 @@ macro_rules! assert_node_variant {
     };
 }
 
+mod prelude;
+mod utils;
+
 mod a_array_expr;
 mod a_const;
 mod a_expr;
@@ -42,16 +45,19 @@ mod alter_seq_stmt;
 mod alter_stats_stmt;
 mod alter_subscription_stmt;
 mod alter_system_stmt;
+mod alter_table_cmd;
 mod alter_table_move_all_stmt;
+mod alter_table_space_options_stmt;
 mod alter_table_stmt;
-mod alter_tablespace_options_stmt;
-mod alter_ts_configuration_stmt;
-mod alter_ts_dictionary_stmt;
+mod alter_tsconfiguration_stmt;
+mod alter_tsdictionary_stmt;
 mod alter_type_stmt;
 mod alter_user_mapping_stmt;
+mod alternative_sub_plan;
 mod array_coerce_expr;
 mod array_expr;
-mod bitstring;
+mod atalter_constraint;
+mod bit_string;
 mod bool_expr;
 mod boolean;
 mod boolean_test;
@@ -60,7 +66,7 @@ mod call_stmt;
 mod case_expr;
 mod case_test_expr;
 mod case_when;
-mod checkpoint_stmt;
+mod check_point_stmt;
 mod close_portal_stmt;
 mod cluster_stmt;
 mod coalesce_expr;
@@ -117,6 +123,7 @@ mod def_elem;
 mod define_stmt;
 mod delete_stmt;
 mod discard_stmt;
+mod distinct_expr;
 mod do_stmt;
 mod drop_owned_stmt;
 mod drop_role_stmt;
@@ -134,6 +141,7 @@ mod float;
 mod from_expr;
 mod func_call;
 mod func_expr;
+mod function_parameter;
 mod grant_role_stmt;
 mod grant_stmt;
 mod grouping_func;
@@ -173,12 +181,13 @@ mod locking_clause;
 mod merge_action;
 mod merge_stmt;
 mod merge_support_func;
+mod merge_when_clause;
 mod min_max_expr;
 mod multi_assign_ref;
 mod named_arg_expr;
 mod next_value_expr;
-mod node_list;
 mod notify_stmt;
+mod null_if_expr;
 mod null_test;
 mod object_with_args;
 mod oid_list;
@@ -192,7 +201,7 @@ mod partition_cmd;
 mod partition_elem;
 mod partition_range_datum;
 mod partition_spec;
-mod pl_assign_stmt;
+mod plassign_stmt;
 mod prepare_stmt;
 mod publication_obj_spec;
 mod publication_table;
@@ -208,28 +217,28 @@ mod range_tbl_ref;
 mod range_var;
 mod raw_stmt;
 mod reassign_owned_stmt;
-mod refresh_matview_stmt;
+mod refresh_mat_view_stmt;
 mod reindex_stmt;
 mod relabel_type;
 mod rename_stmt;
 mod replica_identity_stmt;
 mod res_target;
 mod return_stmt;
+mod returning_clause;
 mod role_spec;
 mod row_compare_expr;
 mod row_expr;
 mod row_mark_clause;
-mod rte_permission_info;
+mod rtepermission_info;
 mod rule_stmt;
 mod scalar_array_op_expr;
 mod sec_label_stmt;
 mod select_stmt;
 mod set_operation_stmt;
 mod set_to_default;
-mod single_partition_spec;
 mod sort_by;
 mod sort_group_clause;
-mod sql_value_function;
+mod sqlvalue_function;
 mod stats_elem;
 mod string;
 mod sub_link;
@@ -296,16 +305,19 @@ use alter_seq_stmt::emit_alter_seq_stmt;
 use alter_stats_stmt::emit_alter_stats_stmt;
 use alter_subscription_stmt::emit_alter_subscription_stmt;
 use alter_system_stmt::emit_alter_system_stmt;
+use alter_table_cmd::{emit_alter_table_cmd, emit_alter_table_cmd_for_type};
 use alter_table_move_all_stmt::emit_alter_table_move_all_stmt;
-use alter_table_stmt::{emit_alter_table_cmd, emit_alter_table_stmt};
-use alter_tablespace_options_stmt::emit_alter_tablespace_options_stmt;
-use alter_ts_configuration_stmt::emit_alter_ts_configuration_stmt;
-use alter_ts_dictionary_stmt::emit_alter_ts_dictionary_stmt;
+use alter_table_space_options_stmt::emit_alter_table_space_options_stmt;
+use alter_table_stmt::emit_alter_table_stmt;
+use alter_tsconfiguration_stmt::emit_alter_tsconfiguration_stmt;
+use alter_tsdictionary_stmt::emit_alter_tsdictionary_stmt;
 use alter_type_stmt::emit_alter_type_stmt;
 use alter_user_mapping_stmt::emit_alter_user_mapping_stmt;
+use alternative_sub_plan::emit_alternative_sub_plan;
 use array_coerce_expr::emit_array_coerce_expr;
 use array_expr::emit_array_expr;
-use bitstring::emit_bitstring;
+use atalter_constraint::emit_atalter_constraint;
+use bit_string::emit_bit_string;
 use bool_expr::emit_bool_expr;
 use boolean::emit_boolean;
 use boolean_test::emit_boolean_test;
@@ -314,7 +326,7 @@ use call_stmt::emit_call_stmt;
 use case_expr::emit_case_expr;
 use case_test_expr::emit_case_test_expr;
 use case_when::emit_case_when;
-use checkpoint_stmt::emit_checkpoint_stmt;
+use check_point_stmt::emit_check_point_stmt;
 use close_portal_stmt::emit_close_portal_stmt;
 use cluster_stmt::emit_cluster_stmt;
 use coalesce_expr::emit_coalesce_expr;
@@ -342,7 +354,7 @@ use create_extension_stmt::emit_create_extension_stmt;
 use create_fdw_stmt::emit_create_fdw_stmt;
 use create_foreign_server_stmt::emit_create_foreign_server_stmt;
 use create_foreign_table_stmt::emit_create_foreign_table_stmt;
-use create_function_stmt::{emit_create_function_stmt, emit_function_parameter};
+use create_function_stmt::emit_create_function_stmt;
 use create_op_class_item::emit_create_op_class_item;
 use create_op_class_stmt::emit_create_op_class_stmt;
 use create_op_family_stmt::emit_create_op_family_stmt;
@@ -352,14 +364,14 @@ use create_publication_stmt::emit_create_publication_stmt;
 use create_range_stmt::emit_create_range_stmt;
 use create_role_stmt::emit_create_role_stmt;
 use create_schema_stmt::emit_create_schema_stmt;
-use create_seq_stmt::{emit_create_seq_stmt, emit_create_seq_stmt_no_semicolon};
+use create_seq_stmt::emit_create_seq_stmt;
 use create_stats_stmt::emit_create_stats_stmt;
-use create_stmt::{emit_create_stmt, emit_create_stmt_no_semicolon};
+use create_stmt::emit_create_stmt;
 use create_subscription_stmt::emit_create_subscription_stmt;
 use create_table_as_stmt::emit_create_table_as_stmt;
 use create_table_space_stmt::emit_create_table_space_stmt;
 use create_transform_stmt::emit_create_transform_stmt;
-use create_trig_stmt::{emit_create_trig_stmt, emit_create_trig_stmt_no_semicolon};
+use create_trig_stmt::emit_create_trig_stmt;
 use create_user_mapping_stmt::emit_create_user_mapping_stmt;
 use createdb_stmt::emit_createdb_stmt;
 use ctecycle_clause::emit_ctecycle_clause;
@@ -369,8 +381,9 @@ use deallocate_stmt::emit_deallocate_stmt;
 use declare_cursor_stmt::emit_declare_cursor_stmt;
 use def_elem::{emit_def_elem, emit_options_def_elem, emit_sequence_option};
 use define_stmt::emit_define_stmt;
-use delete_stmt::{emit_delete_stmt, emit_delete_stmt_no_semicolon};
+use delete_stmt::emit_delete_stmt;
 use discard_stmt::emit_discard_stmt;
+use distinct_expr::emit_distinct_expr;
 use do_stmt::emit_do_stmt;
 use drop_owned_stmt::emit_drop_owned_stmt;
 use drop_role_stmt::emit_drop_role_stmt;
@@ -379,7 +392,7 @@ use drop_subscription_stmt::emit_drop_subscription_stmt;
 use drop_table_space_stmt::emit_drop_table_space_stmt;
 use drop_user_mapping_stmt::emit_drop_user_mapping_stmt;
 use dropdb_stmt::emit_dropdb_stmt;
-use execute_stmt::{emit_execute_stmt, emit_execute_stmt_no_semicolon};
+use execute_stmt::emit_execute_stmt;
 use explain_stmt::emit_explain_stmt;
 use fetch_stmt::emit_fetch_stmt;
 use field_select::emit_field_select;
@@ -388,17 +401,18 @@ use float::emit_float;
 use from_expr::emit_from_expr;
 use func_call::emit_func_call;
 use func_expr::emit_func_expr;
+use function_parameter::emit_function_parameter;
 use grant_role_stmt::emit_grant_role_stmt;
-use grant_stmt::{emit_grant_stmt, emit_grant_stmt_no_semicolon};
+use grant_stmt::emit_grant_stmt;
 use grouping_func::emit_grouping_func;
 use grouping_set::emit_grouping_set;
 use import_foreign_schema_stmt::emit_import_foreign_schema_stmt;
 use index_elem::emit_index_elem;
-use index_stmt::{emit_index_stmt, emit_index_stmt_no_semicolon};
+use index_stmt::emit_index_stmt;
 use infer_clause::emit_infer_clause;
 use inference_elem::emit_inference_elem;
 use inline_code_block::emit_inline_code_block;
-use insert_stmt::{emit_insert_stmt, emit_insert_stmt_no_semicolon};
+use insert_stmt::emit_insert_stmt;
 use int_list::emit_int_list;
 use integer::emit_integer;
 use into_clause::emit_into_clause;
@@ -431,20 +445,22 @@ use listen_stmt::emit_listen_stmt;
 use load_stmt::emit_load_stmt;
 use lock_stmt::emit_lock_stmt;
 use locking_clause::emit_locking_clause;
-use merge_action::{emit_merge_action, emit_merge_when_clause};
-use merge_stmt::{emit_merge_stmt, emit_merge_stmt_no_semicolon};
+use merge_action::emit_merge_action;
+use merge_stmt::emit_merge_stmt;
 use merge_support_func::emit_merge_support_func;
+use merge_when_clause::emit_merge_when_clause;
 use min_max_expr::emit_min_max_expr;
 use multi_assign_ref::emit_multi_assign_ref;
 use named_arg_expr::emit_named_arg_expr;
 use next_value_expr::emit_next_value_expr;
 use notify_stmt::emit_notify_stmt;
+use null_if_expr::emit_null_if_expr;
 use null_test::emit_null_test;
 use object_with_args::{emit_object_with_args, emit_object_with_args_for_aggregate};
 use oid_list::emit_oid_list;
 use on_conflict_clause::emit_on_conflict_clause;
 use on_conflict_expr::emit_on_conflict_expr;
-use op_expr::{emit_distinct_expr, emit_null_if_expr, emit_op_expr};
+use op_expr::emit_op_expr;
 use param::emit_param;
 use param_ref::emit_param_ref;
 use partition_bound_spec::emit_partition_bound_spec;
@@ -452,7 +468,7 @@ use partition_cmd::emit_partition_cmd;
 use partition_elem::emit_partition_elem;
 use partition_range_datum::emit_partition_range_datum;
 use partition_spec::emit_partition_spec;
-use pl_assign_stmt::emit_pl_assign_stmt;
+use plassign_stmt::emit_plassign_stmt;
 use prepare_stmt::emit_prepare_stmt;
 use publication_obj_spec::emit_publication_obj_spec;
 use publication_table::emit_publication_table;
@@ -468,35 +484,32 @@ use range_tbl_ref::emit_range_tbl_ref;
 use range_var::{emit_range_var, emit_range_var_name};
 use raw_stmt::emit_raw_stmt;
 use reassign_owned_stmt::emit_reassign_owned_stmt;
-use refresh_matview_stmt::emit_refresh_matview_stmt;
+use refresh_mat_view_stmt::emit_refresh_mat_view_stmt;
 use reindex_stmt::emit_reindex_stmt;
 use relabel_type::emit_relabel_type;
 use rename_stmt::emit_rename_stmt;
 use replica_identity_stmt::emit_replica_identity_stmt;
 use res_target::emit_res_target;
 use return_stmt::emit_return_stmt;
+use returning_clause::{emit_returning_clause, emit_returning_option};
 use role_spec::emit_role_spec;
 use row_compare_expr::emit_row_compare_expr;
 use row_expr::emit_row_expr;
 use row_mark_clause::emit_row_mark_clause;
-use rte_permission_info::emit_rte_permission_info;
+use rtepermission_info::emit_rtepermission_info;
 use rule_stmt::emit_rule_stmt;
 use scalar_array_op_expr::emit_scalar_array_op_expr;
 use sec_label_stmt::emit_sec_label_stmt;
-use select_stmt::{emit_select_stmt, emit_select_stmt_no_semicolon};
+use select_stmt::emit_select_stmt;
 use set_operation_stmt::emit_set_operation_stmt;
 use set_to_default::emit_set_to_default;
-use single_partition_spec::emit_single_partition_spec;
 use sort_by::emit_sort_by;
 use sort_group_clause::emit_sort_group_clause;
-use sql_value_function::emit_sql_value_function;
+use sqlvalue_function::emit_sqlvalue_function;
 use stats_elem::emit_stats_elem;
-use string::{
-    emit_body_literal, emit_identifier, emit_identifier_maybe_quoted, emit_keyword, emit_keywords,
-    emit_string, emit_string_identifier, emit_string_literal,
-};
+use string::emit_string;
 use sub_link::emit_sub_link;
-use sub_plan::{emit_alternative_sub_plan, emit_sub_plan};
+use sub_plan::emit_sub_plan;
 use subscripting_ref::emit_subscripting_ref;
 use table_func::emit_table_func;
 use table_like_clause::emit_table_like_clause;
@@ -508,13 +521,13 @@ use truncate_stmt::emit_truncate_stmt;
 use type_cast::emit_type_cast;
 use type_name::emit_type_name;
 use unlisten_stmt::emit_unlisten_stmt;
-use update_stmt::{emit_update_stmt, emit_update_stmt_no_semicolon};
+use update_stmt::emit_update_stmt;
 use vacuum_relation::emit_vacuum_relation;
 use vacuum_stmt::emit_vacuum_stmt;
 use var::emit_var;
-use variable_set_stmt::{emit_variable_set_stmt, emit_variable_set_stmt_no_semicolon};
+use variable_set_stmt::emit_variable_set_stmt;
 use variable_show_stmt::emit_variable_show_stmt;
-use view_stmt::{emit_view_stmt, emit_view_stmt_no_semicolon};
+use view_stmt::emit_view_stmt;
 use window_clause::emit_window_clause;
 use window_def::emit_window_def;
 use window_func::emit_window_func;
@@ -527,252 +540,29 @@ use xml_serialize::emit_xml_serialize;
 use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::{NodeEnum, protobuf::Node};
 
-fn is_window_expression(node: &Node) -> bool {
-    match node.node.as_ref() {
-        Some(NodeEnum::FuncCall(call)) => call.over.is_some(),
-        Some(NodeEnum::AExpr(expr)) => {
-            expr.lexpr.as_deref().is_some_and(is_window_expression)
-                || expr.rexpr.as_deref().is_some_and(is_window_expression)
-        }
-        _ => false,
-    }
-}
+use utils::comments::emit_node_with;
 
-pub fn emit_node(node: &Node, e: &mut EventEmitter) {
-    emit_node_with(node, e, emit_node_enum);
-}
-
-pub(super) fn emit_node_with(
-    node: &Node,
-    e: &mut EventEmitter,
-    emit: impl FnOnce(&NodeEnum, &mut EventEmitter),
-) {
-    let location = node
-        .node
-        .as_ref()
-        .and_then(|inner| crate::codegen::node_location::node_location(&inner.to_ref()));
-
-    if let Some(location) = location {
-        e.take_leading_comments_at(location);
-    }
-
-    if let Some(ref inner) = node.node {
-        emit(inner, e)
-    }
-
-    if let Some(location) = location {
-        e.take_trailing_comments_at(location);
-    }
-}
-
-/// Emits `body` with the comments attached to `location`, the way `emit_node` does for a child
-/// reached as a `Node`.
+/// Emits a top-level statement followed by the `;` that terminates it.
 ///
-/// A parent that reaches a child through a typed emitter, `emit_range_var` for instance, never
-/// goes through `emit_node`. Without this helper the comments attached to that child stay in the
-/// emitter map and the whole statement is refused rather than reformatted.
-pub(super) fn emit_with_comments_at(
-    e: &mut EventEmitter,
-    location: i32,
-    body: impl FnOnce(&mut EventEmitter),
-) {
-    // Negative locations are dropped when the comment maps are built, so they hold nothing.
-    if location < 0 {
-        body(e);
-        return;
-    }
-
-    e.take_leading_comments_at(location);
-    body(e);
-    e.take_trailing_comments_at(location);
-}
-
-/// Opens the argument list of a call whose arguments the emitter writes itself: `(`, and when the
-/// call doesn't fit, a break and one more level of indent.
-pub(super) fn open_call_arguments(e: &mut EventEmitter) {
-    use crate::TokenKind;
-    use crate::emitter::LineType;
-
-    e.token(TokenKind::L_PAREN);
-    e.indent_start();
-    e.line(LineType::Soft);
-}
-
-/// Closes an argument list opened with `open_call_arguments`, with `)` back on the call's indent.
-pub(super) fn close_call_arguments(e: &mut EventEmitter) {
-    use crate::TokenKind;
-    use crate::emitter::LineType;
-
-    e.indent_end();
-    e.line(LineType::Soft);
-    e.token(TokenKind::R_PAREN);
-}
-
-/// Emits the comments written before `keyword` whose node is `node`, the expression the parent
-/// writes after the keyword. Call it right before the break that precedes the keyword.
+/// Statements never write a `;` themselves, so that one can be nested in another, a query in
+/// `EXPLAIN` or `PREPARE`, an element of `CREATE SCHEMA` or an action of a rule, without a
+/// separator of its own. Only the top level writes the terminator, and the statements that
+/// separate their children with `;`: `BEGIN ATOMIC` bodies and rules with several actions.
 ///
-/// The comments are attached to `node` because the keyword has no node of its own. Without this,
-/// `then 'x' /* why */ else 'y'` would come out as `else /* why */ 'y'`.
-pub(super) fn emit_comments_before_keyword(e: &mut EventEmitter, keyword: &str, node: &Node) {
-    if let Some(location) = node
-        .node
-        .as_ref()
-        .and_then(crate::comments::first_node_location)
-    {
-        e.take_comments_before_keyword_at(location, keyword);
-    }
-}
-
-pub(super) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
-    use crate::ClauseBodyStyle;
-    use crate::emitter::LineType;
-
-    // Compact keeps the condition on the keyword line. The indent stays in both cases so that the
-    // condition's own continuation lines, the second AND of a chain for instance, sit under it.
-    match e.config().clause_body_style {
-        ClauseBodyStyle::Compact => {
-            e.space();
-            emit_condition_on_keyword_line(e, clause);
-        }
-        ClauseBodyStyle::Break => {
-            e.line(LineType::SoftOrSpace);
-            e.indent_start();
-            emit_node(clause, e);
-            e.indent_end();
-        }
-    }
-}
-
-/// Emits a condition that starts on its keyword's line, `where` or `on`, indenting its
-/// continuation lines.
-///
-/// A condition that only breaks inside the parentheses of a subquery, `exists (...)` or
-/// `a = (...)`, has no continuation lines of its own. Indenting it would put the subquery two
-/// levels in and the closing parenthesis one level in, so it keeps the keyword's indent and closes
-/// under the keyword.
-pub(super) fn emit_condition_on_keyword_line(e: &mut EventEmitter, condition: &Node) {
-    if breaks_only_inside_a_subquery(condition) {
-        emit_node(condition, e);
-    } else {
-        e.indent_start();
-        emit_node(condition, e);
-        e.indent_end();
-    }
-}
-
-/// Whether a select item without an alias, which would continue on a line of its own, is written as
-/// a name or keyword followed by
-/// parentheses that hold everything that can break: a function call, `coalesce(...)`, `cast(...)`,
-/// a subquery, ...
-pub(super) fn breaks_only_inside_its_parentheses(e: &EventEmitter, item: &Node) -> bool {
-    let Some(NodeEnum::ResTarget(target)) = item.node.as_ref() else {
-        return false;
-    };
-    if !target.name.is_empty() || !target.indirection.is_empty() {
-        return false;
-    }
-    let Some(value) = target.val.as_deref() else {
-        return false;
-    };
-    match value.node.as_ref() {
-        // FILTER, WITHIN GROUP and OVER continue the call on lines of their own.
-        Some(NodeEnum::FuncCall(call)) => {
-            call.agg_filter.is_none() && call.over.is_none() && !call.agg_within_group
-        }
-        Some(NodeEnum::CoalesceExpr(_) | NodeEnum::MinMaxExpr(_) | NodeEnum::XmlSerialize(_)) => {
-            true
-        }
-        Some(NodeEnum::TypeCast(_)) => matches!(e.config().cast_style, crate::CastStyle::Cast),
-        Some(NodeEnum::SubLink(_)) => breaks_only_inside_a_subquery(value),
-        _ => false,
-    }
-}
-
-fn breaks_only_inside_a_subquery(node: &Node) -> bool {
-    use pgls_query::protobuf::{AExprKind, BoolExprType, SubLinkType};
-
-    match node.node.as_ref() {
-        Some(NodeEnum::SubLink(sub_link)) => {
-            sub_link.sub_link_type != SubLinkType::MultiexprSublink as i32
-        }
-        Some(NodeEnum::AExpr(expr)) => {
-            expr.kind() == AExprKind::AexprOp
-                && expr.lexpr.as_deref().is_some_and(is_simple_operand)
-                && expr.rexpr.as_deref().is_some_and(|rexpr| {
-                    matches!(
-                        rexpr.node.as_ref(),
-                        Some(NodeEnum::SubLink(sub_link))
-                            if sub_link.sub_link_type == SubLinkType::ExprSublink as i32
-                                || sub_link.sub_link_type == SubLinkType::ArraySublink as i32
-                    )
-                })
-        }
-        Some(NodeEnum::BoolExpr(expr)) => {
-            expr.boolop() == BoolExprType::NotExpr
-                && matches!(expr.args.as_slice(), [arg] if breaks_only_inside_a_subquery(arg))
-        }
-        _ => false,
-    }
-}
-
-/// A column reference, parameter or constant, which never breaks.
-fn is_simple_operand(node: &Node) -> bool {
-    matches!(
-        node.node.as_ref(),
-        Some(NodeEnum::ColumnRef(_) | NodeEnum::ParamRef(_) | NodeEnum::AConst(_))
-    )
-}
-
-/// Emits a condition wrapped in parentheses, such as the `USING (...)` of a policy.
-///
-/// It stays on the keyword line when it fits. Otherwise the condition breaks onto its own lines,
-/// indented like a WHERE condition, and the closing parenthesis returns to the keyword's indent.
-pub(super) fn emit_parenthesized_condition(
-    e: &mut EventEmitter,
-    kind: GroupKind,
-    condition: &Node,
-) {
-    emit_parenthesized_condition_with(e, kind, condition, emit_node_enum);
-}
-
-/// Like `emit_parenthesized_condition`, with `emit` emitting the condition itself.
-pub(super) fn emit_parenthesized_condition_with(
-    e: &mut EventEmitter,
-    kind: GroupKind,
-    condition: &Node,
-    emit: impl FnOnce(&NodeEnum, &mut EventEmitter),
-) {
-    use crate::TokenKind;
-    use crate::emitter::LineType;
-
-    e.group_start(kind);
-    e.token(TokenKind::L_PAREN);
-    e.indent_start();
-    e.line(LineType::Soft);
-    emit_node_with(condition, e, emit);
-    e.indent_end();
-    e.line(LineType::Soft);
-    e.token(TokenKind::R_PAREN);
+/// The terminator goes in a group around the statement, so that `isolate_semicolon` puts it on
+/// its own line exactly when the statement breaks.
+pub(crate) fn emit_statement(e: &mut EventEmitter, stmt: &NodeEnum) {
+    e.group_start(GroupKind::RawStmt);
+    emit_node_enum(stmt, e);
+    e.token(crate::TokenKind::SEMICOLON);
     e.group_end();
 }
 
-/// Emits the break that separates a statement clause from the previous one.
-///
-/// In expanded layout it is a `Hard` line, which `try_single_line` refuses to collapse, so the
-/// break propagates to every enclosing group and the whole statement opens up. That propagation is
-/// why expanded layout needs no renderer change.
-#[allow(dead_code)] // Consumed by the clause emitters introduced in task 3.
-pub(super) fn emit_layout_break(e: &mut EventEmitter) {
-    use crate::Layout;
-    use crate::emitter::LineType;
-
-    match e.config().layout {
-        Layout::Expanded => e.line(LineType::Hard),
-        Layout::Fit => e.line(LineType::SoftOrSpace),
-    }
+pub(crate) fn emit_node(node: &Node, e: &mut EventEmitter) {
+    emit_node_with(node, e, emit_node_enum);
 }
 
-pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
+pub(crate) fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
     match &node {
         NodeEnum::RawStmt(n) => emit_raw_stmt(e, n),
         NodeEnum::SelectStmt(n) => emit_select_stmt(e, n),
@@ -818,7 +608,7 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::Integer(n) => emit_integer(e, n),
         NodeEnum::Float(n) => emit_float(e, n),
         NodeEnum::Boolean(n) => emit_boolean(e, n),
-        NodeEnum::BitString(n) => emit_bitstring(e, n),
+        NodeEnum::BitString(n) => emit_bit_string(e, n),
         NodeEnum::AArrayExpr(n) => emit_a_array_expr(e, n),
         NodeEnum::AIndices(n) => emit_a_indices(e, n),
         NodeEnum::AIndirection(n) => emit_a_indirection(e, n),
@@ -856,20 +646,19 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::NullTest(n) => emit_null_test(e, n),
         NodeEnum::Param(n) => emit_param(e, n),
         NodeEnum::ParamRef(n) => emit_param_ref(e, n),
-        NodeEnum::PlassignStmt(n) => emit_pl_assign_stmt(e, n),
+        NodeEnum::PlassignStmt(n) => emit_plassign_stmt(e, n),
         NodeEnum::PartitionCmd(n) => emit_partition_cmd(e, n),
         NodeEnum::PartitionElem(n) => emit_partition_elem(e, n),
         NodeEnum::PartitionBoundSpec(n) => emit_partition_bound_spec(e, n),
         NodeEnum::PartitionRangeDatum(n) => emit_partition_range_datum(e, n),
         NodeEnum::PartitionSpec(n) => emit_partition_spec(e, n),
-        NodeEnum::SinglePartitionSpec(n) => emit_single_partition_spec(e, n),
         NodeEnum::RowCompareExpr(n) => emit_row_compare_expr(e, n),
         NodeEnum::RowMarkClause(n) => emit_row_mark_clause(e, n),
         NodeEnum::RowExpr(n) => emit_row_expr(e, n),
         NodeEnum::ScalarArrayOpExpr(n) => emit_scalar_array_op_expr(e, n),
         NodeEnum::SetToDefault(n) => emit_set_to_default(e, n),
         NodeEnum::NextValueExpr(n) => emit_next_value_expr(e, n),
-        NodeEnum::SqlvalueFunction(n) => emit_sql_value_function(e, n),
+        NodeEnum::SqlvalueFunction(n) => emit_sqlvalue_function(e, n),
         NodeEnum::TypeCast(n) => emit_type_cast(e, n),
         NodeEnum::TypeName(n) => emit_type_name(e, n),
         NodeEnum::JoinExpr(n) => emit_join_expr(e, n),
@@ -879,7 +668,7 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::RangeTblEntry(n) => emit_range_tbl_entry(e, n),
         NodeEnum::RangeTblFunction(n) => emit_range_tbl_function(e, n),
         NodeEnum::RangeTblRef(n) => emit_range_tbl_ref(e, n),
-        NodeEnum::RtepermissionInfo(n) => emit_rte_permission_info(e, n),
+        NodeEnum::RtepermissionInfo(n) => emit_rtepermission_info(e, n),
         NodeEnum::SortBy(n) => emit_sort_by(e, n),
         NodeEnum::SortGroupClause(n) => emit_sort_group_clause(e, n),
         NodeEnum::SubscriptingRef(n) => emit_subscripting_ref(e, n),
@@ -918,7 +707,7 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::InlineCodeBlock(n) => emit_inline_code_block(e, n),
         NodeEnum::PrepareStmt(n) => emit_prepare_stmt(e, n),
         NodeEnum::CallStmt(n) => emit_call_stmt(e, n),
-        NodeEnum::CheckPointStmt(n) => emit_checkpoint_stmt(e, n),
+        NodeEnum::CheckPointStmt(n) => emit_check_point_stmt(e, n),
         NodeEnum::ClosePortalStmt(n) => emit_close_portal_stmt(e, n),
         NodeEnum::ClusterStmt(n) => emit_cluster_stmt(e, n),
         NodeEnum::CommentStmt(n) => emit_comment_stmt(e, n),
@@ -963,10 +752,11 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::AlterSystemStmt(n) => emit_alter_system_stmt(e, n),
         NodeEnum::AlterTableStmt(n) => emit_alter_table_stmt(e, n),
         NodeEnum::AlterTableCmd(n) => emit_alter_table_cmd(e, n),
+        NodeEnum::AtalterConstraint(n) => emit_atalter_constraint(e, n),
         NodeEnum::AlterTableMoveAllStmt(n) => emit_alter_table_move_all_stmt(e, n),
-        NodeEnum::AlterTableSpaceOptionsStmt(n) => emit_alter_tablespace_options_stmt(e, n),
-        NodeEnum::AlterTsconfigurationStmt(n) => emit_alter_ts_configuration_stmt(e, n),
-        NodeEnum::AlterTsdictionaryStmt(n) => emit_alter_ts_dictionary_stmt(e, n),
+        NodeEnum::AlterTableSpaceOptionsStmt(n) => emit_alter_table_space_options_stmt(e, n),
+        NodeEnum::AlterTsconfigurationStmt(n) => emit_alter_tsconfiguration_stmt(e, n),
+        NodeEnum::AlterTsdictionaryStmt(n) => emit_alter_tsdictionary_stmt(e, n),
         NodeEnum::AlterTypeStmt(n) => emit_alter_type_stmt(e, n),
         NodeEnum::AlterUserMappingStmt(n) => emit_alter_user_mapping_stmt(e, n),
         NodeEnum::ExplainStmt(n) => emit_explain_stmt(e, n),
@@ -984,8 +774,16 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::RenameStmt(n) => emit_rename_stmt(e, n),
         NodeEnum::ReplicaIdentityStmt(n) => emit_replica_identity_stmt(e, n),
         NodeEnum::ReturnStmt(n) => emit_return_stmt(e, n),
+        NodeEnum::ReturningClause(n) => emit_returning_clause(e, n),
+        NodeEnum::ReturningOption(n) => emit_returning_option(e, n),
+        // Planner node: the expression evaluated against the OLD or NEW row.
+        NodeEnum::ReturningExpr(n) => {
+            if let Some(expr) = &n.retexpr {
+                emit_node(expr, e);
+            }
+        }
         NodeEnum::DeallocateStmt(n) => emit_deallocate_stmt(e, n),
-        NodeEnum::RefreshMatViewStmt(n) => emit_refresh_matview_stmt(e, n),
+        NodeEnum::RefreshMatViewStmt(n) => emit_refresh_mat_view_stmt(e, n),
         NodeEnum::ReassignOwnedStmt(n) => emit_reassign_owned_stmt(e, n),
         NodeEnum::RuleStmt(n) => emit_rule_stmt(e, n),
         NodeEnum::CompositeTypeStmt(n) => emit_composite_type_stmt(e, n),
@@ -1051,9 +849,8 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
 
 #[cfg(test)]
 mod tests {
-    use crate::emitter::{EventEmitter, LayoutEvent, LineType};
-    use crate::{Comment, FormatConfig, Layout, TokenKind, attach_comments};
-    use std::collections::HashMap;
+    use crate::comments::attach_comments;
+    use crate::emitter::{EventEmitter, LayoutEvent};
 
     #[test]
     fn a_comment_attached_to_a_node_is_emitted_before_it() {
@@ -1082,53 +879,5 @@ mod tests {
             comments[0],
             LayoutEvent::Comment { text, line_comment: true } if text == "-- pick the magic value"
         ));
-    }
-
-    #[test]
-    fn a_typed_child_emitter_consumes_the_comments_of_its_location() {
-        let comment = Comment {
-            text: "-- note".to_string(),
-            line_comment: true,
-            own_line: true,
-            after_separator: false,
-            before_keyword: None,
-        };
-        let leading = HashMap::from([(7, vec![comment])]);
-        let mut e = EventEmitter::with_comments(Default::default(), leading, HashMap::new());
-
-        super::emit_with_comments_at(&mut e, 7, |e| e.token(TokenKind::ONLY_KW));
-
-        assert_eq!(e.pending_comments(), 0);
-        assert!(e.events.iter().any(|event| matches!(
-            event,
-            LayoutEvent::Comment { text, .. } if text == "-- note"
-        )));
-    }
-
-    #[test]
-    fn a_negative_location_never_carries_a_comment() {
-        let mut e = EventEmitter::new(Default::default());
-
-        super::emit_with_comments_at(&mut e, -1, |e| e.token(TokenKind::ONLY_KW));
-
-        assert_eq!(e.events, vec![LayoutEvent::Token(TokenKind::ONLY_KW)]);
-    }
-
-    #[test]
-    fn fit_layout_emits_a_soft_or_space_break() {
-        let mut e = EventEmitter::new(FormatConfig::default());
-        super::emit_layout_break(&mut e);
-        assert_eq!(e.events, vec![LayoutEvent::Line(LineType::SoftOrSpace)]);
-    }
-
-    #[test]
-    fn expanded_layout_emits_a_hard_break() {
-        let config = FormatConfig {
-            layout: Layout::Expanded,
-            ..Default::default()
-        };
-        let mut e = EventEmitter::new(config);
-        super::emit_layout_break(&mut e);
-        assert_eq!(e.events, vec![LayoutEvent::Line(LineType::Hard)]);
     }
 }

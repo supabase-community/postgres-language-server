@@ -42,6 +42,10 @@ impl TypedReplacement {
         let mut text_range_replacement_builder = TextRangeReplacementBuilder::new(sql);
 
         for replacement in &replacements {
+            #[expect(
+                clippy::unwrap_used,
+                reason = "offsets are `TextSize` (u32) everywhere, statements over 4 GiB aren't supported"
+            )]
             let text_range: TextRange = replacement.original_range.clone().try_into().unwrap();
             text_range_replacement_builder.replace_range(text_range, &replacement.default_value);
         }
@@ -129,8 +133,8 @@ fn get_formatted_default_value(pg_type: &PostgresType, is_array: bool) -> String
 /// * `pg_type`: The type to return the default value for.
 pub fn resolve_default_value(pg_type: &PostgresType) -> String {
     // Handle ENUM types by returning the first variant
-    if !pg_type.enums.values.is_empty() {
-        return format!("'{}'", pg_type.enums.values[0]);
+    if let Some(first) = pg_type.enums.values.first() {
+        return format!("'{first}'");
     }
 
     match pg_type.name.as_str() {
@@ -254,7 +258,7 @@ fn resolve_type<'a>(
     parts: &[&str],
     snapshot: &'a pgls_catalog::Snapshot,
 ) -> Option<&'a PostgresType> {
-    if position < parts.len() - 1 {
+    if position + 1 < parts.len() {
         // Find the composite type
         let schema_type = snapshot.types.iter().find(|t| {
             identifier
@@ -266,7 +270,7 @@ fn resolve_type<'a>(
         })?;
 
         // Find the field within the composite type
-        let field_name = parts.last().unwrap();
+        let field_name = parts.last()?;
         let field = schema_type
             .attributes
             .attrs

@@ -1,16 +1,14 @@
-use pgls_query::protobuf::{CreateStmt, node::Node as NodeEnum};
+use pgls_query::protobuf::CreateStmt;
+use pgls_query::protobuf::node::Node as NodeEnum;
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-
-use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
+use super::prelude::*;
 
 /// Emit a column override for typed tables (OF typename).
 /// These use the syntax: column_name WITH OPTIONS constraints
 fn emit_typed_table_column_override(e: &mut EventEmitter, item: &pgls_query::protobuf::Node) {
     if let Some(NodeEnum::ColumnDef(col)) = &item.node {
         // Emit column name
-        super::string::emit_identifier_maybe_quoted(e, &col.colname);
+        emit_identifier_maybe_quoted(e, &col.colname);
 
         // WITH OPTIONS keyword
         e.space();
@@ -21,23 +19,15 @@ fn emit_typed_table_column_override(e: &mut EventEmitter, item: &pgls_query::pro
         // Emit constraints (e.g., GENERATED ALWAYS AS ... STORED)
         for constraint in &col.constraints {
             e.line(LineType::SoftOrSpace);
-            super::emit_node(constraint, e);
+            emit_node(constraint, e);
         }
     } else {
         // Fall back to regular node emission
-        super::emit_node(item, e);
+        emit_node(item, e);
     }
 }
 
 pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
-    emit_create_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_create_stmt_no_semicolon(e: &mut EventEmitter, n: &CreateStmt) {
-    emit_create_stmt_impl(e, n, false);
-}
-
-fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: bool) {
     e.group_start(GroupKind::CreateStmt);
 
     e.token(TokenKind::CREATE_KW);
@@ -89,7 +79,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.space();
 
         if !n.inh_relations.is_empty() {
-            emit_comma_separated_list(e, &n.inh_relations, super::emit_node);
+            emit_comma_separated_list(e, &n.inh_relations, emit_node);
         }
 
         // Add constraints for partition tables
@@ -106,7 +96,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
                     e.token(TokenKind::COMMA);
                     e.line(LineType::SoftOrSpace);
                 }
-                super::emit_node(item, e);
+                emit_node(item, e);
                 first = false;
             }
             for item in &n.constraints {
@@ -114,7 +104,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
                     e.token(TokenKind::COMMA);
                     e.line(LineType::SoftOrSpace);
                 }
-                super::emit_node(item, e);
+                emit_node(item, e);
                 first = false;
             }
 
@@ -166,7 +156,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
                     e.token(TokenKind::COMMA);
                     e.line(LineType::SoftOrSpace);
                 }
-                super::emit_node(item, e);
+                emit_node(item, e);
                 first = false;
             }
 
@@ -203,7 +193,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
                         e.line(LineType::SoftOrSpace);
                     }
                 }
-                super::emit_node(item, e);
+                emit_node(item, e);
                 first = false;
             }
             for item in &n.constraints {
@@ -215,7 +205,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
                         e.line(LineType::SoftOrSpace);
                     }
                 }
-                super::emit_node(item, e);
+                emit_node(item, e);
                 first = false;
             }
 
@@ -235,7 +225,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
             e.line(LineType::Hard);
             e.token(TokenKind::INHERITS_KW);
             e.space();
-            emit_parenthesized_list(e, &n.inh_relations, super::emit_node);
+            emit_parenthesized_list(e, &n.inh_relations, emit_node);
         }
 
         // Add PARTITION BY clause for regular partitioned tables
@@ -250,7 +240,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.space();
         e.token(TokenKind::USING_KW);
         e.space();
-        super::string::emit_identifier_maybe_quoted(e, &n.access_method);
+        emit_identifier_maybe_quoted(e, &n.access_method);
     }
 
     // Add WITH options if specified - use SoftOrSpace to break if needed
@@ -262,7 +252,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
-        emit_comma_separated_list(e, &n.options, super::emit_node);
+        emit_comma_separated_list(e, &n.options, emit_node);
         e.indent_end();
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
@@ -303,11 +293,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.tablespacename);
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
+        emit_identifier_maybe_quoted(e, &n.tablespacename);
     }
 
     e.group_end();

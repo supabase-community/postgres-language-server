@@ -1,8 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterCollationStmt;
 
-use super::node_list::emit_dot_separated_list;
+use super::prelude::*;
 
 pub(super) fn emit_alter_collation_stmt(e: &mut EventEmitter, n: &AlterCollationStmt) {
     e.group_start(GroupKind::AlterCollationStmt);
@@ -20,8 +18,6 @@ pub(super) fn emit_alter_collation_stmt(e: &mut EventEmitter, n: &AlterCollation
     e.token(TokenKind::REFRESH_KW);
     e.space();
     e.token(TokenKind::VERSION_KW);
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

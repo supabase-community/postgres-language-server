@@ -1,6 +1,6 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterSeqStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
     e.group_start(GroupKind::AlterSeqStmt);
@@ -29,15 +29,10 @@ pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {
                 super::emit_sequence_option(e, def_elem);
             } else {
-                super::emit_node(opt, e);
+                emit_node(opt, e);
             }
         }
     }
-
-    // for_identity field indicates if this is part of ALTER TABLE ALTER COLUMN
-    // In that case, the statement is embedded and might not need semicolon
-    // But for now, we'll always emit it as a standalone statement
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

@@ -1,18 +1,8 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::DeleteStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_delete_stmt(e: &mut EventEmitter, n: &DeleteStmt) {
-    emit_delete_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_delete_stmt_no_semicolon(e: &mut EventEmitter, n: &DeleteStmt) {
-    emit_delete_stmt_impl(e, n, false);
-}
-
-fn emit_delete_stmt_impl(e: &mut EventEmitter, n: &DeleteStmt, with_semicolon: bool) {
     e.group_start(GroupKind::DeleteStmt);
 
     if let Some(ref with_clause) = n.with_clause {
@@ -34,24 +24,18 @@ fn emit_delete_stmt_impl(e: &mut EventEmitter, n: &DeleteStmt, with_semicolon: b
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        super::node_list::emit_comma_separated_list(e, &n.using_clause, super::emit_node);
+        emit_comma_separated_list(e, &n.using_clause, emit_node);
     }
 
     if let Some(ref where_clause) = n.where_clause {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, where_clause);
+        emit_clause_condition(e, where_clause);
     }
 
-    if !n.returning_list.is_empty() {
+    if let Some(returning) = &n.returning_clause {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::RETURNING_KW);
-        e.space();
-        super::node_list::emit_comma_separated_list(e, &n.returning_list, super::emit_node);
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
+        super::emit_returning_clause(e, returning);
     }
 
     e.group_end();

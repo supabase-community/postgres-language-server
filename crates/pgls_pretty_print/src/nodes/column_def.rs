@@ -1,15 +1,12 @@
 use pgls_query::protobuf::ColumnDef;
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-
-use super::node_list::{ListSeparatorSpacing, emit_comma_separated_list_with_spacing};
+use super::prelude::*;
 
 pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     e.group_start(GroupKind::ColumnDef);
 
     // Column name (quote if necessary for special characters or keywords)
-    super::emit_identifier_maybe_quoted(e, &n.colname);
+    emit_identifier_maybe_quoted(e, &n.colname);
 
     // Add type name
     if let Some(ref typename) = n.type_name {
@@ -26,7 +23,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
         e.space();
         e.token(TokenKind::COMPRESSION_KW);
         e.space();
-        super::emit_identifier_maybe_quoted(e, &n.compression);
+        emit_identifier_maybe_quoted(e, &n.compression);
     }
 
     // Add storage clause if specified
@@ -50,7 +47,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::DEFAULT_KW);
         e.space();
-        super::emit_node(raw_default, e);
+        emit_node(raw_default, e);
     }
 
     // Add collation if specified
@@ -82,7 +79,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     // TODO: Handle IDENTITY constraints specially
     for constraint in &n.constraints {
         e.line(LineType::SoftOrSpace);
-        super::emit_node(constraint, e);
+        emit_node(constraint, e);
     }
 
     e.indent_end();

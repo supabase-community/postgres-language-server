@@ -1,19 +1,7 @@
 use crate::TokenKind;
+use crate::config::{IndentStyle, KeywordCase};
 use crate::emitter::{LayoutEvent, LineType};
 use std::fmt::Write;
-
-#[derive(Debug, Clone)]
-pub enum IndentStyle {
-    Spaces,
-    Tabs,
-}
-
-#[derive(Debug, Clone, Default)]
-pub enum KeywordCase {
-    Upper,
-    #[default]
-    Lower,
-}
 
 #[derive(Debug, Clone)]
 pub struct RenderConfig {

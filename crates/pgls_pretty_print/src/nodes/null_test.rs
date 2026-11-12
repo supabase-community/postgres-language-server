@@ -1,15 +1,13 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::NullTest;
+
+use super::prelude::*;
 
 pub(super) fn emit_null_test(e: &mut EventEmitter, n: &NullTest) {
     e.group_start(GroupKind::NullTest);
 
     // Emit the expression being tested
     if let Some(ref arg) = n.arg {
-        super::emit_node(arg, e);
+        emit_node(arg, e);
     }
 
     e.space();

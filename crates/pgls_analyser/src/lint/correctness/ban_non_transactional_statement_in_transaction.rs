@@ -1,11 +1,9 @@
-use crate::{
-    LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::is_reindex_concurrent,
-};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::{CatalogView, RelationKind};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::{NodeEnum, protobuf};
+use pgls_query_ext::options::{def_elem_bool, find_def_elem, is_reindex_concurrent};
 
 declare_lint_rule! {
     /// Statements that Postgres can't run inside a transaction block.
@@ -13,10 +11,10 @@ declare_lint_rule! {
     /// `VACUUM`, `CREATE DATABASE`, `DROP DATABASE`, `ALTER DATABASE ... SET TABLESPACE`,
     /// `CREATE TABLESPACE`, `DROP TABLESPACE`, `ALTER SYSTEM`, `CLUSTER` without a table or on a
     /// partitioned table, `REINDEX SCHEMA`, `REINDEX SYSTEM`, `REINDEX DATABASE`, `REINDEX TABLE`
-    /// on a partitioned table, `DISCARD ALL`, `COMMIT PREPARED`, `ROLLBACK PREPARED`,
-    /// `CREATE SUBSCRIPTION` that creates a replication slot, and
-    /// `ALTER SUBSCRIPTION ... REFRESH PUBLICATION` fail in a transaction block and in the body
-    /// of a function. The statements with `CONCURRENTLY` are covered by
+    /// on a partitioned table, `REINDEX INDEX` on a partitioned index, `DISCARD ALL`,
+    /// `COMMIT PREPARED`, `ROLLBACK PREPARED`, `CREATE SUBSCRIPTION` that creates a replication
+    /// slot, and `ALTER SUBSCRIPTION ... REFRESH PUBLICATION` fail in a transaction block and in
+    /// the body of a function. The statements with `CONCURRENTLY` are covered by
     /// `banConcurrentIndexCreationInTransaction`.
     ///
     /// The rule only reports statements that surely run in a transaction block: between `BEGIN`
@@ -107,6 +105,14 @@ fn non_transactional_statement(
 ) -> Option<&'static str> {
     use protobuf::{AlterSubscriptionType, DiscardMode, ReindexObjectType, TransactionStmtKind};
 
+    let is_partitioned_table = |relation: &protobuf::RangeVar| {
+        ctx.catalog()
+            .is_partitioned_table(relation, ctx.session().search_path())
+    };
+    let is_partitioned_index = |index: &protobuf::RangeVar| {
+        ctx.catalog()
+            .is_partitioned_index_of(index, ctx.session().search_path())
+    };
     match ctx.stmt() {
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/vacuum.c#L523
         NodeEnum::VacuumStmt(stmt) if stmt.is_vacuumcmd => Some("VACUUM"),
@@ -118,16 +124,14 @@ fn non_transactional_statement(
         NodeEnum::AlterSystemStmt(_) => Some("ALTER SYSTEM"),
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/dbcommands.c#L2439
         NodeEnum::AlterDatabaseStmt(stmt)
-            if stmt.options.iter().any(|option| {
-                matches!(&option.node, Some(NodeEnum::DefElem(def)) if def.defname == "tablespace")
-            }) =>
+            if find_def_elem(&stmt.options, "tablespace").is_some() =>
         {
             Some("ALTER DATABASE SET TABLESPACE")
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/cluster.c#L210
         NodeEnum::ClusterStmt(stmt) => match &stmt.relation {
             None => Some("CLUSTER"),
-            Some(relation) if !stmt.indexname.is_empty() && is_partitioned(ctx, relation) => {
+            Some(relation) if !stmt.indexname.is_empty() && is_partitioned_table(relation) => {
                 Some("CLUSTER")
             }
             Some(_) => None,
@@ -137,14 +141,17 @@ fn non_transactional_statement(
             ReindexObjectType::ReindexObjectSchema => Some("REINDEX SCHEMA"),
             ReindexObjectType::ReindexObjectSystem => Some("REINDEX SYSTEM"),
             ReindexObjectType::ReindexObjectDatabase => Some("REINDEX DATABASE"),
+            // `ReindexPartitions`, for a partitioned table or index:
             // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/indexcmds.c#L3392
             ReindexObjectType::ReindexObjectTable
-                if stmt
-                    .relation
-                    .as_ref()
-                    .is_some_and(|relation| is_partitioned(ctx, relation)) =>
+                if stmt.relation.as_ref().is_some_and(is_partitioned_table) =>
             {
                 Some("REINDEX TABLE")
+            }
+            ReindexObjectType::ReindexObjectIndex
+                if stmt.relation.as_ref().is_some_and(is_partitioned_index) =>
+            {
+                Some("REINDEX INDEX")
             }
             _ => None,
         },
@@ -158,12 +165,15 @@ fn non_transactional_statement(
             TransactionStmtKind::TransStmtRollbackPrepared => Some("ROLLBACK PREPARED"),
             _ => None,
         },
-        // `create_slot` is on by default, unless `connect = false`.
+        // `create_slot` is on by default, unless `connect = false`. Postgres rejects an invalid
+        // value of either before it checks for a transaction block.
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/subscriptioncmds.c#L602
         NodeEnum::CreateSubscriptionStmt(stmt) => {
-            let create_slot = option(&stmt.options, "create_slot")
-                .unwrap_or_else(|| option(&stmt.options, "connect").unwrap_or(true));
-            create_slot.then_some("CREATE SUBSCRIPTION ... WITH (create_slot = true)")
+            let option = |name| find_def_elem(&stmt.options, name).map(def_elem_bool);
+            let connect = option("connect").unwrap_or(Some(true));
+            let create_slot = option("create_slot").unwrap_or(connect);
+            (connect.is_some() && create_slot == Some(true))
+                .then_some("CREATE SUBSCRIPTION ... WITH (create_slot = true)")
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/subscriptioncmds.c#L1535
         NodeEnum::AlterSubscriptionStmt(stmt)
@@ -173,36 +183,4 @@ fn non_transactional_statement(
         }
         _ => None,
     }
-}
-
-/// Whether the catalog knows the relation as a partitioned table.
-fn is_partitioned(
-    ctx: &LinterRuleContext<BanNonTransactionalStatementInTransaction>,
-    relation: &protobuf::RangeVar,
-) -> bool {
-    let schema = Some(relation.schemaname.as_str()).filter(|schema| !schema.is_empty());
-    ctx.catalog()
-        .relation(schema, &relation.relname, ctx.session().search_path())
-        .found()
-        .is_some_and(|relation| relation.kind == RelationKind::PartitionedTable)
-}
-
-/// The value of a boolean option, like [`defGetBoolean`], if it is set. An option without a
-/// value is on.
-///
-/// [`defGetBoolean`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/define.c#L94
-fn option(options: &[protobuf::Node], name: &str) -> Option<bool> {
-    let def = options.iter().find_map(|option| match &option.node {
-        Some(NodeEnum::DefElem(def)) if def.defname == name => Some(def),
-        _ => None,
-    })?;
-    Some(match def.arg.as_ref().and_then(|arg| arg.node.as_ref()) {
-        None => true,
-        Some(NodeEnum::Integer(value)) => value.ival != 0,
-        Some(NodeEnum::Boolean(value)) => value.boolval,
-        Some(NodeEnum::String(value)) => !["false", "off", "0"]
-            .iter()
-            .any(|off| value.sval.eq_ignore_ascii_case(off)),
-        Some(_) => true,
-    })
 }
