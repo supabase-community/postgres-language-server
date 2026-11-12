@@ -3,7 +3,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, ConstrType, TypeName};
+use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, ConstrType};
 use pgls_query_ext::utils::string_value;
 
 declare_lint_rule! {
@@ -96,22 +96,9 @@ fn is_required(column: &ColumnDef, not_null_columns: &[&str]) -> bool {
             contype,
             ConstrType::ConstrDefault | ConstrType::ConstrGenerated | ConstrType::ConstrIdentity
         )
-    }) || column.type_name.as_ref().is_some_and(is_serial);
+    }) || column
+        .type_name
+        .as_ref()
+        .is_some_and(|type_name| pgls_catalog::serial_type(type_name).is_some());
     is_not_null && !has_value
-}
-
-/// `serial` types get a default from a sequence. Like Postgres, only an unqualified name without
-/// `%TYPE` is a serial type, see
-/// [`transformColumnDefinition`](https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L604).
-fn is_serial(type_name: &TypeName) -> bool {
-    let [name] = type_name.names.as_slice() else {
-        return false;
-    };
-    !type_name.pct_type
-        && string_value(name).is_some_and(|name| {
-            matches!(
-                name,
-                "smallserial" | "serial" | "bigserial" | "serial2" | "serial4" | "serial8"
-            )
-        })
 }
