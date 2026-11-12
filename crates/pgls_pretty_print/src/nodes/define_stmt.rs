@@ -53,8 +53,7 @@ fn emit_collation_definition(e: &mut EventEmitter, definition: &[Node]) {
         for def_node in definition {
             if let Some(pgls_query::NodeEnum::DefElem(_)) = &def_node.node {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(def_node), ListSeparatorSpacing::SoftOrSpace);
                 }
                 emit_node(e, def_node);
                 first = false;
@@ -189,8 +188,7 @@ fn emit_aggregate_args(e: &mut EventEmitter, args: &[Node]) {
         match arg.node.as_ref() {
             Some(NodeEnum::TypeName(type_name)) => {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(arg), ListSeparatorSpacing::SoftOrSpace);
                 }
                 super::emit_type_name(e, type_name);
                 first = false;
@@ -214,16 +212,14 @@ fn emit_aggregate_args(e: &mut EventEmitter, args: &[Node]) {
                 // A None node in aggregate args represents * (any type)
                 // e.g., CREATE AGGREGATE my_agg (*)
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, None, ListSeparatorSpacing::SoftOrSpace);
                 }
                 e.token(TokenKind::IDENT("*".to_string()));
                 first = false;
             }
             Some(_) => {
                 if !first {
-                    e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    emit_list_comma(e, Some(arg), ListSeparatorSpacing::SoftOrSpace);
                 }
                 emit_node(e, arg);
                 first = false;
