@@ -1,7 +1,6 @@
 use pgls_query::protobuf::{OnConflictAction, OnConflictClause};
 
 use super::prelude::*;
-use super::res_target::emit_set_clause_list;
 
 pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause) {
     e.line(LineType::SoftOrSpace);

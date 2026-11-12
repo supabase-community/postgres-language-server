@@ -6,7 +6,7 @@ use super::prelude::*;
 fn emit_function(e: &mut EventEmitter, node: &pgls_query::Node) {
     match node.node.as_ref() {
         Some(pgls_query::NodeEnum::TypeCast(type_cast)) => {
-            super::type_cast::emit_type_cast_call(e, type_cast)
+            super::emit_type_cast_as(e, type_cast, super::CastSpelling::Call)
         }
         _ => emit_node(e, node),
     }

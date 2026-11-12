@@ -9,9 +9,7 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
 
     if n.replace {
         e.space();
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
     }
 
     e.space();

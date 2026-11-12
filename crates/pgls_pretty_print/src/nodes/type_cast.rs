@@ -4,24 +4,31 @@ use crate::CastStyle;
 
 use super::prelude::*;
 
-pub(super) fn emit_type_cast(e: &mut EventEmitter, n: &TypeCast) {
-    e.group_start();
-
-    match e.config().cast_style {
-        CastStyle::Operator => emit_operator_cast(e, n),
-        CastStyle::Cast => emit_cast_call(e, n),
-    }
-
-    e.group_end();
+/// How a cast is spelled.
+#[derive(Clone, Copy)]
+pub(super) enum CastSpelling {
+    /// As `castStyle` asks.
+    Configured,
+    /// `CAST(expr AS type)` whatever the configured cast style. A cast in a `FROM` clause is a
+    /// table function, and only this spelling is accepted there: `FROM (1 + 2)::int` is a syntax
+    /// error.
+    Call,
 }
 
-/// Emits `CAST(expr AS type)` whatever the configured cast style.
-///
-/// A cast in a `FROM` clause is a table function, and only the `CAST(...)` spelling is accepted
-/// there: `FROM (1 + 2)::int` is a syntax error.
-pub(super) fn emit_type_cast_call(e: &mut EventEmitter, n: &TypeCast) {
+pub(super) fn emit_type_cast(e: &mut EventEmitter, n: &TypeCast) {
+    emit_type_cast_as(e, n, CastSpelling::Configured);
+}
+
+pub(super) fn emit_type_cast_as(e: &mut EventEmitter, n: &TypeCast, spelling: CastSpelling) {
     e.group_start();
-    emit_cast_call(e, n);
+
+    match (spelling, &e.config().cast_style) {
+        (CastSpelling::Configured, CastStyle::Operator) => emit_operator_cast(e, n),
+        (CastSpelling::Configured, CastStyle::Cast) | (CastSpelling::Call, _) => {
+            emit_cast_call(e, n)
+        }
+    }
+
     e.group_end();
 }
 

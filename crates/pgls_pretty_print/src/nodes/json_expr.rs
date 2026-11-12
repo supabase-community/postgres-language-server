@@ -80,7 +80,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
     }
 
     if let Some(ref returning) = n.returning {
-        super::json_value_expr::emit_json_returning_clause(e, returning, &mut clause_has_content);
+        emit_json_returning_clause(e, returning, &mut clause_has_content);
     }
 
     if let Some(ref on_empty) = n.on_empty {

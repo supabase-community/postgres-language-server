@@ -13,11 +13,7 @@ pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUser
 
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     if let Some(ref user) = n.user {
@@ -36,12 +32,7 @@ pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUser
 
     if !n.options.is_empty() {
         e.space();
-        e.token(TokenKind::OPTIONS_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, |e, n| {
-            let def_elem = assert_node_variant!(DefElem, n);
-            super::emit_options_def_elem(e, def_elem);
-        });
+        emit_options_clause(e, &n.options);
     }
 
     e.group_end();

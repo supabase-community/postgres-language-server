@@ -1,7 +1,6 @@
 use pgls_query::protobuf::{CmdType, MergeMatchKind, MergeWhenClause, OverridingKind};
 
 use super::prelude::*;
-use super::res_target::emit_set_clause_list;
 
 pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenClause) {
     e.group_start();

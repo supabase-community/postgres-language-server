@@ -37,7 +37,7 @@ pub(super) fn emit_json_constructor_expr(e: &mut EventEmitter, n: &JsonConstruct
     }
 
     if let Some(returning) = n.returning.as_ref() {
-        super::json_value_expr::emit_json_returning_clause(e, returning, &mut has_content);
+        emit_json_returning_clause(e, returning, &mut has_content);
     }
 
     if n.absent_on_null {

@@ -31,9 +31,7 @@ pub(super) fn emit_create_table_space_stmt(e: &mut EventEmitter, n: &CreateTable
     // WITH options
     if !n.options.is_empty() {
         e.space();
-        e.token(TokenKind::WITH_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.options, emit_node);
+        emit_with_options(e, &n.options);
     }
 
     e.group_end();

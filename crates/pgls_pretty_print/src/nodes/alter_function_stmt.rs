@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{AlterFunctionStmt, ObjectType};
+use pgls_query::protobuf::AlterFunctionStmt;
 
 use super::emit_object_with_args;
 use super::prelude::*;
@@ -9,11 +9,7 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
     e.token(TokenKind::ALTER_KW);
     e.space();
 
-    match n.objtype() {
-        ObjectType::ObjectProcedure => e.token(TokenKind::PROCEDURE_KW),
-        ObjectType::ObjectRoutine => e.token(TokenKind::ROUTINE_KW),
-        _ => e.token(TokenKind::FUNCTION_KW),
-    }
+    emit_keywords(e, object_type_keywords(n.objtype()).unwrap_or("FUNCTION"));
     e.space();
 
     // Function name with arguments
@@ -25,10 +21,10 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
     // Sort according to Postgres's canonical order
     if !n.actions.is_empty() {
         e.indent_start();
-        for action in super::create_function_stmt::sort_function_options(&n.actions) {
+        for action in sort_function_options(&n.actions) {
             let def_elem = assert_node_variant!(DefElem, &action);
             e.line(LineType::SoftOrSpace);
-            super::create_function_stmt::format_function_option(e, def_elem);
+            format_function_option(e, def_elem);
         }
         e.indent_end();
     }
