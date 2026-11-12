@@ -27,11 +27,19 @@ use rayon::prelude::*;
 
 /// Findings on statements Postgres accepted only because an earlier statement of the file failed.
 /// The linter assumes every statement succeeds, like a migration that stops at the first error.
-const KNOWN_ARTEFACTS: &[(&str, &str, &str)] = &[(
-    "transactions",
-    "writetest",
-    "`DROP TABLE writetest` fails in a read-only session, so the table still exists",
-)];
+const KNOWN_ARTEFACTS: &[(&str, &str, &str)] = &[
+    (
+        "transactions",
+        "writetest",
+        "`DROP TABLE writetest` fails in a read-only session, so the table still exists",
+    ),
+    (
+        "foreign_key",
+        "insert into fktable2 values (4, 5)",
+        "`CREATE TEMP TABLE fktable2 (fk int references pktable ENFORCED NOT ENFORCED)` fails, so \
+         no temporary `fktable2` shadows the one created later",
+    ),
+];
 
 /// Known false positives in the bodies of SQL functions Postgres accepted: the file, a snippet of
 /// the function, the rule, and the root cause. Remove an entry once it is fixed; an entry that
@@ -239,24 +247,18 @@ fn parse(sql: &str) -> Result<Option<(NodeEnum, bool)>, ()> {
         .map(|root| (root, conversion.has_identifier_parameters)))
 }
 
-/// The statements in the body of a `LANGUAGE sql` function, as the workspace extracts and
-/// analyses them.
+/// The statements in the body of a SQL function, as the workspace extracts and analyses them.
 fn sql_function_body(root: &NodeEnum, sql: &str, range: TextRange) -> Vec<AnalysableStatement> {
     let NodeEnum::CreateFunctionStmt(create_fn) = root else {
         return Vec::new();
     };
-    let Some(body) = pgls_query_ext::utils::sql_function_body(root, sql) else {
-        return Vec::new();
-    };
     let function = FunctionContext::from_create_function(create_fn);
-    body.statements()
-        .into_iter()
+    pgls_query_ext::function_body::sql_function_body(root, sql)
+        .iter()
         .filter_map(|statement| {
-            let text = &body.body[statement];
-            let (root, has_identifier_parameters) = parse(text).ok()??;
+            let (root, has_identifier_parameters) = parse(&statement.sql).ok()??;
             Some(
-                AnalysableStatement::new(root, statement + body.range.start() + range.start())
-                    .with_sql(text)
+                AnalysableStatement::embedded(root, range.start(), statement)
                     .with_function(function.clone())
                     .with_identifier_parameters(has_identifier_parameters),
             )

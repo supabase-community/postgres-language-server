@@ -7,7 +7,7 @@ use crate::catalog::{
     Catalog, Entry, key,
     names::{qualified_name, type_name},
 };
-use crate::lookup::{Lookup, RelationKind};
+use crate::lookup::Lookup;
 
 /// `DROP TABLE`, `DROP TYPE`, `DROP FUNCTION`, and the other `DROP` statements. Models
 /// [`RemoveRelations`] and [`RemoveObjects`].
@@ -51,10 +51,10 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                 };
                 match c.index_of(&list.items, search_path) {
                     Lookup::Found(index) => {
-                        let is_partitioned = !matches!(
-                            c.index_table(&index),
-                            Lookup::Found(table) if table.kind != RelationKind::PartitionedTable
-                        );
+                        // Unless its table is known not to be partitioned, it may be the index
+                        // of a partitioned table.
+                        let is_partitioned =
+                            !matches!(c.index_is_partitioned(&index), Lookup::Found(false));
                         c.indexes
                             .insert(key(&index.schema, &index.name), Entry::Dropped);
                         if is_partitioned {

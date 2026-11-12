@@ -76,6 +76,7 @@ impl Catalog {
     /// Applies the effects of a top-level statement, executed with the given search path.
     pub fn apply(&mut self, stmt: &NodeEnum, search_path: &[String]) {
         let c = self;
+        c.skipped_existing = false;
         if creates_implicit_indexes(stmt) {
             c.indexes_incomplete = true;
         }

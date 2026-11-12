@@ -11,12 +11,13 @@
 //! - [`CatalogView`] (`lookup.rs`): the lookups the resolver makes. [`Catalog`] implements it.
 //! - [`resolve`] (`resolve/`): name resolution of a single statement against a [`CatalogView`],
 //!   with one module per parse node in `resolve/nodes/`.
-//! - [`identifier_name`] (`identifier.rs`): the name an identifier in SQL text stands for.
+//! - [`identifier_name`] (`identifier.rs`): the name an identifier in SQL text stands for, and
+//!   [`quote_identifier`] the identifier to write for a name.
 //!
 //! The analyser walks a file statement by statement. For each statement it runs the rules,
 //! which resolve names against the current [`Catalog`] with the [`Session`]'s search path, and
-//! then applies the statement to both: `catalog.apply(stmt, session.search_path())` and
-//! `session.apply(stmt)`.
+//! then applies the statement to both: `catalog.apply(stmt, session.search_path())`, then
+//! `session.apply(stmt, &catalog)`, which resolves the names of the statement with the catalog.
 
 mod catalog;
 mod identifier;
@@ -27,7 +28,7 @@ pub mod snapshot;
 pub mod typing;
 
 pub use catalog::{Catalog, CatalogBase};
-pub use identifier::identifier_name;
+pub use identifier::{NamePosition, identifier_name, needs_quotes, quote_identifier};
 pub use lookup::{
     Candidates, CastContext, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
     FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
