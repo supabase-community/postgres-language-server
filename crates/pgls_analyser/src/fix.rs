@@ -65,6 +65,11 @@ impl<'a> StatementTokens<'a> {
         self.tokens.iter().position(|token| token.start == offset)
     }
 
+    /// The range of the token that starts at `offset`, e.g. the name at the location of a node.
+    pub fn range_at(&self, offset: i32) -> Option<TextRange> {
+        Some(self.range(self.at(offset)?))
+    }
+
     /// The closing parenthesis that matches the opening one at `open`.
     pub fn closing_paren(&self, open: usize) -> Option<usize> {
         let mut depth = 0usize;
@@ -99,6 +104,31 @@ impl<'a> StatementTokens<'a> {
             last = index;
         }
         last
+    }
+
+    /// The ranges of the comma-separated elements of the tokens from `start` up to `end`,
+    /// exclusive, e.g. the names of a column list. Commas inside parentheses don't separate
+    /// elements. `None` if an element is empty, which the parser rejects.
+    pub fn list_elements(&self, start: usize, end: usize) -> Option<Vec<TextRange>> {
+        let mut elements = Vec::new();
+        let mut element: Option<TextRange> = None;
+        let mut depth = 0usize;
+        for index in start..end {
+            match self.kind(index)? {
+                Token::Ascii44 if depth == 0 => elements.push(element.take()?),
+                kind => {
+                    match kind {
+                        Token::Ascii40 => depth += 1,
+                        Token::Ascii41 => depth = depth.saturating_sub(1),
+                        _ => {}
+                    }
+                    let range = self.range(index);
+                    element = Some(element.map_or(range, |element| element.cover(range)));
+                }
+            }
+        }
+        elements.push(element?);
+        Some(elements)
     }
 
     /// The words of the type name that starts at the token `start`, e.g. `pg_catalog.varchar`
@@ -167,6 +197,17 @@ impl<'a> StatementTokens<'a> {
         )
     }
 
+    /// A fix that inserts the keywords ` <text>` after the first of the `keywords` that is not
+    /// inside parentheses, like [`Self::insert_after`].
+    pub fn insert_after_keyword(
+        &self,
+        keywords: &[Token],
+        message: &str,
+        text: &str,
+    ) -> Option<RuleFix> {
+        Some(self.insert_after(self.find_any(keywords)?, message, text))
+    }
+
     /// A fix that replaces the token at `index` with `text`, in the case of the token, e.g.
     /// `TIMESTAMP` with `TIMESTAMPTZ`.
     pub fn replace(&self, index: usize, message: &str, text: &str) -> RuleFix {
@@ -221,18 +262,20 @@ pub(crate) fn in_case_of(text: &str, like: &str) -> String {
     }
 }
 
-/// A fix that inserts `CONCURRENTLY` after the token at `index`, for a statement that Postgres
-/// can't run in a transaction block. There is none in a transaction block. If we only assume that
-/// the statement runs outside of one, because we don't know the migration tool, the fix is unsafe.
+/// A fix that inserts `CONCURRENTLY` after the first of the `keywords`, for a statement that
+/// Postgres can't run in a transaction block. There is none in a transaction block. If we only
+/// assume that the statement runs outside of one, because we don't know the migration tool, the
+/// fix is unsafe.
 pub(crate) fn add_concurrently<R: LinterRule + 'static>(
     ctx: &LinterRuleContext<R>,
-    tokens: &StatementTokens,
-    index: usize,
+    keywords: &[Token],
 ) -> Option<RuleFix> {
     if ctx.in_transaction() {
         return None;
     }
-    let fix = tokens.insert_after(index, "Add CONCURRENTLY", "CONCURRENTLY");
+    let fix = ctx
+        .tokens()?
+        .insert_after_keyword(keywords, "Add CONCURRENTLY", "CONCURRENTLY")?;
     Some(if ctx.knows_transaction() {
         fix
     } else {

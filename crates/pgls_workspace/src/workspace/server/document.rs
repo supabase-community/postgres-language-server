@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::OffsetMap};
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
+use pgls_walk::{AnalysableStatement, UnparsableStatement};
 use rustc_hash::FxHashSet;
 
 #[cfg(test)]
@@ -13,19 +13,14 @@ use pgls_migrations::{MigrationTool, Preprocessed, Script, Unit};
 
 use crate::workspace::ProjectKey;
 
-use super::{
-    pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
-    statement_identifier::StatementId,
-    tree_sitter::TreeSitterStore,
-};
+use super::{document_cache::DocumentCache, statement_identifier::StatementId};
 
 pub struct Document {
     content: String,
     version: i32,
     ranges: Vec<TextRange>,
     diagnostics: Vec<SDiagnostic>,
-    ast_db: PgQueryStore,
-    cst_db: TreeSitterStore,
+    cache: DocumentCache,
     suppressions: Suppressions,
     /// The project whose settings apply to the document.
     project_key: ProjectKey,
@@ -50,8 +45,6 @@ impl Document {
         content: String,
         version: i32,
     ) -> Document {
-        let cst_db = TreeSitterStore::new();
-        let ast_db = PgQueryStore::new();
         let migration_script = migration_tool.read(&content);
         let (ranges, diagnostics) =
             split_with_diagnostics(text(&content, migration_script.preprocessed.as_ref()), None);
@@ -62,8 +55,7 @@ impl Document {
             diagnostics,
             content,
             version,
-            ast_db,
-            cst_db,
+            cache: DocumentCache::new(),
             suppressions,
             project_key,
             migration_tool,
@@ -87,6 +79,9 @@ impl Document {
         if resplit {
             self.split();
         }
+        // The analysis depends on the sections. It may have been cached for the new settings
+        // before they reached the document.
+        self.cache.content_changed();
     }
 
     /// Splits the text into statements again, and keeps what is cached for the statements that
@@ -104,8 +99,13 @@ impl Document {
         let statements: FxHashSet<&str> = self.ranges.iter().map(|range| &text[*range]).collect();
         let is_present =
             |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
-        self.ast_db.retain(is_present);
-        self.cst_db.retain(is_present);
+        self.cache.retain_statements(is_present);
+        self.cache.content_changed();
+    }
+
+    /// What is cached for the document.
+    pub(crate) fn cache(&self) -> &DocumentCache {
+        &self.cache
     }
 
     pub(crate) fn project_key(&self) -> ProjectKey {
@@ -308,7 +308,7 @@ where
 
             // The statements of a SQL function body follow the function. They are pushed in
             // reverse, so that they are popped in order.
-            let embedded = self.parser.ast_db.get_or_cache_embedded(&root_id);
+            let embedded = self.parser.cache.embedded(&root_id);
             self.pending_embedded
                 .extend(embedded.iter().rev().map(|embedded| DocumentStatement {
                     id: root_id.create_child(&embedded.sql),
@@ -336,10 +336,15 @@ impl<'a> StatementMapper<'a> for DefaultMapper {
 
 pub struct ExecuteStatementMapper;
 impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
-    type Output = (StatementId, TextRange, String, Option<pgls_query::NodeEnum>);
+    type Output = (
+        StatementId,
+        TextRange,
+        String,
+        Option<Arc<pgls_query::NodeEnum>>,
+    );
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.ast_db.get_or_cache_ast(&stmt.id);
+        let ast_result = doc.cache.parse(&stmt.id);
         let ast_option = match &*ast_result {
             Ok(node) => Some(node.clone()),
             Err(_) => None,
@@ -356,11 +361,11 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
         StatementId,
         TextRange,
         String,
-        Result<pgls_query::NodeEnum, pgls_query_ext::diagnostics::SyntaxDiagnostic>,
+        Result<Arc<pgls_query::NodeEnum>, pgls_query_ext::diagnostics::SyntaxDiagnostic>,
     );
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.ast_db.get_or_cache_ast(&stmt.id);
+        let ast_result = doc.cache.parse(&stmt.id);
         let result = match &*ast_result {
             Ok(node) => Ok(node.clone()),
             Err(diag) => Err(diag.clone().span(stmt.range)),
@@ -376,19 +381,19 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (
         StatementId,
         TextRange,
-        Option<pgls_query::NodeEnum>,
+        Option<Arc<pgls_query::NodeEnum>>,
         Arc<tree_sitter::Tree>,
     );
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.ast_db.get_or_cache_ast(&stmt.id);
+        let ast_result = doc.cache.parse(&stmt.id);
 
         let ast_option = match &*ast_result {
             Ok(node) => Some(node.clone()),
             Err(_) => None,
         };
 
-        let cst_result = doc.cst_db.get_or_cache_tree(&stmt.id);
+        let cst_result = doc.cache.tree(&stmt.id);
 
         (stmt.id, stmt.range, ast_option, cst_result)
     }
@@ -406,11 +411,11 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
         let DocumentStatement { id, range, offsets } = stmt;
-        let maybe_node = doc.ast_db.get_or_cache_ast(&id);
+        let maybe_node = doc.cache.parse(&id);
 
         let (ast_option, diagnostics) = match &*maybe_node {
             Ok(node) => {
-                let plpgsql_result = doc.ast_db.get_or_cache_plpgsql_parse(&id);
+                let plpgsql_result = doc.cache.plpgsql_parse(&id);
                 if let Some(Err(diag)) = plpgsql_result {
                     // offset the pgpsql diagnostic from the parent statement start
                     let span = diag.location().span.map(|sp| sp + range.start());
@@ -429,8 +434,10 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
         // Statements in the body of a SQL function can reference its parameters.
         let function = id.parent().and_then(|root| {
-            let parent = doc.ast_db.get_or_cache_ast(&root);
-            let Ok(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) = parent.as_ref() else {
+            let parent = doc.cache.parse(&root);
+            let Ok(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) =
+                parent.as_ref().as_deref()
+            else {
                 return None;
             };
             pgls_catalog::resolve::FunctionContext::from_create_function(create_fn)
@@ -444,7 +451,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
                 }
                 .with_function(function)
                 .with_identifier_parameters(
-                    convert_to_positional_params_with_metadata(id.content())
+                    pgls_lexer::convert_to_positional_params_with_metadata(id.content())
                         .has_identifier_parameters,
                 )
                 .with_unknown_values(doc.touches_unknown_value(range))
@@ -459,7 +466,7 @@ impl<'a> StatementMapper<'a> for WithCSTMapper {
     type Output = (DocumentStatement, Arc<tree_sitter::Tree>);
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let tree = doc.cst_db.get_or_cache_tree(&stmt.id);
+        let tree = doc.cache.tree(&stmt.id);
         (stmt, tree)
     }
 }
@@ -925,21 +932,15 @@ $$ LANGUAGE plpgsql;";
         let mut d = Document::new("select 1;\nselect 2;".to_string(), 1);
         let first = StatementId::new("select 1;");
         let second = StatementId::new("select 2;");
-        let first_ast = d.ast_db.get_or_cache_ast(&first);
-        let second_ast = d.ast_db.get_or_cache_ast(&second);
-        let first_tree = d.cst_db.get_or_cache_tree(&first);
+        let first_ast = d.cache.parse(&first);
+        let second_ast = d.cache.parse(&second);
+        let first_tree = d.cache.tree(&first);
 
         d.update_content("select 1;\nselect 3;".to_string(), 2);
 
-        assert!(Arc::ptr_eq(&first_ast, &d.ast_db.get_or_cache_ast(&first)));
-        assert!(Arc::ptr_eq(
-            &first_tree,
-            &d.cst_db.get_or_cache_tree(&first)
-        ));
-        assert!(!Arc::ptr_eq(
-            &second_ast,
-            &d.ast_db.get_or_cache_ast(&second)
-        ));
+        assert!(Arc::ptr_eq(&first_ast, &d.cache.parse(&first)));
+        assert!(Arc::ptr_eq(&first_tree, &d.cache.tree(&first)));
+        assert!(!Arc::ptr_eq(&second_ast, &d.cache.parse(&second)));
     }
 
     #[test]

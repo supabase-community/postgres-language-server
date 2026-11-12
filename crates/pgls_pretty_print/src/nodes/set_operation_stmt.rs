@@ -1,14 +1,13 @@
 use pgls_query::protobuf::{SetOperation, SetOperationStmt};
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
+use super::prelude::*;
 
 pub(super) fn emit_set_operation_stmt(e: &mut EventEmitter, n: &SetOperationStmt) {
-    e.group_start(GroupKind::SetOperationStmt);
+    e.group_start();
 
     // Emit left operand (SELECT or another set operation)
     if let Some(ref larg) = n.larg {
-        super::emit_node(larg, e);
+        emit_node(e, larg);
     }
 
     // Emit set operation keyword (UNION, INTERSECT, EXCEPT)
@@ -36,15 +35,14 @@ pub(super) fn emit_set_operation_stmt(e: &mut EventEmitter, n: &SetOperationStmt
                 e.token(TokenKind::ALL_KW);
             }
         }
-        SetOperation::SetopNone | SetOperation::Undefined => {
-            unreachable!("unexpected SetOperation: {:?}", n.op());
-        }
+        // Not a set operation: there is no keyword to write, and the AST check refuses the output.
+        SetOperation::SetopNone | SetOperation::Undefined => {}
     }
 
     // Emit right operand
     if let Some(ref rarg) = n.rarg {
         e.line(LineType::Hard);
-        super::emit_node(rarg, e);
+        emit_node(e, rarg);
     }
 
     e.group_end();

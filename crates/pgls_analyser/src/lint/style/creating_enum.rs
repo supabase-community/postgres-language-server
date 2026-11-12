@@ -1,3 +1,4 @@
+use crate::utils::dotted_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -49,7 +50,7 @@ impl LinterRule for CreatingEnum {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::CreateEnumStmt(stmt) = &ctx.stmt() {
-            let type_name = get_type_name(&stmt.type_name);
+            let type_name = dotted_name(&stmt.type_name);
 
             diagnostics.push(
                 LinterDiagnostic::new(
@@ -66,18 +67,4 @@ impl LinterRule for CreatingEnum {
 
         diagnostics
     }
-}
-
-fn get_type_name(type_name_nodes: &[pgls_query::protobuf::Node]) -> String {
-    type_name_nodes
-        .iter()
-        .filter_map(|n| {
-            if let Some(pgls_query::NodeEnum::String(s)) = &n.node {
-                Some(s.sval.as_str())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(".")
 }

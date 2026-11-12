@@ -15,6 +15,10 @@ column exist in the referenced table.
 Instead, add the constraint as NOT VALID in one transaction, then VALIDATE it in another transaction.
 This approach only takes a SHARE UPDATE EXCLUSIVE lock when validating, allowing concurrent writes.
 
+A `NOT ENFORCED` foreign key (Postgres 18) isn't checked, so adding one doesn't scan the table.
+Making it `ENFORCED` later with `ALTER CONSTRAINT` checks all rows while holding an ACCESS EXCLUSIVE
+lock, and can't be split into NOT VALID and VALIDATE.
+
 ## Examples
 
 ### Invalid
@@ -55,6 +59,26 @@ code-block.sql:1:1 lint/addingForeignKeyConstraint ━━━━━━━━━�
   i Using REFERENCES when adding a column will block writes while verifying the constraint.
   
   i Add the column without the constraint first, then add the constraint as NOT VALID and VALIDATE it separately.
+  
+
+```
+
+```sql
+ALTER TABLE "email" ALTER CONSTRAINT "fk_user" ENFORCED;
+```
+
+```sh
+code-block.sql:1:1 lint/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Enforcing foreign key constraint fk_user checks all rows of the table.
+  
+  > 1 │ ALTER TABLE "email" ALTER CONSTRAINT "fk_user" ENFORCED;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+  i This holds an ACCESS EXCLUSIVE lock on the table while Postgres verifies the constraint.
+  
+  i Drop the constraint and add it again as NOT VALID, then VALIDATE it in a separate transaction.
   
 
 ```
