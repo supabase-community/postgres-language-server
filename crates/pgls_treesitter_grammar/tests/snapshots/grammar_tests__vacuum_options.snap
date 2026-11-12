@@ -1,0 +1,43 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+vacuum (full, freeze false, index_cleanup auto, parallel 4, buffer_usage_limit '256kB') only users *, posts (id);
+-----------------------
+program [0..113] 'vacuum (full, freeze false, index_cleanup auto, parallel 4, buffer_usage_limit '256kB') only users *, posts (id);'
+  statement [0..112] 'vacuum (full, freeze false, index_cleanup auto, parallel 4, buffer_usage_limit '256kB') only users *, posts (id)'
+    vacuum_statement [0..112] 'vacuum (full, freeze false, index_cleanup auto, parallel 4, buffer_usage_limit '256kB') only users *, posts (id)'
+      keyword_vacuum [0..6] 'vacuum' (@end)
+      vacuum_options [7..87] '(full, freeze false, index_cleanup auto, parallel 4, buffer_usage_limit '256kB')'
+        ( [7..8] '('
+        vacuum_option [8..12] 'full'
+          keyword_full [8..12] 'full' (@end)
+        , [12..13] ','
+        vacuum_option [14..26] 'freeze false'
+          keyword_freeze [14..20] 'freeze' (@end)
+          keyword_false [21..26] 'false'
+        , [26..27] ','
+        vacuum_option [28..46] 'index_cleanup auto'
+          keyword_index_cleanup [28..41] 'index_cleanup'
+          keyword_auto [42..46] 'auto' (@end)
+        , [46..47] ','
+        vacuum_option [48..58] 'parallel 4'
+          keyword_parallel [48..56] 'parallel'
+        , [58..59] ','
+        vacuum_option [60..86] 'buffer_usage_limit '256kB''
+          keyword_buffer_usage_limit [60..78] 'buffer_usage_limit'
+        ) [86..87] ')' (@end)
+      table_and_columns [88..100] 'only users *'
+        keyword_only [88..92] 'only'
+        table_reference [93..98] 'users' (@end)
+          any_identifier [93..98] 'users' (@table_reference_1of1)
+        * [99..100] '*'
+      , [100..101] ','
+      table_and_columns [102..112] 'posts (id)'
+        table_reference [102..107] 'posts' (@end)
+          any_identifier [102..107] 'posts' (@table_reference_1of1)
+        table_columns [108..112] '(id)'
+          ( [108..109] '('
+          column_identifier [109..111] 'id'
+          ) [111..112] ')' (@end)
+  ; [112..113] ';'

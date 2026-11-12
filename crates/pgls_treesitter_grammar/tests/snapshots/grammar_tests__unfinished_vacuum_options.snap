@@ -1,0 +1,14 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+vacuum (verbose
+-----------------------
+program [0..15] 'vacuum (verbose'
+  statement [0..15] 'vacuum (verbose'
+    vacuum_statement [0..15] 'vacuum (verbose'
+      keyword_vacuum [0..6] 'vacuum'
+      vacuum_options [7..15] '(verbose'
+        ( [7..8] '('
+        vacuum_option [8..15] 'verbose'
+          keyword_verbose [8..15] 'verbose' (@end)

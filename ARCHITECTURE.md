@@ -81,6 +81,10 @@ SQL pretty-printer / formatter: normalizes the AST and renders it back to format
 
 The linting framework. `pgls_analyse` provides the rule registry, categories, filters, and metadata; `pgls_analyser` hosts the concrete lint rules and the linter runtime.
 
+##### `crates/pgls_walk`
+
+The walk over the statements of a file, like the database runs them: the catalog and the session follow each statement, migration sections run on their own, and statements that don't parse or use placeholder names taint the catalog. Lint and the workspace's editor features share it, so that they see the same catalog and session at each statement.
+
 ##### `crates/pgls_pglinter`
 
 Integration with the `pglinter` Postgres extension for database-level linting.
@@ -109,13 +113,14 @@ Autocompletion and hover providers. They operate on the catalog as of the statem
 
 ##### `crates/pgls_inlay_hints`, `crates/pgls_semantic_tokens`
 
-Inlay hints and semantic tokens of a single statement, built from the references of the name resolver. The workspace walks the file like the analyser does, so that each statement sees the objects created earlier in the file.
+Inlay hints and semantic tokens of a single statement, built from the references of the name resolver. The workspace walks the file with `pgls_walk`, like lint, so that each statement sees the objects created earlier in the file.
 
 #### Diagnostics and utilities
 
 - `crates/pgls_diagnostics` (+ `_categories`, `_macros`) — error and warning reporting model.
 - `crates/pgls_console` / `pgls_markup` — terminal output and markup.
 - `crates/pgls_text_edit`, `pgls_text_size` — text manipulation and byte/char range types.
+- `crates/pgls_line_index` — converts offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back, for the language server and the WASM bindings, and the character positions that Postgres reports to offsets. Positions are converted with it, not by hand.
 - `crates/pgls_matcher` — Unix shell style pattern matching (glob).
 - `crates/pgls_test_utils`, `pgls_test_macros` — shared test helpers.
 - `crates/pgls_wasm` — WASM bindings for browser/editor integrations.

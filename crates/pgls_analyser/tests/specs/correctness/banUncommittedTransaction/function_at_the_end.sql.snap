@@ -1,0 +1,33 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The COMMIT goes after the function, not into its body.
+-- expect_lint/banUncommittedTransaction
+begin;
+create function one() returns int language sql as $$ select 1 $$;
+
+```
+
+# Diagnostics
+lint/banUncommittedTransaction  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Transaction is never committed or rolled back.
+  
+  i Postgres rolls back the open transaction when the session ends, so its changes are not applied.
+  
+  i Add a COMMIT or ROLLBACK statement to complete the transaction.
+  
+
+
+## Fix (unsafe): Add COMMIT at the end
+```
+-- The COMMIT goes after the function, not into its body.
+-- expect_lint/banUncommittedTransaction
+begin;
+create function one() returns int language sql as $$ select 1 $$;
+commit;
+
+```

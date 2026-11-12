@@ -6,7 +6,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 
-const PORT = 3000;
+// Set by playwright.config.ts.
+const PORT = Number(process.env.PGLS_E2E_PORT ?? 3000);
 const ROOT = join(import.meta.dir, "..");
 
 const MIME_TYPES: Record<string, string> = {

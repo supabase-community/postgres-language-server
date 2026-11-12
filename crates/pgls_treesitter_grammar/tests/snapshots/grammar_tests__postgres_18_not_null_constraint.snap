@@ -1,0 +1,51 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+create table t (a int not null no inherit, b int, constraint t_b_not_null not null b no inherit, not null a);
+-----------------------
+program [0..109] 'create table t (a int not null no inherit, b int, constraint t_b_not_null not null b no inherit, not null a);'
+  statement [0..108] 'create table t (a int not null no inherit, b int, constraint t_b_not_null not null b no inherit, not null a)'
+    create_table [0..108] 'create table t (a int not null no inherit, b int, constraint t_b_not_null not null b no inherit, not null a)'
+      keyword_create [0..6] 'create'
+      keyword_table [7..12] 'table'
+      object_reference [13..14] 't'
+        any_identifier [13..14] 't' (@object_reference_1of1)
+      column_definitions [15..108] '(a int not null no inherit, b int, constraint t_b_not_null not null b no inherit, not null a)' (@end)
+        ( [15..16] '('
+        column_definition [16..41] 'a int not null no inherit'
+          any_identifier [16..17] 'a'
+          type [18..21] 'int' (@end)
+            int [18..21] 'int'
+              keyword_int [18..21] 'int'
+          column_constraint [22..30] 'not null'
+            keyword_not [22..25] 'not'
+            keyword_null [26..30] 'null' (@end)
+          column_constraint [31..41] 'no inherit'
+            keyword_no [31..33] 'no'
+            keyword_inherit [34..41] 'inherit' (@end)
+        , [41..42] ','
+        column_definition [43..48] 'b int'
+          any_identifier [43..44] 'b'
+          type [45..48] 'int' (@end)
+            int [45..48] 'int'
+              keyword_int [45..48] 'int'
+        , [48..49] ','
+        constraint [50..95] 'constraint t_b_not_null not null b no inherit'
+          constraint_name [50..73] 'constraint t_b_not_null'
+            keyword_constraint [50..60] 'constraint'
+            any_identifier [61..73] 't_b_not_null' (@end)
+          keyword_not [74..77] 'not'
+          keyword_null [78..82] 'null'
+          column_identifier [83..84] 'b' (@end)
+          constraint_attributes [85..95] 'no inherit'
+            constraint_attribute [85..95] 'no inherit' (@end)
+              keyword_no [85..87] 'no'
+              keyword_inherit [88..95] 'inherit' (@end)
+        , [95..96] ','
+        constraint [97..107] 'not null a'
+          keyword_not [97..100] 'not'
+          keyword_null [101..105] 'null'
+          column_identifier [106..107] 'a' (@end)
+        ) [107..108] ')' (@end)
+  ; [108..109] ';'

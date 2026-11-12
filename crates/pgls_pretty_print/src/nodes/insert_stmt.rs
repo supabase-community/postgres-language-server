@@ -1,22 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::{InsertStmt, OverridingKind};
 
-use super::node_list::{emit_comma_separated_list, emit_comma_separated_list_with_layout_break};
-use super::res_target::emit_column_name;
+use super::prelude::*;
 
 pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
-    emit_insert_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_insert_stmt_no_semicolon(e: &mut EventEmitter, n: &InsertStmt) {
-    emit_insert_stmt_impl(e, n, false);
-}
-
-fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: bool) {
-    e.group_start(GroupKind::InsertStmt);
+    e.group_start();
 
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);
@@ -38,16 +25,16 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
         e.space();
         // The column list has its own group so it can fit on one line in fit layout. In expanded
         // layout the separator breaks below are hard, which makes the group open up on purpose.
-        e.group_start(GroupKind::InsertStmt);
+        e.group_start();
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
 
-        emit_comma_separated_list_with_layout_break(e, &n.cols, |node, e| {
+        emit_comma_separated_list_with_layout_break(e, &n.cols, |e, node| {
             if let Some(pgls_query::NodeEnum::ResTarget(res_target)) = node.node.as_ref() {
                 emit_column_name(e, res_target);
             } else {
-                super::emit_node(node, e);
+                emit_node(e, node);
             }
         });
 
@@ -79,13 +66,8 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
 
     // Emit VALUES or SELECT or DEFAULT VALUES
     if let Some(ref select_stmt) = n.select_stmt {
-        super::emit_layout_break(e);
-        // Use no-semicolon variant since INSERT will emit its own semicolon
-        if let Some(pgls_query::NodeEnum::SelectStmt(stmt)) = select_stmt.node.as_ref() {
-            super::emit_select_stmt_no_semicolon(e, stmt);
-        } else {
-            super::emit_node(select_stmt, e);
-        }
+        emit_layout_break(e);
+        emit_node(e, select_stmt);
     } else {
         // No select_stmt means DEFAULT VALUES
         e.line(LineType::SoftOrSpace);
@@ -96,18 +78,16 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
 
     // Emit ON CONFLICT clause if present
     if let Some(ref on_conflict) = n.on_conflict_clause {
+        emit_comments_before_clause(e, on_conflict.location);
         super::emit_on_conflict_clause(e, on_conflict);
     }
 
-    if !n.returning_list.is_empty() {
-        super::emit_layout_break(e);
-        e.token(TokenKind::RETURNING_KW);
-        e.space();
-        emit_comma_separated_list(e, &n.returning_list, super::emit_node);
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
+    if let Some(returning) = &n.returning_clause {
+        if let Some(first) = returning.options.first().or(returning.exprs.first()) {
+            emit_comments_before_keyword(e, "returning", first);
+        }
+        emit_layout_break(e);
+        super::emit_returning_clause(e, returning);
     }
 
     e.group_end();
