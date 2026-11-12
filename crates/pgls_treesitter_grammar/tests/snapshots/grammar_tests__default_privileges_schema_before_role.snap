@@ -1,0 +1,32 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+alter default privileges in schema public for role admin grant select on tables to bob;
+-----------------------
+program [0..87] 'alter default privileges in schema public for role admin grant select on tables to bob;'
+  statement [0..86] 'alter default privileges in schema public for role admin grant select on tables to bob'
+    alter_default_privileges [0..86] 'alter default privileges in schema public for role admin grant select on tables to bob'
+      keyword_alter [0..5] 'alter'
+      keyword_default [6..13] 'default'
+      keyword_privileges [14..24] 'privileges'
+      default_privileges_in_schema [25..41] 'in schema public'
+        keyword_in [25..27] 'in'
+        keyword_schema [28..34] 'schema'
+        schema_identifier [35..41] 'public' (@end)
+      default_privileges_for_role [42..56] 'for role admin'
+        keyword_for [42..45] 'for'
+        keyword_role [46..50] 'role'
+        role_specification [51..56] 'admin' (@end)
+          role_identifier [51..56] 'admin' (@end)
+      default_privileges_grant [57..86] 'grant select on tables to bob' (@end)
+        keyword_grant [57..62] 'grant'
+        grantable [63..69] 'select'
+          keyword_select [63..69] 'select' (@end)
+        default_privileges_target [70..79] 'on tables'
+          keyword_on [70..72] 'on'
+          keyword_tables [73..79] 'tables' (@end)
+        keyword_to [80..82] 'to'
+        role_specification [83..86] 'bob' (@end)
+          role_identifier [83..86] 'bob' (@end)
+  ; [86..87] ';'

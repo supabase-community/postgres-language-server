@@ -1,0 +1,28 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+delete from users * as u where u.id = 1;
+-----------------------
+program [0..40] 'delete from users * as u where u.id = 1;'
+  statement [0..39] 'delete from users * as u where u.id = 1'
+    delete_statement [0..39] 'delete from users * as u where u.id = 1'
+      keyword_delete [0..6] 'delete'
+      from [7..39] 'from users * as u where u.id = 1'
+        keyword_from [7..11] 'from'
+        table_reference [12..17] 'users' (@end)
+          any_identifier [12..17] 'users' (@table_reference_1of1)
+        * [18..19] '*'
+        alias [20..24] 'as u'
+          keyword_as [20..22] 'as'
+          any_identifier [23..24] 'u' (@end)
+        where [25..39] 'where u.id = 1'
+          keyword_where [25..30] 'where'
+          binary_expression [31..39] 'u.id = 1' (@end)
+            object_reference [31..35] 'u.id' (@binary_expr_left)
+              any_identifier [31..32] 'u' (@object_reference_1of2)
+              . [32..33] '.'
+              any_identifier [33..35] 'id' (@object_reference_2of2)
+            = [36..37] '=' (@binary_expr_operator)
+            literal [38..39] '1' (@end)
+  ; [39..40] ';'
