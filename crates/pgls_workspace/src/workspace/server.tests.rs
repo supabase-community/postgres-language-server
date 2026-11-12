@@ -3003,6 +3003,7 @@ fn code_actions_reuse_the_analysis() {
             gitignore_matches: vec![],
             vcs_base_path: None,
             workspace_directory: None,
+            replace: false,
         })
         .expect("Unable to update settings");
     assert!(lint_actions().is_empty());

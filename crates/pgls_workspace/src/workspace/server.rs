@@ -28,21 +28,14 @@ use document::{Document, ExecuteStatementMapper};
 use document_cache::CacheKey;
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
-use pgls_analyse::{AnalysisFilter, RuleCategories, RuleCategoriesBuilder, RuleFilter};
-#[cfg(feature = "db")]
-use pgls_analyser::StatementAnalysis;
-use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, FileKind, LinterDiagnostic,
-    LinterOptions,
-};
+use pgls_analyse::{AnalysisFilter, RuleCategories};
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session};
 #[cfg(feature = "db")]
 use pgls_lexer::convert_to_positional_params_with_metadata;
-use pgls_walk::{AnalysableStatement, Direction, MigrationSection, WalkParams};
+use pgls_walk::{AnalysableStatement, MigrationSection, WalkParams};
 
 use pgls_catalog::Snapshot;
-use pgls_configuration::RuleSelector;
 use pgls_configuration::inlay_hints::ParameterNameHints;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
@@ -988,7 +981,7 @@ impl Workspace for WorkspaceServer {
                 analysis
                     .lint_diagnostics()
                     .iter()
-                    .filter(|diagnostic| !suppressions.is_suppressed(diagnostic)),
+                    .filter(|diagnostic| !suppressions.is_suppressed(*diagnostic)),
                 parser,
                 params.cursor_position,
             ));
