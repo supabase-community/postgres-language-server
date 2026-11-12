@@ -9,9 +9,9 @@
 
 use std::{collections::BTreeMap, sync::Arc};
 
-use pgls_analyser::{AnalysableStatement, Direction, MigrationSection, WalkState};
 use pgls_catalog::{Snapshot, resolve::Reference};
 use pgls_text_size::{TextRange, TextSize};
+use pgls_walk::{AnalysableStatement, Direction, MigrationSection, WalkState};
 
 /// The states a document keeps to resume walks from. Each holds a copy of the catalog's maps of
 /// the objects that the file changed before it (the objects themselves are shared), so they are

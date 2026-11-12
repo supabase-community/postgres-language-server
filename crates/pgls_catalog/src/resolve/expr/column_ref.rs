@@ -1,4 +1,11 @@
-use super::*;
+use pgls_query_ext::utils::string_values;
+
+use crate::resolve::{
+    resolver::Resolver,
+    scope::{find_column_type, find_item},
+    utils::function_param_type,
+};
+use crate::typing::Type;
 
 /// The type of a column, a whole-row reference, or a SQL function parameter. Port of the
 /// lookups in [`transformColumnRef`] (through [`colNameToVar`] and [`scanNSItemForColumn`]).

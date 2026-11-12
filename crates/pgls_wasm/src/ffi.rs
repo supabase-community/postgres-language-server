@@ -130,6 +130,27 @@ pub extern "C" fn pgls_clear_schema() {
     with_workspace(|ws| ws.clear_schema());
 }
 
+/// Set the configuration from a JSON string in the shape of `postgres-language-server.jsonc`.
+/// It replaces the previous configuration; an empty string goes back to the defaults.
+/// Returns NULL on success, or an error message on failure.
+/// The returned string (if not NULL) must be freed with `pgls_free_string`.
+///
+/// # Safety
+/// The json pointer must be valid and point to a null-terminated UTF-8 string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pgls_configure(json: *const c_char) -> *mut c_char {
+    // SAFETY: Caller guarantees json is valid
+    let json_str = match unsafe { c_str_to_str(json) } {
+        Some(s) => s,
+        None => return str_to_c_string("ERROR: Invalid JSON string pointer"),
+    };
+
+    with_workspace(|ws| match ws.configure(json_str) {
+        Ok(()) => std::ptr::null_mut(),
+        Err(e) => str_to_c_string(&format!("ERROR: {e}")),
+    })
+}
+
 /// Insert or update a file in the workspace.
 /// Returns NULL on success, or an error message on failure.
 ///
@@ -378,6 +399,9 @@ static LSP_HANDLER: Mutex<Option<LspHandler>> = Mutex::new(None);
 /// ```json
 /// {"jsonrpc":"2.0","method":"pgls/setSchema","params":{"schema":"..."}}
 /// ```
+///
+/// The configuration comes as the `initializationOptions` of `initialize` or with
+/// `workspace/didChangeConfiguration`.
 ///
 /// Returns a JSON array of outgoing messages (response + notifications).
 /// The returned string must be freed with `pgls_free_string`.

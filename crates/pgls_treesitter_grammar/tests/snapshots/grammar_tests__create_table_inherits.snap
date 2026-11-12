@@ -1,0 +1,31 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+create table t (a int) inherits (p, q);
+-----------------------
+program [0..39] 'create table t (a int) inherits (p, q);'
+  statement [0..38] 'create table t (a int) inherits (p, q)'
+    create_table [0..38] 'create table t (a int) inherits (p, q)'
+      keyword_create [0..6] 'create'
+      keyword_table [7..12] 'table'
+      object_reference [13..14] 't'
+        any_identifier [13..14] 't' (@object_reference_1of1)
+      column_definitions [15..22] '(a int)' (@end)
+        ( [15..16] '('
+        column_definition [16..21] 'a int'
+          any_identifier [16..17] 'a'
+          type [18..21] 'int' (@end)
+            int [18..21] 'int'
+              keyword_int [18..21] 'int'
+        ) [21..22] ')' (@end)
+      table_inherits [23..38] 'inherits (p, q)'
+        keyword_inherits [23..31] 'inherits'
+        ( [32..33] '('
+        table_reference [33..34] 'p'
+          any_identifier [33..34] 'p' (@table_reference_1of1)
+        , [34..35] ','
+        table_reference [36..37] 'q'
+          any_identifier [36..37] 'q' (@table_reference_1of1)
+        ) [37..38] ')' (@end)
+  ; [38..39] ';'

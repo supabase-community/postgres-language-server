@@ -68,7 +68,21 @@ impl HoveredNode {
                     "binary_expression",
                     "object_reference",
                     "any_identifier",
-                ]) || ctx.history_ends_with(&["term", "object_reference", "any_identifier"]) =>
+                ]) || ctx.history_ends_with(&["term", "object_reference", "any_identifier"])
+                    // The value of `SET col = t.col`, and of `MERGE ... INSERT VALUES (t.col)`,
+                    // but not its qualifier `t`, which may be the name of a column too.
+                    || ((ctx.history_ends_with(&["assignment", "object_reference", "any_identifier"])
+                        || ctx.history_ends_with(&[
+                            "merge_insert",
+                            "insert_values",
+                            "object_reference",
+                            "any_identifier",
+                        ]))
+                        && ctx.node_under_cursor_is_within_field(&[
+                            "object_reference_1of1",
+                            "object_reference_2of2",
+                            "object_reference_3of3",
+                        ])) =>
             {
                 Some(HoveredNode::Column((
                     ctx.head_qualifier_sanitized(),

@@ -1,4 +1,15 @@
-use super::*;
+use pgls_query::{NodeEnum, protobuf};
+use pgls_query_ext::utils::{QualifiedName, qualified_name, string_values};
+
+use super::infer_expr;
+use crate::resolve::{
+    resolver::Resolver,
+    utils::{check_operator, common_types, named, record_enum_operands},
+};
+use crate::{
+    OperatorKind,
+    typing::{Selection, Type, select_common_type, select_operator},
+};
 
 /// Operators, `IS DISTINCT FROM`, `= ANY`, `IN`, `BETWEEN`, `LIKE` and `NULLIF`, which
 /// [`transformExprRecurse`] dispatches on the kind of the `A_Expr`.
@@ -60,7 +71,11 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                     return named(r, "bool");
                 };
                 let op = string_values(&n.name)?.last()?.clone();
-                check_operator(r, &op, Some(&left), &element, n.location);
+                // An unknown literal array, like `'{happy,sad}'`, becomes an array of the type
+                // that the operator resolves its element to (`make_scalar_array_op`).
+                if let Some(operator) = check_operator(r, &op, Some(&left), &element, n.location) {
+                    record_enum_operands(r, &operator, (lexpr, &left), (rexpr, &element));
+                }
                 return named(r, "bool");
             }
             // Port of `transformAExprIn`: try a common scalar type, then compare items one by one:
@@ -251,12 +266,7 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
             }
             _ => {}
         }
-        let names = string_values(&n.name)?;
-        let (schema, name) = match names.as_slice() {
-            [name] => (None, name.as_str()),
-            [schema, name] => (Some(schema.as_str()), name.as_str()),
-            _ => return None,
-        };
+        let QualifiedName { schema, name, .. } = qualified_name(&n.name)?;
         let right = infer_expr(r, n.rexpr.as_deref()?.node.as_ref()?)?;
         let (kind, left) = match n.lexpr.as_deref().and_then(|x| x.node.as_ref()) {
             Some(left) => (OperatorKind::Infix, Some(infer_expr(r, left)?)),

@@ -32,7 +32,7 @@ COMMIT;
 ```sh
 code-block.sql:2:1 lint/banConcurrentIndexCreationInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × CREATE INDEX CONCURRENTLY cannot be used inside a transaction block.
+  × CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
   
     1 │ BEGIN;
   > 2 │ CREATE INDEX CONCURRENTLY "field_name_idx" ON "table_name" ("field_name");
@@ -40,7 +40,7 @@ code-block.sql:2:1 lint/banConcurrentIndexCreationInTransaction ━━━━━�
     3 │ COMMIT;
     4 │ 
   
-  i Run CREATE INDEX CONCURRENTLY outside of a transaction. Migration tools usually run in transactions, so you may need to run this statement in its own migration or manually.
+  i Run CREATE INDEX CONCURRENTLY outside of a transaction block, e.g. in a migration of its own that runs without a transaction.
   
 
 ```
