@@ -147,7 +147,7 @@ impl Table {
             name: relation.relname.clone(),
             schema: (!relation.schemaname.is_empty()).then(|| relation.schemaname.clone()),
             temporary: relation.relpersistence == RELPERSISTENCE_TEMP,
-            span: tokens.and_then(|tokens| Some(tokens.range(tokens.at(relation.location)?))),
+            span: tokens.and_then(|tokens| tokens.range_at(relation.location)),
         }
     }
 }
@@ -203,26 +203,19 @@ fn dropped_names(tokens: StatementTokens) -> Vec<TextRange> {
     let Some(table) = tokens.find(Token::Table) else {
         return vec![];
     };
-    let mut index = table + 1;
-    if tokens.kind(index) == Some(Token::IfP) {
-        index += 2;
+    let mut start = table + 1;
+    if tokens.kind(start) == Some(Token::IfP) {
+        start += 2;
     }
-    let mut names = Vec::new();
-    let mut current: Option<TextRange> = None;
-    while let Some(kind) = tokens.kind(index) {
-        match kind {
-            Token::Ascii44 => names.extend(current.take()),
-            Token::Ascii59 | Token::Cascade | Token::Restrict => break,
-            Token::SqlComment | Token::CComment => {}
-            _ => {
-                let range = tokens.range(index);
-                current = Some(current.map_or(range, |current| current.cover(range)));
-            }
-        }
-        index += 1;
-    }
-    names.extend(current);
-    names
+    // Up to the end of the statement, or `CASCADE` or `RESTRICT`.
+    let end = (start..)
+        .find(|index| {
+            tokens.kind(*index).is_none_or(|kind| {
+                matches!(kind, Token::Ascii59 | Token::Cascade | Token::Restrict)
+            })
+        })
+        .unwrap_or(start);
+    tokens.list_elements(start, end).unwrap_or_default()
 }
 
 #[cfg(test)]

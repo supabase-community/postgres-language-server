@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, cmd_def};
+use crate::utils::{alter_table_cmds, cmd_def, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -82,13 +82,8 @@ impl LinterRule for AddingRequiredField {
 /// Whether a new column is NOT NULL and gets no value from Postgres: no default, not generated,
 /// not an identity column, and not `serial`.
 fn is_required(column: &ColumnDef, not_null_columns: &[&str]) -> bool {
-    let constraint_types: Vec<ConstrType> = column
-        .constraints
-        .iter()
-        .filter_map(|constraint| match &constraint.node {
-            Some(pgls_query::NodeEnum::Constraint(constraint)) => Some(constraint.contype()),
-            _ => None,
-        })
+    let constraint_types: Vec<ConstrType> = column_constraints(column)
+        .map(|constraint| constraint.contype())
         .collect();
     let is_not_null = constraint_types.contains(&ConstrType::ConstrNotnull)
         || not_null_columns.contains(&column.colname.as_str());

@@ -93,6 +93,10 @@ export interface PartialDatabaseConfiguration {
    */
   port?: number;
   /**
+   * How long a statement executed from the editor may run, in seconds, before Postgres cancels it. `0` keeps the `statement_timeout` of the database. Default: `60`.
+   */
+  statementTimeoutSecs?: number;
+  /**
    * The username to connect to the database. Can also be set via the `PGUSER` environment variable.
    */
   username?: string;
@@ -656,6 +660,10 @@ export interface LinterRules {
    * DROP TYPE and DROP DOMAIN don't take a parameter list.
    */
   invalidDropTypeSignature?: RuleConfiguration_for_Null;
+  /**
+   * A MERGE, or merge_action(), that Postgres rejects.
+   */
+  invalidMerge?: RuleConfiguration_for_Null;
   /**
    * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
    */
