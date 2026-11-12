@@ -1,11 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::DeleteStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_delete_stmt(e: &mut EventEmitter, n: &DeleteStmt) {
-    e.group_start(GroupKind::DeleteStmt);
+    e.group_start();
 
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);
@@ -22,20 +20,25 @@ pub(super) fn emit_delete_stmt(e: &mut EventEmitter, n: &DeleteStmt) {
         super::emit_range_var(e, relation);
     }
 
-    if !n.using_clause.is_empty() {
+    if let Some(first) = n.using_clause.first() {
+        emit_comments_before_keyword(e, "using", first);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        super::node_list::emit_comma_separated_list(e, &n.using_clause, super::emit_node);
+        emit_comma_separated_list(e, &n.using_clause, emit_node);
     }
 
     if let Some(ref where_clause) = n.where_clause {
+        emit_comments_before_keyword(e, "where", where_clause);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, where_clause);
+        emit_clause_condition(e, where_clause);
     }
 
     if let Some(returning) = &n.returning_clause {
+        if let Some(first) = returning.options.first().or(returning.exprs.first()) {
+            emit_comments_before_keyword(e, "returning", first);
+        }
         e.line(LineType::SoftOrSpace);
         super::emit_returning_clause(e, returning);
     }

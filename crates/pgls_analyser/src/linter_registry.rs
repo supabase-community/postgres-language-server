@@ -1,8 +1,9 @@
 use pgls_analyse::{AnalysisFilter, Applicability, AppliesTo, GroupCategory, RuleGroup, RuleKey};
 
-use crate::linter_context::{AnalysedFileContext, LinterRuleContext, StatementContext};
+use crate::linter_context::{LinterRuleContext, StatementContext};
 use crate::linter_options::LinterOptions;
 use crate::linter_rule::{LinterDiagnostic, LinterRule};
+use pgls_walk::AnalysedFileContext;
 
 pub struct LinterRuleRegistryBuilder<'a> {
     filter: &'a AnalysisFilter<'a>,

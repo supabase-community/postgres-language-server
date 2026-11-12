@@ -14,7 +14,7 @@ pub struct PullSemanticTokensParams {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Default)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullSemanticTokensResult {
-    /// The tokens, ordered by their start. Tokens don't overlap.
+    /// The tokens, ordered by their start. Tokens don't overlap, and each is on a single line.
     pub tokens: Vec<SemanticToken>,
 }
 
@@ -46,7 +46,7 @@ pub enum SemanticTokenKind {
     Parameter,
     /// A string literal that is coerced to an enum type.
     EnumMember,
-    /// The alias of a FROM item.
+    /// The alias of a FROM item, or a role.
     Variable,
 }
 

@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- NOT NULL ... NOT VALID (Postgres 18) is validated like a CHECK constraint
+-- expect_lint/requireSeparateConstraintValidation
+ALTER TABLE orders ADD CONSTRAINT orders_total_not_null NOT NULL total NOT VALID;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_total_not_null;
+
+```
+
+# Diagnostics
+lint/requireSeparateConstraintValidation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Constraint orders_total_not_null was added as NOT VALID and validated in the same transaction.
+  
+  i Run VALIDATE CONSTRAINT in a separate transaction to avoid holding locks during validation.

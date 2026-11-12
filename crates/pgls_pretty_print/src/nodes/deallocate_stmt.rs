@@ -1,12 +1,9 @@
 use pgls_query::protobuf::DeallocateStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_deallocate_stmt(e: &mut EventEmitter, n: &DeallocateStmt) {
-    e.group_start(GroupKind::DeallocateStmt);
+    e.group_start();
 
     e.token(TokenKind::DEALLOCATE_KW);
     e.space();
@@ -14,7 +11,7 @@ pub(super) fn emit_deallocate_stmt(e: &mut EventEmitter, n: &DeallocateStmt) {
     if n.name.is_empty() || n.name == "ALL" {
         e.token(TokenKind::ALL_KW);
     } else {
-        super::emit_identifier_maybe_quoted(e, &n.name);
+        emit_identifier_maybe_quoted(e, &n.name);
     }
 
     e.group_end();
