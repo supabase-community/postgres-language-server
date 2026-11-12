@@ -70,7 +70,5 @@ pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublica
         emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
-    e.token(TokenKind::SEMICOLON);
-
     e.group_end();
 }

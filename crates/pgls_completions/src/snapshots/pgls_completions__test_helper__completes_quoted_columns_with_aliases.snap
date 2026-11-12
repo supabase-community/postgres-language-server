@@ -173,10 +173,10 @@ s| from private.users "pr"
 select | from private.users "pr"
 
 Results:
-"pr".email - private.users.email (Column)
-"pr".id - private.users.id (Column)
-"pr".name - private.users.name (Column)
-"pr".quoted_column - private.users.quoted_column (Column)
+pr.email - private.users.email (Column)
+pr.id - private.users.id (Column)
+pr.name - private.users.name (Column)
+pr.quoted_column - private.users.quoted_column (Column)
 name - public.names.name (Column)
 
 --------------
@@ -225,10 +225,10 @@ s| from private.users "pr"
 select | from private.users "pr"
 
 Results:
-"pr".email - private.users.email (Column)
-"pr".id - private.users.id (Column)
-"pr".name - private.users.name (Column)
-"pr".quoted_column - private.users.quoted_column (Column)
+pr.email - private.users.email (Column)
+pr.id - private.users.id (Column)
+pr.name - private.users.name (Column)
+pr.quoted_column - private.users.quoted_column (Column)
 name - public.names.name (Column)
 
 --------------
@@ -236,10 +236,10 @@ name - public.names.name (Column)
 select p| from private.users "pr"
 
 Results:
-"pr".email - private.users.email (Column)
-"pr".id - private.users.id (Column)
-"pr".name - private.users.name (Column)
-"pr".quoted_column - private.users.quoted_column (Column)
+pr.email - private.users.email (Column)
+pr.id - private.users.id (Column)
+pr.name - private.users.name (Column)
+pr.quoted_column - private.users.quoted_column (Column)
 pad_attribute - information_schema.collations.pad_attribute (Column)
 
 --------------
@@ -294,10 +294,10 @@ s| from private.users "pr"
 select | from private.users "pr"
 
 Results:
-"pr".email - private.users.email (Column)
-"pr".id - private.users.id (Column)
-"pr".name - private.users.name (Column)
-"pr".quoted_column - private.users.quoted_column (Column)
+pr.email - private.users.email (Column)
+pr.id - private.users.id (Column)
+pr.name - private.users.name (Column)
+pr.quoted_column - private.users.quoted_column (Column)
 name - public.names.name (Column)
 
 --------------
@@ -385,10 +385,10 @@ s| from private.users "pr"
 select | from private.users "pr"
 
 Results:
-"pr".email - private.users.email (Column)
-"pr".id - private.users.id (Column)
-"pr".name - private.users.name (Column)
-"pr".quoted_column - private.users.quoted_column (Column)
+pr.email - private.users.email (Column)
+pr.id - private.users.id (Column)
+pr.name - private.users.name (Column)
+pr.quoted_column - private.users.quoted_column (Column)
 name - public.names.name (Column)
 
 --------------
@@ -396,10 +396,10 @@ name - public.names.name (Column)
 select p| from private.users "pr"
 
 Results:
-"pr".email - private.users.email (Column)
-"pr".id - private.users.id (Column)
-"pr".name - private.users.name (Column)
-"pr".quoted_column - private.users.quoted_column (Column)
+pr.email - private.users.email (Column)
+pr.id - private.users.id (Column)
+pr.name - private.users.name (Column)
+pr.quoted_column - private.users.quoted_column (Column)
 pad_attribute - information_schema.collations.pad_attribute (Column)
 
 --------------
@@ -437,9 +437,9 @@ select | from private.users "pr" join public.names n on pr.id = n.uid;
 Results:
 n.name - public.names.name (Column)
 n.uid - public.names.uid (Column)
-"pr".email - private.users.email (Column)
-"pr".id - private.users.id (Column)
-"pr".name - private.users.name (Column)
+pr.email - private.users.email (Column)
+pr.id - private.users.id (Column)
+pr.name - private.users.name (Column)
 
 --------------
 
@@ -500,9 +500,9 @@ select "pr"."email", | from private.users "pr" join public.names n on pr.id = n.
 Results:
 n.name - public.names.name (Column)
 n.uid - public.names.uid (Column)
-"pr".id - private.users.id (Column)
-"pr".name - private.users.name (Column)
-"pr".quoted_column - private.users.quoted_column (Column)
+pr.id - private.users.id (Column)
+pr.name - private.users.name (Column)
+pr.quoted_column - private.users.quoted_column (Column)
 
 --------------
 
