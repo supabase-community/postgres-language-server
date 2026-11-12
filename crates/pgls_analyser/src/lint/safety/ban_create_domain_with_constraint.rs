@@ -1,3 +1,4 @@
+use crate::utils::constraints;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -43,11 +44,10 @@ impl LinterRule for BanCreateDomainWithConstraint {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // `DEFAULT` and `NULL` are constraint nodes too, but don't restrict the values.
         if let pgls_query::NodeEnum::CreateDomainStmt(stmt) = ctx.stmt()
-            && stmt.constraints.iter().any(|constraint| {
-                matches!(
-                    &constraint.node,
-                    Some(pgls_query::NodeEnum::Constraint(constraint))
-                        if !matches!(constraint.contype(), ConstrType::ConstrDefault | ConstrType::ConstrNull)
+            && constraints(&stmt.constraints).any(|constraint| {
+                !matches!(
+                    constraint.contype(),
+                    ConstrType::ConstrDefault | ConstrType::ConstrNull
                 )
             })
         {

@@ -1,12 +1,12 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-use pgls_query::protobuf::{AlterExtensionContentsStmt, ObjectType};
+use pgls_query::protobuf::AlterExtensionContentsStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_extension_contents_stmt(
     e: &mut EventEmitter,
     n: &AlterExtensionContentsStmt,
 ) {
-    e.group_start(GroupKind::AlterExtensionContentsStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -14,7 +14,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
     e.space();
 
     if !n.extname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.extname);
+        emit_identifier_maybe_quoted(e, &n.extname);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -29,21 +29,13 @@ pub(super) fn emit_alter_extension_contents_stmt(
     e.space();
 
     // Object type
-    match n.objtype() {
-        ObjectType::ObjectTable => e.token(TokenKind::TABLE_KW),
-        ObjectType::ObjectFunction => e.token(TokenKind::FUNCTION_KW),
-        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
-        ObjectType::ObjectOperator => e.token(TokenKind::OPERATOR_KW),
-        _ => e.token(TokenKind::OBJECT_KW),
-    }
+    emit_keywords(e, object_type_keywords(n.objtype()).unwrap_or("OBJECT"));
     e.space();
 
     // Object name
     if let Some(ref object) = n.object {
-        super::emit_node(object, e);
+        emit_node(e, object);
     }
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

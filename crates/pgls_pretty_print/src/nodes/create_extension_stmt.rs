@@ -1,11 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::{NodeEnum, protobuf::CreateExtensionStmt};
+use pgls_query::protobuf::CreateExtensionStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensionStmt) {
-    e.group_start(GroupKind::CreateExtensionStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -13,28 +11,25 @@ pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensi
     e.space();
 
     if n.if_not_exists {
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
         e.space();
     }
 
-    super::emit_identifier_maybe_quoted(e, &n.extname);
+    emit_identifier_maybe_quoted(e, &n.extname);
 
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
 
         for opt in &n.options {
-            let def = assert_node_variant!(DefElem, opt);
+            let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() else {
+                emit_node(e, opt);
+                continue;
+            };
             e.space();
             emit_extension_option(e, def);
         }
     }
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }
@@ -52,7 +47,7 @@ fn emit_extension_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefEl
                 e.space();
                 // Schema name is a String node - emit_node dispatches to
                 // emit_string which uses emit_identifier_maybe_quoted
-                super::emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
         "new_version" => {
@@ -61,9 +56,9 @@ fn emit_extension_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefEl
                 e.space();
                 // Version must be a quoted string literal
                 if let Some(NodeEnum::String(s)) = &arg.node {
-                    super::emit_string_literal(e, s);
+                    emit_string_literal(e, s);
                 } else {
-                    super::emit_node(arg, e);
+                    emit_node(e, arg);
                 }
             }
         }
@@ -72,10 +67,10 @@ fn emit_extension_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefEl
         }
         _ => {
             // Fallback for unknown options
-            super::string::emit_keyword(e, &def.defname);
+            emit_keyword(e, &def.defname);
             if let Some(ref arg) = def.arg {
                 e.space();
-                super::emit_node(arg, e);
+                emit_node(e, arg);
             }
         }
     }

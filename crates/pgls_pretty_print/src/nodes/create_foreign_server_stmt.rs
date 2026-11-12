@@ -1,16 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::CreateForeignServerStmt;
 
-use super::{
-    node_list::emit_parenthesized_list,
-    string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str},
-};
+use super::prelude::*;
 
 pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateForeignServerStmt) {
-    e.group_start(GroupKind::CreateForeignServerStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
@@ -19,11 +12,7 @@ pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateFo
     // Emit IF NOT EXISTS if present
     if n.if_not_exists {
         e.space();
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::NOT_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
+        emit_if_not_exists(e);
     }
 
     // Emit server name
@@ -66,16 +55,9 @@ pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateFo
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.indent_start();
-        emit_keyword(e, "OPTIONS");
-        e.space();
-        emit_parenthesized_list(e, &n.options, |n, e| {
-            let def_elem = assert_node_variant!(DefElem, n);
-            super::emit_options_def_elem(e, def_elem);
-        });
+        emit_options_clause(e, &n.options);
         e.indent_end();
     }
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-pub use crate::codegen::group_kind::GroupKind;
 pub use crate::codegen::token_kind::TokenKind;
 use crate::{Comment, FormatConfig};
 
@@ -29,9 +28,7 @@ pub enum LayoutEvent {
         text: String,
         line_comment: bool,
     },
-    GroupStart {
-        kind: GroupKind,
-    },
+    GroupStart,
     GroupEnd,
     IndentStart,
     IndentEnd,
@@ -54,6 +51,8 @@ pub struct EventEmitter {
     leading_comments: HashMap<i32, Vec<Comment>>,
     /// Comments still waiting to be emitted after a node, by source location.
     trailing_comments: HashMap<i32, Vec<Comment>>,
+    /// Comments waiting for the END of the CASE at this source location.
+    comments_before_case_end: HashMap<i32, Vec<Comment>>,
     /// Boolean operands need standalone line comments to start their own line, otherwise a
     /// comment can join the preceding operand and drift on the next formatting pass.
     leading_line_comments_require_break: bool,
@@ -63,20 +62,15 @@ pub struct EventEmitter {
     configured_layout: crate::Layout,
     /// Identifiers the parser truncated, by their truncated name, as written in the source.
     truncated_identifiers: HashMap<String, String>,
+    /// The locations comments are attached to, in source order.
+    node_locations: Vec<i32>,
 }
 
 impl EventEmitter {
+    /// An emitter without comments, for unit tests that look at the events.
+    #[cfg(test)]
     pub fn new(config: FormatConfig) -> Self {
-        Self {
-            events: Vec::new(),
-            configured_layout: config.layout.clone(),
-            config,
-            leading_comments: HashMap::new(),
-            trailing_comments: HashMap::new(),
-            truncated_identifiers: HashMap::new(),
-            leading_line_comments_require_break: false,
-            comments_after_separator: Vec::new(),
-        }
+        Self::with_comments(config, HashMap::new(), HashMap::new())
     }
 
     // Later option PRs inspect this while deciding which layout events to emit.
@@ -108,16 +102,45 @@ impl EventEmitter {
             config,
             leading_comments,
             trailing_comments,
+            comments_before_case_end: HashMap::new(),
             truncated_identifiers: HashMap::new(),
+            node_locations: Vec::new(),
             leading_line_comments_require_break: false,
             comments_after_separator: Vec::new(),
         }
+    }
+
+    /// Comments anchored to a CASE's closing keyword rather than to a node inside its last branch.
+    pub(crate) fn set_comments_before_case_end(&mut self, comments: HashMap<i32, Vec<Comment>>) {
+        self.comments_before_case_end = comments;
+    }
+
+    pub(crate) fn take_comments_before_case_end_at(&mut self, location: i32) {
+        let comments = self
+            .comments_before_case_end
+            .remove(&location)
+            .unwrap_or_default();
+        self.emit_trailing_comments(comments);
     }
 
     /// Identifiers of the source that the parser truncated, by their truncated name. The emitter
     /// writes them as written rather than as the AST has them.
     pub fn set_truncated_identifiers(&mut self, identifiers: HashMap<String, String>) {
         self.truncated_identifiers = identifiers;
+    }
+
+    /// The locations comments are attached to, in source order.
+    pub fn set_node_locations(&mut self, locations: Vec<i32>) {
+        self.node_locations = locations;
+    }
+
+    /// The location of the node that follows the one at `location` in the source, which holds the
+    /// comments written between the two.
+    pub fn next_node_location(&self, location: i32) -> Option<i32> {
+        let index = self
+            .node_locations
+            .partition_point(|other| *other <= location);
+        self.node_locations.get(index).copied()
     }
 
     /// `name` as written in the source, when the parser truncated it.
@@ -134,6 +157,18 @@ impl EventEmitter {
         let is_comma = matches!(token, TokenKind::COMMA);
         if matches!(token, TokenKind::SEMICOLON) {
             self.flush_comments_after_separator();
+        }
+        // A comment before the comma, `a /* c */, b`, is followed by a space meant for the next
+        // token, which the comma doesn't take. With leading commas, the break before the comma
+        // comes in between.
+        if is_comma
+            && let Some(index) = self
+                .events
+                .iter()
+                .rposition(|event| !matches!(event, LayoutEvent::Line(_)))
+            && matches!(self.events[index], LayoutEvent::Space)
+        {
+            self.events.remove(index);
         }
         self.events.push(LayoutEvent::Token(token));
         if is_comma {
@@ -244,6 +279,13 @@ impl EventEmitter {
         self.emit_trailing_comments(before_keyword);
     }
 
+    /// Emits and consumes the comments before `location` the way trailing comments of the previous
+    /// node are emitted.
+    pub fn take_leading_comments_as_trailing_at(&mut self, location: i32) {
+        let comments = self.leading_comments.remove(&location).unwrap_or_default();
+        self.emit_trailing_comments(comments);
+    }
+
     /// Emits and consumes comments that follow `location`, if any.
     pub fn take_trailing_comments_at(&mut self, location: i32) {
         let comments = self.remove_trailing_comments_at(location);
@@ -290,6 +332,11 @@ impl EventEmitter {
     pub fn pending_comments(&self) -> usize {
         self.leading_comments.values().map(Vec::len).sum::<usize>()
             + self.trailing_comments.values().map(Vec::len).sum::<usize>()
+            + self
+                .comments_before_case_end
+                .values()
+                .map(Vec::len)
+                .sum::<usize>()
             + self.comments_after_separator.len()
     }
 
@@ -307,8 +354,8 @@ impl EventEmitter {
         }
     }
 
-    pub fn group_start(&mut self, kind: GroupKind) {
-        self.events.push(LayoutEvent::GroupStart { kind });
+    pub fn group_start(&mut self) {
+        self.events.push(LayoutEvent::GroupStart);
     }
 
     pub fn group_end(&mut self) {

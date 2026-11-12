@@ -1,18 +1,9 @@
 use pgls_query::protobuf::UpdateStmt;
 
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
-use crate::nodes::node_list::emit_comma_separated_list;
+use super::prelude::*;
+
 pub(super) fn emit_update_stmt(e: &mut EventEmitter, n: &UpdateStmt) {
-    emit_update_stmt_impl(e, n, true);
-}
-
-pub(super) fn emit_update_stmt_no_semicolon(e: &mut EventEmitter, n: &UpdateStmt) {
-    emit_update_stmt_impl(e, n, false);
-}
-
-fn emit_update_stmt_impl(e: &mut EventEmitter, n: &UpdateStmt, with_semicolon: bool) {
-    e.group_start(GroupKind::UpdateStmt);
+    e.group_start();
 
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);
@@ -30,35 +21,35 @@ fn emit_update_stmt_impl(e: &mut EventEmitter, n: &UpdateStmt, with_semicolon: b
         super::emit_range_var(e, range_var)
     }
 
-    if !n.target_list.is_empty() {
+    if let Some(first) = n.target_list.first() {
+        emit_comments_before_keyword(e, "set", first);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
-        super::res_target::emit_set_clause_list(e, &n.target_list);
+        emit_set_clause_list(e, &n.target_list);
     }
 
-    if !n.from_clause.is_empty() {
+    if let Some(first) = n.from_clause.first() {
+        emit_comments_before_keyword(e, "from", first);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FROM_KW);
         e.space();
-        emit_comma_separated_list(e, &n.from_clause, super::emit_node);
+        emit_comma_separated_list(e, &n.from_clause, emit_node);
     }
 
     if let Some(ref where_clause) = n.where_clause {
+        emit_comments_before_keyword(e, "where", where_clause);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
-        super::emit_clause_condition(e, where_clause);
+        emit_clause_condition(e, where_clause);
     }
 
-    if !n.returning_list.is_empty() {
+    if let Some(returning) = &n.returning_clause {
+        if let Some(first) = returning.options.first().or(returning.exprs.first()) {
+            emit_comments_before_keyword(e, "returning", first);
+        }
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::RETURNING_KW);
-        e.space();
-        emit_comma_separated_list(e, &n.returning_list, super::emit_node);
-    }
-
-    if with_semicolon {
-        e.token(TokenKind::SEMICOLON);
+        super::emit_returning_clause(e, returning);
     }
 
     e.group_end();

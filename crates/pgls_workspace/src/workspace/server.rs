@@ -7,6 +7,11 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
+#[cfg(feature = "db")]
+use crate::features::code_actions::execute_statement::{
+    execution,
+    running::{RUNNING_STATEMENTS_MAX, RunningStatements},
+};
 use analyser::AnalyserVisitorBuilder;
 #[cfg(feature = "db")]
 use async_helper::run_async;
@@ -14,27 +19,25 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
-use document::{DefaultMapper, Document, ExecuteStatementMapper};
+use document::{Document, ExecuteStatementMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
-use pgls_analyse::{
-    ActionCategory, AnalysisFilter, Applicability, RuleCategories, RuleCategoriesBuilder,
-    RuleFilter, SUPPRESSION_ACTION_CATEGORY,
-};
+use pgls_analyse::{AnalysisFilter, RuleCategories, RuleCategoriesBuilder, RuleFilter};
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
 use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
-    LinterDiagnostic, LinterOptions, MigrationSection, RuleFix, WalkParams,
+    Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, FileKind, LinterDiagnostic,
+    LinterOptions,
 };
 use pgls_catalog::resolve::{ColumnSource, Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Origin, Session};
 #[cfg(feature = "db")]
 use pgls_lexer::convert_to_positional_params_with_metadata;
-use std::borrow::Cow;
+use pgls_walk::{AnalysableStatement, Direction, MigrationSection, WalkParams};
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::RuleSelector;
+use pgls_configuration::inlay_hints::ParameterNameHints;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
@@ -45,16 +48,15 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_typecheck::TypecheckParams;
 use pgls_workspace_macros::ignored_path;
 use snapshot_manager::SnapshotManager;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use crate::{
     WorkspaceError,
     configuration::to_analyser_rules,
     features::{
         code_actions::{
-            CodeAction, CodeActionKind, CodeActionsParams, CodeActionsResult, CommandAction,
-            CommandActionCategory, EditAction, ExecuteStatementParams, ExecuteStatementResult,
-            FixFileMode, FixFileParams, FixFileResult, TextEdit,
+            self, CodeAction, CodeActionsParams, CodeActionsResult, ExecuteStatementParams,
+            ExecuteStatementResult, FixFileParams, FixFileResult,
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{
@@ -71,9 +73,10 @@ use crate::{
 };
 
 use super::{
-    GetFileContentParams, IsPathIgnoredParams, NestedSettingsError, OpenFileParams, ProjectKey,
-    RegisterProjectFolderParams, ServerInfo, UnregisterProjectFolderParams,
-    UpdateNestedSettingsParams, UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
+    FindProjectParams, GetFileContentParams, IsPathIgnoredParams, NestedSettingsError,
+    OpenFileParams, ProjectKey, RegisterProjectFolderParams, ServerInfo,
+    UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
+    UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
@@ -84,18 +87,23 @@ mod async_helper;
 #[cfg(feature = "db")]
 mod connection_key;
 #[cfg(feature = "db")]
+use crate::settings::DatabaseSettings;
+#[cfg(feature = "db")]
+use connection_key::ConnectionKey;
+#[cfg(feature = "db")]
 mod connection_manager;
+#[cfg(feature = "db")]
+pub(crate) use connection_manager::DatabasePools;
 pub(crate) mod document;
 mod document_cache;
-mod expand_star;
 mod formatting;
+#[cfg(feature = "db")]
+mod last_used;
 mod migration;
 #[cfg(feature = "db")]
 mod pgpass;
 mod snapshot_manager;
 mod sql_function;
-#[cfg(feature = "db")]
-mod statement_execution;
 mod statement_identifier;
 
 pub struct WorkspaceServer {
@@ -115,6 +123,10 @@ pub struct WorkspaceServer {
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
+
+    /// The statements that are being executed, to cancel them
+    #[cfg(feature = "db")]
+    running_statements: RunningStatements,
 }
 
 /// A database snapshot with the changes of the statements before a statement.
@@ -151,6 +163,7 @@ impl WorkspaceServer {
             catalog_base: Mutex::default(),
             snapshot_before: Mutex::default(),
             connection: ConnectionManager::new(),
+            running_statements: RunningStatements::default(),
         }
     }
 
@@ -197,12 +210,24 @@ impl WorkspaceServer {
         self.snapshot.get()
     }
 
-    /// Register a new project in the current workspace
-    fn register_project(&self, path: PathBuf) -> ProjectKey {
-        let mut workspace = self.workspaces_mut();
-        let workspace_mut = workspace.as_mut();
-        workspace_mut.insert_project(path.clone())
+    /// Drops the pools, failures and snapshots of the connections that no settings of any project
+    /// use any more, after a configuration changed or a project was removed. Otherwise every
+    /// database a configuration ever pointed at would stay in memory until the server stops.
+    #[cfg(feature = "db")]
+    fn drop_unused_connections(&self) {
+        let used: std::collections::HashSet<ConnectionKey> = self
+            .workspaces()
+            .as_ref()
+            .every_settings()
+            .filter(|settings| settings.db.enable_connection)
+            .map(|settings| ConnectionKey::from(&settings.db))
+            .collect();
+        self.connection.retain(|key| used.contains(key));
+        self.snapshot.retain(|key| used.contains(key));
     }
+
+    #[cfg(not(feature = "db"))]
+    fn drop_unused_connections(&self) {}
 
     /// Check whether a file is ignored by the settings of its project that apply to it
     fn is_ignored(&self, project_key: ProjectKey, path: &Path) -> bool {
@@ -333,6 +358,7 @@ impl WorkspaceServer {
             file_kind: self.file_kind(settings, path.as_path()),
             sections,
             typecheck,
+            source: Some(doc.get_document_content().to_owned()),
         });
 
         (
@@ -341,60 +367,6 @@ impl WorkspaceServer {
             disabled_rules,
             skipped_sections,
         )
-    }
-
-    /// The fixes of the lint diagnostics at the cursor, and an action to suppress each of them.
-    fn lint_code_actions(
-        &self,
-        settings: &Settings,
-        params: &CodeActionsParams,
-        doc: &Document,
-    ) -> Vec<CodeAction> {
-        let mut actions = Vec::new();
-        for diagnostic in
-            self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip)
-        {
-            let Some(span) = diagnostic.location().span else {
-                continue;
-            };
-            if !span.contains_inclusive(params.cursor_position) {
-                continue;
-            }
-            let category = diagnostic.get_category_name();
-            let rule = category.strip_prefix("lint/").unwrap_or(category);
-
-            if let Some(fix) = diagnostic.get_fix() {
-                actions.push(CodeAction {
-                    title: fix.message.clone(),
-                    kind: CodeActionKind::Edit(EditAction {
-                        rule: Some(category.to_string()),
-                        category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
-                        applicability: fix.applicability,
-                        edits: fix
-                            .edits
-                            .iter()
-                            .map(|edit| TextEdit {
-                                range: edit.range,
-                                new_text: edit.replacement.clone(),
-                            })
-                            .collect(),
-                    }),
-                    disabled_reason: None,
-                });
-            }
-
-            actions.push(CodeAction {
-                title: format!("Suppress rule {rule} for this statement"),
-                kind: CodeActionKind::Edit(EditAction {
-                    rule: Some(category.to_string()),
-                    category: ActionCategory::Other(Cow::Borrowed(SUPPRESSION_ACTION_CATEGORY)),
-                    applicability: Applicability::MaybeIncorrect,
-                    edits: vec![suppression_edit(doc, span.start(), rule)],
-                }),
-                disabled_reason: None,
-            });
-        }
-        actions
     }
 
     /// The refactors offered at `position`: expanding a `*` into its columns. `settings` are the
@@ -408,7 +380,7 @@ impl WorkspaceServer {
         // Code actions are requested whenever the cursor moves, so don't resolve the file unless
         // the cursor is on a `*` of a select list.
         let content = doc.get_document_content();
-        if !expand_star::is_at_star(content, position) {
+        if !code_actions::expand_star::is_at_star(content, position) {
             return Vec::new();
         }
 
@@ -428,7 +400,9 @@ impl WorkspaceServer {
         let (stmt_start, references) = self.references_at(settings, doc, &snapshot, position);
         references
             .iter()
-            .filter_map(|reference| expand_star::expand_star_action(reference, content, stmt_start))
+            .filter_map(|reference| {
+                code_actions::expand_star::expand_star_action(reference, content, stmt_start)
+            })
             .collect()
     }
 
@@ -458,7 +432,7 @@ impl WorkspaceServer {
     }
 
     /// Walks the statements of `doc` that start before `end` like the analyser does, see
-    /// [`pgls_analyser::walk_statements`]. `visit` gets every parsed statement, except those with
+    /// [`pgls_walk::walk_statements`]. `visit` gets every parsed statement, except those with
     /// identifier parameters, with the catalog and the session as they are before it. `settings`
     /// are the ones of the file. Returns the catalog as a statement at `end` sees it.
     fn walk_statements(
@@ -467,7 +441,7 @@ impl WorkspaceServer {
         doc: &Document,
         snapshot: &Arc<Snapshot>,
         end: TextSize,
-        mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
+        mut visit: impl FnMut(&AnalysableStatement, &Catalog, &Session),
     ) -> Catalog {
         let (search_path, sections) = settings
             .map(|settings| {
@@ -494,7 +468,7 @@ impl WorkspaceServer {
             unparsable.extend(skipped);
         }
 
-        pgls_analyser::walk_statements(
+        pgls_walk::walk_statements(
             WalkParams {
                 stmts: &stmts,
                 unparsable: &unparsable,
@@ -763,20 +737,23 @@ impl WorkspaceServer {
                                         snapshot: snapshot.as_ref(),
                                         search_path: &statement.search_path,
                                         identifiers: Vec::new(),
+                                        duplicate_assignments_reported: statement
+                                            .has_duplicate_assignments,
                                     })
                                     .await?;
 
                                     if let Some(diagnostic) = result {
-                                        let span = diagnostic
-                                            .location()
-                                            .span
-                                            .map(|span| span + range.start());
+                                        let span = database_span(
+                                            diagnostic.location().span,
+                                            id.content(),
+                                            range,
+                                        );
                                         diagnostics.push(
                                             diagnostic
                                                 .with_file_path(
                                                     path.as_path().display().to_string(),
                                                 )
-                                                .with_file_span(span.unwrap_or(range)),
+                                                .with_file_span(span),
                                         );
                                     }
                                 }
@@ -813,11 +790,11 @@ impl WorkspaceServer {
                                 }
 
                                 for diagnostic in results.unwrap_or_default() {
-                                    let span = diagnostic.span.map(|span| span + range.start());
+                                    let span = database_span(diagnostic.span, id.content(), range);
                                     diagnostics.push(
                                         diagnostic
                                             .with_file_path(path.as_path().display().to_string())
-                                            .with_file_span(span.unwrap_or(range)),
+                                            .with_file_span(span),
                                     );
                                 }
                             }
@@ -883,18 +860,34 @@ impl Workspace for WorkspaceServer {
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError> {
         let path = params.path.unwrap_or_default();
-        let existing = self.workspaces().as_ref().get_project_key(&path);
+        let mut workspace = self.workspaces_mut();
+        let workspace = workspace.as_mut();
+        let existing = workspace.get_project_key(&path);
         debug!("Register the project {:?}, known as {:?}", path, existing);
 
-        Ok(existing.unwrap_or_else(|| self.register_project(path)))
+        let key = existing.unwrap_or_else(|| workspace.insert_project(path));
+        workspace.set_real_path(key, params.real_path);
+        Ok(key)
+    }
+
+    fn find_project(
+        &self,
+        params: FindProjectParams,
+    ) -> Result<Option<ProjectKey>, WorkspaceError> {
+        Ok(self
+            .workspaces()
+            .as_ref()
+            .find_project(params.path.as_path()))
     }
 
     fn unregister_project_folder(
         &self,
         params: UnregisterProjectFolderParams,
     ) -> Result<(), WorkspaceError> {
-        let mut workspace = self.workspaces_mut();
-        workspace.as_mut().remove_project(params.path.as_path());
+        self.workspaces_mut()
+            .as_mut()
+            .remove_project(params.path.as_path());
+        self.drop_unused_connections();
         Ok(())
     }
 
@@ -906,17 +899,31 @@ impl Workspace for WorkspaceServer {
     #[tracing::instrument(level = "trace", skip(self), err)]
     fn update_settings(&self, params: UpdateSettingsParams) -> Result<(), WorkspaceError> {
         let mut workspace = self.workspaces_mut();
-
-        workspace
+        let settings = workspace
             .as_mut()
             .get_settings_mut(params.project_key)
-            .ok_or_else(WorkspaceError::no_project)?
-            .merge_with_configuration(
+            .ok_or_else(WorkspaceError::no_project)?;
+
+        if params.replace {
+            // A configuration that can't be applied leaves the settings as they were.
+            let mut replacement = Settings::default();
+            replacement.merge_with_configuration(
                 params.configuration,
                 params.workspace_directory,
                 params.vcs_base_path,
                 params.gitignore_matches.as_slice(),
             )?;
+            *settings = replacement;
+        } else {
+            settings.merge_with_configuration(
+                params.configuration,
+                params.workspace_directory,
+                params.vcs_base_path,
+                params.gitignore_matches.as_slice(),
+            )?;
+        }
+        drop(workspace);
+        self.drop_unused_connections();
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
 
@@ -987,6 +994,7 @@ impl Workspace for WorkspaceServer {
         self.workspaces_mut()
             .as_mut()
             .set_nested_settings(params.project_key, nested);
+        self.drop_unused_connections();
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
         Ok(result)
@@ -1073,34 +1081,22 @@ impl Workspace for WorkspaceServer {
             None => Some("Statement execution not allowed against database.".into()),
         };
 
-        let mut actions: Vec<CodeAction> = parser
-            .iter_at(DefaultMapper, params.cursor_position)
-            .map(|(stmt, _, txt)| {
-                let title = format!(
-                    "Execute Statement: {}...",
-                    txt.chars().take(50).collect::<String>()
-                );
-
-                CodeAction {
-                    title,
-                    kind: CodeActionKind::Command(CommandAction {
-                        category: CommandActionCategory::ExecuteStatement(stmt),
-                    }),
-                    disabled_reason: disabled_reason.clone(),
-                }
-            })
-            .collect();
-
-        actions.splice(
-            0..0,
-            self.refactor_code_actions(settings, parser, params.cursor_position),
-        );
-
+        let mut actions = Vec::new();
         if let Some(settings) = settings {
-            let mut lint_actions = self.lint_code_actions(settings, &params, parser);
-            lint_actions.append(&mut actions);
-            actions = lint_actions;
+            let diagnostics =
+                self.lint_diagnostics(settings, &params.path, parser, &params.only, &params.skip);
+            actions.extend(code_actions::lint::lint_actions(
+                &diagnostics,
+                parser,
+                params.cursor_position,
+            ));
         }
+        actions.extend(self.refactor_code_actions(settings, parser, params.cursor_position));
+        actions.extend(code_actions::execute_statement::execute_statement_actions(
+            parser,
+            params.cursor_position,
+            disabled_reason,
+        ));
 
         #[cfg(feature = "db")]
         let invalidate_disabled_reason = match settings {
@@ -1119,28 +1115,20 @@ impl Workspace for WorkspaceServer {
         let invalidate_disabled_reason: Option<String> =
             Some("Database support not enabled.".into());
 
-        actions.push(CodeAction {
-            title: "Invalidate Schema Cache".into(),
-            kind: CodeActionKind::Command(CommandAction {
-                category: CommandActionCategory::InvalidateSchemaCache,
-            }),
-            disabled_reason: invalidate_disabled_reason,
-        });
+        actions.push(code_actions::schema_cache::invalidate_schema_cache_action(
+            invalidate_disabled_reason,
+        ));
 
         Ok(CodeActionsResult { actions })
     }
 
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError> {
-        /// Fixes can enable other fixes, e.g. `CONCURRENTLY` enables `IF NOT EXISTS`, and fixes
-        /// that overlap are applied one after the other.
-        const MAX_PASSES: usize = 10;
-
         let documents = self.documents.read().unwrap();
         let doc = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
-        let mut code = doc.get_document_content().to_string();
+        let code = doc.get_document_content().to_string();
 
         let settings = self.workspaces();
         let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
@@ -1152,62 +1140,12 @@ impl Workspace for WorkspaceServer {
             });
         };
 
-        let mut fixes_applied = 0;
-        let mut skipped_suggested_fixes = 0;
-        let mut converged = false;
-        for _ in 0..MAX_PASSES {
-            let doc = Document::new(code.clone(), 0);
-            let diagnostics =
-                self.lint_diagnostics(settings, &params.path, &doc, &params.only, &params.skip);
-
-            skipped_suggested_fixes = 0;
-            let mut fixes: Vec<&RuleFix> = Vec::new();
-            for fix in diagnostics.iter().filter_map(LinterDiagnostic::get_fix) {
-                if fix.applicability == Applicability::Always
-                    || params.fix_file_mode == FixFileMode::SafeAndUnsafeFixes
-                {
-                    fixes.push(fix);
-                } else {
-                    skipped_suggested_fixes += 1;
-                }
-            }
-            fixes.sort_by_key(|fix| fix.range().map(TextRange::start));
-
-            // Applies the fixes that don't touch the text of an earlier fix in this pass.
-            let mut combined = RuleFix::new("");
-            let mut applied = 0;
-            for fix in fixes {
-                let Some(range) = fix.range() else {
-                    continue;
-                };
-                if combined
-                    .range()
-                    .is_some_and(|previous| range.start() <= previous.end())
-                {
-                    continue;
-                }
-                combined.edits.extend(fix.edits.iter().cloned());
-                applied += 1;
-            }
-            if applied == 0 {
-                converged = true;
-                break;
-            }
-            code = combined.apply(&code);
-            fixes_applied += applied;
-        }
-        if !converged {
-            warn!(
-                path = ?params.path,
-                "Fixes still changed the file after {MAX_PASSES} passes, some may be left"
-            );
-        }
-
-        Ok(FixFileResult {
+        Ok(code_actions::lint::fix_file(
+            &params.path,
             code,
-            fixes_applied,
-            skipped_suggested_fixes,
-        })
+            params.fix_file_mode,
+            |doc| self.lint_diagnostics(settings, &params.path, doc, &params.only, &params.skip),
+        ))
     }
 
     #[cfg(feature = "db")]
@@ -1221,7 +1159,9 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+        let stmt = parser.find(params.statement_id.clone(), ExecuteStatementMapper);
+        // Files can change while the statement runs.
+        drop(documents);
 
         if stmt.is_none() {
             return Ok(ExecuteStatementResult {
@@ -1232,35 +1172,69 @@ impl Workspace for WorkspaceServer {
 
         let (_id, range, content, ast) = stmt.unwrap();
 
-        if ast.is_none() {
+        let Some(ast) = ast else {
             return Ok(ExecuteStatementResult {
                 message: "Statement is invalid.".into(),
                 ..Default::default()
             });
         };
 
+        if let Some(message) = execution::refusal(&ast) {
+            return Ok(ExecuteStatementResult {
+                message,
+                ..Default::default()
+            });
+        }
+
         let settings = self.workspaces();
         let no_connection = ExecuteStatementResult {
             message: "No database connection available.".into(),
             ..Default::default()
         };
-        let Some(settings) = settings.settings_for(params.project_key, params.path.as_path())
+        let Some(db) = settings
+            .settings_for(params.project_key, params.path.as_path())
+            .map(|settings| settings.db.clone())
         else {
             return Ok(no_connection);
         };
+        // The settings can change while the statement runs.
+        drop(settings);
 
-        if let Some(reason) = settings.db.statement_execution_disabled_reason() {
+        if let Some(reason) = db.statement_execution_disabled_reason() {
             return Ok(ExecuteStatementResult {
                 message: reason,
                 ..Default::default()
             });
         }
 
-        let Some(result) = self.connection.with_pools(&settings.db, |pools| {
-            let pool = pools.statement_pool.clone();
-            run_async(async move { statement_execution::execute_statement(&pool, &content).await })?
-                .map_err(WorkspaceError::from)
-        }) else {
+        let options = execution::ExecuteOptions {
+            is_query: execution::is_query(&ast),
+            timeout: db.statement_timeout,
+        };
+        let Some((_running, cancelled)) = self.running_statements.start(&params) else {
+            return Ok(ExecuteStatementResult {
+                message: format!(
+                    "{RUNNING_STATEMENTS_MAX} statements are already running. Wait for one to finish, or cancel it."
+                ),
+                ..Default::default()
+            });
+        };
+
+        let result = self.connection.with_pools(&db, |pools| {
+            let statement_pools = pools.clone();
+            let result = run_async(async move {
+                execution::execute_statement(&statement_pools, &content, options, cancelled).await
+            })?
+            .map_err(WorkspaceError::from)?;
+
+            // Diagnostics, completions and hover should see the objects the statement created.
+            if result.error.is_none() && execution::may_change_schema(&ast) {
+                self.snapshot.clear_connection(&pools.pool);
+            }
+            Ok(result)
+        });
+
+        let Some(result) = result else {
             return Ok(no_connection);
         };
 
@@ -1286,6 +1260,24 @@ impl Workspace for WorkspaceServer {
             message: "Statement execution requires database support.".into(),
             ..Default::default()
         })
+    }
+
+    #[cfg(feature = "db")]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        self.running_statements.cancel(&params);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "db"))]
+    #[allow(unused_variables)]
+    fn cancel_statement_execution(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<(), WorkspaceError> {
+        Ok(())
     }
 
     #[cfg(feature = "db")]
@@ -1561,29 +1553,78 @@ impl Workspace for WorkspaceServer {
         &self,
         params: CheckDatabaseConnectionParams,
     ) -> Result<CheckDatabaseConnectionResult, WorkspaceError> {
-        // Every configuration file of the project can have its own database, so check all of them.
-        let settings = self.workspaces();
-        for settings in settings.as_ref().get_all_settings(params.project_key) {
+        // Every configuration file of the project can have its own database, so check each of
+        // them once, with the folders that use it.
+        let mut connections: Vec<(DatabaseSettings, Vec<PathBuf>)> = Vec::new();
+        let mut errors = Vec::new();
+        for (folder, settings) in self
+            .workspaces()
+            .as_ref()
+            .get_all_settings(params.project_key)
+        {
+            // An invalid connection string disables the connection, so say why.
             if let Some(error) = &settings.db.connection_string_error {
-                return Ok(CheckDatabaseConnectionResult {
-                    error: Some(error.clone()),
-                });
+                if !errors.contains(error) {
+                    errors.push(error.clone());
+                }
+                continue;
             }
+            if !settings.db.enable_connection {
+                continue;
+            }
+            let existing = connections.iter_mut().find(|(db, _)| {
+                ConnectionKey::from(db) == ConnectionKey::from(&settings.db)
+                    && db.connection_string == settings.db.connection_string
+                    && db.password == settings.db.password
+                    && db.conn_timeout_secs == settings.db.conn_timeout_secs
+            });
+            match existing {
+                Some((_, folders)) => folders.push(folder.to_path_buf()),
+                None => connections.push((settings.db.clone(), vec![folder.to_path_buf()])),
+            }
+        }
 
-            let result = self
-                .connection
-                .try_with_pool(&settings.db, |pool| self.snapshot.load(pool).map(|_| ()));
+        // Concurrently, so that unreachable databases time out together rather than one after
+        // the other.
+        let results: Vec<_> = std::thread::scope(|scope| {
+            let checks: Vec<_> = connections
+                .iter()
+                .map(|(db, _)| {
+                    scope.spawn(|| {
+                        self.connection
+                            .try_with_pool(db, |pool| self.snapshot.load(pool).map(|_| ()))
+                    })
+                })
+                .collect();
+            checks
+                .into_iter()
+                .map(|check| check.join().expect("a connection check panicked"))
+                .collect()
+        });
+
+        for ((db, folders), result) in connections.iter().zip(results) {
             match result {
                 None | Some(Ok(())) => {}
                 Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
-                    return Ok(CheckDatabaseConnectionResult {
-                        error: Some(err.to_string()),
-                    });
+                    let folders: Vec<_> = folders
+                        .iter()
+                        .filter(|folder| !folder.as_os_str().is_empty())
+                        .map(|folder| folder.display().to_string())
+                        .collect();
+                    let used_by = if folders.is_empty() {
+                        String::new()
+                    } else {
+                        format!(", the database of {}", folders.join(", "))
+                    };
+                    errors.push(format!(
+                        "Could not connect to {}@{}:{}/{}{used_by}: {err}",
+                        db.username, db.host, db.port, db.database
+                    ));
                 }
                 Some(Err(err)) => return Err(err),
             }
         }
-        Ok(CheckDatabaseConnectionResult::default())
+        Ok(CheckDatabaseConnectionResult { errors })
     }
 
     #[cfg(not(feature = "db"))]
@@ -1755,15 +1796,24 @@ impl Workspace for WorkspaceServer {
 
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
-        if !settings.is_none_or(|settings| settings.inlay_hints.enabled) {
-            return Ok(PullInlayHintsResult::default());
-        }
+        let parameter_names = match settings.map_or(Some(ParameterNameHints::All), |settings| {
+            settings
+                .inlay_hints
+                .enabled
+                .then_some(settings.inlay_hints.parameter_names)
+        }) {
+            Some(ParameterNameHints::All) => pgls_inlay_hints::ParameterNameHints::All,
+            Some(ParameterNameHints::Literals) => pgls_inlay_hints::ParameterNameHints::Literals,
+            Some(ParameterNameHints::None) | None => return Ok(PullInlayHintsResult::default()),
+        };
 
+        // During the reconnect backoff this returns the connection error too, so that the client
+        // is asked to request them again once the database is reachable.
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                    .try_with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -1797,6 +1847,7 @@ impl Workspace for WorkspaceServer {
                         catalog,
                         search_path: session.search_path(),
                         function: stmt.function.as_ref(),
+                        parameter_names,
                     })
                     .into_iter()
                     .map(|hint| InlayHint {
@@ -1832,11 +1883,13 @@ impl Workspace for WorkspaceServer {
             return Ok(PullSemanticTokensResult::default());
         }
 
+        // During the reconnect backoff this returns the connection error too, so that the client
+        // is asked to request them again once the database is reachable.
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+                    .try_with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -1930,8 +1983,11 @@ fn in_database(references: &[Reference], others: &[Reference]) -> bool {
             }
             // Parameters belong to a function of the file.
             Reference::Parameter { .. } => false,
-            // The columns of a `*` can come from objects that the file changed.
-            Reference::Star { .. } => false,
+            // The columns of a `*` can come from objects that the file changed, and so can the
+            // relations behind CTEs and aliases.
+            Reference::Star { .. } | Reference::Cte { .. } | Reference::Alias { .. } => false,
+            // The catalog doesn't tell where schemas and roles come from.
+            Reference::Schema { .. } | Reference::Role { .. } => false,
         })
 }
 
@@ -1945,47 +2001,19 @@ fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSectio
         })
 }
 
-/// The edit that adds `-- pgls-ignore <rule>` on its own line above the statement at `offset`,
-/// with the statement's indentation and the file's line ending. Above the statement, the comment
-/// suppresses the rule for all of the statement, including the bodies of its functions.
-fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
-    let content = doc.get_document_content();
-    let start = doc
-        .statement_ranges()
-        .iter()
-        .find(|statement| statement.contains_inclusive(offset))
-        .map_or(offset, |statement| statement.start());
-    let line_ending = match content.find('\n') {
-        Some(newline) if content[..newline].ends_with('\r') => "\r\n",
-        _ => "\n",
-    };
-
-    let start = usize::from(start);
-    let line_start = content[..start]
-        .rfind('\n')
-        .map_or(0, |newline| newline + 1);
-    let before = &content[line_start..start];
-    let indentation: String = before
-        .chars()
-        .take_while(|c| *c == ' ' || *c == '\t')
-        .collect();
-    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
-    if before.trim().is_empty() {
-        TextEdit {
-            range: TextRange::empty(offset(line_start)),
-            new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
-        }
-    } else {
-        // The statement starts after another one on the same line, so it moves to a line of its
-        // own.
-        let previous_end = line_start + before.trim_end().len();
-        TextEdit {
-            range: TextRange::new(offset(previous_end), offset(start)),
-            new_text: format!(
-                "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
-            ),
-        }
-    }
+/// Moves the span of a diagnostic from the database, which is relative to the text of the
+/// statement at `range`, into the file. The span is computed from positions that the database
+/// reports, so it may not fit the statement as we have it, e.g. after the file changed. A span
+/// that isn't inside the statement or not on char boundaries of its text becomes the statement.
+#[cfg(feature = "db")]
+fn database_span(span: Option<TextRange>, statement: &str, range: TextRange) -> TextRange {
+    span.filter(|span| {
+        span.end() <= range.len()
+            && statement
+                .get(std::ops::Range::<usize>::from(*span))
+                .is_some()
+    })
+    .map_or(range, |span| span + range.start())
 }
 
 #[cfg(all(test, feature = "db"))]

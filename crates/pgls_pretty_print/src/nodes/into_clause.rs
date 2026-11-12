@@ -1,18 +1,10 @@
 use pgls_query::protobuf::{IntoClause, OnCommitAction};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::{
-    emit_node,
-    node_list::emit_comma_separated_list,
-    string::{emit_identifier_maybe_quoted, emit_string},
-};
+use super::emit_string;
+use super::prelude::*;
 
 pub(super) fn emit_into_clause(e: &mut EventEmitter, n: &IntoClause) {
-    e.group_start(GroupKind::IntoClause);
+    e.group_start();
 
     e.token(TokenKind::INTO_KW);
 
@@ -44,8 +36,11 @@ pub(super) fn emit_into_clause(e: &mut EventEmitter, n: &IntoClause) {
                 e.indent_start();
                 e.line(LineType::SoftOrSpace);
             }
-            emit_comma_separated_list(e, &n.col_names, |node, e| {
-                let ident = assert_node_variant!(String, node);
+            emit_comma_separated_list(e, &n.col_names, |e, node| {
+                let Some(NodeEnum::String(ident)) = node.node.as_ref() else {
+                    emit_node(e, node);
+                    return;
+                };
                 emit_string(e, ident);
             });
             if n.col_names.len() > 1 {

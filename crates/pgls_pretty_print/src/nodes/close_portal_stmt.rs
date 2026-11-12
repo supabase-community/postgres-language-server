@@ -1,11 +1,9 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
 use pgls_query::protobuf::ClosePortalStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_close_portal_stmt(e: &mut EventEmitter, n: &ClosePortalStmt) {
-    e.group_start(GroupKind::ClosePortalStmt);
+    e.group_start();
 
     e.token(TokenKind::CLOSE_KW);
     e.space();
@@ -13,10 +11,8 @@ pub(super) fn emit_close_portal_stmt(e: &mut EventEmitter, n: &ClosePortalStmt) 
     if n.portalname.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else {
-        super::emit_identifier_maybe_quoted(e, &n.portalname);
+        emit_identifier_maybe_quoted(e, &n.portalname);
     }
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

@@ -450,6 +450,15 @@
           "format": "uint16",
           "minimum": 0.0
         },
+        "statementTimeoutSecs": {
+          "description": "How long a statement executed from the editor may run, in seconds, before Postgres cancels it. `0` keeps the `statement_timeout` of the database. Default: `60`.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        },
         "username": {
           "description": "The username to connect to the database. Can also be set via the `PGUSER` environment variable.",
           "type": [
@@ -716,6 +725,17 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "parameterNames": {
+          "description": "Which arguments of function calls show the name of their parameter: \"all\", \"literals\" (only constants like `1`, `'a'`, `true` or `null`) or \"none\". Default: \"all\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ParameterNameHints"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       },
@@ -999,7 +1019,7 @@
           ]
         },
         "avoidAttachingPartition": {
-          "description": "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.",
+          "description": "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the partition.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1427,6 +1447,17 @@
             }
           ]
         },
+        "generatedColumnAssignment": {
+          "description": "An INSERT or UPDATE assigns a value to a generated column or a GENERATED ALWAYS identity column.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "identifierTooLong": {
           "description": "Identifiers longer than 63 bytes are silently truncated.",
           "anyOf": [
@@ -1462,6 +1493,17 @@
         },
         "invalidDropTypeSignature": {
           "description": "DROP TYPE and DROP DOMAIN don't take a parameter list.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "invalidMerge": {
+          "description": "A MERGE, or merge_action(), that Postgres rejects.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1871,6 +1913,32 @@
         }
       },
       "additionalProperties": false
+    },
+    "ParameterNameHints": {
+      "description": "Which arguments of function calls show the name of their parameter.",
+      "oneOf": [
+        {
+          "description": "Every positional argument (default).",
+          "type": "string",
+          "enum": [
+            "all"
+          ]
+        },
+        {
+          "description": "Only constants, like `1`, `'a'`, `true` or `null`.",
+          "type": "string",
+          "enum": [
+            "literals"
+          ]
+        },
+        {
+          "description": "No argument.",
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        }
+      ]
     },
     "Performance": {
       "description": "A list of rules that belong to this group",

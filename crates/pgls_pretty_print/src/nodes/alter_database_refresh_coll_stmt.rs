@@ -1,12 +1,12 @@
-use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterDatabaseRefreshCollStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_database_refresh_coll_stmt(
     e: &mut EventEmitter,
     n: &AlterDatabaseRefreshCollStmt,
 ) {
-    e.group_start(GroupKind::AlterDatabaseRefreshCollStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -14,7 +14,7 @@ pub(super) fn emit_alter_database_refresh_coll_stmt(
     e.space();
 
     if !n.dbname.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &n.dbname);
+        emit_identifier_maybe_quoted(e, &n.dbname);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -23,8 +23,6 @@ pub(super) fn emit_alter_database_refresh_coll_stmt(
     e.token(TokenKind::COLLATION_KW);
     e.space();
     e.token(TokenKind::VERSION_KW);
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

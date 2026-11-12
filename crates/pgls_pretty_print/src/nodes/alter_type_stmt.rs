@@ -1,13 +1,9 @@
-use pgls_query::{NodeEnum, protobuf::AlterTypeStmt};
+use pgls_query::protobuf::AlterTypeStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_dot_separated_list, emit_parenthesized_list},
-};
+use super::prelude::*;
 
 pub(super) fn emit_alter_type_stmt(e: &mut EventEmitter, n: &AlterTypeStmt) {
-    e.group_start(GroupKind::AlterTypeStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -23,19 +19,18 @@ pub(super) fn emit_alter_type_stmt(e: &mut EventEmitter, n: &AlterTypeStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, |node, emitter| {
+        emit_parenthesized_list(e, &n.options, |emitter, node| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 emitter.token(TokenKind::IDENT(def.defname.clone()));
                 if let Some(ref arg) = def.arg {
                     emitter.space();
                     emitter.token(TokenKind::IDENT("=".to_string()));
                     emitter.space();
-                    super::emit_node(arg, emitter);
+                    emit_node(emitter, arg);
                 }
             }
         });
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

@@ -1,16 +1,9 @@
-use pgls_query::NodeEnum;
-use pgls_query::protobuf::{AlterOperatorStmt, DefElem, List, ObjectWithArgs};
+use pgls_query::protobuf::{AlterOperatorStmt, DefElem, List};
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_parenthesized_list,
-};
-
-use super::string::emit_identifier_maybe_quoted;
+use super::prelude::*;
 
 pub(super) fn emit_alter_operator_stmt(e: &mut EventEmitter, n: &AlterOperatorStmt) {
-    e.group_start(GroupKind::AlterOperatorStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
@@ -18,11 +11,11 @@ pub(super) fn emit_alter_operator_stmt(e: &mut EventEmitter, n: &AlterOperatorSt
     e.space();
 
     if let Some(ref oper) = n.opername {
-        emit_operator_fqn(e, oper);
+        emit_operator_name(e, &oper.objname);
 
         if !oper.objargs.is_empty() || !oper.args_unspecified {
             e.space();
-            emit_parenthesized_list(e, &oper.objargs, super::emit_node);
+            emit_parenthesized_list(e, &oper.objargs, emit_node);
         }
     }
 
@@ -30,34 +23,14 @@ pub(super) fn emit_alter_operator_stmt(e: &mut EventEmitter, n: &AlterOperatorSt
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, |node, emitter| {
+        emit_parenthesized_list(e, &n.options, |emitter, node| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 emit_operator_option(emitter, def);
             }
         });
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
-}
-
-fn emit_operator_fqn(e: &mut EventEmitter, oper: &ObjectWithArgs) {
-    for (idx, node) in oper.objname.iter().enumerate() {
-        if idx > 0 {
-            e.token(TokenKind::DOT);
-        }
-
-        match node.node.as_ref() {
-            Some(NodeEnum::String(s)) => {
-                if idx == oper.objname.len() - 1 {
-                    e.token(TokenKind::IDENT(s.sval.clone()));
-                } else {
-                    emit_identifier_maybe_quoted(e, &s.sval);
-                }
-            }
-            _ => super::emit_node(node, e),
-        }
-    }
 }
 
 fn emit_operator_option(e: &mut EventEmitter, def: &DefElem) {
@@ -103,8 +76,8 @@ fn emit_operator_option_arg(e: &mut EventEmitter, arg: &pgls_query::protobuf::No
             }));
         }
         Some(NodeEnum::List(list)) => emit_operator_list(e, list),
-        Some(NodeEnum::String(s)) => super::emit_string_literal(e, s),
-        _ => super::emit_node(arg, e),
+        Some(NodeEnum::String(s)) => emit_string_literal(e, s),
+        _ => emit_node(e, arg),
     }
 }
 
@@ -116,7 +89,7 @@ fn emit_operator_list(e: &mut EventEmitter, list: &List) {
 
         match item.node.as_ref() {
             Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-            _ => super::emit_node(item, e),
+            _ => emit_node(e, item),
         }
     }
 }

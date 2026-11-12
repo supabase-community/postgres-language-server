@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/function_argument_groups_leading_fill.sql
+---
+select
+  my_triple_func(
+    'first_key', first_value_column_name
+    , 'first_unit_label_text'
+    , 'second_key', second_value_column_name
+    , 'second_unit_label_text'
+  )
+from
+  t;

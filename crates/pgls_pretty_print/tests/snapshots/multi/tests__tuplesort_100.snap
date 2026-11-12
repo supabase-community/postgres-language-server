@@ -330,11 +330,11 @@ set local enable_indexscan = 'false';
 explain (costs 'off')
 declare c scroll
 cursor
-for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;;
+for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;
 
 declare c scroll
 cursor
-for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;;
+for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;
 
 fetch next from c;
 
@@ -375,11 +375,11 @@ set local work_mem = '100kB';
 explain (costs 'off')
 declare c scroll
 cursor
-for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;;
+for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;
 
 declare c scroll
 cursor
-for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;;
+for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;
 
 fetch next from c;
 

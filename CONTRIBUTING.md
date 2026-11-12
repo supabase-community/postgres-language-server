@@ -13,13 +13,16 @@ cd postgres-language-server
 # install the cargo and JS tooling (tree-sitter-cli, cargo-insta, taplo, sqlx-cli, uv, ...)
 just install-tools
 
-# start the Postgres database the tests and the sqlx queries run against
-docker compose up -d
+# check out the libpg_query submodule and install the JS dependencies; run this in every new worktree too
+just setup
+
+# start the Postgres database the tests and the sqlx queries run against, and wait until it's ready
+just db
 ```
 
-If you use Nix, `nix develop` provides all tools, including libclang, which the `libpg_query` bindings need. Run `git submodule update --init --recursive` if you cloned without `--recurse-submodules`.
+If you use Nix, `nix develop` provides all tools, including libclang, which the `libpg_query` bindings need.
 
-The test database listens on `postgresql://postgres:postgres@127.0.0.1:5432/postgres` (see `.env`).
+The test database listens on `postgresql://postgres:postgres@127.0.0.1:5432/postgres` (see `.env`). All checkouts and worktrees share it. `just db` rebuilds the image when the `Dockerfile` changed; the Docker build cache makes that fast otherwise. Tests that need the database use `#[pgls_test_utils::db_test]`.
 
 ## Running and debugging
 
@@ -72,6 +75,7 @@ The language server runs for hours on files we don't control: `pg_dump` output w
 ```bash
 just format   # Rust, TOML and JS/TS
 just lint     # clippy, rules_check and oxlint
+just check    # what CI's Rust jobs gate on: format check, clippy -D warnings, clean codegen
 just ready    # codegen, format and lint; fails if anything changes
 ```
 
