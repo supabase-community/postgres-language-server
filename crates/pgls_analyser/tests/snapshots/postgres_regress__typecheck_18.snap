@@ -2,32 +2,42 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_18_6: 47289 statements and 373 in SQL function bodies, 1847 findings on statements Postgres rejected
+REL_18_6: 47289 statements and 402 in SQL function bodies, 1907 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
+ambiguousColumn 42712: 2
+ambiguousColumn 42P01: 1
 banDuplicateColumnAssignments 42601: 1
 banDuplicateColumnAssignments 42701: 2
 functionArgumentMismatch 42725: 5
 functionArgumentMismatch 42883: 4
 functionReturnTypeMismatch 42P13: 5
+generatedColumnAssignment 428C9: 18
 insertColumnMismatch 42601: 6
 invalidCast 42846: 2
-missingFromClauseEntry 42P01: 13
+invalidMerge 42601: 2
+invalidMerge 42712: 1
+invalidMerge 42P01: 2
+missingFromClauseEntry 42P01: 20
 operatorTypeMismatch 42725: 1
-operatorTypeMismatch 42883: 9
-unknownColumn 42703: 40
+operatorTypeMismatch 42883: 12
+unknownColumn 42703: 41
 unknownColumn 42P01: 3
 unknownFunction 42704: 4
-unknownFunction 42883: 96
+unknownFunction 42883: 97
 unknownFunction 42P01: 19
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
 unknownRelation 42501: 1
-unknownRelation 42P01: 1536
+unknownRelation 42P01: 1558
 unknownType 42704: 88
 unknownType 42P01: 2
 
 Known artefacts
+constraints.sql:868:1
+  `ALTER COLUMN a ADD GENERATED ALWAYS AS IDENTITY` fails because `a` has an invalid NOT NULL constraint, so `a` is no identity column
+foreign_key.sql:1193:1
+  `CREATE TEMP TABLE fktable2 (fk int references pktable ENFORCED NOT ENFORCED)` fails, so no temporary `fktable2` shadows the one created later
 transactions.sql:108:1
   `DROP TABLE writetest` fails in a read-only session, so the table still exists
 transactions.sql:110:1
@@ -251,6 +261,7 @@ create_am.sql:59:1 42P01 unknownRelation
 create_am.sql:61:1 42P01 unknownRelation
 create_am.sql:63:1 42P01 unknownRelation
 create_cast.sql:28:1 42883 functionArgumentMismatch
+create_function_sql.sql:203:1 (body) 42883 operatorTypeMismatch
 create_function_sql.sql:460:1 42P13 functionReturnTypeMismatch
 create_index_spgist.sql:5:1 42P01 unknownRelation
 create_index_spgist.sql:19:1 42P01 unknownRelation
@@ -270,6 +281,16 @@ errors.sql:52:1 42P01 unknownRelation
 expressions.sql:95:1 42883 operatorTypeMismatch
 expressions.sql:95:1 42883 operatorTypeMismatch
 float8.sql:284:1 42P01 unknownRelation
+generated_stored.sql:55:1 428C9 generatedColumnAssignment
+generated_stored.sql:56:1 428C9 generatedColumnAssignment
+generated_stored.sql:57:1 428C9 generatedColumnAssignment
+generated_stored.sql:58:1 428C9 generatedColumnAssignment
+generated_stored.sql:67:1 428C9 generatedColumnAssignment
+generated_virtual.sql:55:1 428C9 generatedColumnAssignment
+generated_virtual.sql:56:1 428C9 generatedColumnAssignment
+generated_virtual.sql:57:1 428C9 generatedColumnAssignment
+generated_virtual.sql:58:1 428C9 generatedColumnAssignment
+generated_virtual.sql:67:1 428C9 generatedColumnAssignment
 geometry.sql:13:1 42P01 unknownRelation
 geometry.sql:16:1 42P01 unknownRelation
 geometry.sql:19:1 42P01 unknownRelation
@@ -608,7 +629,14 @@ horology.sql:437:1 42P01 unknownRelation
 horology.sql:439:1 42P01 unknownRelation
 horology.sql:445:1 42P01 unknownRelation
 horology.sql:451:1 42P01 unknownRelation
+identity.sql:61:1 428C9 generatedColumnAssignment
+identity.sql:63:1 428C9 generatedColumnAssignment
+identity.sql:64:1 428C9 generatedColumnAssignment
+identity.sql:65:1 428C9 generatedColumnAssignment
+identity.sql:108:1 428C9 generatedColumnAssignment
+identity.sql:125:1 428C9 generatedColumnAssignment
 identity.sql:159:1 42P01 unknownRelation
+identity.sql:491:1 428C9 generatedColumnAssignment
 incremental_sort.sql:3:1 42P01 unknownRelation
 incremental_sort.sql:10:1 42P01 unknownRelation
 incremental_sort.sql:244:1 42P01 unknownRelation
@@ -626,6 +654,27 @@ incremental_sort.sql:274:1 42P01 unknownRelation
 incremental_sort.sql:276:1 42P01 unknownRelation
 incremental_sort.sql:297:1 42P01 unknownRelation
 incremental_sort.sql:297:1 42P01 unknownRelation
+inherit.sql:611:1 42P01 unknownRelation
+inherit.sql:613:1 42P01 unknownRelation
+inherit.sql:617:1 42P01 unknownRelation
+inherit.sql:619:1 42P01 unknownRelation
+inherit.sql:713:1 42P01 unknownRelation
+inherit.sql:713:1 42P01 unknownRelation
+inherit.sql:719:1 42P01 unknownRelation
+inherit.sql:719:1 42P01 unknownRelation
+inherit.sql:725:1 42P01 unknownRelation
+inherit.sql:725:1 42P01 unknownRelation
+inherit.sql:732:1 42P01 unknownRelation
+inherit.sql:732:1 42P01 unknownRelation
+inherit.sql:738:1 42P01 unknownRelation
+inherit.sql:738:1 42P01 unknownRelation
+inherit.sql:745:1 42P01 unknownRelation
+inherit.sql:745:1 42P01 unknownRelation
+inherit.sql:785:1 42P01 unknownRelation
+inherit.sql:787:1 42P01 unknownRelation
+inherit.sql:802:1 42P01 unknownRelation
+inherit.sql:804:1 42P01 unknownRelation
+inherit.sql:1439:1 42883 unknownFunction
 insert.sql:16:1 42601 insertColumnMismatch
 insert.sql:17:1 42601 insertColumnMismatch
 insert.sql:18:1 42601 insertColumnMismatch
@@ -797,7 +846,9 @@ int8.sql:188:1 42P01 unknownRelation
 int8.sql:194:1 42P01 unknownRelation
 int8.sql:195:1 42P01 unknownRelation
 join.sql:82:1 42702 ambiguousColumn
+join.sql:132:1 42P01 missingFromClauseEntry
 join.sql:134:1 42703 unknownColumn
+join.sql:135:1 42P01 missingFromClauseEntry
 join.sql:216:1 42P01 unknownRelation
 join.sql:216:1 42P01 unknownRelation
 join.sql:216:1 42P01 unknownRelation
@@ -975,6 +1026,18 @@ memoize.sql:233:1 42P01 unknownRelation
 memoize.sql:233:1 42P01 unknownRelation
 memoize.sql:239:1 42P01 unknownRelation
 memoize.sql:239:1 42P01 unknownRelation
+merge.sql:99:1 42712 ambiguousColumn
+merge.sql:99:1 42712 ambiguousColumn
+merge.sql:99:1 42712 invalidMerge
+merge.sql:166:1 42P01 missingFromClauseEntry
+merge.sql:432:1 42P01 missingFromClauseEntry
+merge.sql:440:1 42P01 missingFromClauseEntry
+merge.sql:462:1 42601 invalidMerge
+merge.sql:513:1 42P01 missingFromClauseEntry
+merge.sql:527:1 42P01 missingFromClauseEntry
+merge.sql:873:1 42P01 ambiguousColumn
+merge.sql:944:1 42P01 invalidMerge
+merge.sql:945:1 42P01 invalidMerge
 misc_functions.sql:77:1 42883 unknownFunction
 misc_functions.sql:78:1 42883 unknownFunction
 multirangetypes.sql:8:1 42704 unknownType
@@ -1260,6 +1323,7 @@ returning.sql:41:1 42P01 unknownRelation
 returning.sql:48:1 42P01 unknownRelation
 returning.sql:71:1 42P01 unknownRelation
 returning.sql:79:1 42P01 unknownRelation
+returning.sql:336:1 42703 unknownColumn
 rowtypes.sql:123:1 42P01 unknownRelation
 rowtypes.sql:123:1 42P01 unknownRelation
 rowtypes.sql:129:1 42P01 unknownRelation
@@ -1722,6 +1786,7 @@ union.sql:583:1 42P01 unknownRelation
 union.sql:583:1 42P01 unknownRelation
 union.sql:590:1 42P01 unknownRelation
 union.sql:590:1 42P01 unknownRelation
+updatable_views.sql:1189:1 428C9 generatedColumnAssignment
 updatable_views.sql:2080:46 42P01 missingFromClauseEntry
 updatable_views.sql:2080:46 42P01 missingFromClauseEntry
 update.sql:35:1 42703 unknownColumn
@@ -1807,7 +1872,9 @@ window.sql:385:1 42P01 unknownRelation
 window.sql:389:1 42P01 unknownRelation
 window.sql:393:1 42P01 unknownRelation
 window.sql:397:1 42P01 unknownRelation
+window.sql:510:1 (body) 42P01 unknownRelation
 window.sql:518:1 (body) 42P01 unknownRelation
+window.sql:530:1 (body) 42P01 unknownRelation
 window.sql:538:1 (body) 42P01 unknownRelation
 window.sql:556:1 42P01 unknownRelation
 window.sql:560:1 42P01 unknownRelation
@@ -1845,6 +1912,8 @@ window.sql:2068:1 42P01 unknownRelation
 window.sql:2068:1 42P01 unknownRelation
 window.sql:2075:1 42P01 unknownRelation
 window.sql:2075:1 42P01 unknownRelation
+with.sql:91:1 42883 operatorTypeMismatch
+with.sql:91:1 42883 operatorTypeMismatch
 with.sql:247:1 42P01 unknownRelation
 with.sql:378:1 42P01 unknownRelation
 with.sql:378:1 42P01 unknownRelation
@@ -1869,6 +1938,7 @@ with.sql:534:1 42P01 unknownRelation
 with.sql:545:1 42P01 unknownRelation
 with.sql:555:1 42P01 unknownRelation
 with.sql:1342:2 42P01 missingFromClauseEntry
+with.sql:1510:1 42601 invalidMerge
 write_parallel.sql:17:1 42P01 unknownRelation
 write_parallel.sql:19:1 42P01 unknownRelation
 write_parallel.sql:23:1 42P01 unknownRelation

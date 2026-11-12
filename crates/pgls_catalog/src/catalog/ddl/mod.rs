@@ -1,9 +1,9 @@
 //! Applying the effects of statements to the catalog, one module per statement, like the nodes
 //! of `pgls_pretty_print`.
 //!
-//! Only DDL that creates, alters, renames, or drops relations, columns, types, functions, or
-//! schemas is modelled. Statements that may change these in ways we can't follow taint the
-//! catalog. Everything else (DML, `SET`, indexes, grants, comments, policies, triggers,
+//! Only DDL that creates, alters, renames, or drops relations, columns, types, functions,
+//! schemas, or indexes is modelled. Statements that may change these in ways we can't follow
+//! taint the catalog. Everything else (DML, `SET`, grants, comments, policies, triggers,
 //! constraints, ...) has no effect on name resolution and is ignored.
 //!
 //! Known gaps, all of which can only hide errors, never report wrong ones:
@@ -15,7 +15,16 @@
 //!   OF type`) that exist only in the database. This is the one gap that could report a column
 //!   as missing.
 //! - Renaming a schema makes the rest of the file unknown.
+//! - Only indexes created with `CREATE INDEX` and a name are tracked. Once the file may have
+//!   created others (constraints, partitions, generated names), no index is known to be missing.
+//!   We don't know which constraints have an index, so `RENAME CONSTRAINT` and
+//!   `DROP CONSTRAINT` make the index with the constraint's name unknown, and we don't know
+//!   which partition indexes are attached to an index, so dropping the index of a partitioned
+//!   table makes the indexes of all partitions unknown. `DROP COLUMN` doesn't drop the indexes
+//!   on the column.
 
+mod alter_enum_stmt;
+mod alter_function_stmt;
 mod alter_object_schema_stmt;
 mod alter_table_stmt;
 mod composite_type_stmt;
@@ -31,6 +40,7 @@ mod create_stmt;
 mod create_table_as_stmt;
 mod define_stmt;
 mod drop_stmt;
+mod index_stmt;
 mod into_clause;
 mod rename_stmt;
 mod select_stmt;
@@ -41,6 +51,8 @@ use pgls_query::NodeEnum;
 
 use super::Catalog;
 
+use alter_enum_stmt::apply_alter_enum_stmt;
+use alter_function_stmt::apply_alter_function_stmt;
 use alter_object_schema_stmt::apply_alter_object_schema_stmt;
 use alter_table_stmt::apply_alter_table_stmt;
 use composite_type_stmt::apply_composite_type_stmt;
@@ -56,6 +68,7 @@ use create_stmt::apply_create_stmt;
 use create_table_as_stmt::apply_create_table_as_stmt;
 use define_stmt::apply_define_stmt;
 use drop_stmt::apply_drop_stmt;
+use index_stmt::{apply_index_stmt, creates_implicit_indexes};
 use rename_stmt::apply_rename_stmt;
 use select_stmt::apply_select_stmt;
 use transaction_stmt::apply_transaction_stmt;
@@ -65,6 +78,10 @@ impl Catalog {
     /// Applies the effects of a top-level statement, executed with the given search path.
     pub fn apply(&mut self, stmt: &NodeEnum, search_path: &[String]) {
         let c = self;
+        c.skipped_existing = false;
+        if creates_implicit_indexes(stmt) {
+            c.indexes_incomplete = true;
+        }
         match stmt {
             NodeEnum::CreateSchemaStmt(n) => apply_create_schema_stmt(c, n, search_path),
             NodeEnum::CreateStmt(n) => apply_create_stmt(c, n, search_path),
@@ -81,7 +98,10 @@ impl Catalog {
             NodeEnum::CreateRangeStmt(n) => apply_create_range_stmt(c, n, search_path),
             NodeEnum::DefineStmt(n) => apply_define_stmt(c, n, search_path),
             NodeEnum::CreateFunctionStmt(n) => apply_create_function_stmt(c, n, search_path),
+            NodeEnum::AlterFunctionStmt(n) => apply_alter_function_stmt(c, n, search_path),
+            NodeEnum::IndexStmt(n) => apply_index_stmt(c, n, search_path),
             NodeEnum::AlterTableStmt(n) => apply_alter_table_stmt(c, n, search_path),
+            NodeEnum::AlterEnumStmt(n) => apply_alter_enum_stmt(c, n, search_path),
             NodeEnum::RenameStmt(n) => apply_rename_stmt(c, n, search_path),
             NodeEnum::AlterObjectSchemaStmt(n) => apply_alter_object_schema_stmt(c, n, search_path),
             NodeEnum::DropStmt(n) => apply_drop_stmt(c, n, search_path),

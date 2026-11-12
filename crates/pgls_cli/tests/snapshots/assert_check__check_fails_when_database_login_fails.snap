@@ -9,7 +9,7 @@ Found 1 error.
 stderr:
 database/connection ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Database error: password authentication failed for user "postgres"
+  × Could not connect to <database>, the database of <cwd>: Database error: password authentication failed for user "postgres"
   
   i The checks that need the database were skipped. Fix the connection settings, or pass --disable-db or set db.disableConnection to check without a database.
   
