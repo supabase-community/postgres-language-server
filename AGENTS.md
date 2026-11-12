@@ -16,11 +16,11 @@ just setup
 # Install development tools
 just install-tools
 
-# Start database for schema introspection
-docker-compose up -d
+# Start the test database and wait until it accepts connections
+just db
 
 # For Nix users
-nix develop && docker-compose up -d
+nix develop -c just db
 ```
 
 ### Running Commands as an Agent
@@ -36,9 +36,10 @@ nix develop -c bash -c 'cargo clippy --workspace --all-targets -- -D warnings &&
 
 - The first `nix develop` downloads the toolchain and takes a few minutes; give it a generous timeout. Later runs start in seconds.
 - `just format`, which `just gen-lint` ends with, runs `bun oxfmt`. Without `just setup` it fails with `Script not found "oxfmt"` and leaves the generated TS files unformatted.
-- Tests that use `sqlx::test` need the database from `docker-compose up -d` (see `DATABASE_URL` in `.env`).
+- Database tests need the database from `just db` (see `DATABASE_URL` in `.env`). All worktrees share one database: `docker-compose.yml` sets the project name, so `just db` in another worktree reuses the running container. If the database isn't running, the tests fail at once with `test database not reachable at <url>`.
 - The WASM e2e tests (`bun run test:e2e` in `packages/@postgres-language-server/wasm`) serve the test page on port 3000. If that port is taken, e.g. by another worktree, set `PGLS_E2E_PORT`.
-- A worktree's `target/` takes about 6 GB after building every test. When several worktrees build at once, `CARGO_INCREMENTAL=0` saves about 2 GB more per worktree, at the cost of slower rebuilds. Don't point several worktrees at one `CARGO_TARGET_DIR`: the artifacts of the workspace crates have the same names in every worktree, so the builds overwrite each other.
+- A worktree's `target/` takes about 6 GB after building every test; `just clean` removes it. When several worktrees build at once, `CARGO_INCREMENTAL=0` saves about 2 GB more per worktree, at the cost of slower rebuilds. Don't point several worktrees at one `CARGO_TARGET_DIR`: the artifacts of the workspace crates have the same names in every worktree, so the builds overwrite each other.
+- The Nix shell has `sccache`. With `RUSTC_WRAPPER=sccache`, compiled crates are cached in `~/.cache/sccache` (`SCCACHE_DIR`), shared by all worktrees without the overwriting of a shared `CARGO_TARGET_DIR`. It's off by default because it barely helps a new worktree: the cache keys contain the crate's absolute path, so only crates.io dependencies hit (about 75% of the Rust compilations of `-p pgls_analyser`), while the workspace crates and the C code of `libpg_query`, which take most of the build time, compile again. A clean rebuild in the same worktree, e.g. after `just clean`, is 3 to 5 times faster. sccache doesn't cache incrementally compiled crates, so it caches the workspace crates only with `CARGO_INCREMENTAL=0`. The cache grows to 10 GB unless `SCCACHE_CACHE_SIZE` says otherwise.
 
 ### Building and Testing
 ```bash
@@ -118,6 +119,7 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_hover` - Hover information provider
 - `pgls_semantic_tokens` - Semantic highlighting of resolved names
 - `pgls_analyser` & `pgls_analyse` - Linting and analysis framework
+- `pgls_walk` - The walk over a file's statements that lint and the editor features share: the catalog and session as each statement sees them
 - `pgls_typecheck` - EXPLAIN fallback for typecheck
 - `pgls_catalog` - Database snapshot, the file's DDL on top of it, name resolution, and type inference
 
@@ -125,6 +127,7 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_diagnostics` - Error and warning reporting
 - `pgls_console` - Terminal output and formatting
 - `pgls_text_edit` - Text manipulation utilities
+- `pgls_line_index` - Converts offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back, and the character positions that Postgres reports to offsets. Convert positions with it, not by hand
 - `pgls_suppressions` - Rule suppression handling
 
 ### TypeScript Packages
@@ -154,6 +157,9 @@ The server connects to a Postgres database and loads a snapshot of its schema (`
 ### Type Checking
 The type rules in `pgls_catalog::typing` and `pgls_catalog::resolve` port Postgres' parser from the latest supported version. Link the Postgres function next to each port, at the tag of the newest fixtures (e.g. `https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557`). Only report what Postgres would certainly reject; anything not modelled is unknown and never reported. `crates/pgls_analyser/tests/postgres_regress.rs` fails on any finding on a statement Postgres accepted, on every version.
 
+### Database Tests
+Write tests that need a database as `#[pgls_test_utils::db_test] async fn name(test_db: PgPool)`, not `#[sqlx::test]`. sqlx still creates a database per test from `template1` and runs the migrations of `pgls_test_utils`, but `db_test` fails fast when the database isn't running, and gives each test a pool of at most 2 connections that waits up to 2 minutes for one (see `pgls_test_utils::db`), so tests don't time out when several worktrees share the database.
+
 ### Snapshot Testing
 The project uses `insta` for snapshot testing. Update snapshots with:
 ```bash
@@ -168,7 +174,7 @@ INSTA_UPDATE=always cargo test -p pgls_analyser --test rules_tests
 - New rules keep `version: "next"`; the release workflow replaces it with the released version.
 - A spec file under `tests/specs/<group>/<ruleName>/` lists one `-- expect_lint/<ruleName>` line per expected diagnostic, or `-- expect_no_diagnostics`. Only the count per rule is checked, not which statement the line is above.
 - Every `expect_diagnostic` snippet in a rule's doc comment must produce exactly one diagnostic. `docs_codegen`, which runs as part of `just gen-lint`, fails otherwise.
-- The vendored libpg_query is Postgres 17, so syntax that is new in Postgres 18 has no AST nodes yet.
+- The vendored libpg_query is Postgres 18, so it parses syntax that older servers reject (`RETURNING WITH (OLD AS o)`, virtual generated columns, `NOT ENFORCED`, ...). Where the server version matters, check `server_version_num()` of the catalog.
 - The parser truncates identifiers to 63 bytes. For the source text as written, scan the statement with `pgls_query::scan`.
 - `ctx.stmt().iter()` walks every nested node of a statement (CTEs, subqueries, `ON CONFLICT`, ...) as a `NodeRef`.
 - To see the AST of a statement, print `pgls_query::parse(sql)?.into_root()` with `{:#?}`, e.g. from a throwaway test.
@@ -200,6 +206,8 @@ INSTA_UPDATE=always cargo test -p pgls_analyser --test rules_tests
 
 ### Code Generation
 Many parser structures are generated from PostgreSQL's protobuf definitions using procedural macros in `pgls_query_macros`. Run `just gen-lint` after modifying analyzer rules or configurations.
+
+To upgrade libpg_query, check out the new tag in `crates/pgls_query/vendor/libpg_query` and copy its `protobuf/pg_query.proto` and `src/postgres/include/parser/kwlist.h` into the vendor directories of `pgls_query_macros`, `pgls_lexer_codegen` and `pgls_pretty_print_codegen` (renaming them to the new tag). `crates/pgls_query/src/protobuf.rs` is only regenerated when `protoc` is on the `PATH`, which the Nix shell doesn't provide: `nix build --print-out-paths nixpkgs#protobuf` and prepend its `bin` to `PATH` for one `cargo build -p pgls_query`.
 
 ### Database Schema
 The introspection queries live in `crates/pgls_catalog/src/snapshot/queries/`. After changing one, run `cargo sqlx prepare --workspace` against the test database to update `.sqlx/`.

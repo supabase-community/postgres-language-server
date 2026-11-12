@@ -10,6 +10,7 @@ use crate::{CatalogView, Lookup, TypeKind};
 /// Selects the function for a call. Returns `Unknown` when no function with this name and
 /// argument count is visible; that's the job of the name and arity check. `variadic` is set when
 /// the call marks its last argument `VARIADIC`, which passes the variadic array itself.
+/// `include_out_arguments` is set for `CALL`, which passes the output arguments too.
 ///
 /// Port of [`func_get_detail`]: an exact match, then a type-name call as a cast, then the
 /// candidates the arguments can be coerced to, and the best of them.
@@ -21,6 +22,7 @@ pub fn select_function(
     name: &str,
     args: &[CallArg],
     variadic: bool,
+    include_out_arguments: bool,
     search_path: &[String],
 ) -> Selection<ResolvedFunction> {
     let Some(inputs) = args
@@ -50,8 +52,13 @@ pub fn select_function(
     let Decision::Known(pseudo) = Pseudo::load(c) else {
         return Selection::Unknown;
     };
-    let Some(expanded) = expand_candidates(candidates.items, inputs.len(), &names, !variadic)
-    else {
+    let Some(expanded) = expand_candidates(
+        candidates.items,
+        inputs.len(),
+        &names,
+        !variadic,
+        include_out_arguments,
+    ) else {
         return Selection::Unknown;
     };
     if expanded.is_empty() {

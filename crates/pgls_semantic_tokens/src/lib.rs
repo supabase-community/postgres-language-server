@@ -7,6 +7,10 @@
 //! match no object or several, and constructs the resolver doesn't model, get no token and keep
 //! the highlighting of the editor's grammar.
 
+// Semantic tokens read the client's SQL and the database's catalog, so a panic on unexpected
+// input takes down the server for every connected editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use pgls_catalog::CatalogView;
 use pgls_catalog::resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
 use pgls_query::NodeEnum;
@@ -40,7 +44,7 @@ pub enum SemanticTokenKind {
     Parameter,
     /// A string literal that is coerced to an enum type.
     EnumMember,
-    /// The alias of a FROM item, like `u` in `from users u` and in `u.name`.
+    /// The alias of a FROM item, like `u` in `from users u` and in `u.name`, or a role.
     Variable,
 }
 
@@ -53,7 +57,8 @@ pub struct SemanticToken {
     pub default_library: bool,
 }
 
-/// The semantic tokens of a statement, ordered by their start. Tokens don't overlap.
+/// The semantic tokens of a statement, ordered by their start. Tokens don't overlap, and each is
+/// on a single line.
 pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
     let references = resolve(ResolveParams {
         stmt: params.stmt,
@@ -97,7 +102,7 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
             }
         };
         // The schema qualifier of a name, like `public` in `public.users`.
-        let qualifier = |parts: &[TextRange]| parts.len().checked_sub(2).map(|i| parts[i]);
+        let qualifier = |parts: &[TextRange]| parts.iter().rev().nth(1).copied();
         match reference {
             Reference::Relation { relation, .. } => {
                 let schema = Some(relation.schema.as_str());
@@ -130,7 +135,9 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                 let end = reference
                     .span()
                     .map_or(TextSize::default(), |span| span.end());
-                for token in scanned[next..]
+                for token in scanned
+                    .get(next..)
+                    .unwrap_or_default()
                     .iter()
                     .take_while(|token| token_range(token).is_some_and(|range| range.end() <= end))
                 {
@@ -180,6 +187,10 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
             }
             Reference::Cte { .. } => push(parts.last(), SemanticTokenKind::Class, None),
             Reference::Alias { .. } => push(parts.last(), SemanticTokenKind::Variable, None),
+            Reference::Schema { name, .. } => {
+                push(parts.last(), SemanticTokenKind::Namespace, Some(name))
+            }
+            Reference::Role { .. } => push(parts.last(), SemanticTokenKind::Variable, None),
             Reference::EnumLiteral { .. } => {}
             // A `*` is not a name, and its qualifier is a table or alias that has a reference of
             // its own where it is defined.
@@ -197,6 +208,36 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
         keep
     });
     tokens
+        .into_iter()
+        .flat_map(|token| split_lines(params.sql, token))
+        .collect()
+}
+
+/// Splits a token that spans several lines, like a string constant continued on the next line
+/// (`'a'` newline `'b'`), into one token per line, since clients only support tokens on a single
+/// line by default. Each part leaves out the whitespace at the start and end of its line.
+fn split_lines(sql: &str, token: SemanticToken) -> Vec<SemanticToken> {
+    let Some(text) = sql.get(std::ops::Range::<usize>::from(token.range)) else {
+        return vec![token];
+    };
+    if !text.contains('\n') {
+        return vec![token];
+    }
+    let mut parts = Vec::new();
+    let mut line_start = token.range.start();
+    for line in text.split('\n') {
+        let trimmed = line.trim_start();
+        let start = line_start + TextSize::of(&line[..line.len() - trimmed.len()]);
+        let trimmed = trimmed.trim_end();
+        if !trimmed.is_empty() {
+            parts.push(SemanticToken {
+                range: TextRange::at(start, TextSize::of(trimmed)),
+                ..token.clone()
+            });
+        }
+        line_start += TextSize::of(line) + TextSize::of('\n');
+    }
+    parts
 }
 
 fn is_builtin_schema(schema: &str) -> bool {
@@ -229,7 +270,7 @@ fn name_parts(tokens: &[ScanToken], location: i32) -> Option<(Vec<TextRange>, us
     if !is_name(first) {
         return None;
     }
-    while let [dot, name, ..] = &tokens[index..]
+    while let Some([dot, name, ..]) = tokens.get(index..)
         && dot.token() == Token::Ascii46
         && is_name(name)
     {
@@ -266,7 +307,9 @@ fn identifier(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{name_parts, scan};
+    use pgls_text_size::{TextRange, TextSize};
+
+    use super::{SemanticToken, SemanticTokenKind, name_parts, scan, split_lines};
 
     /// The parts of the name at the start of `sql`.
     fn parts(sql: &str) -> Vec<&str> {
@@ -293,5 +336,27 @@ mod tests {
         assert_eq!(parts("$1"), ["$1"]);
         assert_eq!(parts("f(x).y"), ["f"]);
         assert!(parts("(u).name").is_empty());
+    }
+
+    /// The text of each part of a token that covers all of `sql`.
+    fn lines(sql: &str) -> Vec<&str> {
+        let token = SemanticToken {
+            range: TextRange::up_to(TextSize::of(sql)),
+            kind: SemanticTokenKind::EnumMember,
+            default_library: false,
+        };
+        split_lines(sql, token)
+            .into_iter()
+            .map(|part| &sql[part.range])
+            .collect()
+    }
+
+    #[test]
+    fn splits_tokens_into_lines() {
+        assert_eq!(lines("'happy'"), ["'happy'"]);
+        assert_eq!(lines("'hap'\n'py'"), ["'hap'", "'py'"]);
+        assert_eq!(lines("'hap'  \r\n\n   'py'"), ["'hap'", "'py'"]);
+        assert_eq!(lines("e'ä'\n\t'ö'"), ["e'ä'", "'ö'"]);
+        assert_eq!(lines("$$a\n  b$$"), ["$$a", "b$$"]);
     }
 }

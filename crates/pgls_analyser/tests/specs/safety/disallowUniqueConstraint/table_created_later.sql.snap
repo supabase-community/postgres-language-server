@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The table is created after the constraint, so the constraint is added to an existing table.
+-- expect_lint/disallowUniqueConstraint
+ALTER TABLE users ADD CONSTRAINT users_email_key UNIQUE (email);
+CREATE TABLE users (id bigint, email text);
+
+```
+
+# Diagnostics
+lint/disallowUniqueConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock.
+  
+  i Create a unique index CONCURRENTLY and then add the constraint using that index.

@@ -61,13 +61,14 @@ The language server provides semantic tokens for the names that resolve to exact
 
 | Token | LSP token type | Example |
 | --- | --- | --- |
-| Schema | `namespace` | `public` in `public.users` |
+| Schema | `namespace` | `public` in `public.users`, `create schema app`, `set search_path to app` |
 | Table, view, or other relation | `class` | `users` in `from users`, `users.id` |
 | Common table expression | `class` | `recent` in `with recent as (...)`, `from recent`, `recent.id` |
 | Alias of a table or CTE | `variable` | `u` in `from users u` and in `u.name` |
+| Role | `variable` | `reader` in `grant select on users to reader` |
 | Column | `property` | `name`, `u.name`, `public.users.id` |
 | Function | `function` | the overload that a call resolves to |
-| Type | `type` | `int8` in `x::int8`, `cast(x as text)`, `date 'today'` |
+| Type | `type` | `int8` in `x::int8`, `cast(x as text)`, `date 'today'`, column types in `create table`, function signatures |
 | Parameter of a SQL function, in its body | `parameter` | `id`, `fn.id`, `$1` |
 | Enum value | `enumMember` | `'active'` in `status = 'active'` |
 
@@ -85,7 +86,7 @@ select * from users u join posts p on p.user_id = u.id;
 select u.id, u.name, p.id, p.user_id, p.title from users u join posts p on p.user_id = u.id;
 ```
 
-Columns are qualified with the name or alias of their table when there are several in `FROM`, and quoted where needed. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for joins with `USING` or `NATURAL`, tables whose columns are unknown, or sources with two columns of the same name.
+Columns are qualified with the name or alias of their table when there are several in `FROM`, and quoted where needed. Joins with `USING` or `NATURAL` expand to the merged columns first, by their bare name, as Postgres orders them. The columns of CTEs, subqueries, and tables created earlier in the file are expanded too. The action is only offered when every column is known and can be referenced unambiguously, so not for tables whose columns are unknown, sources with two columns of the same name, or a merged column whose name another table in `FROM` has too.
 
 Like hover, it requires a database connection.
 
@@ -100,6 +101,8 @@ Inlay hints and semantic highlighting are on by default. Turn them off for a pro
 }
 ```
 
+To keep the hints only where they help most, show parameter names for constant arguments only (`make_point(x: 1, y: 2)`, but not `make_point(a + 1, b)`) with `"inlayHints": { "parameterNames": "literals" }`. The other values are `"all"`, the default, and `"none"`.
+
 Without semantic tokens, your editor keeps the highlighting of its SQL grammar. Most editors can also turn these features off on their side, e.g. `editor.inlayHints.enabled` and `editor.semanticHighlighting.enabled` in VS Code.
 
 The language server asks the editor to request inlay hints and semantic tokens again when the configuration changes, when the schema cache is invalidated or a statement is executed, and when the database becomes reachable, if the editor supports these refreshes.
@@ -108,6 +111,6 @@ The language server asks the editor to request inlay hints and semantic tokens a
 
 - Only names that resolve to exactly one object get a hover from the resolver, an inlay hint, or a token. Ambiguous calls, unknown objects, and constructs the resolver doesn't model are skipped.
 - The effects of `DO` blocks, `CALL`, `EXECUTE`, and statements that don't parse on the schema are unknown. The statements after them are resolved as if they changed nothing, so an object a `DO` block creates is not known, and one it drops still is.
-- Statements in `BEGIN ATOMIC` function bodies and in `'...'`-quoted bodies that contain `''` are not resolved. `$$`-quoted bodies are. PL/pgSQL bodies are not covered.
+- Statements of SQL function bodies are resolved in `$$`, `'...'`, `E'...'` and `U&'...'` bodies, `BEGIN ATOMIC ... END` and `RETURN` bodies. PL/pgSQL bodies are not covered.
 - No tokens for roles, for schemas outside qualified names, for DDL (column types in `create table`, function signatures), for CTE names, or for table aliases. Tokens that span several lines are skipped.
 - Each request resolves the file up to the visible range. On very long files, like schema dumps with thousands of statements, hints and tokens take longer to appear.

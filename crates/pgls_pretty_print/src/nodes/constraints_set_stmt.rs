@@ -1,12 +1,9 @@
-use super::node_list::emit_comma_separated_list;
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::ConstraintsSetStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_constraints_set_stmt(e: &mut EventEmitter, n: &ConstraintsSetStmt) {
-    e.group_start(GroupKind::ConstraintsSetStmt);
+    e.group_start();
 
     e.token(TokenKind::SET_KW);
     e.space();
@@ -16,7 +13,7 @@ pub(super) fn emit_constraints_set_stmt(e: &mut EventEmitter, n: &ConstraintsSet
     if n.constraints.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else {
-        emit_comma_separated_list(e, &n.constraints, super::emit_node);
+        emit_comma_separated_list(e, &n.constraints, emit_node);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -25,8 +22,6 @@ pub(super) fn emit_constraints_set_stmt(e: &mut EventEmitter, n: &ConstraintsSet
     } else {
         e.token(TokenKind::IMMEDIATE_KW);
     }
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

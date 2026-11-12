@@ -1,4 +1,8 @@
-use super::*;
+use crate::resolve::{
+    resolver::Resolver,
+    utils::{common, record_enum_values},
+};
+use crate::typing::Type;
 
 /// `COALESCE` is the common type of its arguments, which are coerced to it. Port of
 /// [`transformCoalesceExpr`].

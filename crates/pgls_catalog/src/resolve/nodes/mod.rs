@@ -14,13 +14,13 @@ mod from_clause;
 mod func_call;
 mod insert_stmt;
 mod join_expr;
+mod merge_stmt;
 mod on_conflict_clause;
 mod range_function;
 mod range_subselect;
 mod range_var;
 mod res_target;
 mod select_stmt;
-mod string;
 mod type_name;
 mod update_stmt;
 mod view_stmt;
@@ -39,10 +39,11 @@ use delete_stmt::resolve_delete_stmt;
 use explain_stmt::resolve_explain_stmt;
 use func_call::resolve_func_call;
 use insert_stmt::resolve_insert_stmt;
+use merge_stmt::resolve_merge_stmt;
 #[cfg(test)]
 pub(crate) use select_stmt::RESOLVED_QUERIES;
 use select_stmt::resolve_select_stmt;
-use type_name::resolve_type_name;
+use type_name::{record_type_names, resolve_type_name};
 use update_stmt::resolve_update_stmt;
 use view_stmt::resolve_view_stmt;
 
@@ -58,7 +59,11 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         NodeEnum::InsertStmt(n) => return resolve_insert_stmt(r, n),
         NodeEnum::UpdateStmt(n) => return resolve_update_stmt(r, n),
         NodeEnum::DeleteStmt(n) => return resolve_delete_stmt(r, n),
-        NodeEnum::CreateFunctionStmt(n) => resolve_create_function_stmt(r, n),
+        NodeEnum::MergeStmt(n) => return resolve_merge_stmt(r, n),
+        NodeEnum::CreateFunctionStmt(n) => {
+            record_type_names(r, node);
+            resolve_create_function_stmt(r, n);
+        }
         NodeEnum::CreateTableAsStmt(n) => resolve_create_table_as_stmt(r, n),
         NodeEnum::ViewStmt(n) => resolve_view_stmt(r, n),
         NodeEnum::ExplainStmt(n) => resolve_explain_stmt(r, n),
@@ -70,6 +75,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
             }
         }
         NodeEnum::ColumnRef(n) => resolve_column_ref(r, n),
+        NodeEnum::MergeSupportFunc(n) => merge_stmt::check_merge_action(r, n),
         NodeEnum::FuncCall(n) => resolve_func_call(r, n),
         NodeEnum::TypeCast(n) => {
             resolve_opt(r, &n.arg);
@@ -149,8 +155,12 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         | NodeEnum::SqlvalueFunction(_)
         | NodeEnum::SetToDefault(_)
         | NodeEnum::CurrentOfExpr(_) => {}
-        // Anything else (XML and JSON expressions, ...) is not checked.
-        _ => r.depends_on_file(),
+        // Anything else (DDL, XML and JSON expressions, ...) is not checked, but its types are
+        // recorded.
+        _ => {
+            r.depends_on_file();
+            record_type_names(r, node);
+        }
     }
     None
 }

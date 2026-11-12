@@ -5,9 +5,9 @@ use rustc_hash::FxHashSet;
 use crate::settings::Settings;
 
 pub(crate) struct AnalyserVisitorBuilder<'a> {
-    lint: Option<LintVisitor<'a>>,
+    lint: Option<RuleSelection<'a>>,
     #[cfg(feature = "db")]
-    splinter: Option<SplinterVisitor<'a>>,
+    splinter: Option<RuleSelection<'a>>,
     settings: &'a Settings,
 }
 
@@ -35,7 +35,7 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         only: &'a [RuleSelector],
         skip: &'a [RuleSelector],
     ) -> Self {
-        self.lint = Some(LintVisitor::new(only, skip, self.settings));
+        self.lint = Some(RuleSelection::new(only, skip));
         self
     }
 
@@ -46,7 +46,7 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         only: &'a [RuleSelector],
         skip: &'a [RuleSelector],
     ) -> Self {
-        self.splinter = Some(SplinterVisitor::new(only, skip, self.settings));
+        self.splinter = Some(RuleSelection::new(only, skip));
         self
     }
 
@@ -56,14 +56,38 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         let mut enabled_rules = vec![];
         if let Some(mut lint) = self.lint {
             pgls_analyser::visit_registry(&mut lint);
-            let (linter_enabled_rules, linter_disabled_rules) = lint.finish();
+            let (mut linter_enabled_rules, linter_disabled_rules) = lint.finish(
+                self.settings
+                    .as_linter_rules()
+                    .map(|rules| (rules.as_enabled_rules(), rules.as_disabled_rules())),
+            );
+
+            // `linter.enabled` switches the lint rules, and `typecheck.enabled` the typecheck
+            // rules.
+            let linter_enabled = self.settings.linter.enabled;
+            let typecheck_enabled = self.settings.typecheck.enabled;
+            linter_enabled_rules.retain(|filter| {
+                let group = match filter {
+                    RuleFilter::Group(group) | RuleFilter::Rule(group, _) => *group,
+                };
+                if group == pgls_analyser::TYPECHECK_GROUP {
+                    typecheck_enabled
+                } else {
+                    linter_enabled
+                }
+            });
+
             enabled_rules.extend(linter_enabled_rules);
             disabled_rules.extend(linter_disabled_rules);
         }
         #[cfg(feature = "db")]
         if let Some(mut splinter) = self.splinter {
             pgls_splinter::registry::visit_registry(&mut splinter);
-            let (splinter_enabled_rules, splinter_disabled_rules) = splinter.finish();
+            let (splinter_enabled_rules, splinter_disabled_rules) = splinter.finish(
+                self.settings
+                    .as_splinter_rules()
+                    .map(|rules| (rules.as_enabled_rules(), rules.as_disabled_rules())),
+            );
             enabled_rules.extend(splinter_enabled_rules);
             disabled_rules.extend(splinter_disabled_rules);
         }
@@ -72,93 +96,51 @@ impl<'a> AnalyserVisitorBuilder<'a> {
     }
 }
 
-/// Type meant to register all the lint rules
+/// The rules of a registry that `only` and `skip` select, visiting the registry of the linter
+/// or of splinter.
 #[derive(Debug)]
-struct LintVisitor<'a> {
-    pub(crate) enabled_rules: FxHashSet<RuleFilter<'static>>,
-    pub(crate) disabled_rules: FxHashSet<RuleFilter<'static>>,
+struct RuleSelection<'a> {
+    enabled_rules: FxHashSet<RuleFilter<'static>>,
+    disabled_rules: FxHashSet<RuleFilter<'static>>,
     only: &'a [RuleSelector],
     skip: &'a [RuleSelector],
-    settings: &'a Settings,
 }
 
-impl<'a> LintVisitor<'a> {
-    pub(crate) fn new(
-        only: &'a [RuleSelector],
-        skip: &'a [RuleSelector],
-        settings: &'a Settings,
-    ) -> Self {
+impl<'a> RuleSelection<'a> {
+    fn new(only: &'a [RuleSelector], skip: &'a [RuleSelector]) -> Self {
         Self {
             enabled_rules: Default::default(),
             disabled_rules: Default::default(),
             only,
             skip,
-            settings,
         }
     }
 
+    /// The enabled and the disabled rules. Without `only`, they include the rules that the
+    /// configuration enables and disables, `configured`.
     fn finish(
         mut self,
+        configured: Option<(
+            FxHashSet<RuleFilter<'static>>,
+            FxHashSet<RuleFilter<'static>>,
+        )>,
     ) -> (
         FxHashSet<RuleFilter<'static>>,
         FxHashSet<RuleFilter<'static>>,
     ) {
-        let has_only_filter = !self.only.is_empty();
-
-        if !has_only_filter {
-            let enabled_rules = self
-                .settings
-                .as_linter_rules()
-                .map(|rules| rules.as_enabled_rules())
-                .unwrap_or_default();
-
+        if self.only.is_empty() {
+            let (enabled_rules, disabled_rules) = configured.unwrap_or_default();
             self.enabled_rules.extend(enabled_rules);
-
-            let disabled_rules = self
-                .settings
-                .as_linter_rules()
-                .map(|rules| rules.as_disabled_rules())
-                .unwrap_or_default();
             self.disabled_rules.extend(disabled_rules);
         }
 
-        // `linter.enabled` switches the lint rules, and `typecheck.enabled` the typecheck rules.
-        let linter_enabled = self.settings.linter.enabled;
-        let typecheck_enabled = self.settings.typecheck.enabled;
-        self.enabled_rules.retain(|filter| {
-            let group = match filter {
-                RuleFilter::Group(group) | RuleFilter::Rule(group, _) => *group,
-            };
-            if group == pgls_analyser::TYPECHECK_GROUP {
-                typecheck_enabled
-            } else {
-                linter_enabled
-            }
-        });
-
         (self.enabled_rules, self.disabled_rules)
-    }
-
-    fn push_rule<R>(&mut self)
-    where
-        R: RuleMeta + 'static,
-    {
-        // Do not report unused suppression comment diagnostics if a single rule is run.
-        for filter in self.only.iter().flat_map(|selector| selector.filters()) {
-            if filter.match_rule::<R>() {
-                self.enabled_rules.insert(filter);
-            }
-        }
-        for filter in self.skip.iter().flat_map(|selector| selector.filters()) {
-            if filter.match_rule::<R>() {
-                self.disabled_rules.insert(filter);
-            }
-        }
     }
 }
 
-impl RegistryVisitor for LintVisitor<'_> {
+impl RegistryVisitor for RuleSelection<'_> {
     fn record_category<C: GroupCategory>(&mut self) {
+        // The splinter rules are of the lint kind too.
         if C::CATEGORY == RuleCategory::Lint {
             C::record_groups(self)
         }
@@ -188,69 +170,7 @@ impl RegistryVisitor for LintVisitor<'_> {
     where
         R: RuleMeta + 'static,
     {
-        self.push_rule::<R>()
-    }
-}
-
-/// Type meant to register all the splinter (database lint) rules
-#[cfg(feature = "db")]
-#[derive(Debug)]
-struct SplinterVisitor<'a> {
-    pub(crate) enabled_rules: FxHashSet<RuleFilter<'static>>,
-    pub(crate) disabled_rules: FxHashSet<RuleFilter<'static>>,
-    only: &'a [RuleSelector],
-    skip: &'a [RuleSelector],
-    settings: &'a Settings,
-}
-
-#[cfg(feature = "db")]
-impl<'a> SplinterVisitor<'a> {
-    pub(crate) fn new(
-        only: &'a [RuleSelector],
-        skip: &'a [RuleSelector],
-        settings: &'a Settings,
-    ) -> Self {
-        Self {
-            enabled_rules: Default::default(),
-            disabled_rules: Default::default(),
-            only,
-            skip,
-            settings,
-        }
-    }
-
-    fn finish(
-        mut self,
-    ) -> (
-        FxHashSet<RuleFilter<'static>>,
-        FxHashSet<RuleFilter<'static>>,
-    ) {
-        let has_only_filter = !self.only.is_empty();
-
-        if !has_only_filter {
-            let enabled_rules = self
-                .settings
-                .as_splinter_rules()
-                .map(|rules| rules.as_enabled_rules())
-                .unwrap_or_default();
-
-            self.enabled_rules.extend(enabled_rules);
-
-            let disabled_rules = self
-                .settings
-                .as_splinter_rules()
-                .map(|rules| rules.as_disabled_rules())
-                .unwrap_or_default();
-            self.disabled_rules.extend(disabled_rules);
-        }
-
-        (self.enabled_rules, self.disabled_rules)
-    }
-
-    fn push_rule<R>(&mut self)
-    where
-        R: RuleMeta + 'static,
-    {
+        // Do not report unused suppression comment diagnostics if a single rule is run.
         for filter in self.only.iter().flat_map(|selector| selector.filters()) {
             if filter.match_rule::<R>() {
                 self.enabled_rules.insert(filter);
@@ -261,42 +181,6 @@ impl<'a> SplinterVisitor<'a> {
                 self.disabled_rules.insert(filter);
             }
         }
-    }
-}
-
-#[cfg(feature = "db")]
-impl RegistryVisitor for SplinterVisitor<'_> {
-    fn record_category<C: GroupCategory>(&mut self) {
-        // Splinter uses Lint as its kind in declare_category! macro
-        // We always record because we're visiting the splinter registry specifically
-        C::record_groups(self)
-    }
-
-    fn record_group<G: RuleGroup>(&mut self) {
-        if self
-            .only
-            .iter()
-            .flat_map(|selector| selector.filters())
-            .any(|filter| filter.match_group::<G>())
-        {
-            G::record_rules(self)
-        }
-
-        if self
-            .skip
-            .iter()
-            .flat_map(|selector| selector.filters())
-            .any(|filter| filter.match_group::<G>())
-        {
-            G::record_rules(self)
-        }
-    }
-
-    fn record_rule<R>(&mut self)
-    where
-        R: RuleMeta + 'static,
-    {
-        self.push_rule::<R>()
     }
 }
 

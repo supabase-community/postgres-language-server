@@ -1,3 +1,7 @@
+# One project name for every checkout and worktree, so that they all share one test database
+# instead of each trying to start its own on port 5432.
+name: postgres-language-server
+
 services:
   db:
     # postgres://postgres:postgres@127.0.0.1:5432/postgres
@@ -9,3 +13,10 @@ services:
       - POSTGRES_DB=postgres
     ports:
       - "5432:5432"
+    # Over TCP, so it doesn't pass while the image's init scripts run on a socket-only server.
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "127.0.0.1"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 60s

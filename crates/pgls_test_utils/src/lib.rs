@@ -1,5 +1,12 @@
 use std::fmt::Display;
 
+// `#[db_test]` refers to this crate by name, also in its own tests.
+extern crate self as pgls_test_utils;
+
+pub mod db;
+
+pub use pgls_test_macros::db_test;
+
 pub static MIGRATIONS: sqlx::migrate::Migrator = sqlx::migrate!("./testdb_migrations");
 
 static CURSOR_POS: char = '€';

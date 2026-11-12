@@ -1,3 +1,4 @@
+use crate::utils::qualified_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_catalog::resolve::FindingKind;
@@ -40,19 +41,10 @@ impl LinterRule for UnknownRelation {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let Some(resolution) = ctx.resolution() else {
-            return Vec::new();
-        };
-
-        resolution
-            .findings
-            .iter()
+        ctx.findings()
             .filter_map(|finding| match &finding.kind {
                 FindingKind::UnknownRelation { schema, name } => {
-                    let name = match schema {
-                        Some(schema) => format!("{schema}.{name}"),
-                        None => name.clone(),
-                    };
+                    let name = qualified_name(schema.as_deref(), name);
                     Some(LinterDiagnostic::new(
                         rule_category!(),
                         finding.span,
