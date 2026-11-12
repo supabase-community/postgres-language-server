@@ -1,4 +1,6 @@
-use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
+use crate::utils::{
+    alter_table_cmds, altered_relation, cmd_def, column_constraints, skips_validation,
+};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -154,7 +156,7 @@ fn check_foreign_key_constraint(
     }
 
     // NOT VALID constraints are safe, and so are NOT ENFORCED ones, which are never validated
-    if constraint.skip_validation {
+    if skips_validation(constraint) {
         return None;
     }
 

@@ -1,5 +1,5 @@
 use crate::fix::StatementTokens;
-use crate::utils::{ConstraintSite, added_constraints, altered_relation};
+use crate::utils::{ConstraintSite, added_constraints, altered_relation, skips_validation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -63,7 +63,7 @@ fn check_constraint_needs_not_valid(
     constraint: &pgls_query::protobuf::Constraint,
 ) -> Option<LinterDiagnostic> {
     // Skip if the constraint has NOT VALID
-    if !constraint.initially_valid {
+    if skips_validation(constraint) {
         return None;
     }
 

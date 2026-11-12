@@ -11,7 +11,8 @@ declare_lint_rule! {
     /// and writes while held. Unlike other constraints, there is no concurrent alternative.
     /// Use `SET lock_timeout` to limit the impact on concurrent operations.
     ///
-    /// This also applies to exclusion constraints defined inline in `CREATE TABLE`.
+    /// Exclusion constraints in `CREATE TABLE` are not reported: the new table is empty, and no
+    /// other session can use it before the transaction commits.
     ///
     /// ## Examples
     ///
