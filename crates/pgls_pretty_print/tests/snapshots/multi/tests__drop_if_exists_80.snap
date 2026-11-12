@@ -207,7 +207,7 @@ drop rule if exists test_rule_exists on no_such_schema.no_such_table;
 create rule test_rule_exists
 as on insert to test_exists
 do instead
-  insert into test_exists values (new.a, new.b || cast(new.a as text));;
+  insert into test_exists values (new.a, new.b || cast(new.a as text));
 
 drop rule test_rule_exists on test_exists;
 

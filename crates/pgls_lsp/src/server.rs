@@ -362,19 +362,13 @@ pub struct ServerFactory {
     /// This shared flag is set to true once at least one sessions has been
     /// initialized on this server instance
     is_initialized: Arc<AtomicBool>,
-    /// Configuration from environment variables (DATABASE_URL, PGHOST, etc.).
+    /// The database settings of the environment variables (DATABASE_URL, PGHOST, etc.).
     /// Computed once at factory creation and passed to each session.
-    env_config: Option<pgls_configuration::PartialConfiguration>,
+    environment: Option<PartialDatabaseConfiguration>,
 }
 
 impl ServerFactory {
     pub fn new(stop_on_disconnect: bool) -> Self {
-        let env_config = PartialDatabaseConfiguration::from_env().map(|db| {
-            pgls_configuration::PartialConfiguration {
-                db: Some(db),
-                ..Default::default()
-            }
-        });
         Self {
             cancellation: Arc::default(),
             workspace: None,
@@ -382,7 +376,7 @@ impl ServerFactory {
             next_session_key: AtomicU64::new(0),
             stop_on_disconnect,
             is_initialized: Arc::default(),
-            env_config,
+            environment: PartialDatabaseConfiguration::from_env(),
         }
     }
 
@@ -403,7 +397,7 @@ impl ServerFactory {
 
         let session_key = SessionKey(self.next_session_key.fetch_add(1, Ordering::Relaxed));
 
-        let env_config = self.env_config.clone();
+        let environment = self.environment.clone();
         let mut builder = LspService::build(move |client| {
             let mut session = Session::new(
                 session_key,
@@ -411,7 +405,7 @@ impl ServerFactory {
                 workspace,
                 self.cancellation.clone(),
                 fs,
-                env_config,
+                environment,
             );
             if let Some(path) = config_path {
                 session.set_config_path(path);
@@ -469,6 +463,7 @@ impl ServerFactory {
         workspace_method!(builder, pull_inlay_hints);
         workspace_method!(builder, pull_semantic_tokens);
         workspace_method!(builder, register_project_folder);
+        workspace_method!(builder, find_project);
         workspace_method!(builder, unregister_project_folder);
         workspace_method!(builder, invalidate_schema_cache);
 
@@ -568,9 +563,8 @@ mod tests {
     }
 
     /// Clearing an override has to restore the baseline. The configuration file is `{}` and there is
-    /// no environment configuration, so nothing below the override layer configures `files` — and
-    /// `Settings::merge_with_configuration` keeps a section that the incoming configuration omits,
-    /// which is why the cleared section has to be materialized with its defaults.
+    /// no environment configuration, so nothing below the override layer configures `files`: the
+    /// root settings are replaced on every load, so the section goes back to its defaults.
     #[tokio::test]
     async fn clearing_client_overrides_restores_the_baseline() {
         let working_directory = tempfile::tempdir().unwrap();

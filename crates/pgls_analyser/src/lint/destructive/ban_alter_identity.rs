@@ -1,8 +1,10 @@
+use crate::utils::{alter_table_cmds, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{AlterTableCmd, AlterTableType};
+use pgls_query_ext::options::find_def_elem;
 
 /// `ATTRIBUTE_IDENTITY_ALWAYS`, how Postgres encodes `GENERATED ALWAYS`.
 const IDENTITY_ALWAYS: u8 = b'a';
@@ -52,16 +54,8 @@ impl LinterRule for BanAlterIdentity {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() else {
-            return vec![];
-        };
-
-        stmt.cmds
-            .iter()
-            .filter_map(|cmd| match &cmd.node {
-                Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) => breaking_change(cmd),
-                _ => None,
-            })
+        alter_table_cmds(ctx.stmt())
+            .filter_map(breaking_change)
             .map(|(column, detail)| {
                 LinterDiagnostic::new(
                     rule_category!(),
@@ -80,7 +74,7 @@ impl LinterRule for BanAlterIdentity {
 fn breaking_change(cmd: &AlterTableCmd) -> Option<(&str, &'static str)> {
     let always = "Inserts that provide an explicit value fail once the column is GENERATED ALWAYS.";
     match cmd.subtype() {
-        AlterTableType::AtAddIdentity => match cmd.def.as_ref()?.node.as_ref()? {
+        AlterTableType::AtAddIdentity => match cmd_def(cmd)? {
             pgls_query::NodeEnum::Constraint(constraint)
                 if constraint.generated_when.as_bytes() == [IDENTITY_ALWAYS] =>
             {
@@ -93,25 +87,16 @@ fn breaking_change(cmd: &AlterTableCmd) -> Option<(&str, &'static str)> {
             "Inserts that omit the column fail once it no longer generates values.",
         )),
         AlterTableType::AtSetIdentity => {
-            let pgls_query::NodeEnum::List(options) = cmd.def.as_ref()?.node.as_ref()? else {
+            let pgls_query::NodeEnum::List(options) = cmd_def(cmd)? else {
                 return None;
             };
-            options
-                .items
-                .iter()
-                .any(|option| match &option.node {
-                    Some(pgls_query::NodeEnum::DefElem(option))
-                        if option.defname == "generated" =>
-                    {
-                        matches!(
-                            option.arg.as_ref().and_then(|arg| arg.node.as_ref()),
-                            Some(pgls_query::NodeEnum::Integer(value))
-                                if value.ival == i32::from(IDENTITY_ALWAYS)
-                        )
-                    }
-                    _ => false,
-                })
-                .then_some((&cmd.name, always))
+            let generated = find_def_elem(&options.items, "generated")?;
+            matches!(
+                generated.arg.as_ref().and_then(|arg| arg.node.as_ref()),
+                Some(pgls_query::NodeEnum::Integer(value))
+                    if value.ival == i32::from(IDENTITY_ALWAYS)
+            )
+            .then_some((&cmd.name, always))
         }
         _ => None,
     }

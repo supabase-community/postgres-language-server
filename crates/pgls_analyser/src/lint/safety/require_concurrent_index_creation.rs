@@ -1,6 +1,5 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::{CatalogView, RelationKind};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::Token;
@@ -58,15 +57,11 @@ impl LinterRule for RequireConcurrentIndexCreation {
             return diagnostics;
         }
 
-        // Check if this table was created in the same transaction/file
-        let table_name = stmt
-            .relation
-            .as_ref()
-            .map(|r| r.relname.as_str())
-            .unwrap_or("");
-
-        // Skip if table name is empty or table was created in the same file
-        if table_name.is_empty() || is_table_created_in_file(ctx.file_context(), table_name) {
+        // An index on a table created earlier in the transaction doesn't block anyone.
+        let Some(relation) = &stmt.relation else {
+            return diagnostics;
+        };
+        if ctx.is_new_relation(relation) {
             return diagnostics;
         }
 
@@ -93,29 +88,11 @@ fn add_concurrently(
     stmt: &pgls_query::protobuf::IndexStmt,
 ) -> Option<RuleFix> {
     let relation = stmt.relation.as_ref()?;
-    let schema = Some(relation.schemaname.as_str()).filter(|schema| !schema.is_empty());
-    let is_partitioned = ctx
+    if ctx
         .catalog()
-        .relation(schema, &relation.relname, ctx.session().search_path())
-        .found()
-        .is_some_and(|relation| relation.kind == RelationKind::PartitionedTable);
-    if is_partitioned {
+        .is_partitioned_table(relation, ctx.session().search_path())
+    {
         return None;
     }
-    let tokens = ctx.tokens()?;
-    let index = tokens.find(Token::Index)?;
-    fix::add_concurrently(ctx, &tokens, index)
-}
-
-fn is_table_created_in_file(file_context: &crate::AnalysedFileContext, table_name: &str) -> bool {
-    // Check all statements in the file to see if this table was created
-    for stmt in file_context.stmts {
-        if let pgls_query::NodeEnum::CreateStmt(create_stmt) = stmt
-            && let Some(relation) = &create_stmt.relation
-            && relation.relname == table_name
-        {
-            return true;
-        }
-    }
-    false
+    fix::add_concurrently(ctx, &[Token::Index])
 }

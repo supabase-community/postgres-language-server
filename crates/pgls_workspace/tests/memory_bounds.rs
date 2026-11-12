@@ -62,7 +62,10 @@ fn workspace(test_db: &PgPool) -> (Box<dyn Workspace>, ProjectKey) {
     });
     let workspace = pgls_workspace::workspace::server();
     let project_key = workspace
-        .register_project_folder(RegisterProjectFolderParams { path: None })
+        .register_project_folder(RegisterProjectFolderParams {
+            path: None,
+            real_path: None,
+        })
         .unwrap();
     workspace
         .update_settings(UpdateSettingsParams {
@@ -71,6 +74,7 @@ fn workspace(test_db: &PgPool) -> (Box<dyn Workspace>, ProjectKey) {
             gitignore_matches: vec![],
             vcs_base_path: None,
             workspace_directory: None,
+            replace: false,
         })
         .unwrap();
     (workspace, project_key)
@@ -122,7 +126,7 @@ fn use_document(
         .unwrap();
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn open_documents_stay_within_the_budget(test_db: PgPool) {
     count_native_allocations();
     let documents = env("MEMORY_DOCUMENTS", 20);

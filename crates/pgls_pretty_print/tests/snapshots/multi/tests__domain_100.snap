@@ -211,7 +211,7 @@ update dcomptable set d1."r" = (d1).r - 1, d1."i" = (d1).i + 1 where (d1).i > 0;
 create rule silly
 as on delete to dcomptable
 do instead
-  update dcomptable set d1."r" = (d1).r - 1, d1."i" = (d1).i + 1 where (d1).i > 0;;
+  update dcomptable set d1."r" = (d1).r - 1, d1."i" = (d1).i + 1 where (d1).i > 0;
 
 create function makedcomp(r float8, i float8)
 returns dcomptype
@@ -321,7 +321,7 @@ update dcomptable set d1[1]."r" = d1[1].r - 1, d1[1]."i" = d1[1].i + 1 where d1[
 create rule silly
 as on delete to dcomptable
 do instead
-  update dcomptable set d1[1]."r" = d1[1].r - 1, d1[1]."i" = d1[1].i + 1 where d1[1].i > 0;;
+  update dcomptable set d1[1]."r" = d1[1].r - 1, d1[1]."i" = d1[1].i + 1 where d1[1].i > 0;
 
 drop table dcomptable;
 
@@ -757,7 +757,7 @@ alter table domain_test
 
 create domain pos_int as int4 check (value > 0) not null;
 
-prepare s1 as select cast($1 as pos_int) = 10 as is_ten;;
+prepare s1 as select cast($1 as pos_int) = 10 as is_ten;
 
 execute s1 (10);
 

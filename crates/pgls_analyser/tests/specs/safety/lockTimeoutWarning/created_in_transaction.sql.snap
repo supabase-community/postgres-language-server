@@ -1,0 +1,56 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- Only objects the transaction created don't need a timeout.
+create schema app;
+create table public.users (id bigint);
+commit;
+set search_path = app, public;
+begin;
+-- `IF NOT EXISTS` skips `users`, and indexes share their names with tables.
+create table if not exists users (id bigint);
+-- expect_lint/lockTimeoutWarning
+create index if not exists users on public.users (id);
+-- expect_lint/lockTimeoutWarning
+alter table public.users add column payload text;
+commit;
+begin;
+-- A temporary table doesn't capture a new table with its name, Postgres creates `app.events`.
+create temp table events (id bigint);
+create table events (id bigint);
+alter table app.events add column payload text;
+create temp table copy (id bigint);
+create table copy as select 1 as id;
+alter table app.copy add column payload text;
+commit;
+begin;
+set lock_timeout = '1s';
+-- The index is in `public`, the schema of its table.
+create index users_id_idx on users (id);
+reset lock_timeout;
+alter index users_id_idx set (fillfactor = 70);
+commit;
+
+```
+
+# Diagnostics
+lint/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes SHARE lock on public.users while creating index users without lock timeout set.
+  
+  i This blocks writes to the table indefinitely if another transaction holds a conflicting lock.
+  
+  i Run 'SET LOCAL lock_timeout = '2s';' before this statement, or use CREATE INDEX CONCURRENTLY to avoid blocking writes.
+  
+
+
+lint/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes ACCESS EXCLUSIVE lock on public.users without lock timeout set.
+  
+  i This can block all operations on the table indefinitely if another transaction holds a conflicting lock.
+  
+  i Run 'SET LOCAL lock_timeout = '2s';' before this statement and retry the migration if it times out.
