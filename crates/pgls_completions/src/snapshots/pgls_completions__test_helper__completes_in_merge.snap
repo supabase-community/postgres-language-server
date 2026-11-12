@@ -1,0 +1,599 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create table public.users (id serial primary key, name text);
+create table public.posts (post_id int, title text);
+
+
+--------------
+
+m|
+
+Results:
+merge - merge (Keyword)
+vacuum - vacuum (Keyword)
+
+--------------
+
+merge |
+
+Results:
+into - into (Keyword)
+
+--------------
+
+merge i|
+
+Results:
+into - into (Keyword)
+
+--------------
+
+merge into |
+
+Results:
+posts - public.posts (Table)
+users - public.users (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+
+--------------
+
+merge into u|
+
+Results:
+users - public.users (Table)
+public - public (Schema)
+information_schema.udt_privileges - information_schema.udt_privileges (Table)
+information_schema.usage_privileges - information_schema.usage_privileges (Table)
+information_schema.user_defined_types - information_schema.user_defined_types (Table)
+
+--------------
+
+merge into users |
+
+Results:
+using - using (Keyword)
+
+--------------
+
+merge into users u |
+
+Results:
+using - using (Keyword)
+
+--------------
+
+merge into users u u|
+
+Results:
+using - using (Keyword)
+
+--------------
+
+merge into users u using |
+
+Results:
+posts - public.posts (Table)
+users - public.users (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+
+--------------
+
+merge into users u using p|
+
+Results:
+public - public (Schema)
+posts - public.posts (Table)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+information_schema.parameters - information_schema.parameters (Table)
+
+--------------
+
+merge into users u using posts |
+
+Results:
+on - on (Keyword)
+
+--------------
+
+merge into users u using posts p |
+
+Results:
+on - on (Keyword)
+
+--------------
+
+merge into users u using posts p o|
+
+Results:
+on - on (Keyword)
+
+--------------
+
+merge into users u using posts p on |
+
+Results:
+u.id - public.users.id (Column)
+u.name - public.users.name (Column)
+p.post_id - public.posts.post_id (Column)
+p.title - public.posts.title (Column)
+posts - public.posts (Table)
+
+--------------
+
+merge into users u using posts p on p.|
+
+Results:
+post_id - public.posts.post_id (Column)
+title - public.posts.title (Column)
+
+--------------
+
+merge into users u using posts p on p.p|
+
+Results:
+post_id - public.posts.post_id (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id |
+
+Results:
+returning - returning (Keyword)
+when - when (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = |
+
+Results:
+u.id - public.users.id (Column)
+u.name - public.users.name (Column)
+p.post_id - public.posts.post_id (Column)
+p.title - public.posts.title (Column)
+posts - public.posts (Table)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.|
+
+Results:
+id - public.users.id (Column)
+name - public.users.name (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.i|
+
+Results:
+id - public.users.id (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id |
+
+Results:
+returning - returning (Keyword)
+when - when (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id w|
+
+Results:
+when - when (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when |
+
+Results:
+matched - matched (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when m|
+
+Results:
+matched - matched (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched |
+
+Results:
+by - by (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched a|
+
+Results:
+and - and (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and |
+
+Results:
+u.id - public.users.id (Column)
+u.name - public.users.name (Column)
+p.post_id - public.posts.post_id (Column)
+p.title - public.posts.title (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.|
+
+Results:
+post_id - public.posts.post_id (Column)
+title - public.posts.title (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.t|
+
+Results:
+title - public.posts.title (Column)
+post_id - public.posts.post_id (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title |
+
+Results:
+returning - returning (Keyword)
+when - when (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <|
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> |
+
+Results:
+u.id - public.users.id (Column)
+u.name - public.users.name (Column)
+p.post_id - public.posts.post_id (Column)
+p.title - public.posts.title (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.|
+
+Results:
+id - public.users.id (Column)
+name - public.users.name (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.n|
+
+Results:
+name - public.users.name (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name |
+
+Results:
+returning - returning (Keyword)
+when - when (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name t|
+
+Results:
+then - then (Keyword)
+returning - returning (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then |
+
+Results:
+delete - delete (Keyword)
+do - do (Keyword)
+insert - insert (Keyword)
+update - update (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then u|
+
+Results:
+update - update (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update |
+
+Results:
+set - set (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update s|
+
+Results:
+set - set (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set |
+
+Results:
+id - public.users.id (Column)
+name - public.users.name (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set n|
+
+Results:
+name - public.users.name (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name |
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = |
+
+Results:
+u.id - public.users.id (Column)
+u.name - public.users.name (Column)
+p.post_id - public.posts.post_id (Column)
+p.title - public.posts.title (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.|
+
+Results:
+post_id - public.posts.post_id (Column)
+title - public.posts.title (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.t|
+
+Results:
+title - public.posts.title (Column)
+post_id - public.posts.post_id (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title |
+
+Results:
+returning - returning (Keyword)
+when - when (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title w|
+
+Results:
+when - when (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when |
+
+Results:
+matched - matched (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when n|
+
+Results:
+not - not (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not |
+
+Results:
+matched - matched (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not m|
+
+Results:
+matched - matched (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched |
+
+Results:
+by - by (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched t|
+
+Results:
+then - then (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then |
+
+Results:
+delete - delete (Keyword)
+do - do (Keyword)
+insert - insert (Keyword)
+update - update (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then i|
+
+Results:
+insert - insert (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert |
+
+Results:
+default - default (Keyword)
+values - values (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (|
+
+Results:
+id - public.users.id (Column)
+name - public.users.name (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (|)
+
+Results:
+id - public.users.id (Column)
+name - public.users.name (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (i|)
+
+Results:
+id - public.users.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, |)
+
+Results:
+id - public.users.id (Column)
+name - public.users.name (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, n|)
+
+Results:
+name - public.users.name (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) |
+
+Results:
+default - default (Keyword)
+values - values (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) v|
+
+Results:
+values - values (Keyword)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values |
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values (|
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values (|)
+
+Results:
+p.post_id - public.posts.post_id (Column)
+p.title - public.posts.title (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values (p.|)
+
+Results:
+post_id - public.posts.post_id (Column)
+title - public.posts.title (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values (p.p|)
+
+Results:
+post_id - public.posts.post_id (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values (p.post_id, |)
+
+Results:
+p.post_id - public.posts.post_id (Column)
+p.title - public.posts.title (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values (p.post_id, p.|)
+
+Results:
+post_id - public.posts.post_id (Column)
+title - public.posts.title (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values (p.post_id, p.t|)
+
+Results:
+title - public.posts.title (Column)
+post_id - public.posts.post_id (Column)
+
+--------------
+
+merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched then insert (id, name) values (p.post_id, p.title); |
+
+Results:
+alter - alter (Keyword)
+copy - copy (Keyword)
+create - create (Keyword)
+delete - delete (Keyword)
+drop - drop (Keyword)
+
+--------------

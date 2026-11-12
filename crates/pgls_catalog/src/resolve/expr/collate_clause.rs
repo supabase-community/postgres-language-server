@@ -1,4 +1,6 @@
-use super::*;
+use super::infer_expr;
+use crate::resolve::resolver::Resolver;
+use crate::typing::Type;
 
 /// `COLLATE` keeps the type of its argument. Port of [`transformCollateClause`].
 ///

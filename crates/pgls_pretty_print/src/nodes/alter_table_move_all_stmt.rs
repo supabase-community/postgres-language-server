@@ -1,26 +1,15 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-use pgls_query::protobuf::{AlterTableMoveAllStmt, ObjectType};
+use pgls_query::protobuf::AlterTableMoveAllStmt;
+
+use super::prelude::*;
 
 pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTableMoveAllStmt) {
-    e.group_start(GroupKind::AlterTableMoveAllStmt);
+    e.group_start();
 
     e.token(TokenKind::ALTER_KW);
     e.space();
 
     // Emit object type (TABLE, INDEX, MATERIALIZED VIEW)
-    match n.objtype() {
-        ObjectType::ObjectTable => e.token(TokenKind::TABLE_KW),
-        ObjectType::ObjectIndex => e.token(TokenKind::INDEX_KW),
-        ObjectType::ObjectMatview => {
-            e.token(TokenKind::MATERIALIZED_KW);
-            e.space();
-            e.token(TokenKind::VIEW_KW);
-        }
-        _ => e.token(TokenKind::TABLE_KW), // Default to TABLE
-    }
+    emit_keywords(e, object_type_keywords(n.objtype()).unwrap_or("TABLE"));
 
     e.space();
     e.token(TokenKind::ALL_KW);
@@ -29,7 +18,7 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
     e.space();
     e.token(TokenKind::TABLESPACE_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.orig_tablespacename);
+    emit_identifier_maybe_quoted(e, &n.orig_tablespacename);
 
     // Emit OWNED BY roles if specified
     if !n.roles.is_empty() {
@@ -38,8 +27,11 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
-        super::node_list::emit_comma_separated_list(e, &n.roles, |node, e| {
-            let role_spec = assert_node_variant!(RoleSpec, node);
+        emit_comma_separated_list(e, &n.roles, |e, node| {
+            let Some(NodeEnum::RoleSpec(role_spec)) = node.node.as_ref() else {
+                emit_node(e, node);
+                return;
+            };
             super::emit_role_spec(e, role_spec);
         });
     }
@@ -49,14 +41,12 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
     e.space();
     e.token(TokenKind::TABLESPACE_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.new_tablespacename);
+    emit_identifier_maybe_quoted(e, &n.new_tablespacename);
 
     if n.nowait {
         e.space();
         e.token(TokenKind::NOWAIT_KW);
     }
-
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

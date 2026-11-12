@@ -1,5 +1,6 @@
-use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
+use crate::adapters::{PositionEncoding, negotiated_encoding};
 use crate::handlers::code_actions::command_id;
+use pgls_line_index::WideEncoding;
 use pgls_workspace::features::code_actions::CommandActionCategory;
 use strum::IntoEnumIterator;
 use tower_lsp_server::ls_types::{

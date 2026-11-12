@@ -13,7 +13,7 @@ use crate::{
 };
 
 /// The token types, in the order of their indices in the legend.
-const TOKEN_TYPES: [SemanticTokenType; 7] = [
+const TOKEN_TYPES: [SemanticTokenType; 8] = [
     SemanticTokenType::NAMESPACE,
     SemanticTokenType::CLASS,
     SemanticTokenType::PROPERTY,
@@ -21,6 +21,7 @@ const TOKEN_TYPES: [SemanticTokenType; 7] = [
     SemanticTokenType::TYPE,
     SemanticTokenType::PARAMETER,
     SemanticTokenType::ENUM_MEMBER,
+    SemanticTokenType::VARIABLE,
 ];
 
 /// The bit of the `defaultLibrary` modifier, the only one in the legend.
@@ -42,6 +43,7 @@ fn token_type(kind: SemanticTokenKind) -> u32 {
         SemanticTokenKind::Type => 4,
         SemanticTokenKind::Parameter => 5,
         SemanticTokenKind::EnumMember => 6,
+        SemanticTokenKind::Variable => 7,
     }
 }
 
@@ -107,7 +109,8 @@ fn semantic_tokens(
         ) else {
             continue;
         };
-        // Clients only support tokens on a single line by default.
+        // Clients only support tokens on a single line by default, and the workspace splits
+        // tokens that span several lines.
         if start.line != end.line {
             continue;
         }

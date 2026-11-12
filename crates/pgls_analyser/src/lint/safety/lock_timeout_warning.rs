@@ -10,8 +10,12 @@ declare_lint_rule! {
     /// it can cause the database to become unresponsive if another transaction is holding a conflicting lock
     /// while idle in transaction or active. This is particularly dangerous for:
     ///
-    /// - ALTER TABLE statements (acquire ACCESS EXCLUSIVE lock)
+    /// - ALTER TABLE statements (acquire ACCESS EXCLUSIVE lock for most subcommands, and SHARE ROW
+    ///   EXCLUSIVE to enable or disable triggers and to add foreign keys)
     /// - CREATE INDEX without CONCURRENTLY (acquires SHARE lock)
+    ///
+    /// Subcommands that only take a SHARE UPDATE EXCLUSIVE lock, like `VALIDATE CONSTRAINT`, don't
+    /// block reads or writes and aren't reported.
     ///
     /// Setting a lock timeout ensures that if the lock cannot be acquired within a reasonable time,
     /// the statement will fail rather than blocking indefinitely.
@@ -49,78 +53,57 @@ impl LinterRule for LockTimeoutWarning {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut diagnostics = Vec::new();
-
-        // Check if lock timeout has been set in the transaction
-        let tx_state = ctx.session();
-        if tx_state.has_lock_timeout() {
-            return diagnostics;
+        let session = ctx.session();
+        if session.has_lock_timeout() {
+            return vec![];
         }
 
-        // Check if this statement takes a dangerous lock on an existing object
-        match ctx.stmt() {
-            // ALTER TABLE takes ACCESS EXCLUSIVE lock
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => {
-                if let Some(relation) = &stmt.relation {
-                    let schema = if relation.schemaname.is_empty() {
-                        "public"
-                    } else {
-                        &relation.schemaname
-                    };
-                    let table = &relation.relname;
-
-                    // Only warn if the table wasn't created in this transaction
-                    if !tx_state.has_created_object(schema, table) {
-                        let full_name = format!("{schema}.{table}");
-                        diagnostics.push(
-                            LinterDiagnostic::new(
-                                rule_category!(),
-                                None,
-                                markup! {
-                                    "Statement takes ACCESS EXCLUSIVE lock on "<Emphasis>{full_name}</Emphasis>" without lock timeout set."
-                                },
-                            )
-                            .detail(None, "This can block all operations on the table indefinitely if another transaction holds a conflicting lock.")
-                            .note("Run 'SET LOCAL lock_timeout = '2s';' before this statement and retry the migration if it times out."),
-                        );
-                    }
+        // The strongest lock that blocks writes, on a table the transaction didn't create.
+        let Some(lock) = session
+            .table_locks(ctx.stmt(), ctx.catalog())
+            .into_iter()
+            .filter(|lock| lock.mode.blocks_writes())
+            .reduce(|strongest, lock| {
+                if lock.mode > strongest.mode {
+                    lock
+                } else {
+                    strongest
                 }
-            }
+            })
+        else {
+            return vec![];
+        };
+        let full_name = format!("{}.{}", lock.schema, lock.name);
+        let mode = lock.mode.name();
+        let detail = if lock.mode.blocks_reads() {
+            "This can block all operations on the table indefinitely if another transaction holds a conflicting lock."
+        } else {
+            "This blocks writes to the table indefinitely if another transaction holds a conflicting lock."
+        };
 
-            // CREATE INDEX without CONCURRENTLY takes SHARE lock
+        let diagnostic = match ctx.stmt() {
             pgls_query::NodeEnum::IndexStmt(stmt) => {
-                if !stmt.concurrent
-                    && let Some(relation) = &stmt.relation
-                {
-                    let schema = if relation.schemaname.is_empty() {
-                        "public"
-                    } else {
-                        &relation.schemaname
-                    };
-                    let table = &relation.relname;
-
-                    // Only warn if the table wasn't created in this transaction
-                    if !tx_state.has_created_object(schema, table) {
-                        let full_name = format!("{schema}.{table}");
-                        let index_name = &stmt.idxname;
-                        diagnostics.push(
-                                LinterDiagnostic::new(
-                                    rule_category!(),
-                                    None,
-                                    markup! {
-                                        "Statement takes SHARE lock on "<Emphasis>{full_name}</Emphasis>" while creating index "<Emphasis>{index_name}</Emphasis>" without lock timeout set."
-                                    },
-                                )
-                                .detail(None, "This blocks writes to the table indefinitely if another transaction holds a conflicting lock.")
-                                .note("Run 'SET LOCAL lock_timeout = '2s';' before this statement, or use CREATE INDEX CONCURRENTLY to avoid blocking writes."),
-                            );
-                    }
-                }
+                let index_name = &stmt.idxname;
+                LinterDiagnostic::new(
+                    rule_category!(),
+                    None,
+                    markup! {
+                        "Statement takes "{mode}" lock on "<Emphasis>{full_name}</Emphasis>" while creating index "<Emphasis>{index_name}</Emphasis>" without lock timeout set."
+                    },
+                )
+                .detail(None, detail)
+                .note("Run 'SET LOCAL lock_timeout = '2s';' before this statement, or use CREATE INDEX CONCURRENTLY to avoid blocking writes.")
             }
-
-            _ => {}
-        }
-
-        diagnostics
+            _ => LinterDiagnostic::new(
+                rule_category!(),
+                None,
+                markup! {
+                    "Statement takes "{mode}" lock on "<Emphasis>{full_name}</Emphasis>" without lock timeout set."
+                },
+            )
+            .detail(None, detail)
+            .note("Run 'SET LOCAL lock_timeout = '2s';' before this statement and retry the migration if it times out."),
+        };
+        vec![diagnostic]
     }
 }

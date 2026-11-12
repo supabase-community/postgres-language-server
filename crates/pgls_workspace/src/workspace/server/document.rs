@@ -3,12 +3,12 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
-use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::OffsetMap};
 use pgls_statement_splitter::SplitResult;
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
+use pgls_walk::{AnalysableStatement, UnparsableStatement};
 use rustc_hash::FxHashSet;
 
 use super::{

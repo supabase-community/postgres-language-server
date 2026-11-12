@@ -175,7 +175,10 @@ fn workspace(test_db: &PgPool) -> (WorkspaceServer, ProjectKey) {
     });
     let workspace = WorkspaceServer::new();
     let project_key = workspace
-        .register_project_folder(RegisterProjectFolderParams { path: None })
+        .register_project_folder(RegisterProjectFolderParams {
+            path: None,
+            real_path: None,
+        })
         .unwrap();
     workspace
         .update_settings(UpdateSettingsParams {
@@ -184,6 +187,7 @@ fn workspace(test_db: &PgPool) -> (WorkspaceServer, ProjectKey) {
             gitignore_matches: vec![],
             vcs_base_path: None,
             workspace_directory: None,
+            replace: false,
         })
         .unwrap();
     (workspace, project_key)
@@ -251,7 +255,7 @@ fn all_tokens((workspace, project_key): &(WorkspaceServer, ProjectKey), path: &P
         .unwrap();
 }
 
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[pgls_test_utils::db_test]
 async fn caches_follow_the_document_through_many_edits(test_db: PgPool) {
     count_native_allocations();
     let len = env("CHURN_STATEMENTS", 1_000);

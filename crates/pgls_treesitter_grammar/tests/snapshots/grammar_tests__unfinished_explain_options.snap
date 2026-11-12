@@ -1,0 +1,13 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+explain (analyze, verbose
+-----------------------
+program [0..25] 'explain (analyze, verbose'
+  statement [0..25] 'explain (analyze, verbose'
+    keyword_explain [0..7] 'explain'
+    ( [8..9] '('
+    keyword_analyze [9..16] 'analyze'
+    , [16..17] ','
+    keyword_verbose [18..25] 'verbose'

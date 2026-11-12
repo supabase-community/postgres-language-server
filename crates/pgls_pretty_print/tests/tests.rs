@@ -5,11 +5,8 @@ use dir_test::{Fixture, dir_test};
 use insta::{assert_snapshot, with_settings};
 
 use pgls_pretty_print::{
-    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, Layout, LogicalOperatorPlacement,
-    emitter::EventEmitter,
-    nodes::emit_node_enum,
-    normalize::normalize_ast,
-    renderer::{IndentStyle, KeywordCase, RenderConfig, Renderer},
+    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout,
+    LogicalOperatorPlacement, format_statement_unchecked, normalize_ast,
 };
 
 /// Line widths to test - each test file is run at both widths
@@ -145,23 +142,17 @@ fn test_single(fixture: Fixture<&str>) {
 
         println!("Parsed AST: {ast:#?}");
 
-        // The emitter gets the fixture config, not the default one: an option that decides which
-        // tokens exist is read here, before the renderer ever sees the events.
-        let mut emitter = EventEmitter::new(fixture_config.clone());
-        emit_node_enum(&ast, &mut emitter);
-
-        let mut output = String::new();
-        let config = RenderConfig {
-            max_line_length,
-            ..RenderConfig::from(fixture_config.clone())
+        let config = FormatConfig {
+            line_width: max_line_length,
+            ..fixture_config.clone()
         };
-        let mut renderer = Renderer::new(&mut output, config);
-        renderer.render(emitter.events).expect("Failed to render");
+        let output = format_statement_unchecked(&ast, &config).expect("Failed to render");
 
         println!("Formatted content (width={max_line_length}):\n{output}");
 
         assert_line_lengths(&output, max_line_length, fixture_config.indent_size);
         common::assert_clean_whitespace(&output);
+        common::assert_no_empty_statements(&output);
 
         let parsed_output = pgls_query::parse(&output).expect("Failed to parse SQL");
         let mut parsed_ast = parsed_output.into_root().expect("No root node found");
@@ -235,22 +226,16 @@ fn test_multi(fixture: Fixture<&str>) {
 
             println!("Parsed AST: {ast:#?}");
 
-            // The emitter gets the fixture config, not the default one: an option that decides
-            // which tokens exist is read here, before the renderer ever sees the events.
-            let mut emitter = EventEmitter::new(fixture_config.clone());
-            emit_node_enum(&ast, &mut emitter);
-
-            let mut output = String::new();
-            let config = RenderConfig {
-                max_line_length,
-                ..RenderConfig::from(fixture_config.clone())
+            let config = FormatConfig {
+                line_width: max_line_length,
+                ..fixture_config.clone()
             };
-            let mut renderer = Renderer::new(&mut output, config);
-            renderer.render(emitter.events).expect("Failed to render");
+            let output = format_statement_unchecked(&ast, &config).expect("Failed to render");
 
             // Verify line length
             assert_line_lengths(&output, max_line_length, fixture_config.indent_size);
             common::assert_clean_whitespace(&output);
+            common::assert_no_empty_statements(&output);
 
             // Verify AST equality
             let parsed_output = pgls_query::parse(&output).unwrap_or_else(|e| {
@@ -291,4 +276,18 @@ fn assert_line_lengths(output: &str, max_line_length: usize, tab_width: usize) {
         "lines past the width:\n{}\n\n{output}",
         problems.join("\n")
     );
+}
+
+#[test]
+fn empty_statements_are_found_across_comments_but_not_in_literals() {
+    for sql in [
+        "select 1;;",
+        "select 1; /* comment */;",
+        "select 1; -- comment\n;",
+    ] {
+        assert_eq!(common::empty_statements(sql).len(), 1, "{sql}");
+    }
+    for sql in ["select ';;';", "select 1; /* ; */", "select 1; -- ;\n"] {
+        assert!(common::empty_statements(sql).is_empty(), "{sql}");
+    }
 }

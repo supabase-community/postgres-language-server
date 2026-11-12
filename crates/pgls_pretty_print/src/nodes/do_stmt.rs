@@ -1,14 +1,9 @@
-use pgls_query::{NodeEnum, protobuf::DoStmt};
+use pgls_query::protobuf::DoStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
-
-use super::string::{emit_body_literal, emit_identifier_maybe_quoted, emit_keyword};
+use super::prelude::*;
 
 pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
-    e.group_start(GroupKind::DoStmt);
+    e.group_start();
 
     e.token(TokenKind::DO_KW);
 
@@ -86,6 +81,5 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

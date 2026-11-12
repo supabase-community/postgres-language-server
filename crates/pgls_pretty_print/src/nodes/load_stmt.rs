@@ -1,14 +1,9 @@
 use pgls_query::protobuf::LoadStmt;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
-
-use super::string::emit_single_quoted_str;
+use super::prelude::*;
 
 pub(super) fn emit_load_stmt(e: &mut EventEmitter, n: &LoadStmt) {
-    e.group_start(GroupKind::LoadStmt);
+    e.group_start();
 
     e.token(TokenKind::LOAD_KW);
 
@@ -17,6 +12,5 @@ pub(super) fn emit_load_stmt(e: &mut EventEmitter, n: &LoadStmt) {
         emit_single_quoted_str(e, &n.filename);
     }
 
-    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }
