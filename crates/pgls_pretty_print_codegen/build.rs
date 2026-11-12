@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 // TODO make this selectable via feature flags
-static LIBPG_QUERY_TAG: &str = "17-6.1.0";
+static LIBPG_QUERY_TAG: &str = "18.1.0";
 
 /// Downloads the `kwlist.h` file from the specified version of `libpg_query`
 fn main() -> Result<(), Box<dyn std::error::Error>> {

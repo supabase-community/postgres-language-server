@@ -1,0 +1,18 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The column list of a CTE renames its typed columns, so `x` is an integer.
+-- expect_lint/operatorTypeMismatch
+with c(x) as (select 1 as a) select x + timestamp '2020-01-01' from c;
+
+```
+
+# Diagnostics
+lint/operatorTypeMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Operator does not exist: integer + timestamp without time zone
+  
+  i No operator matches the given name and argument types. You might need to add explicit type casts.

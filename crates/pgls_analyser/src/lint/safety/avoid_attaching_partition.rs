@@ -1,14 +1,20 @@
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::alter_table_cmd_lock;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
 declare_lint_rule! {
-    /// Attaching a partition acquires an `ACCESS EXCLUSIVE` lock on the parent table.
+    /// Attaching a partition acquires an `ACCESS EXCLUSIVE` lock on the partition.
     ///
-    /// `ALTER TABLE ... ATTACH PARTITION` locks the parent table, blocking all reads and writes.
-    /// For large tables, this can cause significant downtime. Consider creating the partition
-    /// with the correct constraints upfront, or use a staging table approach.
+    /// `ALTER TABLE ... ATTACH PARTITION` takes a `SHARE UPDATE EXCLUSIVE` lock on the parent
+    /// table, which doesn't block reads and writes, and an `ACCESS EXCLUSIVE` lock on the
+    /// partition and on the default partition, if there is one. While holding them, Postgres
+    /// scans the partition to check that its rows match the partition bound, and the default
+    /// partition to check that none of its rows do. For large tables, this can cause significant
+    /// downtime. Add a `CHECK` constraint that matches the partition bound to the partition
+    /// before attaching it, so that Postgres skips the scan.
     ///
     /// ## Examples
     ///
@@ -40,25 +46,22 @@ impl LinterRule for AvoidAttachingPartition {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
-                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAttachPartition
-                {
-                    diagnostics.push(
-                        LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Attaching a partition acquires an "<Emphasis>"ACCESS EXCLUSIVE"</Emphasis>" lock on the parent table."
-                            },
-                        )
-                        .detail(
-                            None,
-                            "This blocks all reads and writes on the parent table. Consider adding a matching CHECK constraint to the child table before attaching to minimize lock duration.",
-                        ),
-                    );
-                }
+        for cmd in alter_table_cmds(ctx.stmt()) {
+            if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAttachPartition {
+                let parent_lock = alter_table_cmd_lock(cmd).name();
+                diagnostics.push(
+                    LinterDiagnostic::new(
+                        rule_category!(),
+                        None,
+                        markup! {
+                            "Attaching a partition acquires an "<Emphasis>"ACCESS EXCLUSIVE"</Emphasis>" lock on the partition and a "<Emphasis>{parent_lock}</Emphasis>" lock on the parent table."
+                        },
+                    )
+                    .detail(
+                        None,
+                        "This blocks all reads and writes on the partition, and on the default partition if there is one, while Postgres scans them to validate the partition bound. Add a CHECK constraint that matches the partition bound to the partition before attaching it, so that Postgres skips the scan.",
+                    ),
+                );
             }
         }
 

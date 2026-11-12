@@ -4,8 +4,12 @@ use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_catalog::resolve::figure_column_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AlterTableType, Node, ResTarget, SelectStmt, SetOperation, Token};
+use pgls_query::protobuf::{
+    AlterTableStmt, AlterTableType, CreateTableAsStmt, Node, RangeVar, ResTarget, SelectStmt,
+    SetOperation, Token,
+};
 use pgls_query::{NodeEnum, NodeRef};
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 use pgls_text_size::TextRange;
 
 declare_lint_rule! {
@@ -75,7 +79,7 @@ impl LinterRule for BanDuplicateColumnAssignments {
                     report_assignments(&stmt.cols, tokens, &mut diagnostics)
                 }
                 NodeRef::CopyStmt(stmt) => report_definitions(
-                    string_values(&stmt.attlist),
+                    column_list(&stmt.attlist, stmt.relation.as_ref(), tokens),
                     Definition::ColumnList,
                     &mut diagnostics,
                 ),
@@ -90,17 +94,26 @@ impl LinterRule for BanDuplicateColumnAssignments {
                     &mut diagnostics,
                 ),
                 NodeRef::AlterTableStmt(stmt) => report_definitions(
-                    added_columns(&stmt.cmds, tokens),
+                    added_columns(stmt, tokens),
                     Definition::AddedColumn,
                     &mut diagnostics,
                 ),
                 NodeRef::ViewStmt(stmt) => report_definitions(
-                    output_columns(&stmt.aliases, stmt.query.as_deref(), tokens),
+                    output_columns(
+                        column_list(&stmt.aliases, stmt.view.as_ref(), tokens),
+                        stmt.query.as_deref(),
+                        tokens,
+                    ),
                     Definition::Relation,
                     &mut diagnostics,
                 ),
+                // Postgres skips the statement without looking at its columns if the relation
+                // exists.
+                NodeRef::CreateTableAsStmt(stmt) if may_skip(stmt, ctx) => {}
                 NodeRef::CreateTableAsStmt(stmt) => {
-                    let names = stmt.into.as_ref().map_or(&[][..], |into| &into.col_names);
+                    let names = stmt.into.as_ref().map_or(Vec::new(), |into| {
+                        column_list(&into.col_names, into.rel.as_ref(), tokens)
+                    });
                     report_definitions(
                         output_columns(names, stmt.query.as_deref(), tokens),
                         Definition::Relation,
@@ -108,7 +121,7 @@ impl LinterRule for BanDuplicateColumnAssignments {
                     );
                 }
                 NodeRef::SelectStmt(stmt) if stmt.into_clause.is_some() => report_definitions(
-                    select_columns(&[], stmt, tokens),
+                    select_columns(Vec::new(), stmt, tokens),
                     Definition::Relation,
                     &mut diagnostics,
                 ),
@@ -118,6 +131,24 @@ impl LinterRule for BanDuplicateColumnAssignments {
 
         diagnostics
     }
+}
+
+/// Whether a `CREATE TABLE AS` or `CREATE MATERIALIZED VIEW` with `IF NOT EXISTS` may be
+/// skipped, because the catalog doesn't know that the relation is missing.
+fn may_skip(
+    stmt: &CreateTableAsStmt,
+    ctx: &LinterRuleContext<BanDuplicateColumnAssignments>,
+) -> bool {
+    stmt.if_not_exists
+        && !stmt
+            .into
+            .as_ref()
+            .and_then(|into| into.rel.as_ref())
+            .is_some_and(|relation| {
+                ctx.catalog()
+                    .relation_at_creation(relation, ctx.session().search_path())
+                    .is_missing()
+            })
 }
 
 /// A column name, and where it is written if we know that.
@@ -145,7 +176,7 @@ fn report_assignments(
         (
             Column {
                 name: target.name.clone(),
-                span: token_range(tokens, target.location),
+                span: tokens.and_then(|tokens| tokens.range_at(target.location)),
             },
             target.indirection.is_empty(),
         )
@@ -288,7 +319,7 @@ fn column_definitions(elements: &[Node], tokens: Option<StatementTokens>) -> Vec
         .filter_map(|element| match &element.node {
             Some(NodeEnum::ColumnDef(column)) => Some(Column {
                 name: column.colname.clone(),
-                span: token_range(tokens, column.location),
+                span: tokens.and_then(|tokens| tokens.range_at(column.location)),
             }),
             _ => None,
         })
@@ -297,18 +328,13 @@ fn column_definitions(elements: &[Node], tokens: Option<StatementTokens>) -> Vec
 
 /// The columns added by `ADD COLUMN`. Postgres skips an `ADD COLUMN IF NOT EXISTS` of a column
 /// that an earlier command added, so only the other ones count as duplicates.
-fn added_columns(cmds: &[Node], tokens: Option<StatementTokens>) -> Vec<Column> {
+fn added_columns(stmt: &AlterTableStmt, tokens: Option<StatementTokens>) -> Vec<Column> {
     let mut columns = Vec::new();
-    for cmd in cmds {
-        let Some(NodeEnum::AlterTableCmd(cmd)) = &cmd.node else {
-            continue;
-        };
+    for cmd in alter_table_cmds(stmt) {
         if cmd.subtype() != AlterTableType::AtAddColumn {
             continue;
         }
-        let Some(NodeEnum::ColumnDef(column)) =
-            cmd.def.as_deref().and_then(|def| def.node.as_ref())
-        else {
+        let Some(NodeEnum::ColumnDef(column)) = cmd_def(cmd) else {
             continue;
         };
         let added = columns
@@ -319,7 +345,7 @@ fn added_columns(cmds: &[Node], tokens: Option<StatementTokens>) -> Vec<Column> 
         }
         columns.push(Column {
             name: column.colname.clone(),
-            span: token_range(tokens, column.location),
+            span: tokens.and_then(|tokens| tokens.range_at(column.location)),
         });
     }
     columns
@@ -328,19 +354,19 @@ fn added_columns(cmds: &[Node], tokens: Option<StatementTokens>) -> Vec<Column> 
 /// The column names of a view or `CREATE TABLE AS`: the explicit names, then the names of the
 /// remaining entries of the select list.
 fn output_columns(
-    names: &[Node],
+    names: Vec<Column>,
     query: Option<&Node>,
     tokens: Option<StatementTokens>,
 ) -> Vec<Column> {
     match query.and_then(|query| query.node.as_ref()) {
         Some(NodeEnum::SelectStmt(select)) => select_columns(names, select, tokens),
-        _ => string_values(names),
+        _ => names,
     }
 }
 
 /// Columns we can't name, like the expansion of `*`, are left out.
 fn select_columns(
-    names: &[Node],
+    names: Vec<Column>,
     select: &SelectStmt,
     tokens: Option<StatementTokens>,
 ) -> Vec<Column> {
@@ -349,13 +375,12 @@ fn select_columns(
     while select.op() != SetOperation::SetopNone {
         match select.larg.as_deref() {
             Some(larg) => select = larg,
-            None => return string_values(names),
+            None => return names,
         }
     }
 
-    let mut columns = string_values(names);
     if !select.values_lists.is_empty() {
-        return columns;
+        return names;
     }
     let targets: Vec<_> = select
         .target_list
@@ -376,10 +401,12 @@ fn select_columns(
             .is_some_and(is_star)
     });
     if first_star.is_some_and(|star| star < names.len()) {
-        return columns;
+        return names;
     }
 
-    columns.extend(targets.iter().skip(names.len()).filter_map(|target| {
+    let skipped = names.len();
+    let mut columns = names;
+    columns.extend(targets.iter().skip(skipped).filter_map(|target| {
         let name = if target.name.is_empty() {
             figure_column_name(target.val.as_deref()?.node.as_ref()?)?
         } else {
@@ -405,23 +432,39 @@ fn is_star(value: &NodeEnum) -> bool {
     )
 }
 
-fn string_values(names: &[Node]) -> Vec<Column> {
+/// The names of a column list, like `copy t (a, b)` or `create view v (a, b)`, which directly
+/// follows the name of the relation at `relation`. The names have no locations, so their spans
+/// come from the tokens of the list.
+fn column_list(
+    names: &[Node],
+    relation: Option<&RangeVar>,
+    tokens: Option<StatementTokens>,
+) -> Vec<Column> {
+    let spans = relation
+        .zip(tokens)
+        .and_then(|(relation, tokens)| list_element_ranges(tokens, relation.location))
+        .filter(|spans| spans.len() == names.len());
     names
         .iter()
-        .filter_map(|name| match &name.node {
+        .enumerate()
+        .filter_map(|(index, name)| match &name.node {
             Some(NodeEnum::String(name)) => Some(Column {
                 name: name.sval.clone(),
-                span: None,
+                span: spans.as_ref().map(|spans| spans[index]),
             }),
             _ => None,
         })
         .collect()
 }
 
-/// The range of the token at `location`, e.g. the name of a column definition.
-fn token_range(tokens: Option<StatementTokens>, location: i32) -> Option<TextRange> {
-    let tokens = tokens?;
-    Some(tokens.range(tokens.at(location)?))
+/// The ranges of the elements of the first parenthesized list after the token at `location`.
+fn list_element_ranges(tokens: StatementTokens, location: i32) -> Option<Vec<TextRange>> {
+    let start = tokens.at(location)?;
+    let open = (start + 1..)
+        .map_while(|index| Some((index, tokens.kind(index)?)))
+        .find(|(_, kind)| *kind == Token::Ascii40)?
+        .0;
+    tokens.list_elements(open + 1, tokens.closing_paren(open)?)
 }
 
 /// The range of the select list entry that starts at `location`: up to the next `,` outside
@@ -506,8 +549,27 @@ mod tests {
     }
 
     #[test]
-    fn statement_without_locations() {
-        let sql = "copy users (id, id) from stdin";
-        assert_eq!(spans(sql), [sql]);
+    fn points_at_the_second_name_of_a_column_list() {
+        assert_eq!(
+            spans("copy users (id, name, \"id\") from stdin"),
+            ["\"id\""]
+        );
+        assert_eq!(
+            spans("copy public.users (id, id) to stdout with (format csv)"),
+            ["id"]
+        );
+        assert_eq!(
+            spans("create view v (a, b, \"a\") with (security_barrier) as select 1, 2, 3"),
+            ["\"a\""]
+        );
+        assert_eq!(
+            spans("create table t (x, y, \"x\") as select 1, 2, 3"),
+            ["\"x\""]
+        );
+        // An explicit name and the name of a select list entry.
+        assert_eq!(
+            spans("create view v (id) as select 1, 2 as id"),
+            ["2 as id"]
+        );
     }
 }

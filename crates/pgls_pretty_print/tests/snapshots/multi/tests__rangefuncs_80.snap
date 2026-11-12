@@ -146,7 +146,7 @@ from
   rows from (generate_series(1, 5),
   generate_series(1, 2))
   with ordinality
-  as g (i, j, o);;
+  as g (i, j, o);
 
 fetch forward all from rf_cur;
 
@@ -1182,7 +1182,7 @@ create temporary table tt_log (
 create rule insert_tt_rule
 as on insert to tt
 do
-  insert into tt_log values (new.*);;
+  insert into tt_log values (new.*);
 
 select insert_tt2('foollog', 'barlog') limit 1;
 

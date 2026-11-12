@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/limit.sql
-snapshot_kind: text
 ---
 select
   cast('' as text) as two,
@@ -108,7 +107,7 @@ select * from int8_tbl offset case when random() < 0.5 then cast(null as bigint)
 
 begin;
 
-declare c1 cursor for select * from int8_tbl limit 10;;
+declare c1 cursor for select * from int8_tbl limit 10;
 
 fetch forward all from c1;
 
@@ -122,7 +121,7 @@ fetch prior from c1;
 
 fetch forward all from c1;
 
-declare c2 cursor for select * from int8_tbl limit 3;;
+declare c2 cursor for select * from int8_tbl limit 3;
 
 fetch forward all from c2;
 
@@ -136,7 +135,7 @@ fetch prior from c2;
 
 fetch forward all from c2;
 
-declare c3 cursor for select * from int8_tbl offset 3;;
+declare c3 cursor for select * from int8_tbl offset 3;
 
 fetch forward all from c3;
 
@@ -150,7 +149,7 @@ fetch prior from c3;
 
 fetch forward all from c3;
 
-declare c4 cursor for select * from int8_tbl offset 10;;
+declare c4 cursor for select * from int8_tbl offset 10;
 
 fetch forward all from c4;
 
