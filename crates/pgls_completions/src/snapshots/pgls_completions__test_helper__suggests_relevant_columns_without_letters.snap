@@ -32,7 +32,7 @@ address - public.users.address (Column)
 email - public.users.email (Column)
 id - public.users.id (Column)
 name - public.users.name (Column)
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+pg_catalog."RI_FKey_cascade_del"() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
 
 --------------
 

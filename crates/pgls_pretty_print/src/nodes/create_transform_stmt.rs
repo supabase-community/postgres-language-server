@@ -1,19 +1,15 @@
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
-};
 use pgls_query::protobuf::CreateTransformStmt;
 
+use super::prelude::*;
+
 pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransformStmt) {
-    e.group_start(GroupKind::CreateTransformStmt);
+    e.group_start();
 
     e.token(TokenKind::CREATE_KW);
     e.space();
 
     if n.replace {
-        e.token(TokenKind::OR_KW);
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_or_replace(e);
         e.space();
     }
 
@@ -29,7 +25,7 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
     e.space();
     e.token(TokenKind::LANGUAGE_KW);
     e.space();
-    super::emit_identifier_maybe_quoted(e, &n.lang);
+    emit_identifier_maybe_quoted(e, &n.lang);
 
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::L_PAREN);
@@ -69,7 +65,6 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
     e.indent_end();
     e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
-    e.token(TokenKind::SEMICOLON);
 
     e.group_end();
 }

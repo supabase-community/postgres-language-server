@@ -1,3 +1,12 @@
+mod layers;
+mod project;
+
+pub use layers::ConfigurationLayers;
+pub use project::{
+    AppliedConfiguration, ConfigurationNotice, ConfigureProjectParams, ConfiguredProject,
+    VcsIntegration, configure_project,
+};
+
 use std::{
     ffi::OsStr,
     io::ErrorKind,
@@ -16,7 +25,7 @@ use pgls_console::markup;
 use pgls_env::PGLS_WEBSITE;
 use pgls_fs::{
     AutoSearchResult, ConfigName, FileSystem, FindFiles, OpenOptions, SKIPPED_DIRECTORIES,
-    SkipDirectory,
+    SkipDirectory, normalize_path,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -208,11 +217,10 @@ impl std::fmt::Display for IncompleteSearch {
 /// configuration directories are skipped even when they are below the root, and so is everything
 /// below the home directory or a filesystem root, which hold unrelated projects.
 ///
-/// The database settings of the `environment` (see [PartialDatabaseConfiguration::from_env])
-/// only fill in the connection options that a nested configuration file doesn't set itself, so
-/// that each file keeps its own database. `configure` then lays the layers of the caller, such as
-/// the arguments of the CLI, over each configuration file. Folders that the settings above them
-/// ignore are skipped.
+/// `layers` are laid over each configuration file like over the root configuration file, except
+/// that the environment only fills in the connection options that a nested configuration file
+/// doesn't set itself, so that each file keeps its own database (see
+/// [ConfigurationLayers::apply_nested]). Folders that the settings above them ignore are skipped.
 ///
 /// This walks the file system, so call it off the async runtime. Fails if the project is not
 /// registered.
@@ -221,8 +229,7 @@ pub fn apply_nested_configurations(
     fs: &DynRef<'_, dyn FileSystem>,
     project_key: ProjectKey,
     search: NestedConfigurationSearch,
-    environment: Option<&PartialDatabaseConfiguration>,
-    configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
+    layers: &ConfigurationLayers,
 ) -> Result<NestedConfigurations, WorkspaceError> {
     let NestedConfigurationSearch {
         root,
@@ -246,7 +253,7 @@ pub fn apply_nested_configurations(
     let nested = directories
         .into_iter()
         .map(
-            |directory| match load_nested_configuration(fs, &directory, environment, &configure) {
+            |directory| match load_nested_configuration(fs, &directory, layers) {
                 Ok((nested, extended)) => {
                     extended_files.insert(directory, extended);
                     nested
@@ -307,6 +314,10 @@ fn find_nested_configurations(
     root_files: Option<Arc<FilesSettings>>,
 ) -> (Vec<PathBuf>, Option<IncompleteSearch>) {
     let file_names = ConfigName::file_names();
+    // Like the settings, which only use `.gitignore` with `vcs.enabled` and `vcs.useIgnoreFile`.
+    let vcs_ignore_files = root_files
+        .as_ref()
+        .is_none_or(|root_files| root_files.git_ignore.is_some());
     let skip_directory = root_files.map(|root_files| {
         Arc::new(move |directory: &Path| root_files.is_ignored(directory)) as SkipDirectory
     });
@@ -320,6 +331,7 @@ fn find_nested_configurations(
             folder,
             &FindFiles {
                 skip_directory: skip_directory.clone(),
+                vcs_ignore_files,
                 ..FindFiles::new(&file_names)
             },
         );
@@ -427,23 +439,13 @@ fn is_not_a_project_folder(fs: &DynRef<'_, dyn FileSystem>, folder: &Path) -> bo
 fn load_nested_configuration(
     fs: &DynRef<'_, dyn FileSystem>,
     directory: &Path,
-    environment: Option<&PartialDatabaseConfiguration>,
-    configure: impl Fn(PartialConfiguration) -> PartialConfiguration,
+    layers: &ConfigurationLayers,
 ) -> Result<(NestedSettingsParams, Vec<PathBuf>), WorkspaceError> {
     let loaded = load_configuration(
         fs,
         ConfigurationPathHint::FromWorkspace(directory.to_path_buf()),
     )?;
-    let mut configuration = loaded.configuration;
-    if let Some(environment) = environment
-        .and_then(|environment| environment.for_nested_configuration(loaded.file_database.as_ref()))
-    {
-        configuration.merge_with(PartialConfiguration {
-            db: Some(environment),
-            ..Default::default()
-        });
-    }
-    let configuration = configure(configuration);
+    let configuration = layers.apply_nested(loaded.configuration, loaded.file_database.as_ref());
     let (vcs_base_path, gitignore_matches) =
         configuration.retrieve_gitignore_matches(fs, Some(directory))?;
     let nested = NestedSettingsParams {
@@ -485,10 +487,8 @@ fn load_config(
     if let ConfigurationPathHint::FromUser(ref config_file_path) = base_path
         && file_system.path_is_file(config_file_path)
     {
-        let content = strip_jsonc(&file_system.read_file_from_path(config_file_path)?)?;
-
-        let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
-            .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+        let deserialized =
+            parse_configuration(&file_system.read_file_from_path(config_file_path)?)?;
 
         return Ok(Some(ConfigurationPayload {
             deserialized,
@@ -515,8 +515,7 @@ fn load_config(
     )? {
         let AutoSearchResult { content, file_path } = auto_search_result;
 
-        let deserialized = serde_json::from_str::<PartialConfiguration>(&strip_jsonc(&content)?)
-            .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+        let deserialized = parse_configuration(&content)?;
 
         Ok(Some(ConfigurationPayload {
             deserialized,
@@ -539,9 +538,7 @@ fn load_user_config(
             continue;
         }
 
-        let content = strip_jsonc(&file_system.read_file_from_path(&file_path)?)?;
-        let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
-            .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+        let deserialized = parse_configuration(&file_system.read_file_from_path(&file_path)?)?;
 
         return Ok(Some(ConfigurationPayload {
             deserialized,
@@ -629,6 +626,12 @@ pub fn to_analyser_rules(settings: &Settings) -> LinterRules {
     analyser_rules
 }
 
+/// Parses the content of a configuration file, which may have comments and trailing commas.
+pub fn parse_configuration(content: &str) -> Result<PartialConfiguration, ConfigurationDiagnostic> {
+    serde_json::from_str(&strip_jsonc(content)?)
+        .map_err(ConfigurationDiagnostic::new_deserialization_error)
+}
+
 /// Strips JSONC comments and trailing commas from input, returning valid JSON.
 fn strip_jsonc(content: &str) -> Result<String, ConfigurationDiagnostic> {
     let mut data = content.to_string();
@@ -670,37 +673,19 @@ impl PartialConfigurationExt for PartialConfiguration {
     /// Mutates the configuration so that any fields that have not been configured explicitly are
     /// filled in with their values from configs listed in the `extends` field.
     ///
-    /// The `extends` configs are applied from left to right.
+    /// The `extends` configs are applied from left to right, each with its own `extends` applied
+    /// first. Relative paths in an extended file are relative to that file, and it resolves
+    /// packages from its folder.
     ///
-    /// If a configuration can't be resolved from the file system, the operation will fail.
+    /// If a configuration can't be resolved from the file system, extends itself, or is extended
+    /// more than [EXTENDS_DEPTH_MAX] levels deep, the operation will fail.
     fn apply_extends(
         &mut self,
         fs: &DynRef<'_, dyn FileSystem>,
         file_path: &Path,
         external_resolution_base_path: &Path,
     ) -> Result<Vec<PathBuf>, WorkspaceError> {
-        let (extended_files, configurations): (Vec<_>, Vec<_>) = self
-            .deserialize_extends(
-                fs,
-                file_path.parent().expect("file path should have a parent"),
-                external_resolution_base_path,
-            )?
-            .into_iter()
-            .unzip();
-
-        let extended_configuration = configurations.into_iter().reduce(
-            |mut previous_configuration, current_configuration| {
-                previous_configuration.merge_with(current_configuration);
-                previous_configuration
-            },
-        );
-        if let Some(mut extended_configuration) = extended_configuration {
-            // We swap them to avoid having to clone `self.configuration` to merge it.
-            std::mem::swap(self, &mut extended_configuration);
-            self.merge_with(extended_configuration)
-        }
-
-        Ok(extended_files)
+        apply_extends_transitively(self, fs, file_path, external_resolution_base_path)
     }
 
     /// It attempts to deserialize all the configuration files that were specified in the `extends` property
@@ -772,9 +757,7 @@ impl PartialConfigurationExt for PartialConfiguration {
 
             })?;
 
-            let deserialized =
-                serde_json::from_str::<PartialConfiguration>(&strip_jsonc(&content)?)
-                    .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+            let deserialized = parse_configuration(&content)?;
             deserialized_configurations.push((extend_configuration_file_path, deserialized))
         }
         Ok(deserialized_configurations)
@@ -824,6 +807,129 @@ impl PartialConfigurationExt for PartialConfiguration {
     }
 }
 
+/// How many levels deep configuration files can extend each other. A chain of a nested
+/// configuration, the root configuration and a shared or user configuration is three levels;
+/// ten leaves room for that and catches runaway chains that aren't cycles.
+const EXTENDS_DEPTH_MAX: usize = 10;
+
+/// A configuration file whose `extends` [apply_extends_transitively] is applying.
+struct ExtendingFile {
+    path: PathBuf,
+    configuration: PartialConfiguration,
+    /// The files in its `extends` that are still to be applied, in order.
+    pending: std::vec::IntoIter<(PathBuf, PartialConfiguration)>,
+    /// The files in its `extends` that were applied, merged from left to right.
+    extended: Option<PartialConfiguration>,
+}
+
+impl ExtendingFile {
+    fn new(
+        path: PathBuf,
+        mut configuration: PartialConfiguration,
+        fs: &DynRef<'_, dyn FileSystem>,
+        external_resolution_base_path: &Path,
+    ) -> Result<Self, WorkspaceError> {
+        let pending = configuration
+            .deserialize_extends(
+                fs,
+                path.parent().unwrap_or(Path::new("")),
+                external_resolution_base_path,
+            )?
+            .into_iter();
+        Ok(Self {
+            path,
+            configuration,
+            pending,
+            extended: None,
+        })
+    }
+
+    /// The configuration over the files it extends.
+    fn finish(self) -> PartialConfiguration {
+        match self.extended {
+            Some(mut extended) => {
+                extended.merge_with(self.configuration);
+                extended
+            }
+            None => self.configuration,
+        }
+    }
+}
+
+/// Applies the `extends` of `configuration`, the file at `file_path`, and of the files it
+/// extends, depth first. Returns the extended files in the order they were found. Walks with a
+/// stack instead of recursing, so that the depth is [EXTENDS_DEPTH_MAX] and not the stack's.
+fn apply_extends_transitively(
+    configuration: &mut PartialConfiguration,
+    fs: &DynRef<'_, dyn FileSystem>,
+    file_path: &Path,
+    external_resolution_base_path: &Path,
+) -> Result<Vec<PathBuf>, WorkspaceError> {
+    let mut extended_files = Vec::new();
+    // The file and the files it extends that are being applied, each extending the one before.
+    let mut chain = vec![ExtendingFile::new(
+        normalize_path(file_path),
+        std::mem::take(configuration),
+        fs,
+        external_resolution_base_path,
+    )?];
+    loop {
+        let next = chain.last_mut().and_then(|file| file.pending.next());
+        if let Some((path, extended)) = next {
+            let path = normalize_path(&path);
+            if chain.iter().any(|file| file.path == path) {
+                let cycle: Vec<_> = chain
+                    .iter()
+                    .map(|file| &file.path)
+                    .chain(std::iter::once(&path))
+                    .map(|file| file.display().to_string())
+                    .collect();
+                return Err(ConfigurationDiagnostic::invalid_configuration(format!(
+                    "The configuration files extend each other: {}",
+                    cycle.join(" -> ")
+                ))
+                .into());
+            }
+            if chain.len() >= EXTENDS_DEPTH_MAX {
+                return Err(ConfigurationDiagnostic::invalid_configuration(format!(
+                    "The configuration files extend each other more than {EXTENDS_DEPTH_MAX} \
+                     levels deep, at {}",
+                    path.display()
+                ))
+                .into());
+            }
+            extended_files.push(path.clone());
+            // Like `require` in Node.js, an extended file resolves the packages in its own
+            // `extends` from its folder, e.g. from the `node_modules` of the package it is in.
+            let package_resolution_base_path = path.parent().unwrap_or(Path::new("")).to_owned();
+            chain.push(ExtendingFile::new(
+                path,
+                extended,
+                fs,
+                &package_resolution_base_path,
+            )?);
+            continue;
+        }
+
+        let Some(file) = chain.pop() else {
+            break;
+        };
+        let finished = file.finish();
+        match chain.last_mut() {
+            // Later files in `extends` override earlier ones.
+            Some(extending) => match &mut extending.extended {
+                Some(extended) => extended.merge_with(finished),
+                None => extending.extended = Some(finished),
+            },
+            None => {
+                *configuration = finished;
+                break;
+            }
+        }
+    }
+    Ok(extended_files)
+}
+
 /// Expands a leading `~` in a path to the home directory.
 ///
 /// Returns `None` if the path doesn't start with `~` or the home directory is unknown.
@@ -835,73 +941,6 @@ fn expand_home(path: &str, home_directory: Option<&Path>) -> Option<PathBuf> {
             .or_else(|| path.strip_prefix("~\\").filter(|_| cfg!(windows)))?
     };
     Some(home_directory?.join(rest))
-}
-
-/// Normalizes a path, resolving '..' and '.' segments without requiring the path to exist
-fn normalize_path(path: &Path) -> PathBuf {
-    let mut components = Vec::new();
-    let mut prefix_component = None;
-    let mut is_absolute = false;
-
-    for component in path.components() {
-        match component {
-            std::path::Component::Prefix(_prefix) => {
-                prefix_component = Some(component);
-                components.clear();
-            }
-            std::path::Component::RootDir => {
-                is_absolute = true;
-                components.clear();
-            }
-            std::path::Component::ParentDir => {
-                if !components.is_empty() {
-                    components.pop();
-                } else if !is_absolute && prefix_component.is_none() {
-                    // Only keep parent dir if we're not absolute and have no prefix
-                    components.push(component.as_os_str());
-                }
-            }
-            std::path::Component::Normal(c) => {
-                components.push(c);
-            }
-            std::path::Component::CurDir => {
-                // Skip current directory components
-            }
-        }
-    }
-
-    let mut result = PathBuf::new();
-
-    // Add prefix component (like C: on Windows)
-    if let Some(prefix) = prefix_component {
-        result.push(prefix.as_os_str());
-    }
-
-    // Add root directory if path is absolute
-    if is_absolute {
-        result.push(std::path::Component::RootDir.as_os_str());
-    }
-
-    // Add normalized components
-    for component in components {
-        result.push(component);
-    }
-
-    // Handle edge cases
-    if result.as_os_str().is_empty() {
-        if prefix_component.is_some() || is_absolute {
-            // This shouldn't happen with proper input, but fallback to original path's root
-            return path
-                .ancestors()
-                .last()
-                .unwrap_or(Path::new(""))
-                .to_path_buf();
-        } else {
-            return PathBuf::from(".");
-        }
-    }
-
-    result
 }
 
 #[cfg(test)]
@@ -945,6 +984,193 @@ mod tests {
 
     fn files_config(max_size: u32) -> String {
         format!(r#"{{ "files": {{ "maxSize": {max_size} }} }}"#)
+    }
+
+    /// A configuration that extends a file which itself extends another, e.g. a nested
+    /// configuration extending the root configuration that extends a shared one, gets all three.
+    /// Relative paths in an extended file are relative to it.
+    #[test]
+    fn extends_is_applied_transitively() {
+        let mut fs = file_system();
+        fs.insert(
+            project_directory()
+                .join("db1")
+                .join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["../postgres-language-server.jsonc"], "db": { "database": "db1" } }"#,
+        );
+        fs.insert(
+            project_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["./shared/base.jsonc"], "db": { "database": "root", "host": "db" } }"#,
+        );
+        fs.insert(
+            project_directory().join("shared").join("base.jsonc"),
+            r#"{ "extends": ["./files.jsonc"] }"#,
+        );
+        fs.insert(
+            project_directory().join("shared").join("files.jsonc"),
+            files_config(7),
+        );
+
+        let loaded = load(
+            fs,
+            ConfigurationPathHint::FromWorkspace(project_directory().join("db1")),
+        );
+        assert_eq!(max_file_size(&loaded), Some(7));
+        let db = loaded.configuration.db.as_ref().unwrap();
+        assert_eq!(db.database.as_deref(), Some("db1"));
+        assert_eq!(db.host.as_deref(), Some("db"));
+        assert_eq!(
+            loaded.extended_files,
+            [
+                project_directory().join(ConfigName::pgls_jsonc()),
+                project_directory().join("shared").join("base.jsonc"),
+                project_directory().join("shared").join("files.jsonc"),
+            ]
+        );
+    }
+
+    /// The files in `extends` apply from left to right, each over the files it extends itself.
+    #[test]
+    fn extends_applies_later_files_over_earlier_ones() {
+        let mut fs = file_system();
+        fs.insert(
+            project_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["./a.jsonc", "./b.jsonc"] }"#,
+        );
+        fs.insert(
+            project_directory().join("a.jsonc"),
+            r#"{ "extends": ["./a_base.jsonc"], "db": { "database": "a" } }"#,
+        );
+        fs.insert(
+            project_directory().join("a_base.jsonc"),
+            r#"{ "db": { "host": "a_base", "database": "a_base", "username": "a_base" } }"#,
+        );
+        fs.insert(
+            project_directory().join("b.jsonc"),
+            r#"{ "db": { "host": "b" } }"#,
+        );
+
+        let loaded = load(
+            fs,
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        );
+        let db = loaded.configuration.db.as_ref().unwrap();
+        assert_eq!(db.host.as_deref(), Some("b"));
+        assert_eq!(db.database.as_deref(), Some("a"));
+        assert_eq!(db.username.as_deref(), Some("a_base"));
+        assert_eq!(
+            loaded.extended_files,
+            [
+                project_directory().join("a.jsonc"),
+                project_directory().join("a_base.jsonc"),
+                project_directory().join("b.jsonc"),
+            ]
+        );
+    }
+
+    #[test]
+    fn extends_fails_on_a_cycle() {
+        let mut fs = file_system();
+        fs.insert(
+            project_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["./a.jsonc"] }"#,
+        );
+        fs.insert(
+            project_directory().join("a.jsonc"),
+            r#"{ "extends": ["./b.jsonc"] }"#,
+        );
+        fs.insert(
+            project_directory().join("b.jsonc"),
+            r#"{ "extends": ["./a.jsonc"] }"#,
+        );
+
+        let error = load_configuration(
+            &DynRef::Owned(Box::new(fs)),
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        )
+        .expect_err("a cycle can't be applied");
+        assert!(error.to_string().contains("extend each other"), "{error}");
+    }
+
+    /// A file system with a chain of `files` configuration files, each extending the next.
+    fn extends_chain(files: usize) -> MemoryFileSystem {
+        let mut fs = file_system();
+        let name = |level: usize| match level {
+            0 => ConfigName::pgls_jsonc().to_string(),
+            level => format!("{level}.jsonc"),
+        };
+        for level in 0..files {
+            let content = if level + 1 < files {
+                format!(r#"{{ "extends": ["./{}"] }}"#, name(level + 1))
+            } else {
+                "{}".to_string()
+            };
+            fs.insert(project_directory().join(name(level)), content);
+        }
+        fs
+    }
+
+    /// A package that an extended file extends is resolved from the folder of that file, like
+    /// `require` in Node.js, so a shared configuration can depend on a package of its own.
+    #[test]
+    fn extended_files_resolve_packages_from_their_folder() {
+        let directory = tempfile::tempdir().unwrap();
+        let project = directory.path().join("project");
+        let config_package = project.join("node_modules/@acme/pgls-config");
+        let base_package = config_package.join("node_modules/@acme/pgls-base");
+        for (path, content) in [
+            (
+                project.join(ConfigName::pgls_jsonc()),
+                r#"{ "extends": ["@acme/pgls-config"] }"#,
+            ),
+            (
+                config_package.join("package.json"),
+                r#"{ "name": "@acme/pgls-config", "main": "config.jsonc" }"#,
+            ),
+            (
+                config_package.join("config.jsonc"),
+                r#"{ "extends": ["@acme/pgls-base"], "db": { "database": "config" } }"#,
+            ),
+            (
+                base_package.join("package.json"),
+                r#"{ "name": "@acme/pgls-base", "main": "base.jsonc" }"#,
+            ),
+            (
+                base_package.join("base.jsonc"),
+                r#"{ "db": { "host": "base" } }"#,
+            ),
+        ] {
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, content).unwrap();
+        }
+
+        let loaded = load_configuration(
+            &DynRef::Owned(Box::new(pgls_fs::OsFileSystem::new(project.clone()))),
+            ConfigurationPathHint::FromWorkspace(project),
+        )
+        .expect("configuration should load");
+        let db = loaded.configuration.db.as_ref().unwrap();
+        assert_eq!(db.database.as_deref(), Some("config"));
+        assert_eq!(db.host.as_deref(), Some("base"));
+    }
+
+    #[test]
+    fn extends_applies_a_chain_as_deep_as_the_limit() {
+        let loaded = load(
+            extends_chain(EXTENDS_DEPTH_MAX),
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        );
+        assert_eq!(loaded.extended_files.len(), EXTENDS_DEPTH_MAX - 1);
+    }
+
+    #[test]
+    fn extends_fails_when_too_deep() {
+        let error = load_configuration(
+            &DynRef::Owned(Box::new(extends_chain(EXTENDS_DEPTH_MAX + 1))),
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        )
+        .expect_err("too deep");
+        assert!(error.to_string().contains("levels"), "{error}");
     }
 
     #[test]

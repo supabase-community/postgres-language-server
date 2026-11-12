@@ -1,0 +1,34 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- A NOT NULL constraint (Postgres 18) without NOT VALID scans the table like SET NOT NULL
+-- expect_lint/addingNotNullField
+ALTER TABLE users ADD CONSTRAINT users_email_not_null NOT NULL email;
+-- expect_lint/addingNotNullField
+ALTER TABLE users ADD NOT NULL name;
+ALTER TABLE users ADD CONSTRAINT users_age_not_null NOT NULL age NOT VALID;
+ALTER TABLE users VALIDATE CONSTRAINT users_age_not_null;
+
+```
+
+# Diagnostics
+lint/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Setting a column NOT NULL blocks reads while the table is scanned.
+  
+  i This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.
+  
+  i Add the constraint with ADD CONSTRAINT ... NOT NULL ... NOT VALID, then VALIDATE it in a separate transaction.
+  
+
+
+lint/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Setting a column NOT NULL blocks reads while the table is scanned.
+  
+  i This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.
+  
+  i Add the constraint with ADD CONSTRAINT ... NOT NULL ... NOT VALID, then VALIDATE it in a separate transaction.

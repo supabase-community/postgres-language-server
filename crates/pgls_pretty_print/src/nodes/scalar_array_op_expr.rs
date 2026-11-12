@@ -1,12 +1,9 @@
 use pgls_query::protobuf::ScalarArrayOpExpr;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use super::prelude::*;
 
 pub(super) fn emit_scalar_array_op_expr(e: &mut EventEmitter, n: &ScalarArrayOpExpr) {
-    e.group_start(GroupKind::ScalarArrayOpExpr);
+    e.group_start();
 
     debug_assert!(
         n.args.len() == 2,
@@ -17,7 +14,7 @@ pub(super) fn emit_scalar_array_op_expr(e: &mut EventEmitter, n: &ScalarArrayOpE
         let lhs = &n.args[0];
         let rhs = &n.args[1];
 
-        super::emit_node(lhs, e);
+        emit_node(e, lhs);
         e.space();
 
         // TODO: derive operator token from opno instead of assuming equality.
@@ -32,7 +29,7 @@ pub(super) fn emit_scalar_array_op_expr(e: &mut EventEmitter, n: &ScalarArrayOpE
         e.space();
 
         e.token(TokenKind::L_PAREN);
-        super::emit_node(rhs, e);
+        emit_node(e, rhs);
         e.token(TokenKind::R_PAREN);
     }
 

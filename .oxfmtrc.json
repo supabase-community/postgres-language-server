@@ -1,4 +1,5 @@
 {
 	"singleQuote": false,
-	"experimentalSortImports": {}
+	"experimentalSortImports": {},
+	"ignorePatterns": ["**/playwright-report/**", "**/test-results/**"]
 }
