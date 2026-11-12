@@ -1,5 +1,6 @@
 use pgls_query::protobuf::{AlterTableCmd, AlterTableType, DropBehavior};
 
+use super::atalter_constraint::emit_atalter_constraint;
 use super::prelude::*;
 
 /// Emit an ALTER TABLE command. The `for_type` parameter indicates if this is
@@ -722,41 +723,14 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             }
         }
         AlterTableType::AtAlterConstraint => {
-            // ALTER CONSTRAINT constraint_name [DEFERRABLE | NOT DEFERRABLE] [INITIALLY DEFERRED | INITIALLY IMMEDIATE]
+            // ALTER CONSTRAINT name [ENFORCED | NOT ENFORCED] [[NOT] DEFERRABLE INITIALLY ...]
+            // ALTER CONSTRAINT name [NO] INHERIT
             e.token(TokenKind::ALTER_KW);
             e.space();
-            e.token(TokenKind::CONSTRAINT_KW);
-            e.space();
-
-            // constraint name comes from the def (Constraint node)
             if let Some(ref def) = cmd.def
-                && let Some(NodeEnum::Constraint(c)) = &def.node
+                && let Some(NodeEnum::AtalterConstraint(c)) = &def.node
             {
-                emit_identifier_maybe_quoted(e, &c.conname);
-
-                // DEFERRABLE or NOT DEFERRABLE
-                if c.deferrable {
-                    e.space();
-                    e.token(TokenKind::DEFERRABLE_KW);
-                } else {
-                    e.space();
-                    e.token(TokenKind::NOT_KW);
-                    e.space();
-                    e.token(TokenKind::DEFERRABLE_KW);
-                }
-
-                // INITIALLY DEFERRED or INITIALLY IMMEDIATE
-                if c.initdeferred {
-                    e.space();
-                    e.token(TokenKind::INITIALLY_KW);
-                    e.space();
-                    e.token(TokenKind::DEFERRED_KW);
-                } else {
-                    e.space();
-                    e.token(TokenKind::INITIALLY_KW);
-                    e.space();
-                    e.token(TokenKind::IMMEDIATE_KW);
-                }
+                emit_atalter_constraint(e, c);
             }
         }
         AlterTableType::AtDropOids => {

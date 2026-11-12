@@ -11,8 +11,11 @@ declare_lint_rule! {
     ///
     /// In Postgres 11+, this behavior was optimized for non-volatile defaults. However:
     /// - Volatile default values (like random() or custom functions) still cause table rewrites
-    /// - Generated columns (GENERATED ALWAYS AS) always require table rewrites
+    /// - Stored generated columns (GENERATED ALWAYS AS ... STORED) always require table rewrites
     /// - Non-volatile defaults are safe in Postgres 11+
+    ///
+    /// Virtual generated columns (Postgres 18) are computed when rows are read, so adding one
+    /// doesn't rewrite the table.
     ///
     /// ## Examples
     ///
@@ -64,21 +67,24 @@ impl LinterRule for AddingFieldWithDefault {
                         }
                     });
 
-                    let has_generated = col_def.constraints.iter().any(|constraint| {
+                    // A virtual generated column ('v', Postgres 18) is computed on read and
+                    // needs no rewrite.
+                    let has_stored_generated = col_def.constraints.iter().any(|constraint| {
                         if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
                             c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
+                                && c.generated_kind == "s"
                         } else {
                             false
                         }
                     });
 
-                    if has_generated {
+                    if has_stored_generated {
                         diagnostics.push(
                                     LinterDiagnostic::new(
                                         rule_category!(),
                                         None,
                                         markup! {
-                                            "Adding a generated column requires a table rewrite."
+                                            "Adding a stored generated column requires a table rewrite."
                                         },
                                     )
                                     .detail(None, "This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.")
