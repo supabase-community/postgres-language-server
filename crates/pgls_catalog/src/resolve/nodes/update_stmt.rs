@@ -1,17 +1,15 @@
-use pgls_query::{NodeEnum, protobuf::UpdateStmt};
+use pgls_query::protobuf::UpdateStmt;
 
 use super::{
     Resolver,
     from_clause::resolve_from_clause,
     range_var::resolve_target_relation,
-    res_target::{check_target_column, resolve_returning_clause},
-    resolve_node,
+    res_target::{resolve_returning_clause, resolve_set_clause},
     with_clause::resolve_with_clause,
 };
 use crate::resolve::{
-    expr::{check_assignment, infer_expr},
     scope::{Columns, Level},
-    utils::node_location,
+    utils::resolve_expr,
 };
 
 /// Resolves an UPDATE and returns the columns of its RETURNING list. Port of
@@ -40,39 +38,11 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
     level.extend(resolve_from_clause(r, &n.from_clause));
     r.enter_level(level);
 
-    for assignment in &n.target_list {
-        if let Some(NodeEnum::ResTarget(assignment)) = &assignment.node {
-            check_target_column(r, &target, &assignment.name, assignment.location);
-            // Assignments to subscripts or fields, like `a[1]` or `c.f`, aren't checked.
-            if let (true, Some(column_type), Some(expr)) = (
-                assignment.indirection.is_empty(),
-                target.type_of(&assignment.name).flatten(),
-                assignment.val.as_deref().and_then(|v| v.node.as_ref()),
-            ) {
-                let expr_type = infer_expr(r, expr);
-                check_assignment(
-                    r,
-                    &assignment.name,
-                    column_type,
-                    Some(expr),
-                    expr_type,
-                    assignment
-                        .val
-                        .as_deref()
-                        .and_then(node_location)
-                        .unwrap_or(assignment.location),
-                );
-            }
-        }
-        resolve_node(r, assignment);
-    }
+    resolve_set_clause(r, &target, &n.target_list);
     if let Some(where_clause) = n.where_clause.as_deref() {
-        resolve_node(r, where_clause);
-        if let Some(expr) = where_clause.node.as_ref() {
-            infer_expr(r, expr);
-        }
+        resolve_expr(r, where_clause);
     }
 
     let level = r.exit_level();
-    resolve_returning_clause(r, n.returning_clause.as_ref(), level)
+    resolve_returning_clause(r, n.returning_clause.as_ref(), &target, level)
 }

@@ -1,0 +1,56 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- A NOT NULL constraint (Postgres 18) can be added as NOT VALID too
+-- expect_lint/constraintMissingNotValid
+ALTER TABLE users ADD CONSTRAINT users_email_not_null NOT NULL email;
+-- expect_lint/constraintMissingNotValid
+ALTER TABLE users ADD NOT NULL name;
+ALTER TABLE users ADD CONSTRAINT users_age_not_null NOT NULL age NOT VALID;
+ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+
+```
+
+# Diagnostics
+lint/constraintMissingNotValid  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
+  
+  i Add the constraint as NOT VALID in one transaction, then run VALIDATE CONSTRAINT in a separate transaction.
+  
+
+
+## Fix (unsafe): Add NOT VALID
+```
+-- A NOT NULL constraint (Postgres 18) can be added as NOT VALID too
+-- expect_lint/constraintMissingNotValid
+ALTER TABLE users ADD CONSTRAINT users_email_not_null NOT NULL email NOT VALID;
+-- expect_lint/constraintMissingNotValid
+ALTER TABLE users ADD NOT NULL name;
+ALTER TABLE users ADD CONSTRAINT users_age_not_null NOT NULL age NOT VALID;
+ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+
+```
+
+lint/constraintMissingNotValid  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
+  
+  i Add the constraint as NOT VALID in one transaction, then run VALIDATE CONSTRAINT in a separate transaction.
+  
+
+
+## Fix (unsafe): Add NOT VALID
+```
+-- A NOT NULL constraint (Postgres 18) can be added as NOT VALID too
+-- expect_lint/constraintMissingNotValid
+ALTER TABLE users ADD CONSTRAINT users_email_not_null NOT NULL email;
+-- expect_lint/constraintMissingNotValid
+ALTER TABLE users ADD NOT NULL name not valid;
+ALTER TABLE users ADD CONSTRAINT users_age_not_null NOT NULL age NOT VALID;
+ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+
+```

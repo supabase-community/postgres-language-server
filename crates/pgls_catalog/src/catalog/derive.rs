@@ -24,11 +24,7 @@ impl Catalog {
         Some(
             columns
                 .into_iter()
-                .map(|column| ColumnInfo {
-                    name: column.name,
-                    type_name: None,
-                    ty: column.ty,
-                })
+                .map(|column| ColumnInfo::new(column.name, None, column.ty))
                 .collect(),
         )
     }
