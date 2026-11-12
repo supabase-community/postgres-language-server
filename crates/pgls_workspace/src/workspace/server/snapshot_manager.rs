@@ -273,7 +273,7 @@ mod tests {
 
     /// A pool for `database` on port `port` of localhost that waits at most `timeout` for a
     /// connection. It only connects when it's used.
-    fn lazy_pool(port: u16, database: &str, timeout: Duration) -> PgPool {
+    fn lazy_pool(port: u16, database: &str, timeout: Duration) -> Result<PgPool, WorkspaceError> {
         let options = PgConnectOptions::new()
             .host("127.0.0.1")
             .port(port)
@@ -284,7 +284,6 @@ mod tests {
                 .acquire_timeout(timeout)
                 .connect_lazy_with(options)
         })
-        .unwrap()
     }
 
     /// While the snapshot of a database that doesn't answer loads, the snapshots of the other
@@ -295,10 +294,10 @@ mod tests {
         let hanging = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         hanging.set_nonblocking(true).unwrap();
         let timeout = Duration::from_secs(3);
-        let slow = lazy_pool(hanging.local_addr().unwrap().port(), "slow", timeout);
+        let slow = lazy_pool(hanging.local_addr().unwrap().port(), "slow", timeout).unwrap();
         let manager = SnapshotManager::new();
         insert(&manager, "cached");
-        let cached = lazy_pool(key("cached").port, "cached", timeout);
+        let cached = lazy_pool(key("cached").port, "cached", timeout).unwrap();
 
         std::thread::scope(|scope| {
             let slow_load = scope.spawn(|| manager.load(&slow));
