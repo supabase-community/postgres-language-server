@@ -1248,9 +1248,12 @@
 it can cause the database to become unresponsive if another transaction is holding a conflicting lock
 while idle in transaction or active. This is particularly dangerous for:</p>
 <ul>
-<li>ALTER TABLE statements (acquire ACCESS EXCLUSIVE lock)</li>
+<li>ALTER TABLE statements (acquire ACCESS EXCLUSIVE lock for most subcommands, and SHARE ROW
+EXCLUSIVE to enable or disable triggers and to add foreign keys)</li>
 <li>CREATE INDEX without CONCURRENTLY (acquires SHARE lock)</li>
 </ul>
+<p>Subcommands that only take a SHARE UPDATE EXCLUSIVE lock, like <code>VALIDATE CONSTRAINT</code>, don't
+block reads or writes and aren't reported.</p>
 <p>Setting a lock timeout ensures that if the lock cannot be acquired within a reasonable time,
 the statement will fail rather than blocking indefinitely.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
