@@ -2,16 +2,13 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CreateFunctionStmt, FunctionParameterMode as Mode},
 };
+use pgls_query_ext::utils::{qualified_name, type_name};
 
 use super::alter_function_stmt::volatility_option;
 use crate::Behavior;
-use crate::catalog::{
-    Catalog,
-    names::{qualified_name, type_label, type_name},
-    overlay::function_info,
-};
+use crate::catalog::{Catalog, overlay::function_info};
 use crate::lookup::{CatalogView, ColumnInfo, FunctionKind};
-use crate::typing::{Decision, TypeId, is_valid_polymorphic_signature};
+use crate::typing::{Decision, Polymorphic, TypeId, is_valid_polymorphic_signature};
 
 /// `CREATE FUNCTION` and `CREATE PROCEDURE` add an overload. Models [`CreateFunction`], with the parameter
 /// checks of [`interpret_function_parameter_list`] and the result checks of [`ProcedureCreate`].
@@ -27,7 +24,7 @@ pub(super) fn apply_create_function_stmt(
     let Some(name) = qualified_name(&n.funcname) else {
         return;
     };
-    let (schema, name) = c.creation_key(&name, search_path);
+    let (schema, name) = c.creation_key(name, search_path);
 
     let mut inputs = 0;
     let mut defaults = 0;
@@ -50,7 +47,11 @@ pub(super) fn apply_create_function_stmt(
                 .and_then(|ty| crate::typing::normalize_type_name(c, ty, search_path).0);
             outputs.push(ColumnInfo::new(
                 parameter.name.clone(),
-                parameter.arg_type.as_ref().and_then(type_label),
+                parameter
+                    .arg_type
+                    .as_ref()
+                    .and_then(type_name)
+                    .map(|name| name.name.to_owned()),
                 argument_type.clone().map(crate::typing::Type::Named),
             ));
         }
@@ -105,7 +106,7 @@ pub(super) fn apply_create_function_stmt(
     let return_columns = if !has_outputs {
         return_type
             .and_then(type_name)
-            .and_then(|name| c.type_(name.schema(), &name.name, search_path).found())
+            .and_then(|name| c.type_(name.schema, name.name, search_path).found())
             .and_then(|type_info| type_info.attributes)
     } else {
         Some(outputs)
@@ -192,16 +193,11 @@ pub(super) fn apply_create_function_stmt(
 /// [`interpret_function_parameter_list`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L183
 fn variadic_element(c: &Catalog, id: &crate::typing::TypeId) -> Option<crate::typing::TypeId> {
     let info = c.type_by_id(id).found()?;
-    if info.schema == "pg_catalog" {
-        let element = match info.name.as_str() {
-            "anyarray" => Some("anyelement"),
-            "anycompatiblearray" => Some("anycompatible"),
-            "any" => Some("any"),
-            _ => None,
-        };
-        if let Some(element) = element {
-            return c.builtin_type(element);
-        }
-    }
-    info.element
+    let element = match Polymorphic::from_type(&info) {
+        Some(Polymorphic::AnyArray) => Polymorphic::AnyElement,
+        Some(Polymorphic::AnyCompatibleArray) => Polymorphic::AnyCompatible,
+        Some(Polymorphic::Any) => Polymorphic::Any,
+        _ => return info.element,
+    };
+    element.type_id(c)
 }

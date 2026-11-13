@@ -19,15 +19,17 @@
 mod coerce;
 mod model;
 mod overload;
+mod pseudo;
 mod types;
 mod unify;
 
 pub use coerce::is_binary_coercible;
-pub use model::{Decision, Type, TypeId, TypedColumn};
+pub use model::{CoercionContext, Decision, Type, TypeId, TypedColumn};
 pub use types::{SerialType, base_type, format_type, normalize_type_name, serial_type};
 
 pub(crate) use coerce::*;
 pub(crate) use model::*;
 pub(crate) use overload::*;
+pub(crate) use pseudo::*;
 pub(crate) use types::*;
 pub(crate) use unify::*;

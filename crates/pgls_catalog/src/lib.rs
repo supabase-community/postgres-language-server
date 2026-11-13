@@ -31,7 +31,7 @@ pub mod typing;
 pub use catalog::{Catalog, CatalogBase};
 pub use identifier::{NamePosition, identifier_name, quote_identifier};
 pub use lookup::{
-    Candidates, CastContext, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
+    Candidates, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
     FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
     OperatorInfo, OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
