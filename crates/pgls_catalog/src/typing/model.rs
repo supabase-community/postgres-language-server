@@ -37,6 +37,15 @@ pub enum Decision<T> {
     Unknown,
 }
 
+impl<T> Decision<T> {
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Decision<U> {
+        match self {
+            Decision::Known(value) => Decision::Known(f(value)),
+            Decision::Unknown => Decision::Unknown,
+        }
+    }
+}
+
 /// A candidate selection result.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Selection<T> {
@@ -46,8 +55,12 @@ pub enum Selection<T> {
     Unknown,
 }
 
-/// The coercion context requested by Postgres.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The context of a coercion, in Postgres' order: a cast applies in its own context and the
+/// ones after it ([`CoercionContext`], [`CoercionCodes`] of `pg_cast.castcontext`).
+///
+/// [`CoercionContext`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/nodes/primnodes.h#L731
+/// [`CoercionCodes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/catalog/pg_cast.h#L75
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CoercionContext {
     Implicit,
     Assignment,

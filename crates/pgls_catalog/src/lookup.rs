@@ -7,7 +7,7 @@
 use std::borrow::Cow;
 
 use crate::Behavior;
-use crate::typing::{Type, TypeId, TypedColumn};
+use crate::typing::{CoercionContext, Decision, Type, TypeId, TypedColumn};
 use crate::{Generated, Identity};
 
 /// The result of a catalog lookup.
@@ -39,6 +39,15 @@ impl<T> Lookup<T> {
             Lookup::Found(value) => Lookup::Found(f(value)),
             Lookup::Missing => Lookup::Missing,
             Lookup::Unknown => Lookup::Unknown,
+        }
+    }
+
+    /// The object, `None` if it certainly does not exist, and unknown if we can't tell.
+    pub fn into_decision(self) -> Decision<Option<T>> {
+        match self {
+            Lookup::Found(value) => Decision::Known(Some(value)),
+            Lookup::Missing => Decision::Known(None),
+            Lookup::Unknown => Decision::Unknown,
         }
     }
 }
@@ -298,6 +307,37 @@ pub enum TypeKind {
     Multirange,
 }
 
+impl TypeKind {
+    /// The kind for a `pg_type.typtype` code ([`TYPTYPE_BASE`] and the ones after it).
+    ///
+    /// [`TYPTYPE_BASE`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/catalog/pg_type.h#L276
+    pub fn from_typtype(typtype: char) -> Option<Self> {
+        Some(match typtype {
+            'b' => Self::Base,
+            'c' => Self::Composite,
+            'd' => Self::Domain,
+            'e' => Self::Enum,
+            'p' => Self::Pseudo,
+            'r' => Self::Range,
+            'm' => Self::Multirange,
+            _ => return None,
+        })
+    }
+
+    /// The `pg_type.typtype` code of the kind.
+    pub fn typtype(self) -> char {
+        match self {
+            Self::Base => 'b',
+            Self::Composite => 'c',
+            Self::Domain => 'd',
+            Self::Enum => 'e',
+            Self::Pseudo => 'p',
+            Self::Range => 'r',
+            Self::Multirange => 'm',
+        }
+    }
+}
+
 /// Operator arity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperatorKind {
@@ -385,14 +425,6 @@ pub struct OperatorInfo {
     pub result: Option<TypeId>,
 }
 
-/// A cast context from pg_cast.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CastContext {
-    Implicit,
-    Assignment,
-    Explicit,
-}
-
 /// A cast implementation from pg_cast.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CastMethod {
@@ -406,6 +438,7 @@ pub enum CastMethod {
 pub struct CastInfo {
     pub source: TypeId,
     pub target: TypeId,
-    pub context: CastContext,
+    /// The least context the cast applies in.
+    pub context: CoercionContext,
     pub method: CastMethod,
 }
