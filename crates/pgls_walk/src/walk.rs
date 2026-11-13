@@ -1,4 +1,4 @@
-use std::{ops::Range, sync::Arc};
+use std::{collections::HashSet, ops::Range, sync::Arc};
 
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
 use pgls_text_size::{TextRange, TextSize};
@@ -13,6 +13,10 @@ pub struct WalkParams<'a> {
     pub stmts: &'a [AnalysableStatement],
     /// The top-level statements that don't parse, in file order.
     pub unparsable: &'a [UnparsableStatement],
+    /// The ranges of all top-level statements of the file, parsed or not, in order. The walk
+    /// counts the statements of a section and of its queries with them, also when it is only
+    /// given some of the statements, see [`MigrationSection::implicit_blocks`].
+    pub statement_ranges: &'a [TextRange],
     /// The database snapshot the catalog starts from.
     pub catalog_base: Option<Arc<CatalogBase>>,
     /// Explicit search path at the start of the file.
@@ -26,28 +30,96 @@ pub struct WalkParams<'a> {
     /// like a `DO` block, see [`Catalog::best_effort`]. Editor features show what names most
     /// likely refer to; lint only reports what is certain.
     pub best_effort: bool,
+    /// Resumes a walk where it stopped instead of starting at the beginning of the file. The
+    /// statements are then those from [`WalkState::at`] on.
+    pub from: Option<WalkState>,
+    /// The starts of top-level statements where to record the state of the walk, in file
+    /// order, see [`Walk::checkpoints`].
+    pub checkpoints: &'a [TextSize],
+    /// Checked every [`STOP_CHECK_INTERVAL`] statements. The walk stops when it returns `true`,
+    /// e.g. because the document changed or the request was cancelled.
+    pub should_stop: &'a dyn Fn() -> bool,
+}
+
+/// How many statements the walk visits between two checks of [`WalkParams::should_stop`]. The
+/// check takes a lock, and 64 statements take about a millisecond to walk.
+pub const STOP_CHECK_INTERVAL: usize = 64;
+
+/// The state of a walk before a top-level statement: the catalog and the session after the
+/// statements before it. It only depends on the text before the statement, the section the
+/// statement is in, and the parameters of the walk other than the statements.
+#[derive(Clone)]
+pub struct WalkState {
+    at: TextSize,
+    /// The start of the migration section that `at` is in, or zero before the first section.
+    section_start: TextSize,
+    catalog: Catalog,
+    session: Session,
+    /// In a down section, the catalog after the up sections before it.
+    up_catalog: Option<Catalog>,
+    /// The start of the query whose implicit transaction block the session is in.
+    implicit_block: Option<TextSize>,
+    /// See [`CatalogFunctions`].
+    catalog_functions: CatalogFunctions,
+}
+
+impl WalkState {
+    /// The start of the statement before which the walk stopped.
+    pub fn at(&self) -> TextSize {
+        self.at
+    }
+
+    /// Whether `sections` put the statement at [`Self::at`] in the section it was in when the
+    /// walk stopped. A marker inserted right before the statement changes that, even though the
+    /// text before the statement's old start is the same.
+    pub fn fits(&self, sections: &[MigrationSection]) -> bool {
+        section_start(sections, self.at) == self.section_start
+    }
+}
+
+/// The start of the section that `offset` is in, or zero before the first section.
+fn section_start(sections: &[MigrationSection], offset: TextSize) -> TextSize {
+    sections
+        .iter()
+        .take_while(|section| section.range.start() <= offset)
+        .last()
+        .map_or(TextSize::from(0), |section| section.range.start())
+}
+
+pub struct Walk {
+    /// The catalog as a statement at [`WalkParams::end`] sees it.
+    pub catalog: Catalog,
+    /// The state of the walk at each of [`WalkParams::checkpoints`] that it got to: before the
+    /// first statement that starts at or after it. Resuming from it walks like walking from the
+    /// start of the file, as long as the text before it doesn't change.
+    pub checkpoints: Vec<WalkState>,
+    /// Set when [`WalkParams::should_stop`] stopped the walk before `end`. The catalog is then
+    /// that of where it stopped.
+    pub stopped: bool,
 }
 
 /// Walks the statements like the database runs them: the catalog and the session follow the
 /// statements, so that each statement sees the objects that the statements before it create,
 /// change or drop. `visit` gets each statement with the file context as it is before it.
-/// Returns the catalog as a statement at [`WalkParams::end`] sees it.
+/// Returns the catalog as a statement at [`WalkParams::end`] sees it, and the states at the
+/// checkpoints.
 ///
 /// - Each migration section runs in a session and transaction of its own. A down section runs
 ///   after the up sections before it, and its changes don't carry into the next section.
 /// - A top-level statement that doesn't parse taints the catalog if it may have changed it.
-/// - The statements of SQL function bodies are visited, but they don't run.
+/// - The statements of SQL function bodies are visited, but they don't run. A statement that
+///   calls a SQL function of the file whose body may change the catalog taints it.
 /// - The names of a statement with identifier parameters, like psql's `:name`, are placeholders.
 ///   Such a statement is visited and applied to the session (its locks and its effect on the
 ///   transaction), but if it may change the catalog, it taints it instead of being applied to it.
 ///
-/// The file context only knows the statements that the walk is given. When they stop before the
-/// end of the file, [`AnalysedFileContext::stmt_count`] and the implicit transaction blocks of
-/// the last query are those of the statements given, which only rules rely on.
+/// The file context only knows the statements that the walk is given, except for
+/// [`AnalysedFileContext::stmt_count`] and the queries that run in an implicit transaction
+/// block, which [`WalkParams::statement_ranges`] tell.
 pub fn walk_statements(
     params: WalkParams<'_>,
     mut visit: impl FnMut(&AnalysableStatement, &AnalysedFileContext),
-) -> Catalog {
+) -> Walk {
     let roots: Vec<&pgls_query::NodeEnum> = params.stmts.iter().map(|s| &*s.root).collect();
 
     // The catalog after the up sections so far.
@@ -56,23 +128,58 @@ pub fn walk_statements(
         catalog = catalog.best_effort();
     }
     let mut unparsable = params.unparsable.iter().peekable();
+    let mut from = params.from;
+    // The walk can't record the states before where it resumes.
+    let resumes_at = from.as_ref().map_or(TextSize::from(0), WalkState::at);
+    let mut checkpoint_at = params
+        .checkpoints
+        .iter()
+        .copied()
+        .filter(|at| *at >= resumes_at)
+        .peekable();
+    let mut checkpoints = Vec::new();
+    let mut catalog_functions = from
+        .as_ref()
+        .map(|from| from.catalog_functions.clone())
+        .unwrap_or_default();
+    let mut visited = 0usize;
     for unit in migration_units(params.stmts, params.sections) {
         if unit.start >= params.end {
             break;
         }
+        if from.as_ref().is_some_and(|from| unit.end <= from.at) {
+            continue;
+        }
         let is_down = unit
             .section
             .is_some_and(|section| section.direction == Direction::Down);
-        let unit_catalog = if is_down {
-            catalog.clone()
-        } else {
-            std::mem::replace(&mut catalog, Catalog::new(None))
+        let mut implicit_block = None;
+        let (unit_catalog, session) = match from.take() {
+            Some(from) => {
+                debug_assert_eq!(
+                    from.section_start, unit.start,
+                    "the state fits the sections"
+                );
+                if let Some(up_catalog) = from.up_catalog {
+                    catalog = up_catalog;
+                }
+                implicit_block = from.implicit_block;
+                (from.catalog, from.session)
+            }
+            None => {
+                let unit_catalog = if is_down {
+                    catalog.clone()
+                } else {
+                    std::mem::replace(&mut catalog, Catalog::new(None))
+                };
+                // Each section runs in a session and transaction of its own.
+                let session = Session::new(params.search_path.to_vec()).with_transaction_mode(
+                    unit.section
+                        .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
+                );
+                (unit_catalog, session)
+            }
         };
-        // Each section runs in a session and transaction of its own.
-        let session = Session::new(params.search_path.to_vec()).with_transaction_mode(
-            unit.section
-                .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
-        );
         let stmts = &params.stmts[unit.stmts.clone()];
         let unit_unparsable = {
             let starts = |end: TextSize| {
@@ -100,35 +207,17 @@ pub fn walk_statements(
         let terminated = last
             .and_then(|(_, sql)| sql)
             .is_none_or(|sql| sql.trim_end().ends_with(';'));
-        // The starts of the statements the unit runs, in order, including those that don't
-        // parse, but not those in function bodies.
-        let mut starts: Vec<TextSize> = stmts
-            .iter()
-            .filter(|stmt| stmt.function.is_none())
-            .map(|stmt| stmt.range.start())
-            .chain(unit_unparsable.iter().map(|skipped| skipped.range.start()))
-            .collect();
-        starts.sort_unstable();
-        let stmt_count = |range: TextRange| {
-            starts.partition_point(|start| *start < range.end())
-                - starts.partition_point(|start| *start < range.start())
+        let statements_before = |offset: TextSize| {
+            params
+                .statement_ranges
+                .partition_point(|statement| statement.start() < offset)
         };
-        // Outside a transaction, the queries with more than one statement run in an implicit
-        // transaction block.
-        let implicit_blocks: Vec<TextRange> = unit
-            .section
-            .filter(|section| !section.transaction)
-            .map(|section| {
-                section
-                    .queries
-                    .iter()
-                    .copied()
-                    .filter(|query| stmt_count(*query) > 1)
-                    .collect()
-            })
-            .unwrap_or_default();
         // The blocks that don't end before the statement, which comes after those before it.
-        let mut implicit_blocks = implicit_blocks.into_iter().peekable();
+        let mut implicit_blocks = unit
+            .section
+            .into_iter()
+            .flat_map(|section| section.implicit_blocks(params.statement_ranges))
+            .peekable();
         let mut file_context =
             AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
                 .with_positions(
@@ -136,12 +225,42 @@ pub fn walk_statements(
                     last_end,
                     terminated,
                 )
-                .with_stmt_count(stmt_count(TextRange::new(unit.start, unit.end)));
-        let mut implicit_block = None;
+                .with_stmt_count(statements_before(unit.end) - statements_before(unit.start));
+        let state = |at: TextSize,
+                     file_context: &AnalysedFileContext,
+                     catalog: &Catalog,
+                     implicit_block: Option<TextSize>,
+                     catalog_functions: &CatalogFunctions| WalkState {
+            at,
+            section_start: unit.start,
+            catalog: file_context.catalog().clone(),
+            session: file_context.session().clone(),
+            up_catalog: is_down.then(|| catalog.clone()),
+            implicit_block,
+            catalog_functions: catalog_functions.clone(),
+        };
 
         for stmt in stmts {
             if stmt.range.start() >= params.end {
                 break;
+            }
+            visited += 1;
+            if visited.is_multiple_of(STOP_CHECK_INTERVAL) && (params.should_stop)() {
+                return Walk {
+                    catalog: file_context.into_catalog(),
+                    checkpoints,
+                    stopped: true,
+                };
+            }
+            while let Some(at) = checkpoint_at.next_if(|at| stmt.range.start() >= *at) {
+                skip_unparsable(&mut unparsable, at, &mut file_context);
+                checkpoints.push(state(
+                    at,
+                    &file_context,
+                    &catalog,
+                    implicit_block,
+                    &catalog_functions,
+                ));
             }
             let runs = stmt.function.is_none();
             if runs {
@@ -151,8 +270,8 @@ pub fn walk_statements(
                 {}
                 let block = implicit_blocks
                     .peek()
-                    .copied()
-                    .filter(|block| block.contains(stmt.range.start()));
+                    .filter(|block| block.contains(stmt.range.start()))
+                    .map(|block| block.start());
                 if block != implicit_block {
                     if implicit_block.is_some() {
                         file_context.end_implicit_block();
@@ -175,18 +294,42 @@ pub fn walk_statements(
                 file_context.taint_catalog();
             }
             file_context.next(runs, !placeholders);
+
+            match &stmt.function {
+                Some(function) => catalog_functions.record_body_statement(function, &stmt.root),
+                None if catalog_functions.called_by(&stmt.root) => file_context.taint_catalog(),
+                None => {}
+            }
         }
 
+        while let Some(at) = checkpoint_at.next_if(|at| *at < unit.end && *at <= params.end) {
+            skip_unparsable(&mut unparsable, at, &mut file_context);
+            checkpoints.push(state(
+                at,
+                &file_context,
+                &catalog,
+                implicit_block,
+                &catalog_functions,
+            ));
+        }
         skip_unparsable(&mut unparsable, unit.end.min(params.end), &mut file_context);
         // The section that contains `end` decides what a statement there sees.
         if params.end < unit.end {
-            return file_context.into_catalog();
+            return Walk {
+                catalog: file_context.into_catalog(),
+                checkpoints,
+                stopped: false,
+            };
         }
         if !is_down {
             catalog = file_context.into_catalog();
         }
     }
-    catalog
+    Walk {
+        catalog,
+        checkpoints,
+        stopped: false,
+    }
 }
 
 /// Moves past the statements that don't parse and start before `before`. Those that may have
@@ -200,6 +343,54 @@ fn skip_unparsable<'a>(
         if may_change_catalog(&skipped.sql) {
             file_context.taint_catalog();
         }
+    }
+}
+
+/// The SQL functions of the file whose bodies may change the catalog, by name. The catalog
+/// can't follow what a call to one of them does, so a statement that calls one taints it, like
+/// `CALL` does.
+///
+/// Functions are known by their name only, without schema or arguments: a call to any function
+/// of that name taints the catalog. The bodies of other languages, like PL/pgSQL, are not looked
+/// at.
+///
+/// Cost: one pass over the nodes of each statement that runs, once the file created such a
+/// function, and of each statement of a function body.
+#[derive(Clone, Default)]
+struct CatalogFunctions(Arc<HashSet<String>>);
+
+impl CatalogFunctions {
+    /// Records `stmt`, a statement of the body of `function`. A body statement that may change
+    /// the catalog, or that calls a function that may, makes `function` one that may.
+    fn record_body_statement(
+        &mut self,
+        function: &pgls_catalog::resolve::FunctionContext,
+        stmt: &pgls_query::NodeEnum,
+    ) {
+        if self.0.contains(&function.function_name) {
+            return;
+        }
+        if !is_plain_query(stmt) || self.called_by(stmt) {
+            Arc::make_mut(&mut self.0).insert(function.function_name.clone());
+        }
+    }
+
+    /// Whether `stmt` calls one of the functions. Creating a function doesn't call the
+    /// functions its `BEGIN ATOMIC` body calls.
+    fn called_by(&self, stmt: &pgls_query::NodeEnum) -> bool {
+        use pgls_query::{NodeEnum, NodeRef};
+        if self.0.is_empty() || matches!(stmt, NodeEnum::CreateFunctionStmt(_)) {
+            return false;
+        }
+        stmt.iter().any(|node| {
+            let NodeRef::FuncCall(call) = node else {
+                return false;
+            };
+            call.funcname
+                .last()
+                .and_then(pgls_query_ext::utils::string_value)
+                .is_some_and(|name| self.0.contains(name))
+        })
     }
 }
 
@@ -327,7 +518,8 @@ mod tests {
     fn walk_queries(sql: &str, queries: Vec<TextRange>) -> (Vec<(String, bool)>, Duration) {
         let mut stmts = Vec::new();
         let mut unparsable = Vec::new();
-        for range in pgls_statement_splitter::split(sql).ranges {
+        let statement_ranges = pgls_statement_splitter::split(sql).ranges;
+        for &range in &statement_ranges {
             let text = &sql[range];
             match pgls_query::parse(text) {
                 Ok(parsed) => stmts.push(
@@ -351,11 +543,15 @@ mod tests {
             WalkParams {
                 stmts: &stmts,
                 unparsable: &unparsable,
+                statement_ranges: &statement_ranges,
                 catalog_base: None,
                 search_path: &[],
                 sections: &sections,
                 end: TextSize::of(sql),
                 best_effort: false,
+                from: None,
+                checkpoints: &[],
+                should_stop: &|| false,
             },
             |stmt, file_context| {
                 visited.push((
@@ -395,6 +591,82 @@ mod tests {
                 ("select 6;".to_string(), false),
             ]
         );
+    }
+
+    /// Walks `sql`, with `body` as the body of the SQL function `create_and_insert`, which the
+    /// first statement creates. Returns whether the catalog is tainted before each statement
+    /// that runs, and how long the walk took.
+    fn walk_with_function_body(sql: &str, body: &str) -> (Vec<bool>, Duration) {
+        let function = pgls_catalog::resolve::FunctionContext {
+            function_name: "create_and_insert".to_string(),
+            params: Vec::new(),
+        };
+        let mut stmts = Vec::new();
+        let statement_ranges = pgls_statement_splitter::split(sql).ranges;
+        for (i, &range) in statement_ranges.iter().enumerate() {
+            let text = &sql[range];
+            let root = pgls_query::parse(text).unwrap().into_root().unwrap();
+            stmts.push(AnalysableStatement::new(root, range).with_sql(text));
+            if i == 0 {
+                for stmt in pgls_statement_splitter::split(body).ranges {
+                    let root = pgls_query::parse(&body[stmt]).unwrap().into_root().unwrap();
+                    stmts.push(
+                        AnalysableStatement::new(root, range)
+                            .with_sql(&body[stmt])
+                            .with_function(Some(function.clone())),
+                    );
+                }
+            }
+        }
+        let mut tainted = Vec::new();
+        let start = Instant::now();
+        walk_statements(
+            WalkParams {
+                stmts: &stmts,
+                unparsable: &[],
+                statement_ranges: &statement_ranges,
+                catalog_base: None,
+                search_path: &[],
+                sections: &[],
+                end: TextSize::of(sql),
+                best_effort: false,
+                from: None,
+                checkpoints: &[],
+                should_stop: &|| false,
+            },
+            |stmt, file_context| {
+                if stmt.function.is_none() {
+                    tainted.push(file_context.catalog().is_tainted());
+                }
+            },
+        );
+        (tainted, start.elapsed())
+    }
+
+    #[test]
+    fn calls_to_functions_whose_body_changes_the_catalog_taint_it() {
+        let sql = "create function create_and_insert() returns void language sql as 'body';
+            select 1; select create_and_insert(); select 2;";
+        let (tainted, _) = walk_with_function_body(
+            sql,
+            "create table ddl_test (f1 int); insert into ddl_test values (1);",
+        );
+        assert_eq!(tainted, [false, false, false, true]);
+
+        let (tainted, _) = walk_with_function_body(sql, "insert into ddl_test values (1);");
+        assert_eq!(tainted, [false, false, false, false]);
+    }
+
+    #[test]
+    fn calls_to_functions_are_looked_up_in_linear_time() {
+        let statements = 20_000;
+        let sql = format!(
+            "create function create_and_insert() returns void language sql as 'body';\n{}",
+            "select other_function(1, 2) from t where a = b;\n".repeat(statements)
+        );
+        let (tainted, elapsed) = walk_with_function_body(&sql, "create table ddl_test (f1 int);");
+        assert!(tainted.iter().all(|tainted| !tainted));
+        assert!(elapsed < Duration::from_secs(1), "{elapsed:?}");
     }
 
     #[test]
