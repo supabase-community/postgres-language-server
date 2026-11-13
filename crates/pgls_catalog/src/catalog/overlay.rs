@@ -209,6 +209,30 @@ impl Catalog {
         keys
     }
 
+    /// The descendants of a relation that keep a column it drops: the inheritance children
+    /// whose column is also their own or inherited from another parent, and their own
+    /// descendants ([`ATExecDropColumn`]). We don't know which columns those are, so these are
+    /// all children in [`Catalog::children_with_own_columns`] and their descendants.
+    ///
+    /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9419
+    pub(super) fn descendants_keeping_dropped_columns(&self, root: &Key) -> FxHashSet<Key> {
+        self.with_descendants(root.clone())
+            .into_iter()
+            .filter(|child| child != root && self.children_with_own_columns.contains(child))
+            .flat_map(|child| self.with_descendants(child))
+            .collect()
+    }
+
+    /// Removes the inheritance edges of a dropped relation, so that a relation that reuses its
+    /// name doesn't inherit them.
+    pub(super) fn forget_inheritance(&mut self, relation: &Key) {
+        self.children.remove(relation);
+        for children in self.children.values_mut() {
+            children.retain(|child| child != relation);
+        }
+        self.children_with_own_columns.remove(relation);
+    }
+
     fn is_database_relation(&self, relation: &RelationInfo) -> bool {
         self.base
             .as_ref()
@@ -261,9 +285,18 @@ impl Catalog {
                 }
             }
         }
+        // The inheritance follows the relation.
+        let new_key = key(&relation.schema, &relation.name);
         if let Some(children) = self.children.remove(&old_key) {
-            self.children
-                .insert(key(&relation.schema, &relation.name), children);
+            self.children.insert(new_key.clone(), children);
+        }
+        for children in self.children.values_mut() {
+            for child in children.iter_mut().filter(|child| **child == old_key) {
+                *child = new_key.clone();
+            }
+        }
+        if self.children_with_own_columns.remove(&old_key) {
+            self.children_with_own_columns.insert(new_key);
         }
         // The indexes stay on the table, and in its schema.
         for mut index in self.table_indexes(&old_key.0, &old_key.1) {
@@ -314,8 +347,10 @@ impl Catalog {
     /// on it, and so does dropping the column from the inheritance children and partitions
     /// ([`ATExecDropColumn`]). Indexes whose columns we don't know become unknown, and so do the
     /// indexes of all children in the database, since we don't know which tables they inherit
-    /// from. With `may_fail`, Postgres may reject the statement, so the indexes that use the
-    /// column become unknown instead of dropped.
+    /// from. The indexes of children that may keep the column become unknown too, see
+    /// [`Catalog::descendants_keeping_dropped_columns`]. With `may_fail`, Postgres may reject
+    /// or skip the statement, so the indexes that use the column become unknown instead of
+    /// dropped.
     ///
     /// [`index_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L1132
     /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
@@ -326,16 +361,21 @@ impl Catalog {
         recurse: bool,
         may_fail: bool,
     ) {
-        let tables = if recurse {
-            self.with_descendants(key(&relation.schema, &relation.name))
+        let root = key(&relation.schema, &relation.name);
+        let (tables, keeping) = if recurse {
+            (
+                self.with_descendants(root.clone()),
+                self.descendants_keeping_dropped_columns(&root),
+            )
         } else {
-            vec![key(&relation.schema, &relation.name)]
+            (vec![root], FxHashSet::default())
         };
-        for (schema, table) in tables {
-            for index in self.table_indexes(&schema, &table) {
+        for table in tables {
+            let may_keep = may_fail || keeping.contains(&table);
+            for index in self.table_indexes(&table.0, &table.1) {
                 let entry = match &index.columns {
                     Some(columns) if !columns.iter().any(|name| name == column) => continue,
-                    Some(_) if !may_fail => Entry::Dropped,
+                    Some(_) if !may_keep => Entry::Dropped,
                     _ => Entry::Unknown,
                 };
                 self.indexes.insert(key(&index.schema, &index.name), entry);

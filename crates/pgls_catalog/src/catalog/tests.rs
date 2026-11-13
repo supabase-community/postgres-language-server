@@ -1266,6 +1266,56 @@ fn dropping_a_column_drops_the_indexes_that_use_it() {
     let catalog = after(&format!("{child} alter table child drop column a;"));
     assert_eq!(state(&catalog, "child_a_idx"), "unknown");
 
+    // A child keeps a column that is also its own or inherited from another parent, and so do
+    // its own children. We don't know which columns those are.
+    let catalog = after(
+        "create table p (a int); create table t (a int) inherits (p);
+         create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "unknown");
+    let catalog = after(
+        "create table p (a int); create table q (a int); create table t () inherits (p, q);
+         create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "unknown");
+    let catalog = after(
+        "create table p (a int); create table t (a int); alter table t inherit p;
+         create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "unknown");
+    let catalog = after(
+        "create table p (a int); create table t (a int) inherits (p);
+         create table g () inherits (t); create index g_a_idx on g (a);
+         alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "g_a_idx"), "unknown");
+
+    // `IF EXISTS` skips a column the table doesn't have, even if a child has one by that name.
+    let catalog = after(
+        "create table p (a int); create table t (b int) inherits (p);
+         create index t_b_idx on t (b); alter table p drop column if exists b;",
+    );
+    assert_eq!(state(&catalog, "t_b_idx"), "found");
+    // If we don't know the columns of the table, it may or may not have the column.
+    let catalog = after(
+        "create table p (like nope) partition by list (x); create table t (b int, x int);
+         create index t_b_idx on t (b); alter table p attach partition t for values in (1);
+         alter table p drop column if exists b;",
+    );
+    assert_eq!(state(&catalog, "t_b_idx"), "unknown");
+
+    // A dropped or renamed child no longer inherits under its old name.
+    let catalog = after(
+        "create table p (a int); create table t () inherits (p); drop table t;
+         create table t (a int); create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+    let catalog = after(
+        "create table p (a int); create table t () inherits (p); alter table t rename to u;
+         create table t (a int); create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+
     // We don't know the columns of the indexes of the database.
     let catalog = after("alter table users drop column id;");
     assert_eq!(state(&catalog, "users_name_idx"), "unknown");

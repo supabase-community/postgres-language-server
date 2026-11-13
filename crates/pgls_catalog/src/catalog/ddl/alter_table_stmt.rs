@@ -123,21 +123,13 @@ fn apply_column_changes(
         }
     });
 
-    // A child keeps a dropped column that is also its own or inherited from another parent, and
-    // so do its own children ([`ATExecDropColumn`]). We don't know which columns those are.
-    //
-    // [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9419
+    // Some children may keep a dropped column, see
+    // [`Catalog::descendants_keeping_dropped_columns`].
     let drops_columns = commands
         .iter()
         .any(|command| command.subtype() == AlterTableType::AtDropColumn);
     if drops_columns {
-        let root = key(&relation.schema, &relation.name);
-        let keeping: Vec<_> = c
-            .with_descendants(root.clone())
-            .into_iter()
-            .filter(|child| *child != root && c.children_with_own_columns.contains(child))
-            .flat_map(|child| c.with_descendants(child))
-            .collect();
+        let keeping = c.descendants_keeping_dropped_columns(&key(&relation.schema, &relation.name));
         for child in keeping {
             if let Some(mut child) = c.relation_in(&child.0, &child.1).found() {
                 child.columns = None;
@@ -312,6 +304,7 @@ enum IdentityChange {
 /// - `DROP COLUMN` drops the indexes that use the column, see [`Catalog::drop_column_indexes`].
 ///   Without `ONLY`, Postgres drops the column from the children as well.
 ///
+/// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
 /// [`transformIndexConstraint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L2406
 /// [`ATExecAddIndexConstraint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9715
 /// [`dropconstraint_internal`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L14098
@@ -343,11 +336,21 @@ fn apply_index_changes(
                 }
             }
             AlterTableType::AtDropColumn => {
+                // `IF EXISTS` skips a column the table doesn't have, before it recurses to the
+                // children ([`ATExecDropColumn`]).
+                let has_column = table
+                    .columns
+                    .as_ref()
+                    .map(|columns| columns.iter().any(|known| known.name == command.name));
+                if command.missing_ok && has_column == Some(false) {
+                    continue;
+                }
                 // Postgres rejects dropping an inherited column, and we don't know which columns
                 // of a child are inherited. It also rejects `ONLY` on a partitioned table with
                 // partitions.
                 let may_fail = c.is_inheritance_child(table)
-                    || (!recurse && table.kind == RelationKind::PartitionedTable);
+                    || (!recurse && table.kind == RelationKind::PartitionedTable)
+                    || (command.missing_ok && has_column.is_none());
                 c.drop_column_indexes(table, &command.name, recurse, may_fail);
             }
             AlterTableType::AtDropConstraint => {
