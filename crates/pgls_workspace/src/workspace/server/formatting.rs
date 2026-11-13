@@ -1,7 +1,7 @@
 //! Formatting of a document. Each statement is printed on its own, and the text between the
 //! statements is kept, since the parser drops comments.
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, ops::Range, sync::Arc};
 
 use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_pretty_print::FormatConfig;
@@ -54,6 +54,8 @@ pub(super) fn format_document(
     let mut diagnostics = Vec::new();
     let mut statements = Vec::new();
     let mut formatted_output = String::new();
+    // The range of each statement in the source and in the output, and whether it parses.
+    let mut spans: Vec<StatementSpan> = Vec::new();
 
     let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
     let mut formatted_sql_fn_bodies = HashMap::new();
@@ -129,11 +131,19 @@ pub(super) fn format_document(
         }
         last_end = stmt_end;
 
+        let output_start = formatted_output.len();
+        let parses = ast_result.is_ok();
+
         // Leave statements outside the requested range untouched.
         if let Some(filter_range) = range
             && stmt_range.intersect(filter_range).is_none()
         {
             formatted_output.push_str(&text);
+            spans.push(StatementSpan {
+                source: stmt_start..stmt_end,
+                output: output_start..formatted_output.len(),
+                parses,
+            });
             continue;
         }
 
@@ -195,6 +205,12 @@ pub(super) fn format_document(
                 formatted_output.push_str(&text);
             }
         }
+
+        spans.push(StatementSpan {
+            source: stmt_start..stmt_end,
+            output: output_start..formatted_output.len(),
+            parses,
+        });
     }
 
     // Preserve any trailing text or comments after the last statement, without blank lines
@@ -215,12 +231,173 @@ pub(super) fn format_document(
         formatted_output.push_str(rest);
     }
 
+    if let Err(reason) = check_around_unparsable(source, &formatted_output, &spans) {
+        diagnostics.push(SDiagnostic::new(
+            pgls_diagnostics::Error::from(WorkspaceError::format_error(format!(
+                "The formatted file would not mean the same as the original ({reason}), the file \
+                 was left untouched"
+            )))
+            .with_file_path(path),
+        ));
+
+        return PullFormattingResult {
+            original: source.to_string(),
+            formatted: source.to_string(),
+            statements: Vec::new(),
+            diagnostics,
+        };
+    }
+
     PullFormattingResult {
         original: doc.get_document_content().to_string(),
         formatted: formatted_output,
         statements,
         diagnostics,
     }
+}
+
+/// Where a statement of the document is in the source and in the formatted output.
+struct StatementSpan {
+    source: Range<usize>,
+    output: Range<usize>,
+    /// Whether the statement parses on its own. One that does not is kept as written.
+    parses: bool,
+}
+
+/// Each statement was checked on its own, but that relies on where the statement splitter put the
+/// boundaries. A wrong boundary cuts a valid statement into fragments, at least one of which does
+/// not parse, and the others may format into something else, e.g. the `END` of a function body
+/// into `COMMIT` (#1142).
+///
+/// So the text from the statement before the first one that does not parse to the statement after
+/// the last one is parsed as a whole, before and after formatting, independently of the splitter.
+///
+/// Costs nothing for a file whose statements all parse. Otherwise up to four parses of that text,
+/// about 40 ms per 1000 statements each, so 3 s for 20k statements with errors at both ends, on
+/// top of about 2.4 s of formatting them.
+fn check_around_unparsable(
+    source: &str,
+    formatted: &str,
+    spans: &[StatementSpan],
+) -> Result<(), String> {
+    let (Some(first), Some(last)) = (
+        spans.iter().position(|span| !span.parses),
+        spans.iter().rposition(|span| !span.parses),
+    ) else {
+        return Ok(());
+    };
+
+    let Some(around) = spans.get(first.saturating_sub(1)..spans.len().min(last + 2)) else {
+        return Ok(());
+    };
+    let (Some(from), Some(to)) = (around.first(), around.last()) else {
+        return Ok(());
+    };
+    let source_range = from.source.start..to.source.end;
+    let output_range = from.output.start..to.output.end;
+    let (Some(source), Some(formatted)) = (
+        source.get(source_range.clone()),
+        formatted.get(output_range.clone()),
+    ) else {
+        debug_assert!(false, "statement ranges at no character boundary");
+        return Err("its statements could not be told apart".to_string());
+    };
+
+    if source == formatted {
+        return Ok(());
+    }
+
+    let unparsable: Vec<_> = around
+        .iter()
+        .filter(|span| !span.parses)
+        .map(|span| {
+            (
+                span.source.start - source_range.start..span.source.end - source_range.start,
+                span.output.start - output_range.start..span.output.end - output_range.start,
+            )
+        })
+        .collect();
+
+    check_unchanged(source, formatted, &unparsable)
+}
+
+/// Checks that `formatted` parses as a whole into the same statements as `source`.
+///
+/// `unparsable` holds the ranges of the statements that were kept as written because they do not
+/// parse, in `source` and in `formatted`. When `source` does not parse as a whole, the check is
+/// repeated with them blanked out, so a syntax error or a psql meta-command in one statement does
+/// not turn it off for the rest. When neither parses, nothing can be checked.
+fn check_unchanged(
+    source: &str,
+    formatted: &str,
+    unparsable: &[(Range<usize>, Range<usize>)],
+) -> Result<(), String> {
+    let (expected, formatted) = match parse_file(source) {
+        Some(expected) => (expected, formatted.to_string()),
+        None => {
+            let Some(expected) =
+                blank_out(source, unparsable.iter().map(|r| &r.0)).and_then(|s| parse_file(&s))
+            else {
+                return Ok(());
+            };
+            let Some(formatted) = blank_out(formatted, unparsable.iter().map(|r| &r.1)) else {
+                return Err("its statements could not be told apart".to_string());
+            };
+            (expected, formatted)
+        }
+    };
+
+    let Some(actual) = parse_file(&formatted) else {
+        return Err("it has a syntax error".to_string());
+    };
+
+    if actual.len() != expected.len() {
+        return Err(format!(
+            "it has {} statements instead of {}",
+            actual.len(),
+            expected.len()
+        ));
+    }
+
+    match actual.iter().zip(&expected).position(|(a, e)| a != e) {
+        Some(idx) => Err(format!("statement {} changed", idx + 1)),
+        None => Ok(()),
+    }
+}
+
+/// The normalized statements of `text`, or `None` if it does not parse. The bodies of SQL
+/// functions are emptied, since they are formatted and checked on their own.
+fn parse_file(text: &str) -> Option<Vec<pgls_query::NodeEnum>> {
+    let parsed = pgls_query::parse(&pgls_lexer::convert_to_positional_params(text)).ok()?;
+    Some(
+        parsed
+            .protobuf
+            .stmts
+            .into_iter()
+            .filter_map(|raw| raw.stmt.and_then(|stmt| stmt.node))
+            .map(|mut stmt| {
+                sql_function::clear_sql_fn_body(&mut stmt);
+                pgls_pretty_print::normalize_ast(&mut stmt);
+                stmt
+            })
+            .collect(),
+    )
+}
+
+/// `text` with the bytes of `ranges` replaced by spaces, so the rest keeps its offsets. `None` if a
+/// range does not start and end at a character boundary.
+fn blank_out<'a>(text: &str, ranges: impl Iterator<Item = &'a Range<usize>>) -> Option<String> {
+    let mut bytes = text.as_bytes().to_vec();
+    for range in ranges {
+        debug_assert!(
+            range.end <= bytes.len(),
+            "range {range:?} is outside of the text"
+        );
+        if let Some(blanked) = bytes.get_mut(range.clone()) {
+            blanked.fill(b' ');
+        }
+    }
+    String::from_utf8(bytes).ok()
 }
 
 /// Keeps at most one blank line in `text`, which only holds whitespace and comments.
@@ -307,5 +484,111 @@ fn restore_named_parameters(
         Some(restored)
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{StatementSpan, check_around_unparsable, check_unchanged};
+
+    const BEGIN_ATOMIC: &str = "CREATE FUNCTION f() RETURNS integer LANGUAGE sql
+BEGIN ATOMIC
+  SELECT CASE WHEN true THEN 1 ELSE 2 END;
+END;
+";
+
+    #[test]
+    fn rejects_a_closing_end_formatted_as_commit() {
+        // What a wrong statement boundary in the body made of it, see #1142.
+        let formatted = BEGIN_ATOMIC.replace("END;\n", "commit;\n");
+        let body_end = BEGIN_ATOMIC.find("END;\n").unwrap();
+        let unparsable = [(0..body_end, 0..body_end)];
+
+        assert_eq!(
+            check_unchanged(BEGIN_ATOMIC, &formatted, &unparsable),
+            Err("it has a syntax error".to_string())
+        );
+    }
+
+    #[test]
+    fn checks_the_statements_around_one_that_does_not_parse() {
+        // How the splitter cut the function before #1142 was fixed.
+        let body_end = BEGIN_ATOMIC.find("END;\n").unwrap();
+        let source = format!("select 1;\n{BEGIN_ATOMIC}");
+        let formatted = format!("select 1;\n{}", BEGIN_ATOMIC.replace("END;\n", "commit;\n"));
+        let spans = |parses: bool| {
+            [
+                StatementSpan {
+                    source: 0..9,
+                    output: 0..9,
+                    parses: true,
+                },
+                StatementSpan {
+                    source: 10..10 + body_end,
+                    output: 10..10 + body_end,
+                    parses,
+                },
+                StatementSpan {
+                    source: 10 + body_end..source.len() - 1,
+                    output: 10 + body_end..formatted.len() - 1,
+                    parses: true,
+                },
+            ]
+        };
+
+        assert_eq!(
+            check_around_unparsable(&source, &formatted, &spans(false)),
+            Err("it has a syntax error".to_string())
+        );
+        // Statements that all parse are not checked again.
+        assert_eq!(
+            check_around_unparsable(&source, &formatted, &spans(true)),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn accepts_a_reformatted_file() {
+        let source =
+            "SELECT a,b FROM t;\nCREATE FUNCTION f() RETURNS int AS 'SELECT 1' LANGUAGE sql;";
+        let formatted =
+            "select a, b from t;\ncreate function f() returns int as '\nselect 1;\n' language sql;";
+
+        assert_eq!(check_unchanged(source, formatted, &[]), Ok(()));
+        assert_eq!(check_unchanged(BEGIN_ATOMIC, BEGIN_ATOMIC, &[]), Ok(()));
+    }
+
+    #[test]
+    fn rejects_a_changed_statement() {
+        assert_eq!(
+            check_unchanged("select 1;\nselect 2;", "select 1;\nselect 3;", &[]),
+            Err("statement 2 changed".to_string())
+        );
+        assert_eq!(
+            check_unchanged("select 1;", "select 1;\ncommit;", &[]),
+            Err("it has 2 statements instead of 1".to_string())
+        );
+    }
+
+    #[test]
+    fn checks_around_unparsable_statements() {
+        let source = "SELECT a,b FROM t;\nselect from where;\n\\set x 1\nSELECT 2;\n";
+        let error = source.find("select from").unwrap()..source.find("SELECT 2").unwrap();
+
+        let formatted = "select a, b from t;\nselect from where;\n\\set x 1\nselect 2;\n";
+        let output_error =
+            formatted.find("select from").unwrap()..formatted.find("select 2").unwrap();
+        assert_eq!(
+            check_unchanged(source, formatted, &[(error.clone(), output_error)]),
+            Ok(())
+        );
+
+        let formatted = "select a, b from t;\nselect from where;\n\\set x 1\ncommit;\n";
+        let output_error =
+            formatted.find("select from").unwrap()..formatted.find("commit").unwrap();
+        assert_eq!(
+            check_unchanged(source, formatted, &[(error, output_error)]),
+            Err("statement 2 changed".to_string())
+        );
     }
 }

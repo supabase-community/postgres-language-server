@@ -1588,6 +1588,25 @@ fn format_content(content: &str) -> String {
         .formatted
 }
 
+/// The `END` of a `CASE` in a `BEGIN ATOMIC` body was taken as the end of the body, and the real
+/// `END` was formatted as `COMMIT`, see #1142.
+#[tokio::test]
+async fn test_format_keeps_end_of_begin_atomic_with_case() {
+    let content = "CREATE FUNCTION f() RETURNS integer LANGUAGE sql
+BEGIN ATOMIC
+  SELECT CASE WHEN true THEN 1 ELSE 2 END;
+END;
+";
+    let formatted = format_content(content);
+
+    assert!(
+        !formatted.to_lowercase().contains("commit"),
+        "the end of the body became a statement:\n{formatted}"
+    );
+    let parsed = pgls_query::parse(&formatted).expect("the formatted file parses");
+    assert_eq!(parsed.stmts().len(), 1, "{formatted}");
+}
+
 #[tokio::test]
 async fn test_format_preserves_leading_comment() {
     let formatted = format_content("-- a header comment\nselect   1;");
