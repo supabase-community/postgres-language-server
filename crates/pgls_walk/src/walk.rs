@@ -593,6 +593,82 @@ mod tests {
         );
     }
 
+    /// Walks `sql`, with `body` as the body of the SQL function `create_and_insert`, which the
+    /// first statement creates. Returns whether the catalog is tainted before each statement
+    /// that runs, and how long the walk took.
+    fn walk_with_function_body(sql: &str, body: &str) -> (Vec<bool>, Duration) {
+        let function = pgls_catalog::resolve::FunctionContext {
+            function_name: "create_and_insert".to_string(),
+            params: Vec::new(),
+        };
+        let mut stmts = Vec::new();
+        let statement_ranges = pgls_statement_splitter::split(sql).ranges;
+        for (i, &range) in statement_ranges.iter().enumerate() {
+            let text = &sql[range];
+            let root = pgls_query::parse(text).unwrap().into_root().unwrap();
+            stmts.push(AnalysableStatement::new(root, range).with_sql(text));
+            if i == 0 {
+                for stmt in pgls_statement_splitter::split(body).ranges {
+                    let root = pgls_query::parse(&body[stmt]).unwrap().into_root().unwrap();
+                    stmts.push(
+                        AnalysableStatement::new(root, range)
+                            .with_sql(&body[stmt])
+                            .with_function(Some(function.clone())),
+                    );
+                }
+            }
+        }
+        let mut tainted = Vec::new();
+        let start = Instant::now();
+        walk_statements(
+            WalkParams {
+                stmts: &stmts,
+                unparsable: &[],
+                statement_ranges: &statement_ranges,
+                catalog_base: None,
+                search_path: &[],
+                sections: &[],
+                end: TextSize::of(sql),
+                best_effort: false,
+                from: None,
+                checkpoints: &[],
+                should_stop: &|| false,
+            },
+            |stmt, file_context| {
+                if stmt.function.is_none() {
+                    tainted.push(file_context.catalog().is_tainted());
+                }
+            },
+        );
+        (tainted, start.elapsed())
+    }
+
+    #[test]
+    fn calls_to_functions_whose_body_changes_the_catalog_taint_it() {
+        let sql = "create function create_and_insert() returns void language sql as 'body';
+            select 1; select create_and_insert(); select 2;";
+        let (tainted, _) = walk_with_function_body(
+            sql,
+            "create table ddl_test (f1 int); insert into ddl_test values (1);",
+        );
+        assert_eq!(tainted, [false, false, false, true]);
+
+        let (tainted, _) = walk_with_function_body(sql, "insert into ddl_test values (1);");
+        assert_eq!(tainted, [false, false, false, false]);
+    }
+
+    #[test]
+    fn calls_to_functions_are_looked_up_in_linear_time() {
+        let statements = 20_000;
+        let sql = format!(
+            "create function create_and_insert() returns void language sql as 'body';\n{}",
+            "select other_function(1, 2) from t where a = b;\n".repeat(statements)
+        );
+        let (tainted, elapsed) = walk_with_function_body(&sql, "create table ddl_test (f1 int);");
+        assert!(tainted.iter().all(|tainted| !tainted));
+        assert!(elapsed < Duration::from_secs(1), "{elapsed:?}");
+    }
+
     #[test]
     fn many_queries_are_walked_in_linear_time() {
         // Two statements per query, like goose `StatementBegin` blocks. Looking up the
