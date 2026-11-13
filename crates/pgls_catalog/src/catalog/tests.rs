@@ -1563,6 +1563,7 @@ fn snapshot_of_a_file_with_many_changes() {
         schema: "public".into(),
         name: "users_name_idx".into(),
         table_name: "users".into(),
+        columns: None,
     });
     database.sequences.push(crate::Sequence {
         id: 300,
