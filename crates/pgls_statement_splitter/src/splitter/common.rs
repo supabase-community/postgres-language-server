@@ -67,21 +67,38 @@ pub(crate) fn statement(p: &mut Splitter) -> SplitterResult {
     Ok(())
 }
 
+/// Skips a `BEGIN ... END` block, e.g. the `BEGIN ATOMIC` body of a function.
+///
+/// `CASE` also ends with `END`, so it opens a level just like `BEGIN`, which is how psql finds
+/// the end of the statement:
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L1080
+///
+/// The statements of a `BEGIN ATOMIC` body hold no blocks, so a `begin` there is a column name,
+/// as `begin` is an unreserved keyword.
+///
+/// The depth is a counter, so nesting costs neither stack nor memory, and every iteration moves
+/// by one token.
 pub(crate) fn begin_end(p: &mut Splitter) -> SplitterResult {
+    let atomic = p.look_ahead(true) == SyntaxKind::ATOMIC_KW;
     p.expect(SyntaxKind::BEGIN_KW)?;
 
-    let mut depth = 1;
+    let mut depth: usize = 1;
 
     loop {
         match p.current() {
-            SyntaxKind::BEGIN_KW => {
+            SyntaxKind::BEGIN_KW if !atomic && !at_label(p) => {
                 p.advance()?;
                 depth += 1;
             }
-            SyntaxKind::END_KW => {
-                if p.current() == SyntaxKind::END_KW {
-                    p.advance()?;
-                }
+            SyntaxKind::CASE_KW if !at_label(p) => {
+                p.advance()?;
+                depth += 1;
+            }
+            SyntaxKind::END_KW if !at_label(p) => {
+                p.advance()?;
+                // `END CASE` closes a PL/pgSQL `CASE` statement, the `CASE` does not open
+                // another level.
+                p.eat(SyntaxKind::CASE_KW)?;
                 depth -= 1;
                 if depth == 0 {
                     break;
@@ -94,6 +111,15 @@ pub(crate) fn begin_end(p: &mut Splitter) -> SplitterResult {
     }
 
     Ok(())
+}
+
+/// Whether the current keyword is a column label rather than a keyword: Postgres accepts any
+/// keyword, even a reserved one like `end` or `case`, after `AS` and after a `.`, e.g.
+/// `SELECT t.end AS case FROM t`.
+///
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L17655
+fn at_label(p: &Splitter) -> bool {
+    matches!(p.look_back(true), Some(SyntaxKind::AS_KW | SyntaxKind::DOT))
 }
 
 pub(crate) fn parenthesis(p: &mut Splitter) -> SplitterResult {
@@ -145,14 +171,26 @@ pub(crate) fn plpgsql_command(p: &mut Splitter) -> SplitterResult {
     Ok(())
 }
 
+/// Skips a `CASE ... END` expression, including the `CASE` expressions nested in it. The depth
+/// is a counter, so nesting costs neither stack nor memory, and every iteration moves by one
+/// token.
 pub(crate) fn case(p: &mut Splitter) -> SplitterResult {
     p.expect(SyntaxKind::CASE_KW)?;
 
+    let mut depth: usize = 1;
+
     loop {
         match p.current() {
-            SyntaxKind::END_KW => {
+            SyntaxKind::CASE_KW if !at_label(p) => {
                 p.advance()?;
-                break;
+                depth += 1;
+            }
+            SyntaxKind::END_KW if !at_label(p) => {
+                p.advance()?;
+                depth -= 1;
+                if depth == 0 {
+                    break;
+                }
             }
             _ => {
                 p.advance()?;
@@ -180,7 +218,7 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     break;
                 }
             }
-            SyntaxKind::CASE_KW => {
+            SyntaxKind::CASE_KW if !at_label(p) => {
                 case(p)?;
             }
             SyntaxKind::BACKSLASH => {

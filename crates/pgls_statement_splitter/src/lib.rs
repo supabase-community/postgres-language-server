@@ -311,6 +311,70 @@ END;",
     }
 
     #[test]
+    fn begin_atomic_case_end() {
+        let function = "CREATE FUNCTION f() RETURNS integer LANGUAGE sql
+BEGIN ATOMIC
+  SELECT CASE WHEN true THEN 1 ELSE 2 END;
+END;";
+        Tester::from(function)
+            .assert_no_errors()
+            .expect_statements(vec![function]);
+
+        // nested CASE, and a CASE in a later statement of the body
+        let function = "CREATE FUNCTION f(x integer) RETURNS integer LANGUAGE sql
+BEGIN ATOMIC
+  SELECT 1;
+  SELECT CASE WHEN x > 0 THEN CASE WHEN x > 10 THEN 2 ELSE 1 END ELSE (CASE x WHEN 0 THEN 0 END) END;
+END;";
+        Tester::from(function)
+            .assert_no_errors()
+            .expect_statements(vec![function]);
+
+        // several functions, each followed by another statement
+        let first = "CREATE FUNCTION f() RETURNS integer LANGUAGE sql
+BEGIN ATOMIC
+  SELECT CASE WHEN true THEN 1 END;
+END;";
+        let second = "CREATE PROCEDURE p() LANGUAGE sql
+BEGIN ATOMIC
+  INSERT INTO t VALUES (CASE WHEN true THEN 1 END);
+  DELETE FROM t WHERE CASE WHEN id > 1 THEN true ELSE false END;
+END;";
+        Tester::from(format!("{first}\n{second}\nSELECT 1;\nCOMMIT;").as_str())
+            .assert_no_errors()
+            .expect_statements(vec![first, second, "SELECT 1;", "COMMIT;"]);
+    }
+
+    #[test]
+    fn begin_atomic_keywords_as_labels() {
+        // `end`, `case` and `begin` as column names and labels do not open or close the body
+        let function = "CREATE FUNCTION f() RETURNS integer LANGUAGE sql
+BEGIN ATOMIC
+  SELECT t.end + t.case FROM t;
+  SELECT 1 AS end, 2 AS case;
+  SELECT begin FROM t;
+END;";
+        Tester::from(format!("{function}\nSELECT 1;").as_str())
+            .assert_no_errors()
+            .expect_statements(vec![function, "SELECT 1;"]);
+
+        Tester::from("SELECT 1 AS case, t.end FROM t;\nSELECT 2;")
+            .expect_statements(vec!["SELECT 1 AS case, t.end FROM t;", "SELECT 2;"]);
+    }
+
+    #[test]
+    fn nested_case() {
+        Tester::from(
+            "SELECT CASE WHEN a THEN CASE WHEN b THEN 1 END ELSE 2 END FROM t
+SELECT 1",
+        )
+        .expect_statements(vec![
+            "SELECT CASE WHEN a THEN CASE WHEN b THEN 1 END ELSE 2 END FROM t",
+            "SELECT 1",
+        ]);
+    }
+
+    #[test]
     fn ts_with_timezone() {
         Tester::from("alter table foo add column bar timestamp with time zone;").expect_statements(
             vec!["alter table foo add column bar timestamp with time zone;"],
