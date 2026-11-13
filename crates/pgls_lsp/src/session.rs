@@ -88,7 +88,7 @@ pub(crate) struct Session {
     /// File system to read files inside the workspace
     pub(crate) fs: DynRef<'static, dyn FileSystem>,
 
-    documents: RwLock<FxHashMap<ls_types::Uri, Document>>,
+    documents: RwLock<FxHashMap<ls_types::Uri, Arc<Document>>>,
 
     pub(crate) cancellation: Arc<Notify>,
 
@@ -559,15 +559,10 @@ impl Session {
 
         // A change, or closing and opening the document again, which can reset its version to
         // the same or a lower number, makes the diagnostics outdated.
-        let current = match self.document(&url) {
-            Ok(current) => current,
-            Err(_) => return Ok(()),
-        };
-        if current.revision != doc.revision {
+        if !self.is_current_document(&url, &doc) {
             debug!(
-                "discarding stale diagnostics for {}: computed for version {captured_version}, current is {}",
+                "discarding stale diagnostics for {}: computed for version {captured_version}",
                 url.as_str(),
-                current.version
             );
             return Ok(());
         }
@@ -697,7 +692,7 @@ impl Session {
     /// Get a [`Document`] matching the provided [`ls_types::Uri`]
     ///
     /// If document does not exist, result is [WorkspaceError::NotFound]
-    pub(crate) fn document(&self, url: &ls_types::Uri) -> Result<Document, Error> {
+    pub(crate) fn document(&self, url: &ls_types::Uri) -> Result<Arc<Document>, Error> {
         self.documents
             .read()
             .get(url)
@@ -709,7 +704,18 @@ impl Session {
     ///
     /// Used by [`handlers::text_document] to synchronize documents with the client.
     pub(crate) fn insert_document(&self, url: ls_types::Uri, document: Document) {
-        self.documents.write().insert(url, document);
+        self.documents.write().insert(url, Arc::new(document));
+    }
+
+    /// Whether `doc` is still the open document at `url`, so that a result computed for it is
+    /// up to date. Every open and change of the document stores another one, also when the
+    /// document is closed and opened again with the same version. The caller holds `doc`, so no
+    /// other document can have its address.
+    pub(crate) fn is_current_document(&self, url: &ls_types::Uri, doc: &Arc<Document>) -> bool {
+        self.documents
+            .read()
+            .get(url)
+            .is_some_and(|current| Arc::ptr_eq(current, doc))
     }
 
     /// Remove the [`Document`] matching the provided [`ls_types::Uri`]
