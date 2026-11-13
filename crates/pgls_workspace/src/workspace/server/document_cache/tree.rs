@@ -5,7 +5,7 @@ use rustc_hash::FxHashMap;
 use crate::workspace::StatementId;
 
 /// The tree-sitter trees of the statements of a document. They are kept until the statement is
-/// no longer in the document, see [`TreeSitterStore::retain`].
+/// no longer in the document, see [`TreeSitterStore::remove`].
 pub struct TreeSitterStore {
     db: Mutex<FxHashMap<StatementId, Arc<tree_sitter::Tree>>>,
     parser: Mutex<tree_sitter::Parser>,
@@ -24,12 +24,39 @@ impl TreeSitterStore {
         }
     }
 
-    /// Drops the trees of the statements for which `keep` returns `false`.
-    pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
-        self.db.lock().unwrap().retain(|id, _| keep(id));
+    /// The number of statements with a cached tree.
+    pub fn len(&self) -> usize {
+        self.db.lock().unwrap().len()
     }
 
-    pub fn get_or_cache_tree(&self, statement: &StatementId) -> Arc<tree_sitter::Tree> {
+    /// Drops every cached tree, and the memory of the map.
+    pub fn clear(&self) {
+        drop(std::mem::take(&mut *self.db.lock().unwrap()));
+    }
+
+    /// Drops the tree of `statement`.
+    pub fn remove(&self, statement: &StatementId) {
+        self.db.lock().unwrap().remove(statement);
+    }
+
+    /// Shrinks the map if it is less than a quarter full, see [`super::parse::shrink`].
+    pub fn shrink(&self) {
+        super::parse::shrink(&mut self.db.lock().unwrap());
+    }
+
+    /// The number of trees that the map has room for.
+    #[cfg(test)]
+    pub fn capacity(&self) -> usize {
+        self.db.lock().unwrap().capacity()
+    }
+
+    /// The tree of `statement`. It is only cached if `may_insert` returns `true`, see
+    /// [`PgQueryStore::get_or_cache_ast`](super::parse::PgQueryStore::get_or_cache_ast).
+    pub fn get_or_cache_tree(
+        &self,
+        statement: &StatementId,
+        may_insert: impl Fn() -> bool,
+    ) -> Arc<tree_sitter::Tree> {
         // First check cache
         {
             let cache = self.db.lock().unwrap();
@@ -50,9 +77,41 @@ impl TreeSitterStore {
             if let Some(existing) = cache.get(statement) {
                 return existing.clone();
             }
-            cache.insert(statement.clone(), tree.clone());
+            if may_insert() {
+                cache.insert(statement.clone(), tree.clone());
+            }
         }
 
         tree
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dropping_trees_releases_the_map() {
+        let store = TreeSitterStore::new();
+        let statements: Vec<StatementId> = (0..200)
+            .map(|i| StatementId::new(&format!("select {i};")))
+            .collect();
+        let fill = || {
+            for id in &statements {
+                store.get_or_cache_tree(id, || true);
+            }
+        };
+
+        fill();
+        for id in &statements[1..] {
+            store.remove(id);
+        }
+        store.shrink();
+        assert_eq!(store.len(), 1);
+        assert!(store.capacity() < 64, "{}", store.capacity());
+
+        fill();
+        store.clear();
+        assert_eq!(store.capacity(), 0);
     }
 }

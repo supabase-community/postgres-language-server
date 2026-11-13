@@ -51,7 +51,7 @@ pub(super) fn apply_index_stmt(c: &mut Catalog, n: &IndexStmt, search_path: &[St
     let columns = index_columns(n, &table);
     let entry = match taken {
         Lookup::Unknown => Entry::Unknown,
-        _ => Entry::Defined(IndexInfo {
+        _ => Entry::defined(IndexInfo {
             schema: table.schema,
             name: n.idxname.clone(),
             table: table.name,

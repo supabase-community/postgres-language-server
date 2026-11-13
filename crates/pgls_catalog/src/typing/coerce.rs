@@ -1,8 +1,10 @@
 //! Whether a value of one type can become another: Postgres' coercion rules.
 
-use crate::typing::types::{array_element, base_type, info, is_array, type_category};
-use crate::typing::{CoercionContext, Decision, Type, TypeId};
-use crate::{CastContext, CastMethod};
+use crate::CastMethod;
+use crate::typing::types::{
+    array_element, base_type, info, is_array, lookup_builtin, type_category,
+};
+use crate::typing::{CoercionContext, Decision, Polymorphic, Type, TypeId};
 use crate::{CatalogView, Lookup, TypeKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -11,21 +13,6 @@ pub enum CoercionPathway {
     Func,
     ArrayCoerce,
     CoerceViaIo,
-}
-
-fn cast_context(context: CastContext) -> u8 {
-    match context {
-        CastContext::Implicit => 0,
-        CastContext::Assignment => 1,
-        CastContext::Explicit => 2,
-    }
-}
-fn coercion_context(context: CoercionContext) -> u8 {
-    match context {
-        CoercionContext::Implicit => 0,
-        CoercionContext::Assignment => 1,
-        CoercionContext::Explicit => 2,
-    }
 }
 
 /// How a value of `source` becomes a `target` in `context`: binary, through a cast function,
@@ -51,7 +38,7 @@ pub fn find_coercion_pathway(
     }
     match c.cast(&source, &target) {
         Lookup::Found(cast) => {
-            if coercion_context(context) < cast_context(cast.context) {
+            if context < cast.context {
                 return Decision::Known(None);
             }
             return Decision::Known(Some(match cast.method {
@@ -100,21 +87,10 @@ pub fn find_coercion_pathway(
     }
 }
 
-fn lookup_named(c: &dyn CatalogView, name: &str) -> Decision<Option<TypeId>> {
-    match c.type_(Some("pg_catalog"), name, &[]) {
-        Lookup::Found(t) => Decision::Known(t.id),
-        Lookup::Missing => Decision::Known(None),
-        Lookup::Unknown => Decision::Unknown,
-    }
-}
 fn is_named(c: &dyn CatalogView, id: &TypeId, name: &str) -> Decision<bool> {
-    match lookup_named(c, name) {
-        Decision::Known(Some(expected)) => Decision::Known(id == &expected),
-        Decision::Known(None) => Decision::Known(false),
-        Decision::Unknown => Decision::Unknown,
-    }
+    lookup_builtin(c, name).map(|expected| expected.as_ref() == Some(id))
 }
-fn target_pseudo(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<String>> {
+fn target_pseudo(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<Polymorphic>> {
     let t = match info(c, id) {
         Decision::Known(t) => t,
         Decision::Unknown => return Decision::Unknown,
@@ -124,23 +100,9 @@ fn target_pseudo(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<String>> {
         Some(_) => return Decision::Known(None),
         None => return Decision::Unknown,
     }
-    const NAMES: &[&str] = &[
-        "any",
-        "anyelement",
-        "anyarray",
-        "anynonarray",
-        "anyenum",
-        "anyrange",
-        "anymultirange",
-        "anycompatible",
-        "anycompatiblearray",
-        "anycompatiblenonarray",
-        "anycompatiblerange",
-        "anycompatiblemultirange",
-    ];
-    for name in NAMES {
-        match is_named(c, id, name) {
-            Decision::Known(true) => return Decision::Known(Some((*name).into())),
+    for p in Polymorphic::ALL {
+        match is_named(c, id, p.name()) {
+            Decision::Known(true) => return Decision::Known(Some(p)),
             Decision::Known(false) => {}
             Decision::Unknown => return Decision::Unknown,
         }
@@ -203,8 +165,8 @@ pub fn can_coerce(
     }
     match target_pseudo(c, to) {
         Decision::Unknown => return Decision::Unknown,
-        Decision::Known(Some(name)) => {
-            return if name == "any" {
+        Decision::Known(Some(p)) => {
+            return if p == Polymorphic::Any {
                 Decision::Known(true)
             } else {
                 Decision::Unknown
@@ -257,27 +219,23 @@ pub fn is_binary_coercible(
     }
     match target_pseudo(c, target) {
         Decision::Unknown => return Decision::Unknown,
-        Decision::Known(Some(name)) => {
-            return match name.as_str() {
-                "any" | "anyelement" | "anycompatible" => Decision::Known(true),
-                "anyarray" | "anycompatiblearray" => is_array(c, &source),
-                "anynonarray" | "anycompatiblenonarray" => match is_array(c, &source) {
-                    Decision::Known(array) => Decision::Known(!array),
-                    Decision::Unknown => Decision::Unknown,
-                },
-                "anyenum" => match info(c, &source) {
-                    Decision::Known(t) => Decision::Known(t.kind == Some(TypeKind::Enum)),
-                    Decision::Unknown => Decision::Unknown,
-                },
-                "anyrange" | "anycompatiblerange" => match info(c, &source) {
-                    Decision::Known(t) => Decision::Known(t.kind == Some(TypeKind::Range)),
-                    Decision::Unknown => Decision::Unknown,
-                },
-                "anymultirange" | "anycompatiblemultirange" => match info(c, &source) {
-                    Decision::Known(t) => Decision::Known(t.kind == Some(TypeKind::Multirange)),
-                    Decision::Unknown => Decision::Unknown,
-                },
-                _ => Decision::Known(false),
+        Decision::Known(Some(p)) => {
+            let has_kind = |kind| info(c, &source).map(|t| t.kind == Some(kind));
+            return match p {
+                Polymorphic::Any | Polymorphic::AnyElement | Polymorphic::AnyCompatible => {
+                    Decision::Known(true)
+                }
+                Polymorphic::AnyArray | Polymorphic::AnyCompatibleArray => is_array(c, &source),
+                Polymorphic::AnyNonArray | Polymorphic::AnyCompatibleNonArray => {
+                    is_array(c, &source).map(|array| !array)
+                }
+                Polymorphic::AnyEnum => has_kind(TypeKind::Enum),
+                Polymorphic::AnyRange | Polymorphic::AnyCompatibleRange => {
+                    has_kind(TypeKind::Range)
+                }
+                Polymorphic::AnyMultirange | Polymorphic::AnyCompatibleMultirange => {
+                    has_kind(TypeKind::Multirange)
+                }
             };
         }
         Decision::Known(None) => {}
@@ -290,13 +248,11 @@ pub fn is_binary_coercible(
         Decision::Unknown => return Decision::Unknown,
         Decision::Known(false) => {}
     }
-    match c.cast(&source, target) {
-        Lookup::Found(cast) => Decision::Known(
-            cast.method == CastMethod::Binary && cast.context == CastContext::Implicit,
-        ),
-        Lookup::Missing => Decision::Known(false),
-        Lookup::Unknown => Decision::Unknown,
-    }
+    c.cast(&source, target).into_decision().map(|cast| {
+        cast.is_some_and(|cast| {
+            cast.method == CastMethod::Binary && cast.context == CoercionContext::Implicit
+        })
+    })
 }
 
 #[cfg(all(test, feature = "db"))]
