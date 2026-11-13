@@ -1455,6 +1455,31 @@ fn snapshot_includes_indexes_of_the_file() {
         .map(|index| (index.name.as_str(), index.table_name.as_str()))
         .collect();
     assert_eq!(indexes, [("users_id_idx", "users")]);
+
+    // An index of the database follows its renamed column.
+    let catalog = catalog_after(
+        "alter table users rename column name to renamed;",
+        &search_path,
+    );
+    let snapshot = catalog.snapshot().unwrap();
+    let columns: Vec<_> = snapshot
+        .indexes
+        .iter()
+        .map(|index| (index.name.as_str(), index.columns.clone()))
+        .collect();
+    assert_eq!(
+        columns,
+        [("users_name_idx", Some(vec!["renamed".to_owned()]))]
+    );
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let parsed = pgls_query::parse("alter table users drop column renamed;").expect("valid sql");
+    for stmt in parsed.stmts() {
+        catalog.apply(stmt, &search_path);
+    }
+    assert!(matches!(
+        catalog.index(None, "users_name_idx", &search_path),
+        Lookup::Missing
+    ));
 }
 
 #[test]
@@ -1757,7 +1782,15 @@ mod typing_overlay_tests {
                  create index t_include_idx on t (a) include (e);
                  create index t_expression_idx on t ((b + 1)) where c > 0;
                  create index t_row_idx on t (whole_row(t));
-                 alter table t add constraint t_pkey primary key (d);",
+                 alter table t add constraint t_pkey primary key (d);
+                 create table x (
+                   r int4range, a int, b int, c int,
+                   constraint x_expression_excl exclude using gist (int4range(a, b) with &&),
+                   constraint x_predicate_excl exclude using gist (r with &&) where (c > 0)
+                 );
+                 create table g (a int, b int, g int generated always as (a + 1) stored);
+                 create index g_g_idx on g (g);
+                 create index g_b_idx on g (b);",
             )
             .await
             .unwrap();
@@ -1798,5 +1831,25 @@ mod typing_overlay_tests {
         // A whole-row reference depends on the table, not on its columns, so Postgres keeps the
         // index.
         assert_eq!(state("alter table t drop column a;", "t_row_idx"), "found");
+
+        // A column in an expression or the predicate of an exclusion constraint makes `DROP
+        // COLUMN` fail without CASCADE, and drops the constraint and its index with it.
+        assert_eq!(
+            state("alter table x drop column a;", "x_expression_excl"),
+            "unknown"
+        );
+        assert_eq!(
+            state("alter table x drop column c;", "x_predicate_excl"),
+            "unknown"
+        );
+        // With CASCADE, Postgres also drops the generated columns that use the column.
+        assert_eq!(
+            state("alter table g drop column a cascade;", "g_g_idx"),
+            "unknown"
+        );
+        assert_eq!(
+            state("alter table g drop column a cascade;", "g_b_idx"),
+            "found"
+        );
     }
 }
