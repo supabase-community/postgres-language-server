@@ -6,6 +6,7 @@ mod codegen;
 mod lexed;
 mod lexer;
 mod params;
+mod templating;
 
 pub use crate::codegen::syntax_kind::{KeywordCategory, SyntaxKind};
 pub use crate::lexed::{LexDiagnostic, Lexed};
@@ -13,6 +14,10 @@ pub use crate::lexer::Lexer;
 pub use crate::params::{
     NamedParameterConversion, convert_to_positional_params,
     convert_to_positional_params_with_metadata,
+};
+pub use crate::templating::{
+    TemplateError, TemplateSyntax, bind_template_arguments, convert_template_parameters,
+    template_parameters,
 };
 
 /// The category of the keyword `word`, compared case-insensitively. `None` if it's no keyword.

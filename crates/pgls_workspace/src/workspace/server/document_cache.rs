@@ -8,6 +8,7 @@
 use std::sync::{Arc, Mutex};
 
 use pgls_catalog::CatalogBase;
+use pgls_lexer::TemplateSyntax;
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::EmbeddedStatement};
 
 use super::{StatementId, analysis::DocumentAnalysis};
@@ -74,12 +75,24 @@ struct KeyedCaches {
 }
 
 impl DocumentCache {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn with_template_syntax(template_syntax: TemplateSyntax) -> Self {
         Self {
-            parses: PgQueryStore::new(),
+            parses: PgQueryStore::with_template_syntax(template_syntax),
             trees: TreeSitterStore::new(),
             keyed: Mutex::default(),
         }
+    }
+
+    /// The placeholder syntaxes the cached parses were made with.
+    pub(crate) fn template_syntax(&self) -> TemplateSyntax {
+        self.parses.template_syntax
+    }
+
+    /// Drops the parses, which were made with another syntax, and the analysis that depends on
+    /// them. The trees are kept: the syntax doesn't change how the text is lexed.
+    pub(crate) fn set_template_syntax(&mut self, template_syntax: TemplateSyntax) {
+        self.parses = PgQueryStore::with_template_syntax(template_syntax);
+        self.keyed.get_mut().unwrap().analysis = None;
     }
 
     /// The analysis of the document for `key`. `analyse` computes it if it isn't cached.

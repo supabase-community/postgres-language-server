@@ -8,6 +8,90 @@ const FORMATTED_PATH: &str = "tests/fixtures/format/formatted.sql";
 const UNFORMATTED_PATH: &str = "tests/fixtures/format/unformatted.sql";
 const BLANK_LINES_PATH: &str = "tests/fixtures/format/blank_lines.sql";
 
+fn template_format(source: &str, syntax: &str) -> String {
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .args([
+            "format",
+            "--config-path",
+            CONFIG_PATH,
+            "--log-level",
+            "none",
+            "--stdin-file-path",
+            "virtual.sql",
+            "--template-syntax",
+            syntax,
+        ])
+        .write_stdin(source)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout).unwrap()
+}
+
+#[test]
+fn template_format_dollar_values_preserves_indexes_and_duplicates() {
+    assert_eq!(
+        template_format("SELECT   $1,$2,$123,$1;", "dollar-values"),
+        "select $1, $2, $123, $1;"
+    );
+}
+
+#[test]
+fn template_format_all_modes_preserves_directives_and_is_idempotent() {
+    let source = "SELECT   %s,{value},$1 FROM %s_{schema}.%[2]s WHERE id=$2;";
+    let formatted = template_format(source, "go-printf,rust-fmt,dollar-values");
+    for marker in ["%s", "{value}", "$1", "%s_{schema}", "%[2]s", "$2"] {
+        assert!(formatted.contains(marker), "{marker}: {formatted}");
+    }
+    assert_eq!(
+        template_format(&formatted, "rust-fmt,dollar-values,go-printf"),
+        formatted
+    );
+}
+
+#[test]
+fn template_format_array_slice_bounds_and_modulo_restore_their_syntax() {
+    let formatted = template_format("SELECT a[1:%d],1+2%%3 FROM %s;", "go-printf");
+    assert!(formatted.contains("a[1:%d]"), "{formatted}");
+    assert!(formatted.contains("%%"), "{formatted}");
+    assert_eq!(template_format(&formatted, "go-printf"), formatted);
+}
+
+#[test]
+fn template_format_restores_placeholders_quoted_by_the_formatter() {
+    let source = "SELECT %s.%[3]q FROM %s LEFT JOIN %s USING (%[3]q);";
+    let formatted = template_format(source, "go-printf");
+    assert!(formatted.contains("using (%[3]q)"), "{formatted}");
+    assert_eq!(template_format(&formatted, "go-printf"), formatted);
+}
+
+#[test]
+fn template_format_reports_ambiguous_fragments_and_keeps_the_source() {
+    let source = "SELECT * FROM items %s;";
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .args([
+            "format",
+            "--config-path",
+            CONFIG_PATH,
+            "--log-level",
+            "none",
+            "--stdin-file-path",
+            "virtual.sql",
+            "--template-syntax",
+            "go-printf",
+        ])
+        .write_stdin(source)
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Ambiguous"));
+    assert_eq!(String::from_utf8(output.stdout).unwrap(), source);
+}
+
 #[test]
 fn format_values_rows_from_cli_options() {
     let mut cmd = cargo_bin_cmd!("postgres-language-server");
