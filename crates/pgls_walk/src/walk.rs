@@ -1,4 +1,4 @@
-use std::{ops::Range, sync::Arc};
+use std::{collections::HashSet, ops::Range, sync::Arc};
 
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
 use pgls_text_size::{TextRange, TextSize};
@@ -52,6 +52,8 @@ pub struct WalkState {
     up_catalog: Option<Catalog>,
     /// The start of the query whose implicit transaction block the session is in.
     implicit_block: Option<TextSize>,
+    /// See [`CatalogFunctions`].
+    catalog_functions: CatalogFunctions,
 }
 
 impl WalkState {
@@ -95,7 +97,8 @@ pub struct Walk {
 /// - Each migration section runs in a session and transaction of its own. A down section runs
 ///   after the up sections before it, and its changes don't carry into the next section.
 /// - A top-level statement that doesn't parse taints the catalog if it may have changed it.
-/// - The statements of SQL function bodies are visited, but they don't run.
+/// - The statements of SQL function bodies are visited, but they don't run. A statement that
+///   calls a SQL function of the file whose body may change the catalog taints it.
 /// - The names of a statement with identifier parameters, like psql's `:name`, are placeholders.
 ///   Such a statement is visited and applied to the session (its locks and its effect on the
 ///   transaction), but if it may change the catalog, it taints it instead of being applied to it.
@@ -125,6 +128,10 @@ pub fn walk_statements(
         .filter(|at| *at >= resumes_at)
         .peekable();
     let mut checkpoints = Vec::new();
+    let mut catalog_functions = from
+        .as_ref()
+        .map(|from| from.catalog_functions.clone())
+        .unwrap_or_default();
     for unit in migration_units(params.stmts, params.sections) {
         if unit.start >= params.end {
             break;
@@ -211,13 +218,15 @@ pub fn walk_statements(
         let state = |at: TextSize,
                      file_context: &AnalysedFileContext,
                      catalog: &Catalog,
-                     implicit_block: Option<TextSize>| WalkState {
+                     implicit_block: Option<TextSize>,
+                     catalog_functions: &CatalogFunctions| WalkState {
             at,
             section_start: unit.start,
             catalog: file_context.catalog().clone(),
             session: file_context.session().clone(),
             up_catalog: is_down.then(|| catalog.clone()),
             implicit_block,
+            catalog_functions: catalog_functions.clone(),
         };
 
         for stmt in stmts {
@@ -226,7 +235,13 @@ pub fn walk_statements(
             }
             while let Some(at) = checkpoint_at.next_if(|at| stmt.range.start() >= *at) {
                 skip_unparsable(&mut unparsable, at, &mut file_context);
-                checkpoints.push(state(at, &file_context, &catalog, implicit_block));
+                checkpoints.push(state(
+                    at,
+                    &file_context,
+                    &catalog,
+                    implicit_block,
+                    &catalog_functions,
+                ));
             }
             let runs = stmt.function.is_none();
             if runs {
@@ -260,11 +275,23 @@ pub fn walk_statements(
                 file_context.taint_catalog();
             }
             file_context.next(runs, !placeholders);
+
+            match &stmt.function {
+                Some(function) => catalog_functions.record_body_statement(function, &stmt.root),
+                None if catalog_functions.called_by(&stmt.root) => file_context.taint_catalog(),
+                None => {}
+            }
         }
 
         while let Some(at) = checkpoint_at.next_if(|at| *at < unit.end && *at <= params.end) {
             skip_unparsable(&mut unparsable, at, &mut file_context);
-            checkpoints.push(state(at, &file_context, &catalog, implicit_block));
+            checkpoints.push(state(
+                at,
+                &file_context,
+                &catalog,
+                implicit_block,
+                &catalog_functions,
+            ));
         }
         skip_unparsable(&mut unparsable, unit.end.min(params.end), &mut file_context);
         // The section that contains `end` decides what a statement there sees.
@@ -295,6 +322,54 @@ fn skip_unparsable<'a>(
         if may_change_catalog(&skipped.sql) {
             file_context.taint_catalog();
         }
+    }
+}
+
+/// The SQL functions of the file whose bodies may change the catalog, by name. The catalog
+/// can't follow what a call to one of them does, so a statement that calls one taints it, like
+/// `CALL` does.
+///
+/// Functions are known by their name only, without schema or arguments: a call to any function
+/// of that name taints the catalog. The bodies of other languages, like PL/pgSQL, are not looked
+/// at.
+///
+/// Cost: one pass over the nodes of each statement that runs, once the file created such a
+/// function, and of each statement of a function body.
+#[derive(Clone, Default)]
+struct CatalogFunctions(Arc<HashSet<String>>);
+
+impl CatalogFunctions {
+    /// Records `stmt`, a statement of the body of `function`. A body statement that may change
+    /// the catalog, or that calls a function that may, makes `function` one that may.
+    fn record_body_statement(
+        &mut self,
+        function: &pgls_catalog::resolve::FunctionContext,
+        stmt: &pgls_query::NodeEnum,
+    ) {
+        if self.0.contains(&function.function_name) {
+            return;
+        }
+        if !is_plain_query(stmt) || self.called_by(stmt) {
+            Arc::make_mut(&mut self.0).insert(function.function_name.clone());
+        }
+    }
+
+    /// Whether `stmt` calls one of the functions. Creating a function doesn't call the
+    /// functions its `BEGIN ATOMIC` body calls.
+    fn called_by(&self, stmt: &pgls_query::NodeEnum) -> bool {
+        use pgls_query::{NodeEnum, NodeRef};
+        if self.0.is_empty() || matches!(stmt, NodeEnum::CreateFunctionStmt(_)) {
+            return false;
+        }
+        stmt.iter().any(|node| {
+            let NodeRef::FuncCall(call) = node else {
+                return false;
+            };
+            call.funcname
+                .last()
+                .and_then(pgls_query_ext::utils::string_value)
+                .is_some_and(|name| self.0.contains(name))
+        })
     }
 }
 
