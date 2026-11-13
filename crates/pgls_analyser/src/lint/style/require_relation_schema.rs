@@ -24,6 +24,8 @@ declare_lint_rule! {
     /// `USING`, as well as the queries of views, `CREATE TABLE AS`, `EXPLAIN`, `DECLARE` and
     /// `PREPARE`, and the relations of `COPY`, `TRUNCATE` and `LOCK`. Names that refer to a CTE
     /// and temporary tables, including the ones created earlier in the file, are not reported.
+    /// A CTE doesn't hide the target of `INSERT`, `UPDATE`, `DELETE` or `MERGE`, so a target
+    /// with the name of a CTE is reported.
     /// The tables that DDL creates, changes or drops are checked by `requireTableSchema`.
     ///
     /// ## Examples
@@ -63,35 +65,46 @@ impl LinterRule for RequireRelationSchema {
         // `SELECT INTO`, which `requireTableSchema` checks, the aliases of `FOR UPDATE OF`, and
         // the references to CTEs.
         let mut skipped: HashSet<*const RangeVar> = HashSet::new();
+        // The names that match a CTE, by address.
+        let mut ctes: HashSet<*const RangeVar> = HashSet::new();
+        // The targets of `INSERT`, `UPDATE`, `DELETE` and `MERGE`, by address. CTEs don't hide
+        // them, Postgres always looks them up in the catalog ([`setTargetTable`]).
+        //
+        // [`setTargetTable`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L178
+        let mut targets: HashSet<*const RangeVar> = HashSet::new();
         for query in queries(ctx.stmt()) {
             for node in query.iter() {
-                match node {
-                    NodeRef::RangeVar(relation) => relations.push(relation),
+                let (with, target) = match node {
+                    NodeRef::RangeVar(relation) => {
+                        relations.push(relation);
+                        continue;
+                    }
                     NodeRef::IntoClause(into) => {
                         skipped.extend(into.rel.as_ref().map(std::ptr::from_ref));
+                        continue;
                     }
                     NodeRef::LockingClause(locking) => {
                         skipped.extend(range_vars(&locking.locked_rels).map(std::ptr::from_ref));
+                        continue;
                     }
-                    NodeRef::SelectStmt(stmt) => {
-                        skipped.extend(cte_references(node, stmt.with_clause.as_ref()));
-                    }
+                    NodeRef::SelectStmt(stmt) => (stmt.with_clause.as_ref(), None),
                     NodeRef::InsertStmt(stmt) => {
-                        skipped.extend(cte_references(node, stmt.with_clause.as_ref()));
+                        (stmt.with_clause.as_ref(), stmt.relation.as_ref())
                     }
                     NodeRef::UpdateStmt(stmt) => {
-                        skipped.extend(cte_references(node, stmt.with_clause.as_ref()));
+                        (stmt.with_clause.as_ref(), stmt.relation.as_ref())
                     }
                     NodeRef::DeleteStmt(stmt) => {
-                        skipped.extend(cte_references(node, stmt.with_clause.as_ref()));
+                        (stmt.with_clause.as_ref(), stmt.relation.as_ref())
                     }
-                    NodeRef::MergeStmt(stmt) => {
-                        skipped.extend(cte_references(node, stmt.with_clause.as_ref()));
-                    }
-                    _ => {}
-                }
+                    NodeRef::MergeStmt(stmt) => (stmt.with_clause.as_ref(), stmt.relation.as_ref()),
+                    _ => continue,
+                };
+                targets.extend(target.map(std::ptr::from_ref));
+                ctes.extend(cte_references(node, with));
             }
         }
+        skipped.extend(ctes.difference(&targets));
 
         // An unqualified name refers to a temporary table if there is one, since `pg_temp` comes
         // first on the search path.
@@ -262,6 +275,21 @@ mod tests {
         assert!(
             spans("with recursive r as (select 1 union all select * from r) select * from r")
                 .is_empty()
+        );
+    }
+
+    #[test]
+    fn reports_dml_targets_with_the_name_of_a_cte() {
+        assert_eq!(
+            spans("with users as (select 1 as id) update users set id = 2 from users u"),
+            ["users"]
+        );
+        assert_eq!(
+            spans(
+                "with users as (select 1 as id) merge into users t using users s on true \
+                 when matched then delete"
+            ),
+            ["users"]
         );
     }
 

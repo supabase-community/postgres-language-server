@@ -19,6 +19,8 @@ subqueries, CTEs, the targets of `INSERT`, `UPDATE`, `DELETE` and `MERGE`, and t
 `USING`, as well as the queries of views, `CREATE TABLE AS`, `EXPLAIN`, `DECLARE` and
 `PREPARE`, and the relations of `COPY`, `TRUNCATE` and `LOCK`. Names that refer to a CTE
 and temporary tables, including the ones created earlier in the file, are not reported.
+A CTE doesn't hide the target of `INSERT`, `UPDATE`, `DELETE` or `MERGE`, so a target
+with the name of a CTE is reported.
 The tables that DDL creates, changes or drops are checked by `requireTableSchema`.
 
 ## Examples
