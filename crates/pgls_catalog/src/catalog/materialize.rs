@@ -197,6 +197,7 @@ impl Builder {
             schema: index.schema.clone(),
             name: index.name.clone(),
             table_name: index.table.clone(),
+            columns: index.columns.clone(),
         });
     }
 

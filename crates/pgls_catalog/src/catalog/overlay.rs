@@ -448,6 +448,7 @@ impl Catalog {
                 for name in columns.iter_mut().filter(|name| *name == old_name) {
                     *name = new_name.to_owned();
                 }
+                index.origin = Origin::File;
                 self.indexes
                     .insert(key(&index.schema, &index.name), Entry::defined(index));
             }

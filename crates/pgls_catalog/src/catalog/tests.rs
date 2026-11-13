@@ -71,6 +71,7 @@ fn base() -> Arc<CatalogBase> {
         schema: "public".into(),
         name: "users_name_idx".into(),
         table_name: "users".into(),
+        columns: Some(vec!["name".into()]),
     }];
     let cache = Snapshot {
         schemas,
@@ -1328,9 +1329,11 @@ fn dropping_a_column_drops_the_indexes_that_use_it() {
     );
     assert_eq!(state(&catalog, "t_a_idx"), "found");
 
-    // We don't know the columns of the indexes of the database.
+    // The snapshot has the columns of the indexes of the database.
     let catalog = after("alter table users drop column id;");
-    assert_eq!(state(&catalog, "users_name_idx"), "unknown");
+    assert_eq!(state(&catalog, "users_name_idx"), "found");
+    let catalog = after("alter table users drop column name;");
+    assert_eq!(state(&catalog, "users_name_idx"), "missing");
 }
 
 #[test]
@@ -1452,6 +1455,31 @@ fn snapshot_includes_indexes_of_the_file() {
         .map(|index| (index.name.as_str(), index.table_name.as_str()))
         .collect();
     assert_eq!(indexes, [("users_id_idx", "users")]);
+
+    // An index of the database follows its renamed column.
+    let catalog = catalog_after(
+        "alter table users rename column name to renamed;",
+        &search_path,
+    );
+    let snapshot = catalog.snapshot().unwrap();
+    let columns: Vec<_> = snapshot
+        .indexes
+        .iter()
+        .map(|index| (index.name.as_str(), index.columns.clone()))
+        .collect();
+    assert_eq!(
+        columns,
+        [("users_name_idx", Some(vec!["renamed".to_owned()]))]
+    );
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let parsed = pgls_query::parse("alter table users drop column renamed;").expect("valid sql");
+    for stmt in parsed.stmts() {
+        catalog.apply(stmt, &search_path);
+    }
+    assert!(matches!(
+        catalog.index(None, "users_name_idx", &search_path),
+        Lookup::Missing
+    ));
 }
 
 #[test]
@@ -1741,5 +1769,87 @@ mod typing_overlay_tests {
         apply(&mut catalog, "do $$ begin null; end $$;", &path);
         assert!(catalog.is_tainted());
         assert!(!catalog.function_candidates(None, "abs", &path).complete);
+    }
+
+    #[pgls_test_utils::db_test]
+    async fn dropping_a_column_drops_the_database_indexes_that_use_it(test_db: PgPool) {
+        use sqlx::Executor;
+
+        test_db
+            .execute(
+                "create table t (a int, b int, c int, d text, e int);
+                 create function whole_row(t) returns int immutable language sql as 'select 1';
+                 create index t_include_idx on t (a) include (e);
+                 create index t_expression_idx on t ((b + 1)) where c > 0;
+                 create index t_row_idx on t (whole_row(t));
+                 alter table t add constraint t_pkey primary key (d);
+                 create table x (
+                   r int4range, a int, b int, c int,
+                   constraint x_expression_excl exclude using gist (int4range(a, b) with &&),
+                   constraint x_predicate_excl exclude using gist (r with &&) where (c > 0)
+                 );
+                 create table g (a int, b int, g int generated always as (a + 1) stored);
+                 create index g_g_idx on g (g);
+                 create index g_b_idx on g (b);",
+            )
+            .await
+            .unwrap();
+        let base = Arc::new(CatalogBase::new(Arc::new(
+            Snapshot::load(&test_db).await.expect("load snapshot"),
+        )));
+        let path = path(&["public"]);
+        let state = |sql: &str, index: &str| {
+            let mut catalog = Catalog::new(Some(Arc::clone(&base)));
+            apply(&mut catalog, sql, &path);
+            match catalog.index(None, index, &path) {
+                Lookup::Found(_) => "found",
+                Lookup::Missing => "missing",
+                Lookup::Unknown => "unknown",
+            }
+        };
+
+        // An `INCLUDE` column, columns in an expression and the predicate, and the key of a
+        // constraint, whose index depends on the constraint instead of the column.
+        assert_eq!(
+            state("alter table t drop column e;", "t_include_idx"),
+            "missing"
+        );
+        assert_eq!(
+            state("alter table t drop column b;", "t_expression_idx"),
+            "missing"
+        );
+        assert_eq!(
+            state("alter table t drop column c;", "t_expression_idx"),
+            "missing"
+        );
+        assert_eq!(state("alter table t drop column d;", "t_pkey"), "missing");
+        assert_eq!(
+            state("alter table t drop column a;", "t_expression_idx"),
+            "found"
+        );
+        assert_eq!(state("alter table t drop column a;", "t_pkey"), "found");
+        // A whole-row reference depends on the table, not on its columns, so Postgres keeps the
+        // index.
+        assert_eq!(state("alter table t drop column a;", "t_row_idx"), "found");
+
+        // A column in an expression or the predicate of an exclusion constraint makes `DROP
+        // COLUMN` fail without CASCADE, and drops the constraint and its index with it.
+        assert_eq!(
+            state("alter table x drop column a;", "x_expression_excl"),
+            "unknown"
+        );
+        assert_eq!(
+            state("alter table x drop column c;", "x_predicate_excl"),
+            "unknown"
+        );
+        // With CASCADE, Postgres also drops the generated columns that use the column.
+        assert_eq!(
+            state("alter table g drop column a cascade;", "g_g_idx"),
+            "unknown"
+        );
+        assert_eq!(
+            state("alter table g drop column a cascade;", "g_b_idx"),
+            "found"
+        );
     }
 }
