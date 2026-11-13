@@ -191,8 +191,9 @@ impl WorkspaceServer {
     fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut<'_> {
         let handle = WorkspaceSettingsHandleMut::new(&self.settings);
         // While the settings are locked, so that nothing is cached with the old settings under
-        // the new version.
-        self.settings_version.fetch_add(1, Ordering::Relaxed);
+        // the new version. Whoever reads the new version then waits for the lock to read the
+        // settings, see `migration_tool`.
+        self.settings_version.fetch_add(1, Ordering::AcqRel);
         handle
     }
 
@@ -281,41 +282,50 @@ impl WorkspaceServer {
         settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
     }
 
-    /// The migration tool of the settings that apply to the file.
-    fn migration_tool(&self, project_key: ProjectKey, path: &Path) -> &'static dyn MigrationTool {
+    /// The migration tool of the settings that apply to the file, and the version of the settings
+    /// it is from.
+    fn migration_tool(
+        &self,
+        project_key: ProjectKey,
+        path: &Path,
+    ) -> (u64, &'static dyn MigrationTool) {
+        // Read before the settings, so that settings that change in between make the version
+        // older than the tool, and the document gets the tool again on the next request.
+        let settings_version = self.settings_version.load(Ordering::Acquire);
         let tool = self
             .workspaces()
             .settings_for(project_key, path)
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.tool)
             .unwrap_or_default();
-        tool_of_setting(tool)
+        (settings_version, tool_of_setting(tool))
     }
 
-    /// Applies the changed settings of a project to its open documents.
-    fn apply_settings_to_documents(&self, project_key: ProjectKey) {
-        // Neither the documents nor the settings are locked while taking the other lock, since
-        // other methods take them in either order.
-        let paths: Vec<PgLSPath> = self
+    /// Gives the open document at `path` the migration tool of the current settings of
+    /// `project_key`, if the settings changed since it got its tool or the file belongs to
+    /// another project now, e.g. after the workspace folders changed. Requests call it before
+    /// they lock the documents or the settings, since it locks the documents for writing.
+    ///
+    /// Checking on every request, rather than going through the open documents when the settings
+    /// change, also covers a document that is opened while the settings change: it keeps the
+    /// version of the settings that it read the tool from.
+    fn refresh_migration_tool(&self, project_key: ProjectKey, path: &PgLSPath) {
+        let is_current = |doc: &Document| {
+            doc.has_migration_tool_of(project_key, self.settings_version.load(Ordering::Acquire))
+        };
+        if self
             .documents
             .read()
             .unwrap()
-            .iter()
-            .filter(|(_, doc)| doc.project_key() == project_key)
-            .map(|(path, _)| path.clone())
-            .collect();
-        let tools: Vec<_> = paths
-            .into_iter()
-            .map(|path| {
-                let tool = self.migration_tool(project_key, &path);
-                (path, tool)
-            })
-            .collect();
-        let mut documents = self.documents.write().unwrap();
-        for (path, tool) in tools {
-            if let Some(doc) = documents.get_mut(&path) {
-                doc.set_migration_tool(tool);
-            }
+            .get(path)
+            .is_none_or(is_current)
+        {
+            return;
+        }
+        // Neither the documents nor the settings are locked while taking the other lock.
+        let (settings_version, migration_tool) = self.migration_tool(project_key, path);
+        if let Some(doc) = self.documents.write().unwrap().get_mut(path) {
+            doc.set_migration_tool(project_key, settings_version, migration_tool);
         }
     }
 
@@ -852,7 +862,6 @@ impl Workspace for WorkspaceServer {
             )?;
         }
         drop(workspace);
-        self.apply_settings_to_documents(params.project_key);
         self.drop_unused_connections();
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
@@ -924,7 +933,6 @@ impl Workspace for WorkspaceServer {
         self.workspaces_mut()
             .as_mut()
             .set_nested_settings(params.project_key, nested);
-        self.apply_settings_to_documents(params.project_key);
         self.drop_unused_connections();
         // The search path and the migration sections change what a statement sees.
         *self.snapshot_before.lock().unwrap() = None;
@@ -935,11 +943,13 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        let migration_tool = self.migration_tool(params.project_key, &params.path);
+        let (settings_version, migration_tool) =
+            self.migration_tool(params.project_key, &params.path);
         let mut documents = self.documents.write().unwrap();
         documents.entry(params.path.clone()).or_insert_with(|| {
             Document::open(
                 params.project_key,
+                settings_version,
                 migration_tool,
                 params.content,
                 params.version,
@@ -967,20 +977,23 @@ impl Workspace for WorkspaceServer {
     ), err)]
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        // For a new document. An open document keeps its tool until the settings change, see
-        // `apply_settings_to_documents`. Read before locking the documents, like there.
-        let migration_tool = self.migration_tool(params.project_key, &params.path);
+        // Read before locking the documents, see `refresh_migration_tool`.
+        let (settings_version, migration_tool) =
+            self.migration_tool(params.project_key, &params.path);
         let mut documents = self.documents.write().unwrap();
 
         match documents.entry(params.path.clone()) {
             std::collections::hash_map::Entry::Occupied(mut entry) => {
-                entry
-                    .get_mut()
-                    .update_content(params.content, params.version);
+                let doc = entry.get_mut();
+                if !doc.has_migration_tool_of(params.project_key, settings_version) {
+                    doc.set_migration_tool(params.project_key, settings_version, migration_tool);
+                }
+                doc.update_content(params.content, params.version);
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
                 entry.insert(Document::open(
                     params.project_key,
+                    settings_version,
                     migration_tool,
                     params.content,
                     params.version,
@@ -1013,6 +1026,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: CodeActionsParams,
     ) -> Result<CodeActionsResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let documents = self.documents.read().unwrap();
         let parser = documents
             .get(&params.path)
@@ -1082,6 +1096,7 @@ impl Workspace for WorkspaceServer {
 
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let documents = self.documents.read().unwrap();
         let doc = documents
             .get(&params.path)
@@ -1122,6 +1137,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let documents = self.documents.read().unwrap();
         let parser = documents
             .get(&params.path)
@@ -1285,6 +1301,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullFileDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let settings = self.workspaces();
 
         let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
@@ -1494,6 +1511,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullFileFormattingParams,
     ) -> Result<PullFormattingResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let settings = self.workspaces();
 
         let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
@@ -1625,6 +1643,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let documents = self.documents.read().unwrap();
         let parsed_doc = documents
             .get(&params.path)
@@ -1698,6 +1717,7 @@ impl Workspace for WorkspaceServer {
         position = params.position.to_string()
     ), err)]
     fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let documents = self.documents.read().unwrap();
         let doc = documents
             .get(&params.path)
@@ -1761,6 +1781,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullInlayHintsParams,
     ) -> Result<PullInlayHintsResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let documents = self.documents.read().unwrap();
         let doc = documents
             .get(&params.path)
@@ -1844,6 +1865,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullSemanticTokensParams,
     ) -> Result<PullSemanticTokensResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let documents = self.documents.read().unwrap();
         let doc = documents
             .get(&params.path)

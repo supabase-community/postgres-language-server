@@ -121,7 +121,13 @@ pub(crate) fn fix_file(
     let mut skipped_suggested_fixes = 0;
     let mut converged = false;
     for _ in 0..MAX_PASSES {
-        let doc = Document::open(open.project_key(), open.migration_tool(), code.clone(), 0);
+        let doc = Document::open(
+            open.project_key(),
+            open.settings_version(),
+            open.migration_tool(),
+            code.clone(),
+            0,
+        );
         let diagnostics = lint(&doc);
 
         skipped_suggested_fixes = 0;
