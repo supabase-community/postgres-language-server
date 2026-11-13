@@ -23,7 +23,8 @@ use connection_manager::ConnectionManager;
 #[cfg(feature = "db")]
 use document::TypecheckDiagnosticsMapper;
 use document::{Document, ExecuteStatementMapper};
-use document_cache::CacheKey;
+use document_cache::{CacheBudget, CacheKey};
+pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 use pgls_analyse::{AnalysisFilter, RuleCategories};
@@ -117,6 +118,10 @@ pub struct WorkspaceServer {
     /// Incremented whenever the settings change, see [`CacheKey`].
     settings_version: AtomicU64,
 
+    /// What the caches of the open documents keep together, see
+    /// [`DOCUMENT_CACHE_ENTRIES_MAX`].
+    document_caches: CacheBudget<PgLSPath>,
+
     #[cfg(feature = "db")]
     connection: ConnectionManager,
 
@@ -154,6 +159,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             settings_version: AtomicU64::default(),
+            document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
             connection: ConnectionManager::new(),
             running_statements: RunningStatements::default(),
             #[cfg(test)]
@@ -170,6 +176,7 @@ impl WorkspaceServer {
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             settings_version: AtomicU64::default(),
+            document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
             #[cfg(test)]
             walked_statements: Default::default(),
         }
@@ -186,6 +193,33 @@ impl WorkspaceServer {
         // the new version.
         self.settings_version.fetch_add(1, Ordering::Relaxed);
         handle
+    }
+
+    /// What the caches of the open document at `path` hold, for tests of their memory.
+    #[doc(hidden)]
+    pub fn document_cache_stats(&self, path: &PgLSPath) -> Option<DocumentCacheStats> {
+        let documents = self.documents.read().unwrap();
+        documents.get(path).map(Document::cache_stats)
+    }
+
+    /// Records what the caches of the document at `path` keep after a request, and drops the
+    /// caches of the least recently used other documents to stay within
+    /// [`DOCUMENT_CACHE_ENTRIES_MAX`]. The document of the request is never dropped, so a
+    /// single file larger than the budget stays cached while it is used.
+    fn charge_document_caches(&self, documents: &HashMap<PgLSPath, Document>, path: &PgLSPath) {
+        let Some(doc) = documents.get(path) else {
+            return;
+        };
+        for evicted in self.document_caches.record(path, doc.cache().usage()) {
+            if let Some(doc) = documents.get(&evicted) {
+                tracing::debug!(
+                    "Dropping the caches of {} to keep at most {} cache entries",
+                    evicted.display(),
+                    self.document_caches.max()
+                );
+                doc.cache().clear();
+            }
+        }
     }
 
     /// The database snapshot of the database in `settings`, if it is reachable or a snapshot was
@@ -657,6 +691,7 @@ impl Workspace for WorkspaceServer {
         documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
+        self.document_caches.remove(&params.path);
 
         Ok(())
     }
@@ -776,6 +811,7 @@ impl Workspace for WorkspaceServer {
             invalidate_disabled_reason,
         ));
 
+        self.charge_document_caches(&documents, &params.path);
         Ok(CodeActionsResult { actions })
     }
 
@@ -826,6 +862,8 @@ impl Workspace for WorkspaceServer {
             .ok_or(WorkspaceError::not_found())?;
 
         let stmt = parser.find(params.statement_id.clone(), ExecuteStatementMapper);
+        // Finding the statement parsed the statements before it.
+        self.charge_document_caches(&documents, &params.path);
         // Files can change while the statement runs.
         drop(documents);
 
@@ -1105,6 +1143,7 @@ impl Workspace for WorkspaceServer {
         diagnostics.retain(|d| !suppressions.is_suppressed(d));
         diagnostics.extend(suppression_errors.into_iter().map(SDiagnostic::new));
 
+        self.charge_document_caches(&documents, &params.path);
         info!("Pulled {:?} diagnostic(s)", diagnostics.len());
         Ok(PullDiagnosticsResult {
             diagnostics,
@@ -1204,12 +1243,14 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        Ok(formatting::format_document(
+        let result = formatting::format_document(
             doc,
             &settings.formatter,
             params.range,
             &params.path.as_path().display().to_string(),
-        ))
+        );
+        self.charge_document_caches(&documents, &params.path);
+        Ok(result)
     }
 
     #[cfg(feature = "db")]
@@ -1361,6 +1402,7 @@ impl Workspace for WorkspaceServer {
                     text: stmt.id.content().to_string(),
                 });
 
+                self.charge_document_caches(&documents, &params.path);
                 Ok(CompletionsResult::in_document(items, &stmt))
             }
         }
@@ -1415,6 +1457,7 @@ impl Workspace for WorkspaceServer {
                 })
                 .unwrap_or_default();
 
+                self.charge_document_caches(&documents, &params.path);
                 Ok(OnHoverResult { markdown_blocks })
             }
             None => Ok(OnHoverResult::default()),
@@ -1496,6 +1539,7 @@ impl Workspace for WorkspaceServer {
         }
 
         hints.sort_by_key(|hint| hint.offset);
+        self.charge_document_caches(&documents, &params.path);
         Ok(PullInlayHintsResult { hints })
     }
 
@@ -1575,6 +1619,7 @@ impl Workspace for WorkspaceServer {
             }
             keep
         });
+        self.charge_document_caches(&documents, &params.path);
         Ok(PullSemanticTokensResult { tokens })
     }
 }
