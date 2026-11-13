@@ -4,8 +4,8 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::NodeRef;
 use pgls_query::protobuf::{AExprKind, Node, SubLinkType, Token};
+use pgls_query::{NodeEnum, NodeRef};
 use pgls_query_ext::utils::string_value;
 use pgls_text_size::TextRange;
 
@@ -163,6 +163,21 @@ impl Construct {
 fn lookup(node: NodeRef) -> Option<Lookup> {
     let (name, construct, location) = match node {
         NodeRef::AExpr(expr) => {
+            // `IS [NOT] DISTINCT FROM NULL` with a bare `NULL` is a `NullTest`, which uses no
+            // operator ([`transformAExprDistinct`]).
+            //
+            // [`transformAExprDistinct`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1031
+            if matches!(
+                expr.kind(),
+                AExprKind::AexprDistinct | AExprKind::AexprNotDistinct
+            ) && [&expr.lexpr, &expr.rexpr].into_iter().any(|operand| {
+                matches!(
+                    operand.as_deref().and_then(|operand| operand.node.as_ref()),
+                    Some(NodeEnum::AConst(value)) if value.isnull
+                )
+            }) {
+                return None;
+            }
             // The negated constructs, like `NOT IN`, use the negated operator, like `<>`.
             let negated = matches!(unqualified(&expr.name), Some("<>" | "!~~" | "!~~*" | "!~"));
             let construct = match expr.kind() {
