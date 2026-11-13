@@ -12,7 +12,7 @@ use pgls_query::{
 
 use super::{
     Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
-    scope::{Cte, Level},
+    scope::{Cte, Level, OutputNames},
     span::Tokens,
 };
 use crate::TypeKind;
@@ -100,7 +100,7 @@ impl<'a> Resolver<'a> {
 
     /// Whether bare column names can refer to the output columns of the innermost level, as in
     /// `ORDER BY` and `GROUP BY`.
-    pub fn set_output_names_visible(&mut self, visible: bool) {
+    pub fn set_output_names_visible(&mut self, visible: OutputNames) {
         if let Some(level) = self.levels.last_mut() {
             level.output_names_visible = visible;
         }

@@ -405,6 +405,45 @@ async fn column_references(test_db: PgPool) {
 }
 
 #[pgls_test_utils::db_test]
+async fn group_by_prefers_columns_of_from_to_output_names(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    // In GROUP BY, `id` is the column of FROM rather than the output column `id`, also in
+    // grouping sets. In ORDER BY, it's the output column.
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "select u.name as id from users u group by id, rollup (id) order by id"
+        ),
+        [
+            "users => relation public.users",
+            "u => alias u",
+            "u.name => column public.users.name: text (text)",
+            "id => column public.users.id: bigint (int8)",
+            "id => column public.users.id: bigint (int8)",
+        ]
+    );
+    // Without a column of FROM with its name, it's the output column, before the columns of the
+    // queries around it.
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            "select p.id from posts p where exists \
+             (select u.id as title from users u group by title)"
+        ),
+        [
+            "posts => relation public.posts",
+            "p => alias p",
+            "p.id => column public.posts.id: bigint (int8)",
+            "users => relation public.users",
+            "u => alias u",
+            "u.id => column public.users.id: bigint (int8)",
+        ]
+    );
+}
+
+#[pgls_test_utils::db_test]
 async fn cte_and_subquery_columns(test_db: PgPool) {
     let (catalog, search_path) = catalog(&test_db).await;
     assert_eq!(

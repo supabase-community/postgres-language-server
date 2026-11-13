@@ -13,7 +13,11 @@ use super::{
     with_clause::resolve_with_clause,
 };
 use crate::resolve::column_name::figure_column_name;
-use crate::resolve::{expr::infer_expr, scope::Columns, utils::resolve_expr};
+use crate::resolve::{
+    expr::infer_expr,
+    scope::{Columns, OutputNames},
+    utils::resolve_expr,
+};
 
 #[cfg(test)]
 thread_local! {
@@ -147,7 +151,9 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     for node in n.where_clause.iter().chain(&n.having_clause) {
         resolve_expr(r, node);
     }
-    r.set_output_names_visible(true);
+    // In `GROUP BY`, a column of FROM takes precedence over an output column with its name,
+    // unlike in `ORDER BY` and `DISTINCT ON`.
+    r.set_output_names_visible(OutputNames::AfterColumns);
     for node in &n.group_clause {
         resolve_node(r, node);
         if let Some(expr) = node.node.as_ref()
@@ -156,6 +162,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
             infer_expr(r, expr);
         }
     }
+    r.set_output_names_visible(OutputNames::BeforeColumns);
     for node in &n.sort_clause {
         resolve_node(r, node);
         if let Some(expr) = node.node.as_ref().and_then(|sort| match sort {
@@ -174,7 +181,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
             infer_expr(r, expr);
         }
     }
-    r.set_output_names_visible(false);
+    r.set_output_names_visible(OutputNames::Hidden);
     for node in &n.window_clause {
         resolve_node(r, node);
         if let Some(NodeEnum::WindowDef(window)) = node.node.as_ref() {
