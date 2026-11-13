@@ -2,8 +2,9 @@ use pgls_query::{
     NodeEnum,
     protobuf::{AlterObjectSchemaStmt, ObjectType},
 };
+use pgls_query_ext::utils::qualified_name;
 
-use crate::catalog::{Catalog, names::qualified_name};
+use crate::catalog::Catalog;
 
 /// `ALTER ... SET SCHEMA`. Models [`ExecAlterObjectSchemaStmt`].
 ///
@@ -29,7 +30,7 @@ pub(super) fn apply_alter_object_schema_stmt(
             if let Some(NodeEnum::List(list)) = object
                 && let Some(name) = qualified_name(&list.items)
             {
-                c.move_type(&name, Some(new_schema), None, search_path);
+                c.move_type(name, Some(new_schema), None, search_path);
             }
         }
         ObjectType::ObjectFunction
