@@ -24,6 +24,13 @@ relation. It does not report:
 `ORDER BY` of `UNION`, `INTERSECT` and `EXCEPT`
 - whole-row references, like `select u from public.users u`
 - the parameters of the SQL function the statement is in
+
+A name of an output column, relation, alias or parameter is still reported where Postgres
+resolves it to a column, like `u` in `select u from public.t u` if `t` has a column `u`,
+or `n` in `select u.id as n from public.t u group by n` if `t` has a column `n`: in
+`GROUP BY`, unlike in `ORDER BY`, the columns of `FROM` take precedence over the output
+columns. This needs the columns of the relations from the database.
+
 - the column lists of `INSERT`, `USING (...)` and `ON CONFLICT (...)`, and the targets of
 `UPDATE ... SET`, which can only name columns of one table
 - expressions outside queries, like column definitions, defaults, `CHECK` constraints and

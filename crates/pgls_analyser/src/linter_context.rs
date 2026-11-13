@@ -3,7 +3,7 @@ use std::cell::OnceCell;
 use pgls_analyse::{GroupCategory, RuleCategory, RuleGroup, RuleMetadata};
 use pgls_catalog::{
     Catalog, Session,
-    resolve::{Finding, FunctionContext, Resolution, ResolveParams, resolve},
+    resolve::{Finding, FunctionContext, Reference, Resolution, ResolveParams, resolve},
 };
 
 use pgls_query::protobuf::{RangeVar, ScanToken, Token};
@@ -102,6 +102,16 @@ where
         self.statement.resolution(self.file_context)
     }
 
+    /// The names of the current statement that resolve to exactly one object, see
+    /// [`Resolution::references`].
+    ///
+    /// Returns `None` without a database snapshot. The references are computed on the first
+    /// call, with a resolution of their own, so only the rules that need them pay for them:
+    /// about as much as [`Self::resolution`] again.
+    pub fn references(&self) -> Option<&[Reference]> {
+        self.statement.references(self.file_context)
+    }
+
     /// The findings of the name resolution of the current statement, see [`Self::resolution`].
     pub fn findings(&self) -> impl Iterator<Item = &Finding> {
         self.resolution()
@@ -156,6 +166,7 @@ pub struct StatementContext<'a> {
     sql: Option<&'a str>,
     function: Option<&'a FunctionContext>,
     resolution: OnceCell<Option<Resolution>>,
+    references: OnceCell<Option<Vec<Reference>>>,
     /// The tokens of the statement without its comments, and the comments.
     tokens: OnceCell<Option<(Vec<ScanToken>, Vec<ScanToken>)>>,
 }
@@ -171,6 +182,7 @@ impl<'a> StatementContext<'a> {
             sql,
             function,
             resolution: OnceCell::new(),
+            references: OnceCell::new(),
             tokens: OnceCell::new(),
         }
     }
@@ -191,20 +203,35 @@ impl<'a> StatementContext<'a> {
 
     pub fn resolution(&self, file_context: &AnalysedFileContext) -> Option<&Resolution> {
         self.resolution
-            .get_or_init(|| {
-                if !file_context.catalog().has_base() {
-                    return None;
-                }
-
-                Some(resolve(ResolveParams {
-                    stmt: self.stmt,
-                    catalog: file_context.catalog(),
-                    search_path: file_context.session().search_path(),
-                    function: self.function,
-                    sql: self.sql,
-                    collect_references: false,
-                }))
-            })
+            .get_or_init(|| self.resolve(file_context, false))
             .as_ref()
+    }
+
+    pub fn references(&self, file_context: &AnalysedFileContext) -> Option<&[Reference]> {
+        self.references
+            .get_or_init(|| {
+                self.resolve(file_context, true)
+                    .map(|resolution| resolution.references)
+            })
+            .as_deref()
+    }
+
+    fn resolve(
+        &self,
+        file_context: &AnalysedFileContext,
+        collect_references: bool,
+    ) -> Option<Resolution> {
+        if !file_context.catalog().has_base() {
+            return None;
+        }
+
+        Some(resolve(ResolveParams {
+            stmt: self.stmt,
+            catalog: file_context.catalog(),
+            search_path: file_context.session().search_path(),
+            function: self.function,
+            sql: self.sql,
+            collect_references,
+        }))
     }
 }
