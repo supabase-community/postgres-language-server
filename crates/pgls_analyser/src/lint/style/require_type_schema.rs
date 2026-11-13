@@ -1,28 +1,8 @@
-use std::collections::HashSet;
-
-use crate::utils::statement_nodes;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
+use pgls_catalog::resolve::{LookupKind, SearchPathLookup};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AlterTableType, Node, TypeName};
-use pgls_query::{NodeEnum, NodeRef};
-use pgls_query_ext::utils::string_value;
-
-/// The serial pseudo-types. Postgres recognizes them by their unqualified name in the column
-/// definitions of `CREATE TABLE` and `ALTER TABLE ... ADD COLUMN`, and doesn't look them up
-/// there, so `pg_catalog.serial` is an error. Elsewhere, like in a cast, they are looked up like
-/// any other type name.
-///
-/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L604
-const SERIAL_TYPES: &[&str] = &[
-    "smallserial",
-    "serial2",
-    "serial",
-    "serial4",
-    "bigserial",
-    "serial8",
-];
 
 declare_lint_rule! {
     /// Type names should be schema-qualified.
@@ -68,54 +48,22 @@ declare_lint_rule! {
 
 impl LinterRule for RequireTypeSchema {
     type Options = ();
+    const READS_LOOKUPS: bool = true;
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let tokens = ctx.tokens();
-        let nodes = statement_nodes(ctx.stmt());
-        // The types of the columns that can be serial, by address.
-        let column_types: HashSet<*const TypeName> = nodes
+        let mut lookups: Vec<&SearchPathLookup> = ctx
+            .lookups()
             .iter()
-            .flat_map(|node| {
-                let column_defs: Vec<&Node> = match node {
-                    NodeRef::CreateStmt(create) => create.table_elts.iter().collect(),
-                    NodeRef::AlterTableCmd(cmd) if cmd.subtype() == AlterTableType::AtAddColumn => {
-                        cmd.def.as_deref().into_iter().collect()
-                    }
-                    _ => vec![],
-                };
-                column_defs
-                    .into_iter()
-                    .filter_map(|column_def| match &column_def.node {
-                        Some(NodeEnum::ColumnDef(column_def)) => column_def.type_name.as_ref(),
-                        _ => None,
-                    })
-                    .map(std::ptr::from_ref)
-            })
+            .filter(|lookup| lookup.kind == LookupKind::Type)
             .collect();
-        let mut names: Vec<(&str, i32)> = nodes
+        lookups.sort_by_key(|lookup| lookup.location);
+        lookups
             .into_iter()
-            .filter_map(|node| match node {
-                NodeRef::TypeName(type_name) if !type_name.pct_type => {
-                    match type_name.names.as_slice() {
-                        [name] => {
-                            let name = string_value(name)?;
-                            let is_serial = SERIAL_TYPES.contains(&name)
-                                && column_types.contains(&std::ptr::from_ref(type_name));
-                            (!is_serial).then_some((name, type_name.location))
-                        }
-                        _ => None,
-                    }
-                }
-                _ => None,
-            })
-            .collect();
-        names.sort_by_key(|(_, location)| *location);
-        names
-            .into_iter()
-            .map(|(name, location)| {
+            .map(|lookup| {
+                let name = &lookup.name;
                 LinterDiagnostic::new(
                     rule_category!(),
-                    tokens.and_then(|tokens| tokens.range_at(location)),
+                    lookup.span,
                     markup! {
                         "Type "<Emphasis>{name}</Emphasis>" is not schema-qualified."
                     },

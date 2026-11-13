@@ -3,7 +3,7 @@ use std::cell::OnceCell;
 use pgls_analyse::{GroupCategory, RuleCategory, RuleGroup, RuleMetadata};
 use pgls_catalog::{
     Catalog, Session,
-    resolve::{Finding, FunctionContext, Reference, Resolution, ResolveParams, resolve},
+    resolve::{Finding, FunctionContext, Resolution, ResolveParams, SearchPathLookup, resolve},
 };
 
 use pgls_query::protobuf::{RangeVar, ScanToken, Token};
@@ -102,14 +102,13 @@ where
         self.statement.resolution(self.file_context)
     }
 
-    /// The names of the current statement that resolve to exactly one object, see
-    /// [`Resolution::references`].
+    /// The names of the current statement that Postgres looks up through the search path, see
+    /// [`Resolution::lookups`]. They come from the same resolution as [`Self::resolution`], also
+    /// without a database snapshot.
     ///
-    /// Returns `None` without a database snapshot. The references are computed on the first
-    /// call, with a resolution of their own, so only the rules that need them pay for them:
-    /// about as much as [`Self::resolution`] again.
-    pub fn references(&self) -> Option<&[Reference]> {
-        self.statement.references(self.file_context)
+    /// Empty unless the rule sets [`LinterRule::READS_LOOKUPS`].
+    pub fn lookups(&self) -> &[SearchPathLookup] {
+        self.statement.lookups(self.file_context)
     }
 
     /// The findings of the name resolution of the current statement, see [`Self::resolution`].
@@ -165,8 +164,11 @@ pub struct StatementContext<'a> {
     stmt: &'a pgls_query::NodeEnum,
     sql: Option<&'a str>,
     function: Option<&'a FunctionContext>,
+    /// Whether an enabled rule reads the [`Resolution::lookups`].
+    collect_lookups: bool,
+    /// The name resolution of the statement. `None` if neither a database snapshot nor the
+    /// lookups are there.
     resolution: OnceCell<Option<Resolution>>,
-    references: OnceCell<Option<Vec<Reference>>>,
     /// The tokens of the statement without its comments, and the comments.
     tokens: OnceCell<Option<(Vec<ScanToken>, Vec<ScanToken>)>>,
 }
@@ -176,13 +178,14 @@ impl<'a> StatementContext<'a> {
         stmt: &'a pgls_query::NodeEnum,
         sql: Option<&'a str>,
         function: Option<&'a FunctionContext>,
+        collect_lookups: bool,
     ) -> Self {
         Self {
             stmt,
             sql,
             function,
+            collect_lookups,
             resolution: OnceCell::new(),
-            references: OnceCell::new(),
             tokens: OnceCell::new(),
         }
     }
@@ -201,38 +204,37 @@ impl<'a> StatementContext<'a> {
         Some(StatementTokens::new(sql, tokens, comments))
     }
 
+    /// The name resolution of the statement, `None` without a database snapshot.
     pub fn resolution(&self, file_context: &AnalysedFileContext) -> Option<&Resolution> {
-        self.resolution
-            .get_or_init(|| self.resolve(file_context, false))
-            .as_ref()
-    }
-
-    pub fn references(&self, file_context: &AnalysedFileContext) -> Option<&[Reference]> {
-        self.references
-            .get_or_init(|| {
-                self.resolve(file_context, true)
-                    .map(|resolution| resolution.references)
-            })
-            .as_deref()
-    }
-
-    fn resolve(
-        &self,
-        file_context: &AnalysedFileContext,
-        collect_references: bool,
-    ) -> Option<Resolution> {
         if !file_context.catalog().has_base() {
             return None;
         }
+        self.resolve(file_context)
+    }
 
-        Some(resolve(ResolveParams {
-            stmt: self.stmt,
-            catalog: file_context.catalog(),
-            search_path: file_context.session().search_path(),
-            function: self.function,
-            sql: self.sql,
-            collect_references,
-            collect_lookups: false,
-        }))
+    pub fn lookups(&self, file_context: &AnalysedFileContext) -> &[SearchPathLookup] {
+        self.resolve(file_context)
+            .map_or(&[], |resolution| &resolution.lookups)
+    }
+
+    /// Resolves the statement once for every rule. Without a database snapshot, only the lookups
+    /// are needed, which the resolver records whether or not their objects exist.
+    fn resolve(&self, file_context: &AnalysedFileContext) -> Option<&Resolution> {
+        self.resolution
+            .get_or_init(|| {
+                if !file_context.catalog().has_base() && !self.collect_lookups {
+                    return None;
+                }
+                Some(resolve(ResolveParams {
+                    stmt: self.stmt,
+                    catalog: file_context.catalog(),
+                    search_path: file_context.session().search_path(),
+                    function: self.function,
+                    sql: self.sql,
+                    collect_references: false,
+                    collect_lookups: self.collect_lookups,
+                }))
+            })
+            .as_ref()
     }
 }

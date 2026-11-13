@@ -20,21 +20,22 @@ The rule checks the column references of queries and DML that read from or write
 relation. It does not report:
 
 - queries without relations, like `select 1`
-- references to output columns or their positions in `ORDER BY` and `GROUP BY`, and the
-`ORDER BY` of `UNION`, `INTERSECT` and `EXCEPT`
+- references to output columns or their positions in `ORDER BY`, `GROUP BY` and
+`DISTINCT ON`, and the `ORDER BY` of `UNION`, `INTERSECT` and `EXCEPT`
 - whole-row references, like `select u from public.users u`
 - the parameters of the SQL function the statement is in
+- the column lists of `INSERT`, `USING (...)` and `ON CONFLICT (...)`, the targets of
+`UPDATE ... SET`, and the `WHERE` clauses of `ON CONFLICT (...)` and `COPY FROM`, which
+can only name columns of one table
+- expressions outside queries, like column definitions, defaults, `CHECK` constraints,
+index expressions, and the expressions and actions of `CREATE POLICY` and `CREATE RULE`
 
 A name of an output column, relation, alias or parameter is still reported where Postgres
 resolves it to a column, like `u` in `select u from public.t u` if `t` has a column `u`,
 or `n` in `select u.id as n from public.t u group by n` if `t` has a column `n`: in
 `GROUP BY`, unlike in `ORDER BY`, the columns of `FROM` take precedence over the output
-columns. This needs the columns of the relations from the database.
-
-- the column lists of `INSERT`, `USING (...)` and `ON CONFLICT (...)`, and the targets of
-`UPDATE ... SET`, which can only name columns of one table
-- expressions outside queries, like column definitions, defaults, `CHECK` constraints and
-index expressions
+columns. An output column can only be named on its own, so in `order by lower(n)`, `n` is
+a column. This needs the columns of the relations from the database.
 
 ## Examples
 

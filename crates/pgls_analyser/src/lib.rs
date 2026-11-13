@@ -169,6 +169,7 @@ impl<'a> Analyser<'a> {
                 runs_on_file && runs_typecheck
             })
             .collect();
+        let collect_lookups = rules.iter().any(|rule| rule.reads_lookups);
 
         let walk = WalkParams {
             stmts: &params.stmts,
@@ -188,8 +189,12 @@ impl<'a> Analyser<'a> {
             }
             let typecheck_statement = typecheck && !stmt.has_identifier_parameters;
 
-            let statement =
-                StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
+            let statement = StatementContext::new(
+                root,
+                stmt.sql.as_deref(),
+                stmt.function.as_ref(),
+                collect_lookups,
+            );
             let mut has_typecheck_findings = false;
             let mut has_duplicate_assignments = false;
 

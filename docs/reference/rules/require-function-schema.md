@@ -19,7 +19,8 @@ The rule checks every function call, including aggregates, window functions, `CA
 calls in DDL, like column defaults and index expressions. It doesn't report the SQL syntax
 that Postgres turns into a call of a `pg_catalog` function itself, like `extract(...)`,
 `position(... in ...)`, `substring(... from ...)`, `overlay`, `trim`, `current_date` or
-`coalesce`.
+`coalesce`, and `unnest` with several arguments in `FROM`, which calls `pg_catalog.unnest`
+for each argument.
 
 ## Examples
 

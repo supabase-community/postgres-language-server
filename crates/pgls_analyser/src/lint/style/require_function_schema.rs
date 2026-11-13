@@ -1,11 +1,8 @@
-use crate::utils::statement_nodes;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
+use pgls_catalog::resolve::{LookupKind, SearchPathLookup};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::NodeRef;
-use pgls_query::protobuf::CoercionForm;
-use pgls_query_ext::utils::string_value;
 
 declare_lint_rule! {
     /// Function calls should be schema-qualified.
@@ -23,7 +20,8 @@ declare_lint_rule! {
     /// calls in DDL, like column defaults and index expressions. It doesn't report the SQL syntax
     /// that Postgres turns into a call of a `pg_catalog` function itself, like `extract(...)`,
     /// `position(... in ...)`, `substring(... from ...)`, `overlay`, `trim`, `current_date` or
-    /// `coalesce`.
+    /// `coalesce`, and `unnest` with several arguments in `FROM`, which calls `pg_catalog.unnest`
+    /// for each argument.
     ///
     /// ## Examples
     ///
@@ -50,28 +48,22 @@ declare_lint_rule! {
 
 impl LinterRule for RequireFunctionSchema {
     type Options = ();
+    const READS_LOOKUPS: bool = true;
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let tokens = ctx.tokens();
-        let mut names: Vec<(&str, i32)> = statement_nodes(ctx.stmt())
-            .into_iter()
-            .filter_map(|node| match node {
-                NodeRef::FuncCall(call) if call.funcformat() != CoercionForm::CoerceSqlSyntax => {
-                    match call.funcname.as_slice() {
-                        [name] => Some((string_value(name)?, call.location)),
-                        _ => None,
-                    }
-                }
-                _ => None,
-            })
+        let mut lookups: Vec<&SearchPathLookup> = ctx
+            .lookups()
+            .iter()
+            .filter(|lookup| lookup.kind == LookupKind::Function)
             .collect();
-        names.sort_by_key(|(_, location)| *location);
-        names
+        lookups.sort_by_key(|lookup| lookup.location);
+        lookups
             .into_iter()
-            .map(|(name, location)| {
+            .map(|lookup| {
+                let name = &lookup.name;
                 LinterDiagnostic::new(
                     rule_category!(),
-                    tokens.and_then(|tokens| tokens.range_at(location)),
+                    lookup.span,
                     markup! {
                         "Function "<Emphasis>{name}</Emphasis>" is not schema-qualified."
                     },

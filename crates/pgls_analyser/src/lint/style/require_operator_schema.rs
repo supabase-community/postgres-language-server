@@ -1,16 +1,8 @@
-use crate::fix::StatementTokens;
-use crate::utils::statement_nodes;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
+use pgls_catalog::resolve::{LookupKind, OperatorConstruct, SearchPathLookup};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AExprKind, Node, SubLinkType, Token};
-use pgls_query::{NodeEnum, NodeRef};
-use pgls_query_ext::utils::string_value;
-use pgls_text_size::TextRange;
-
-/// The most tokens of a construct that uses an operator, like `IS NOT DISTINCT FROM`.
-const CONSTRUCT_TOKENS_MAX: usize = 4;
 
 declare_lint_rule! {
     /// Operators should be schema-qualified.
@@ -61,37 +53,41 @@ declare_lint_rule! {
 
 impl LinterRule for RequireOperatorSchema {
     type Options = ();
+    const READS_LOOKUPS: bool = true;
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let tokens = ctx.tokens();
-        let mut lookups: Vec<Lookup> = statement_nodes(ctx.stmt())
-            .into_iter()
-            .filter_map(lookup)
+        let mut lookups: Vec<(&SearchPathLookup, Option<OperatorConstruct>)> = ctx
+            .lookups()
+            .iter()
+            .filter_map(|lookup| match lookup.kind {
+                LookupKind::Operator(construct) => Some((lookup, construct)),
+                _ => None,
+            })
             .collect();
-        lookups.sort_by_key(|lookup| lookup.location);
+        lookups.sort_by_key(|(lookup, _)| lookup.location);
         lookups
             .into_iter()
-            .map(|lookup| {
-                let span = tokens.and_then(|tokens| lookup.span(tokens));
-                let operator = lookup.operator;
-                let diagnostic = match lookup.construct {
+            .map(|(lookup, construct)| {
+                let operator = &lookup.name;
+                let diagnostic = match construct {
                     None => LinterDiagnostic::new(
                         rule_category!(),
-                        span,
+                        lookup.span,
                         markup! {
                             "Operator "<Emphasis>{operator}</Emphasis>" is not schema-qualified."
                         },
                     ),
                     Some(construct) => {
-                        let (noun, operators) = match lookup.second_operator {
-                            None => ("operator", operator.to_owned()),
-                            Some(second) => ("operators", format!("{operator} and {second}")),
+                        let keywords = construct.keywords();
+                        let (noun, operators) = match construct.operators() {
+                            [operator] => ("operator", (*operator).to_owned()),
+                            operators => ("operators", operators.join(" and ")),
                         };
                         LinterDiagnostic::new(
                             rule_category!(),
-                            span,
+                            lookup.span,
                             markup! {
-                                <Emphasis>{construct.name}</Emphasis>" uses the "{noun}" "<Emphasis>{operators}</Emphasis>" without a schema."
+                                <Emphasis>{keywords}</Emphasis>" uses the "{noun}" "<Emphasis>{operators}</Emphasis>" without a schema."
                             },
                         )
                     }
@@ -100,156 +96,19 @@ impl LinterRule for RequireOperatorSchema {
                     None,
                     "Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.",
                 );
-                match lookup.construct {
+                match construct {
                     None => diagnostic.note(markup! {
                         "Specify the schema, e.g. "<Emphasis>"OPERATOR(pg_catalog."{operator}")"</Emphasis>"."
                     }),
-                    Some(construct) => diagnostic.note(markup! {
-                        <Emphasis>{construct.name}</Emphasis>" has no schema-qualified form. Write the comparison with "<Emphasis>"OPERATOR(pg_catalog."{operator}")"</Emphasis>" instead."
-                    }),
+                    Some(construct) => {
+                        let keywords = construct.keywords();
+                        diagnostic.note(markup! {
+                            <Emphasis>{keywords}</Emphasis>" has no schema-qualified form. Write the comparison with "<Emphasis>"OPERATOR(pg_catalog."{operator}")"</Emphasis>" instead."
+                        })
+                    }
                 }
             })
             .collect()
-    }
-}
-
-/// An operator that Postgres looks up through the search path.
-struct Lookup<'a> {
-    operator: &'a str,
-    /// The other operator of `BETWEEN`, which uses `>=` and `<=`.
-    second_operator: Option<&'a str>,
-    /// The SQL construct that uses the operators, if they are not written out.
-    construct: Option<Construct>,
-    location: i32,
-}
-
-impl Lookup<'_> {
-    /// The operator, or the keywords of the construct, e.g. `IS NOT DISTINCT FROM`.
-    fn span(&self, tokens: StatementTokens) -> Option<TextRange> {
-        let start = tokens.at(self.location)?;
-        let Some(construct) = self.construct else {
-            return Some(tokens.range(start));
-        };
-        let mut end = (start..start + CONSTRUCT_TOKENS_MAX)
-            .find(|index| tokens.kind(*index) == Some(construct.last))
-            .unwrap_or(start);
-        if construct.last == Token::Between
-            && matches!(
-                tokens.kind(end + 1),
-                Some(Token::Symmetric | Token::Asymmetric)
-            )
-        {
-            end += 1;
-        }
-        Some(tokens.range(start).cover(tokens.range(end)))
-    }
-}
-
-/// A SQL construct that Postgres turns into operators, like `IN`.
-#[derive(Clone, Copy)]
-struct Construct {
-    name: &'static str,
-    /// The last keyword of the construct, e.g. `FROM` of `IS DISTINCT FROM`.
-    last: Token,
-}
-
-impl Construct {
-    const fn new(name: &'static str, last: Token) -> Self {
-        Self { name, last }
-    }
-}
-
-/// The operator lookup of a node, if Postgres looks up an operator through the search path.
-fn lookup(node: NodeRef) -> Option<Lookup> {
-    let (name, construct, location) = match node {
-        NodeRef::AExpr(expr) => {
-            // `IS [NOT] DISTINCT FROM NULL` with a bare `NULL` is a `NullTest`, which uses no
-            // operator ([`transformAExprDistinct`]).
-            //
-            // [`transformAExprDistinct`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1031
-            if matches!(
-                expr.kind(),
-                AExprKind::AexprDistinct | AExprKind::AexprNotDistinct
-            ) && [&expr.lexpr, &expr.rexpr].into_iter().any(|operand| {
-                matches!(
-                    operand.as_deref().and_then(|operand| operand.node.as_ref()),
-                    Some(NodeEnum::AConst(value)) if value.isnull
-                )
-            }) {
-                return None;
-            }
-            // The negated constructs, like `NOT IN`, use the negated operator, like `<>`.
-            let negated = matches!(unqualified(&expr.name), Some("<>" | "!~~" | "!~~*" | "!~"));
-            let construct = match expr.kind() {
-                AExprKind::AexprOp | AExprKind::AexprOpAny | AExprKind::AexprOpAll => None,
-                AExprKind::AexprIn if negated => Some(Construct::new("NOT IN", Token::InP)),
-                AExprKind::AexprIn => Some(Construct::new("IN", Token::InP)),
-                AExprKind::AexprLike if negated => Some(Construct::new("NOT LIKE", Token::Like)),
-                AExprKind::AexprLike => Some(Construct::new("LIKE", Token::Like)),
-                AExprKind::AexprIlike if negated => Some(Construct::new("NOT ILIKE", Token::Ilike)),
-                AExprKind::AexprIlike => Some(Construct::new("ILIKE", Token::Ilike)),
-                AExprKind::AexprSimilar if negated => {
-                    Some(Construct::new("NOT SIMILAR TO", Token::To))
-                }
-                AExprKind::AexprSimilar => Some(Construct::new("SIMILAR TO", Token::To)),
-                AExprKind::AexprDistinct => Some(Construct::new("IS DISTINCT FROM", Token::From)),
-                AExprKind::AexprNotDistinct => {
-                    Some(Construct::new("IS NOT DISTINCT FROM", Token::From))
-                }
-                AExprKind::AexprNullif => Some(Construct::new("NULLIF", Token::Nullif)),
-                AExprKind::AexprBetween
-                | AExprKind::AexprBetweenSym
-                | AExprKind::AexprNotBetween
-                | AExprKind::AexprNotBetweenSym => {
-                    // The name is the construct, e.g. `NOT BETWEEN`, which compares with `<`
-                    // and `>`.
-                    let name = match expr.kind() {
-                        AExprKind::AexprNotBetween | AExprKind::AexprNotBetweenSym => "NOT BETWEEN",
-                        _ => "BETWEEN",
-                    };
-                    let (operator, second) = match expr.kind() {
-                        AExprKind::AexprNotBetween | AExprKind::AexprNotBetweenSym => ("<", ">"),
-                        _ => (">=", "<="),
-                    };
-                    return Some(Lookup {
-                        operator,
-                        second_operator: Some(second),
-                        construct: Some(Construct::new(name, Token::Between)),
-                        location: expr.location,
-                    });
-                }
-                AExprKind::Undefined => return None,
-            };
-            (unqualified(&expr.name)?, construct, expr.location)
-        }
-        NodeRef::SubLink(sub_link) => match sub_link.sub_link_type() {
-            // `IN (subquery)` has no operator name and compares with `=`.
-            SubLinkType::AnySublink if sub_link.oper_name.is_empty() => (
-                "=",
-                Some(Construct::new("IN", Token::InP)),
-                sub_link.location,
-            ),
-            SubLinkType::AnySublink | SubLinkType::AllSublink => {
-                (unqualified(&sub_link.oper_name)?, None, sub_link.location)
-            }
-            _ => return None,
-        },
-        NodeRef::SortBy(sort_by) => (unqualified(&sort_by.use_op)?, None, sort_by.location),
-        _ => return None,
-    };
-    Some(Lookup {
-        operator: name,
-        second_operator: None,
-        construct,
-        location,
-    })
-}
-
-/// The name of an operator that is not schema-qualified.
-fn unqualified(name: &[Node]) -> Option<&str> {
-    match name {
-        [name] => string_value(name),
-        _ => None,
     }
 }
 
