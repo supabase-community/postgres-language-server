@@ -81,7 +81,7 @@ impl Catalog {
         for (key, entry) in &self.functions {
             match entry {
                 Entry::Defined(overloads) => {
-                    for function in overloads {
+                    for function in overloads.iter() {
                         if function.origin == Origin::File {
                             builder.add_function(key, function);
                         }
@@ -197,6 +197,7 @@ impl Builder {
             schema: index.schema.clone(),
             name: index.name.clone(),
             table_name: index.table.clone(),
+            columns: index.columns.clone(),
         });
     }
 
