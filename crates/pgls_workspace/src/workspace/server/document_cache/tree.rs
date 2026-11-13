@@ -6,7 +6,7 @@ use rustc_hash::FxHashMap;
 use crate::workspace::StatementId;
 
 /// The tree-sitter trees of the statements of a document. They are kept until the statement is
-/// no longer in the document, see [`TreeSitterStore::retain`].
+/// no longer in the document, see [`TreeSitterStore::remove`].
 pub struct TreeSitterStore {
     db: Mutex<FxHashMap<StatementId, Arc<tree_sitter::Tree>>>,
     parser: Mutex<tree_sitter::Parser>,
@@ -39,9 +39,14 @@ impl TreeSitterStore {
         drop(std::mem::take(&mut *self.db.lock()));
     }
 
-    /// Drops the trees of the statements for which `keep` returns `false`.
-    pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
-        super::parse::retain(&mut self.db.lock(), keep);
+    /// Drops the tree of `statement`.
+    pub fn remove(&self, statement: &StatementId) {
+        self.db.lock().remove(statement);
+    }
+
+    /// Shrinks the map if it is less than a quarter full, see [`super::parse::shrink`].
+    pub fn shrink(&self) {
+        super::parse::shrink(&mut self.db.lock());
     }
 
     /// The number of trees that the map has room for.
@@ -50,7 +55,13 @@ impl TreeSitterStore {
         self.db.lock().capacity()
     }
 
-    pub fn get_or_cache_tree(&self, statement: &StatementId) -> Arc<tree_sitter::Tree> {
+    /// The tree of `statement`. It is only cached if `may_insert` returns `true`, see
+    /// [`PgQueryStore::get_or_cache_ast`](super::parse::PgQueryStore::get_or_cache_ast).
+    pub fn get_or_cache_tree(
+        &self,
+        statement: &StatementId,
+        may_insert: impl Fn() -> bool,
+    ) -> Arc<tree_sitter::Tree> {
         // First check cache
         {
             let cache = self.db.lock();
@@ -79,7 +90,9 @@ impl TreeSitterStore {
             if let Some(existing) = cache.get(statement) {
                 return existing.clone();
             }
-            cache.insert(statement.clone(), tree.clone());
+            if may_insert() {
+                cache.insert(statement.clone(), tree.clone());
+            }
         }
 
         tree
@@ -98,12 +111,15 @@ mod tests {
             .collect();
         let fill = || {
             for id in &statements {
-                store.get_or_cache_tree(id);
+                store.get_or_cache_tree(id, || true);
             }
         };
 
         fill();
-        store.retain(|id| *id == statements[0]);
+        for id in &statements[1..] {
+            store.remove(id);
+        }
+        store.shrink();
         assert_eq!(store.len(), 1);
         assert!(store.capacity() < 64, "{}", store.capacity());
 

@@ -16,11 +16,12 @@ mod operator;
 pub use function::select_function;
 pub use operator::select_operator;
 
+use crate::CatalogView;
 use crate::typing::coerce::can_coerce;
+use crate::typing::pseudo::{Polymorphic, PolymorphicIds};
 use crate::typing::types::{base_type, type_category};
 use crate::typing::unify::{check_generic_type_consistency, resolve_polymorphic_result};
 use crate::typing::{CoercionContext, Decision, Type, TypeId};
-use crate::{CatalogView, Lookup};
 
 /// An operator or function with its declared argument types, in the order of the call's
 /// arguments.
@@ -38,7 +39,7 @@ pub(super) struct Candidate<T> {
 /// [`func_match_argtypes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L978
 pub(super) fn match_argtypes<T>(
     c: &dyn CatalogView,
-    pseudo: &Pseudo,
+    pseudo: &PolymorphicIds,
     inputs: &[Type],
     candidates: Vec<Candidate<T>>,
 ) -> Decision<Vec<Candidate<T>>> {
@@ -59,17 +60,19 @@ pub(super) fn match_argtypes<T>(
 /// [`can_coerce_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557
 pub(super) fn can_coerce_args(
     c: &dyn CatalogView,
-    pseudo: &Pseudo,
+    pseudo: &PolymorphicIds,
     inputs: &[Type],
     targets: &[TypeId],
 ) -> Decision<bool> {
     let mut generic = false;
     let mut unknown = false;
     for (input, target) in inputs.iter().zip(targets) {
-        if matches!(input, Type::Named(id) if id == target) || pseudo.any.as_ref() == Some(target) {
+        let polymorphic = pseudo.of(target);
+        if matches!(input, Type::Named(id) if id == target) || polymorphic == Some(Polymorphic::Any)
+        {
             continue;
         }
-        if pseudo.polymorphic.contains(target) {
+        if polymorphic.is_some_and(Polymorphic::is_polymorphic) {
             generic = true;
             continue;
         }
@@ -103,7 +106,7 @@ pub(super) fn can_coerce_args(
 /// [`func_select_candidate`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1063
 pub(super) fn select_candidate<T: Clone>(
     c: &dyn CatalogView,
-    pseudo: &Pseudo,
+    pseudo: &PolymorphicIds,
     inputs: &[Type],
     mut candidates: Vec<Candidate<T>>,
 ) -> Decision<Option<Candidate<T>>> {
@@ -291,57 +294,16 @@ pub(super) fn keep_best<T>(
 /// [`enforce_generic_type_consistency`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2134
 pub(super) fn resolve_result(
     c: &dyn CatalogView,
-    pseudo: &Pseudo,
+    pseudo: &PolymorphicIds,
     inputs: &[Type],
     declared: &[TypeId],
     result: &TypeId,
 ) -> Decision<Option<Type>> {
-    if !pseudo.polymorphic.contains(result)
-        && !declared.iter().any(|d| pseudo.polymorphic.contains(d))
-    {
+    let is_polymorphic = |id| pseudo.of(id).is_some_and(Polymorphic::is_polymorphic);
+    if !is_polymorphic(result) && !declared.iter().any(is_polymorphic) {
         return Decision::Known(Some(Type::Named(result.clone())));
     }
     resolve_polymorphic_result(c, inputs, declared, result)
-}
-
-/// The identities of `"any"` and the polymorphic pseudo-types.
-pub(super) struct Pseudo {
-    any: Option<TypeId>,
-    polymorphic: Vec<TypeId>,
-}
-
-impl Pseudo {
-    fn load(c: &dyn CatalogView) -> Decision<Self> {
-        let lookup = |name: &str| match c.type_(Some("pg_catalog"), name, &[]) {
-            Lookup::Found(info) => Decision::Known(info.id),
-            Lookup::Missing => Decision::Known(None),
-            Lookup::Unknown => Decision::Unknown,
-        };
-        let Decision::Known(any) = lookup("any") else {
-            return Decision::Unknown;
-        };
-        let mut polymorphic = Vec::new();
-        for name in [
-            "anyelement",
-            "anyarray",
-            "anynonarray",
-            "anyenum",
-            "anyrange",
-            "anymultirange",
-            "anycompatible",
-            "anycompatiblearray",
-            "anycompatiblenonarray",
-            "anycompatiblerange",
-            "anycompatiblemultirange",
-        ] {
-            match lookup(name) {
-                Decision::Known(Some(id)) => polymorphic.push(id),
-                Decision::Known(None) => {}
-                Decision::Unknown => return Decision::Unknown,
-            }
-        }
-        Decision::Known(Self { any, polymorphic })
-    }
 }
 
 #[cfg(test)]
