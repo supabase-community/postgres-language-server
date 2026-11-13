@@ -54,7 +54,7 @@ pub fn base_type(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeId> {
 /// [`get_type_category_preferred`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/cache/lsyscache.c#L3012
 /// [`TypeCategory`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2979
 /// [`IsPreferredType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2998
-pub fn type_category(c: &dyn CatalogView, id: &TypeId) -> Decision<(char, bool)> {
+pub(crate) fn type_category(c: &dyn CatalogView, id: &TypeId) -> Decision<(char, bool)> {
     match info(c, id) {
         Decision::Known(t) => match (t.category, t.preferred) {
             (Some(category), Some(preferred)) => Decision::Known((category, preferred)),
@@ -67,7 +67,7 @@ pub fn type_category(c: &dyn CatalogView, id: &TypeId) -> Decision<(char, bool)>
 /// Port of [`type_is_array`]: whether the type has an element type.
 ///
 /// [`type_is_array`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/utils/lsyscache.h#L218
-pub fn is_array(c: &dyn CatalogView, id: &TypeId) -> Decision<bool> {
+pub(crate) fn is_array(c: &dyn CatalogView, id: &TypeId) -> Decision<bool> {
     match info(c, id) {
         Decision::Known(t) => Decision::Known(t.element.is_some()),
         Decision::Unknown => Decision::Unknown,
@@ -77,7 +77,7 @@ pub fn is_array(c: &dyn CatalogView, id: &TypeId) -> Decision<bool> {
 /// Port of [`get_element_type`]: the element type of a true array type.
 ///
 /// [`get_element_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/cache/lsyscache.c#L3061
-pub fn array_element(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<TypeId>> {
+pub(crate) fn array_element(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<TypeId>> {
     match info(c, id) {
         Decision::Known(t) => Decision::Known(t.element),
         Decision::Unknown => Decision::Unknown,
@@ -173,7 +173,7 @@ pub fn format_type(c: &dyn CatalogView, ty: &Type) -> Option<String> {
 }
 
 /// Formats a type using the supplied path to determine whether qualification is needed.
-pub fn format_type_with_search_path(
+pub(crate) fn format_type_with_search_path(
     c: &dyn CatalogView,
     ty: &Type,
     search_path: &[String],

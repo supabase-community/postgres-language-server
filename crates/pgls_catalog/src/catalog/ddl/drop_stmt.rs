@@ -39,6 +39,7 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                     .filter(|key| key.0 != "pg_catalog")
                 {
                     c.drop_table_indexes(&key.0, &key.1);
+                    c.forget_inheritance(&key);
                     c.types.insert(key.clone(), Entry::Dropped);
                     c.relations.insert(key, Entry::Dropped);
                 }

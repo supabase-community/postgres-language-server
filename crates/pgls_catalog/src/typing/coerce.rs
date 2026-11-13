@@ -8,7 +8,7 @@ use crate::typing::{CoercionContext, Decision, Polymorphic, Type, TypeId};
 use crate::{CatalogView, Lookup, TypeKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CoercionPathway {
+pub(crate) enum CoercionPathway {
     RelabelType,
     Func,
     ArrayCoerce,
@@ -19,7 +19,7 @@ pub enum CoercionPathway {
 /// through I/O, or as an array element by element. Port of [`find_coercion_pathway`].
 ///
 /// [`find_coercion_pathway`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L3156
-pub fn find_coercion_pathway(
+pub(crate) fn find_coercion_pathway(
     c: &dyn CatalogView,
     source: &TypeId,
     target: &TypeId,
@@ -115,7 +115,7 @@ fn target_pseudo(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<Polymorphi
 /// [`crate::typing::check_generic_type_consistency`] instead.
 ///
 /// [`can_coerce_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557
-pub fn can_coerce(
+pub(crate) fn can_coerce(
     c: &dyn CatalogView,
     from: &Type,
     to: &TypeId,

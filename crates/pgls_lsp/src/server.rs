@@ -36,6 +36,56 @@ pub struct LSPServer {
 impl RefUnwindSafe for LSPServer {}
 
 impl LSPServer {
+    /// Runs a request handler that works on a document on the blocking thread pool, so that it
+    /// doesn't hold up the runtime that applies the edits. If the document changed meanwhile,
+    /// the request fails with `ContentModified`, which tells the client to ask again.
+    ///
+    /// When the client cancels the request, tower-lsp drops this future, which tells the
+    /// handler to stop through [`pgls_workspace::cancellation`].
+    async fn run_document_request<T: Send + 'static>(
+        &self,
+        uri: &Uri,
+        handler: impl FnOnce(&Session) -> Result<T, crate::diagnostics::LspError> + Send + 'static,
+    ) -> LspResult<T> {
+        /// Cancels the handler when the request is dropped, whether it finished or not.
+        struct CancelOnDrop(Arc<AtomicBool>);
+
+        impl Drop for CancelOnDrop {
+            fn drop(&mut self) {
+                self.0.store(true, Ordering::Relaxed);
+            }
+        }
+
+        let doc = self.session.document(uri).ok();
+        let session = Arc::clone(&self.session);
+        let span = tracing::Span::current();
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let _cancel_on_drop = CancelOnDrop(Arc::clone(&cancelled));
+        let result = spawn_blocking(move || {
+            let _guard = span.entered();
+            pgls_workspace::cancellation::with_cancellation(cancelled, || handler(&session))
+        })
+        .await;
+        let result = match result {
+            Ok(Ok(result)) => result,
+            Ok(Err(err)) => return Err(into_lsp_error(err)),
+            Err(err) => {
+                return Err(match err.try_into_panic() {
+                    Ok(err) => panic_to_lsp_error(err),
+                    Err(err) => into_lsp_error(err),
+                });
+            }
+        };
+        let unchanged = match &doc {
+            Some(doc) => self.session.is_current_document(uri, doc),
+            None => self.session.document(uri).is_err(),
+        };
+        if !unchanged {
+            return Err(jsonrpc::Error::content_modified());
+        }
+        Ok(result)
+    }
+
     fn new(
         session: SessionHandle,
         sessions: Sessions,
@@ -189,21 +239,29 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn hover(&self, params: HoverParams) -> LspResult<Option<Hover>> {
-        match handlers::hover::on_hover(&self.session, params) {
-            Ok(result) => LspResult::Ok(result.map(|contents| Hover {
-                contents,
-                range: None,
-            })),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params
+            .text_document_position_params
+            .text_document
+            .uri
+            .clone();
+        let result = self
+            .run_document_request(&uri, move |session| {
+                handlers::hover::on_hover(session, params)
+            })
+            .await?;
+        Ok(result.map(|contents| Hover {
+            contents,
+            range: None,
+        }))
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn inlay_hint(&self, params: InlayHintParams) -> LspResult<Option<Vec<InlayHint>>> {
-        match handlers::inlay_hints::inlay_hints(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::inlay_hints::inlay_hints(session, params)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -211,10 +269,11 @@ impl LanguageServer for LSPServer {
         &self,
         params: SemanticTokensParams,
     ) -> LspResult<Option<SemanticTokensResult>> {
-        match handlers::semantic_tokens::semantic_tokens_full(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::semantic_tokens::semantic_tokens_full(session, params)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -222,29 +281,32 @@ impl LanguageServer for LSPServer {
         &self,
         params: SemanticTokensRangeParams,
     ) -> LspResult<Option<SemanticTokensRangeResult>> {
-        match handlers::semantic_tokens::semantic_tokens_range(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::semantic_tokens::semantic_tokens_range(session, params)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn completion(&self, params: CompletionParams) -> LspResult<Option<CompletionResponse>> {
-        match handlers::completions::get_completions(&self.session, params) {
-            Ok(result) => LspResult::Ok(Some(result)),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document_position.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::completions::get_completions(session, params).map(Some)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip(self))]
     async fn code_action(&self, params: CodeActionParams) -> LspResult<Option<CodeActionResponse>> {
-        match handlers::code_actions::get_actions(&self.session, params) {
-            Ok(result) => {
-                tracing::trace!("Got {} Code Action(s)", result.len());
-                return LspResult::Ok(Some(result));
-            }
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        let result = self
+            .run_document_request(&uri, move |session| {
+                Ok(handlers::code_actions::get_actions(session, params)?)
+            })
+            .await?;
+        tracing::trace!("Got {} Code Action(s)", result.len());
+        Ok(Some(result))
     }
 
     #[tracing::instrument(level = "trace", skip(self))]
@@ -266,10 +328,11 @@ impl LanguageServer for LSPServer {
         &self,
         params: DocumentFormattingParams,
     ) -> LspResult<Option<Vec<TextEdit>>> {
-        match handlers::formatting::formatting(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::formatting::formatting(session, params)
+        })
+        .await
     }
 
     #[tracing::instrument(level = "trace", skip(self))]
@@ -277,10 +340,11 @@ impl LanguageServer for LSPServer {
         &self,
         params: DocumentRangeFormattingParams,
     ) -> LspResult<Option<Vec<TextEdit>>> {
-        match handlers::formatting::range_formatting(&self.session, params) {
-            Ok(result) => LspResult::Ok(result),
-            Err(e) => LspResult::Err(into_lsp_error(e)),
-        }
+        let uri = params.text_document.uri.clone();
+        self.run_document_request(&uri, move |session| {
+            handlers::formatting::range_formatting(session, params)
+        })
+        .await
     }
 }
 
@@ -560,6 +624,26 @@ mod tests {
                 pgls_path: PgLSPath::new(path),
             })
             .expect("is_path_ignored")
+    }
+
+    /// A result computed for a document is outdated once the document is closed and opened again,
+    /// even with the same version.
+    #[tokio::test]
+    async fn reopened_documents_are_not_current() {
+        let working_directory = tempfile::tempdir().unwrap();
+        let (_service, session, _socket) = session_in(working_directory.path());
+        let url =
+            Uri::from_file_path(working_directory.path().join("document.sql")).expect("a file url");
+
+        session.insert_document(url.clone(), Document::new(1, "select 1;"));
+        let opened = session.document(&url).expect("the document is open");
+        assert!(session.is_current_document(&url, &opened));
+
+        session.remove_document(&url);
+        assert!(!session.is_current_document(&url, &opened));
+
+        session.insert_document(url.clone(), Document::new(1, "select 1;"));
+        assert!(!session.is_current_document(&url, &opened));
     }
 
     /// Clearing an override has to restore the baseline. The configuration file is `{}` and there is
