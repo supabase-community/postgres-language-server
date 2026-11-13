@@ -4,13 +4,12 @@
 use crate::typing::TypeId;
 use crate::{FunctionArgumentMode, FunctionSignature, Generated, Identity};
 use pgls_query::{Node, NodeEnum, protobuf};
-use pgls_query_ext::utils::string_value;
+use pgls_query_ext::utils::{
+    QualifiedName, qualified_name, range_var_name, string_value, type_name,
+};
 use rustc_hash::FxHashSet;
 
-use super::{
-    Catalog, Entry, Key, key,
-    names::{QualifiedName, qualified_name, range_var_name, type_label},
-};
+use super::{Catalog, Entry, Key, key};
 use crate::lookup::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
     RelationKind, TypeInfo,
@@ -33,10 +32,12 @@ impl Catalog {
             .unwrap_or_else(|| "public".into())
     }
 
-    pub(super) fn creation_key(&self, name: &QualifiedName, search_path: &[String]) -> Key {
+    /// Where a new object with `name` is created. A catalog name is ignored, like in
+    /// [`qualified_name`].
+    pub(super) fn creation_key(&self, name: QualifiedName, search_path: &[String]) -> Key {
         (
-            self.creation_schema(name.schema(), search_path),
-            name.name.clone(),
+            self.creation_schema(name.schema, search_path),
+            name.name.to_owned(),
         )
     }
 
@@ -51,9 +52,9 @@ impl Catalog {
     ) -> Option<Key> {
         let name = range_var_name(range_var);
         if range_var.relpersistence == "t" {
-            return Some(key("pg_temp", &name.name));
+            return Some(key("pg_temp", name.name));
         }
-        let key = self.creation_key(&name, search_path);
+        let key = self.creation_key(name, search_path);
         (key.0 != "pg_catalog").then_some(key)
     }
 
@@ -350,7 +351,7 @@ impl Catalog {
         search_path: &[String],
     ) {
         let name = range_var_name(range_var);
-        let index = match self.index(name.schema(), &name.name, search_path) {
+        let index = match self.index(name.schema, name.name, search_path) {
             Lookup::Found(index) => index,
             Lookup::Missing => return,
             Lookup::Unknown => {
@@ -375,7 +376,7 @@ impl Catalog {
 
     pub(super) fn define_type(
         &mut self,
-        name: &QualifiedName,
+        name: QualifiedName,
         attributes: Option<Vec<ColumnInfo>>,
         search_path: &[String],
     ) {
@@ -485,12 +486,12 @@ impl Catalog {
     /// catalogs, which are left as they are.
     pub(super) fn change_type(
         &mut self,
-        name: &QualifiedName,
+        name: QualifiedName,
         search_path: &[String],
         change: impl FnOnce(&Self, &mut TypeInfo),
     ) {
         let Some(mut type_info) = self
-            .type_(name.schema(), &name.name, search_path)
+            .type_(name.schema, name.name, search_path)
             .found()
             .filter(|type_info| type_info.schema != "pg_catalog")
         else {
@@ -505,12 +506,12 @@ impl Catalog {
     /// Moves a type to a new schema or name.
     pub(super) fn move_type(
         &mut self,
-        name: &QualifiedName,
+        name: QualifiedName,
         new_schema: Option<&str>,
         new_name: Option<&str>,
         search_path: &[String],
     ) {
-        let Some(mut type_info) = self.type_(name.schema(), &name.name, search_path).found() else {
+        let Some(mut type_info) = self.type_(name.schema, name.name, search_path).found() else {
             return;
         };
         let old_key = key(&type_info.schema, &type_info.name);
@@ -560,7 +561,7 @@ impl Catalog {
         search_path: &[String],
     ) -> Option<FunctionInfo> {
         let name = qualified_name(&object.objname)?;
-        let key = self.function_key(name.schema(), &name.name, search_path)?;
+        let key = self.function_key(name.schema, name.name, search_path)?;
         let Lookup::Found(mut overloads) = self.functions_in(&key.0, &key.1) else {
             return None;
         };
@@ -654,10 +655,9 @@ impl Catalog {
                     return;
                 };
                 let schema = new_schema
-                    .map(str::to_owned)
                     .or(name.schema)
-                    .unwrap_or_else(|| self.creation_schema(None, search_path));
-                let name = new_name.map_or(name.name, str::to_owned);
+                    .map_or_else(|| self.creation_schema(None, search_path), str::to_owned);
+                let name = new_name.unwrap_or(name.name).to_owned();
                 self.functions.insert((schema, name), Entry::Unknown);
             }
         }
@@ -671,7 +671,7 @@ pub(super) fn column_info(
 ) -> ColumnInfo {
     // Postgres checks for the serial pseudo-types before it looks the name up, and turns them
     // into integer columns. They aren't types, so a lookup wouldn't find them.
-    let (type_name, type_id) = match column.type_name.as_ref() {
+    let (type_label, type_id) = match column.type_name.as_ref() {
         Some(name) => match crate::serial_type(name) {
             Some(serial) => {
                 let integer_type = serial.integer_type();
@@ -681,7 +681,7 @@ pub(super) fn column_info(
                 )
             }
             None => (
-                type_label(name),
+                type_name(name).map(|name| name.name.to_owned()),
                 crate::normalize_type_name(catalog, name, search_path).0,
             ),
         },
@@ -693,7 +693,7 @@ pub(super) fn column_info(
         identity,
         ..ColumnInfo::new(
             column.colname.clone(),
-            type_name,
+            type_label,
             type_id.map(crate::typing::Type::Named),
         )
     }
