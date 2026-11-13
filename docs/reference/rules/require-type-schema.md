@@ -17,8 +17,9 @@ extension scripts, as defence in depth next to setting the `search_path` explici
 The rule checks every type name, like the ones of casts, column definitions, and function
 arguments and results. The types whose names are SQL keywords, like `integer`, `varchar`,
 `timestamp` or `boolean`, always refer to `pg_catalog` and are not reported. Types like
-`text`, `uuid` or `jsonb` are not keywords and are reported. The serial pseudo-types and
-`%TYPE` references are not reported either.
+`text`, `uuid` or `jsonb` are not keywords and are reported. The serial pseudo-types of
+the columns of `CREATE TABLE` and `ALTER TABLE ... ADD COLUMN`, which Postgres doesn't
+look up, and `%TYPE` references are not reported either.
 
 ## Examples
 
