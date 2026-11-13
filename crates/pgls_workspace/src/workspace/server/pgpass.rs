@@ -112,7 +112,7 @@ fn match_field<'a>(entry: &'a [u8], mut token: &[u8]) -> Option<&'a [u8]> {
         };
 
         if byte == b':' && !escaped && token.is_empty() {
-            return Some(&entry[index + 1..]);
+            return entry.get(index + 1..);
         }
         let (&expected, rest) = token.split_first()?;
         if byte != expected {
@@ -127,13 +127,14 @@ fn match_field<'a>(entry: &'a [u8], mut token: &[u8]) -> Option<&'a [u8]> {
 /// The password is the rest of the entry up to an unescaped `:`.
 fn unescape_password(field: &[u8]) -> Vec<u8> {
     let mut password = Vec::with_capacity(field.len());
-    let mut index = 0;
-    while index < field.len() && field[index] != b':' {
-        if field[index] == b'\\' && index + 1 < field.len() {
-            index += 1;
+    let mut bytes = field.iter();
+    while let Some(&byte) = bytes.next() {
+        match byte {
+            b':' => break,
+            // A `\` at the end stays.
+            b'\\' => password.push(bytes.next().copied().unwrap_or(byte)),
+            _ => password.push(byte),
         }
-        password.push(field[index]);
-        index += 1;
     }
     password
 }
@@ -210,6 +211,14 @@ db.example.com:5432:app:alice:second-match
         assert_eq!(
             lookup("*:*:a\\:b:c\\\\d:pass\\:wo\\\\rd\n", &target).as_deref(),
             Some("pass:wo\\rd")
+        );
+    }
+
+    #[test]
+    fn keeps_a_backslash_at_the_end_of_the_password() {
+        assert_eq!(
+            lookup("*:*:*:*:secret\\\n", &TARGET).as_deref(),
+            Some("secret\\")
         );
     }
 

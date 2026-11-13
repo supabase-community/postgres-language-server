@@ -6,13 +6,12 @@ use std::sync::Arc;
 use crate::typing::TypeId;
 use crate::{FunctionArgumentMode, FunctionSignature, Generated, Identity};
 use pgls_query::{Node, NodeEnum, protobuf};
-use pgls_query_ext::utils::string_value;
+use pgls_query_ext::utils::{
+    QualifiedName, qualified_name, range_var_name, string_value, type_name,
+};
 use rustc_hash::FxHashSet;
 
-use super::{
-    Catalog, Entry, Key, key,
-    names::{QualifiedName, qualified_name, range_var_name, type_label},
-};
+use super::{Catalog, Entry, Key, key};
 use crate::lookup::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
     RelationKind, TypeInfo,
@@ -35,10 +34,12 @@ impl Catalog {
             .unwrap_or_else(|| "public".into())
     }
 
-    pub(super) fn creation_key(&self, name: &QualifiedName, search_path: &[String]) -> Key {
+    /// Where a new object with `name` is created. A catalog name is ignored, like in
+    /// [`qualified_name`].
+    pub(super) fn creation_key(&self, name: QualifiedName, search_path: &[String]) -> Key {
         (
-            self.creation_schema(name.schema(), search_path),
-            name.name.clone(),
+            self.creation_schema(name.schema, search_path),
+            name.name.to_owned(),
         )
     }
 
@@ -53,9 +54,9 @@ impl Catalog {
     ) -> Option<Key> {
         let name = range_var_name(range_var);
         if range_var.relpersistence == "t" {
-            return Some(key("pg_temp", &name.name));
+            return Some(key("pg_temp", name.name));
         }
-        let key = self.creation_key(&name, search_path);
+        let key = self.creation_key(name, search_path);
         (key.0 != "pg_catalog").then_some(key)
     }
 
@@ -178,11 +179,7 @@ impl Catalog {
         change: impl Fn(&mut Option<Vec<ColumnInfo>>, bool),
     ) {
         // Column changes of a database table also change its children in the database.
-        let is_database_table = self
-            .base
-            .as_ref()
-            .is_some_and(|base| base.relation(&relation.schema, &relation.name).is_some());
-        if is_database_table {
+        if self.is_database_relation(relation) {
             self.database_columns_changed = true;
         }
 
@@ -213,6 +210,36 @@ impl Catalog {
             keys.push(key);
         }
         keys
+    }
+
+    /// The descendants of a relation that keep a column it drops: the inheritance children
+    /// whose column is also their own or inherited from another parent, and their own
+    /// descendants ([`ATExecDropColumn`]). We don't know which columns those are, so these are
+    /// all children in [`Catalog::children_with_own_columns`] and their descendants.
+    ///
+    /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9419
+    pub(super) fn descendants_keeping_dropped_columns(&self, root: &Key) -> FxHashSet<Key> {
+        self.with_descendants(root.clone())
+            .into_iter()
+            .filter(|child| child != root && self.children_with_own_columns.contains(child))
+            .flat_map(|child| self.with_descendants(child))
+            .collect()
+    }
+
+    /// Removes the inheritance edges of a dropped relation, so that a relation that reuses its
+    /// name doesn't inherit them.
+    pub(super) fn forget_inheritance(&mut self, relation: &Key) {
+        self.children.remove(relation);
+        for children in self.children.values_mut() {
+            children.retain(|child| child != relation);
+        }
+        self.children_with_own_columns.remove(relation);
+    }
+
+    fn is_database_relation(&self, relation: &RelationInfo) -> bool {
+        self.base
+            .as_ref()
+            .is_some_and(|base| base.relation(&relation.schema, &relation.name).is_some())
     }
 
     /// Moves a relation to a new schema or name.
@@ -261,9 +288,18 @@ impl Catalog {
                 }
             }
         }
+        // The inheritance follows the relation.
+        let new_key = key(&relation.schema, &relation.name);
         if let Some(children) = self.children.remove(&old_key) {
-            self.children
-                .insert(key(&relation.schema, &relation.name), children);
+            self.children.insert(new_key.clone(), children);
+        }
+        for children in self.children.values_mut() {
+            for child in children.iter_mut().filter(|child| **child == old_key) {
+                *child = new_key.clone();
+            }
+        }
+        if self.children_with_own_columns.remove(&old_key) {
+            self.children_with_own_columns.insert(new_key);
         }
         // The indexes stay on the table, and in its schema.
         for mut index in self.table_indexes(&old_key.0, &old_key.1) {
@@ -310,6 +346,115 @@ impl Catalog {
         }
     }
 
+    /// Dropping a column drops the indexes that use it, since [`index_create`] makes them depend
+    /// on it, and so does dropping the column from the inheritance children and partitions
+    /// ([`ATExecDropColumn`]). Indexes whose columns we don't know become unknown, and so do the
+    /// indexes of all children in the database, since we don't know which tables they inherit
+    /// from. The indexes of children that may keep the column become unknown too, see
+    /// [`Catalog::descendants_keeping_dropped_columns`]. With `cascade`, Postgres also drops the
+    /// generated columns whose expression uses the column. We don't know which those are, so the
+    /// indexes that use a generated column become unknown. With `may_fail`, Postgres may reject
+    /// or skip the statement, so the indexes that use the column become unknown instead of
+    /// dropped.
+    ///
+    /// [`index_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L1132
+    /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
+    pub(super) fn drop_column_indexes(
+        &mut self,
+        relation: &RelationInfo,
+        column: &str,
+        recurse: bool,
+        cascade: bool,
+        may_fail: bool,
+    ) {
+        let root = key(&relation.schema, &relation.name);
+        let (tables, keeping) = if recurse {
+            (
+                self.with_descendants(root.clone()),
+                self.descendants_keeping_dropped_columns(&root),
+            )
+        } else {
+            (vec![root], FxHashSet::default())
+        };
+        for table in tables {
+            let may_keep = may_fail || keeping.contains(&table);
+            // The columns that CASCADE may drop with the column. `None` if we don't know them.
+            let generated: Option<Vec<String>> = if cascade {
+                self.relation_in(&table.0, &table.1)
+                    .found()
+                    .and_then(|relation| relation.columns)
+                    .map(|columns| {
+                        columns
+                            .into_iter()
+                            .filter(|known| known.generated.is_generated())
+                            .map(|known| known.name)
+                            .collect()
+                    })
+            } else {
+                Some(Vec::new())
+            };
+            for index in self.table_indexes(&table.0, &table.1) {
+                let entry = match (&index.columns, &generated) {
+                    (Some(columns), _) if columns.iter().any(|name| name == column) => {
+                        if may_keep {
+                            Entry::Unknown
+                        } else {
+                            Entry::Dropped
+                        }
+                    }
+                    (Some(columns), Some(generated))
+                        if !columns.iter().any(|name| generated.contains(name)) =>
+                    {
+                        continue;
+                    }
+                    _ => Entry::Unknown,
+                };
+                self.indexes.insert(key(&index.schema, &index.name), entry);
+            }
+        }
+        if recurse && self.is_database_relation(relation) {
+            let children: Vec<Key> = self
+                .base
+                .iter()
+                .flat_map(|base| base.inheritance_children().cloned())
+                .collect();
+            for (schema, table) in children {
+                for index in self.table_indexes(&schema, &table) {
+                    self.indexes
+                        .insert(key(&index.schema, &index.name), Entry::Unknown);
+                }
+            }
+        }
+    }
+
+    /// Renaming a column renames it in the indexes that use it, on the table and on the
+    /// inheritance children and partitions that it is renamed in too ([`renameatt`]).
+    ///
+    /// [`renameatt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L4018
+    pub(super) fn rename_index_column(
+        &mut self,
+        relation: &RelationInfo,
+        old_name: &str,
+        new_name: &str,
+    ) {
+        for (schema, table) in self.with_descendants(key(&relation.schema, &relation.name)) {
+            for mut index in self.table_indexes(&schema, &table) {
+                let Some(columns) = index.columns.as_mut() else {
+                    continue;
+                };
+                if !columns.iter().any(|name| name == old_name) {
+                    continue;
+                }
+                for name in columns.iter_mut().filter(|name| *name == old_name) {
+                    *name = new_name.to_owned();
+                }
+                index.origin = Origin::File;
+                self.indexes
+                    .insert(key(&index.schema, &index.name), Entry::defined(index));
+            }
+        }
+    }
+
     /// Makes an index unknown, unless it is known to be missing: a statement may have renamed or
     /// dropped it.
     pub(super) fn mark_index_unknown(&mut self, schema: &str, name: &str) {
@@ -352,7 +497,7 @@ impl Catalog {
         search_path: &[String],
     ) {
         let name = range_var_name(range_var);
-        let index = match self.index(name.schema(), &name.name, search_path) {
+        let index = match self.index(name.schema, name.name, search_path) {
             Lookup::Found(index) => index,
             Lookup::Missing => return,
             Lookup::Unknown => {
@@ -377,7 +522,7 @@ impl Catalog {
 
     pub(super) fn define_type(
         &mut self,
-        name: &QualifiedName,
+        name: QualifiedName,
         attributes: Option<Vec<ColumnInfo>>,
         search_path: &[String],
     ) {
@@ -487,12 +632,12 @@ impl Catalog {
     /// catalogs, which are left as they are.
     pub(super) fn change_type(
         &mut self,
-        name: &QualifiedName,
+        name: QualifiedName,
         search_path: &[String],
         change: impl FnOnce(&Self, &mut TypeInfo),
     ) {
         let Some(mut type_info) = self
-            .type_(name.schema(), &name.name, search_path)
+            .type_(name.schema, name.name, search_path)
             .found()
             .filter(|type_info| type_info.schema != "pg_catalog")
         else {
@@ -507,12 +652,12 @@ impl Catalog {
     /// Moves a type to a new schema or name.
     pub(super) fn move_type(
         &mut self,
-        name: &QualifiedName,
+        name: QualifiedName,
         new_schema: Option<&str>,
         new_name: Option<&str>,
         search_path: &[String],
     ) {
-        let Some(mut type_info) = self.type_(name.schema(), &name.name, search_path).found() else {
+        let Some(mut type_info) = self.type_(name.schema, name.name, search_path).found() else {
             return;
         };
         let old_key = key(&type_info.schema, &type_info.name);
@@ -562,7 +707,7 @@ impl Catalog {
         search_path: &[String],
     ) -> Option<FunctionInfo> {
         let name = qualified_name(&object.objname)?;
-        let key = self.function_key(name.schema(), &name.name, search_path)?;
+        let key = self.function_key(name.schema, name.name, search_path)?;
         let Lookup::Found(mut overloads) = self.functions_in(&key.0, &key.1) else {
             return None;
         };
@@ -656,10 +801,9 @@ impl Catalog {
                     return;
                 };
                 let schema = new_schema
-                    .map(str::to_owned)
                     .or(name.schema)
-                    .unwrap_or_else(|| self.creation_schema(None, search_path));
-                let name = new_name.map_or(name.name, str::to_owned);
+                    .map_or_else(|| self.creation_schema(None, search_path), str::to_owned);
+                let name = new_name.unwrap_or(name.name).to_owned();
                 self.functions.insert((schema, name), Entry::Unknown);
             }
         }
@@ -673,7 +817,7 @@ pub(super) fn column_info(
 ) -> ColumnInfo {
     // Postgres checks for the serial pseudo-types before it looks the name up, and turns them
     // into integer columns. They aren't types, so a lookup wouldn't find them.
-    let (type_name, type_id) = match column.type_name.as_ref() {
+    let (type_label, type_id) = match column.type_name.as_ref() {
         Some(name) => match crate::serial_type(name) {
             Some(serial) => {
                 let integer_type = serial.integer_type();
@@ -683,7 +827,7 @@ pub(super) fn column_info(
                 )
             }
             None => (
-                type_label(name),
+                type_name(name).map(|name| name.name.to_owned()),
                 crate::normalize_type_name(catalog, name, search_path).0,
             ),
         },
@@ -695,7 +839,7 @@ pub(super) fn column_info(
         identity,
         ..ColumnInfo::new(
             column.colname.clone(),
-            type_name,
+            type_label,
             type_id.map(crate::typing::Type::Named),
         )
     }

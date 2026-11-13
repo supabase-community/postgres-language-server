@@ -1,5 +1,6 @@
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{Arc, LazyLock};
 
+use parking_lot::Mutex;
 use pgls_lexer::convert_to_positional_params;
 use pgls_query_ext::{
     diagnostics::*,
@@ -14,7 +15,7 @@ use crate::workspace::StatementId;
 pub type ParseResult = Result<Arc<pgls_query::NodeEnum>, SyntaxDiagnostic>;
 
 /// The parse results of the statements of a document. They are kept until the statement is
-/// no longer in the document, see [`PgQueryStore::retain`].
+/// no longer in the document, see [`PgQueryStore::remove`].
 pub struct PgQueryStore {
     /// The tree is in an `Arc` of its own, so that the analyser can share it.
     ast_db: Mutex<FxHashMap<StatementId, Arc<ParseResult>>>,
@@ -36,58 +37,92 @@ impl PgQueryStore {
     pub fn cached_embedded_len(&self, statement: &StatementId) -> Option<usize> {
         self.embedded_db
             .lock()
-            .unwrap()
             .get(statement)
             .map(|embedded| embedded.len())
     }
 
     /// The number of statements with a cached parse result.
     pub fn len(&self) -> usize {
-        self.ast_db.lock().unwrap().len()
+        self.ast_db.lock().len()
     }
 
     /// Drops every cached result, and the memory of the maps.
     pub fn clear(&self) {
-        drop(std::mem::take(&mut *self.ast_db.lock().unwrap()));
-        drop(std::mem::take(&mut *self.plpgsql_db.lock().unwrap()));
-        drop(std::mem::take(&mut *self.embedded_db.lock().unwrap()));
+        drop(std::mem::take(&mut *self.ast_db.lock()));
+        drop(std::mem::take(&mut *self.plpgsql_db.lock()));
+        drop(std::mem::take(&mut *self.embedded_db.lock()));
     }
 
-    /// Drops the results of the statements for which `keep` returns `false`.
-    pub fn retain(&self, keep: impl Fn(&StatementId) -> bool) {
-        retain(&mut self.ast_db.lock().unwrap(), &keep);
-        retain(&mut self.plpgsql_db.lock().unwrap(), &keep);
-        retain(&mut self.embedded_db.lock().unwrap(), &keep);
+    /// Drops the results of the top-level statement `statement` and of its embedded statements.
+    /// Returns the ids of the embedded statements, which are cached only if those of
+    /// `statement` are.
+    pub fn remove(&self, statement: &StatementId) -> Vec<StatementId> {
+        debug_assert!(statement.is_root());
+        let embedded: Vec<StatementId> = self
+            .embedded_db
+            .lock()
+            .remove(statement)
+            .iter()
+            .flat_map(|embedded| embedded.iter())
+            .map(|embedded| statement.create_child(&embedded.sql))
+            .collect();
+        let mut asts = self.ast_db.lock();
+        let mut plpgsql = self.plpgsql_db.lock();
+        for id in embedded.iter().chain([statement]) {
+            asts.remove(id);
+            plpgsql.remove(id);
+        }
+        embedded
+    }
+
+    /// Shrinks the maps that are less than a quarter full, see [`shrink`].
+    pub fn shrink(&self) {
+        shrink(&mut self.ast_db.lock());
+        shrink(&mut self.plpgsql_db.lock());
+        shrink(&mut self.embedded_db.lock());
     }
 
     /// The number of entries that the maps have room for.
     #[cfg(test)]
     pub fn capacity(&self) -> usize {
-        self.ast_db.lock().unwrap().capacity()
-            + self.plpgsql_db.lock().unwrap().capacity()
-            + self.embedded_db.lock().unwrap().capacity()
+        self.ast_db.lock().capacity()
+            + self.plpgsql_db.lock().capacity()
+            + self.embedded_db.lock().capacity()
     }
 
     /// The statements embedded in the top-level statement `statement`, in order: the statements
-    /// of the body of a SQL function. Empty if it doesn't parse.
-    pub fn get_or_cache_embedded(&self, statement: &StatementId) -> Arc<[EmbeddedStatement]> {
+    /// of the body of a SQL function. Empty if it doesn't parse. They are only cached if
+    /// `may_insert` returns `true`, see [`get_or_cache_ast`](Self::get_or_cache_ast).
+    pub fn get_or_cache_embedded(
+        &self,
+        statement: &StatementId,
+        may_insert: impl Fn() -> bool,
+    ) -> Arc<[EmbeddedStatement]> {
         debug_assert!(statement.is_root());
-        if let Some(existing) = self.embedded_db.lock().unwrap().get(statement) {
+        if let Some(existing) = self.embedded_db.lock().get(statement) {
             return Arc::clone(existing);
         }
-        let embedded: Arc<[EmbeddedStatement]> = match self.get_or_cache_ast(statement).as_ref() {
-            Ok(ast) => sql_function_body(ast, statement.content()).into(),
-            Err(_) => Arc::default(),
-        };
-        self.embedded_db
-            .lock()
-            .unwrap()
-            .insert(statement.clone(), Arc::clone(&embedded));
+        let embedded: Arc<[EmbeddedStatement]> =
+            match self.get_or_cache_ast(statement, &may_insert).as_ref() {
+                Ok(ast) => sql_function_body(ast, statement.content()).into(),
+                Err(_) => Arc::default(),
+            };
+        let mut cache = self.embedded_db.lock();
+        if may_insert() {
+            cache.insert(statement.clone(), Arc::clone(&embedded));
+        }
         embedded
     }
 
-    pub fn get_or_cache_ast(&self, statement: &StatementId) -> Arc<ParseResult> {
-        let mut cache = self.ast_db.lock().unwrap();
+    /// The tree of `statement`, or why it doesn't parse. It is only cached if `may_insert`
+    /// returns `true`, which is checked while the cache is locked, so that it can't be inserted
+    /// after [`Self::remove`] ran for an edit that `may_insert` doesn't know of yet.
+    pub fn get_or_cache_ast(
+        &self,
+        statement: &StatementId,
+        may_insert: impl Fn() -> bool,
+    ) -> Arc<ParseResult> {
+        let mut cache = self.ast_db.lock();
 
         if let Some(existing) = cache.get(statement) {
             return existing.clone();
@@ -102,15 +137,18 @@ impl PgQueryStore {
                     })
                 }),
         );
-        cache.insert(statement.clone(), r.clone());
+        if may_insert() {
+            cache.insert(statement.clone(), r.clone());
+        }
         r
     }
 
     pub fn get_or_cache_plpgsql_parse(
         &self,
         statement: &StatementId,
+        may_insert: impl Fn() -> bool,
     ) -> Option<Result<(), SyntaxDiagnostic>> {
-        let ast = self.get_or_cache_ast(statement);
+        let ast = self.get_or_cache_ast(statement, &may_insert);
 
         let create_fn = match ast.as_ref().as_deref() {
             Ok(pgls_query::NodeEnum::CreateFunctionStmt(node)) => node,
@@ -123,7 +161,7 @@ impl PgQueryStore {
             return None;
         }
 
-        let mut cache = self.plpgsql_db.lock().unwrap();
+        let mut cache = self.plpgsql_db.lock();
 
         if let Some(existing) = cache.get(statement) {
             return Some(existing.clone());
@@ -142,20 +180,24 @@ impl PgQueryStore {
             })
             .map_err(|e| SyntaxDiagnostic::new(e.to_string(), range));
 
-        cache.insert(statement.clone(), r.clone());
+        if may_insert() {
+            cache.insert(statement.clone(), r.clone());
+        }
 
         Some(r)
     }
 }
 
+#[expect(
+    clippy::unwrap_used,
+    reason = "the pattern is a constant, which `recognises_composite_type_errors` compiles"
+)]
 static COMPOSITE_TYPE_ERROR_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"\\?"([^"\\]+\.[^"\\]+)\\?" is not a known variable"#).unwrap());
 
-/// Keeps the entries of `map` for which `keep` returns `true`. A map that is less than a quarter
-/// full is shrunk, so that a document that got much shorter doesn't keep the memory of the
-/// statements it had.
-pub(super) fn retain<V>(map: &mut FxHashMap<StatementId, V>, keep: impl Fn(&StatementId) -> bool) {
-    map.retain(|id, _| keep(id));
+/// Shrinks `map` if it is less than a quarter full, so that a document that got much shorter
+/// doesn't keep the memory of the statements it had.
+pub(super) fn shrink<V>(map: &mut FxHashMap<StatementId, V>) {
     if map.capacity() > 4 * map.len().max(16) {
         map.shrink_to_fit();
     }
@@ -181,13 +223,16 @@ mod tests {
             .collect();
         let fill = || {
             for id in &statements {
-                store.get_or_cache_embedded(id);
-                store.get_or_cache_plpgsql_parse(id);
+                store.get_or_cache_embedded(id, || true);
+                store.get_or_cache_plpgsql_parse(id, || true);
             }
         };
 
         fill();
-        store.retain(|id| *id == statements[0]);
+        for id in &statements[1..] {
+            store.remove(id);
+        }
+        store.shrink();
         assert_eq!(store.len(), 1);
         assert!(store.capacity() < 3 * 64, "{}", store.capacity());
 
@@ -209,7 +254,7 @@ mod tests {
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_ast(&StatementId::new(input));
+        let res = store.get_or_cache_ast(&StatementId::new(input), || true);
 
         assert!(res.is_ok());
     }
@@ -231,7 +276,7 @@ CROSS JOIN :raw_data.migration_infos;
 
         let store = PgQueryStore::new();
         for input in cases {
-            let result = store.get_or_cache_ast(&StatementId::new(input));
+            let result = store.get_or_cache_ast(&StatementId::new(input), || true);
             assert!(result.is_ok(), "failed to parse {input:?}: {result:?}");
         }
     }
@@ -244,7 +289,7 @@ CROSS JOIN :raw_data.migration_infos;
         assert_eq!(normalized, input);
 
         let store = PgQueryStore::new();
-        let result = store.get_or_cache_ast(&StatementId::new(input));
+        let result = store.get_or_cache_ast(&StatementId::new(input), || true);
         assert!(result.is_ok(), "failed to parse {input:?}: {result:?}");
     }
 
@@ -267,7 +312,7 @@ $$;
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(matches!(res, Some(Err(_))));
     }
@@ -286,7 +331,8 @@ $$;
             ),
         ] {
             let store = PgQueryStore::new();
-            let Some(Err(diagnostic)) = store.get_or_cache_plpgsql_parse(&StatementId::new(input))
+            let Some(Err(diagnostic)) =
+                store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true)
             else {
                 panic!("expected a syntax error for {input}");
             };
@@ -320,7 +366,7 @@ $$;
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(matches!(res, Some(Ok(_))));
     }
@@ -338,7 +384,7 @@ CREATE FUNCTION add_numbers(a integer, b integer)
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(res.is_none());
     }
@@ -349,7 +395,7 @@ CREATE FUNCTION add_numbers(a integer, b integer)
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(res.is_none());
     }
@@ -371,11 +417,11 @@ $$;
         let statement_id = StatementId::new(input);
 
         // First call should parse
-        let res1 = store.get_or_cache_plpgsql_parse(&statement_id);
+        let res1 = store.get_or_cache_plpgsql_parse(&statement_id, || true);
         assert!(matches!(res1, Some(Ok(_))));
 
         // Second call should return cached result
-        let res2 = store.get_or_cache_plpgsql_parse(&statement_id);
+        let res2 = store.get_or_cache_plpgsql_parse(&statement_id, || true);
         assert!(matches!(res2, Some(Ok(_))));
     }
 
@@ -406,7 +452,7 @@ $$;
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(matches!(res, Some(Ok(_))));
     }
@@ -417,8 +463,32 @@ $$;
 
         let store = PgQueryStore::new();
 
-        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(res.is_none());
+    }
+
+    #[test]
+    fn recognises_composite_type_errors() {
+        assert!(is_composite_type_error(
+            r#""v_row.id" is not a known variable"#
+        ));
+        assert!(!is_composite_type_error(
+            r#""v_id" is not a known variable"#
+        ));
+    }
+
+    #[test]
+    fn a_panic_while_the_cache_is_locked_does_not_break_it() {
+        let store = PgQueryStore::new();
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _cache = store.ast_db.lock();
+            panic!("a request panicked while it held the cache");
+        }));
+        assert!(panicked.is_err());
+
+        let res = store.get_or_cache_ast(&StatementId::new("select 1;"), || true);
+
+        assert!(res.is_ok());
     }
 }
