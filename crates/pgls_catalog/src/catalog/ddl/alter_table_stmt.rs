@@ -3,13 +3,9 @@ use pgls_query::{
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, DropBehavior, ObjectType},
 };
 use pgls_query_ext::options::find_def_elem;
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def, range_var_name, type_name};
 
-use crate::catalog::{
-    Catalog, Key, key,
-    names::{range_var_name, type_label},
-    overlay::column_info,
-};
+use crate::catalog::{Catalog, Key, key, overlay::column_info};
 use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};
 use crate::{Generated, Identity};
 
@@ -29,7 +25,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     let commands: Vec<&AlterTableCmd> = alter_table_cmds(n).collect();
 
     if n.objtype() == ObjectType::ObjectType {
-        c.change_type(&range_var_name(range_var), search_path, |c, type_info| {
+        c.change_type(range_var_name(range_var), search_path, |c, type_info| {
             if let Some(attributes) = type_info.attributes.as_mut() {
                 for command in &commands {
                     apply_column_change(c, attributes, command, search_path, IdentityChange::Apply);
@@ -442,7 +438,11 @@ fn apply_column_change(
                     .iter_mut()
                     .find(|column| column.name == command.name),
             ) {
-                column.type_name = definition.type_name.as_ref().and_then(type_label);
+                column.type_name = definition
+                    .type_name
+                    .as_ref()
+                    .and_then(type_name)
+                    .map(|name| name.name.to_owned());
                 column.ty = definition
                     .type_name
                     .as_ref()

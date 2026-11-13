@@ -81,7 +81,7 @@ impl Catalog {
         for (key, entry) in &self.functions {
             match entry {
                 Entry::Defined(overloads) => {
-                    for function in overloads {
+                    for function in overloads.iter() {
                         if function.origin == Origin::File {
                             builder.add_function(key, function);
                         }
@@ -109,18 +109,6 @@ impl Catalog {
         }
 
         Some(Arc::new(builder.snapshot))
-    }
-}
-
-fn type_kind_code(kind: TypeKind) -> char {
-    match kind {
-        TypeKind::Base => 'b',
-        TypeKind::Composite => 'c',
-        TypeKind::Domain => 'd',
-        TypeKind::Enum => 'e',
-        TypeKind::Pseudo => 'p',
-        TypeKind::Range => 'r',
-        TypeKind::Multirange => 'm',
     }
 }
 
@@ -375,7 +363,7 @@ impl Builder {
         };
         type_.typtype = info
             .kind
-            .map(type_kind_code)
+            .map(TypeKind::typtype)
             .unwrap_or_default()
             .to_string();
         type_.typcategory = info.category.map(|c| c.to_string()).unwrap_or_default();
