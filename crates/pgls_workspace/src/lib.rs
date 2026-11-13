@@ -1,3 +1,8 @@
+// The workspace handles data from the client, the database, the file system and config files, so
+// a panic on unexpected input fails the request, or takes down the server for every connected
+// editor.
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use std::ops::{Deref, DerefMut};
 
 use pgls_console::Console;

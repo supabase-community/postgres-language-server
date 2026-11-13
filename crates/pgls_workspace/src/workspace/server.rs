@@ -3,7 +3,7 @@ use std::{
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
     sync::{
-        Arc, Mutex, RwLock,
+        Arc,
         atomic::{AtomicU64, Ordering},
     },
 };
@@ -28,6 +28,7 @@ use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
+use parking_lot::{Mutex, RwLock};
 use pgls_analyse::AnalysisFilter;
 use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
@@ -201,13 +202,13 @@ impl WorkspaceServer {
     /// What the caches of the open document at `path` hold, for tests of their memory.
     #[doc(hidden)]
     pub fn document_cache_stats(&self, path: &PgLSPath) -> Option<DocumentCacheStats> {
-        let documents = self.documents.read().unwrap();
+        let documents = self.documents.read();
         documents.get(path).map(|doc| doc.cache_stats())
     }
 
     /// The open document at `path`. The lock of the documents is only held to look it up.
     fn document(&self, path: &PgLSPath) -> Result<Arc<Document>, WorkspaceError> {
-        let documents = self.documents.read().unwrap();
+        let documents = self.documents.read();
         documents
             .get(path)
             .cloned()
@@ -227,7 +228,7 @@ impl WorkspaceServer {
     /// Whether `doc` is no longer the content of the document at `path`, e.g. because the client
     /// changed it while a request was running.
     pub(super) fn is_outdated(&self, path: &PgLSPath, doc: &Document) -> bool {
-        let documents = self.documents.read().unwrap();
+        let documents = self.documents.read();
         documents
             .get(path)
             .is_none_or(|current| current.generation() != doc.generation())
@@ -242,7 +243,7 @@ impl WorkspaceServer {
         if evicted.is_empty() {
             return;
         }
-        let documents = self.documents.read().unwrap();
+        let documents = self.documents.read();
         for evicted in evicted {
             if let Some(doc) = documents.get(&evicted) {
                 tracing::debug!(
@@ -740,7 +741,7 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        let mut documents = self.documents.write().unwrap();
+        let mut documents = self.documents.write();
         documents
             .entry(params.path.clone())
             .or_insert_with(|| Arc::new(Document::new(params.content, params.version)));
@@ -751,7 +752,7 @@ impl Workspace for WorkspaceServer {
     /// Remove a file from the workspace
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
-        let mut documents = self.documents.write().unwrap();
+        let mut documents = self.documents.write();
         documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
@@ -767,7 +768,7 @@ impl Workspace for WorkspaceServer {
     ), err)]
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        let mut documents = self.documents.write().unwrap();
+        let mut documents = self.documents.write();
 
         let stale = match documents.entry(params.path.clone()) {
             // A request that still works on the previous version keeps it. The copy shares the
@@ -923,15 +924,12 @@ impl Workspace for WorkspaceServer {
         self.charge_document_caches(&params.path, doc);
         // Files can change while the statement runs, so don't keep the version it is in.
         drop(document);
-
-        if stmt.is_none() {
+        let Some((_id, range, content, ast)) = stmt else {
             return Ok(ExecuteStatementResult {
                 message: "Statement was not found in document.".into(),
                 ..Default::default()
             });
         };
-
-        let (_id, range, content, ast) = stmt.unwrap();
 
         let Some(ast) = ast else {
             return Ok(ExecuteStatementResult {
@@ -1374,7 +1372,11 @@ impl Workspace for WorkspaceServer {
                 .collect();
             checks
                 .into_iter()
-                .map(|check| check.join().expect("a connection check panicked"))
+                .map(|check| {
+                    check.join().unwrap_or_else(|_| {
+                        Some(Err(WorkspaceError::runtime("A connection check panicked.")))
+                    })
+                })
                 .collect()
         });
 
@@ -1715,6 +1717,8 @@ fn database_span(span: Option<TextRange>, statement: &str, range: TextRange) -> 
     .map_or(range, |span| span + range.start())
 }
 
-#[cfg(all(test, feature = "db"))]
+// Two attributes, because clippy only exempts tests from the panic lints under a plain `cfg(test)`.
+#[cfg(test)]
+#[cfg(feature = "db")]
 #[path = "server.tests.rs"]
 mod tests;

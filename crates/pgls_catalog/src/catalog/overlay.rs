@@ -179,11 +179,7 @@ impl Catalog {
         change: impl Fn(&mut Option<Vec<ColumnInfo>>, bool),
     ) {
         // Column changes of a database table also change its children in the database.
-        let is_database_table = self
-            .base
-            .as_ref()
-            .is_some_and(|base| base.relation(&relation.schema, &relation.name).is_some());
-        if is_database_table {
+        if self.is_database_relation(relation) {
             self.database_columns_changed = true;
         }
 
@@ -214,6 +210,36 @@ impl Catalog {
             keys.push(key);
         }
         keys
+    }
+
+    /// The descendants of a relation that keep a column it drops: the inheritance children
+    /// whose column is also their own or inherited from another parent, and their own
+    /// descendants ([`ATExecDropColumn`]). We don't know which columns those are, so these are
+    /// all children in [`Catalog::children_with_own_columns`] and their descendants.
+    ///
+    /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9419
+    pub(super) fn descendants_keeping_dropped_columns(&self, root: &Key) -> FxHashSet<Key> {
+        self.with_descendants(root.clone())
+            .into_iter()
+            .filter(|child| child != root && self.children_with_own_columns.contains(child))
+            .flat_map(|child| self.with_descendants(child))
+            .collect()
+    }
+
+    /// Removes the inheritance edges of a dropped relation, so that a relation that reuses its
+    /// name doesn't inherit them.
+    pub(super) fn forget_inheritance(&mut self, relation: &Key) {
+        self.children.remove(relation);
+        for children in self.children.values_mut() {
+            children.retain(|child| child != relation);
+        }
+        self.children_with_own_columns.remove(relation);
+    }
+
+    fn is_database_relation(&self, relation: &RelationInfo) -> bool {
+        self.base
+            .as_ref()
+            .is_some_and(|base| base.relation(&relation.schema, &relation.name).is_some())
     }
 
     /// Moves a relation to a new schema or name.
@@ -262,9 +288,18 @@ impl Catalog {
                 }
             }
         }
+        // The inheritance follows the relation.
+        let new_key = key(&relation.schema, &relation.name);
         if let Some(children) = self.children.remove(&old_key) {
-            self.children
-                .insert(key(&relation.schema, &relation.name), children);
+            self.children.insert(new_key.clone(), children);
+        }
+        for children in self.children.values_mut() {
+            for child in children.iter_mut().filter(|child| **child == old_key) {
+                *child = new_key.clone();
+            }
+        }
+        if self.children_with_own_columns.remove(&old_key) {
+            self.children_with_own_columns.insert(new_key);
         }
         // The indexes stay on the table, and in its schema.
         for mut index in self.table_indexes(&old_key.0, &old_key.1) {
@@ -308,6 +343,115 @@ impl Catalog {
         for index in self.table_indexes(schema, table) {
             self.indexes
                 .insert(key(&index.schema, &index.name), Entry::Dropped);
+        }
+    }
+
+    /// Dropping a column drops the indexes that use it, since [`index_create`] makes them depend
+    /// on it, and so does dropping the column from the inheritance children and partitions
+    /// ([`ATExecDropColumn`]). Indexes whose columns we don't know become unknown, and so do the
+    /// indexes of all children in the database, since we don't know which tables they inherit
+    /// from. The indexes of children that may keep the column become unknown too, see
+    /// [`Catalog::descendants_keeping_dropped_columns`]. With `cascade`, Postgres also drops the
+    /// generated columns whose expression uses the column. We don't know which those are, so the
+    /// indexes that use a generated column become unknown. With `may_fail`, Postgres may reject
+    /// or skip the statement, so the indexes that use the column become unknown instead of
+    /// dropped.
+    ///
+    /// [`index_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L1132
+    /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
+    pub(super) fn drop_column_indexes(
+        &mut self,
+        relation: &RelationInfo,
+        column: &str,
+        recurse: bool,
+        cascade: bool,
+        may_fail: bool,
+    ) {
+        let root = key(&relation.schema, &relation.name);
+        let (tables, keeping) = if recurse {
+            (
+                self.with_descendants(root.clone()),
+                self.descendants_keeping_dropped_columns(&root),
+            )
+        } else {
+            (vec![root], FxHashSet::default())
+        };
+        for table in tables {
+            let may_keep = may_fail || keeping.contains(&table);
+            // The columns that CASCADE may drop with the column. `None` if we don't know them.
+            let generated: Option<Vec<String>> = if cascade {
+                self.relation_in(&table.0, &table.1)
+                    .found()
+                    .and_then(|relation| relation.columns)
+                    .map(|columns| {
+                        columns
+                            .into_iter()
+                            .filter(|known| known.generated.is_generated())
+                            .map(|known| known.name)
+                            .collect()
+                    })
+            } else {
+                Some(Vec::new())
+            };
+            for index in self.table_indexes(&table.0, &table.1) {
+                let entry = match (&index.columns, &generated) {
+                    (Some(columns), _) if columns.iter().any(|name| name == column) => {
+                        if may_keep {
+                            Entry::Unknown
+                        } else {
+                            Entry::Dropped
+                        }
+                    }
+                    (Some(columns), Some(generated))
+                        if !columns.iter().any(|name| generated.contains(name)) =>
+                    {
+                        continue;
+                    }
+                    _ => Entry::Unknown,
+                };
+                self.indexes.insert(key(&index.schema, &index.name), entry);
+            }
+        }
+        if recurse && self.is_database_relation(relation) {
+            let children: Vec<Key> = self
+                .base
+                .iter()
+                .flat_map(|base| base.inheritance_children().cloned())
+                .collect();
+            for (schema, table) in children {
+                for index in self.table_indexes(&schema, &table) {
+                    self.indexes
+                        .insert(key(&index.schema, &index.name), Entry::Unknown);
+                }
+            }
+        }
+    }
+
+    /// Renaming a column renames it in the indexes that use it, on the table and on the
+    /// inheritance children and partitions that it is renamed in too ([`renameatt`]).
+    ///
+    /// [`renameatt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L4018
+    pub(super) fn rename_index_column(
+        &mut self,
+        relation: &RelationInfo,
+        old_name: &str,
+        new_name: &str,
+    ) {
+        for (schema, table) in self.with_descendants(key(&relation.schema, &relation.name)) {
+            for mut index in self.table_indexes(&schema, &table) {
+                let Some(columns) = index.columns.as_mut() else {
+                    continue;
+                };
+                if !columns.iter().any(|name| name == old_name) {
+                    continue;
+                }
+                for name in columns.iter_mut().filter(|name| *name == old_name) {
+                    *name = new_name.to_owned();
+                }
+                index.origin = Origin::File;
+                self.indexes
+                    .insert(key(&index.schema, &index.name), Entry::defined(index));
+            }
         }
     }
 
