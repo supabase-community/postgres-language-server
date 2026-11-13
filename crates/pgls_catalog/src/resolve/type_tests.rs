@@ -124,6 +124,27 @@ async fn infers_query_output_types(test_db: PgPool) {
 }
 
 #[pgls_test_utils::db_test]
+async fn infers_fields_of_a_composite_without_its_kind(test_db: PgPool) {
+    // `typtype` is optional in a snapshot's JSON; the attributes still give the fields.
+    sqlx::raw_sql("create type pair as (a integer, b text); create table items (p pair);")
+        .execute(&test_db)
+        .await
+        .unwrap();
+    let mut snapshot = Snapshot::load(&test_db).await.unwrap();
+    let pair = snapshot
+        .types
+        .iter_mut()
+        .find(|ty| ty.schema == "public" && ty.name == "pair")
+        .expect("the composite type pair");
+    pair.typtype = String::new();
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    assert_eq!(
+        output_types(&mut catalog, "", "select (p).a from items"),
+        [Some("integer".into())]
+    );
+}
+
+#[pgls_test_utils::db_test]
 async fn infers_length_result_type(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));

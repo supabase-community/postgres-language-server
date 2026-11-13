@@ -59,19 +59,24 @@ pub(super) fn row_columns(r: &Resolver<'_>, ty: &Type) -> Option<Option<Vec<Type
         Type::Named(id) => id,
         Type::UnknownLiteral => return None,
     };
-    let Decision::Known(id) = base_type(r.catalog, id) else {
-        return None;
-    };
-    let info = r.catalog.type_by_id(&id).found()?;
-    match info.kind? {
-        TypeKind::Composite => Some(Some(
+    let mut info = r.catalog.type_by_id(id).found()?;
+    if info.kind == Some(TypeKind::Domain) {
+        let Decision::Known(base) = base_type(r.catalog, id) else {
+            return None;
+        };
+        info = r.catalog.type_by_id(&base).found()?;
+    }
+    match info.kind {
+        // A snapshot may lack the kind (`typtype` is optional in its JSON); the attributes
+        // alone still give the columns of a composite type.
+        Some(TypeKind::Composite) | None => Some(Some(
             info.attributes?
                 .into_iter()
                 .map(TypedColumn::from)
                 .collect(),
         )),
-        TypeKind::Pseudo => None,
-        _ => Some(None),
+        Some(TypeKind::Pseudo) => None,
+        Some(_) => Some(None),
     }
 }
 
