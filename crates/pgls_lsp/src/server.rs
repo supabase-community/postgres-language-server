@@ -56,7 +56,7 @@ impl LSPServer {
             }
         }
 
-        let revision = self.session.document(uri).ok().map(|doc| doc.revision);
+        let doc = self.session.document(uri).ok();
         let session = Arc::clone(&self.session);
         let span = tracing::Span::current();
         let cancelled = Arc::new(AtomicBool::new(false));
@@ -76,7 +76,11 @@ impl LSPServer {
                 });
             }
         };
-        if self.session.document(uri).ok().map(|doc| doc.revision) != revision {
+        let unchanged = match &doc {
+            Some(doc) => self.session.is_current_document(uri, doc),
+            None => self.session.document(uri).is_err(),
+        };
+        if !unchanged {
             return Err(jsonrpc::Error::content_modified());
         }
         Ok(result)
@@ -620,6 +624,26 @@ mod tests {
                 pgls_path: PgLSPath::new(path),
             })
             .expect("is_path_ignored")
+    }
+
+    /// A result computed for a document is outdated once the document is closed and opened again,
+    /// even with the same version.
+    #[tokio::test]
+    async fn reopened_documents_are_not_current() {
+        let working_directory = tempfile::tempdir().unwrap();
+        let (_service, session, _socket) = session_in(working_directory.path());
+        let url =
+            Uri::from_file_path(working_directory.path().join("document.sql")).expect("a file url");
+
+        session.insert_document(url.clone(), Document::new(1, "select 1;"));
+        let opened = session.document(&url).expect("the document is open");
+        assert!(session.is_current_document(&url, &opened));
+
+        session.remove_document(&url);
+        assert!(!session.is_current_document(&url, &opened));
+
+        session.insert_document(url.clone(), Document::new(1, "select 1;"));
+        assert!(!session.is_current_document(&url, &opened));
     }
 
     /// Clearing an override has to restore the baseline. The configuration file is `{}` and there is
