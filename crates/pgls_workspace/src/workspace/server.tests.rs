@@ -5864,6 +5864,264 @@ async fn walks_from_checkpoints_match_full_walks(test_db: PgPool) {
     }
 }
 
+/// A request keeps working on the version of the document it started with, while an edit
+/// replaces it. A walk of the outdated version stops and leaves nothing in the shared cache.
+#[pgls_test_utils::db_test]
+async fn test_editor_requests_use_document_snapshots(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "create table items (id int);\nselect id from items;\n".repeat(100);
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let settings = workspace.workspaces();
+    let settings = settings.settings_for(project_key, path.as_path());
+    let snapshot = workspace
+        .database_snapshot(settings.unwrap())
+        .expect("a database snapshot");
+    let outdated = workspace.document(&path).expect("an open document");
+    let request = workspace.editor_request(project_key, &path, settings, snapshot, &outdated);
+
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: path.clone(),
+            version: 2,
+            content: format!("{content}select 1;\n"),
+        })
+        .expect("Unable to change test file");
+    assert_eq!(outdated.get_document_content(), content);
+
+    let everything = TextRange::up_to(TextSize::of(content.as_str()));
+    assert!(
+        workspace
+            .resolved_statements(&request, &outdated, everything)
+            .is_empty()
+    );
+    let stats = workspace.document_cache_stats(&path).unwrap();
+    assert_eq!(
+        (stats.resolved_statements, stats.walk_checkpoints),
+        (0, 0),
+        "{stats:?}"
+    );
+    let current = workspace.document(&path).expect("an open document");
+    assert_eq!(
+        workspace
+            .resolved_statements(&request, &current, everything)
+            .len(),
+        200
+    );
+}
+
+/// A cancelled request stops walking, and the next one gets everything.
+#[pgls_test_utils::db_test]
+async fn test_cancelled_requests_stop_walking(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "create table items (id int);\nselect id from items;\n".repeat(100),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let tokens = || {
+        workspace
+            .pull_semantic_tokens(PullSemanticTokensParams {
+                project_key,
+                path: path.clone(),
+                range: None,
+            })
+            .expect("Unable to pull semantic tokens")
+            .tokens
+            .len()
+    };
+    let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    assert_eq!(crate::cancellation::with_cancellation(cancelled, tokens), 0);
+    assert_eq!(tokens(), 300);
+}
+
+/// Cancelled diagnostics and code actions stop analysing the document.
+#[tokio::test]
+async fn test_cancelled_analysis_stops() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "alter table items drop column name;\n".repeat(200);
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let diagnostics = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 1_000,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .len()
+    };
+    let cancelled = || Arc::new(std::sync::atomic::AtomicBool::new(true));
+    assert_eq!(
+        crate::cancellation::with_cancellation(cancelled(), diagnostics),
+        0
+    );
+    assert!(diagnostics() >= 200);
+
+    let last = TextSize::of(content.as_str()) - TextSize::from(10);
+    let actions = || {
+        workspace
+            .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+                project_key,
+                path: path.clone(),
+                cursor_position: last,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull code actions")
+            .actions
+            .into_iter()
+            .filter(|action| matches!(&action.kind, CodeActionKind::Edit(_)))
+            .count()
+    };
+    // The analysis of the diagnostics is cached, so the code actions don't analyse again.
+    assert!(crate::cancellation::with_cancellation(cancelled(), actions) > 0);
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: path.clone(),
+            version: 2,
+            content: format!("{content}select 1;\n"),
+        })
+        .expect("Unable to change test file");
+    assert_eq!(
+        crate::cancellation::with_cancellation(cancelled(), actions),
+        0
+    );
+    assert!(actions() > 0);
+}
+
+/// An edit while the diagnostics of the previous version are computed doesn't wait for them.
+/// The analysis checks whether the document changed, which needs the documents, so an edit that
+/// waited for the analysis while it holds the documents would never finish.
+#[test]
+fn test_edit_during_analysis_does_not_wait_for_it() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let workspace = Arc::new(workspace);
+    let diagnostics = move |workspace: &WorkspaceServer, path: PgLSPath| {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path,
+                categories: RuleCategories::all(),
+                max_diagnostics: 1_000,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+    };
+    // The first diagnostics also look for the database, which takes a while.
+    let warm_up = PgLSPath::new("warm_up.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: warm_up.clone(),
+            content: "select 1;".into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    diagnostics(&workspace, warm_up);
+
+    let path = PgLSPath::new("test.sql");
+    let content = "alter table items drop column name;\n".repeat(5_000);
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let analysis = std::thread::spawn({
+        let (workspace, path) = (Arc::clone(&workspace), path.clone());
+        move || diagnostics(&workspace, path)
+    });
+    // Let the analysis start.
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    assert!(
+        !analysis.is_finished(),
+        "the analysis took less than the wait"
+    );
+
+    let (changed, edit) = std::sync::mpsc::channel();
+    std::thread::spawn({
+        let workspace = Arc::clone(&workspace);
+        move || {
+            workspace
+                .change_file(crate::workspace::ChangeFileParams {
+                    project_key,
+                    path,
+                    version: 2,
+                    content: format!("{content}select 1;\n"),
+                })
+                .expect("Unable to change test file");
+            changed.send(()).unwrap();
+        }
+    });
+    edit.recv_timeout(std::time::Duration::from_secs(30))
+        .expect("the edit waited for the analysis of the previous version");
+    // The analysis stopped, since the document changed.
+    assert!(analysis.join().expect("the analysis panicked").is_empty());
+}
+
 /// Whether a statement runs in an implicit transaction block depends on the query it is in,
 /// also on its statements after it. Cached walks see the blocks like a walk from the start.
 #[pgls_test_utils::db_test]
@@ -5974,4 +6232,35 @@ async fn cached_walks_see_the_implicit_blocks_of_queries(test_db: PgPool) {
     let blocks = hover(&edited, &edited_after, 1);
     assert!(blocks.contains("pub_col"), "{blocks}");
     assert_eq!(blocks, fresh_hover(&edited_after, 1));
+}
+
+/// A request on a document that was closed and opened again is outdated, also if it has the same
+/// content and version.
+#[test]
+fn requests_on_a_reopened_document_are_outdated() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let open = || {
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: "select 1;".into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+    };
+
+    open();
+    let doc = workspace.document(&path).expect("an open document");
+    assert!(!workspace.is_outdated(&path, &doc));
+    workspace
+        .close_file(crate::workspace::CloseFileParams {
+            project_key,
+            path: path.clone(),
+        })
+        .expect("Unable to close test file");
+    open();
+    assert!(workspace.is_outdated(&path, &doc));
 }
