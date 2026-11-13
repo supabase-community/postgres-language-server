@@ -1,5 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
+use parking_lot::Mutex;
 use rustc_hash::FxHashMap;
 
 use crate::workspace::StatementId;
@@ -14,6 +15,10 @@ pub struct TreeSitterStore {
 impl TreeSitterStore {
     pub fn new() -> TreeSitterStore {
         let mut parser = tree_sitter::Parser::new();
+        #[expect(
+            clippy::expect_used,
+            reason = "only fails if the grammar was generated for an incompatible tree-sitter version, which the tests catch"
+        )]
         parser
             .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
@@ -26,28 +31,28 @@ impl TreeSitterStore {
 
     /// The number of statements with a cached tree.
     pub fn len(&self) -> usize {
-        self.db.lock().unwrap().len()
+        self.db.lock().len()
     }
 
     /// Drops every cached tree, and the memory of the map.
     pub fn clear(&self) {
-        drop(std::mem::take(&mut *self.db.lock().unwrap()));
+        drop(std::mem::take(&mut *self.db.lock()));
     }
 
     /// Drops the tree of `statement`.
     pub fn remove(&self, statement: &StatementId) {
-        self.db.lock().unwrap().remove(statement);
+        self.db.lock().remove(statement);
     }
 
     /// Shrinks the map if it is less than a quarter full, see [`super::parse::shrink`].
     pub fn shrink(&self) {
-        super::parse::shrink(&mut self.db.lock().unwrap());
+        super::parse::shrink(&mut self.db.lock());
     }
 
     /// The number of trees that the map has room for.
     #[cfg(test)]
     pub fn capacity(&self) -> usize {
-        self.db.lock().unwrap().capacity()
+        self.db.lock().capacity()
     }
 
     /// The tree of `statement`. It is only cached if `may_insert` returns `true`, see
@@ -59,20 +64,28 @@ impl TreeSitterStore {
     ) -> Arc<tree_sitter::Tree> {
         // First check cache
         {
-            let cache = self.db.lock().unwrap();
+            let cache = self.db.lock();
             if let Some(existing) = cache.get(statement) {
                 return existing.clone();
             }
         }
 
         // Cache miss - parse outside of cache lock to avoid deadlock
-        let mut parser = self.parser.lock().unwrap();
-        let tree = Arc::new(parser.parse(statement.content(), None).unwrap());
+        let mut parser = self.parser.lock();
+        #[expect(
+            clippy::expect_used,
+            reason = "parsing only fails without a language, which `new` sets, or on a timeout or cancellation, which are never set"
+        )]
+        let tree = Arc::new(
+            parser
+                .parse(statement.content(), None)
+                .expect("the parser has a language"),
+        );
         drop(parser);
 
         // Insert into cache
         {
-            let mut cache = self.db.lock().unwrap();
+            let mut cache = self.db.lock();
             // Double-check in case another thread inserted while we were parsing
             if let Some(existing) = cache.get(statement) {
                 return existing.clone();
