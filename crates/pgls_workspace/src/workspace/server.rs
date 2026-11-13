@@ -1334,7 +1334,11 @@ impl Workspace for WorkspaceServer {
                 .collect();
             checks
                 .into_iter()
-                .map(|check| check.join().expect("a connection check panicked"))
+                .map(|check| {
+                    check.join().unwrap_or_else(|_| {
+                        Some(Err(WorkspaceError::runtime("A connection check panicked.")))
+                    })
+                })
                 .collect()
         });
 
@@ -1675,6 +1679,8 @@ fn database_span(span: Option<TextRange>, statement: &str, range: TextRange) -> 
     .map_or(range, |span| span + range.start())
 }
 
-#[cfg(all(test, feature = "db"))]
+// Two attributes, because clippy only exempts tests from the panic lints under a plain `cfg(test)`.
+#[cfg(test)]
+#[cfg(feature = "db")]
 #[path = "server.tests.rs"]
 mod tests;

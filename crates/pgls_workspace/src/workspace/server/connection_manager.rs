@@ -1,5 +1,3 @@
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::str::FromStr;
