@@ -22,8 +22,11 @@ pub struct Document {
     diagnostics: Vec<SDiagnostic>,
     cache: DocumentCache,
     suppressions: Suppressions,
-    /// The project whose settings apply to the document.
+    /// The project whose settings `migration_tool` is from.
     project_key: ProjectKey,
+    /// The version of the settings that `migration_tool` is from, see
+    /// [`Document::has_migration_tool_of`].
+    settings_version: u64,
     /// The migration tool that runs the file, from its settings. See [`Document::open`].
     migration_tool: &'static dyn MigrationTool,
     /// How `migration_tool` runs the content.
@@ -34,13 +37,15 @@ impl Document {
     /// A document without a project, and so without a migration tool: it is one migration.
     #[cfg(test)]
     pub fn new(content: String, version: i32) -> Document {
-        Self::open(ProjectKey::default(), &Plain, content, version)
+        Self::open(ProjectKey::default(), 0, &Plain, content, version)
     }
 
-    /// A document of the project `project_key`, whose settings make `migration_tool` run the
-    /// file. When the settings change, [`Document::set_migration_tool`] applies them.
+    /// A document of the project `project_key`, whose settings at `settings_version` make
+    /// `migration_tool` run the file. When the settings or the project change,
+    /// [`Document::set_migration_tool`] applies them.
     pub(crate) fn open(
         project_key: ProjectKey,
+        settings_version: u64,
         migration_tool: &'static dyn MigrationTool,
         content: String,
         version: i32,
@@ -58,6 +63,7 @@ impl Document {
             cache: DocumentCache::new(),
             suppressions,
             project_key,
+            settings_version,
             migration_tool,
             migration_script,
         }
@@ -70,8 +76,15 @@ impl Document {
         self.split();
     }
 
-    /// Applies the migration tool of changed settings.
-    pub(crate) fn set_migration_tool(&mut self, migration_tool: &'static dyn MigrationTool) {
+    /// Applies the migration tool of the settings of `project_key` at `settings_version`.
+    pub(crate) fn set_migration_tool(
+        &mut self,
+        project_key: ProjectKey,
+        settings_version: u64,
+        migration_tool: &'static dyn MigrationTool,
+    ) {
+        self.project_key = project_key;
+        self.settings_version = settings_version;
         self.migration_tool = migration_tool;
         let migration_script = migration_tool.read(&self.content);
         let resplit = migration_script.preprocessed != self.migration_script.preprocessed;
@@ -108,8 +121,23 @@ impl Document {
         &self.cache
     }
 
+    /// Whether the migration tool is the one of the settings of `project_key` at
+    /// `settings_version`. Otherwise the settings changed since, or the file now belongs to
+    /// another project, e.g. after the workspace folders changed.
+    pub(crate) fn has_migration_tool_of(
+        &self,
+        project_key: ProjectKey,
+        settings_version: u64,
+    ) -> bool {
+        self.project_key == project_key && self.settings_version == settings_version
+    }
+
     pub(crate) fn project_key(&self) -> ProjectKey {
         self.project_key
+    }
+
+    pub(crate) fn settings_version(&self) -> u64 {
+        self.settings_version
     }
 
     /// The migration tool that runs the file, from its settings.

@@ -298,6 +298,54 @@ DROP INDEX CONCURRENTLY IF EXISTS users_name_idx;
     );
 }
 
+/// Replaces the settings of the project with ones that only set `migrations.tool`.
+fn set_tool(workspace: &WorkspaceServer, project_key: ProjectKey, tool: MigrationTool) {
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: PartialConfiguration {
+                migrations: Some(PartialMigrationsConfiguration {
+                    tool: Some(tool),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+            replace: true,
+        })
+        .expect("Unable to update the settings");
+}
+
+/// The number of diagnostics of the open file at `path` about its section markers.
+fn marker_diagnostics(
+    workspace: &WorkspaceServer,
+    project_key: ProjectKey,
+    path: &PgLSPath,
+) -> usize {
+    workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics
+        .iter()
+        .filter(|d| {
+            d.category()
+                .is_some_and(|c| c.name() == "migrations/sectionMarkers")
+        })
+        .count()
+}
+
+/// A file with a statement before the first dbmate marker.
+const STATEMENT_BEFORE_DBMATE_MARKER: &str = "select 1;\n-- migrate:up\nselect 2;\n";
+
 #[test]
 fn the_migration_tool_follows_settings_changes() {
     let (workspace, project_key) =
@@ -307,55 +355,130 @@ fn the_migration_tool_follows_settings_changes() {
         .open_file(OpenFileParams {
             project_key,
             path: path.clone(),
-            content: "select 1;\n-- migrate:up\nselect 2;\n".into(),
+            content: STATEMENT_BEFORE_DBMATE_MARKER.into(),
             version: 1,
         })
         .expect("Unable to open test file");
 
-    let set_tool = |tool| {
+    assert_eq!(marker_diagnostics(&workspace, project_key, &path), 0);
+    set_tool(&workspace, project_key, MigrationTool::Dbmate);
+    assert_eq!(marker_diagnostics(&workspace, project_key, &path), 1);
+    set_tool(&workspace, project_key, MigrationTool::None);
+    assert_eq!(marker_diagnostics(&workspace, project_key, &path), 0);
+}
+
+/// The workspace folders change while a file is open, so that it belongs to a dbmate project in
+/// a parent folder instead of a goose project.
+#[test]
+fn the_migration_tool_follows_the_project_of_an_open_file() {
+    let workspace = WorkspaceServer::new();
+    let register = |path: &str| {
         workspace
-            .update_settings(UpdateSettingsParams {
-                project_key,
-                configuration: PartialConfiguration {
-                    migrations: Some(PartialMigrationsConfiguration {
-                        tool: Some(tool),
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                },
-                gitignore_matches: vec![],
-                vcs_base_path: None,
-                workspace_directory: None,
-                replace: true,
+            .register_project_folder(RegisterProjectFolderParams {
+                path: Some(PathBuf::from(path)),
+                real_path: None,
             })
-            .expect("Unable to update the settings");
+            .unwrap()
     };
-    // The statement before the first marker.
-    let marker_diagnostics = || {
+    let goose = register("/repo/db");
+    set_tool(&workspace, goose, MigrationTool::Goose);
+
+    let markers = PgLSPath::new("/repo/db/20250301120000_markers.sql");
+    // goose sends the statements of a `NO TRANSACTION` migration one by one, while dbmate sends
+    // a section as one query, which runs in a transaction block with several statements.
+    let indexes = PgLSPath::new("/repo/db/20250301120001_indexes.sql");
+    let indexes_content = "-- +goose NO TRANSACTION\n-- +goose Up\n-- migrate:up transaction:false\ncreate index users_email_idx on users (email);\ncreate index users_name_idx on users (name);\n";
+    for (path, content) in [
+        (&markers, STATEMENT_BEFORE_DBMATE_MARKER),
+        (&indexes, indexes_content),
+    ] {
         workspace
-            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
-                project_key,
+            .open_file(OpenFileParams {
+                project_key: goose,
                 path: path.clone(),
-                categories: RuleCategories::all(),
-                max_diagnostics: 100,
-                only: vec![],
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+    }
+    let fixed = |project_key| {
+        workspace
+            .fix_file(FixFileParams {
+                project_key,
+                path: indexes.clone(),
+                fix_file_mode: FixFileMode::SafeFixes,
+                only: vec!["safety/requireConcurrentIndexCreation".parse().unwrap()],
                 skip: vec![],
             })
-            .expect("Unable to pull diagnostics")
-            .diagnostics
-            .iter()
-            .filter(|d| {
-                d.category()
-                    .is_some_and(|c| c.name() == "migrations/sectionMarkers")
-            })
-            .count()
+            .expect("Unable to fix file")
+            .code
     };
+    assert_eq!(marker_diagnostics(&workspace, goose, &markers), 0);
+    assert_eq!(
+        fixed(goose),
+        "-- +goose NO TRANSACTION\n-- +goose Up\n-- migrate:up transaction:false\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n"
+    );
 
-    assert_eq!(marker_diagnostics(), 0);
-    set_tool(MigrationTool::Dbmate);
-    assert_eq!(marker_diagnostics(), 1);
-    set_tool(MigrationTool::None);
-    assert_eq!(marker_diagnostics(), 0);
+    // Like `workspace/didChangeWorkspaceFolders`, which replaces the folder by its parent.
+    workspace
+        .unregister_project_folder(UnregisterProjectFolderParams {
+            path: PgLSPath::new("/repo/db"),
+        })
+        .unwrap();
+    let dbmate = register("/repo");
+    set_tool(&workspace, dbmate, MigrationTool::Dbmate);
+    assert_eq!(
+        workspace
+            .find_project(FindProjectParams {
+                path: markers.clone(),
+            })
+            .unwrap(),
+        Some(dbmate)
+    );
+
+    assert_eq!(marker_diagnostics(&workspace, dbmate, &markers), 1);
+    assert_eq!(fixed(dbmate), indexes_content);
+
+    // An edit keeps the tool of the new project.
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key: dbmate,
+            path: markers.clone(),
+            content: STATEMENT_BEFORE_DBMATE_MARKER.into(),
+            version: 2,
+        })
+        .expect("Unable to change test file");
+    assert_eq!(marker_diagnostics(&workspace, dbmate, &markers), 1);
+}
+
+/// A file that is opened while the settings change gets the migration tool of the new settings,
+/// even if it read the old ones before they changed.
+#[test]
+fn the_migration_tool_of_a_file_opened_while_the_settings_change() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+
+    std::thread::scope(|scope| {
+        // The opener reads the settings, then waits for the documents.
+        let documents = workspace.documents.write().unwrap();
+        let opener = scope.spawn(|| {
+            workspace.open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: STATEMENT_BEFORE_DBMATE_MARKER.into(),
+                version: 1,
+            })
+        });
+        // There is no hook to wait for the opener to read the settings. If it hasn't by then, it
+        // reads the new ones, and the test passes regardless.
+        std::thread::sleep(Duration::from_millis(200));
+        set_tool(&workspace, project_key, MigrationTool::Dbmate);
+        drop(documents);
+        opener.join().unwrap().expect("Unable to open test file");
+    });
+
+    assert_eq!(marker_diagnostics(&workspace, project_key, &path), 1);
 }
 
 #[test]
