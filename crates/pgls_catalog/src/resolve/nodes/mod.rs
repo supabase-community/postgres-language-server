@@ -28,8 +28,16 @@ mod with_clause;
 
 use pgls_query::{Node, NodeEnum};
 
-use super::{resolver::Resolver, scope::Columns};
+use super::{
+    lookups::{
+        record_a_expr, record_create_function, record_function, record_sort_by, record_sub_link,
+        record_unresolved,
+    },
+    resolver::Resolver,
+    scope::Columns,
+};
 
+pub(super) use column_ref::record_column_ref_lookup;
 use column_ref::resolve_column_ref;
 use copy_stmt::resolve_copy_stmt;
 use create_function_stmt::resolve_create_function_stmt;
@@ -40,6 +48,7 @@ use explain_stmt::resolve_explain_stmt;
 use func_call::resolve_func_call;
 use insert_stmt::resolve_insert_stmt;
 use merge_stmt::resolve_merge_stmt;
+use range_var::lookup_relation;
 #[cfg(test)]
 pub(crate) use select_stmt::RESOLVED_QUERIES;
 use select_stmt::resolve_select_stmt;
@@ -55,13 +64,26 @@ pub(super) fn resolve_node(r: &mut Resolver, node: &Node) -> Columns {
 
 pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
     match node {
-        NodeEnum::SelectStmt(n) => return resolve_select_stmt(r, n),
-        NodeEnum::InsertStmt(n) => return resolve_insert_stmt(r, n),
-        NodeEnum::UpdateStmt(n) => return resolve_update_stmt(r, n),
-        NodeEnum::DeleteStmt(n) => return resolve_delete_stmt(r, n),
-        NodeEnum::MergeStmt(n) => return resolve_merge_stmt(r, n),
+        NodeEnum::SelectStmt(_)
+        | NodeEnum::InsertStmt(_)
+        | NodeEnum::UpdateStmt(_)
+        | NodeEnum::DeleteStmt(_)
+        | NodeEnum::MergeStmt(_) => {
+            r.query_depth += 1;
+            let columns = match node {
+                NodeEnum::SelectStmt(n) => resolve_select_stmt(r, n),
+                NodeEnum::InsertStmt(n) => resolve_insert_stmt(r, n),
+                NodeEnum::UpdateStmt(n) => resolve_update_stmt(r, n),
+                NodeEnum::DeleteStmt(n) => resolve_delete_stmt(r, n),
+                NodeEnum::MergeStmt(n) => resolve_merge_stmt(r, n),
+                _ => None,
+            };
+            r.query_depth -= 1;
+            return columns;
+        }
         NodeEnum::CreateFunctionStmt(n) => {
             record_type_names(r, node);
+            record_create_function(r, n);
             resolve_create_function_stmt(r, n);
         }
         NodeEnum::CreateTableAsStmt(n) => resolve_create_table_as_stmt(r, n),
@@ -69,8 +91,31 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         NodeEnum::ExplainStmt(n) => resolve_explain_stmt(r, n),
         NodeEnum::DeclareCursorStmt(n) => resolve_declare_cursor_stmt(r, n),
         NodeEnum::CopyStmt(n) => resolve_copy_stmt(r, n),
+        // The relations of `TRUNCATE` and `LOCK`, looked up like the ones of queries
+        // ([`ExecuteTruncate`], [`LockTableCommand`]).
+        //
+        // [`ExecuteTruncate`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L1870
+        // [`LockTableCommand`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/lockcmds.c#L41
+        NodeEnum::TruncateStmt(n) => lookup_relations(r, &n.relations),
+        NodeEnum::LockStmt(n) => lookup_relations(r, &n.relations),
+        // The parameter types and the query of `PREPARE` ([`PrepareQuery`]).
+        //
+        // [`PrepareQuery`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/prepare.c#L59
+        NodeEnum::PrepareStmt(n) => {
+            r.depends_on_file();
+            for argtype in &n.argtypes {
+                if let Some(NodeEnum::TypeName(type_name)) = argtype.node.as_ref() {
+                    resolve_type_name(r, type_name);
+                }
+            }
+            resolve_opt(r, &n.query);
+        }
         NodeEnum::CallStmt(n) => {
             if let Some(call) = &n.funccall {
+                record_function(r, call);
+                for arg in &call.args {
+                    record_unresolved_node(r, arg, false);
+                }
                 super::expr::resolve_procedure_call(r, call);
             }
         }
@@ -84,6 +129,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
             }
         }
         NodeEnum::SubLink(n) => {
+            record_sub_link(r, n);
             resolve_opt(r, &n.testexpr);
             if let Some(query) = n.subselect.as_deref() {
                 // The subquery sees the enclosing queries, like in Postgres, where
@@ -95,8 +141,14 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
                 r.remember_subquery_output(query, output);
             }
         }
-        NodeEnum::ResTarget(n) => resolve_opt(r, &n.val),
+        // The subscripts of an assignment, like `a[i]` in `UPDATE ... SET a[i] = 1`, are
+        // expressions.
+        NodeEnum::ResTarget(n) => {
+            resolve_list(r, &n.indirection);
+            resolve_opt(r, &n.val);
+        }
         NodeEnum::AExpr(n) => {
+            record_a_expr(r, n);
             resolve_opt(r, &n.lexpr);
             resolve_opt(r, &n.rexpr);
         }
@@ -126,7 +178,10 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         }
         NodeEnum::CollateClause(n) => resolve_opt(r, &n.arg),
         NodeEnum::NamedArgExpr(n) => resolve_opt(r, &n.arg),
-        NodeEnum::SortBy(n) => resolve_opt(r, &n.node),
+        NodeEnum::SortBy(n) => {
+            record_sort_by(r, n);
+            resolve_opt(r, &n.node);
+        }
         NodeEnum::GroupingSet(n) => resolve_list(r, &n.content),
         NodeEnum::GroupingFunc(n) => resolve_list(r, &n.args),
         NodeEnum::MultiAssignRef(n) => resolve_opt(r, &n.source),
@@ -160,9 +215,27 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         _ => {
             r.depends_on_file();
             record_type_names(r, node);
+            record_unresolved(r, node.to_ref(), r.query_depth > 0);
         }
     }
     None
+}
+
+/// Looks up the relations of `TRUNCATE` or `LOCK`.
+fn lookup_relations(r: &mut Resolver, relations: &[Node]) {
+    r.depends_on_file();
+    for relation in relations {
+        if let Some(NodeEnum::RangeVar(relation)) = relation.node.as_ref() {
+            lookup_relation(r, relation);
+        }
+    }
+}
+
+/// Records the lookups of `node`, which the resolver doesn't resolve, see [`record_unresolved`].
+pub(super) fn record_unresolved_node(r: &mut Resolver, node: &Node, in_query: bool) {
+    if let Some(node) = node.node.as_ref() {
+        record_unresolved(r, node.to_ref(), in_query);
+    }
 }
 
 pub(super) fn resolve_opt(r: &mut Resolver, node: &Option<Box<Node>>) {

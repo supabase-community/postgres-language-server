@@ -12,6 +12,7 @@ use pgls_query::{
 
 use super::{
     Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
+    lookups::{LookupKind, SearchPathLookup},
     scope::{Cte, Level, OutputNames},
     span::Tokens,
 };
@@ -39,6 +40,15 @@ pub(super) struct Resolver<'a> {
     pub references: Option<Vec<Reference>>,
     /// The location and kind of each reference in `references`.
     recorded: FxHashSet<(i32, Discriminant<Reference>)>,
+    /// The names looked up through the search path so far, when they are being collected.
+    pub lookups: Option<Vec<SearchPathLookup>>,
+    /// The location and kind of each lookup in `lookups`.
+    recorded_lookups: FxHashSet<(i32, LookupKind)>,
+    /// Set while resolving a clause whose unqualified names can only be columns of one relation,
+    /// like the index predicate of `ON CONFLICT`, so they are not recorded as column lookups.
+    pub single_relation: bool,
+    /// How many queries and data-modifying statements the resolver is in.
+    pub query_depth: usize,
     /// The output columns of the subqueries of sublinks resolved so far, by the address of the
     /// subquery's node, so that typing a sublink doesn't resolve its subquery again. Resolving
     /// it again at every level of nested subqueries took time exponential in their depth.
@@ -68,6 +78,10 @@ impl<'a> Resolver<'a> {
             output: None,
             references: None,
             recorded: FxHashSet::default(),
+            lookups: None,
+            recorded_lookups: FxHashSet::default(),
+            single_relation: false,
+            query_depth: 0,
             subquery_outputs: FxHashMap::default(),
             in_merge_returning: false,
         }
@@ -169,6 +183,33 @@ impl<'a> Resolver<'a> {
             .insert((reference.location(), std::mem::discriminant(&reference)))
         {
             references.push(reference);
+        }
+    }
+
+    /// Whether the names looked up through the search path are being collected.
+    pub fn collects_lookups(&self) -> bool {
+        self.lookups.is_some()
+    }
+
+    /// Records a name looked up through the search path, when lookups are being collected.
+    pub fn record_lookup(
+        &mut self,
+        kind: LookupKind,
+        name: &str,
+        location: i32,
+        span: Option<TextRange>,
+    ) {
+        let Some(lookups) = self.lookups.as_mut() else {
+            return;
+        };
+        // Some expressions are resolved more than once, e.g. VALUES rows in INSERT.
+        if self.recorded_lookups.insert((location, kind)) {
+            lookups.push(SearchPathLookup {
+                kind,
+                name: name.to_owned(),
+                location,
+                span,
+            });
         }
     }
 
@@ -310,6 +351,31 @@ impl<'a> Resolver<'a> {
     /// The span of the `*` or `t.*` starting at `location`.
     pub fn star_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, Tokens::star_end)
+    }
+
+    /// The span of the token starting at `location`.
+    pub fn token_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, Tokens::token_end)
+    }
+
+    /// The span of the keywords of the SQL construct starting at `location` that end with `last`,
+    /// like `NOT IN`.
+    pub fn construct_span(
+        &self,
+        location: i32,
+        last: pgls_query::protobuf::Token,
+    ) -> Option<TextRange> {
+        let start = usize::try_from(location).ok()?;
+        let end = self.tokens()?.construct_end(start, last)?;
+        debug_assert!(
+            self.sql
+                .is_some_and(|sql| start < end && sql.get(start..end).is_some()),
+            "span {start}..{end} outside the statement or not on character boundaries"
+        );
+        Some(TextRange::new(
+            TextSize::try_from(start).ok()?,
+            TextSize::try_from(end).ok()?,
+        ))
     }
 
     /// The span of the operator token starting at `location`.

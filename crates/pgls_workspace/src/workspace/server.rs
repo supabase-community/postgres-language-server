@@ -411,6 +411,7 @@ impl WorkspaceServer {
                     function: stmt.function.as_ref(),
                     sql: Some(sql),
                     collect_references: true,
+                    collect_lookups: false,
                 })
                 .references
                 .into_iter()
@@ -481,6 +482,7 @@ impl WorkspaceServer {
                     function: stmt.function.as_ref(),
                     sql: Some(sql),
                     collect_references: true,
+                    collect_lookups: false,
                 })
                 .references;
                 innermost = Some((stmt.range, stmt.offsets.is_verbatim(), references));

@@ -180,6 +180,15 @@ fn is_output_name(levels: &[Level], depth: usize, column: &str) -> bool {
     level.output_names_visible == precedence && level.output_names.iter().any(|n| n == column)
 }
 
+/// Whether `column` can refer to an output column of the innermost level, before or after the
+/// columns of FROM.
+pub(super) fn may_be_output_name(levels: &[Level], column: &str) -> bool {
+    levels.last().is_some_and(|level| {
+        level.output_names_visible != OutputNames::Hidden
+            && level.output_names.iter().any(|name| name == column)
+    })
+}
+
 /// The FROM items of one query level.
 #[derive(Debug, Clone, Default)]
 pub(super) struct Level {
@@ -382,6 +391,8 @@ impl Level {
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum ColumnLookup {
     Found,
+    /// An output column of the select list, in `ORDER BY`, `GROUP BY` or `DISTINCT ON`.
+    Output,
     /// Matches columns of several items of the same query level.
     Ambiguous(Vec<String>),
     /// Can't be decided, because some columns in scope are not known.
@@ -448,7 +459,7 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
 pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
     for (depth, level) in levels.iter().rev().enumerate() {
         if is_output_name(levels, depth, column) {
-            return ColumnLookup::Found;
+            return ColumnLookup::Output;
         }
 
         if let Some(visible) = level.visible_columns(column) {
@@ -481,7 +492,7 @@ pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
         }
     }
     if is_output_name(levels, levels.len(), column) {
-        return ColumnLookup::Found;
+        return ColumnLookup::Output;
     }
     ColumnLookup::NotFound
 }

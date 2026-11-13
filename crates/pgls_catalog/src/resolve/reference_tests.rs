@@ -64,6 +64,7 @@ fn function_references_in(
         function,
         sql: Some(sql),
         collect_references: true,
+        collect_lookups: false,
     });
     resolution
         .references
@@ -838,6 +839,7 @@ async fn references_are_only_collected_on_request(test_db: PgPool) {
         function: None,
         sql: Some(sql),
         collect_references,
+        collect_lookups: false,
     };
     let without = resolve(params(false));
     let with = resolve(params(true));
@@ -856,6 +858,7 @@ async fn references_are_only_collected_on_request(test_db: PgPool) {
         function: None,
         sql: Some(sql),
         collect_references,
+        collect_lookups: false,
     };
     let without = resolve(params(false));
     let with = resolve(params(true));

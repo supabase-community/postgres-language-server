@@ -52,7 +52,7 @@ fn function(name: &str, kind: ProcKind, modes: &[&str], defaults: usize) -> Func
 
 /// A database with a few builtins, the tables `users (id, name)` and `posts (id, user_id,
 /// title)`, the composite type `address (street, city)`, and the enum `mood`.
-fn database() -> Arc<CatalogBase> {
+pub(super) fn database() -> Arc<CatalogBase> {
     const INT8: i64 = 20;
     const TEXT: i64 = 25;
     let mut types: Vec<PostgresType> = [
@@ -162,6 +162,7 @@ fn resolve_after(setup: &str, sql: &str, function: Option<&FunctionContext>) -> 
         function,
         sql: Some(sql),
         collect_references: false,
+        collect_lookups: false,
     })
 }
 
@@ -896,6 +897,7 @@ fn invalid_merge() {
             function: None,
             sql: None,
             collect_references: false,
+            collect_lookups: false,
         });
         assert_eq!(resolution.findings, [], "{version}");
     }

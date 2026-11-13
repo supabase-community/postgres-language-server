@@ -46,6 +46,7 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
                 function: None,
                 sql: Some(&sql),
                 collect_references: true,
+                collect_lookups: false,
             })
             .references
         })

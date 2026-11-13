@@ -4,7 +4,7 @@ use pgls_query::{Node, NodeEnum};
 
 use super::{
     Resolver, join_expr::resolve_join_expr, range_function::resolve_range_function,
-    range_subselect::resolve_range_subselect, range_var::resolve_range_var,
+    range_subselect::resolve_range_subselect, range_var::resolve_range_var, record_unresolved_node,
 };
 use crate::resolve::scope::{Item, Level};
 
@@ -31,6 +31,7 @@ pub(super) fn resolve_from_item(r: &mut Resolver, node: &Node, preceding: &Level
         _ => {
             // TABLESAMPLE, XMLTABLE, JSON_TABLE, ...: we don't know what they expose.
             r.depends_on_file();
+            record_unresolved_node(r, node, true);
             return Level {
                 items: vec![Item::named(None, None)],
                 has_opaque_items: true,

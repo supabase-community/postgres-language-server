@@ -232,6 +232,7 @@ impl<'a> StatementContext<'a> {
             function: self.function,
             sql: self.sql,
             collect_references,
+            collect_lookups: false,
         }))
     }
 }
