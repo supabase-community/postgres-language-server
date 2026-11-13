@@ -3,7 +3,9 @@
 //! runs with a subscriber that collects these events and passes everything else on.
 
 use std::fmt;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+
+use parking_lot::Mutex;
 
 use tracing::field::{Field, Visit};
 use tracing::span::{Attributes, Id, Record};
@@ -30,7 +32,7 @@ impl NoticeCollector {
 
     /// The collected notices, each as `SEVERITY: message`.
     pub(super) fn take(&self) -> Vec<String> {
-        std::mem::take(&mut self.notices.lock().unwrap())
+        std::mem::take(&mut self.notices.lock())
     }
 }
 
@@ -70,10 +72,7 @@ impl Subscriber for Collector {
                     Level::DEBUG => "DEBUG",
                     Level::TRACE => "INFO",
                 };
-                self.notices
-                    .lock()
-                    .unwrap()
-                    .push(format!("{severity}: {message}"));
+                self.notices.lock().push(format!("{severity}: {message}"));
             }
             if !self.inner.enabled(metadata) {
                 return;

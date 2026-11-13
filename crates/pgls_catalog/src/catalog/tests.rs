@@ -71,6 +71,7 @@ fn base() -> Arc<CatalogBase> {
         schema: "public".into(),
         name: "users_name_idx".into(),
         table_name: "users".into(),
+        columns: Some(vec!["name".into()]),
     }];
     let cache = Snapshot {
         schemas,
@@ -1209,6 +1210,165 @@ fn indexes_follow_constraints_and_partitioned_indexes() {
 }
 
 #[test]
+fn dropping_a_column_drops_the_indexes_that_use_it() {
+    let search_path = path(&["public"]);
+    let after = |sql: &str| catalog_after(sql, &search_path);
+    let index = |catalog: &Catalog, name| catalog.index(None, name, &search_path);
+    let state = |catalog: &Catalog, name| match index(catalog, name) {
+        Lookup::Found(_) => "found",
+        Lookup::Missing => "missing",
+        Lookup::Unknown => "unknown",
+    };
+    let table = "create table t (a int, b int, c int);
+         create index t_a_idx on t (a);
+         create index t_b_idx on t ((b + 1));
+         create index t_qualified_idx on t (abs(t.b));
+         create index t_where_idx on t (a) where c > 0;
+         create index t_include_idx on t (a) include (c);
+         create function whole_row(t) returns int immutable language sql as 'select 1';
+         create index t_row_idx on t (whole_row(t));
+         create index t_star_idx on t (whole_row(t.*));
+         create index t_row_where_idx on t (whole_row(t)) where b > 0;
+         create index t_row_star_idx on t (whole_row(row(t.*)::t));
+         create index t_row_star_where_idx on t (a) where whole_row(row(t.*)::t) > 0;
+         create index t_field_idx on t (((t).b));
+         create index t_field_star_idx on t (((t.*).b));
+         create index t_quoted_field_idx on t (((\"t\").\"b\"));
+         create index t_field_where_idx on t (a) where (t).b > 0;
+         create index t_projection_idx on t ((b(t)));";
+
+    // The column of a key, an INCLUDE column, or a column in an expression or the predicate.
+    let catalog = after(&format!("{table} alter table t drop column c;"));
+    assert_eq!(state(&catalog, "t_where_idx"), "missing");
+    assert_eq!(state(&catalog, "t_include_idx"), "missing");
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+    assert_eq!(state(&catalog, "t_b_idx"), "found");
+    // `t` and `t.*` are the whole row, which adds no column to the index.
+    assert_eq!(state(&catalog, "t_row_idx"), "found");
+    assert_eq!(state(&catalog, "t_star_idx"), "found");
+    assert_eq!(state(&catalog, "t_row_where_idx"), "found");
+    let catalog = after(&format!("{table} alter table t drop column b;"));
+    assert_eq!(state(&catalog, "t_b_idx"), "missing");
+    assert_eq!(state(&catalog, "t_qualified_idx"), "missing");
+    assert_eq!(state(&catalog, "t_row_where_idx"), "missing");
+    assert_eq!(state(&catalog, "t_row_idx"), "found");
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+    // `(t).b` selects the column `b` of the whole row.
+    assert_eq!(state(&catalog, "t_field_idx"), "missing");
+    assert_eq!(state(&catalog, "t_field_star_idx"), "missing");
+    assert_eq!(state(&catalog, "t_quoted_field_idx"), "missing");
+    assert_eq!(state(&catalog, "t_field_where_idx"), "missing");
+    // `b(t)` is the column `b` too, unless there is a function `b`.
+    assert_eq!(state(&catalog, "t_projection_idx"), "unknown");
+    // `ROW(t.*)` expands to all columns of the table.
+    let catalog = after(&format!("{table} alter table t drop column c;"));
+    assert_eq!(state(&catalog, "t_row_star_idx"), "missing");
+    assert_eq!(state(&catalog, "t_row_star_where_idx"), "missing");
+    assert_eq!(state(&catalog, "t_field_idx"), "found");
+    assert_eq!(state(&catalog, "t_field_where_idx"), "found");
+    let catalog = after(&format!(
+        "{table} alter table t rename column b to x; alter table t drop column x;"
+    ));
+    assert_eq!(state(&catalog, "t_row_star_idx"), "missing");
+    assert_eq!(state(&catalog, "t_field_idx"), "missing");
+    let catalog = after(&format!(
+        "{table} alter table t drop column if exists nope;"
+    ));
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+
+    // The index follows a renamed column.
+    let catalog = after(&format!(
+        "{table} alter table t rename column a to x; alter table t add column a int;
+         alter table t drop column a;"
+    ));
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+    let catalog = after(&format!(
+        "{table} alter table t rename column a to x; alter table t drop column x;"
+    ));
+    assert_eq!(state(&catalog, "t_a_idx"), "missing");
+
+    // The column is dropped from the children too, unless with ONLY.
+    let child = "create table t (a int); create table child (b int) inherits (t);
+         create index child_a_idx on child (a);";
+    let catalog = after(&format!("{child} alter table t drop column a;"));
+    assert_eq!(state(&catalog, "child_a_idx"), "missing");
+    let catalog = after(&format!("{child} alter table only t drop column a;"));
+    assert_eq!(state(&catalog, "child_a_idx"), "found");
+    // Postgres rejects dropping an inherited column, and we don't know which columns of a child
+    // are inherited.
+    let catalog = after(&format!("{child} alter table child drop column a;"));
+    assert_eq!(state(&catalog, "child_a_idx"), "unknown");
+
+    // A child keeps a column that is also its own or inherited from another parent, and so do
+    // its own children. We don't know which columns those are.
+    let catalog = after(
+        "create table p (a int); create table t (a int) inherits (p);
+         create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "unknown");
+    let catalog = after(
+        "create table p (a int); create table q (a int); create table t () inherits (p, q);
+         create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "unknown");
+    let catalog = after(
+        "create table p (a int); create table t (a int); alter table t inherit p;
+         create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "unknown");
+    let catalog = after(
+        "create table p (a int); create table t (a int) inherits (p);
+         create table g () inherits (t); create index g_a_idx on g (a);
+         alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "g_a_idx"), "unknown");
+
+    // `IF EXISTS` skips a column the table doesn't have, even if a child has one by that name.
+    let catalog = after(
+        "create table p (a int); create table t (b int) inherits (p);
+         create index t_b_idx on t (b); alter table p drop column if exists b;",
+    );
+    assert_eq!(state(&catalog, "t_b_idx"), "found");
+    // If we don't know the columns of the table, it may or may not have the column.
+    let catalog = after(
+        "create table p (like nope) partition by list (x); create table t (b int, x int);
+         create index t_b_idx on t (b); alter table p attach partition t for values in (1);
+         alter table p drop column if exists b;",
+    );
+    assert_eq!(state(&catalog, "t_b_idx"), "unknown");
+
+    // With CASCADE, Postgres also drops the generated columns that use the column, and their
+    // indexes. We don't know which columns a generation expression uses.
+    let generated = "create table t (a int, b int, g int generated always as (a + 1) stored);
+         create index t_g_idx on t (g); create index t_b_idx on t (b);";
+    let catalog = after(&format!("{generated} alter table t drop column a cascade;"));
+    assert_eq!(state(&catalog, "t_g_idx"), "unknown");
+    assert_eq!(state(&catalog, "t_b_idx"), "found");
+    let catalog = after(&format!("{generated} alter table t drop column b cascade;"));
+    assert_eq!(state(&catalog, "t_b_idx"), "missing");
+    let catalog = after(&format!("{generated} alter table t drop column b;"));
+    assert_eq!(state(&catalog, "t_g_idx"), "found");
+
+    // A dropped or renamed child no longer inherits under its old name.
+    let catalog = after(
+        "create table p (a int); create table t () inherits (p); drop table t;
+         create table t (a int); create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+    let catalog = after(
+        "create table p (a int); create table t () inherits (p); alter table t rename to u;
+         create table t (a int); create index t_a_idx on t (a); alter table p drop column a;",
+    );
+    assert_eq!(state(&catalog, "t_a_idx"), "found");
+
+    // The snapshot has the columns of the indexes of the database.
+    let catalog = after("alter table users drop column id;");
+    assert_eq!(state(&catalog, "users_name_idx"), "found");
+    let catalog = after("alter table users drop column name;");
+    assert_eq!(state(&catalog, "users_name_idx"), "missing");
+}
+
+#[test]
 fn indexes_with_names_we_dont_know_make_missing_indexes_unknown() {
     let search_path = path(&["public"]);
     for sql in [
@@ -1327,6 +1487,31 @@ fn snapshot_includes_indexes_of_the_file() {
         .map(|index| (index.name.as_str(), index.table_name.as_str()))
         .collect();
     assert_eq!(indexes, [("users_id_idx", "users")]);
+
+    // An index of the database follows its renamed column.
+    let catalog = catalog_after(
+        "alter table users rename column name to renamed;",
+        &search_path,
+    );
+    let snapshot = catalog.snapshot().unwrap();
+    let columns: Vec<_> = snapshot
+        .indexes
+        .iter()
+        .map(|index| (index.name.as_str(), index.columns.clone()))
+        .collect();
+    assert_eq!(
+        columns,
+        [("users_name_idx", Some(vec!["renamed".to_owned()]))]
+    );
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let parsed = pgls_query::parse("alter table users drop column renamed;").expect("valid sql");
+    for stmt in parsed.stmts() {
+        catalog.apply(stmt, &search_path);
+    }
+    assert!(matches!(
+        catalog.index(None, "users_name_idx", &search_path),
+        Lookup::Missing
+    ));
 }
 
 #[test]
@@ -1616,5 +1801,87 @@ mod typing_overlay_tests {
         apply(&mut catalog, "do $$ begin null; end $$;", &path);
         assert!(catalog.is_tainted());
         assert!(!catalog.function_candidates(None, "abs", &path).complete);
+    }
+
+    #[pgls_test_utils::db_test]
+    async fn dropping_a_column_drops_the_database_indexes_that_use_it(test_db: PgPool) {
+        use sqlx::Executor;
+
+        test_db
+            .execute(
+                "create table t (a int, b int, c int, d text, e int);
+                 create function whole_row(t) returns int immutable language sql as 'select 1';
+                 create index t_include_idx on t (a) include (e);
+                 create index t_expression_idx on t ((b + 1)) where c > 0;
+                 create index t_row_idx on t (whole_row(t));
+                 alter table t add constraint t_pkey primary key (d);
+                 create table x (
+                   r int4range, a int, b int, c int,
+                   constraint x_expression_excl exclude using gist (int4range(a, b) with &&),
+                   constraint x_predicate_excl exclude using gist (r with &&) where (c > 0)
+                 );
+                 create table g (a int, b int, g int generated always as (a + 1) stored);
+                 create index g_g_idx on g (g);
+                 create index g_b_idx on g (b);",
+            )
+            .await
+            .unwrap();
+        let base = Arc::new(CatalogBase::new(Arc::new(
+            Snapshot::load(&test_db).await.expect("load snapshot"),
+        )));
+        let path = path(&["public"]);
+        let state = |sql: &str, index: &str| {
+            let mut catalog = Catalog::new(Some(Arc::clone(&base)));
+            apply(&mut catalog, sql, &path);
+            match catalog.index(None, index, &path) {
+                Lookup::Found(_) => "found",
+                Lookup::Missing => "missing",
+                Lookup::Unknown => "unknown",
+            }
+        };
+
+        // An `INCLUDE` column, columns in an expression and the predicate, and the key of a
+        // constraint, whose index depends on the constraint instead of the column.
+        assert_eq!(
+            state("alter table t drop column e;", "t_include_idx"),
+            "missing"
+        );
+        assert_eq!(
+            state("alter table t drop column b;", "t_expression_idx"),
+            "missing"
+        );
+        assert_eq!(
+            state("alter table t drop column c;", "t_expression_idx"),
+            "missing"
+        );
+        assert_eq!(state("alter table t drop column d;", "t_pkey"), "missing");
+        assert_eq!(
+            state("alter table t drop column a;", "t_expression_idx"),
+            "found"
+        );
+        assert_eq!(state("alter table t drop column a;", "t_pkey"), "found");
+        // A whole-row reference depends on the table, not on its columns, so Postgres keeps the
+        // index.
+        assert_eq!(state("alter table t drop column a;", "t_row_idx"), "found");
+
+        // A column in an expression or the predicate of an exclusion constraint makes `DROP
+        // COLUMN` fail without CASCADE, and drops the constraint and its index with it.
+        assert_eq!(
+            state("alter table x drop column a;", "x_expression_excl"),
+            "unknown"
+        );
+        assert_eq!(
+            state("alter table x drop column c;", "x_predicate_excl"),
+            "unknown"
+        );
+        // With CASCADE, Postgres also drops the generated columns that use the column.
+        assert_eq!(
+            state("alter table g drop column a cascade;", "g_g_idx"),
+            "unknown"
+        );
+        assert_eq!(
+            state("alter table g drop column a cascade;", "g_b_idx"),
+            "found"
+        );
     }
 }
