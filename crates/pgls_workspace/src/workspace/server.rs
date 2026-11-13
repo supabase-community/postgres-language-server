@@ -1137,6 +1137,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let documents = self.documents.read().unwrap();
         let parser = documents
             .get(&params.path)
@@ -1510,6 +1511,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullFileFormattingParams,
     ) -> Result<PullFormattingResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let settings = self.workspaces();
 
         let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
