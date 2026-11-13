@@ -11,7 +11,7 @@ use crate::catalog::{
     overlay::function_info,
 };
 use crate::lookup::{CatalogView, ColumnInfo, FunctionKind};
-use crate::typing::{Decision, TypeId, is_valid_polymorphic_signature};
+use crate::typing::{Decision, Polymorphic, TypeId, is_valid_polymorphic_signature};
 
 /// `CREATE FUNCTION` and `CREATE PROCEDURE` add an overload. Models [`CreateFunction`], with the parameter
 /// checks of [`interpret_function_parameter_list`] and the result checks of [`ProcedureCreate`].
@@ -192,16 +192,11 @@ pub(super) fn apply_create_function_stmt(
 /// [`interpret_function_parameter_list`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L183
 fn variadic_element(c: &Catalog, id: &crate::typing::TypeId) -> Option<crate::typing::TypeId> {
     let info = c.type_by_id(id).found()?;
-    if info.schema == "pg_catalog" {
-        let element = match info.name.as_str() {
-            "anyarray" => Some("anyelement"),
-            "anycompatiblearray" => Some("anycompatible"),
-            "any" => Some("any"),
-            _ => None,
-        };
-        if let Some(element) = element {
-            return c.builtin_type(element);
-        }
-    }
-    info.element
+    let element = match Polymorphic::from_type(&info) {
+        Some(Polymorphic::AnyArray) => Polymorphic::AnyElement,
+        Some(Polymorphic::AnyCompatibleArray) => Polymorphic::AnyCompatible,
+        Some(Polymorphic::Any) => Polymorphic::Any,
+        _ => return info.element,
+    };
+    element.type_id(c)
 }
