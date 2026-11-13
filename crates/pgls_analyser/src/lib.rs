@@ -28,8 +28,8 @@ pub use linter_registry::{
 };
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use pgls_walk::{
-    AnalysableStatement, AnalysedFileContext, Direction, MigrationSection, UnparsableStatement,
-    Walk, WalkParams, WalkState, is_plain_query, walk_statements,
+    AnalysableStatement, AnalysedFileContext, Direction, MigrationSection, STOP_CHECK_INTERVAL,
+    UnparsableStatement, Walk, WalkParams, WalkState, is_plain_query, walk_statements,
 };
 
 pub static METADATA: LazyLock<MetadataRegistry> = LazyLock::new(|| {
@@ -118,6 +118,9 @@ pub struct StatementAnalysis {
 pub struct AnalysisResult {
     pub diagnostics: Vec<LinterDiagnostic>,
     pub statements: Vec<StatementAnalysis>,
+    /// Set when [`Analyser::analyse_until`] stopped before the end, so the result covers only
+    /// the statements before that.
+    pub stopped: bool,
 }
 
 pub struct AnalyserConfig<'a> {
@@ -144,6 +147,17 @@ impl<'a> Analyser<'a> {
     /// Runs the rules statement by statement, while the catalog and the session follow the
     /// effects of the statements, see [`walk_statements`].
     pub fn analyse(&self, params: AnalyserParams) -> AnalysisResult {
+        self.analyse_until(params, &|| false)
+    }
+
+    /// Like [`Analyser::analyse`], but checks `should_stop` every [`STOP_CHECK_INTERVAL`]
+    /// statements and stops when it returns `true`, e.g. because the document changed or the
+    /// request was cancelled.
+    pub fn analyse_until(
+        &self,
+        params: AnalyserParams,
+        should_stop: &dyn Fn() -> bool,
+    ) -> AnalysisResult {
         let mut result = AnalysisResult::default();
 
         let mut typecheck = params.typecheck && params.catalog_base.is_some();
@@ -189,8 +203,9 @@ impl<'a> Analyser<'a> {
             best_effort: false,
             from: None,
             checkpoints: &[],
+            should_stop,
         };
-        walk_statements(walk, |stmt, file_context| {
+        let walk = walk_statements(walk, |stmt, file_context| {
             let root = &*stmt.root;
             // The catalog can't follow statements on placeholder names, like `drop table :name`,
             // so the rest of the file isn't typechecked.
@@ -266,6 +281,7 @@ impl<'a> Analyser<'a> {
                 search_path: file_context.session().search_path().to_vec(),
             });
         });
+        result.stopped = walk.stopped;
 
         result
     }
@@ -606,5 +622,45 @@ mod tests {
         println!("*******************");
 
         // assert_eq!(results, vec![]);
+    }
+
+    #[test]
+    fn analysis_stops_when_asked() {
+        const SQL: &str = "alter table test drop column id;";
+        let rule_filter = RuleFilter::Rule("destructive", "banDropColumn");
+        let filter = AnalysisFilter {
+            enabled_rules: Some(slice::from_ref(&rule_filter)),
+            ..Default::default()
+        };
+        let options = LinterOptions::default();
+        let analyser = Analyser::new(crate::AnalyserConfig {
+            options: &options,
+            filter,
+        });
+        let params = || crate::AnalyserParams {
+            stmts: (0..200u32)
+                .map(|i| {
+                    let start = i * 40;
+                    AnalysableStatement::new(
+                        pgls_query::parse(SQL).unwrap().into_root().unwrap(),
+                        TextRange::at(start.into(), u32::try_from(SQL.len()).unwrap().into()),
+                    )
+                })
+                .collect(),
+            ..Default::default()
+        };
+
+        let all = analyser.analyse(params());
+        assert!(!all.stopped);
+        assert_eq!(all.diagnostics.len(), 200);
+
+        // Asked to stop at the second check.
+        let checks = std::cell::Cell::new(0);
+        let stopped = analyser.analyse_until(params(), &|| {
+            checks.set(checks.get() + 1);
+            checks.get() == 2
+        });
+        assert!(stopped.stopped);
+        assert_eq!(stopped.diagnostics.len(), 127);
     }
 }
