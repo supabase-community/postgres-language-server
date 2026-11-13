@@ -29,7 +29,7 @@ pub use linter_registry::{
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use pgls_walk::{
     AnalysableStatement, AnalysedFileContext, Direction, MigrationSection, UnparsableStatement,
-    WalkParams, is_plain_query, walk_statements,
+    Walk, WalkParams, WalkState, is_plain_query, walk_statements,
 };
 
 pub static METADATA: LazyLock<MetadataRegistry> = LazyLock::new(|| {
@@ -170,14 +170,25 @@ impl<'a> Analyser<'a> {
             })
             .collect();
 
+        let mut statement_ranges: Vec<TextRange> = params
+            .stmts
+            .iter()
+            .filter(|stmt| stmt.function.is_none())
+            .map(|stmt| stmt.range)
+            .chain(params.unparsable.iter().map(|skipped| skipped.range))
+            .collect();
+        statement_ranges.sort_unstable_by_key(|range| range.start());
         let walk = WalkParams {
             stmts: &params.stmts,
             unparsable: &params.unparsable,
+            statement_ranges: &statement_ranges,
             catalog_base: params.catalog_base.clone(),
             search_path: &params.search_path,
             sections: &params.sections,
             end: TextSize::from(u32::MAX),
             best_effort: false,
+            from: None,
+            checkpoints: &[],
         };
         walk_statements(walk, |stmt, file_context| {
             let root = &*stmt.root;
