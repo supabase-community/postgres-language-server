@@ -1,6 +1,6 @@
 use pgls_query::{
     NodeEnum,
-    protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, ObjectType},
+    protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, DropBehavior, ObjectType},
 };
 use pgls_query_ext::options::find_def_elem;
 use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
@@ -351,7 +351,8 @@ fn apply_index_changes(
                 let may_fail = c.is_inheritance_child(table)
                     || (!recurse && table.kind == RelationKind::PartitionedTable)
                     || (command.missing_ok && has_column.is_none());
-                c.drop_column_indexes(table, &command.name, recurse, may_fail);
+                let cascade = command.behavior() == DropBehavior::DropCascade;
+                c.drop_column_indexes(table, &command.name, recurse, cascade, may_fail);
             }
             AlterTableType::AtDropConstraint => {
                 c.mark_index_unknown(&table.schema, &command.name);

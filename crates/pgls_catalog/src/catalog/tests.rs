@@ -1304,6 +1304,18 @@ fn dropping_a_column_drops_the_indexes_that_use_it() {
     );
     assert_eq!(state(&catalog, "t_b_idx"), "unknown");
 
+    // With CASCADE, Postgres also drops the generated columns that use the column, and their
+    // indexes. We don't know which columns a generation expression uses.
+    let generated = "create table t (a int, b int, g int generated always as (a + 1) stored);
+         create index t_g_idx on t (g); create index t_b_idx on t (b);";
+    let catalog = after(&format!("{generated} alter table t drop column a cascade;"));
+    assert_eq!(state(&catalog, "t_g_idx"), "unknown");
+    assert_eq!(state(&catalog, "t_b_idx"), "found");
+    let catalog = after(&format!("{generated} alter table t drop column b cascade;"));
+    assert_eq!(state(&catalog, "t_b_idx"), "missing");
+    let catalog = after(&format!("{generated} alter table t drop column b;"));
+    assert_eq!(state(&catalog, "t_g_idx"), "found");
+
     // A dropped or renamed child no longer inherits under its old name.
     let catalog = after(
         "create table p (a int); create table t () inherits (p); drop table t;

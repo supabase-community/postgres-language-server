@@ -348,7 +348,9 @@ impl Catalog {
     /// ([`ATExecDropColumn`]). Indexes whose columns we don't know become unknown, and so do the
     /// indexes of all children in the database, since we don't know which tables they inherit
     /// from. The indexes of children that may keep the column become unknown too, see
-    /// [`Catalog::descendants_keeping_dropped_columns`]. With `may_fail`, Postgres may reject
+    /// [`Catalog::descendants_keeping_dropped_columns`]. With `cascade`, Postgres also drops the
+    /// generated columns whose expression uses the column. We don't know which those are, so the
+    /// indexes that use a generated column become unknown. With `may_fail`, Postgres may reject
     /// or skip the statement, so the indexes that use the column become unknown instead of
     /// dropped.
     ///
@@ -359,6 +361,7 @@ impl Catalog {
         relation: &RelationInfo,
         column: &str,
         recurse: bool,
+        cascade: bool,
         may_fail: bool,
     ) {
         let root = key(&relation.schema, &relation.name);
@@ -372,10 +375,35 @@ impl Catalog {
         };
         for table in tables {
             let may_keep = may_fail || keeping.contains(&table);
+            // The columns that CASCADE may drop with the column. `None` if we don't know them.
+            let generated: Option<Vec<String>> = if cascade {
+                self.relation_in(&table.0, &table.1)
+                    .found()
+                    .and_then(|relation| relation.columns)
+                    .map(|columns| {
+                        columns
+                            .into_iter()
+                            .filter(|known| known.generated.is_generated())
+                            .map(|known| known.name)
+                            .collect()
+                    })
+            } else {
+                Some(Vec::new())
+            };
             for index in self.table_indexes(&table.0, &table.1) {
-                let entry = match &index.columns {
-                    Some(columns) if !columns.iter().any(|name| name == column) => continue,
-                    Some(_) if !may_keep => Entry::Dropped,
+                let entry = match (&index.columns, &generated) {
+                    (Some(columns), _) if columns.iter().any(|name| name == column) => {
+                        if may_keep {
+                            Entry::Unknown
+                        } else {
+                            Entry::Dropped
+                        }
+                    }
+                    (Some(columns), Some(generated))
+                        if !columns.iter().any(|name| generated.contains(name)) =>
+                    {
+                        continue;
+                    }
                     _ => Entry::Unknown,
                 };
                 self.indexes.insert(key(&index.schema, &index.name), entry);
