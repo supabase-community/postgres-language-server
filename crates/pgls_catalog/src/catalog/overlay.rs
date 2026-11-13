@@ -11,7 +11,7 @@ use pgls_query_ext::utils::{
 };
 use rustc_hash::FxHashSet;
 
-use super::{Catalog, Entry, Key, key};
+use super::{Catalog, Entry, Key, explicit_schemas, key};
 use crate::lookup::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
     RelationKind, TypeInfo,
@@ -26,11 +26,8 @@ impl Catalog {
         if let Some(schema) = schema {
             return schema.to_owned();
         }
-        search_path
-            .iter()
-            .filter(|schema| schema.as_str() != "$user")
+        explicit_schemas(search_path)
             .find(|schema| !self.schema(schema).is_missing())
-            .cloned()
             .unwrap_or_else(|| "public".into())
     }
 
@@ -43,11 +40,13 @@ impl Catalog {
         )
     }
 
-    /// The key of a new relation. Temporary relations live in `pg_temp`. `None` for system
+    /// The key of a new relation. Temporary relations live in `pg_temp`. Unlike
+    /// [`Catalog::relation_name_of`], this doesn't depend on the relations that exist: a
+    /// temporary table with the name doesn't capture a new permanent table. `None` for system
     /// catalogs, where Postgres rejects new relations ([`heap_create`]).
     ///
     /// [`heap_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/heap.c#L285
-    pub(super) fn relation_creation_key(
+    pub(crate) fn relation_creation_key(
         &self,
         range_var: &protobuf::RangeVar,
         search_path: &[String],
@@ -723,7 +722,7 @@ impl Catalog {
                             pgls_query::NodeEnum::TypeName(name) => name,
                             _ => return None,
                         };
-                        crate::normalize_type_name(self, name, search_path).0
+                        crate::typing::normalize_type_name(self, name, search_path).0
                     })
                     .collect::<Option<Vec<_>>>()
             })
@@ -828,7 +827,7 @@ pub(super) fn column_info(
             }
             None => (
                 type_name(name).map(|name| name.name.to_owned()),
-                crate::normalize_type_name(catalog, name, search_path).0,
+                crate::typing::normalize_type_name(catalog, name, search_path).0,
             ),
         },
         None => (None, None),
