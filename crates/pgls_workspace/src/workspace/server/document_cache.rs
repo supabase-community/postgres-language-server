@@ -9,11 +9,14 @@
 //! the workspace drops the caches of the least recently used documents when all of them keep more
 //! than [`DOCUMENT_CACHE_ENTRIES_MAX`], see [`CacheBudget`].
 
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use std::sync::{
-    Arc, Mutex,
+    Arc,
     atomic::{AtomicU64, Ordering},
 };
 
+use parking_lot::{Mutex, MutexGuard};
 use pgls_catalog::CatalogBase;
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::EmbeddedStatement};
 
@@ -194,7 +197,7 @@ impl DocumentCache {
         generation: u64,
         analyse: impl FnOnce() -> Option<DocumentAnalysis>,
     ) -> Option<Arc<DocumentAnalysis>> {
-        let analysing = self.analysing.lock().unwrap();
+        let analysing = self.analysing.lock();
         match self.keyed(key, generation) {
             Some(keyed) => {
                 if let Some(analysis) = &keyed.analysis {
@@ -208,7 +211,7 @@ impl DocumentCache {
         }
         let analysis = Arc::new(analyse()?);
         // Unless the content or the key changed meanwhile.
-        let mut keyed = self.keyed.lock().unwrap();
+        let mut keyed = self.keyed.lock();
         if self.is_current(generation) && keyed.key.as_ref() == Some(key) {
             keyed.analysis = Some(Arc::clone(&analysis));
         }
@@ -221,7 +224,7 @@ impl DocumentCache {
     /// statement, see [`DOCUMENT_CACHE_ENTRIES_MAX`], and [`CHECKPOINT_ENTRIES`] per walk
     /// checkpoint.
     pub(crate) fn usage(&self) -> usize {
-        let (resolved, checkpoints) = self.keyed.lock().unwrap().walk.len();
+        let (resolved, checkpoints) = self.keyed.lock().walk.len();
         self.parses.len() + self.trees.len() + resolved + checkpoints * CHECKPOINT_ENTRIES
     }
 
@@ -229,7 +232,7 @@ impl DocumentCache {
     pub(crate) fn clear(&self) {
         self.parses.clear();
         self.trees.clear();
-        *self.keyed.lock().unwrap() = KeyedCaches::default();
+        *self.keyed.lock() = KeyedCaches::default();
     }
 
     /// What the caches hold for a document with the top-level statements `statements`. The
@@ -240,7 +243,7 @@ impl DocumentCache {
             .filter_map(|id| self.parses.cached_embedded_len(id))
             .sum();
         let statements = statements.len() + embedded;
-        let keyed = self.keyed.lock().unwrap();
+        let keyed = self.keyed.lock();
         let (resolved_statements, walk_checkpoints) = keyed.walk.len();
         DocumentCacheStats {
             statements,
@@ -255,17 +258,13 @@ impl DocumentCache {
     /// The cached analysis, whatever its key.
     #[cfg(test)]
     pub(crate) fn cached_analysis(&self) -> Option<Arc<DocumentAnalysis>> {
-        self.keyed.lock().unwrap().analysis.clone()
+        self.keyed.lock().analysis.clone()
     }
 
     /// The caches for `key`, emptied first if they were for another key. `None` if they are for
     /// another generation of the content.
-    fn keyed(
-        &self,
-        key: &CacheKey,
-        generation: u64,
-    ) -> Option<std::sync::MutexGuard<'_, KeyedCaches>> {
-        let mut keyed = self.keyed.lock().unwrap();
+    fn keyed(&self, key: &CacheKey, generation: u64) -> Option<MutexGuard<'_, KeyedCaches>> {
+        let mut keyed = self.keyed.lock();
         if !self.is_current(generation) {
             return None;
         }
@@ -312,7 +311,7 @@ impl DocumentCache {
     /// [`WalkCache::content_changed`], and the analysis. [`Self::remove_statements`] then drops
     /// what was cached for the statements that the change removed.
     pub(crate) fn content_changed(&self, change: ContentChange, generation: u64) -> StaleEntries {
-        let mut keyed = self.keyed.lock().unwrap();
+        let mut keyed = self.keyed.lock();
         self.generation.store(generation, Ordering::Release);
         StaleEntries {
             analysis: keyed.analysis.take(),

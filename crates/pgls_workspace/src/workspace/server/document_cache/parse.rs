@@ -1,5 +1,6 @@
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{Arc, LazyLock};
 
+use parking_lot::Mutex;
 use pgls_lexer::convert_to_positional_params;
 use pgls_query_ext::{
     diagnostics::*,
@@ -36,21 +37,20 @@ impl PgQueryStore {
     pub fn cached_embedded_len(&self, statement: &StatementId) -> Option<usize> {
         self.embedded_db
             .lock()
-            .unwrap()
             .get(statement)
             .map(|embedded| embedded.len())
     }
 
     /// The number of statements with a cached parse result.
     pub fn len(&self) -> usize {
-        self.ast_db.lock().unwrap().len()
+        self.ast_db.lock().len()
     }
 
     /// Drops every cached result, and the memory of the maps.
     pub fn clear(&self) {
-        drop(std::mem::take(&mut *self.ast_db.lock().unwrap()));
-        drop(std::mem::take(&mut *self.plpgsql_db.lock().unwrap()));
-        drop(std::mem::take(&mut *self.embedded_db.lock().unwrap()));
+        drop(std::mem::take(&mut *self.ast_db.lock()));
+        drop(std::mem::take(&mut *self.plpgsql_db.lock()));
+        drop(std::mem::take(&mut *self.embedded_db.lock()));
     }
 
     /// Drops the results of the top-level statement `statement` and of its embedded statements.
@@ -61,14 +61,13 @@ impl PgQueryStore {
         let embedded: Vec<StatementId> = self
             .embedded_db
             .lock()
-            .unwrap()
             .remove(statement)
             .iter()
             .flat_map(|embedded| embedded.iter())
             .map(|embedded| statement.create_child(&embedded.sql))
             .collect();
-        let mut asts = self.ast_db.lock().unwrap();
-        let mut plpgsql = self.plpgsql_db.lock().unwrap();
+        let mut asts = self.ast_db.lock();
+        let mut plpgsql = self.plpgsql_db.lock();
         for id in embedded.iter().chain([statement]) {
             asts.remove(id);
             plpgsql.remove(id);
@@ -78,17 +77,17 @@ impl PgQueryStore {
 
     /// Shrinks the maps that are less than a quarter full, see [`shrink`].
     pub fn shrink(&self) {
-        shrink(&mut self.ast_db.lock().unwrap());
-        shrink(&mut self.plpgsql_db.lock().unwrap());
-        shrink(&mut self.embedded_db.lock().unwrap());
+        shrink(&mut self.ast_db.lock());
+        shrink(&mut self.plpgsql_db.lock());
+        shrink(&mut self.embedded_db.lock());
     }
 
     /// The number of entries that the maps have room for.
     #[cfg(test)]
     pub fn capacity(&self) -> usize {
-        self.ast_db.lock().unwrap().capacity()
-            + self.plpgsql_db.lock().unwrap().capacity()
-            + self.embedded_db.lock().unwrap().capacity()
+        self.ast_db.lock().capacity()
+            + self.plpgsql_db.lock().capacity()
+            + self.embedded_db.lock().capacity()
     }
 
     /// The statements embedded in the top-level statement `statement`, in order: the statements
@@ -100,7 +99,7 @@ impl PgQueryStore {
         may_insert: impl Fn() -> bool,
     ) -> Arc<[EmbeddedStatement]> {
         debug_assert!(statement.is_root());
-        if let Some(existing) = self.embedded_db.lock().unwrap().get(statement) {
+        if let Some(existing) = self.embedded_db.lock().get(statement) {
             return Arc::clone(existing);
         }
         let embedded: Arc<[EmbeddedStatement]> =
@@ -108,7 +107,7 @@ impl PgQueryStore {
                 Ok(ast) => sql_function_body(ast, statement.content()).into(),
                 Err(_) => Arc::default(),
             };
-        let mut cache = self.embedded_db.lock().unwrap();
+        let mut cache = self.embedded_db.lock();
         if may_insert() {
             cache.insert(statement.clone(), Arc::clone(&embedded));
         }
@@ -123,7 +122,7 @@ impl PgQueryStore {
         statement: &StatementId,
         may_insert: impl Fn() -> bool,
     ) -> Arc<ParseResult> {
-        let mut cache = self.ast_db.lock().unwrap();
+        let mut cache = self.ast_db.lock();
 
         if let Some(existing) = cache.get(statement) {
             return existing.clone();
@@ -162,7 +161,7 @@ impl PgQueryStore {
             return None;
         }
 
-        let mut cache = self.plpgsql_db.lock().unwrap();
+        let mut cache = self.plpgsql_db.lock();
 
         if let Some(existing) = cache.get(statement) {
             return Some(existing.clone());
@@ -189,6 +188,10 @@ impl PgQueryStore {
     }
 }
 
+#[expect(
+    clippy::unwrap_used,
+    reason = "the pattern is a constant, which `recognises_composite_type_errors` compiles"
+)]
 static COMPOSITE_TYPE_ERROR_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"\\?"([^"\\]+\.[^"\\]+)\\?" is not a known variable"#).unwrap());
 
@@ -463,5 +466,29 @@ $$;
         let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(res.is_none());
+    }
+
+    #[test]
+    fn recognises_composite_type_errors() {
+        assert!(is_composite_type_error(
+            r#""v_row.id" is not a known variable"#
+        ));
+        assert!(!is_composite_type_error(
+            r#""v_id" is not a known variable"#
+        ));
+    }
+
+    #[test]
+    fn a_panic_while_the_cache_is_locked_does_not_break_it() {
+        let store = PgQueryStore::new();
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _cache = store.ast_db.lock();
+            panic!("a request panicked while it held the cache");
+        }));
+        assert!(panicked.is_err());
+
+        let res = store.get_or_cache_ast(&StatementId::new("select 1;"), || true);
+
+        assert!(res.is_ok());
     }
 }
