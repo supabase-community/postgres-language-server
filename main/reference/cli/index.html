@@ -1271,8 +1271,8 @@
   The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
 - <strong><code>--migrations-dir</code></strong>=<em><code>ARG</code></em> &mdash; 
   The directory where the migration files are stored
-- <strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash; 
-  Ignore any migrations before this timestamp
+- <strong><code>--after</code></strong>=<em><code>VERSION</code></em> &mdash; 
+  Ignore the migrations up to this version, in the version format of the migration tool: a number like <code>20250301120000</code>, or a string like <code>"0042"</code>. The version of a migration is the number its file name starts with.
 - <strong><code>--migration-tool</code></strong>=<em><code>ARG</code></em> &mdash; 
   The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: <code>-- migrate:up</code> and <code>-- migrate:down</code> of dbmate, <code>-- +goose Up</code> and <code>-- +goose Down</code> of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
@@ -1379,8 +1379,8 @@
   The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
 - <strong><code>--migrations-dir</code></strong>=<em><code>ARG</code></em> &mdash; 
   The directory where the migration files are stored
-- <strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash; 
-  Ignore any migrations before this timestamp
+- <strong><code>--after</code></strong>=<em><code>VERSION</code></em> &mdash; 
+  Ignore the migrations up to this version, in the version format of the migration tool: a number like <code>20250301120000</code>, or a string like <code>"0042"</code>. The version of a migration is the number its file name starts with.
 - <strong><code>--migration-tool</code></strong>=<em><code>ARG</code></em> &mdash; 
   The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: <code>-- migrate:up</code> and <code>-- migrate:down</code> of dbmate, <code>-- +goose Up</code> and <code>-- +goose Down</code> of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
@@ -1508,8 +1508,8 @@
   The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
 - <strong><code>--migrations-dir</code></strong>=<em><code>ARG</code></em> &mdash; 
   The directory where the migration files are stored
-- <strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash; 
-  Ignore any migrations before this timestamp
+- <strong><code>--after</code></strong>=<em><code>VERSION</code></em> &mdash; 
+  Ignore the migrations up to this version, in the version format of the migration tool: a number like <code>20250301120000</code>, or a string like <code>"0042"</code>. The version of a migration is the number its file name starts with.
 - <strong><code>--migration-tool</code></strong>=<em><code>ARG</code></em> &mdash; 
   The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: <code>-- migrate:up</code> and <code>-- migrate:down</code> of dbmate, <code>-- +goose Up</code> and <code>-- +goose Down</code> of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 

@@ -1247,7 +1247,7 @@
 <div class="highlight"><pre><span></span><code>postgres-language-server<span class="w"> </span>check<span class="w"> </span>supabase/migrations
 </code></pre></div>
 <p>When you are setting it up in an existing project, you might want to ignore all migrations that are already applied. To do so, add <code>migrationsDir</code> and <code>after</code> to your <code>postgres-language-server.jsonc</code> file.</p>
-<p>The <code>after</code> value is the numeric prefix extracted from your migration filenames (the part before the first <code>_</code>), with leading zeros stripped. Only migrations with a prefix greater than this value will be checked.</p>
+<p>The <code>after</code> value is the version of the last migration to ignore, in the format of your migration tool: the numeric prefix of the migration filenames (the part before the first <code>_</code>), with leading zeros stripped. It can be a number or a string, so <code>"0042"</code> and <code>42</code> are the same. Only migrations with a greater version are checked. If <code>after</code> isn't a version, like <code>"v1"</code>, no migration is ignored, and the CLI and the editor show a warning.</p>
 <p>For example, if your last applied migration is <code>20250301120000_create_users.sql</code>, use <code>20250301120000</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">"migrations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1266,7 +1266,7 @@
 <p>The prefix format depends on your migration tool:</p>
 <ul>
 <li><strong>Supabase</strong>: datetime prefix, e.g. <code>20250301120000_create_users.sql</code> → use <code>20250301120000</code></li>
-<li><strong>Sequential</strong>: numeric prefix, e.g. <code>000201_create_users.sql</code> → use <code>201</code> (leading zeros are stripped)</li>
+<li><strong>Sequential</strong>: numeric prefix, e.g. <code>000201_create_users.sql</code> → use <code>201</code> or <code>"000201"</code> (leading zeros are stripped)</li>
 </ul>
 </div>
 <p>For pre-commit hooks and when working locally, use <code>--staged</code> to only lint files that have been staged. In CI environments, you most likely want to use <code>--changed</code> to only lint files that have been changed compared to your <code>vcs.default_branch</code> configuration. If <code>default_branch</code> is not set in your <code>postgres-language-server.jsonc</code>, use <code>--since=REF</code> to specify the base branch to compare against.</p>
