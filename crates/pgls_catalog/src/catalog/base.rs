@@ -282,7 +282,7 @@ impl CatalogBase {
                     return_columns,
                     volatility: Some(function.behavior),
                     origin: Origin::Database,
-
+                    id: Some(function.id),
                     signature: Some(FunctionSignature {
                         arguments: args
                             .iter()

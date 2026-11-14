@@ -43,6 +43,9 @@ impl Catalog {
             sequences: FxHashSet::default(),
         };
 
+        // Before the schemas are dropped, so that a function moved out of a dropped schema
+        // stays.
+        builder.update_database_functions(&self.functions);
         for schema in &self.dropped_schemas {
             builder.drop_schema(schema);
         }
@@ -86,22 +89,7 @@ impl Catalog {
                 builder.define_type(key, type_);
             }
         }
-        // The same holds for the functions.
-        for (key, entry) in &self.functions {
-            if let Entry::Defined(overloads) = entry {
-                for function in overloads.iter() {
-                    if function.origin == Origin::File {
-                        builder.add_function(key, function);
-                    }
-                }
-            }
-        }
-        let dropped_functions = dropped(&self.functions);
-        if !dropped_functions.is_empty() {
-            builder.snapshot.functions.retain(|function| {
-                !dropped_functions.contains(&(function.schema.as_str(), function.name.as_str()))
-            });
-        }
+        builder.add_file_functions(&self.functions);
 
         let mut replaced_indexes = FxHashSet::default();
         let mut defined_indexes = Vec::new();
@@ -446,6 +434,54 @@ impl Builder {
             .unwrap_or_else(|| self.tables.get(&key(schema, name)).copied().unwrap_or(0));
         type_.is_array = info.element.is_some();
         self.push_type(type_);
+    }
+
+    /// Applies the changes of the file to the database functions. A database function the file
+    /// altered, renamed or moved keeps its database definition, with the schema, name and
+    /// volatility the file gave it. One that the file dropped or replaced is no longer in its
+    /// function set and is removed.
+    fn update_database_functions(&mut self, functions: &FxHashMap<Key, Entry<Vec<FunctionInfo>>>) {
+        let mut database_functions: FxHashMap<i64, &FunctionInfo> = FxHashMap::default();
+        let mut changed_sets: FxHashSet<(&str, &str)> = FxHashSet::default();
+        for ((schema, name), entry) in functions {
+            match entry {
+                Entry::Defined(overloads) => {
+                    database_functions.extend(
+                        overloads
+                            .iter()
+                            .filter_map(|function| Some((function.id?, function))),
+                    );
+                    changed_sets.insert((schema, name));
+                }
+                Entry::Dropped => {
+                    changed_sets.insert((schema, name));
+                }
+                // The functions of a set we can't follow keep their database definition.
+                Entry::Unknown => {}
+            }
+        }
+        self.snapshot.functions.retain_mut(|function| {
+            let Some(info) = database_functions.get(&function.id) else {
+                return !changed_sets.contains(&(function.schema.as_str(), function.name.as_str()));
+            };
+            function.schema.clone_from(&info.schema);
+            function.name.clone_from(&info.name);
+            if let Some(volatility) = info.volatility {
+                function.behavior = volatility;
+            }
+            true
+        });
+    }
+
+    /// Adds the functions the file created.
+    fn add_file_functions(&mut self, functions: &FxHashMap<Key, Entry<Vec<FunctionInfo>>>) {
+        for (key, entry) in functions {
+            if let Entry::Defined(overloads) = entry {
+                for function in overloads.iter().filter(|function| function.id.is_none()) {
+                    self.add_function(key, function);
+                }
+            }
+        }
     }
 
     fn add_function(&mut self, (schema, name): &Key, info: &FunctionInfo) {
