@@ -7,12 +7,12 @@ use std::{
     borrow::Cow,
     num::NonZeroU64,
     path::{Path, PathBuf},
-    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
     time::Duration,
 };
 use tracing::{trace, warn};
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use pgls_configuration::{
     ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration, TypecheckConfiguration,
     database::PartialDatabaseConfiguration,
@@ -23,7 +23,9 @@ use pgls_configuration::{
         Layout, LogicalOperatorPlacement,
     },
     inlay_hints::InlayHintsConfiguration,
-    migrations::{MigrationsConfiguration, PartialMigrationsConfiguration, SectionMarkers},
+    migrations::{
+        MigrationTool, MigrationVersion, MigrationsConfiguration, PartialMigrationsConfiguration,
+    },
     pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
     semantic_tokens::SemanticTokensConfiguration,
@@ -208,7 +210,7 @@ pub struct WorkspaceSettingsHandle<'a> {
 impl<'a> WorkspaceSettingsHandle<'a> {
     pub(crate) fn new(settings: &'a RwLock<WorkspaceSettings>) -> Self {
         Self {
-            inner: settings.read().unwrap(),
+            inner: settings.read(),
         }
     }
 
@@ -236,7 +238,7 @@ pub struct WorkspaceSettingsHandleMut<'a> {
 impl<'a> WorkspaceSettingsHandleMut<'a> {
     pub(crate) fn new(settings: &'a RwLock<WorkspaceSettings>) -> Self {
         Self {
-            inner: settings.write().unwrap(),
+            inner: settings.write(),
         }
     }
 }
@@ -1095,8 +1097,8 @@ pub struct FilesSettings {
 #[derive(Debug)]
 pub struct MigrationSettings {
     pub path: Option<PathBuf>,
-    pub after: Option<u64>,
-    pub section_markers: SectionMarkers,
+    pub after: Option<MigrationVersion>,
+    pub tool: MigrationTool,
     pub lint_down: bool,
 }
 
@@ -1105,7 +1107,7 @@ impl Default for MigrationSettings {
         Self {
             path: None,
             after: None,
-            section_markers: SectionMarkers::None,
+            tool: MigrationTool::Plain,
             lint_down: true,
         }
     }
@@ -1114,12 +1116,36 @@ impl Default for MigrationSettings {
 impl From<PartialMigrationsConfiguration> for MigrationSettings {
     fn from(value: PartialMigrationsConfiguration) -> Self {
         Self {
+            tool: value.migration_tool(),
             path: value.migrations_dir.map(PathBuf::from),
             after: value.after,
-            section_markers: value.section_markers.unwrap_or_default(),
             lint_down: value.lint_down.unwrap_or(true),
         }
     }
+}
+
+/// What is wrong with the migrations settings of a configuration that it can still apply, like an
+/// `after` that isn't a version of the migration tool.
+pub fn migrations_problems(configuration: &PartialConfiguration) -> Vec<String> {
+    let Some(migrations) = &configuration.migrations else {
+        return Vec::new();
+    };
+    let tool = migrations.migration_tool();
+    // `0`, the default, ignores nothing.
+    migrations
+        .after
+        .as_ref()
+        .filter(|after| **after != MigrationVersion::default())
+        .map(MigrationVersion::text)
+        .filter(|after| tool.version(after).is_none())
+        .map(|after| {
+            format!(
+                "`migrations.after` is `{after}`, which is not a version of {} migrations, so no migration is ignored. Use the number that the file names start with, like `20250301120000`.",
+                tool.name()
+            )
+        })
+        .into_iter()
+        .collect()
 }
 
 fn to_migration_settings(
@@ -1127,11 +1153,11 @@ fn to_migration_settings(
     conf: MigrationsConfiguration,
 ) -> MigrationSettings {
     MigrationSettings {
+        tool: conf.migration_tool(),
         // The migrations directory is relative to the working directory.
         path: working_directory
             .map(|working_directory| working_directory.join(conf.migrations_dir)),
         after: Some(conf.after),
-        section_markers: conf.section_markers,
         lint_down: conf.lint_down,
     }
 }
@@ -1203,8 +1229,23 @@ mod tests {
     use pgls_configuration::StringSet;
     use pgls_configuration::database::PartialDatabaseConfiguration;
 
-    use super::{DatabaseSettings, Settings, WorkspaceSettings};
+    use super::{DatabaseSettings, Settings, WorkspaceSettings, migrations_problems};
     use crate::workspace::ProjectKey;
+
+    #[test]
+    fn reports_an_after_that_is_not_a_version_of_the_tool() {
+        let problems = |json: &str| migrations_problems(&serde_json::from_str(json).unwrap());
+        assert!(problems(r#"{ "migrations": { "after": 20250301120000 } }"#).is_empty());
+        assert!(problems(r#"{ "migrations": { "after": "0042" } }"#).is_empty());
+        assert!(problems(r#"{ "migrations": { "after": 0 } }"#).is_empty());
+        assert!(problems(r#"{ "migrations": { "migrationsDir": "migrations" } }"#).is_empty());
+        assert_eq!(
+            problems(r#"{ "migrations": { "tool": "goose", "after": "v1" } }"#),
+            [
+                "`migrations.after` is `v1`, which is not a version of goose migrations, so no migration is ignored. Use the number that the file names start with, like `20250301120000`."
+            ]
+        );
+    }
 
     fn with_linter(enabled: bool) -> Settings {
         let mut settings = Settings::default();

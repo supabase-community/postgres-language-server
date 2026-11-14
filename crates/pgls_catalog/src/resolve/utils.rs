@@ -7,7 +7,8 @@ use crate::{
     OperatorInfo, OperatorKind, TypeKind,
     lookup::Lookup,
     typing::{
-        Polymorphic, Selection, Type, TypeId, TypedColumn, select_common_type, select_operator,
+        Decision, Polymorphic, Selection, Type, TypeId, TypedColumn, base_type, select_common_type,
+        select_operator,
     },
 };
 
@@ -35,25 +36,48 @@ pub(super) fn named(r: &Resolver<'_>, name: &str) -> Option<Type> {
     r.catalog.builtin_type(name).map(Type::Named)
 }
 
-/// The type of a field of a row.
+/// The type of a field of a row, like [`ParseComplexProjection`].
+///
+/// [`ParseComplexProjection`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1967
 pub(super) fn field_type(r: &Resolver<'_>, row: &Type, field: &str) -> Option<Type> {
-    let columns = match row {
-        Type::Record(columns) => columns.clone(),
-        Type::Named(id) => {
-            let Lookup::Found(info) = r.catalog.type_by_id(id) else {
-                return None;
-            };
-            info.attributes?
-                .into_iter()
-                .map(|attribute| TypedColumn {
-                    name: attribute.name,
-                    ty: attribute.ty,
-                })
-                .collect()
-        }
+    row_columns(r, row)??
+        .into_iter()
+        .find(|column| column.name == field)?
+        .ty
+}
+
+/// The columns of a value of type `ty`: the attributes of a composite type or of a domain over
+/// one, like [`get_expr_result_type`] with [`get_type_func_class`]. `Some(None)` for a scalar
+/// type, and `None` if the type is unknown or a pseudo-type like `record`, whose columns only
+/// a column definition list gives.
+///
+/// [`get_expr_result_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/fmgr/funcapi.c#L299
+/// [`get_type_func_class`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/fmgr/funcapi.c#L1328
+pub(super) fn row_columns(r: &Resolver<'_>, ty: &Type) -> Option<Option<Vec<TypedColumn>>> {
+    let id = match ty {
+        Type::Record(columns) => return Some(Some(columns.clone())),
+        Type::Named(id) => id,
         Type::UnknownLiteral => return None,
     };
-    columns.into_iter().find(|column| column.name == field)?.ty
+    let mut info = r.catalog.type_by_id(id).found()?;
+    if info.kind == Some(TypeKind::Domain) {
+        let Decision::Known(base) = base_type(r.catalog, id) else {
+            return None;
+        };
+        info = r.catalog.type_by_id(&base).found()?;
+    }
+    match info.kind {
+        // A snapshot may lack the kind (`typtype` is optional in its JSON); the attributes
+        // alone still give the columns of a composite type.
+        Some(TypeKind::Composite) | None => Some(Some(
+            info.attributes?
+                .into_iter()
+                .map(TypedColumn::from)
+                .collect(),
+        )),
+        Some(TypeKind::Pseudo) => None,
+        Some(_) => Some(None),
+    }
 }
 
 /// The type of a parameter in the body of a SQL function. Postgres parses the body when the

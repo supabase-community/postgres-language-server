@@ -2,8 +2,8 @@
 //! open document.
 
 use std::hash::Hash;
-use std::sync::Mutex;
 
+use parking_lot::Mutex;
 use rustc_hash::FxHashMap;
 
 /// Tracks how much each key's caches use, in a unit of the caller's choice, and which keys to
@@ -49,7 +49,7 @@ impl<K: Eq + Hash + Clone> CacheBudget<K> {
     /// whose caches the caller has to drop to get back within the budget, least recently used
     /// first. They are no longer tracked until they are recorded again.
     pub(crate) fn record(&self, key: &K, usage: usize) -> Vec<K> {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock();
         state.clock += 1;
         let clock = state.clock;
         let previous = state
@@ -90,7 +90,7 @@ impl<K: Eq + Hash + Clone> CacheBudget<K> {
 
     /// Stops tracking `key`, e.g. when its caches are dropped with the document.
     pub(crate) fn remove(&self, key: &K) {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock();
         if let Some(entry) = state.entries.remove(key) {
             state.total -= entry.usage;
         }
@@ -98,7 +98,7 @@ impl<K: Eq + Hash + Clone> CacheBudget<K> {
 
     #[cfg(test)]
     pub(crate) fn total(&self) -> usize {
-        self.state.lock().unwrap().total
+        self.state.lock().total
     }
 }
 

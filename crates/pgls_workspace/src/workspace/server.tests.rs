@@ -11,7 +11,7 @@ use pgls_configuration::{
     PartialConfiguration, PartialFormatConfiguration, PartialTypecheckConfiguration,
     database::PartialDatabaseConfiguration,
     files::PartialFilesConfiguration,
-    migrations::{PartialMigrationsConfiguration, SectionMarkers},
+    migrations::{MigrationTool, PartialMigrationsConfiguration},
 };
 
 use pgls_configuration::ConfigurationPathHint;
@@ -22,6 +22,7 @@ use pgls_fs::{ConfigName, FileSystem, FindFiles, MemoryFileSystem, PgLSPath};
 use pgls_text_size::{TextRange, TextSize};
 use sqlx::{Executor, PgPool, Row};
 
+use crate::features::code_actions::execute_statement::PLACEHOLDER_EXECUTION_DISABLED;
 use crate::{
     DynRef, Workspace, WorkspaceError,
     configuration::{
@@ -175,17 +176,52 @@ fn test_suppresses_multiline_alter_table_drop_column() {
     );
 }
 
+#[test]
+fn a_panic_while_the_workspace_is_locked_does_not_break_it() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _settings = workspace.settings.write();
+        let _documents = workspace.documents.write();
+        panic!("a request panicked while it held the locks");
+    }));
+    assert!(panicked.is_err());
+
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "alter table users drop column name;".into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec!["safety/banDropColumn".parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+}
+
 /// The categories of the diagnostics of a migration file, sorted. Suppression errors have no
 /// category.
 fn migration_diagnostics(
-    section_markers: SectionMarkers,
+    tool: MigrationTool,
     lint_down: Option<bool>,
     content: &str,
 ) -> Vec<String> {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(section_markers),
+            tool: Some(tool),
             lint_down,
             ..Default::default()
         }),
@@ -247,7 +283,7 @@ fn drops_and_errors(categories: Vec<String>) -> Vec<String> {
 fn lints_down_sections_by_default() {
     assert_eq!(
         drops_and_errors(migration_diagnostics(
-            SectionMarkers::Dbmate,
+            MigrationTool::Dbmate,
             None,
             DBMATE_DROP_NAME
         )),
@@ -260,7 +296,7 @@ fn skips_down_sections_without_lint_down() {
     // The syntax error is still reported, and the suppression isn't reported as unused.
     assert_eq!(
         drops_and_errors(migration_diagnostics(
-            SectionMarkers::Dbmate,
+            MigrationTool::Dbmate,
             Some(false),
             DBMATE_DROP_NAME
         )),
@@ -287,14 +323,197 @@ DROP INDEX CONCURRENTLY IF EXISTS users_name_idx;
 
     // Both sections run in a transaction.
     assert_eq!(
-        in_transaction(migration_diagnostics(SectionMarkers::Goose, None, content)),
+        in_transaction(migration_diagnostics(MigrationTool::Goose, None, content)),
         4
     );
     let content = format!("-- +goose NO TRANSACTION\n{content}");
     assert_eq!(
-        in_transaction(migration_diagnostics(SectionMarkers::Goose, None, &content)),
+        in_transaction(migration_diagnostics(MigrationTool::Goose, None, &content)),
         0
     );
+}
+
+/// Replaces the settings of the project with ones that only set `migrations.tool`.
+fn set_tool(workspace: &WorkspaceServer, project_key: ProjectKey, tool: MigrationTool) {
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: PartialConfiguration {
+                migrations: Some(PartialMigrationsConfiguration {
+                    tool: Some(tool),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+            replace: true,
+        })
+        .expect("Unable to update the settings");
+}
+
+/// The number of diagnostics of the open file at `path` about its section markers.
+fn marker_diagnostics(
+    workspace: &WorkspaceServer,
+    project_key: ProjectKey,
+    path: &PgLSPath,
+) -> usize {
+    workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics
+        .iter()
+        .filter(|d| {
+            d.category()
+                .is_some_and(|c| c.name() == "migrations/sectionMarkers")
+        })
+        .count()
+}
+
+/// A file with a statement before the first dbmate marker.
+const STATEMENT_BEFORE_DBMATE_MARKER: &str = "select 1;\n-- migrate:up\nselect 2;\n";
+
+#[test]
+fn the_migration_tool_follows_settings_changes() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: STATEMENT_BEFORE_DBMATE_MARKER.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    assert_eq!(marker_diagnostics(&workspace, project_key, &path), 0);
+    set_tool(&workspace, project_key, MigrationTool::Dbmate);
+    assert_eq!(marker_diagnostics(&workspace, project_key, &path), 1);
+    set_tool(&workspace, project_key, MigrationTool::Plain);
+    assert_eq!(marker_diagnostics(&workspace, project_key, &path), 0);
+}
+
+/// The workspace folders change while a file is open, so that it belongs to a dbmate project in
+/// a parent folder instead of a goose project.
+#[test]
+fn the_migration_tool_follows_the_project_of_an_open_file() {
+    let workspace = WorkspaceServer::new();
+    let register = |path: &str| {
+        workspace
+            .register_project_folder(RegisterProjectFolderParams {
+                path: Some(PathBuf::from(path)),
+                real_path: None,
+            })
+            .unwrap()
+    };
+    let goose = register("/repo/db");
+    set_tool(&workspace, goose, MigrationTool::Goose);
+
+    let markers = PgLSPath::new("/repo/db/20250301120000_markers.sql");
+    // goose sends the statements of a `NO TRANSACTION` migration one by one, while dbmate sends
+    // a section as one query, which runs in a transaction block with several statements.
+    let indexes = PgLSPath::new("/repo/db/20250301120001_indexes.sql");
+    let indexes_content = "-- +goose NO TRANSACTION\n-- +goose Up\n-- migrate:up transaction:false\ncreate index users_email_idx on users (email);\ncreate index users_name_idx on users (name);\n";
+    for (path, content) in [
+        (&markers, STATEMENT_BEFORE_DBMATE_MARKER),
+        (&indexes, indexes_content),
+    ] {
+        workspace
+            .open_file(OpenFileParams {
+                project_key: goose,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+    }
+    let fixed = |project_key| {
+        workspace
+            .fix_file(FixFileParams {
+                project_key,
+                path: indexes.clone(),
+                fix_file_mode: FixFileMode::SafeFixes,
+                only: vec!["safety/requireConcurrentIndexCreation".parse().unwrap()],
+                skip: vec![],
+            })
+            .expect("Unable to fix file")
+            .code
+    };
+    assert_eq!(marker_diagnostics(&workspace, goose, &markers), 0);
+    assert_eq!(
+        fixed(goose),
+        "-- +goose NO TRANSACTION\n-- +goose Up\n-- migrate:up transaction:false\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n"
+    );
+
+    // Like `workspace/didChangeWorkspaceFolders`, which replaces the folder by its parent.
+    workspace
+        .unregister_project_folder(UnregisterProjectFolderParams {
+            path: PgLSPath::new("/repo/db"),
+        })
+        .unwrap();
+    let dbmate = register("/repo");
+    set_tool(&workspace, dbmate, MigrationTool::Dbmate);
+    assert_eq!(
+        workspace
+            .find_project(FindProjectParams {
+                path: markers.clone(),
+            })
+            .unwrap(),
+        Some(dbmate)
+    );
+
+    assert_eq!(marker_diagnostics(&workspace, dbmate, &markers), 1);
+    assert_eq!(fixed(dbmate), indexes_content);
+
+    // An edit keeps the tool of the new project.
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key: dbmate,
+            path: markers.clone(),
+            content: STATEMENT_BEFORE_DBMATE_MARKER.into(),
+            version: 2,
+        })
+        .expect("Unable to change test file");
+    assert_eq!(marker_diagnostics(&workspace, dbmate, &markers), 1);
+}
+
+/// A file that is opened while the settings change gets the migration tool of the new settings,
+/// even if it read the old ones before they changed.
+#[test]
+fn the_migration_tool_of_a_file_opened_while_the_settings_change() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+
+    std::thread::scope(|scope| {
+        // The opener reads the settings, then waits for the documents.
+        let documents = workspace.documents.write();
+        let opener = scope.spawn(|| {
+            workspace.open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: STATEMENT_BEFORE_DBMATE_MARKER.into(),
+                version: 1,
+            })
+        });
+        // There is no hook to wait for the opener to read the settings. If it hasn't by then, it
+        // reads the new ones, and the test passes regardless.
+        std::thread::sleep(Duration::from_millis(200));
+        set_tool(&workspace, project_key, MigrationTool::Dbmate);
+        drop(documents);
+        opener.join().unwrap().expect("Unable to open test file");
+    });
+
+    assert_eq!(marker_diagnostics(&workspace, project_key, &path), 1);
 }
 
 #[test]
@@ -2282,6 +2501,61 @@ async fn execute_statement_is_disabled_without_matching_pattern(test_db: PgPool)
 }
 
 #[pgls_test_utils::db_test]
+async fn execute_statement_refuses_goose_envsub_expansions(test_db: PgPool) {
+    test_db
+        .execute("create table audit_log (message text);")
+        .await
+        .unwrap();
+    let (workspace, project_key) =
+        get_statement_execution_workspace(&test_db, &allow_test_host(&test_db));
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: PartialConfiguration {
+                migrations: Some(PartialMigrationsConfiguration {
+                    tool: Some(MigrationTool::Goose),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+            replace: false,
+        })
+        .expect("Unable to update the settings");
+
+    // goose inserts the value of `MESSAGE`, which we don't know.
+    let sql = "-- +goose Up\n-- +goose ENVSUB ON\ninsert into audit_log (message) values ('${MESSAGE}');\n";
+    let (disabled_reason, result) = execute_sql_at(
+        &workspace,
+        project_key,
+        sql,
+        TextSize::try_from(sql.find("insert").unwrap()).unwrap(),
+    );
+
+    assert_eq!(
+        disabled_reason.as_deref(),
+        Some(PLACEHOLDER_EXECUTION_DISABLED)
+    );
+    assert_eq!(
+        result,
+        ExecuteStatementResult {
+            message: PLACEHOLDER_EXECUTION_DISABLED.into(),
+            ..Default::default()
+        }
+    );
+    let rows: i64 = sqlx::query_scalar("select count(*) from audit_log")
+        .fetch_one(&test_db)
+        .await
+        .unwrap();
+    assert_eq!(
+        rows, 0,
+        "A statement with an expansion must not be executed"
+    );
+}
+
+#[pgls_test_utils::db_test]
 async fn execute_statement_ignores_invalid_patterns(test_db: PgPool) {
     let mut patterns = vec!["local[host/*".to_string()];
     patterns.extend(allow_test_host(&test_db));
@@ -2791,12 +3065,12 @@ async fn executed_ddl_refreshes_the_snapshot(test_db: PgPool) {
     assert_eq!(typecheck_findings(), 0);
 }
 
-/// A workspace that reads the section markers of a migration tool.
-fn section_workspace(section_markers: SectionMarkers) -> (WorkspaceServer, ProjectKey) {
+/// A workspace with the section markers of a migration tool.
+fn section_workspace(tool: MigrationTool) -> (WorkspaceServer, ProjectKey) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(section_markers),
+            tool: Some(tool),
             ..Default::default()
         }),
         ..Default::default()
@@ -2841,7 +3115,7 @@ fn fixed(
 fn test_code_actions_fix_and_suppress_lint_diagnostics() {
     // A dbmate section with `transaction:false` and a single statement runs outside a
     // transaction, where `DROP INDEX CONCURRENTLY` works.
-    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let (workspace, project_key) = section_workspace(MigrationTool::Dbmate);
 
     let path = PgLSPath::new("test.sql");
     let content = "-- migrate:up transaction:false\n  drop index users_email_idx;";
@@ -3080,7 +3354,7 @@ fn code_actions_reuse_the_analysis() {
         .expect("Unable to open test file");
 
     let cached = || {
-        let documents = workspace.documents.read().unwrap();
+        let documents = workspace.documents.read();
         documents.get(&path).unwrap().cache().cached_analysis()
     };
     let lint_actions = || {
@@ -3158,7 +3432,7 @@ fn code_actions_reuse_the_analysis() {
 #[test]
 fn test_fix_file() {
     // goose sends the statements of a `NO TRANSACTION` migration one by one.
-    let (workspace, project_key) = section_workspace(SectionMarkers::Goose);
+    let (workspace, project_key) = section_workspace(MigrationTool::Goose);
     let content = "-- +goose NO TRANSACTION\n-- +goose Up\ndrop index users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;";
     let path = PgLSPath::new("test.sql");
     workspace
@@ -3207,7 +3481,7 @@ fn test_fix_file() {
 fn test_no_concurrently_fix_in_a_dbmate_section_with_several_statements() {
     // dbmate sends a section to Postgres as one query, which runs in a transaction block if it
     // has more than one statement.
-    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let (workspace, project_key) = section_workspace(MigrationTool::Dbmate);
     let content = "-- migrate:up transaction:false\ncreate index users_email_idx on users (email);\ncreate index users_name_idx on users (name);\n";
     assert_eq!(
         fixed(
@@ -3231,7 +3505,7 @@ fn test_concurrently_in_a_query_with_several_statements_is_flagged() {
     };
     assert_eq!(
         flagged(
-            SectionMarkers::Dbmate,
+            MigrationTool::Dbmate,
             "-- migrate:up transaction:false\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n\n-- migrate:down transaction:false\ndrop index concurrently users_email_idx;\n"
         ),
         2
@@ -3239,7 +3513,7 @@ fn test_concurrently_in_a_query_with_several_statements_is_flagged() {
     // goose sends a `StatementBegin` block as one query, and the other statements one by one.
     assert_eq!(
         flagged(
-            SectionMarkers::Goose,
+            MigrationTool::Goose,
             "-- +goose NO TRANSACTION\n-- +goose Up\n-- +goose StatementBegin\ncreate index concurrently users_email_idx on users (email);\ncreate index concurrently users_name_idx on users (name);\n-- +goose StatementEnd\ncreate index concurrently users_age_idx on users (age);\n-- +goose StatementBegin\ndrop index concurrently users_id_idx;\n-- +goose StatementEnd\n"
         ),
         2
@@ -3250,7 +3524,7 @@ fn test_concurrently_in_a_query_with_several_statements_is_flagged() {
 fn test_concurrently_in_a_function_body() {
     // A function runs in the transaction of the statement that calls it, so `CONCURRENTLY`
     // fails in its body.
-    let (workspace, project_key) = section_workspace(SectionMarkers::Dbmate);
+    let (workspace, project_key) = section_workspace(MigrationTool::Dbmate);
     let content = "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index users_email_idx on users (email) $$;\n";
     assert_eq!(
         fixed(
@@ -3264,7 +3538,7 @@ fn test_concurrently_in_a_function_body() {
     );
 
     let diagnostics = migration_diagnostics(
-        SectionMarkers::Dbmate,
+        MigrationTool::Dbmate,
         None,
         "-- migrate:up transaction:false\ncreate function add_index() returns void language sql as $$ create index concurrently users_email_idx on users (email) $$;\n",
     );
@@ -3408,7 +3682,7 @@ async fn test_no_concurrently_fix_on_partitioned_tables(test_db: PgPool) {
             ..Default::default()
         }),
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Goose),
+            tool: Some(MigrationTool::Goose),
             ..Default::default()
         }),
         ..Default::default()
@@ -4080,7 +4354,7 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
             ..Default::default()
         }),
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Dbmate),
+            tool: Some(MigrationTool::Dbmate),
             ..Default::default()
         }),
         ..Default::default()
@@ -4130,7 +4404,7 @@ async fn test_inlay_hints_follow_migration_sections(test_db: PgPool) {
 fn test_section_marker_problems_are_reported() {
     let content =
         "create table t (id int);\n-- migrate:up\nselect 1;\n-- Migrate:Down\nselect 2;\n";
-    let categories = migration_diagnostics(SectionMarkers::Dbmate, None, content);
+    let categories = migration_diagnostics(MigrationTool::Dbmate, None, content);
     assert_eq!(
         categories
             .iter()
@@ -4145,7 +4419,7 @@ fn test_section_marker_problems_are_reported() {
 fn test_non_transactional_statement_in_a_function_body() {
     // A function runs in the transaction of the statement that calls it.
     let categories = migration_diagnostics(
-        SectionMarkers::Dbmate,
+        MigrationTool::Dbmate,
         None,
         "-- migrate:up transaction:false\ncreate function clean_up() returns void language sql as $$ vacuum users $$;\n",
     );
@@ -5069,7 +5343,7 @@ ALTER TABLE users DROP COLUMN email;
         r#"{
             "migrations": {
                 "migrationsDir": "migrations",
-                "sectionMarkers": "dbmate",
+                "tool": "dbmate",
                 "lintDown": false,
                 "after": 20240101000000
             }
@@ -5094,6 +5368,33 @@ ALTER TABLE users DROP COLUMN email;
     assert!(project.is_ignored("/repo/db/migrations/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/db/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
+}
+
+/// `after` is a number or a string, read like the versions of the migration files: the number
+/// their names start with, without leading zeros. One that isn't a version ignores nothing.
+#[test]
+fn migrations_after_is_a_number_or_a_string() {
+    let ignored = |after: &str, path: &str| {
+        let mut fs = MemoryFileSystem::default();
+        fs.insert(
+            Path::new("/repo").join(ConfigName::pgls_jsonc()),
+            format!(r#"{{ "migrations": {{ "migrationsDir": "migrations", "after": {after} }} }}"#),
+        );
+        let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+        TestProject::without_nested_configurations(&fs, Path::new("/repo")).is_ignored(path)
+    };
+    for after in ["20240101000000", r#""20240101000000""#] {
+        assert!(ignored(after, "/repo/migrations/20230101000000_old.sql"));
+        assert!(ignored(after, "/repo/migrations/20240101000000_same.sql"));
+        assert!(!ignored(after, "/repo/migrations/20250101000000_new.sql"));
+    }
+    // Leading zeros don't count, in `after` and in the file names.
+    for after in ["2", r#""0002""#] {
+        assert!(ignored(after, "/repo/migrations/0001_a.sql"));
+        assert!(ignored(after, "/repo/migrations/02_b.sql"));
+        assert!(!ignored(after, "/repo/migrations/0003_c.sql"));
+    }
+    assert!(!ignored(r#""v1""#, "/repo/migrations/0001_a.sql"));
 }
 
 /// When no configuration points at a database any more, its pool and snapshot are dropped, so that
@@ -5379,6 +5680,257 @@ async fn test_sql_function_bodies(test_db: PgPool) {
     );
 }
 
+const GOOSE_ENVSUB: &str = "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SCHEMA}.events (id bigint, at timestamp);\ndrop table ${SCHEMA:-public}.old_events;\n-- +goose ENVSUB OFF\nselect ${NOT_SUBSTITUTED};\n";
+
+#[test]
+fn test_goose_envsub_expansions_are_analysed_as_parameters() {
+    let categories = migration_diagnostics(MigrationTool::Goose, None, GOOSE_ENVSUB);
+    // Only the expansion after `ENVSUB OFF` is a syntax error, and the rules still run.
+    assert_eq!(
+        categories
+            .iter()
+            .filter(|category| *category == "syntax")
+            .count(),
+        1,
+        "{categories:?}"
+    );
+    assert!(
+        categories
+            .iter()
+            .any(|category| category == "lint/banDropTable"),
+        "{categories:?}"
+    );
+}
+
+#[test]
+fn test_goose_envsub_needs_the_goose_tool() {
+    // Other tools don't replace the expansions, so they stay syntax errors.
+    for tool in [MigrationTool::Plain, MigrationTool::Dbmate] {
+        let categories = migration_diagnostics(tool, None, GOOSE_ENVSUB);
+        assert_eq!(
+            categories
+                .iter()
+                .filter(|category| *category == "syntax")
+                .count(),
+            3,
+            "{tool:?}: {categories:?}"
+        );
+    }
+}
+
+#[test]
+fn test_goose_envsub_follows_settings_changes() {
+    let (workspace, project_key) =
+        get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: GOOSE_ENVSUB.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let syntax_errors = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "syntax"))
+            .count()
+    };
+
+    assert_eq!(syntax_errors(), 3);
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: PartialConfiguration {
+                migrations: Some(PartialMigrationsConfiguration {
+                    tool: Some(MigrationTool::Goose),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+            replace: false,
+        })
+        .expect("Unable to update the settings");
+    // Only the expansion after `ENVSUB OFF` is left.
+    assert_eq!(syntax_errors(), 1);
+}
+
+#[test]
+fn test_goose_envsub_expansions_stay_as_written() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(
+            r#"{"linter": {"rules": {"all": true}}, "format": {"enabled": true}, "migrations": {"tool": "goose"}}"#,
+        )
+        .unwrap(),
+    );
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let content = "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SCHEMA}.events (id bigint, at timestamp);\ncreate table logs (at timestamp);\n";
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let fixed = workspace
+        .fix_file(FixFileParams {
+            project_key,
+            path: path.clone(),
+            fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    // The statement with the expansion is fixed around it, and the expansion stays as written.
+    assert_eq!(
+        fixed.to_lowercase(),
+        "-- +goose up\n-- +goose envsub on\ncreate table if not exists ${schema}.events (id bigint, at timestamptz);\ncreate table if not exists logs (at timestamptz);\n"
+    );
+
+    // The formatter leaves the statement alone.
+    let formatted = workspace
+        .pull_file_formatting(PullFileFormattingParams {
+            project_key,
+            path: path.clone(),
+            range: None,
+        })
+        .expect("Unable to format file");
+    assert!(
+        formatted
+            .formatted
+            .contains("create table ${SCHEMA}.events (id bigint, at timestamp);"),
+        "{}",
+        formatted.formatted
+    );
+}
+
+#[test]
+fn test_no_fix_inside_a_goose_envsub_expansion() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(
+            r#"{"linter": {"rules": {"all": true}}, "migrations": {"tool": "goose"}}"#,
+        )
+        .unwrap(),
+    );
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    // `NOT VALID` goes after the last token of the constraint, the whole `${PARENT}`, and not
+    // inside it.
+    let content = "-- +goose Up\n-- +goose ENVSUB ON\nalter table orders add constraint orders_parent_fk foreign key (parent_id) references ${PARENT};\n";
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let fixed = workspace
+        .fix_file(FixFileParams {
+            project_key,
+            path,
+            fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
+            only: vec!["safety/constraintMissingNotValid".parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    assert_eq!(
+        fixed,
+        "-- +goose Up\n-- +goose ENVSUB ON\nalter table orders add constraint orders_parent_fk foreign key (parent_id) references ${PARENT} not valid;\n"
+    );
+}
+
+/// The diagnostics of a goose migration with `ENVSUB` on for `sql`.
+fn goose_envsub_diagnostics(sql: &str) -> Vec<String> {
+    migration_diagnostics(
+        MigrationTool::Goose,
+        None,
+        &format!("-- +goose Up\n-- +goose ENVSUB ON\n{sql}\n"),
+    )
+}
+
+#[test]
+fn test_goose_envsub_default_with_a_brace() {
+    // interpolate reads the `{` as text, so goose runs `create schema public;` with
+    // `SCHEMA=public`.
+    let categories = goose_envsub_diagnostics("create schema ${SCHEMA:-app{test};");
+    assert!(!categories.iter().any(|c| c == "syntax"), "{categories:?}");
+}
+
+#[test]
+fn test_goose_envsub_expansion_in_an_identifier() {
+    // goose runs `create table app_events (id bigint);` with `PREFIX=app`.
+    let categories = goose_envsub_diagnostics("create table ${PREFIX}_events (id bigint);");
+    assert!(!categories.iter().any(|c| c == "syntax"), "{categories:?}");
+}
+
+#[test]
+fn test_goose_envsub_quoted_expansion() {
+    // goose runs `select * from "public".events;` with `SCHEMA=public`, so the schema isn't
+    // `$SCHEMA` or `${SCHEMA}`.
+    let categories = goose_envsub_diagnostics("select * from \"${SCHEMA}\".events;");
+    assert_eq!(categories, Vec::<String>::new());
+}
+
+#[test]
+fn test_goose_envsub_more_than_nine_expansions() {
+    let categories = goose_envsub_diagnostics(
+        "select ${A}, ${B}, ${C}, ${D}, ${E}, ${F}, ${G}, ${H}, ${I}, ${J};",
+    );
+    assert_eq!(categories, Vec::<String>::new());
+}
+
+#[test]
+fn named_parameter_in_a_join_condition_is_a_value() {
+    // A value: the relations are still checked.
+    let categories = migration_diagnostics(
+        MigrationTool::Plain,
+        None,
+        "select * from orders join customers on :enabled;",
+    );
+    assert_eq!(
+        categories,
+        ["lint/unknownRelation", "lint/unknownRelation"],
+        "{categories:?}"
+    );
+}
+
+#[test]
+fn test_goose_envsub_expansion_in_a_string_is_not_typechecked() {
+    // goose runs `select '5'::int;` with `N=5`, so only the second statement is an error.
+    let categories = goose_envsub_diagnostics("select '${N}'::int;\nselect 'abc'::int;");
+    assert_eq!(categories, ["typecheck"]);
+
+    // The table is still created for the statements after it.
+    let categories = goose_envsub_diagnostics(
+        "create table events (id int default '${ID}');\nselect missing from events;",
+    );
+    assert_eq!(categories, ["lint/unknownColumn"]);
+}
+
 /// Lint, hover and completions see the same catalog at each statement: after a down section,
 /// after a statement that doesn't parse, and after a statement on identifier parameters.
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -5396,7 +5948,7 @@ async fn lint_hover_and_completions_see_the_same_catalog(test_db: PgPool) {
             ..Default::default()
         }),
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Dbmate),
+            tool: Some(MigrationTool::Dbmate),
             ..Default::default()
         }),
         ..Default::default()
@@ -5537,7 +6089,7 @@ async fn walks_resume_from_checkpoints_before_the_edit(test_db: PgPool) {
             ..Default::default()
         }),
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Dbmate),
+            tool: Some(MigrationTool::Dbmate),
             ..Default::default()
         }),
         ..Default::default()
@@ -5705,7 +6257,7 @@ async fn walks_from_checkpoints_match_full_walks(test_db: PgPool) {
             ..Default::default()
         }),
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Dbmate),
+            tool: Some(MigrationTool::Dbmate),
             ..Default::default()
         }),
         ..Default::default()
@@ -6165,7 +6717,7 @@ async fn cached_walks_see_the_implicit_blocks_of_queries(test_db: PgPool) {
             ..Default::default()
         }),
         migrations: Some(PartialMigrationsConfiguration {
-            section_markers: Some(SectionMarkers::Goose),
+            tool: Some(MigrationTool::Goose),
             ..Default::default()
         }),
         ..Default::default()
@@ -6282,4 +6834,101 @@ fn requests_on_a_reopened_document_are_outdated() {
         .expect("Unable to close test file");
     open();
     assert!(workspace.is_outdated(&path, &doc));
+}
+
+/// A cancelled diagnostics request whose analysis is cached doesn't check the statements against
+/// the database.
+#[pgls_test_utils::db_test]
+async fn test_cancelled_database_diagnostics_stop(test_db: PgPool) {
+    test_db
+        .execute("create table cancelled_items (id int);")
+        .await
+        .expect("setup sql failed");
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "select id from cancelled_items where id = 'not a number';\n".repeat(20),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let diagnostics = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 1_000,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .len()
+    };
+
+    // EXPLAIN reports the invalid integer of each statement.
+    assert_eq!(diagnostics(), 20);
+    let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    assert_eq!(
+        crate::cancellation::with_cancellation(cancelled, diagnostics),
+        0
+    );
+}
+
+/// A cancelled formatting request stops formatting, and the next one formats the document.
+#[tokio::test]
+async fn test_cancelled_formatting_stops() {
+    let content = "SELECT   1;\n".repeat(200);
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        format: Some(PartialFormatConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let format = || {
+        workspace
+            .pull_file_formatting(PullFileFormattingParams {
+                project_key,
+                path: path.clone(),
+                range: None,
+            })
+            .expect("Unable to pull formatting")
+    };
+
+    let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let result = crate::cancellation::with_cancellation(cancelled, format);
+    assert_eq!(result.formatted, result.original);
+    assert!(result.statements.is_empty());
+    assert_eq!(format().formatted, "select 1;\n".repeat(200));
 }

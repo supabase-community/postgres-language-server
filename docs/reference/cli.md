@@ -131,10 +131,10 @@ Lints your database schema.
   The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
 - **`    --migrations-dir`**=_`ARG`_ &mdash; 
   The directory where the migration files are stored
-- **`    --after`**=_`ARG`_ &mdash; 
-  Ignore any migrations before this timestamp
-- **`    --section-markers`**=_`ARG`_ &mdash; 
-  The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
+- **`    --after`**=_`VERSION`_ &mdash; 
+  Ignore the migrations up to this version, in the version format of the migration tool: a number like `20250301120000`, or a string like `"0042"`. The version of a migration is the number its file name starts with.
+- **`    --migration-tool`**=_`ARG`_ &mdash; 
+  The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
 - **`    --line-width`**=_`NUMBER`_ &mdash; 
@@ -258,10 +258,10 @@ Runs everything to the requested files.
   The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
 - **`    --migrations-dir`**=_`ARG`_ &mdash; 
   The directory where the migration files are stored
-- **`    --after`**=_`ARG`_ &mdash; 
-  Ignore any migrations before this timestamp
-- **`    --section-markers`**=_`ARG`_ &mdash; 
-  The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
+- **`    --after`**=_`VERSION`_ &mdash; 
+  Ignore the migrations up to this version, in the version format of the migration tool: a number like `20250301120000`, or a string like `"0042"`. The version of a migration is the number its file name starts with.
+- **`    --migration-tool`**=_`ARG`_ &mdash; 
+  The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
 - **`    --line-width`**=_`NUMBER`_ &mdash; 
@@ -411,10 +411,10 @@ Formats the requested files.
   The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
 - **`    --migrations-dir`**=_`ARG`_ &mdash; 
   The directory where the migration files are stored
-- **`    --after`**=_`ARG`_ &mdash; 
-  Ignore any migrations before this timestamp
-- **`    --section-markers`**=_`ARG`_ &mdash; 
-  The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
+- **`    --after`**=_`VERSION`_ &mdash; 
+  Ignore the migrations up to this version, in the version format of the migration tool: a number like `20250301120000`, or a string like `"0042"`. The version of a migration is the number its file name starts with.
+- **`    --migration-tool`**=_`ARG`_ &mdash; 
+  The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
 - **`    --line-width`**=_`NUMBER`_ &mdash; 

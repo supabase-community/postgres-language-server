@@ -10,7 +10,7 @@ postgres-language-server check supabase/migrations
 
 When you are setting it up in an existing project, you might want to ignore all migrations that are already applied. To do so, add `migrationsDir` and `after` to your `postgres-language-server.jsonc` file.
 
-The `after` value is the numeric prefix extracted from your migration filenames (the part before the first `_`), with leading zeros stripped. Only migrations with a prefix greater than this value will be checked.
+The `after` value is the version of the last migration to ignore, in the format of your migration tool: the numeric prefix of the migration filenames (the part before the first `_`), with leading zeros stripped. It can be a number or a string, so `"0042"` and `42` are the same. Only migrations with a greater version are checked. If `after` isn't a version, like `"v1"`, no migration is ignored, and the CLI and the editor show a warning.
 
 For example, if your last applied migration is `20250301120000_create_users.sql`, use `20250301120000`:
 
@@ -37,30 +37,37 @@ Setting `migrationsDir` also limits where migration-only rules run, such as most
     The prefix format depends on your migration tool:
 
     - **Supabase**: datetime prefix, e.g. `20250301120000_create_users.sql` → use `20250301120000`
-    - **Sequential**: numeric prefix, e.g. `000201_create_users.sql` → use `201` (leading zeros are stripped)
+    - **Sequential**: numeric prefix, e.g. `000201_create_users.sql` → use `201` or `"000201"` (leading zeros are stripped)
 
 For pre-commit hooks and when working locally, use `--staged` to only lint files that have been staged. In CI environments, you most likely want to use `--changed` to only lint files that have been changed compared to your `vcs.default_branch` configuration. If `default_branch` is not set in your `postgres-language-server.jsonc`, use `--since=REF` to specify the base branch to compare against.
 
 ## Up and down migrations in one file
 
-Some migration tools put the up and the down migration in the same file, separated by marker comments, and run each section on its own. Set `sectionMarkers` to the tool you use, so that each section is checked as a migration of its own:
+Some migration tools put the up and the down migration in the same file, separated by marker comments, and run each section on its own. Set `tool` to the tool you use, so that each section is checked as a migration of its own:
 
 ```json
 {
     "migrations": {
         "migrationsDir": "db/migrations",
-        "sectionMarkers": "dbmate"
+        "tool": "dbmate"
     }
 }
 ```
 
-| `sectionMarkers` | Markers | Without a transaction |
+| `tool` | Markers | Without a transaction |
 | --- | --- | --- |
 | `"dbmate"` | `-- migrate:up`, `-- migrate:down` | `-- migrate:up transaction:false` (per section) |
 | `"goose"` | `-- +goose Up`, `-- +goose Down` | `-- +goose NO TRANSACTION` (whole file) |
+| `"supabase"` | | |
 | `"none"` (default) | | |
 
-With section markers:
+The Supabase CLI runs every file as one migration, so `"supabase"` checks files like `"none"`.
+
+In a dbmate project, `postgres-language-server init` sets both: it detects dbmate by a first migration in `db/migrations`, dbmate's default folder, that starts with `-- migrate:up`. goose has no default folder or configuration file, so `init` doesn't detect it.
+
+`tool` was called `sectionMarkers` before. `sectionMarkers` still works, with a deprecation warning, and `tool` wins if both are set.
+
+With a migration tool:
 
 - The transaction, lock, and session state starts fresh in each section. A lock taken or a `lock_timeout` set in the up section doesn't carry over to the down section.
 - Sections run in a transaction, like the tools run them, unless the markers disable it. `banConcurrentIndexCreationInTransaction` flags `CONCURRENTLY` in every section that runs in a transaction, even when it's the only statement, and `banNonTransactionalStatementInTransaction` flags the other statements Postgres can't run in a transaction block, like `VACUUM` or `CREATE DATABASE`. In a section without a transaction, explicit `BEGIN` and `COMMIT` are fine for `transactionNesting`.
@@ -68,13 +75,14 @@ With section markers:
 - A down section sees the objects of the up sections before it, because it only runs after them. Its own changes don't carry over to the sections after it. For example, `drop table posts` in the down section knows `posts` from the up section.
 - Statements before the first marker are checked like a file without markers, and reported, because both tools reject them. Lines that look like markers but that the tool reads as plain comments, like `-- Migrate:Up` or an indented `  -- migrate:up`, are reported too, and so are indented goose annotations, which goose rejects.
 - goose's `-- +goose StatementBegin` and `-- +goose StatementEnd` need no setup: statements, including function bodies, are split by their SQL syntax.
+- Between goose's `-- +goose ENVSUB ON` and `-- +goose ENVSUB OFF`, goose replaces `${NAME}`, `$NAME` (and `${NAME:-default}` and the other forms of [interpolate](https://github.com/mfridman/interpolate)) with environment variables. We don't know their values, so an identifier with an expansion, like `${SCHEMA}`, `${PREFIX}_events` or `"${SCHEMA}"`, is analysed like a psql variable: as an identifier after keywords like `TABLE`, `FROM` or `REFERENCES` and before a `.`, and as a value elsewhere. Statements with an expansion in an identifier aren't typechecked. Expansions in string literals and comments stay as written, and a statement with an expansion in a string literal isn't typechecked either, since its value is unknown. The statements after it still are. A line that goose can't interpolate, like one with `${NAME:?}`, is analysed as written too. Fixes that would edit an expansion are left out, statements with an expansion can't be executed from the editor, and the formatter leaves them as they are, so the expansions stay as written. This needs `"tool": "goose"`.
 
 Down sections are checked by default, since they run when you roll back. To only check the up sections, set `lintDown` to `false`. Syntax errors in down sections are still reported.
 
 ```json
 {
     "migrations": {
-        "sectionMarkers": "goose",
+        "tool": "goose",
         "lintDown": false
     }
 }

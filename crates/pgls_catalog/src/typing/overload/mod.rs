@@ -13,8 +13,8 @@ mod candidates;
 mod function;
 mod operator;
 
-pub use function::select_function;
-pub use operator::select_operator;
+pub(crate) use function::select_function;
+pub(crate) use operator::select_operator;
 
 use crate::CatalogView;
 use crate::typing::coerce::can_coerce;

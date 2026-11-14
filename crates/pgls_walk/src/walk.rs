@@ -3,9 +3,7 @@ use std::{collections::HashSet, ops::Range, sync::Arc};
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
 use pgls_text_size::{TextRange, TextSize};
 
-use crate::{
-    AnalysableStatement, AnalysedFileContext, Direction, MigrationSection, UnparsableStatement,
-};
+use crate::{AnalysableStatement, AnalysedFileContext, Direction, Unit, UnparsableStatement};
 
 pub struct WalkParams<'a> {
     /// The statements that parse, in file order, including the statements of SQL function
@@ -15,7 +13,7 @@ pub struct WalkParams<'a> {
     pub unparsable: &'a [UnparsableStatement],
     /// The ranges of all top-level statements of the file, parsed or not, in order. The walk
     /// counts the statements of a section and of its queries with them, also when it is only
-    /// given some of the statements, see [`MigrationSection::implicit_blocks`].
+    /// given some of the statements, see [`Unit::implicit_blocks`].
     pub statement_ranges: &'a [TextRange],
     /// The database snapshot the catalog starts from.
     pub catalog_base: Option<Arc<CatalogBase>>,
@@ -23,7 +21,7 @@ pub struct WalkParams<'a> {
     pub search_path: &'a [String],
     /// The sections of a migration file, like dbmate's up and down migrations. Without sections,
     /// the whole file is one migration.
-    pub sections: &'a [MigrationSection],
+    pub sections: &'a [Unit],
     /// The walk visits the statements that start before `end`.
     pub end: TextSize,
     /// Whether the catalog resolves names as well as it can after statements it can't follow,
@@ -72,13 +70,13 @@ impl WalkState {
     /// Whether `sections` put the statement at [`Self::at`] in the section it was in when the
     /// walk stopped. A marker inserted right before the statement changes that, even though the
     /// text before the statement's old start is the same.
-    pub fn fits(&self, sections: &[MigrationSection]) -> bool {
+    pub fn fits(&self, sections: &[Unit]) -> bool {
         section_start(sections, self.at) == self.section_start
     }
 }
 
 /// The start of the section that `offset` is in, or zero before the first section.
-fn section_start(sections: &[MigrationSection], offset: TextSize) -> TextSize {
+fn section_start(sections: &[Unit], offset: TextSize) -> TextSize {
     sections
         .iter()
         .take_while(|section| section.range.start() <= offset)
@@ -175,7 +173,7 @@ pub fn walk_statements(
                 // Each section runs in a session and transaction of its own.
                 let session = Session::new(params.search_path.to_vec()).with_transaction_mode(
                     unit.section
-                        .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
+                        .map_or(TransactionMode::Unknown, transaction_mode),
                 );
                 (unit_catalog, session)
             }
@@ -394,9 +392,18 @@ impl CatalogFunctions {
     }
 }
 
+/// The transaction mode that a migration section starts in.
+pub fn transaction_mode(section: &Unit) -> TransactionMode {
+    if section.transaction {
+        TransactionMode::Transaction
+    } else {
+        TransactionMode::Autocommit
+    }
+}
+
 /// Statements that run together: those before the first section marker, then each section.
 struct MigrationUnit<'a> {
-    section: Option<&'a MigrationSection>,
+    section: Option<&'a Unit>,
     /// The indices of the statements.
     stmts: Range<usize>,
     start: TextSize,
@@ -406,7 +413,7 @@ struct MigrationUnit<'a> {
 
 fn migration_units<'a>(
     stmts: &[AnalysableStatement],
-    sections: &'a [MigrationSection],
+    sections: &'a [Unit],
 ) -> Vec<MigrationUnit<'a>> {
     let end_of_text = TextSize::from(u32::MAX);
     let before_sections = sections
@@ -510,7 +517,7 @@ mod tests {
     use pgls_text_size::{TextRange, TextSize};
 
     use super::{WalkParams, walk_statements};
-    use crate::{AnalysableStatement, Direction, MigrationSection, UnparsableStatement};
+    use crate::{AnalysableStatement, Direction, Unit, UnparsableStatement};
 
     /// Walks the statements of `sql` in a section without a transaction, with the given queries.
     /// Returns each statement that parses with whether it runs in an implicit transaction block,
@@ -531,7 +538,7 @@ mod tests {
                 }),
             }
         }
-        let sections = [MigrationSection {
+        let sections = [Unit {
             range: TextRange::up_to(TextSize::of(sql)),
             direction: Direction::Up,
             transaction: false,

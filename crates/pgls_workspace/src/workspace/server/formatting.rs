@@ -3,6 +3,7 @@
 
 use std::{collections::HashMap, ops::Range, sync::Arc};
 
+use pgls_analyser::STOP_CHECK_INTERVAL;
 use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_pretty_print::FormatConfig;
 use pgls_text_size::TextRange;
@@ -43,13 +44,23 @@ fn format_config(settings: &FormatterSettings) -> FormatConfig {
 
 /// Formats the statements of `doc`, or only those that intersect `range`. `path` is the path of
 /// the document in diagnostics.
+///
+/// `None` if `should_stop` stopped it, e.g. because the document changed or the request was
+/// cancelled. It is checked every [`STOP_CHECK_INTERVAL`] statements that are parsed or
+/// formatted.
 pub(super) fn format_document(
     doc: &Document,
     settings: &FormatterSettings,
     range: Option<TextRange>,
     path: &str,
-) -> PullFormattingResult {
+    should_stop: &dyn Fn() -> bool,
+) -> Option<PullFormattingResult> {
     let config = format_config(settings);
+    let mut visited = 0usize;
+    let mut stops = || {
+        visited += 1;
+        visited.is_multiple_of(STOP_CHECK_INTERVAL) && should_stop()
+    };
 
     let mut diagnostics = Vec::new();
     let mut statements = Vec::new();
@@ -57,7 +68,13 @@ pub(super) fn format_document(
     // The range of each statement in the source and in the output, and whether it parses.
     let mut spans: Vec<StatementSpan> = Vec::new();
 
-    let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
+    let mut format_candidates = Vec::new();
+    for candidate in doc.iter(FormatStatementMapper) {
+        if stops() {
+            return None;
+        }
+        format_candidates.push(candidate);
+    }
     let mut formatted_sql_fn_bodies = HashMap::new();
 
     // Only format SQL function bodies if skip_fn_bodies is false. A body with several
@@ -80,6 +97,9 @@ pub(super) fn format_document(
 
             if statements_per_body.get(&parent_id) != Some(&1) {
                 continue;
+            }
+            if stops() {
+                return None;
             }
 
             let Ok(ast) = ast_result else {
@@ -112,6 +132,9 @@ pub(super) fn format_document(
         if id.is_child() {
             continue;
         }
+        if stops() {
+            return None;
+        }
 
         let stmt_start = usize::from(stmt_range.start());
         let stmt_end = usize::from(stmt_range.end());
@@ -134,11 +157,12 @@ pub(super) fn format_document(
         let output_start = formatted_output.len();
         let parses = ast_result.is_ok();
 
-        // Leave statements outside the requested range untouched.
-        if let Some(filter_range) = range
-            && stmt_range.intersect(filter_range).is_none()
+        // Leave statements outside the requested range untouched, and those with `ENVSUB`
+        // expansions, whose text holds placeholders.
+        if range.is_some_and(|filter_range| stmt_range.intersect(filter_range).is_none())
+            || doc.touches_placeholder(stmt_range)
         {
-            formatted_output.push_str(&text);
+            formatted_output.push_str(&source[stmt_start..stmt_end]);
             spans.push(StatementSpan {
                 source: stmt_start..stmt_end,
                 output: output_start..formatted_output.len(),
@@ -240,20 +264,20 @@ pub(super) fn format_document(
             .with_file_path(path),
         ));
 
-        return PullFormattingResult {
+        return Some(PullFormattingResult {
             original: source.to_string(),
             formatted: source.to_string(),
             statements: Vec::new(),
             diagnostics,
-        };
+        });
     }
 
-    PullFormattingResult {
+    Some(PullFormattingResult {
         original: doc.get_document_content().to_string(),
         formatted: formatted_output,
         statements,
         diagnostics,
-    }
+    })
 }
 
 /// Where a statement of the document is in the source and in the formatted output.

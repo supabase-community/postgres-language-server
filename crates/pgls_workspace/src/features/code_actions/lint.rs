@@ -63,7 +63,12 @@ pub(crate) fn lint_actions<'a>(
         let category = diagnostic.get_category_name();
         let rule = category.strip_prefix("lint/").unwrap_or(category);
 
-        if let Some(fix) = diagnostic.get_fix() {
+        // A fix must not write the placeholder of an `ENVSUB` expansion into the file.
+        if let Some(fix) = diagnostic.get_fix().filter(|fix| {
+            !fix.edits
+                .iter()
+                .any(|edit| doc.touches_placeholder(edit.range))
+        }) {
             actions.push(CodeAction {
                 title: fix.message.clone(),
                 kind: CodeActionKind::Edit(EditAction {
@@ -98,9 +103,12 @@ pub(crate) fn lint_actions<'a>(
 }
 
 /// Applies the fixes of the lint diagnostics to `code`, the content of the file at `path`, until
-/// no fix is left. `lint` returns the lint diagnostics of a document that are not suppressed.
+/// no fix is left. `open` is the open document of the file, whose migration tool the
+/// intermediate documents keep. `lint` returns the lint diagnostics of a document that are not
+/// suppressed.
 pub(crate) fn fix_file(
     path: &PgLSPath,
+    open: &Document,
     mut code: String,
     mode: FixFileMode,
     mut lint: impl FnMut(&Document) -> Vec<LinterDiagnostic>,
@@ -113,12 +121,26 @@ pub(crate) fn fix_file(
     let mut skipped_suggested_fixes = 0;
     let mut converged = false;
     for _ in 0..MAX_PASSES {
-        let doc = Document::new(code.clone(), 0);
+        let doc = Document::open(
+            open.project_key(),
+            open.settings_version(),
+            open.migration_tool(),
+            code.clone(),
+            0,
+        );
         let diagnostics = lint(&doc);
 
         skipped_suggested_fixes = 0;
         let mut fixes: Vec<&RuleFix> = Vec::new();
-        for fix in diagnostics.iter().filter_map(LinterDiagnostic::get_fix) {
+        for fix in diagnostics
+            .iter()
+            .filter_map(LinterDiagnostic::get_fix)
+            .filter(|fix| {
+                !fix.edits
+                    .iter()
+                    .any(|edit| doc.touches_placeholder(edit.range))
+            })
+        {
             if fix.applicability == Applicability::Always || mode == FixFileMode::SafeAndUnsafeFixes
             {
                 fixes.push(fix);
@@ -180,27 +202,24 @@ fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
         _ => "\n",
     };
 
-    let start = usize::from(start);
-    let line_start = content[..start]
-        .rfind('\n')
-        .map_or(0, |newline| newline + 1);
-    let before = &content[line_start..start];
+    let before_start = &content[..usize::from(start)];
+    let line_start = before_start.rfind('\n').map_or(0, |newline| newline + 1);
+    let before = &before_start[line_start..];
     let indentation: String = before
         .chars()
         .take_while(|c| *c == ' ' || *c == '\t')
         .collect();
-    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
     if before.trim().is_empty() {
         TextEdit {
-            range: TextRange::empty(offset(line_start)),
+            range: TextRange::empty(start - TextSize::of(before)),
             new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
         }
     } else {
         // The statement starts after another one on the same line, so it moves to a line of its
         // own.
-        let previous_end = line_start + before.trim_end().len();
+        let previous_end = start - (TextSize::of(before) - TextSize::of(before.trim_end()));
         TextEdit {
-            range: TextRange::new(offset(previous_end), offset(start)),
+            range: TextRange::new(previous_end, start),
             new_text: format!(
                 "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
             ),

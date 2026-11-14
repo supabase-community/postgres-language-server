@@ -11,7 +11,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 use pgls_catalog::{Snapshot, resolve::Reference};
 use pgls_text_size::{TextRange, TextSize};
-use pgls_walk::{AnalysableStatement, Direction, MigrationSection, WalkState};
+use pgls_walk::{AnalysableStatement, Direction, Unit, WalkState};
 
 /// The states a document keeps to resume walks from. Each holds a copy of the catalog's maps of
 /// the objects that the file changed before it (the objects themselves are shared), so they are
@@ -71,7 +71,7 @@ impl MigrationContext {
     /// of the document.
     ///
     /// Cost: O(log statements) per query of the sections.
-    pub(crate) fn new(sections: &[MigrationSection], statement_ranges: &[TextRange]) -> Self {
+    pub(crate) fn new(sections: &[Unit], statement_ranges: &[TextRange]) -> Self {
         let mut boundaries: Vec<Boundary> = sections
             .iter()
             .flat_map(|section| {
@@ -140,7 +140,7 @@ impl WalkCache {
     pub(crate) fn checkpoint_before(
         &mut self,
         at: TextSize,
-        sections: &[MigrationSection],
+        sections: &[Unit],
     ) -> Option<WalkState> {
         let (index, _) = self
             .checkpoints
