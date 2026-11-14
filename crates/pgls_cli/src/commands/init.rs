@@ -86,7 +86,7 @@ fn configure(project: &Detected, config: &mut PartialConfiguration) {
         db.database = Some(database.database.to_string());
         // Statement execution stays off: enabling it is the user's call.
     }
-    let tool = MigrationTool::of(project.tool);
+    let tool = (project.tool != MigrationTool::Plain).then_some(project.tool);
     if project.migrations_dir.is_some() || tool.is_some() {
         config.migrations = Some(PartialMigrationsConfiguration {
             migrations_dir: project.migrations_dir.clone(),
@@ -115,7 +115,7 @@ fn configured_settings(project: &Detected) -> String {
     if let Some(migrations_dir) = &project.migrations_dir {
         settings.push(("the migrations", "are", migrations_dir.clone()));
     }
-    if MigrationTool::of(project.tool).is_some() {
+    if project.tool != MigrationTool::Plain {
         settings.push(("the migration tool", "is", project.tool.name().to_string()));
     }
     let mut text = String::new();

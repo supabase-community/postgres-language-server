@@ -2637,6 +2637,8 @@ dependencies = [
  "pgls_lexer",
  "pgls_statement_splitter",
  "pgls_text_size",
+ "schemars",
+ "serde",
  "tempfile",
  "toml",
 ]

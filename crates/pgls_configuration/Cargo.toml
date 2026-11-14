@@ -34,7 +34,7 @@ serde_json                = { workspace = true, features = ["raw_value"] }
 doctest = false
 
 [features]
-schema = ["dep:schemars", "schemars/indexmap"]
+schema = ["dep:schemars", "pgls_migrations/schema", "schemars/indexmap"]
 
 [lints]
 workspace = true

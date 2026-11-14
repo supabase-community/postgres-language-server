@@ -9,7 +9,7 @@ use pgls_analyser::{
 };
 use pgls_configuration::RuleSelector;
 use pgls_fs::PgLSPath;
-use pgls_migrations::{MigrationTool, Role};
+use pgls_migrations::Role;
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 
@@ -86,10 +86,11 @@ impl<'a> AnalysisRequest<'a> {
 impl WorkspaceServer {
     /// Whether the file is a migration. Migration-only rules don't run on other files.
     fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
-        let Some((tool, migrations_dir)) = settings.migrations.as_ref().and_then(|migrations| {
-            let tool = MigrationTool::from(migrations.tool);
-            Some((tool, migrations.path.as_ref()?))
-        }) else {
+        let Some((tool, migrations_dir)) = settings
+            .migrations
+            .as_ref()
+            .and_then(|migrations| Some((migrations.tool, migrations.path.as_ref()?)))
+        else {
             return FileKind::Unknown;
         };
         match tool.file(path, migrations_dir).role {

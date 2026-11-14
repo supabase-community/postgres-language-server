@@ -25,21 +25,50 @@ mod markers;
 mod supabase;
 
 use std::path::Path;
+use std::str::FromStr;
 
 use pgls_fs::FileSystem;
 use pgls_text_size::TextRange;
+use serde::{Deserialize, Serialize};
 
 pub use detect::{Detected, LocalDatabase, Root};
 pub use markers::{Direction, SectionMarkerDiagnostic, Unit};
 
-/// A migration tool.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+// The value of `migrations.tool`: the doc comments are the documentation of the setting.
+/// The migration tool that runs the migration files.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
 pub enum MigrationTool {
-    /// No tool: plain SQL files, every file is one migration.
+    /// The whole file is one migration (default).
+    #[default]
+    #[serde(rename = "none")]
     Plain,
+    /// The Supabase CLI. Every file is one migration.
     Supabase,
+    /// `-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section
+    /// without a transaction, but still as one query.
     Dbmate,
+    /// `-- +goose Up` and `-- +goose Down` of goose. `-- +goose NO TRANSACTION` runs the file
+    /// without a transaction, statement by statement.
     Goose,
+}
+
+/// The value of `--migration-tool`.
+impl FromStr for MigrationTool {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "none" => Ok(Self::Plain),
+            "supabase" => Ok(Self::Supabase),
+            "dbmate" => Ok(Self::Dbmate),
+            "goose" => Ok(Self::Goose),
+            _ => Err(
+                "Value not supported for the migration tool. Use 'none', 'supabase', 'dbmate' or 'goose'.",
+            ),
+        }
+    }
 }
 
 impl MigrationTool {

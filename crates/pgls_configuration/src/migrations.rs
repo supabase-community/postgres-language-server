@@ -1,7 +1,6 @@
-use std::str::FromStr;
-
 use bpaf::Bpaf;
 use pgls_configuration_macros::{Merge, Partial};
+pub use pgls_migrations::MigrationTool;
 use serde::{Deserialize, Serialize};
 
 /// The configuration of the filesystem
@@ -61,61 +60,10 @@ impl PartialMigrationsConfiguration {
     }
 }
 
-/// The migration tool that runs the migration files.
-#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[serde(rename_all = "camelCase")]
-pub enum MigrationTool {
-    /// The whole file is one migration (default).
-    #[default]
-    None,
-    /// The Supabase CLI. Every file is one migration.
-    Supabase,
-    /// `-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section
-    /// without a transaction, but still as one query.
-    Dbmate,
-    /// `-- +goose Up` and `-- +goose Down` of goose. `-- +goose NO TRANSACTION` runs the file
-    /// without a transaction, statement by statement.
-    Goose,
-}
-
-impl FromStr for MigrationTool {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "none" => Ok(Self::None),
-            "supabase" => Ok(Self::Supabase),
-            "dbmate" => Ok(Self::Dbmate),
-            "goose" => Ok(Self::Goose),
-            _ => Err(
-                "Value not supported for the migration tool. Use 'none', 'supabase', 'dbmate' or 'goose'.",
-            ),
-        }
-    }
-}
-
-impl MigrationTool {
-    /// The value of `migrations.tool` for the tool, if it isn't the default.
-    pub fn of(tool: pgls_migrations::MigrationTool) -> Option<Self> {
-        match tool {
-            pgls_migrations::MigrationTool::Plain => None,
-            pgls_migrations::MigrationTool::Supabase => Some(Self::Supabase),
-            pgls_migrations::MigrationTool::Dbmate => Some(Self::Dbmate),
-            pgls_migrations::MigrationTool::Goose => Some(Self::Goose),
-        }
-    }
-}
-
-/// The tool that the workspace runs files with.
-impl From<MigrationTool> for pgls_migrations::MigrationTool {
-    fn from(tool: MigrationTool) -> Self {
-        match tool {
-            MigrationTool::None => Self::Plain,
-            MigrationTool::Supabase => Self::Supabase,
-            MigrationTool::Dbmate => Self::Dbmate,
-            MigrationTool::Goose => Self::Goose,
-        }
+/// Like the `Merge` derive of an enum: the tool of the other configuration wins.
+impl crate::Merge for MigrationTool {
+    fn merge_with(&mut self, other: Self) {
+        *self = other;
     }
 }
 
@@ -137,7 +85,7 @@ mod tests {
         assert_eq!(config.migration_tool(), MigrationTool::Supabase);
 
         let config = MigrationsConfiguration::from(PartialMigrationsConfiguration::default());
-        assert_eq!(config.migration_tool(), MigrationTool::None);
+        assert_eq!(config.migration_tool(), MigrationTool::Plain);
         assert!(config.lint_down);
     }
 

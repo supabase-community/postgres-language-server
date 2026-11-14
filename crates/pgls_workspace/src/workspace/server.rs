@@ -353,7 +353,7 @@ impl WorkspaceServer {
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.tool)
             .unwrap_or_default();
-        (settings_version, tool.into())
+        (settings_version, tool)
     }
 
     /// Gives the open document at `path` the migration tool of the current settings of
@@ -632,9 +632,7 @@ fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
         .and_then(|migration_settings| {
             let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let version = MigrationTool::from(migration_settings.tool)
-                .file(path, migrations_dir)
-                .version?;
+            let version = migration_settings.tool.file(path, migrations_dir).version?;
 
             Some(version <= Version::Number(*ignore_before))
         })

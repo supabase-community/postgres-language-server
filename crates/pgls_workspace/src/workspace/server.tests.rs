@@ -398,7 +398,7 @@ fn the_migration_tool_follows_settings_changes() {
     assert_eq!(marker_diagnostics(&workspace, project_key, &path), 0);
     set_tool(&workspace, project_key, MigrationTool::Dbmate);
     assert_eq!(marker_diagnostics(&workspace, project_key, &path), 1);
-    set_tool(&workspace, project_key, MigrationTool::None);
+    set_tool(&workspace, project_key, MigrationTool::Plain);
     assert_eq!(marker_diagnostics(&workspace, project_key, &path), 0);
 }
 
@@ -5659,7 +5659,7 @@ fn test_goose_envsub_expansions_are_analysed_as_parameters() {
 #[test]
 fn test_goose_envsub_needs_the_goose_tool() {
     // Other tools don't replace the expansions, so they stay syntax errors.
-    for tool in [MigrationTool::None, MigrationTool::Dbmate] {
+    for tool in [MigrationTool::Plain, MigrationTool::Dbmate] {
         let categories = migration_diagnostics(tool, None, GOOSE_ENVSUB);
         assert_eq!(
             categories
@@ -5861,7 +5861,7 @@ fn test_goose_envsub_more_than_nine_expansions() {
 fn named_parameter_in_a_join_condition_is_a_value() {
     // A value: the relations are still checked.
     let categories = migration_diagnostics(
-        MigrationTool::None,
+        MigrationTool::Plain,
         None,
         "select * from orders join customers on :enabled;",
     );
