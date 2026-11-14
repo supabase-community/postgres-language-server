@@ -1,0 +1,7 @@
+-- Qualified types, the types whose names are keywords, serial and %TYPE.
+-- expect_no_diagnostics
+select 'hello'::pg_catalog.text;
+select 1::integer, 1::bigint, 'a'::varchar(10), 'a'::character varying, true::boolean;
+select now()::timestamp with time zone, 1.5::numeric(10, 2), 1::double precision, interval '1 day';
+create table public.users (id serial, created_at timestamp, name pg_catalog.text);
+create function public.f(x public.users.id%type) returns integer language sql as 'select 1';

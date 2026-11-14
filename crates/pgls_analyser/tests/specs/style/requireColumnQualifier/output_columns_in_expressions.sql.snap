@@ -1,0 +1,23 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- An output column can only be named on its own in ORDER BY, GROUP BY and DISTINCT ON. In an
+-- expression, the name is a column.
+-- expect_lint/requireColumnQualifier
+select u.name as n from public.users u order by pg_catalog.lower(n);
+select u.name as n from public.users u order by n;
+select distinct on (n) u.name as n from public.users u;
+
+```
+
+# Diagnostics
+lint/requireColumnQualifier ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column n is not qualified with its table.
+  
+  i Without a table, the column is looked up in every relation of the query and of the queries around it, so a column with the same name in another relation can take its place.
+  
+  i Qualify the column with the name or alias of its table, e.g. t.n.

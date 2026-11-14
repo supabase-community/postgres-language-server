@@ -1,0 +1,57 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- A CTE doesn't hide the target of INSERT, UPDATE, DELETE or MERGE: Postgres looks it up through
+-- the search_path.
+-- expect_lint/requireRelationSchema
+with users as (select 1 as id) update users set id = 2;
+-- expect_lint/requireRelationSchema
+with users as (select 1 as id) insert into users select u.id from users u;
+-- expect_lint/requireRelationSchema
+with users as (select 1 as id) delete from users;
+-- expect_lint/requireRelationSchema
+with users as (select 1 as id) merge into users t using users s on t.id = s.id when matched then delete;
+
+```
+
+# Diagnostics
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation users is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.users.
+  
+
+
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation users is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.users.
+  
+
+
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation users is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.users.
+  
+
+
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation users is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.users.

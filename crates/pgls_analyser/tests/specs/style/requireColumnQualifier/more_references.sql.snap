@@ -1,0 +1,68 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireColumnQualifier
+select u.id from public.users u where name = 'alice';
+-- expect_lint/requireColumnQualifier
+update public.users u set name = 'bob' where id = 1;
+-- expect_lint/requireColumnQualifier
+delete from public.posts p where p.id = 1 returning title;
+-- A subquery can refer to a column of the query around it.
+-- expect_lint/requireColumnQualifier
+select u.id from public.users u where u.id in (select p.user_id from public.posts p where p.id = user_id);
+-- expect_lint/requireColumnQualifier
+insert into public.users (id, name) values (1, 'a') on conflict (id) do update set name = excluded.name where active;
+
+```
+
+# Diagnostics
+lint/requireColumnQualifier ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column name is not qualified with its table.
+  
+  i Without a table, the column is looked up in every relation of the query and of the queries around it, so a column with the same name in another relation can take its place.
+  
+  i Qualify the column with the name or alias of its table, e.g. t.name.
+  
+
+
+lint/requireColumnQualifier ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column id is not qualified with its table.
+  
+  i Without a table, the column is looked up in every relation of the query and of the queries around it, so a column with the same name in another relation can take its place.
+  
+  i Qualify the column with the name or alias of its table, e.g. t.id.
+  
+
+
+lint/requireColumnQualifier ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column title is not qualified with its table.
+  
+  i Without a table, the column is looked up in every relation of the query and of the queries around it, so a column with the same name in another relation can take its place.
+  
+  i Qualify the column with the name or alias of its table, e.g. t.title.
+  
+
+
+lint/requireColumnQualifier ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column user_id is not qualified with its table.
+  
+  i Without a table, the column is looked up in every relation of the query and of the queries around it, so a column with the same name in another relation can take its place.
+  
+  i Qualify the column with the name or alias of its table, e.g. t.user_id.
+  
+
+
+lint/requireColumnQualifier ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column active is not qualified with its table.
+  
+  i Without a table, the column is looked up in every relation of the query and of the queries around it, so a column with the same name in another relation can take its place.
+  
+  i Qualify the column with the name or alias of its table, e.g. t.active.

@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireFunctionSchema
+select abs(1);
+
+```
+
+# Diagnostics
+lint/requireFunctionSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Function abs is not schema-qualified.
+  
+  i Without a schema, the function is resolved through the search_path: a function with the same name earlier on the search_path, or an overload whose argument types match better, is called instead.
+  
+  i Specify the schema, e.g. pg_catalog.abs for a built-in function.

@@ -1,0 +1,79 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireFunctionSchema
+select count(*) from public.users;
+-- expect_lint/requireFunctionSchema
+select row_number() over () from public.users;
+-- expect_lint/requireFunctionSchema
+create table public.t (id uuid default gen_random_uuid());
+-- expect_lint/requireFunctionSchema
+create index on public.users (lower(email));
+-- expect_lint/requireFunctionSchema
+call refresh_stats();
+-- expect_lint/requireFunctionSchema
+select * from generate_series(1, 3);
+
+```
+
+# Diagnostics
+lint/requireFunctionSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Function count is not schema-qualified.
+  
+  i Without a schema, the function is resolved through the search_path: a function with the same name earlier on the search_path, or an overload whose argument types match better, is called instead.
+  
+  i Specify the schema, e.g. pg_catalog.count for a built-in function.
+  
+
+
+lint/requireFunctionSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Function row_number is not schema-qualified.
+  
+  i Without a schema, the function is resolved through the search_path: a function with the same name earlier on the search_path, or an overload whose argument types match better, is called instead.
+  
+  i Specify the schema, e.g. pg_catalog.row_number for a built-in function.
+  
+
+
+lint/requireFunctionSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Function gen_random_uuid is not schema-qualified.
+  
+  i Without a schema, the function is resolved through the search_path: a function with the same name earlier on the search_path, or an overload whose argument types match better, is called instead.
+  
+  i Specify the schema, e.g. pg_catalog.gen_random_uuid for a built-in function.
+  
+
+
+lint/requireFunctionSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Function lower is not schema-qualified.
+  
+  i Without a schema, the function is resolved through the search_path: a function with the same name earlier on the search_path, or an overload whose argument types match better, is called instead.
+  
+  i Specify the schema, e.g. pg_catalog.lower for a built-in function.
+  
+
+
+lint/requireFunctionSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Function refresh_stats is not schema-qualified.
+  
+  i Without a schema, the function is resolved through the search_path: a function with the same name earlier on the search_path, or an overload whose argument types match better, is called instead.
+  
+  i Specify the schema, e.g. pg_catalog.refresh_stats for a built-in function.
+  
+
+
+lint/requireFunctionSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Function generate_series is not schema-qualified.
+  
+  i Without a schema, the function is resolved through the search_path: a function with the same name earlier on the search_path, or an overload whose argument types match better, is called instead.
+  
+  i Specify the schema, e.g. pg_catalog.generate_series for a built-in function.

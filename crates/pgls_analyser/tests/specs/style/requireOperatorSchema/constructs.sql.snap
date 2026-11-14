@@ -1,0 +1,115 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireOperatorSchema
+select * from pg_catalog.pg_class where relkind in ('r', 'p');
+-- expect_lint/requireOperatorSchema
+select * from pg_catalog.pg_class where relname like 'pg%';
+-- expect_lint/requireOperatorSchema
+select * from pg_catalog.pg_class where relname is distinct from 'x';
+-- expect_lint/requireOperatorSchema
+select * from pg_catalog.pg_class where relpages between 1 and 10;
+-- expect_lint/requireOperatorSchema
+select nullif(1, 2);
+-- expect_lint/requireOperatorSchema
+select * from pg_catalog.pg_class where oid in (select indrelid from pg_catalog.pg_index);
+-- expect_lint/requireOperatorSchema
+select * from pg_catalog.pg_class where relkind = any (array['r', 'p']);
+-- expect_lint/requireOperatorSchema
+select * from pg_catalog.pg_class order by relname using <;
+-- expect_lint/requireOperatorSchema
+select -relpages from pg_catalog.pg_class;
+
+```
+
+# Diagnostics
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × IN uses the operator = without a schema.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i IN has no schema-qualified form. Write the comparison with OPERATOR(pg_catalog.=) instead.
+  
+
+
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × LIKE uses the operator ~~ without a schema.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i LIKE has no schema-qualified form. Write the comparison with OPERATOR(pg_catalog.~~) instead.
+  
+
+
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × IS DISTINCT FROM uses the operator = without a schema.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i IS DISTINCT FROM has no schema-qualified form. Write the comparison with OPERATOR(pg_catalog.=) instead.
+  
+
+
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × BETWEEN uses the operators >= and <= without a schema.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i BETWEEN has no schema-qualified form. Write the comparison with OPERATOR(pg_catalog.>=) instead.
+  
+
+
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × NULLIF uses the operator = without a schema.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i NULLIF has no schema-qualified form. Write the comparison with OPERATOR(pg_catalog.=) instead.
+  
+
+
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × IN uses the operator = without a schema.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i IN has no schema-qualified form. Write the comparison with OPERATOR(pg_catalog.=) instead.
+  
+
+
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Operator = is not schema-qualified.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i Specify the schema, e.g. OPERATOR(pg_catalog.=).
+  
+
+
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Operator < is not schema-qualified.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i Specify the schema, e.g. OPERATOR(pg_catalog.<).
+  
+
+
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Operator - is not schema-qualified.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i Specify the schema, e.g. OPERATOR(pg_catalog.-).

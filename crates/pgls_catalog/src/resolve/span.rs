@@ -4,6 +4,9 @@
 
 use pgls_query::protobuf::{KeywordKind, Token as Kind};
 
+/// The most tokens of a SQL construct that uses an operator, like `IS NOT DISTINCT FROM`.
+const CONSTRUCT_TOKENS_MAX: usize = 4;
+
 /// A token of the statement. Comments are left out.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Token {
@@ -208,7 +211,7 @@ impl<'a> Tokens<'a> {
     }
 
     /// The end of the token starting at `start`. `None` for parentheses, commas and semicolons.
-    fn token_end(&self, start: usize) -> Option<usize> {
+    pub fn token_end(&self, start: usize) -> Option<usize> {
         let token = self.tokens.get(self.at(start)?)?;
         if matches!(
             token.kind,
@@ -223,6 +226,22 @@ impl<'a> Tokens<'a> {
     /// it starts with one.
     pub fn expression_end(&self, start: usize) -> Option<usize> {
         self.name_end(start).or_else(|| self.token_end(start))
+    }
+
+    /// The end of the SQL construct starting at `start` whose keywords end with `last`, like
+    /// `IS NOT DISTINCT FROM`, or `BETWEEN SYMMETRIC` when `last` is `BETWEEN`. The first token
+    /// if `last` doesn't follow within [`CONSTRUCT_TOKENS_MAX`] tokens.
+    pub fn construct_end(&self, start: usize, last: Kind) -> Option<usize> {
+        let first = self.at(start)?;
+        let mut end = (first..first + CONSTRUCT_TOKENS_MAX)
+            .find(|&index| self.kind(index) == Some(last))
+            .unwrap_or(first);
+        if last == Kind::Between
+            && matches!(self.kind(end + 1), Some(Kind::Symmetric | Kind::Asymmetric))
+        {
+            end += 1;
+        }
+        self.end(end)
     }
 
     /// The end of the operator starting at `start`: a single token, or `OPERATOR(schema.op)`.

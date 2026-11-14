@@ -5,7 +5,11 @@ use super::Resolver;
 use crate::lookup::Lookup;
 use crate::resolve::{
     FindingKind, Reference,
-    scope::{ColumnLookup, Item, find_column, find_column_item, find_item, has_opaque_items},
+    lookups::LookupKind,
+    scope::{
+        ColumnLookup, Item, find_column, find_column_item, find_item, has_opaque_items,
+        may_be_output_name,
+    },
 };
 
 /// Reports a column reference that matches no column, or columns of several FROM items, and a
@@ -57,7 +61,10 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
 }
 
 fn resolve_unqualified_column(r: &mut Resolver, name: &str, location: i32) {
-    match find_column(&r.levels, name) {
+    let lookup = find_column(&r.levels, name);
+    record_column_lookup(r, name, location, &lookup);
+    match lookup {
+        ColumnLookup::Output => {}
         ColumnLookup::Found => {
             let reference = column_reference(r, find_column_item(&r.levels, name), name, location);
             record(r, reference);
@@ -161,6 +168,53 @@ fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, locat
         },
         location,
     );
+}
+
+/// Records the column reference `n` as a column lookup if it is a single name that Postgres looks
+/// up as a column, see [`record_column_lookup`].
+pub(in crate::resolve) fn record_column_ref_lookup(r: &mut Resolver, n: &ColumnRef) {
+    if !r.collects_lookups() {
+        return;
+    }
+    if let Some([name]) = string_values(&n.fields).as_deref() {
+        let lookup = find_column(&r.levels, name);
+        record_column_lookup(r, name, n.location, &lookup);
+    }
+}
+
+/// Records the unqualified name `name` as a column lookup, when lookups are being collected and
+/// the query has relations, unless Postgres resolves it to something else. [`colNameToVar`]
+/// looks for a column in every query level first, so a name is a column if one has it. If none
+/// does, [`transformColumnRef`] reads the name as a whole row of a FROM item, and then a
+/// parameter of the SQL function ([`sql_fn_post_column_ref`]). In `ORDER BY`, `GROUP BY` and
+/// `DISTINCT ON`, it can be an output column instead ([`findTargetlistEntrySQL92`]). If the
+/// columns of a query level are not known, a name that can be one of these is not recorded.
+///
+/// [`colNameToVar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L930
+/// [`transformColumnRef`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L509
+/// [`sql_fn_post_column_ref`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L353
+/// [`findTargetlistEntrySQL92`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L2006
+fn record_column_lookup(r: &mut Resolver, name: &str, location: i32, lookup: &ColumnLookup) {
+    if !r.collects_lookups() || r.single_relation {
+        return;
+    }
+    // Without relations, a name can't be a column, and Postgres raises an error.
+    if r.levels.iter().all(|level| level.items.is_empty()) {
+        return;
+    }
+    let is_column = match lookup {
+        ColumnLookup::Found | ColumnLookup::Ambiguous(_) => true,
+        ColumnLookup::Output => false,
+        ColumnLookup::Unknown | ColumnLookup::NotFound => {
+            find_item(&r.levels, name).is_none()
+                && r.function_param_index(name).is_none()
+                && !may_be_output_name(&r.levels, name)
+        }
+    };
+    if is_column {
+        let span = r.token_span(location);
+        r.record_lookup(LookupKind::Column, name, location, span);
+    }
 }
 
 /// The reference to the column `name` of `item`, if references are collected and the source of

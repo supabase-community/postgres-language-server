@@ -67,6 +67,7 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
         function: params.function,
         sql: Some(params.sql),
         collect_references: true,
+        collect_lookups: false,
     })
     .references;
     semantic_tokens_of_references(&references, params.sql)

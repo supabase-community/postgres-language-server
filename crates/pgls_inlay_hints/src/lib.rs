@@ -61,6 +61,7 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
         function: params.function,
         sql: Some(params.sql),
         collect_references: true,
+        collect_lookups: false,
     })
     .references;
     inlay_hints_of_references(&references, params.sql, params.parameter_names)

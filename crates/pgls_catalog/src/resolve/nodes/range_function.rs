@@ -8,7 +8,7 @@ use super::{
     Resolver,
     alias::{apply_alias, apply_typed_alias},
     func_call::resolve_func_call,
-    resolve_node,
+    record_unresolved_node, resolve_node,
 };
 use crate::resolve::{
     expr::call_args,
@@ -71,6 +71,9 @@ pub(super) fn resolve_range_function(
             None => {}
         }
         if let Some(definitions) = column_definitions {
+            for definition in definitions {
+                record_unresolved_node(r, definition, false);
+            }
             function_columns = column_definition_names(definitions);
         }
 
@@ -86,6 +89,9 @@ pub(super) fn resolve_range_function(
     r.exit_level();
 
     if !n.coldeflist.is_empty() {
+        for definition in &n.coldeflist {
+            record_unresolved_node(r, definition, false);
+        }
         columns = column_definition_names(&n.coldeflist);
     }
     if n.ordinality

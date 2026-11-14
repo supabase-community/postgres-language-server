@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireRelationSchema
+select * from pg_statio_all_tables;
+
+```
+
+# Diagnostics
+lint/requireRelationSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation pg_statio_all_tables is not schema-qualified.
+  
+  i Without a schema, the relation is resolved through the search_path: a relation with the same name earlier on the search_path, like a temporary table, is used instead.
+  
+  i Specify the schema, e.g. public.pg_statio_all_tables.

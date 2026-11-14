@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireOperatorSchema
+select * from pg_catalog.pg_stat_io where backend_type = 'client backend';
+
+```
+
+# Diagnostics
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Operator = is not schema-qualified.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i Specify the schema, e.g. OPERATOR(pg_catalog.=).

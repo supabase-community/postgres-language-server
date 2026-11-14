@@ -236,6 +236,7 @@ impl WorkspaceServer {
                     function: stmt.function.as_ref(),
                     sql: Some(sql),
                     collect_references: true,
+                    collect_lookups: false,
                 })
                 .references,
             ));

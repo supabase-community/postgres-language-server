@@ -3,7 +3,7 @@ use pgls_query_ext::utils::{QualifiedName, qualified_name};
 
 use super::Resolver;
 use crate::lookup::Lookup;
-use crate::resolve::{FindingKind, Reference};
+use crate::resolve::{FindingKind, Reference, lookups::record_type};
 
 /// Types whose input is the name of a catalog object, which we don't resolve.
 const OBJECT_NAME_TYPES: &[&str] = &[
@@ -21,6 +21,7 @@ const OBJECT_NAME_TYPES: &[&str] = &[
 ];
 
 pub(super) fn resolve_type_name(r: &mut Resolver, n: &TypeName) {
+    record_type(r, n);
     if n.pct_type {
         r.depends_on_file();
         return;
