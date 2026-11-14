@@ -1,7 +1,7 @@
 use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::resolve::target_name;
+use pgls_catalog::resolve::{query_output_columns, target_name};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{
@@ -11,6 +11,7 @@ use pgls_query::protobuf::{
 use pgls_query::{NodeEnum, NodeRef};
 use pgls_query_ext::utils::{alter_table_cmds, cmd_def, is_star};
 use pgls_text_size::TextRange;
+use std::cell::OnceCell;
 
 declare_lint_rule! {
     /// A column is assigned or declared more than once.
@@ -63,6 +64,9 @@ impl LinterRule for BanDuplicateColumnAssignments {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let tokens = ctx.tokens();
         let mut diagnostics = Vec::new();
+        // The output column names of a query, as far as the catalog knows them.
+        let catalog_names =
+            |query: &Node| query_output_columns(query, ctx.catalog(), ctx.session().search_path());
 
         for node in ctx.stmt().iter() {
             match node {
@@ -103,6 +107,7 @@ impl LinterRule for BanDuplicateColumnAssignments {
                         column_list(&stmt.aliases, stmt.view.as_ref(), tokens),
                         stmt.query.as_deref(),
                         tokens,
+                        &catalog_names,
                     ),
                     Definition::Relation,
                     &mut diagnostics,
@@ -115,13 +120,17 @@ impl LinterRule for BanDuplicateColumnAssignments {
                         column_list(&into.col_names, into.rel.as_ref(), tokens)
                     });
                     report_definitions(
-                        output_columns(names, stmt.query.as_deref(), tokens),
+                        output_columns(names, stmt.query.as_deref(), tokens, &catalog_names),
                         Definition::Relation,
                         &mut diagnostics,
                     );
                 }
                 NodeRef::SelectStmt(stmt) if stmt.into_clause.is_some() => report_definitions(
-                    select_columns(Vec::new(), stmt, tokens),
+                    select_columns(Vec::new(), stmt, tokens, &|| {
+                        catalog_names(&Node {
+                            node: Some(NodeEnum::SelectStmt(Box::new(stmt.clone()))),
+                        })
+                    }),
                     Definition::Relation,
                     &mut diagnostics,
                 ),
@@ -357,18 +366,24 @@ fn output_columns(
     names: Vec<Column>,
     query: Option<&Node>,
     tokens: Option<StatementTokens>,
+    catalog_names: &dyn Fn(&Node) -> Option<Vec<String>>,
 ) -> Vec<Column> {
-    match query.and_then(|query| query.node.as_ref()) {
-        Some(NodeEnum::SelectStmt(select)) => select_columns(names, select, tokens),
+    match query.and_then(|query| query.node.as_ref().map(|node| (query, node))) {
+        Some((query, NodeEnum::SelectStmt(select))) => {
+            select_columns(names, select, tokens, &|| catalog_names(query))
+        }
         _ => names,
     }
 }
 
-/// Columns we can't name, like the expansion of `*`, are left out.
+/// Columns we can't name, like the expansion of `*`, are left out. `catalog_names` gives the
+/// output column names of the query that the catalog knows, for the entries whose name depends
+/// on the catalog, like `(select * from t)`, which is named after the first column of `t`.
 fn select_columns(
     names: Vec<Column>,
     select: &SelectStmt,
     tokens: Option<StatementTokens>,
+    catalog_names: &dyn Fn() -> Option<Vec<String>>,
 ) -> Vec<Column> {
     let mut select = select;
     // The left-most select of a set operation names the columns.
@@ -405,13 +420,35 @@ fn select_columns(
     }
 
     let skipped = names.len();
+    let known_names = OnceCell::new();
+    // The output columns before the first `*` are the entries of the select list.
+    let columns_before_star = first_star.unwrap_or(targets.len());
+    let name = |index: usize, target: &ResTarget| -> Option<String> {
+        if let Some(name) = target_name(target) {
+            return Some(name);
+        }
+        if index >= columns_before_star {
+            return None;
+        }
+        known_names
+            .get_or_init(catalog_names)
+            .as_ref()?
+            .get(index)
+            .cloned()
+    };
     let mut columns = names;
-    columns.extend(targets.iter().skip(skipped).filter_map(|target| {
-        Some(Column {
-            name: target_name(target)?,
-            span: select_entry_range(tokens, target.location),
-        })
-    }));
+    columns.extend(
+        targets
+            .iter()
+            .enumerate()
+            .skip(skipped)
+            .filter_map(|(index, target)| {
+                Some(Column {
+                    name: name(index, target)?,
+                    span: select_entry_range(tokens, target.location),
+                })
+            }),
+    );
     columns
 }
 
