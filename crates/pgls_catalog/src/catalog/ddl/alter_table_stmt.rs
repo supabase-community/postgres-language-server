@@ -1,15 +1,11 @@
 use pgls_query::{
     NodeEnum,
-    protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, ObjectType},
+    protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, DropBehavior, ObjectType},
 };
 use pgls_query_ext::options::find_def_elem;
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def, range_var_name, type_name};
 
-use crate::catalog::{
-    Catalog, Key, key,
-    names::{range_var_name, type_label},
-    overlay::column_info,
-};
+use crate::catalog::{Catalog, Key, key, overlay::column_info};
 use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};
 use crate::{Generated, Identity};
 
@@ -29,7 +25,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     let commands: Vec<&AlterTableCmd> = alter_table_cmds(n).collect();
 
     if n.objtype() == ObjectType::ObjectType {
-        c.change_type(&range_var_name(range_var), search_path, |c, type_info| {
+        c.change_type(range_var_name(range_var), search_path, |c, type_info| {
             if let Some(attributes) = type_info.attributes.as_mut() {
                 for command in &commands {
                     apply_column_change(c, attributes, command, search_path, IdentityChange::Apply);
@@ -47,7 +43,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     else {
         return;
     };
-    apply_index_changes(c, &relation, &commands);
+    apply_index_changes(c, &relation, range_var.inh, &commands);
     apply_column_changes(c, &relation, &commands, search_path);
     if n.objtype() == ObjectType::ObjectTable || n.objtype() == ObjectType::ObjectForeignTable {
         apply_inheritance_changes(c, &relation, &commands, search_path);
@@ -123,21 +119,13 @@ fn apply_column_changes(
         }
     });
 
-    // A child keeps a dropped column that is also its own or inherited from another parent, and
-    // so do its own children ([`ATExecDropColumn`]). We don't know which columns those are.
-    //
-    // [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9419
+    // Some children may keep a dropped column, see
+    // [`Catalog::descendants_keeping_dropped_columns`].
     let drops_columns = commands
         .iter()
         .any(|command| command.subtype() == AlterTableType::AtDropColumn);
     if drops_columns {
-        let root = key(&relation.schema, &relation.name);
-        let keeping: Vec<_> = c
-            .with_descendants(root.clone())
-            .into_iter()
-            .filter(|child| *child != root && c.children_with_own_columns.contains(child))
-            .flat_map(|child| c.with_descendants(child))
-            .collect();
+        let keeping = c.descendants_keeping_dropped_columns(&key(&relation.schema, &relation.name));
         for child in keeping {
             if let Some(mut child) = c.relation_in(&child.0, &child.1).found() {
                 child.columns = None;
@@ -309,11 +297,19 @@ enum IdentityChange {
 ///   partitioned table also the constraints and indexes of the partitions
 ///   ([`dropconstraint_internal`]). We don't know which constraints have an index, so the index
 ///   with the name of the constraint becomes unknown.
+/// - `DROP COLUMN` drops the indexes that use the column, see [`Catalog::drop_column_indexes`].
+///   Without `ONLY`, Postgres drops the column from the children as well.
 ///
+/// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
 /// [`transformIndexConstraint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_utilcmd.c#L2406
 /// [`ATExecAddIndexConstraint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9715
 /// [`dropconstraint_internal`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L14098
-fn apply_index_changes(c: &mut Catalog, table: &RelationInfo, commands: &[&AlterTableCmd]) {
+fn apply_index_changes(
+    c: &mut Catalog,
+    table: &RelationInfo,
+    recurse: bool,
+    commands: &[&AlterTableCmd],
+) {
     for command in commands {
         match command.subtype() {
             AlterTableType::AtAddConstraint => {
@@ -334,6 +330,25 @@ fn apply_index_changes(c: &mut Catalog, table: &RelationInfo, commands: &[&Alter
                 {
                     c.move_index(index, &constraint.conname);
                 }
+            }
+            AlterTableType::AtDropColumn => {
+                // `IF EXISTS` skips a column the table doesn't have, before it recurses to the
+                // children ([`ATExecDropColumn`]).
+                let has_column = table
+                    .columns
+                    .as_ref()
+                    .map(|columns| columns.iter().any(|known| known.name == command.name));
+                if command.missing_ok && has_column == Some(false) {
+                    continue;
+                }
+                // Postgres rejects dropping an inherited column, and we don't know which columns
+                // of a child are inherited. It also rejects `ONLY` on a partitioned table with
+                // partitions.
+                let may_fail = c.is_inheritance_child(table)
+                    || (!recurse && table.kind == RelationKind::PartitionedTable)
+                    || (command.missing_ok && has_column.is_none());
+                let cascade = command.behavior() == DropBehavior::DropCascade;
+                c.drop_column_indexes(table, &command.name, recurse, cascade, may_fail);
             }
             AlterTableType::AtDropConstraint => {
                 c.mark_index_unknown(&table.schema, &command.name);
@@ -423,11 +438,15 @@ fn apply_column_change(
                     .iter_mut()
                     .find(|column| column.name == command.name),
             ) {
-                column.type_name = definition.type_name.as_ref().and_then(type_label);
+                column.type_name = definition
+                    .type_name
+                    .as_ref()
+                    .and_then(type_name)
+                    .map(|name| name.name.to_owned());
                 column.ty = definition
                     .type_name
                     .as_ref()
-                    .and_then(|name| crate::normalize_type_name(c, name, search_path).0)
+                    .and_then(|name| crate::typing::normalize_type_name(c, name, search_path).0)
                     .map(crate::typing::Type::Named);
             }
         }

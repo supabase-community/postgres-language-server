@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use crate::typing::{Type, TypeId};
+use crate::typing::{CoercionContext, Type, TypeId};
 use crate::{
-    CastContext, CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature,
-    OperatorInfo, OperatorKind, TypeKind,
+    CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature, OperatorInfo,
+    OperatorKind, TypeKind,
 };
 use crate::{Generated, Identity, ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -88,16 +88,7 @@ impl CatalogBase {
                     origin: Origin::Database,
 
                     id: Some(TypeId::Snapshot(type_.id)),
-                    kind: match type_.typtype.as_str() {
-                        "b" => Some(TypeKind::Base),
-                        "c" => Some(TypeKind::Composite),
-                        "d" => Some(TypeKind::Domain),
-                        "e" => Some(TypeKind::Enum),
-                        "p" => Some(TypeKind::Pseudo),
-                        "r" => Some(TypeKind::Range),
-                        "m" => Some(TypeKind::Multirange),
-                        _ => None,
-                    },
+                    kind: type_.typtype.parse().ok().and_then(TypeKind::from_typtype),
                     category: type_.typcategory.chars().next(),
                     preferred: Some(type_.typispreferred),
                     element: (type_.is_array && type_.typelem != 0)
@@ -189,6 +180,11 @@ impl CatalogBase {
                     relation: None,
                 });
         }
+        let sequence_columns = sequence_columns(|name| {
+            types
+                .get(&key("pg_catalog", name))
+                .and_then(|type_: &TypeInfo| type_.id.clone())
+        });
         for sequence in &snapshot.sequences {
             relations
                 .entry(key(&sequence.schema, &sequence.name))
@@ -196,7 +192,7 @@ impl CatalogBase {
                     schema: sequence.schema.clone(),
                     name: sequence.name.clone(),
                     kind: RelationKind::Other,
-                    columns: Some(sequence_columns(&types_by_id)),
+                    columns: Some(sequence_columns.clone()),
                     origin: Origin::Database,
                 });
         }
@@ -215,6 +211,7 @@ impl CatalogBase {
                     schema: index.schema.clone(),
                     name: index.name.clone(),
                     table: index.table_name.clone(),
+                    columns: index.columns.clone(),
                     origin: Origin::Database,
                 },
             );
@@ -356,9 +353,9 @@ impl CatalogBase {
                         source: TypeId::Snapshot(cast.source),
                         target: TypeId::Snapshot(cast.target),
                         context: match cast.context.as_str() {
-                            "i" => CastContext::Implicit,
-                            "a" => CastContext::Assignment,
-                            "e" => CastContext::Explicit,
+                            "i" => CoercionContext::Implicit,
+                            "a" => CoercionContext::Assignment,
+                            "e" => CoercionContext::Explicit,
                             _ => return None,
                         },
                         method: match cast.method.as_str() {
@@ -527,8 +524,9 @@ impl CatalogBase {
     }
 }
 
-/// The columns of a sequence relation.
-pub(super) fn sequence_columns(types: &FxHashMap<i64, &crate::PostgresType>) -> Vec<ColumnInfo> {
+/// The columns of a sequence relation. `builtin_type` looks up the identity of a `pg_catalog`
+/// type by name.
+pub(super) fn sequence_columns(builtin_type: impl Fn(&str) -> Option<TypeId>) -> Vec<ColumnInfo> {
     [
         ("last_value", "int8"),
         ("log_cnt", "int8"),
@@ -539,10 +537,7 @@ pub(super) fn sequence_columns(types: &FxHashMap<i64, &crate::PostgresType>) -> 
         ColumnInfo::new(
             name,
             Some(type_name.into()),
-            types
-                .values()
-                .find(|type_| type_.name == type_name && type_.schema == "pg_catalog")
-                .map(|type_| Type::Named(TypeId::Snapshot(type_.id))),
+            builtin_type(type_name).map(Type::Named),
         )
     })
     .collect()
