@@ -29,7 +29,10 @@ pub mod snapshot;
 pub mod typing;
 
 pub use catalog::{Catalog, CatalogBase};
-pub use identifier::{NamePosition, identifier_name, quote_identifier};
+pub use identifier::{
+    MAX_IDENTIFIER_BYTES, NamePosition, identifier_name, quote_identifier, truncate_identifier,
+    unicode_identifier_name, untruncated_identifier_name,
+};
 pub use lookup::{
     Candidates, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
     FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
