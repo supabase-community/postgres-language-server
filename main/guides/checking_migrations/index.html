@@ -1271,18 +1271,18 @@
 </div>
 <p>For pre-commit hooks and when working locally, use <code>--staged</code> to only lint files that have been staged. In CI environments, you most likely want to use <code>--changed</code> to only lint files that have been changed compared to your <code>vcs.default_branch</code> configuration. If <code>default_branch</code> is not set in your <code>postgres-language-server.jsonc</code>, use <code>--since=REF</code> to specify the base branch to compare against.</p>
 <h2 id="up-and-down-migrations-in-one-file">Up and down migrations in one file<a class="headerlink" href="#up-and-down-migrations-in-one-file" title="Permanent link">&para;</a></h2>
-<p>Some migration tools put the up and the down migration in the same file, separated by marker comments, and run each section on its own. Set <code>sectionMarkers</code> to the tool you use, so that each section is checked as a migration of its own:</p>
+<p>Some migration tools put the up and the down migration in the same file, separated by marker comments, and run each section on its own. Set <code>tool</code> to the tool you use, so that each section is checked as a migration of its own:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">"migrations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"migrationsDir"</span><span class="p">:</span><span class="w"> </span><span class="s2">"db/migrations"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"sectionMarkers"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dbmate"</span>
+<span class="w">        </span><span class="nt">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dbmate"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <table>
 <thead>
 <tr>
-<th><code>sectionMarkers</code></th>
+<th><code>tool</code></th>
 <th>Markers</th>
 <th>Without a transaction</th>
 </tr>
@@ -1299,14 +1299,21 @@
 <td><code>-- +goose NO TRANSACTION</code> (whole file)</td>
 </tr>
 <tr>
+<td><code>"supabase"</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td><code>"none"</code> (default)</td>
 <td></td>
 <td></td>
 </tr>
 </tbody>
 </table>
+<p>The Supabase CLI runs every file as one migration, so <code>"supabase"</code> checks files like <code>"none"</code>.</p>
 <p>In a dbmate project, <code>postgres-language-server init</code> sets both: it detects dbmate by a first migration in <code>db/migrations</code>, dbmate's default folder, that starts with <code>-- migrate:up</code>. goose has no default folder or configuration file, so <code>init</code> doesn't detect it.</p>
-<p>With section markers:</p>
+<p><code>tool</code> was called <code>sectionMarkers</code> before. <code>sectionMarkers</code> still works, with a deprecation warning, and <code>tool</code> wins if both are set.</p>
+<p>With a migration tool:</p>
 <ul>
 <li>The transaction, lock, and session state starts fresh in each section. A lock taken or a <code>lock_timeout</code> set in the up section doesn't carry over to the down section.</li>
 <li>Sections run in a transaction, like the tools run them, unless the markers disable it. <code>banConcurrentIndexCreationInTransaction</code> flags <code>CONCURRENTLY</code> in every section that runs in a transaction, even when it's the only statement, and <code>banNonTransactionalStatementInTransaction</code> flags the other statements Postgres can't run in a transaction block, like <code>VACUUM</code> or <code>CREATE DATABASE</code>. In a section without a transaction, explicit <code>BEGIN</code> and <code>COMMIT</code> are fine for <code>transactionNesting</code>.</li>
@@ -1314,12 +1321,12 @@
 <li>A down section sees the objects of the up sections before it, because it only runs after them. Its own changes don't carry over to the sections after it. For example, <code>drop table posts</code> in the down section knows <code>posts</code> from the up section.</li>
 <li>Statements before the first marker are checked like a file without markers, and reported, because both tools reject them. Lines that look like markers but that the tool reads as plain comments, like <code>-- Migrate:Up</code> or an indented <code>-- migrate:up</code>, are reported too, and so are indented goose annotations, which goose rejects.</li>
 <li>goose's <code>-- +goose StatementBegin</code> and <code>-- +goose StatementEnd</code> need no setup: statements, including function bodies, are split by their SQL syntax.</li>
-<li>Between goose's <code>-- +goose ENVSUB ON</code> and <code>-- +goose ENVSUB OFF</code>, goose replaces <code>${NAME}</code>, <code>$NAME</code> (and <code>${NAME:-default}</code> and the other forms of <a href="https://github.com/mfridman/interpolate">interpolate</a>) with environment variables. We don't know their values, so an identifier with an expansion, like <code>${SCHEMA}</code>, <code>${PREFIX}_events</code> or <code>"${SCHEMA}"</code>, is analysed like a psql variable: as an identifier after keywords like <code>TABLE</code>, <code>FROM</code> or <code>REFERENCES</code> and before a <code>.</code>, and as a value elsewhere. Statements with an expansion in an identifier aren't typechecked. Expansions in string literals and comments are analysed as written. A line that goose can't interpolate, like one with <code>${NAME:?}</code>, is analysed as written too. Fixes that would edit an expansion are left out, statements with an expansion can't be executed from the editor, and the formatter leaves them as they are, so the expansions stay as written. This needs <code>"sectionMarkers": "goose"</code>.</li>
+<li>Between goose's <code>-- +goose ENVSUB ON</code> and <code>-- +goose ENVSUB OFF</code>, goose replaces <code>${NAME}</code>, <code>$NAME</code> (and <code>${NAME:-default}</code> and the other forms of <a href="https://github.com/mfridman/interpolate">interpolate</a>) with environment variables. We don't know their values, so an identifier with an expansion, like <code>${SCHEMA}</code>, <code>${PREFIX}_events</code> or <code>"${SCHEMA}"</code>, is analysed like a psql variable: as an identifier after keywords like <code>TABLE</code>, <code>FROM</code> or <code>REFERENCES</code> and before a <code>.</code>, and as a value elsewhere. Statements with an expansion in an identifier aren't typechecked. Expansions in string literals and comments are analysed as written. A line that goose can't interpolate, like one with <code>${NAME:?}</code>, is analysed as written too. Fixes that would edit an expansion are left out, statements with an expansion can't be executed from the editor, and the formatter leaves them as they are, so the expansions stay as written. This needs <code>"tool": "goose"</code>.</li>
 </ul>
 <p>Down sections are checked by default, since they run when you roll back. To only check the up sections, set <code>lintDown</code> to <code>false</code>. Syntax errors in down sections are still reported.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">"migrations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">"sectionMarkers"</span><span class="p">:</span><span class="w"> </span><span class="s2">"goose"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"goose"</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">"lintDown"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>

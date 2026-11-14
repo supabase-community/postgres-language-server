@@ -1253,7 +1253,7 @@ the body of a function. The statements with <code>CONCURRENTLY</code> are covere
 <code>banConcurrentIndexCreationInTransaction</code>.</p>
 <p>The rule only reports statements that surely run in a transaction block: between <code>BEGIN</code>
 and <code>COMMIT</code>, in a function body, or in a migration section that runs in a transaction
-(see <code>migrations.sectionMarkers</code>). Without section markers, we don't know whether the
+(see <code>migrations.tool</code>). Without a migration tool, we don't know whether the
 migration tool runs the file in a transaction, so the other statements aren't reported.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>

@@ -1237,7 +1237,7 @@
 <code>ALTER TABLE ... DETACH PARTITION ... CONCURRENTLY</code> cannot be used within a transaction
 block, or in the body of a function. This will cause an error in Postgres.</p>
 <p>Migration tools usually run each migration in a transaction, so using <code>CONCURRENTLY</code> will fail in such tools.</p>
-<p>With <code>migrations.sectionMarkers</code>, the rule knows whether the migration runs in a transaction:
+<p>With <code>migrations.tool</code>, the rule knows whether the migration runs in a transaction:
 dbmate's <code>-- migrate:up transaction:false</code> and goose's <code>-- +goose NO TRANSACTION</code> disable it.
 dbmate still sends the whole section to Postgres as one query, which Postgres runs in a
 transaction block if it has more than one statement.</p>
