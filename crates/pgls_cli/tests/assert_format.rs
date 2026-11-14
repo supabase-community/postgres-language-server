@@ -98,6 +98,57 @@ fn format_stdin_with_syntax_error_snapshot() {
     ));
 }
 
+/// The `END` of the `CASE` was taken as the end of the body, which turned the real `END` into
+/// `COMMIT`, see #1142.
+const BEGIN_ATOMIC_WITH_CASE: &str = "CREATE FUNCTION f() RETURNS integer LANGUAGE sql
+BEGIN ATOMIC
+  SELECT CASE WHEN true THEN 1 ELSE 2 END;
+END;
+";
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn format_stdin_begin_atomic_with_case_snapshot() {
+    assert_snapshot!(run_format_stdin(
+        &["--stdin-file-path", "virtual.sql"],
+        BEGIN_ATOMIC_WITH_CASE
+    ));
+}
+
+#[test]
+fn format_write_begin_atomic_with_case() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("repro.sql");
+    std::fs::write(&path, BEGIN_ATOMIC_WITH_CASE).unwrap();
+
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .args([
+            "format",
+            "--config-path",
+            CONFIG_PATH,
+            "--log-level",
+            "none",
+        ])
+        .args(["--write", path.to_str().unwrap()])
+        .output()
+        .expect("failed to run CLI");
+
+    let written = std::fs::read_to_string(&path).unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        written.trim_end().to_lowercase().ends_with("end;"),
+        "{written}"
+    );
+    assert!(!written.to_lowercase().contains("commit"), "{written}");
+}
+
 #[test]
 #[cfg_attr(
     target_os = "windows",

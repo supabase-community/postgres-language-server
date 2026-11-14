@@ -17,6 +17,14 @@ pub fn set_formatted_sql_fn_body(ast: &mut pgls_query::NodeEnum, formatted: &str
     true
 }
 
+/// Empties the body of a `CREATE FUNCTION ... AS '<body>'` for a `LANGUAGE sql` function, to compare
+/// functions whose body was formatted, and checked, on its own.
+pub fn clear_sql_fn_body(ast: &mut pgls_query::NodeEnum) {
+    if let Some(body) = sql_fn_body_mut(ast) {
+        body.clear();
+    }
+}
+
 fn sql_fn_body_mut(ast: &mut pgls_query::NodeEnum) -> Option<&mut String> {
     let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = ast else {
         return None;

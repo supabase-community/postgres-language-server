@@ -41,7 +41,7 @@ create_aggregate: Name 389/401 ed4c0f42 Type 204/204 6b2d3195 Star 0/0 84222325 
 create_am: Name 491/654 10e0506e Type 58/58 79a172a0 Star 8/8 e1c631f8 Operator 64/64 cc33cb9b Cast 30/30 39d3958e Literal 62/93 4bd7cff4 Alias 108/135 90f0c1bb Expression 652/654 01034428
 create_cast: Name 92/120 658624ac Type 47/47 3099cd50 Star 0/0 84222325 Operator 4/4 0c27d141 Cast 16/16 b9578489 Literal 7/11 11423100 Alias 2/2 9ce3c6d8 Expression 119/120 457731ed
 create_function_c: Name 8/8 87430adc Type 4/4 c19afee5 Star 0/0 84222325 Operator 0/0 84222325 Cast 0/0 84222325 Literal 0/0 84222325 Alias 0/0 84222325 Expression 8/8 87430adc
-create_function_sql: Name 604/744 b72cf864 Type 192/192 c9fd5991 Star 7/7 6da10117 Operator 26/26 dbee429e Cast 46/46 036869dc Literal 69/120 66c40cb4 Alias 26/40 37ccc4cf Expression 742/744 6a2474cb
+create_function_sql: Name 615/757 c44829ce Type 194/194 49be1dc2 Star 7/7 6a7dd312 Operator 28/28 9c61729b Cast 46/46 b80b3bc4 Literal 69/124 f7b6a663 Alias 26/40 5f2366b5 Expression 755/757 3834d165
 create_index: Name 2536/3413 9ace775b Type 205/205 ea5447ba Star 88/88 5f2d9de2 Operator 397/397 59de257a Cast 124/124 004fe2bc Literal 275/697 fd2fea97 Alias 365/548 45618497 Expression 3398/3413 7fb2f3c7
 create_index_spgist: Name 758/1143 0285827d Type 25/25 8d467108 Star 7/7 3f670cf1 Operator 185/185 1a56832c Cast 1/1 799e1b38 Literal 182/203 feba79ff Alias 194/206 0cbc9fe5 Expression 1127/1143 3bb3fc3c
 create_misc: Name 385/572 eb134bbe Type 73/73 c9d3526c Star 5/5 ccbb0e0b Operator 8/8 fa05ee23 Cast 61/61 98f1d377 Literal 114/147 99166bfa Alias 6/94 9ff213f9 Expression 572/572 98ce0e84

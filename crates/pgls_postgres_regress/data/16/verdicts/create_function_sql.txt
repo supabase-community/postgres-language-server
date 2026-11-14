@@ -65,8 +65,7 @@
 192:1 rejected 42P13
 198:1 rejected 42P13
 203:1 rejected 42883
-208:1 rejected 42601
-212:1 skipped
+208:1 accepted
 214:1 accepted
 215:1 accepted
 216:1 accepted
@@ -78,7 +77,7 @@
 224:1 accepted
 225:1 accepted
 226:1 accepted
-227:1 rejected 42883
+227:1 accepted
 228:1 accepted
 230:1 accepted
 233:1 accepted
