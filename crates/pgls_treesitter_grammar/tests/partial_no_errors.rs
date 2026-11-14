@@ -59,6 +59,7 @@ static PG_REGRESSION_FILES: LazyLock<Vec<&'static str>> = std::sync::LazyLock::n
         include_str!("../tests/partial-sqls/delete.sql"),
         include_str!("../tests/partial-sqls/create_table.sql"),
         include_str!("../tests/partial-sqls/alter_table.sql"),
+        include_str!("../tests/partial-sqls/expressions.sql"),
     ]
 });
 
