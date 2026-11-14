@@ -40,7 +40,7 @@ use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-use pgls_migrations::{MigrationTool, Version};
+use pgls_migrations::MigrationTool;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -624,17 +624,19 @@ struct DatabaseDiagnostics {
     plpgsql_checked: Vec<TextRange>,
 }
 
-/// Check whether a file is a migration before `migrations.after`
+/// Check whether a file is a migration up to `migrations.after`. Both versions are read in the
+/// format of the migration tool; an `after` that isn't one ignores nothing.
 fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
     settings
         .migrations
         .as_ref()
         .and_then(|migration_settings| {
-            let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let version = migration_settings.tool.file(path, migrations_dir).version?;
+            let tool = migration_settings.tool;
+            let after = tool.version(&migration_settings.after.as_ref()?.text())?;
+            let version = tool.file(path, migrations_dir).version?;
 
-            Some(version <= Version::Number(*ignore_before))
+            Some(version <= after)
         })
         .unwrap_or(false)
 }
