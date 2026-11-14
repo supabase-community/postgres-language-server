@@ -1305,6 +1305,7 @@
 </tr>
 </tbody>
 </table>
+<p>In a dbmate project, <code>postgres-language-server init</code> sets both: it detects dbmate by a first migration in <code>db/migrations</code>, dbmate's default folder, that starts with <code>-- migrate:up</code>. goose has no default folder or configuration file, so <code>init</code> doesn't detect it.</p>
 <p>With section markers:</p>
 <ul>
 <li>The transaction, lock, and session state starts fresh in each section. A lock taken or a <code>lock_timeout</code> set in the up section doesn't carry over to the down section.</li>
