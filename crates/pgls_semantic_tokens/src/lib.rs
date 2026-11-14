@@ -69,13 +69,19 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
         collect_references: true,
     })
     .references;
+    semantic_tokens_of_references(&references, params.sql)
+}
 
-    let Some(scanned) = scan(params.sql) else {
+/// The semantic tokens of the statement `sql` from its `references`, which
+/// [`pgls_catalog::resolve::resolve`] collected. Ordered by their start. Tokens don't overlap,
+/// and each is on a single line.
+pub fn semantic_tokens_of_references(references: &[Reference], sql: &str) -> Vec<SemanticToken> {
+    let Some(scanned) = scan(sql) else {
         return Vec::new();
     };
 
     let mut tokens = Vec::new();
-    for reference in &references {
+    for reference in references {
         if let Reference::EnumLiteral {
             span, type_info, ..
         } = reference
@@ -161,7 +167,7 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
                     // `table.column` or `cte.column`, and otherwise `alias.column`: the qualifier
                     // is the name of the FROM item the column comes from.
                     [qualifier, _] => {
-                        let qualifier_name = identifier_name(&params.sql[*qualifier]);
+                        let qualifier_name = identifier_name(&sql[*qualifier]);
                         let is_own_name = match source {
                             ColumnSource::Relation { name, .. } | ColumnSource::Cte { name } => {
                                 qualifier_name == *name
@@ -209,7 +215,7 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
     });
     tokens
         .into_iter()
-        .flat_map(|token| split_lines(params.sql, token))
+        .flat_map(|token| split_lines(sql, token))
         .collect()
 }
 
