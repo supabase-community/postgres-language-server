@@ -10,4 +10,4 @@ mod walk;
 pub use file_context::AnalysedFileContext;
 pub use migration::{Direction, MigrationSection};
 pub use statement::{AnalysableStatement, UnparsableStatement};
-pub use walk::{WalkParams, is_plain_query, walk_statements};
+pub use walk::{STOP_CHECK_INTERVAL, Walk, WalkParams, WalkState, is_plain_query, walk_statements};

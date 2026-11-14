@@ -1,15 +1,14 @@
 //! The changes that statements are made of: defining, moving, and dropping relations, types,
 //! functions, and schemas in the overlay.
 
-use crate::typing::TypeId;
-use crate::{FunctionArgumentMode, FunctionSignature, Generated, Identity};
+use std::sync::Arc;
+
+use crate::{FunctionSignature, Generated, Identity};
 use pgls_query::{Node, NodeEnum, protobuf};
-use pgls_query_ext::utils::{
-    QualifiedName, qualified_name, range_var_name, string_value, type_name,
-};
+use pgls_query_ext::utils::{QualifiedName, qualified_name, range_var_name, type_name};
 use rustc_hash::FxHashSet;
 
-use super::{Catalog, Entry, Key, key};
+use super::{Catalog, Entry, Key, explicit_schemas, key};
 use crate::lookup::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
     RelationKind, TypeInfo,
@@ -24,11 +23,8 @@ impl Catalog {
         if let Some(schema) = schema {
             return schema.to_owned();
         }
-        search_path
-            .iter()
-            .filter(|schema| schema.as_str() != "$user")
+        explicit_schemas(search_path)
             .find(|schema| !self.schema(schema).is_missing())
-            .cloned()
             .unwrap_or_else(|| "public".into())
     }
 
@@ -41,11 +37,13 @@ impl Catalog {
         )
     }
 
-    /// The key of a new relation. Temporary relations live in `pg_temp`. `None` for system
+    /// The key of a new relation. Temporary relations live in `pg_temp`. Unlike
+    /// [`Catalog::relation_name_of`], this doesn't depend on the relations that exist: a
+    /// temporary table with the name doesn't capture a new permanent table. `None` for system
     /// catalogs, where Postgres rejects new relations ([`heap_create`]).
     ///
     /// [`heap_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/heap.c#L285
-    pub(super) fn relation_creation_key(
+    pub(crate) fn relation_creation_key(
         &self,
         range_var: &protobuf::RangeVar,
         search_path: &[String],
@@ -95,7 +93,7 @@ impl Catalog {
         if relation.kind != RelationKind::Other {
             self.types.insert(
                 key.clone(),
-                Entry::Defined(TypeInfo {
+                Entry::defined(TypeInfo {
                     schema: relation.schema.clone(),
                     name: relation.name.clone(),
                     attributes: relation.columns.clone(),
@@ -121,7 +119,7 @@ impl Catalog {
             );
             self.ensure_array_type(&relation.schema, &relation.name, None);
         }
-        self.relations.insert(key, Entry::Defined(relation));
+        self.relations.insert(key, Entry::defined(relation));
     }
 
     pub(super) fn mark_relation_unknown(&mut self, key: Key) {
@@ -177,11 +175,7 @@ impl Catalog {
         change: impl Fn(&mut Option<Vec<ColumnInfo>>, bool),
     ) {
         // Column changes of a database table also change its children in the database.
-        let is_database_table = self
-            .base
-            .as_ref()
-            .is_some_and(|base| base.relation(&relation.schema, &relation.name).is_some());
-        if is_database_table {
+        if self.is_database_relation(relation) {
             self.database_columns_changed = true;
         }
 
@@ -214,6 +208,36 @@ impl Catalog {
         keys
     }
 
+    /// The descendants of a relation that keep a column it drops: the inheritance children
+    /// whose column is also their own or inherited from another parent, and their own
+    /// descendants ([`ATExecDropColumn`]). We don't know which columns those are, so these are
+    /// all children in [`Catalog::children_with_own_columns`] and their descendants.
+    ///
+    /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9419
+    pub(super) fn descendants_keeping_dropped_columns(&self, root: &Key) -> FxHashSet<Key> {
+        self.with_descendants(root.clone())
+            .into_iter()
+            .filter(|child| child != root && self.children_with_own_columns.contains(child))
+            .flat_map(|child| self.with_descendants(child))
+            .collect()
+    }
+
+    /// Removes the inheritance edges of a dropped relation, so that a relation that reuses its
+    /// name doesn't inherit them.
+    pub(super) fn forget_inheritance(&mut self, relation: &Key) {
+        self.children.remove(relation);
+        for children in self.children.values_mut() {
+            children.retain(|child| child != relation);
+        }
+        self.children_with_own_columns.remove(relation);
+    }
+
+    fn is_database_relation(&self, relation: &RelationInfo) -> bool {
+        self.base
+            .as_ref()
+            .is_some_and(|base| base.relation(&relation.schema, &relation.name).is_some())
+    }
+
     /// Moves a relation to a new schema or name.
     pub(super) fn move_relation(
         &mut self,
@@ -237,32 +261,41 @@ impl Catalog {
         self.relations.insert(old_key.clone(), Entry::Dropped);
         if relation.kind != RelationKind::Other {
             let old_type = self.types.get(&old_key).and_then(|entry| match entry {
-                Entry::Defined(info) => Some(info.clone()),
+                Entry::Defined(info) => Some(TypeInfo::clone(info)),
                 _ => None,
             });
             self.types.insert(old_key.clone(), Entry::Dropped);
             if let Some(mut info) = old_type {
                 let old_array = key(&info.schema, &format!("_{}", info.name));
                 let array_info = self.types.get(&old_array).and_then(|entry| match entry {
-                    Entry::Defined(info) => Some(info.clone()),
+                    Entry::Defined(info) => Some(TypeInfo::clone(info)),
                     _ => None,
                 });
                 self.types.insert(old_array, Entry::Dropped);
                 info.schema = relation.schema.clone();
                 info.name = relation.name.clone();
                 self.types
-                    .insert(key(&info.schema, &info.name), Entry::Defined(info.clone()));
+                    .insert(key(&info.schema, &info.name), Entry::defined(info.clone()));
                 if let Some(mut array) = array_info {
                     array.schema = relation.schema.clone();
                     array.name = format!("_{}", relation.name);
                     self.types
-                        .insert(key(&array.schema, &array.name), Entry::Defined(array));
+                        .insert(key(&array.schema, &array.name), Entry::defined(array));
                 }
             }
         }
+        // The inheritance follows the relation.
+        let new_key = key(&relation.schema, &relation.name);
         if let Some(children) = self.children.remove(&old_key) {
-            self.children
-                .insert(key(&relation.schema, &relation.name), children);
+            self.children.insert(new_key.clone(), children);
+        }
+        for children in self.children.values_mut() {
+            for child in children.iter_mut().filter(|child| **child == old_key) {
+                *child = new_key.clone();
+            }
+        }
+        if self.children_with_own_columns.remove(&old_key) {
+            self.children_with_own_columns.insert(new_key);
         }
         // The indexes stay on the table, and in its schema.
         for mut index in self.table_indexes(&old_key.0, &old_key.1) {
@@ -272,7 +305,7 @@ impl Catalog {
             index.table = relation.name.clone();
             index.origin = Origin::File;
             self.indexes
-                .insert(key(&index.schema, &index.name), Entry::Defined(index));
+                .insert(key(&index.schema, &index.name), Entry::defined(index));
         }
         self.define_relation(relation);
     }
@@ -286,7 +319,7 @@ impl Catalog {
             .values()
             .filter_map(|entry| match entry {
                 Entry::Defined(index) if index.schema == schema && index.table == table => {
-                    Some(index.clone())
+                    Some(IndexInfo::clone(index))
                 }
                 _ => None,
             })
@@ -306,6 +339,115 @@ impl Catalog {
         for index in self.table_indexes(schema, table) {
             self.indexes
                 .insert(key(&index.schema, &index.name), Entry::Dropped);
+        }
+    }
+
+    /// Dropping a column drops the indexes that use it, since [`index_create`] makes them depend
+    /// on it, and so does dropping the column from the inheritance children and partitions
+    /// ([`ATExecDropColumn`]). Indexes whose columns we don't know become unknown, and so do the
+    /// indexes of all children in the database, since we don't know which tables they inherit
+    /// from. The indexes of children that may keep the column become unknown too, see
+    /// [`Catalog::descendants_keeping_dropped_columns`]. With `cascade`, Postgres also drops the
+    /// generated columns whose expression uses the column. We don't know which those are, so the
+    /// indexes that use a generated column become unknown. With `may_fail`, Postgres may reject
+    /// or skip the statement, so the indexes that use the column become unknown instead of
+    /// dropped.
+    ///
+    /// [`index_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L1132
+    /// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
+    pub(super) fn drop_column_indexes(
+        &mut self,
+        relation: &RelationInfo,
+        column: &str,
+        recurse: bool,
+        cascade: bool,
+        may_fail: bool,
+    ) {
+        let root = key(&relation.schema, &relation.name);
+        let (tables, keeping) = if recurse {
+            (
+                self.with_descendants(root.clone()),
+                self.descendants_keeping_dropped_columns(&root),
+            )
+        } else {
+            (vec![root], FxHashSet::default())
+        };
+        for table in tables {
+            let may_keep = may_fail || keeping.contains(&table);
+            // The columns that CASCADE may drop with the column. `None` if we don't know them.
+            let generated: Option<Vec<String>> = if cascade {
+                self.relation_in(&table.0, &table.1)
+                    .found()
+                    .and_then(|relation| relation.columns)
+                    .map(|columns| {
+                        columns
+                            .into_iter()
+                            .filter(|known| known.generated.is_generated())
+                            .map(|known| known.name)
+                            .collect()
+                    })
+            } else {
+                Some(Vec::new())
+            };
+            for index in self.table_indexes(&table.0, &table.1) {
+                let entry = match (&index.columns, &generated) {
+                    (Some(columns), _) if columns.iter().any(|name| name == column) => {
+                        if may_keep {
+                            Entry::Unknown
+                        } else {
+                            Entry::Dropped
+                        }
+                    }
+                    (Some(columns), Some(generated))
+                        if !columns.iter().any(|name| generated.contains(name)) =>
+                    {
+                        continue;
+                    }
+                    _ => Entry::Unknown,
+                };
+                self.indexes.insert(key(&index.schema, &index.name), entry);
+            }
+        }
+        if recurse && self.is_database_relation(relation) {
+            let children: Vec<Key> = self
+                .base
+                .iter()
+                .flat_map(|base| base.inheritance_children().cloned())
+                .collect();
+            for (schema, table) in children {
+                for index in self.table_indexes(&schema, &table) {
+                    self.indexes
+                        .insert(key(&index.schema, &index.name), Entry::Unknown);
+                }
+            }
+        }
+    }
+
+    /// Renaming a column renames it in the indexes that use it, on the table and on the
+    /// inheritance children and partitions that it is renamed in too ([`renameatt`]).
+    ///
+    /// [`renameatt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L4018
+    pub(super) fn rename_index_column(
+        &mut self,
+        relation: &RelationInfo,
+        old_name: &str,
+        new_name: &str,
+    ) {
+        for (schema, table) in self.with_descendants(key(&relation.schema, &relation.name)) {
+            for mut index in self.table_indexes(&schema, &table) {
+                let Some(columns) = index.columns.as_mut() else {
+                    continue;
+                };
+                if !columns.iter().any(|name| name == old_name) {
+                    continue;
+                }
+                for name in columns.iter_mut().filter(|name| *name == old_name) {
+                    *name = new_name.to_owned();
+                }
+                index.origin = Origin::File;
+                self.indexes
+                    .insert(key(&index.schema, &index.name), Entry::defined(index));
+            }
         }
     }
 
@@ -369,7 +511,7 @@ impl Catalog {
         index.name = new_name.to_owned();
         index.origin = Origin::File;
         self.indexes
-            .insert(key(&index.schema, &index.name), Entry::Defined(index));
+            .insert(key(&index.schema, &index.name), Entry::defined(index));
     }
 
     // ----- types -----
@@ -406,7 +548,7 @@ impl Catalog {
         let array_id = self.allocate_type_id();
         self.types.insert(
             type_key,
-            Entry::Defined(TypeInfo {
+            Entry::defined(TypeInfo {
                 schema: schema.clone(),
                 name: name.clone(),
                 attributes: attributes.clone(),
@@ -423,7 +565,7 @@ impl Catalog {
         );
         self.types.insert(
             key(&schema, &array_name),
-            Entry::Defined(TypeInfo {
+            Entry::defined(TypeInfo {
                 schema,
                 name: array_name,
                 attributes: None,
@@ -460,11 +602,11 @@ impl Catalog {
             })
             .unwrap_or_else(|| self.allocate_type_id());
         if let Some(Entry::Defined(row)) = self.types.get_mut(&row_key) {
-            row.array = Some(array_id.clone());
+            Arc::make_mut(row).array = Some(array_id.clone());
         }
         self.types.insert(
             array_key,
-            Entry::Defined(TypeInfo {
+            Entry::defined(TypeInfo {
                 schema: schema.to_owned(),
                 name: array_name,
                 attributes,
@@ -500,7 +642,7 @@ impl Catalog {
         change(self, &mut type_info);
         type_info.origin = Origin::File;
         let key = key(&type_info.schema, &type_info.name);
-        self.types.insert(key, Entry::Defined(type_info));
+        self.types.insert(key, Entry::defined(type_info));
     }
 
     /// Moves a type to a new schema or name.
@@ -524,7 +666,7 @@ impl Catalog {
         type_info.origin = Origin::File;
         self.types.insert(old_key, Entry::Dropped);
         let new_key = key(&type_info.schema, &type_info.name);
-        self.types.insert(new_key, Entry::Defined(type_info));
+        self.types.insert(new_key, Entry::defined(type_info));
     }
 
     // ----- functions -----
@@ -536,18 +678,26 @@ impl Catalog {
             Lookup::Found(mut overloads) => {
                 // `CREATE OR REPLACE` replaces the overload with the same input types. When
                 // the types are not all known, we can't tell, so the overload is added.
-                let replaced = input_types(function.signature.as_ref()).and_then(|types| {
+                let input_types = function
+                    .signature
+                    .as_ref()
+                    .and_then(FunctionSignature::input_types);
+                let replaced = input_types.and_then(|types| {
                     overloads.iter().position(|existing| {
-                        input_types(existing.signature.as_ref()).as_ref() == Some(&types)
+                        let existing = existing
+                            .signature
+                            .as_ref()
+                            .and_then(FunctionSignature::input_types);
+                        existing.as_ref() == Some(&types)
                     })
                 });
                 match replaced {
                     Some(position) => overloads[position] = function,
                     None => overloads.push(function),
                 }
-                Entry::Defined(overloads)
+                Entry::defined(overloads)
             }
-            Lookup::Missing => Entry::Defined(vec![function]),
+            Lookup::Missing => Entry::defined(vec![function]),
             Lookup::Unknown => Entry::Unknown,
         };
         self.functions.insert(key, entry);
@@ -577,14 +727,17 @@ impl Catalog {
                             pgls_query::NodeEnum::TypeName(name) => name,
                             _ => return None,
                         };
-                        crate::normalize_type_name(self, name, search_path).0
+                        crate::typing::normalize_type_name(self, name, search_path).0
                     })
                     .collect::<Option<Vec<_>>>()
             })
             .flatten();
         let typed_position = argument_types.as_ref().and_then(|arguments| {
             let mut candidates = overloads.iter().enumerate().filter(|(_, overload)| {
-                input_types(overload.signature.as_ref())
+                overload
+                    .signature
+                    .as_ref()
+                    .and_then(FunctionSignature::input_types)
                     .is_some_and(|types| types.iter().copied().eq(arguments.iter()))
             });
             match (candidates.next(), candidates.next()) {
@@ -623,7 +776,7 @@ impl Catalog {
         let entry = if overloads.is_empty() {
             Entry::Dropped
         } else {
-            Entry::Defined(overloads)
+            Entry::defined(overloads)
         };
         self.functions.insert(key, entry);
         Some(function)
@@ -682,7 +835,7 @@ pub(super) fn column_info(
             }
             None => (
                 type_name(name).map(|name| name.name.to_owned()),
-                crate::normalize_type_name(catalog, name, search_path).0,
+                crate::typing::normalize_type_name(catalog, name, search_path).0,
             ),
         },
         None => (None, None),
@@ -749,29 +902,5 @@ pub(super) fn rename_columns(
     columns: Option<Vec<ColumnInfo>>,
     names: &[Node],
 ) -> Option<Vec<ColumnInfo>> {
-    let mut columns = columns?;
-    if names.len() > columns.len() {
-        return None;
-    }
-    for (column, name) in columns.iter_mut().zip(names) {
-        column.name = string_value(name)?.to_owned();
-    }
-    Some(columns)
-}
-
-/// The input argument types of a function, or `None` if any of them is unknown.
-fn input_types(signature: Option<&FunctionSignature>) -> Option<Vec<&TypeId>> {
-    signature?
-        .arguments
-        .iter()
-        .filter(|arg| {
-            matches!(
-                arg.mode,
-                FunctionArgumentMode::In
-                    | FunctionArgumentMode::InOut
-                    | FunctionArgumentMode::Variadic
-            )
-        })
-        .map(|arg| arg.ty.as_ref())
-        .collect()
+    crate::resolve::rename(columns, names, |column, name| column.name = name)
 }

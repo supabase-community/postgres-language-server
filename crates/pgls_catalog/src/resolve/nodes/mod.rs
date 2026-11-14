@@ -37,6 +37,7 @@ use super::{
     scope::Columns,
 };
 
+pub(crate) use alias::rename;
 pub(super) use column_ref::record_column_ref_lookup;
 use column_ref::resolve_column_ref;
 use copy_stmt::resolve_copy_stmt;

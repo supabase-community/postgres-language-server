@@ -95,6 +95,7 @@ fn rename_column(
     c.change_columns(&relation, |columns, _| {
         rename_in(columns, old_name, new_name)
     });
+    c.rename_index_column(&relation, old_name, new_name);
 }
 
 fn rename_in(columns: &mut Option<Vec<ColumnInfo>>, old_name: &str, new_name: &str) {

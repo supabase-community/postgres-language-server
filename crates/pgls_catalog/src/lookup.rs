@@ -7,7 +7,7 @@
 use std::borrow::Cow;
 
 use crate::Behavior;
-use crate::typing::{CoercionContext, Decision, Type, TypeId};
+use crate::typing::{CoercionContext, Decision, Type, TypeId, TypedColumn};
 use crate::{Generated, Identity};
 
 /// The result of a catalog lookup.
@@ -100,6 +100,15 @@ impl ColumnInfo {
     }
 }
 
+impl From<ColumnInfo> for TypedColumn {
+    fn from(column: ColumnInfo) -> Self {
+        TypedColumn {
+            name: column.name,
+            ty: column.ty,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationInfo {
     pub schema: String,
@@ -130,6 +139,10 @@ pub struct IndexInfo {
     pub name: String,
     /// The table or materialized view the index is on.
     pub table: String,
+    /// The columns of the table that the index uses, in its keys, expressions or predicate.
+    /// `None` if we don't know them, like for an index the file created with a name in an
+    /// expression that the catalog can't resolve.
+    pub columns: Option<Vec<String>>,
     pub origin: Origin,
 }
 
@@ -385,6 +398,22 @@ impl FunctionSignature {
             all.insert((*position).min(all.len()), argument.clone());
         }
         Cow::Owned(all)
+    }
+
+    /// The types of the input arguments, or `None` if any of them is unknown.
+    pub(crate) fn input_types(&self) -> Option<Vec<&TypeId>> {
+        self.arguments
+            .iter()
+            .filter(|arg| {
+                matches!(
+                    arg.mode,
+                    FunctionArgumentMode::In
+                        | FunctionArgumentMode::InOut
+                        | FunctionArgumentMode::Variadic
+                )
+            })
+            .map(|arg| arg.ty.as_ref())
+            .collect()
     }
 }
 
