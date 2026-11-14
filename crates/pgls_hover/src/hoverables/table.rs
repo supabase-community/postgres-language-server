@@ -74,7 +74,10 @@ impl ToHoverMarkdown for Table {
                 write!(writer, " - not null")?;
             }
 
-            if let Some(default_expr) = column
+            // The expression of a generated column is its generation expression, not a default.
+            if let Some(kind) = column.generated.keyword() {
+                write!(writer, " - generated {kind}")?;
+            } else if let Some(default_expr) = column
                 .default_expr
                 .as_deref()
                 .and_then(extract_basic_default_literal)
