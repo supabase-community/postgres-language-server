@@ -7,7 +7,6 @@ use pgls_query::{
 use pgls_query_ext::utils::{star_qualifier, string_value, string_values};
 
 use super::{Resolver, resolve_list};
-use crate::resolve::column_name::target_name;
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
     expr::{check_assignment, infer_expr},
@@ -47,7 +46,7 @@ pub(super) fn target_list_columns(r: &Resolver, targets: &[Node]) -> Columns {
             continue;
         }
 
-        columns.push(target_name(target)?);
+        columns.push(r.target_name(target)?);
     }
     Some(columns)
 }
@@ -82,7 +81,7 @@ pub(super) fn target_list_typed_columns(
             continue;
         }
         typed.push(crate::typing::TypedColumn {
-            name: target_name(target).unwrap_or_default(),
+            name: r.target_name(target).unwrap_or_default(),
             ty: infer_expr(r, value),
         });
     }

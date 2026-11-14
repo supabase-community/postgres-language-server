@@ -12,6 +12,7 @@ use pgls_query::{
 
 use super::{
     Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
+    column_name::target_name_with,
     scope::{Cte, Level},
     span::Tokens,
 };
@@ -138,6 +139,18 @@ impl<'a> Resolver<'a> {
                 _ => self.database_only = false,
             }
         }
+    }
+
+    /// The name of a select list entry, see [`target_name`]. Scalar subqueries the resolver has
+    /// resolved are named after their first output column, which is also known when it is a `*`,
+    /// as in `(select * from t)`.
+    ///
+    /// [`target_name`]: super::target_name
+    pub fn target_name(&self, target: &protobuf::ResTarget) -> Option<String> {
+        target_name_with(target, &|link| {
+            let output = self.subquery_output(link.subselect.as_deref()?)?;
+            Some(output.as_ref()?.first()?.name.clone())
+        })
     }
 
     /// The statement text, if known.

@@ -13,7 +13,6 @@ use super::{
     resolve_list, resolve_node,
     with_clause::resolve_with_clause,
 };
-use crate::resolve::column_name::target_name;
 use crate::resolve::{expr::infer_expr, scope::Columns, utils::resolve_expr};
 
 #[cfg(test)]
@@ -138,12 +137,19 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
 ///
 /// [`transformSelectStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1389
 fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
-    let mut level = resolve_from_clause(r, &n.from_clause);
-    level.output_names = n.target_list.iter().filter_map(output_name).collect();
-    let output_names = level.output_names.clone();
+    let level = resolve_from_clause(r, &n.from_clause);
     r.enter_level(level);
 
     resolve_list(r, &n.target_list);
+    // Named after resolving the select list, which names its scalar subqueries.
+    let output_names: Vec<String> = n
+        .target_list
+        .iter()
+        .filter_map(|target| output_name(r, target))
+        .collect();
+    if let Some(level) = r.levels.last_mut() {
+        level.output_names = output_names.clone();
+    }
     record_star_references(r, &n.target_list);
     for node in n.where_clause.iter().chain(&n.having_clause) {
         resolve_expr(r, node);
@@ -224,9 +230,9 @@ fn is_output_reference(expr: &NodeEnum, output_names: &[String]) -> bool {
 }
 
 /// The name of an entry of the select list, which `ORDER BY` and `GROUP BY` can reference.
-fn output_name(target: &Node) -> Option<String> {
+fn output_name(r: &Resolver, target: &Node) -> Option<String> {
     match &target.node {
-        Some(NodeEnum::ResTarget(target)) => target_name(target),
+        Some(NodeEnum::ResTarget(target)) => r.target_name(target),
         _ => None,
     }
 }
