@@ -993,12 +993,18 @@ impl Workspace for WorkspaceServer {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
         let stmt = doc.find(params.statement_id.clone(), ExecuteStatementMapper);
         // Finding the statement parsed the statements before it.
         self.charge_document_caches(&params.path, doc);
+        // The content is the analysed text, which is the statement as written outside of the
+        // parts that the migration tool replaces. With such parts, neither is what it runs.
+        let touches_placeholder = stmt
+            .as_ref()
+            .is_some_and(|(_, range, _, _)| doc.touches_placeholder(*range));
         // Files can change while the statement runs, so don't keep the version it is in.
         drop(document);
         let Some((_id, range, content, ast)) = stmt else {
@@ -1014,6 +1020,13 @@ impl Workspace for WorkspaceServer {
                 ..Default::default()
             });
         };
+
+        if touches_placeholder {
+            return Ok(ExecuteStatementResult {
+                message: code_actions::execute_statement::PLACEHOLDER_EXECUTION_DISABLED.into(),
+                ..Default::default()
+            });
+        }
 
         if let Some(message) = execution::refusal(&ast) {
             return Ok(ExecuteStatementResult {
@@ -1363,6 +1376,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullFileFormattingParams,
     ) -> Result<PullFormattingResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let settings = self.workspaces();
 
         let settings = match settings.settings_for(params.project_key, params.path.as_path()) {

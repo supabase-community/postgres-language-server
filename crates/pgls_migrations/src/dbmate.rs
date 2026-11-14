@@ -59,6 +59,7 @@ pub(crate) fn read(text: &str) -> Script {
             "dbmate rejects a migration with statements before the first `-- migrate:up`."
                 .to_string(),
         ),
+        preprocessed: None,
     }
 }
 

@@ -7,7 +7,8 @@
 //!
 //! The workspace asks the tool of a file's settings two things, and keeps the answers:
 //! - [`MigrationTool::file`]: what the path says, like the version of the migration.
-//! - [`MigrationTool::read`]: what the text says, like its up and down sections.
+//! - [`MigrationTool::read`]: what the text says, like its up and down sections, and what the
+//!   tool replaces in it before it runs it, like goose's `ENVSUB`.
 //!
 //! `init` asks every tool for its projects with [`detect::find_projects`].
 //!
@@ -108,8 +109,8 @@ impl MigrationTool {
         number(text)
     }
 
-    /// How the tool runs the text of a migration file: its units, and the problems with its
-    /// markers.
+    /// How the tool runs the text of a migration file: its units, the problems with its markers,
+    /// and what the tool replaces in it.
     ///
     /// Markers are found line by line, like the migration tools do, without looking at the SQL.
     pub fn read(self, text: &str) -> Script {
@@ -176,6 +177,9 @@ pub struct Script {
     look_alikes: Vec<(TextRange, &'static str)>,
     /// What the tool says about statements before the first unit, if it rejects them.
     before_first_unit: Option<String>,
+    /// What the tool replaces in the file before it runs it, like goose's `ENVSUB`, or `None` if
+    /// it runs the file as written. Its text is what the analysis splits and parses.
+    pub preprocessed: Option<Preprocessed>,
 }
 
 impl Script {
@@ -198,6 +202,31 @@ impl Script {
         }
         diagnostics.sort_by_key(|diagnostic| diagnostic.span.start());
         diagnostics
+    }
+}
+
+/// The text that the analysis reads instead of the file as written, with placeholders where the
+/// migration tool replaces parts of it, like goose's `ENVSUB`. It has the length of the file, so
+/// that the offsets of diagnostics, fixes and editor positions are the same in both.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Preprocessed {
+    pub text: String,
+    /// The ranges that the tool replaces when it runs the file, in file order. The text holds a
+    /// placeholder there, or the file as written where a placeholder wouldn't parse, like in a
+    /// string literal.
+    pub placeholders: Vec<TextRange>,
+}
+
+impl Preprocessed {
+    /// Whether `range` overlaps a placeholder. An empty range touches it if it's inside it.
+    pub fn touches_placeholder(&self, range: TextRange) -> bool {
+        self.placeholders.iter().any(|placeholder| {
+            if range.is_empty() {
+                placeholder.start() < range.start() && range.start() < placeholder.end()
+            } else {
+                placeholder.start() < range.end() && range.start() < placeholder.end()
+            }
+        })
     }
 }
 

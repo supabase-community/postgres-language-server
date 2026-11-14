@@ -5,12 +5,16 @@
 //! in the folder of `-dir` or `GOOSE_MIGRATION_DIR`, `.` by default. So its projects aren't
 //! detected.
 
-use pgls_text_size::TextRange;
+mod envsub;
+mod interpolate;
+
+use pgls_text_size::{TextRange, TextSize};
 
 use crate::{
-    Direction, Script,
+    Direction, Preprocessed, Script,
     markers::{UnitsBuilder, lines, look_alikes},
 };
+use envsub::{Expansion, substitute};
 
 pub(crate) fn read(text: &str) -> Script {
     let mut sections = UnitsBuilder::new(text);
@@ -69,7 +73,51 @@ pub(crate) fn read(text: &str) -> Script {
             "goose rejects a migration with statements before the first `-- +goose Up`."
                 .to_string(),
         ),
+        preprocessed: envsub(text),
     }
+}
+
+/// Between `-- +goose ENVSUB ON` and `-- +goose ENVSUB OFF`, goose replaces the expansions
+/// of [interpolate], like `$NAME`, `${NAME}` and `${NAME:-default}`, with environment
+/// variables before it runs the SQL, see
+/// https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L211
+///
+/// We don't know their values, so an identifier with expansions, like `${SCHEMA}`,
+/// `${PREFIX}_events` or `"${SCHEMA}"`, becomes the named parameter `$SCHEMA`,
+/// `$PREFIX_events` or `$SCHEMA`, padded with `_` to the same length, so that the whole
+/// identifier is one token with room for the index of a parameter. Named parameters are
+/// analysed like psql variables: as values, or as identifiers that aren't typechecked.
+/// Expansions in string literals and comments stay as written.
+///
+/// [interpolate]: https://github.com/mfridman/interpolate/blob/v0.0.2/parser.go
+fn envsub(text: &str) -> Option<Preprocessed> {
+    if !text.contains("+goose") {
+        return None;
+    }
+    let mut expansions = Vec::new();
+    let mut envsub = false;
+    for (range, line) in lines(text) {
+        let annotation = annotation(line);
+        match annotation {
+            Some(annotation) if annotation.eq_ignore_ascii_case("envsub on") => envsub = true,
+            Some(annotation) if annotation.eq_ignore_ascii_case("envsub off") => envsub = false,
+            _ => {}
+        }
+        if !envsub || annotation.is_some() {
+            continue;
+        }
+        // goose fails on a line that interpolate rejects, so it stays as written.
+        for expansion in interpolate::expansions(line).unwrap_or_default() {
+            expansions.push(Expansion {
+                range: TextRange::new(
+                    range.start() + TextSize::try_from(expansion.range.start).unwrap(),
+                    range.start() + TextSize::try_from(expansion.range.end).unwrap(),
+                ),
+                name: expansion.name,
+            });
+        }
+    }
+    (!expansions.is_empty()).then(|| substitute(text, &expansions))
 }
 
 /// The annotation of a `-- +goose <annotation>` line. See
@@ -147,6 +195,81 @@ mod tests {
         );
         assert!(problems[0].1.ends_with("so this line is a plain comment."));
         assert!(problems[1].1.starts_with("goose rejects a migration"));
+    }
+
+    /// The text that is analysed for `text`, and the parts that goose replaces.
+    fn envsub(text: &str) -> Option<(String, Vec<&str>)> {
+        let preprocessed = MigrationTool::Goose.read(text).preprocessed?;
+        assert_eq!(preprocessed.text.len(), text.len());
+        let placeholders = preprocessed
+            .placeholders
+            .iter()
+            .map(|range| &text[*range])
+            .collect();
+        Some((preprocessed.text, placeholders))
+    }
+
+    #[test]
+    fn goose_envsub_replaces_expansions_with_named_parameters() {
+        let text = "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema ${SCHEMA};\ngrant usage on schema ${SCHEMA:-${FALLBACK}} to $ROLE, \\${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n";
+        assert_eq!(
+            envsub(text),
+            Some((
+                "-- +goose Up\nselect '${A}';\n-- +goose ENVSUB ON\ncreate schema $SCHEMA__;\ngrant usage on schema $SCHEMA_______________ to $ROLE, \\${KEPT};\n-- +goose ENVSUB OFF\nselect ${B};\n".to_string(),
+                vec!["${SCHEMA}", "${SCHEMA:-${FALLBACK}}", "$ROLE"]
+            ))
+        );
+        assert_eq!(envsub("-- +goose Up\nselect ${A};\n"), None);
+        assert_eq!(envsub("select 1;"), None);
+    }
+
+    #[test]
+    fn goose_envsub_reads_defaults_like_interpolate() {
+        // interpolate reads `{` in a default as text, and goose runs `create schema public;`
+        // with `SCHEMA=public`.
+        assert_eq!(
+            envsub("-- +goose Up\n-- +goose ENVSUB ON\ncreate schema ${SCHEMA:-app{test};\n"),
+            Some((
+                "-- +goose Up\n-- +goose ENVSUB ON\ncreate schema $SCHEMA____________;\n"
+                    .to_string(),
+                vec!["${SCHEMA:-app{test}"]
+            ))
+        );
+        // interpolate rejects `${A:?}`, so goose fails on the line, and it stays as written.
+        assert_eq!(
+            envsub("-- +goose Up\n-- +goose ENVSUB ON\nselect ${A:?};\n"),
+            None
+        );
+    }
+
+    #[test]
+    fn goose_envsub_replaces_whole_identifiers() {
+        // goose runs `create table app_events (id bigint);` with `PREFIX=app`, and
+        // `select * from "public".events` with `SCHEMA=public`.
+        assert_eq!(
+            envsub(
+                "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${PREFIX}_events (id bigint);\nselect * from \"${SCHEMA}\".events, app_$PREFIX.${A}${B};\n"
+            ),
+            Some((
+                "-- +goose Up\n-- +goose ENVSUB ON\ncreate table $PREFIX_events__ (id bigint);\nselect * from $SCHEMA____.events, $app_PREFIX.$AB_____;\n"
+                    .to_string(),
+                vec![
+                    "${PREFIX}_events",
+                    "\"${SCHEMA}\"",
+                    "app_$PREFIX",
+                    "${A}${B}"
+                ]
+            ))
+        );
+    }
+
+    #[test]
+    fn goose_envsub_keeps_expansions_in_strings_and_comments() {
+        let text = "-- +goose Up\n-- +goose ENVSUB ON\ninsert into audit_log (message) values ('${MESSAGE}'); -- ${NOTE}\n";
+        assert_eq!(
+            envsub(text),
+            Some((text.to_string(), vec!["${MESSAGE}", "${NOTE}"]))
+        );
     }
 
     #[test]

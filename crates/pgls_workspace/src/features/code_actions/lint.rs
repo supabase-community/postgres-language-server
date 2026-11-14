@@ -63,7 +63,12 @@ pub(crate) fn lint_actions<'a>(
         let category = diagnostic.get_category_name();
         let rule = category.strip_prefix("lint/").unwrap_or(category);
 
-        if let Some(fix) = diagnostic.get_fix() {
+        // A fix must not write the placeholder of an `ENVSUB` expansion into the file.
+        if let Some(fix) = diagnostic.get_fix().filter(|fix| {
+            !fix.edits
+                .iter()
+                .any(|edit| doc.touches_placeholder(edit.range))
+        }) {
             actions.push(CodeAction {
                 title: fix.message.clone(),
                 kind: CodeActionKind::Edit(EditAction {
@@ -127,7 +132,15 @@ pub(crate) fn fix_file(
 
         skipped_suggested_fixes = 0;
         let mut fixes: Vec<&RuleFix> = Vec::new();
-        for fix in diagnostics.iter().filter_map(LinterDiagnostic::get_fix) {
+        for fix in diagnostics
+            .iter()
+            .filter_map(LinterDiagnostic::get_fix)
+            .filter(|fix| {
+                !fix.edits
+                    .iter()
+                    .any(|edit| doc.touches_placeholder(edit.range))
+            })
+        {
             if fix.applicability == Applicability::Always || mode == FixFileMode::SafeAndUnsafeFixes
             {
                 fixes.push(fix);

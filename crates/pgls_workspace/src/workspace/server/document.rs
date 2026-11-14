@@ -11,7 +11,7 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{AnalysableStatement, UnparsableStatement};
 use rustc_hash::FxHashSet;
 
-use pgls_migrations::{MigrationTool, Script, Unit};
+use pgls_migrations::{MigrationTool, Preprocessed, Script, Unit};
 
 use crate::workspace::ProjectKey;
 
@@ -76,11 +76,12 @@ impl Document {
         content: String,
         version: i32,
     ) -> Document {
-        let split = pgls_statement_splitter::split(&content);
+        let migration_script = migration_tool.read(&content);
+        let split =
+            pgls_statement_splitter::split(text(&content, migration_script.preprocessed.as_ref()));
         let diagnostics = split_diagnostics(&split);
         let suppressions =
             Suppressions::from(content.as_str()).with_statements(split.ranges.clone());
-        let migration_script = migration_tool.read(&content);
 
         let generation = next_generation();
         Document {
@@ -102,16 +103,20 @@ impl Document {
     /// Replaces the content of the document. Returns what the change invalidated in its cache,
     /// for the caller to drop, see [`StaleEntries::drop_in_background`].
     pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
-        let unchanged = common_prefix(&self.content, &content);
-        let unchanged_suffix = common_suffix(&self.content, &content, unchanged);
+        let migration_script = self.migration_tool.read(&content);
+        // The text that is split is the content with the placeholders of the migration tool.
+        let old_text = self.text();
+        let new_text = text(&content, migration_script.preprocessed.as_ref());
+        let unchanged = common_prefix(old_text, new_text);
+        let unchanged_suffix = common_suffix(old_text, new_text, unchanged);
         // Only the statements around the change are split again.
-        let split = pgls_statement_splitter::split_edited(&self.content, &self.split, &content);
+        let split = pgls_statement_splitter::split_edited(old_text, &self.split, new_text);
         let changed = changed_statements(
             &self.split.ranges,
             &split.ranges,
             unchanged,
-            TextSize::of(self.content.as_str()) - unchanged_suffix,
-            content.len() as i64 - self.content.len() as i64,
+            TextSize::of(old_text) - unchanged_suffix,
+            new_text.len() as i64 - old_text.len() as i64,
         );
         // The statements before the change keep what the walks cached for them. The splitter
         // looks ahead, so a statement before the change can still end elsewhere.
@@ -121,9 +126,9 @@ impl Document {
             .get(changed.start)
             .map_or(TextSize::from(u32::MAX), |range| range.start());
         let old_content = std::mem::replace(&mut self.content, content);
+        let old_script = std::mem::replace(&mut self.migration_script, migration_script);
         let old_split = std::mem::replace(&mut self.split, split);
         self.version = version;
-        self.migration_script = self.migration_tool.read(&self.content);
         self.generation = next_generation();
         self.edited_at = Some(unchanged);
 
@@ -141,15 +146,16 @@ impl Document {
         // The statements around the change that are no longer in the document drop what was
         // cached for them, with the statements of their function bodies. The other statements
         // have the same text as before.
+        let old_text = text(&old_content, old_script.preprocessed.as_ref());
         let removed = statements_not_in(
             old_split
                 .ranges
                 .get(changed)
                 .unwrap_or_default()
                 .iter()
-                .map(|range| &old_content[*range]),
-            &self.content,
-            ranges,
+                .map(|range| &old_text[*range]),
+            self.text(),
+            &self.split.ranges,
         );
         self.cache.remove_statements(removed);
         stale
@@ -184,19 +190,40 @@ impl Document {
         self.project_key = project_key;
         self.settings_version = settings_version;
         self.migration_tool = migration_tool;
-        self.migration_script = migration_tool.read(&self.content);
+        let migration_script = migration_tool.read(&self.content);
+        let resplit = migration_script.preprocessed != self.migration_script.preprocessed;
+        let old_script = std::mem::replace(&mut self.migration_script, migration_script);
+        let old_split = resplit.then(|| {
+            let split = pgls_statement_splitter::split(self.text());
+            self.diagnostics = split_diagnostics(&split);
+            self.suppressions =
+                Suppressions::from(self.content.as_str()).with_statements(split.ranges.clone());
+            std::mem::replace(&mut self.split, split)
+        });
         // The analysis and the walks depend on the sections. They may have been cached for the
         // new settings before they reached the document, so the document gets a new generation:
         // requests that still run with the old tool are outdated and don't cache what they
         // compute. The parse results only depend on the text, and stay.
         self.generation = next_generation();
-        self.cache.content_changed(
+        let stale = self.cache.content_changed(
             ContentChange {
                 unchanged: TextSize::from(0),
                 first_changed_statement: TextSize::from(0),
             },
             self.generation,
-        )
+        );
+        // With other placeholders, the statements that are no longer in the text drop what was
+        // cached for them.
+        if let Some(old_split) = old_split {
+            let old_text = text(&self.content, old_script.preprocessed.as_ref());
+            let removed = statements_not_in(
+                old_split.ranges.iter().map(|range| &old_text[*range]),
+                self.text(),
+                &self.split.ranges,
+            );
+            self.cache.remove_statements(removed);
+        }
+        stale
     }
 
     /// Whether the migration tool is the one of the settings of `project_key` at
@@ -240,7 +267,7 @@ impl Document {
             .split
             .ranges
             .iter()
-            .map(|range| StatementId::new(&self.content[*range]))
+            .map(|range| StatementId::new(&self.text()[*range]))
             .collect();
         self.cache.stats(&statements)
     }
@@ -256,6 +283,21 @@ impl Document {
 
     pub fn get_document_content(&self) -> &str {
         &self.content
+    }
+
+    /// The text that is split and parsed: the content, with the placeholders of the migration
+    /// tool if it replaces parts of it. It has the length of the content.
+    fn text(&self) -> &str {
+        text(&self.content, self.migration_script.preprocessed.as_ref())
+    }
+
+    /// Whether `range` overlaps a part of the content that the migration tool replaces, like a
+    /// goose `ENVSUB` expansion. Edits there would write the placeholder into the file.
+    pub fn touches_placeholder(&self, range: TextRange) -> bool {
+        self.migration_script
+            .preprocessed
+            .as_ref()
+            .is_some_and(|preprocessed| preprocessed.touches_placeholder(range))
     }
 
     pub fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
@@ -441,7 +483,7 @@ where
             }
 
             let range = *self.ranges.next()?;
-            let root_id = StatementId::new(&self.parser.content[range]);
+            let root_id = StatementId::new(&self.parser.text()[range]);
 
             // The statements of a SQL function body follow the function. They are pushed in
             // reverse, so that they are popped in order.
@@ -671,6 +713,11 @@ impl StatementFilter<'_> for IdFilter {
     fn predicate(&self, stmt: &DocumentStatement) -> bool {
         stmt.id == self.id
     }
+}
+
+/// See [`Document::text`].
+fn text<'a>(content: &'a str, preprocessed: Option<&'a Preprocessed>) -> &'a str {
+    preprocessed.map_or(content, |preprocessed| &preprocessed.text)
 }
 
 /// The length of the longest common prefix of `a` and `b`, on a character boundary.
@@ -1295,6 +1342,44 @@ $$ LANGUAGE plpgsql;";
                 format!("{:?}", d.diagnostics),
                 format!("{:?}", split_diagnostics(&whole))
             );
+        }
+    }
+
+    /// With goose's `ENVSUB`, the text that is split has placeholders, which can hide a `;`, and an
+    /// edit can change it after the edit, like `ENVSUB ON`. Edits split it like the whole text is
+    /// split.
+    #[test]
+    fn edits_split_the_text_with_the_placeholders_of_the_migration_tool() {
+        let goose = MigrationTool::Goose;
+        let lines = [
+            "-- +goose Up",
+            "-- +goose ENVSUB ON",
+            "create schema ${SCHEMA:-app};",
+            "select '${A}'; select ${B};",
+            "-- +goose ENVSUB OFF",
+            "select ${C};",
+        ];
+        let edits = [
+            (1, "-- +goose ENVSUB OFF"),
+            (1, "-- +goose ENVSUB ON"),
+            (3, "select ${A; select ${B};"),
+            (4, "-- +goose ENVSUB ON"),
+            (2, "create schema ${SCHEMA:-app;x};"),
+            (4, "-- +goose ENVSUB OFF"),
+            (1, "-- +goose ENVSUB OFF"),
+            (1, "-- +goose ENVSUB ON"),
+        ];
+        let mut lines = lines.map(str::to_string);
+        let mut d = Document::open(ProjectKey::default(), 0, goose, lines.join("\n"), 0);
+        for (version, (line, text)) in (1..).zip(edits) {
+            lines[line] = text.to_string();
+            let content = lines.join("\n");
+            d.update_content(content.clone(), version)
+                .drop_in_background();
+
+            let whole = Document::open(ProjectKey::default(), 0, goose, content.clone(), 0);
+            assert_eq!(d.split, whole.split, "{content}");
+            assert_eq!(d.text(), whole.text(), "{content}");
         }
     }
 
