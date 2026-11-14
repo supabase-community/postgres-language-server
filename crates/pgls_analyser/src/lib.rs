@@ -212,8 +212,17 @@ impl<'a> Analyser<'a> {
             if stmt.has_identifier_parameters && !is_plain_query(root) {
                 typecheck = false;
             }
-            let typecheck_statement =
-                typecheck && !stmt.has_identifier_parameters && !stmt.has_unknown_values;
+            // Postgres doesn't validate the body of a SQL function created while
+            // `check_function_bodies` is off, e.g. one whose statements use a table that an
+            // earlier statement of the body creates ([`fmgr_sql_validator`]).
+            //
+            // [`fmgr_sql_validator`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/pg_proc.c#L890
+            let validated =
+                stmt.function.is_none() || file_context.session().check_function_bodies();
+            let typecheck_statement = typecheck
+                && !stmt.has_identifier_parameters
+                && !stmt.has_unknown_values
+                && validated;
 
             let statement =
                 StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
