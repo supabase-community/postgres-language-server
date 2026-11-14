@@ -1,6 +1,6 @@
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 
-use pgls_migrations::{History, TOOLS};
+use pgls_migrations::{History, MigrationTool};
 use pgls_treesitter::context::{TreesitterContext, WrappingClause};
 
 use crate::{providers::helper::word_at_cursor, sanitization};
@@ -481,8 +481,8 @@ impl CompletionScore<'_> {
             History::Table(name) => table_name == Some(*name),
             History::Schema(name) => schema_name == Some(*name),
         };
-        if TOOLS
-            .iter()
+        if MigrationTool::ALL
+            .into_iter()
             .filter_map(|tool| tool.database().history)
             .any(|history| is_history(&history))
             // sqlx records its migrations here, but isn't a migration tool of ours yet.

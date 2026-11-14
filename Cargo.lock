@@ -2416,6 +2416,7 @@ dependencies = [
  "pgls_diagnostics",
  "pgls_env",
  "pgls_matcher",
+ "pgls_migrations",
  "pgls_pretty_print",
  "pgls_text_size",
  "rustc-hash",
@@ -2636,6 +2637,8 @@ dependencies = [
  "pgls_lexer",
  "pgls_statement_splitter",
  "pgls_text_size",
+ "schemars",
+ "serde",
  "tempfile",
  "toml",
 ]

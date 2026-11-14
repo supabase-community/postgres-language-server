@@ -65,10 +65,7 @@ use crate::{
         on_hover::{OnHoverParams, OnHoverResult},
         semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
-    settings::{
-        Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut,
-        migration_tool,
-    },
+    settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
     workspace::WithCSTMapper,
 };
 
@@ -346,11 +343,7 @@ impl WorkspaceServer {
 
     /// The migration tool of the settings that apply to the file, and the version of the settings
     /// it is from.
-    fn migration_tool(
-        &self,
-        project_key: ProjectKey,
-        path: &Path,
-    ) -> (u64, &'static dyn MigrationTool) {
+    fn migration_tool(&self, project_key: ProjectKey, path: &Path) -> (u64, MigrationTool) {
         // Read before the settings, so that settings that change in between make the version
         // older than the tool, and the document gets the tool again on the next request.
         let settings_version = self.settings_version.load(Ordering::Acquire);
@@ -360,7 +353,7 @@ impl WorkspaceServer {
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.tool)
             .unwrap_or_default();
-        (settings_version, migration_tool(tool))
+        (settings_version, tool)
     }
 
     /// Gives the open document at `path` the migration tool of the current settings of
@@ -639,7 +632,7 @@ fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
         .as_ref()
         .and_then(|migration_settings| {
             let migrations_dir = migration_settings.path.as_ref()?;
-            let tool = migration_tool(migration_settings.tool);
+            let tool = migration_settings.tool;
             let after = tool.version(&migration_settings.after.as_ref()?.text())?;
             let version = tool.file(path, migrations_dir).version?;
 

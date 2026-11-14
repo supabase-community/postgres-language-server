@@ -16,6 +16,8 @@ pgls_diagnostics = { workspace = true }
 pgls_fs          = { workspace = true, features = ["serde"] }
 pgls_lexer       = { workspace = true }
 pgls_text_size   = { workspace = true }
+schemars         = { workspace = true, optional = true }
+serde            = { workspace = true, features = ["derive"] }
 toml             = { workspace = true }
 
 [dev-dependencies]
@@ -24,6 +26,9 @@ tempfile                = "3.15.0"
 
 [lib]
 doctest = false
+
+[features]
+schema = ["dep:schemars"]
 
 [lints]
 workspace = true

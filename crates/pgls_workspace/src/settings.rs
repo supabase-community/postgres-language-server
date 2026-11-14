@@ -1,7 +1,6 @@
 use globset::Glob;
 use pgls_configuration::StringSet;
 use pgls_diagnostics::Category;
-use pgls_migrations::ToolId;
 #[cfg(feature = "db")]
 use std::str::FromStr;
 use std::{
@@ -1108,7 +1107,7 @@ impl Default for MigrationSettings {
         Self {
             path: None,
             after: None,
-            tool: MigrationTool::None,
+            tool: MigrationTool::Plain,
             lint_down: true,
         }
     }
@@ -1125,24 +1124,13 @@ impl From<PartialMigrationsConfiguration> for MigrationSettings {
     }
 }
 
-/// The tool that the workspace runs files with for `migrations.tool`.
-pub(crate) fn migration_tool(tool: MigrationTool) -> &'static dyn pgls_migrations::MigrationTool {
-    match tool {
-        MigrationTool::None => ToolId::Plain,
-        MigrationTool::Supabase => ToolId::Supabase,
-        MigrationTool::Dbmate => ToolId::Dbmate,
-        MigrationTool::Goose => ToolId::Goose,
-    }
-    .tool()
-}
-
 /// What is wrong with the migrations settings of a configuration that it can still apply, like an
 /// `after` that isn't a version of the migration tool.
 pub fn migrations_problems(configuration: &PartialConfiguration) -> Vec<String> {
     let Some(migrations) = &configuration.migrations else {
         return Vec::new();
     };
-    let tool = migration_tool(migrations.migration_tool());
+    let tool = migrations.migration_tool();
     // `0`, the default, ignores nothing.
     migrations
         .after

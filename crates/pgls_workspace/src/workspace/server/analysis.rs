@@ -17,11 +17,7 @@ use super::{
     WorkspaceServer, analyser::AnalyserVisitorBuilder, document::AnalyserDiagnosticsMapper,
     document::Document,
 };
-use crate::{
-    configuration::to_analyser_rules,
-    settings::{Settings, migration_tool},
-    workspace::ProjectKey,
-};
+use crate::{configuration::to_analyser_rules, settings::Settings, workspace::ProjectKey};
 
 /// What the analyser found in a document, with what the diagnostics need to be reported.
 pub(crate) struct DocumentAnalysis {
@@ -90,10 +86,11 @@ impl<'a> AnalysisRequest<'a> {
 impl WorkspaceServer {
     /// Whether the file is a migration. Migration-only rules don't run on other files.
     fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
-        let Some((tool, migrations_dir)) = settings.migrations.as_ref().and_then(|migrations| {
-            let tool = migration_tool(migrations.tool);
-            Some((tool, migrations.path.as_ref()?))
-        }) else {
+        let Some((tool, migrations_dir)) = settings
+            .migrations
+            .as_ref()
+            .and_then(|migrations| Some((migrations.tool, migrations.path.as_ref()?)))
+        else {
             return FileKind::Unknown;
         };
         match tool.file(path, migrations_dir).role {
