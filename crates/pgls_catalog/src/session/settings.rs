@@ -5,6 +5,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{self, VariableSetKind},
 };
+use pgls_query_ext::utils::string_value;
 
 #[derive(Debug, Default, Clone)]
 pub(super) struct Settings {
@@ -182,10 +183,7 @@ fn variable_value(node: &NodeEnum) -> Option<String> {
             protobuf::a_const::Val::Sval(s) => Some(s.sval.clone()),
             _ => None,
         },
-        NodeEnum::ColumnRef(v) => v.fields.last().and_then(|f| match f.node.as_ref()? {
-            NodeEnum::String(s) => Some(s.sval.clone()),
-            _ => None,
-        }),
+        NodeEnum::ColumnRef(v) => v.fields.last().and_then(string_value).map(str::to_owned),
         _ => None,
     }
 }

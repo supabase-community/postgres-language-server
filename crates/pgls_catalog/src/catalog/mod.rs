@@ -9,7 +9,6 @@ mod base;
 mod ddl;
 mod derive;
 mod materialize;
-mod names;
 mod overlay;
 #[cfg(test)]
 mod tests;
@@ -19,6 +18,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
+use pgls_query_ext::utils::{qualified_name, range_var_name};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::Candidates;
@@ -33,15 +33,23 @@ pub use base::CatalogBase;
 /// `(schema, name)` of a catalog object.
 type Key = (String, String);
 
-/// The state of an object that the file changed.
+/// The state of an object that the file changed. Objects are shared between clones of the
+/// catalog, like the checkpoints of the editor walk and savepoints, and copied when one of them
+/// changes.
 #[derive(Debug, Clone)]
 enum Entry<T> {
     /// Created or altered by the file.
-    Defined(T),
+    Defined(Arc<T>),
     /// Dropped (or renamed away) by the file.
     Dropped,
     /// Changed by the file in a way the catalog can't follow.
     Unknown,
+}
+
+impl<T> Entry<T> {
+    fn defined(value: T) -> Self {
+        Self::Defined(Arc::new(value))
+    }
 }
 
 /// The catalog as seen by a statement: the database snapshot plus the changes made by the
@@ -175,7 +183,7 @@ impl Catalog {
 
     fn entry_lookup<T: Clone>(&self, entry: &Entry<T>) -> Lookup<T> {
         match entry {
-            Entry::Defined(value) => Lookup::Found(value.clone()),
+            Entry::Defined(value) => Lookup::Found(T::clone(value)),
             Entry::Dropped => self.not_found(),
             Entry::Unknown => Lookup::Unknown,
         }
@@ -224,6 +232,16 @@ impl Catalog {
                 None => not_found(),
             },
             None => not_found(),
+        }
+    }
+
+    /// Whether a relation or an index has the name in the schema. Indexes share their namespace
+    /// with tables, views, sequences and composite types, but live in their own map.
+    fn relation_or_index_in(&self, schema: &str, name: &str) -> Lookup<()> {
+        match (self.relation_in(schema, name), self.index_in(schema, name)) {
+            (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(()),
+            (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
+            (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
         }
     }
 
@@ -284,8 +302,8 @@ impl Catalog {
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
     ) -> Lookup<RelationInfo> {
-        let name = names::range_var_name(range_var);
-        self.relation(name.schema(), &name.name, search_path)
+        let name = range_var_name(range_var);
+        self.relation(name.schema, name.name, search_path)
     }
 
     /// Looks up a column of the relation a `RangeVar` names, see [`Catalog::relation_of`].
@@ -310,43 +328,26 @@ impl Catalog {
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
     ) -> (String, String) {
-        let name = names::range_var_name(range_var);
-        // Indexes are relations too, in their own map.
-        let in_schema = |schema: &str| match (
-            self.relation_in(schema, &name.name),
-            self.index_in(schema, &name.name),
-        ) {
-            (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(key(schema, &name.name)),
-            (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
-            (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
+        let name = range_var_name(range_var);
+        let in_schema = |schema: &str| {
+            self.relation_or_index_in(schema, name.name)
+                .map(|()| key(schema, name.name))
         };
-        let found = match name.schema() {
+        let found = match name.schema {
             Some(schema) => in_schema(schema),
             None => self.search(relation_search_path(search_path), in_schema),
         };
         match found.found() {
             Some(key) => key,
             None if range_var.relpersistence == "t" => key("pg_temp", &range_var.relname),
-            None => self.creation_key(&name, search_path),
+            None => self.creation_key(name, search_path),
         }
-    }
-
-    /// The schema and name of the relation that `CREATE TABLE` creates for a `RangeVar`. Unlike
-    /// [`Catalog::relation_name_of`], this doesn't depend on the relations that exist: a
-    /// temporary table with the name doesn't capture a new permanent table. `None` for system
-    /// catalogs, where Postgres rejects new relations.
-    pub fn relation_creation_name_of(
-        &self,
-        range_var: &pgls_query::protobuf::RangeVar,
-        search_path: &[String],
-    ) -> Option<(String, String)> {
-        self.relation_creation_key(range_var, search_path)
     }
 
     /// Whether the last statement applied was a no-op because of `IF NOT EXISTS`, like `CREATE
     /// TABLE IF NOT EXISTS` of a table that is known to exist. If the catalog doesn't know
     /// whether the object exists, the statement may have created it and this is `false`.
-    pub fn skipped_existing(&self) -> bool {
+    pub(crate) fn skipped_existing(&self) -> bool {
         self.skipped_existing
     }
 
@@ -377,19 +378,19 @@ impl Catalog {
     }
 
     /// Looks up the index that a name list names, like the objects of `DROP INDEX`.
-    pub fn index_of(
+    pub(crate) fn index_of(
         &self,
         names: &[pgls_query::protobuf::Node],
         search_path: &[String],
     ) -> Lookup<IndexInfo> {
-        match names::qualified_name(names) {
-            Some(name) => self.index(name.schema(), &name.name, search_path),
+        match qualified_name(names) {
+            Some(name) => self.index(name.schema, name.name, search_path),
             None => Lookup::Unknown,
         }
     }
 
     /// Looks up the table or materialized view an index is on.
-    pub fn index_table(&self, index: &IndexInfo) -> Lookup<RelationInfo> {
+    pub(crate) fn index_table(&self, index: &IndexInfo) -> Lookup<RelationInfo> {
         self.relation_in(&index.schema, &index.table)
     }
 
@@ -416,8 +417,8 @@ impl Catalog {
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
     ) -> bool {
-        let name = names::range_var_name(range_var);
-        self.is_partitioned(self.index(name.schema(), &name.name, search_path))
+        let name = range_var_name(range_var);
+        self.is_partitioned(self.index(name.schema, name.name, search_path))
     }
 
     fn is_partitioned(&self, index: Lookup<IndexInfo>) -> bool {
@@ -590,7 +591,7 @@ impl CatalogView for Catalog {
                 .values()
                 .find_map(|entry| match entry {
                     Entry::Defined(info) if info.id == Some(TypeId::File(*id)) => {
-                        Some(info.clone())
+                        Some(TypeInfo::clone(info))
                     }
                     _ => None,
                 })

@@ -24,6 +24,25 @@ pub struct Unit {
     pub queries: Vec<TextRange>,
 }
 
+impl Unit {
+    /// The queries that run in an implicit transaction block: outside a transaction, those with
+    /// more than one statement. `statement_ranges` are the ranges of the top-level statements of
+    /// the file, parsed or not, in order.
+    ///
+    /// Cost: O(log statements) per query.
+    pub fn implicit_blocks<'a>(
+        &'a self,
+        statement_ranges: &'a [TextRange],
+    ) -> impl Iterator<Item = TextRange> + 'a {
+        let starting_before = |offset: TextSize| {
+            statement_ranges.partition_point(|statement| statement.start() < offset)
+        };
+        self.queries.iter().copied().filter(move |query| {
+            !self.transaction && starting_before(query.end()) - starting_before(query.start()) > 1
+        })
+    }
+}
+
 /// The units of a file, built from its markers in file order.
 pub(crate) struct UnitsBuilder {
     units: Vec<Unit>,
