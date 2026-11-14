@@ -15,7 +15,7 @@ use pgls_text_size::{TextRange, TextSize};
 
 use super::{
     WorkspaceServer, analyser::AnalyserVisitorBuilder, document::AnalyserDiagnosticsMapper,
-    document::Document, tool_of_setting,
+    document::Document,
 };
 use crate::{configuration::to_analyser_rules, settings::Settings, workspace::ProjectKey};
 
@@ -86,10 +86,11 @@ impl<'a> AnalysisRequest<'a> {
 impl WorkspaceServer {
     /// Whether the file is a migration. Migration-only rules don't run on other files.
     fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
-        let Some((tool, migrations_dir)) = settings.migrations.as_ref().and_then(|migrations| {
-            let tool = tool_of_setting(migrations.tool);
-            Some((tool, migrations.path.as_ref()?))
-        }) else {
+        let Some((tool, migrations_dir)) = settings
+            .migrations
+            .as_ref()
+            .and_then(|migrations| Some((migrations.tool, migrations.path.as_ref()?)))
+        else {
             return FileKind::Unknown;
         };
         match tool.file(path, migrations_dir).role {

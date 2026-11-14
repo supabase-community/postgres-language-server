@@ -1105,7 +1105,7 @@ impl Default for MigrationSettings {
         Self {
             path: None,
             after: None,
-            tool: MigrationTool::None,
+            tool: MigrationTool::Plain,
             lint_down: true,
         }
     }

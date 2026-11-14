@@ -5,118 +5,75 @@
 //! in the folder of `-dir` or `GOOSE_MIGRATION_DIR`, `.` by default. So its projects aren't
 //! detected.
 
-use std::path::Path;
+mod envsub;
+mod interpolate;
 
-use pgls_fs::FileSystem;
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::{
-    Database, Detected, Direction, FileInfo, History, MigrationTool, Root, Script, ToolId, Version,
-    directives::{self, lines},
-    naming,
-    templating::{
-        Preprocessed,
-        envsub::{Expansion, substitute},
-        interpolate,
-    },
-    units::UnitsBuilder,
+    Direction, Preprocessed, Script,
+    markers::{UnitsBuilder, lines, look_alikes},
 };
+use envsub::{Expansion, substitute};
 
-pub struct Goose;
-
-impl MigrationTool for Goose {
-    fn id(&self) -> ToolId {
-        ToolId::Goose
-    }
-
-    fn name(&self) -> &'static str {
-        "goose"
-    }
-
-    /// goose has no sign of its projects, see above.
-    fn detect(&self, _fs: &dyn FileSystem, _root: &Root) -> Option<Detected> {
-        None
-    }
-
-    fn database(&self) -> Database {
-        Database {
-            history: Some(History::Table("goose_db_version")),
-        }
-    }
-
-    fn default_dir(&self) -> Option<&'static str> {
-        None
-    }
-
-    fn file(&self, path: &Path, migrations_dir: &Path) -> FileInfo {
-        naming::numbered(path, migrations_dir, |text| self.version(text))
-    }
-
-    fn version(&self, text: &str) -> Option<Version> {
-        naming::number(text)
-    }
-
-    fn read(&self, text: &str) -> Script {
-        let mut sections = UnitsBuilder::new(text);
-        let mut no_transaction = false;
-        // The start of the open `StatementBegin` block.
-        let mut statement_begin = None;
-        for (range, line) in lines(text) {
-            match annotation(line) {
-                Some(annotation) if annotation.eq_ignore_ascii_case("up") => {
-                    sections.start(range.start(), Direction::Up, true);
-                }
-                Some(annotation) if annotation.eq_ignore_ascii_case("down") => {
-                    sections.start(range.start(), Direction::Down, true);
-                }
-                Some(annotation) if annotation.eq_ignore_ascii_case("no transaction") => {
-                    no_transaction = true;
-                }
-                Some(annotation) if annotation.eq_ignore_ascii_case("statementbegin") => {
-                    statement_begin = Some(range.start());
-                }
-                Some(annotation) if annotation.eq_ignore_ascii_case("statementend") => {
-                    // goose sends the statements between `StatementBegin` and `StatementEnd`
-                    // to Postgres as one query.
-                    if let (Some(begin), Some(section)) =
-                        (statement_begin.take(), sections.current())
-                    {
-                        section.queries.push(TextRange::new(begin, range.end()));
-                    }
-                }
-                _ => {}
+pub(crate) fn read(text: &str) -> Script {
+    let mut sections = UnitsBuilder::new(text);
+    let mut no_transaction = false;
+    // The start of the open `StatementBegin` block.
+    let mut statement_begin = None;
+    for (range, line) in lines(text) {
+        match annotation(line) {
+            Some(annotation) if annotation.eq_ignore_ascii_case("up") => {
+                sections.start(range.start(), Direction::Up, true);
             }
-        }
-
-        let mut units = sections.finish();
-        // goose runs both directions of the file without a transaction.
-        if no_transaction {
-            for unit in &mut units {
-                unit.transaction = false;
+            Some(annotation) if annotation.eq_ignore_ascii_case("down") => {
+                sections.start(range.start(), Direction::Down, true);
             }
+            Some(annotation) if annotation.eq_ignore_ascii_case("no transaction") => {
+                no_transaction = true;
+            }
+            Some(annotation) if annotation.eq_ignore_ascii_case("statementbegin") => {
+                statement_begin = Some(range.start());
+            }
+            Some(annotation) if annotation.eq_ignore_ascii_case("statementend") => {
+                // goose sends the statements between `StatementBegin` and `StatementEnd`
+                // to Postgres as one query.
+                if let (Some(begin), Some(section)) = (statement_begin.take(), sections.current()) {
+                    section.queries.push(TextRange::new(begin, range.end()));
+                }
+            }
+            _ => {}
         }
-        Script {
-            units,
-            look_alikes: directives::look_alikes(
-                text,
-                |line| annotation(line).is_some(),
-                |line| {
-                    // goose fails on an annotation with leading whitespace instead of ignoring
-                    // it, see
-                    // https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L321
-                    if line.contains("+goose") {
-                        "goose rejects a migration with an annotation that doesn't start at the beginning of the line."
-                    } else {
-                        "goose only reads `-- +goose` annotations with `+goose` in lowercase, so this line is a plain comment."
-                    }
-                },
-            ),
-            before_first_unit: Some(
-                "goose rejects a migration with statements before the first `-- +goose Up`."
-                    .to_string(),
-            ),
-            preprocessed: envsub(text),
+    }
+
+    let mut units = sections.finish();
+    // goose runs both directions of the file without a transaction.
+    if no_transaction {
+        for unit in &mut units {
+            unit.transaction = false;
         }
+    }
+    Script {
+        units,
+        look_alikes: look_alikes(
+            text,
+            |line| annotation(line).is_some(),
+            |line| {
+                // goose fails on an annotation with leading whitespace instead of ignoring
+                // it, see
+                // https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L321
+                if line.contains("+goose") {
+                    "goose rejects a migration with an annotation that doesn't start at the beginning of the line."
+                } else {
+                    "goose only reads `-- +goose` annotations with `+goose` in lowercase, so this line is a plain comment."
+                }
+            },
+        ),
+        before_first_unit: Some(
+            "goose rejects a migration with statements before the first `-- +goose Up`."
+                .to_string(),
+        ),
+        preprocessed: envsub(text),
     }
 }
 
@@ -177,7 +134,7 @@ fn annotation(line: &str) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        Direction, ToolId,
+        Direction, MigrationTool,
         tests::{marker_problems, sections},
     };
 
@@ -185,7 +142,7 @@ mod tests {
     fn goose_sections() {
         let text = "-- +goose Up\n-- +goose StatementBegin\nselect 1;\n-- +goose StatementEnd\n-- +goose down\nselect 2;";
         assert_eq!(
-            sections(text, ToolId::Goose),
+            sections(text, MigrationTool::Goose),
             vec![
                 (
                     "-- +goose Up\n-- +goose StatementBegin\nselect 1;\n-- +goose StatementEnd\n",
@@ -200,8 +157,7 @@ mod tests {
     #[test]
     fn queries_sent_at_once() {
         let text = "-- +goose NO TRANSACTION\n-- +goose Up\nselect 1;\n-- +goose StatementBegin\nselect 2;\nselect 3;\n-- +goose StatementEnd\n-- +goose Down\nselect 4;\n";
-        let queries = ToolId::Goose
-            .tool()
+        let queries = MigrationTool::Goose
             .read(text)
             .units
             .into_iter()
@@ -226,14 +182,14 @@ mod tests {
     #[test]
     fn statements_before_the_first_marker() {
         let text = "select 1;\n-- +goose Up\nselect 2;\n";
-        assert_eq!(marker_problems(text, ToolId::Goose).len(), 1);
+        assert_eq!(marker_problems(text, MigrationTool::Goose).len(), 1);
     }
 
     #[test]
     fn lines_that_look_like_markers() {
         let text =
             "-- +goose Up\nselect 1;\n-- +Goose Down\n  -- +goose StatementBegin\nselect 2;\n";
-        let problems = marker_problems(text, ToolId::Goose);
+        let problems = marker_problems(text, MigrationTool::Goose);
         assert_eq!(
             problems.iter().map(|(line, _)| *line).collect::<Vec<_>>(),
             ["-- +Goose Down", "  -- +goose StatementBegin"]
@@ -244,7 +200,7 @@ mod tests {
 
     /// The text that is analysed for `text`, and the parts that goose replaces.
     fn envsub(text: &str) -> Option<(String, Vec<&str>)> {
-        let preprocessed = ToolId::Goose.tool().read(text).preprocessed?;
+        let preprocessed = MigrationTool::Goose.read(text).preprocessed?;
         assert_eq!(preprocessed.text.len(), text.len());
         let placeholders = preprocessed
             .placeholders
@@ -316,7 +272,7 @@ mod tests {
             Some((text.to_string(), vec!["${MESSAGE}", "${NOTE}"]))
         );
         // Only the one in the string literal is a value that we don't know.
-        let preprocessed = ToolId::Goose.tool().read(text).preprocessed.unwrap();
+        let preprocessed = MigrationTool::Goose.read(text).preprocessed.unwrap();
         assert_eq!(
             preprocessed
                 .unknown_values
@@ -331,7 +287,7 @@ mod tests {
     fn goose_no_transaction_applies_to_the_whole_file() {
         let text = "-- +goose Up\nselect 1;\n-- +goose Down\nselect 2;\n-- +goose NO TRANSACTION\n";
         assert!(
-            sections(text, ToolId::Goose)
+            sections(text, MigrationTool::Goose)
                 .iter()
                 .all(|(_, _, transaction)| !transaction)
         );

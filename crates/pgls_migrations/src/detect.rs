@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use pgls_fs::FileSystem;
 
-use crate::{MigrationTool, TOOLS, ToolId};
+use crate::MigrationTool;
 
 /// Folders that never hold the project of a migration tool in a monorepo.
 const SKIPPED_DIRECTORIES: &[&str] = &["node_modules", "target", "supabase"];
@@ -13,7 +13,7 @@ const SKIPPED_DIRECTORIES: &[&str] = &["node_modules", "target", "supabase"];
 #[derive(Debug)]
 pub struct Detected {
     /// The tool.
-    pub tool: ToolId,
+    pub tool: MigrationTool,
     /// The folder of the configuration file, relative to the working directory: `..` when
     /// `init` runs in the folder of the tool inside a project, like `supabase`, so that the
     /// configuration applies to the whole project like the tool's does, and the editor finds it
@@ -43,9 +43,9 @@ pub struct LocalDatabase {
 impl Detected {
     /// A project of `tool` with the tool's folder `directory` in `root`, and the tool's default
     /// migrations folder.
-    pub(crate) fn new(tool: &dyn MigrationTool, root: &Root, directory: &str) -> Self {
+    pub(crate) fn new(tool: MigrationTool, root: &Root, directory: &str) -> Self {
         Self {
-            tool: tool.id(),
+            tool,
             configuration_directory: Path::new(""),
             directory: root.relative(directory),
             migrations_dir: tool
@@ -98,8 +98,8 @@ pub fn find_projects(fs: &dyn FileSystem) -> Vec<Detected> {
                 format!("{relative}/")
             },
         };
-        TOOLS
-            .iter()
+        MigrationTool::ALL
+            .into_iter()
             .filter_map(|tool| tool.detect(fs, &root))
             .collect::<Vec<_>>()
     };
@@ -167,7 +167,7 @@ mod tests {
             .map(|project| {
                 (
                     project.directory,
-                    project.tool.tool().name(),
+                    project.tool.name(),
                     project.migrations_dir,
                 )
             })
@@ -186,7 +186,7 @@ mod tests {
         write(&dir, "supabase/config.toml", "[db]\nport = 6543\n");
         let fs = OsFileSystem::new(dir.path().to_path_buf());
         let [project] = find_projects(&fs).try_into().unwrap();
-        assert_eq!(project.tool, ToolId::Supabase);
+        assert_eq!(project.tool, MigrationTool::Supabase);
         assert_eq!(project.configuration_directory, Path::new(""));
         assert_eq!(project.directory, "supabase");
         assert_eq!(
@@ -207,7 +207,7 @@ mod tests {
         );
         let fs = OsFileSystem::new(dir.path().to_path_buf());
         let [project] = find_projects(&fs).try_into().unwrap();
-        assert_eq!(project.tool, ToolId::Dbmate);
+        assert_eq!(project.tool, MigrationTool::Dbmate);
         assert_eq!(project.directory, "db");
         assert_eq!(project.migrations_dir.as_deref(), Some("db/migrations"));
         assert!(project.database.is_none());
@@ -278,7 +278,7 @@ mod tests {
         write(&dir, "db/migrations/1_init.sql", "-- migrate:up\n");
         let fs = OsFileSystem::new(dir.path().join("supabase"));
         let [project] = find_projects(&fs).try_into().unwrap();
-        assert_eq!(project.tool, ToolId::Supabase);
+        assert_eq!(project.tool, MigrationTool::Supabase);
         assert_eq!(project.configuration_directory, Path::new(".."));
         assert_eq!(project.directory, "supabase");
         assert_eq!(
