@@ -1,7 +1,11 @@
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::OffsetMap};
+use pgls_statement_splitter::SplitResult;
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{AnalysableStatement, UnparsableStatement};
@@ -13,14 +17,24 @@ use pgls_migrations::{MigrationTool, Preprocessed, Script, Unit};
 
 use crate::workspace::ProjectKey;
 
-use super::{document_cache::DocumentCache, statement_identifier::StatementId};
+use super::{
+    document_cache::{ContentChange, DocumentCache, DocumentCacheStats, StaleEntries},
+    statement_identifier::StatementId,
+};
 
+/// An open document. Clones share the cache, which is keyed so that each clone only sees what
+/// was cached for its own content.
+#[derive(Clone)]
 pub struct Document {
     content: String,
+    /// Changes on every change of the content or of the migration tool, see
+    /// [`Document::generation`].
+    generation: u64,
     version: i32,
-    ranges: Vec<TextRange>,
+    /// The statements of `content`, kept to split the next version of it incrementally.
+    split: SplitResult,
     diagnostics: Vec<SDiagnostic>,
-    cache: DocumentCache,
+    cache: Arc<DocumentCache>,
     suppressions: Suppressions,
     /// The project whose settings `migration_tool` is from.
     project_key: ProjectKey,
@@ -31,6 +45,14 @@ pub struct Document {
     migration_tool: &'static dyn MigrationTool,
     /// How `migration_tool` runs the content.
     migration_script: Script,
+    /// Where the last change of the content starts.
+    edited_at: Option<TextSize>,
+}
+
+/// A generation that no document had before, see [`Document::generation`].
+fn next_generation() -> u64 {
+    static GENERATIONS: AtomicU64 = AtomicU64::new(0);
+    GENERATIONS.fetch_add(1, Ordering::Relaxed)
 }
 
 impl Document {
@@ -51,74 +73,153 @@ impl Document {
         version: i32,
     ) -> Document {
         let migration_script = migration_tool.read(&content);
-        let (ranges, diagnostics) =
-            split_with_diagnostics(text(&content, migration_script.preprocessed.as_ref()), None);
-        let suppressions = Suppressions::from(content.as_str()).with_statements(ranges.clone());
+        let split =
+            pgls_statement_splitter::split(text(&content, migration_script.preprocessed.as_ref()));
+        let diagnostics = split_diagnostics(&split);
+        let suppressions =
+            Suppressions::from(content.as_str()).with_statements(split.ranges.clone());
 
+        let generation = next_generation();
         Document {
-            ranges,
+            split,
             diagnostics,
             content,
+            generation,
             version,
-            cache: DocumentCache::new(),
+            cache: Arc::new(DocumentCache::new(generation)),
             suppressions,
             project_key,
             settings_version,
             migration_tool,
             migration_script,
+            edited_at: None,
         }
     }
 
-    pub fn update_content(&mut self, content: String, version: i32) {
-        self.content = content;
+    /// Replaces the content of the document. Returns what the change invalidated in its cache,
+    /// for the caller to drop, see [`StaleEntries::drop_in_background`].
+    pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
+        let migration_script = self.migration_tool.read(&content);
+        // The text that is split is the content with the placeholders of the migration tool.
+        let old_text = self.text();
+        let new_text = text(&content, migration_script.preprocessed.as_ref());
+        let unchanged = common_prefix(old_text, new_text);
+        let unchanged_suffix = common_suffix(old_text, new_text, unchanged);
+        // Only the statements around the change are split again.
+        let split = pgls_statement_splitter::split_edited(old_text, &self.split, new_text);
+        let changed = changed_statements(
+            &self.split.ranges,
+            &split.ranges,
+            unchanged,
+            TextSize::of(old_text) - unchanged_suffix,
+            new_text.len() as i64 - old_text.len() as i64,
+        );
+        // The statements before the change keep what the walks cached for them. The splitter
+        // looks ahead, so a statement before the change can still end elsewhere.
+        let first_changed_statement = self
+            .split
+            .ranges
+            .get(changed.start)
+            .map_or(TextSize::from(u32::MAX), |range| range.start());
+        let old_content = std::mem::replace(&mut self.content, content);
+        let old_script = std::mem::replace(&mut self.migration_script, migration_script);
+        let old_split = std::mem::replace(&mut self.split, split);
         self.version = version;
-        self.migration_script = self.migration_tool.read(&self.content);
-        self.split();
-    }
+        self.generation = next_generation();
+        self.edited_at = Some(unchanged);
 
-    /// Applies the migration tool of the settings of `project_key` at `settings_version`.
-    pub(crate) fn set_migration_tool(
-        &mut self,
-        project_key: ProjectKey,
-        settings_version: u64,
-        migration_tool: &'static dyn MigrationTool,
-    ) {
-        self.project_key = project_key;
-        self.settings_version = settings_version;
-        self.migration_tool = migration_tool;
-        let migration_script = migration_tool.read(&self.content);
-        let resplit = migration_script.preprocessed != self.migration_script.preprocessed;
-        self.migration_script = migration_script;
-        if resplit {
-            self.split();
-        }
-        // The analysis depends on the sections. It may have been cached for the new settings
-        // before they reached the document.
-        self.cache.content_changed();
-    }
-
-    /// Splits the text into statements again, and keeps what is cached for the statements that
-    /// are still in it.
-    fn split(&mut self) {
-        let (ranges, diagnostics) = split_with_diagnostics(self.text(), None);
-
+        let ranges = &self.split.ranges;
         self.suppressions =
             Suppressions::from(self.content.as_str()).with_statements(ranges.clone());
-        self.ranges = ranges;
-        self.diagnostics = diagnostics;
-        // Keep what is cached for the statements that are still in the document. The bodies
-        // of SQL functions are kept with their function.
-        let text = text(&self.content, self.migration_script.preprocessed.as_ref());
-        let statements: FxHashSet<&str> = self.ranges.iter().map(|range| &text[*range]).collect();
-        let is_present =
-            |id: &StatementId| statements.contains(id.parent_content().unwrap_or(id.content()));
-        self.cache.retain_statements(is_present);
-        self.cache.content_changed();
+        self.diagnostics = split_diagnostics(&self.split);
+        let stale = self.cache.content_changed(
+            ContentChange {
+                unchanged,
+                first_changed_statement,
+            },
+            self.generation,
+        );
+        // The statements around the change that are no longer in the document drop what was
+        // cached for them, with the statements of their function bodies. The other statements
+        // have the same text as before.
+        let old_text = text(&old_content, old_script.preprocessed.as_ref());
+        let removed = statements_not_in(
+            old_split
+                .ranges
+                .get(changed)
+                .unwrap_or_default()
+                .iter()
+                .map(|range| &old_text[*range]),
+            self.text(),
+            &self.split.ranges,
+        );
+        self.cache.remove_statements(removed);
+        stale
+    }
+
+    /// Which version of the content this is. Unlike the client's version, it is unique across
+    /// all documents: it changes on every change, also of the migration tool, and a document that
+    /// is closed and opened again gets a new one.
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+
+    /// Where the last change of the content starts.
+    pub fn edited_at(&self) -> Option<TextSize> {
+        self.edited_at
     }
 
     /// What is cached for the document.
     pub(crate) fn cache(&self) -> &DocumentCache {
         &self.cache
+    }
+
+    /// Applies the migration tool of the settings of `project_key` at `settings_version`.
+    /// Returns what the change invalidated in the cache, for the caller to drop, see
+    /// [`StaleEntries::drop_in_background`].
+    pub(crate) fn set_migration_tool(
+        &mut self,
+        project_key: ProjectKey,
+        settings_version: u64,
+        migration_tool: &'static dyn MigrationTool,
+    ) -> StaleEntries {
+        self.project_key = project_key;
+        self.settings_version = settings_version;
+        self.migration_tool = migration_tool;
+        let migration_script = migration_tool.read(&self.content);
+        let resplit = migration_script.preprocessed != self.migration_script.preprocessed;
+        let old_script = std::mem::replace(&mut self.migration_script, migration_script);
+        let old_split = resplit.then(|| {
+            let split = pgls_statement_splitter::split(self.text());
+            self.diagnostics = split_diagnostics(&split);
+            self.suppressions =
+                Suppressions::from(self.content.as_str()).with_statements(split.ranges.clone());
+            std::mem::replace(&mut self.split, split)
+        });
+        // The analysis and the walks depend on the sections. They may have been cached for the
+        // new settings before they reached the document, so the document gets a new generation:
+        // requests that still run with the old tool are outdated and don't cache what they
+        // compute. The parse results only depend on the text, and stay.
+        self.generation = next_generation();
+        let stale = self.cache.content_changed(
+            ContentChange {
+                unchanged: TextSize::from(0),
+                first_changed_statement: TextSize::from(0),
+            },
+            self.generation,
+        );
+        // With other placeholders, the statements that are no longer in the text drop what was
+        // cached for them.
+        if let Some(old_split) = old_split {
+            let old_text = text(&self.content, old_script.preprocessed.as_ref());
+            let removed = statements_not_in(
+                old_split.ranges.iter().map(|range| &old_text[*range]),
+                self.text(),
+                &self.split.ranges,
+            );
+            self.cache.remove_statements(removed);
+        }
+        stale
     }
 
     /// Whether the migration tool is the one of the settings of `project_key` at
@@ -156,13 +257,24 @@ impl Document {
         &self.migration_script.units
     }
 
+    /// What the caches of the document hold, for tests of their memory. It doesn't fill them.
+    pub(crate) fn cache_stats(&self) -> DocumentCacheStats {
+        let statements: FxHashSet<StatementId> = self
+            .split
+            .ranges
+            .iter()
+            .map(|range| StatementId::new(&self.text()[*range]))
+            .collect();
+        self.cache.stats(&statements)
+    }
+
     pub fn suppressions(&self) -> &Suppressions {
         &self.suppressions
     }
 
     /// The ranges of the top-level statements, in file order.
     pub fn statement_ranges(&self) -> &[TextRange] {
-        &self.ranges
+        &self.split.ranges
     }
 
     pub fn get_document_content(&self) -> &str {
@@ -223,16 +335,60 @@ impl Document {
     {
         // The ranges are ordered and don't overlap, so only the first one that ends after
         // `position` can contain it.
-        let first = self.ranges.partition_point(|range| range.end() <= position);
-        let ranges = &self.ranges[first..self.ranges.len().min(first + 1)];
+        let first = self
+            .split
+            .ranges
+            .partition_point(|range| range.end() <= position);
+        let ranges = self.split.ranges.get(first..=first).unwrap_or_default();
         ParseIterator {
             ranges: ranges.iter(),
             ..ParseIterator::new(self, mapper, CursorPositionFilter::new(position))
         }
     }
 
-    pub fn count(&self) -> usize {
-        self.iter(DefaultMapper).count()
+    /// The statements from the first top-level statement that starts at or after `offset` on.
+    pub fn iter_from<'a, M>(&'a self, mapper: M, offset: TextSize) -> ParseIterator<'a, M, NoFilter>
+    where
+        M: StatementMapper<'a>,
+    {
+        let first = self
+            .split
+            .ranges
+            .partition_point(|range| range.start() < offset);
+        ParseIterator {
+            ranges: self.split.ranges.get(first..).unwrap_or_default().iter(),
+            ..ParseIterator::new(self, mapper, NoFilter)
+        }
+    }
+
+    /// The statements that [`GetCompletionsFilter`] accepts for `position`, without looking at
+    /// the statements far from it.
+    pub fn iter_for_completions<'a, M>(
+        &'a self,
+        mapper: M,
+        position: TextSize,
+    ) -> ParseIterator<'a, M, GetCompletionsFilter>
+    where
+        M: StatementMapper<'a>,
+    {
+        // The filter accepts a statement up to two characters after its end. The bodies of SQL
+        // functions are inside their top-level statement.
+        let ranges = &self.split.ranges;
+        let first = ranges.partition_point(|range| range.end() + TextSize::from(2) <= position);
+        let near = ranges.get(first..).unwrap_or_default();
+        let near = near
+            .get(..near.partition_point(|range| range.start() <= position))
+            .unwrap_or_default();
+        ParseIterator {
+            ranges: near.iter(),
+            ..ParseIterator::new(
+                self,
+                mapper,
+                GetCompletionsFilter {
+                    cursor_position: position,
+                },
+            )
+        }
     }
 }
 
@@ -299,7 +455,7 @@ impl<'a, M, F> ParseIterator<'a, M, F> {
             parser,
             mapper,
             filter,
-            ranges: parser.ranges.iter(),
+            ranges: parser.split.ranges.iter(),
             pending_embedded: Vec::new(),
         }
     }
@@ -327,7 +483,7 @@ where
 
             // The statements of a SQL function body follow the function. They are pushed in
             // reverse, so that they are popped in order.
-            let embedded = self.parser.cache.embedded(&root_id);
+            let embedded = self.parser.cache.embedded(&root_id, self.parser.generation);
             self.pending_embedded
                 .extend(embedded.iter().rev().map(|embedded| DocumentStatement {
                     id: root_id.create_child(&embedded.sql),
@@ -363,7 +519,7 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     );
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.cache.parse(&stmt.id);
+        let ast_result = doc.cache.parse(&stmt.id, doc.generation);
         let ast_option = match &*ast_result {
             Ok(node) => Some(node.clone()),
             Err(_) => None,
@@ -384,7 +540,7 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
     );
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.cache.parse(&stmt.id);
+        let ast_result = doc.cache.parse(&stmt.id, doc.generation);
         let result = match &*ast_result {
             Ok(node) => Ok(node.clone()),
             Err(diag) => Err(diag.clone().span(stmt.range)),
@@ -405,14 +561,14 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     );
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.cache.parse(&stmt.id);
+        let ast_result = doc.cache.parse(&stmt.id, doc.generation);
 
         let ast_option = match &*ast_result {
             Ok(node) => Some(node.clone()),
             Err(_) => None,
         };
 
-        let cst_result = doc.cache.tree(&stmt.id);
+        let cst_result = doc.cache.tree(&stmt.id, doc.generation);
 
         (stmt.id, stmt.range, ast_option, cst_result)
     }
@@ -430,11 +586,11 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
         let DocumentStatement { id, range, offsets } = stmt;
-        let maybe_node = doc.cache.parse(&id);
+        let maybe_node = doc.cache.parse(&id, doc.generation);
 
         let (ast_option, diagnostics) = match &*maybe_node {
             Ok(node) => {
-                let plpgsql_result = doc.cache.plpgsql_parse(&id);
+                let plpgsql_result = doc.cache.plpgsql_parse(&id, doc.generation);
                 if let Some(Err(diag)) = plpgsql_result {
                     // offset the pgpsql diagnostic from the parent statement start
                     let span = diag.location().span.map(|sp| sp + range.start());
@@ -453,7 +609,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
         // Statements in the body of a SQL function can reference its parameters.
         let function = id.parent().and_then(|root| {
-            let parent = doc.cache.parse(&root);
+            let parent = doc.cache.parse(&root, doc.generation);
             let Ok(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) =
                 parent.as_ref().as_deref()
             else {
@@ -484,7 +640,7 @@ impl<'a> StatementMapper<'a> for WithCSTMapper {
     type Output = (DocumentStatement, Arc<tree_sitter::Tree>);
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let tree = doc.cache.tree(&stmt.id);
+        let tree = doc.cache.tree(&stmt.id, doc.generation);
         (stmt, tree)
     }
 }
@@ -560,33 +716,145 @@ fn text<'a>(content: &'a str, preprocessed: Option<&'a Preprocessed>) -> &'a str
     preprocessed.map_or(content, |preprocessed| &preprocessed.text)
 }
 
-/// Helper function that wraps the statement splitter and returns the ranges with unified
-/// diagnostics
-pub(crate) fn split_with_diagnostics(
-    content: &str,
-    offset: Option<TextSize>,
-) -> (Vec<TextRange>, Vec<SDiagnostic>) {
-    let o = offset.unwrap_or_else(|| 0.into());
-    let result = pgls_statement_splitter::split(content);
+/// The length of the longest common prefix of `a` and `b`, on a character boundary.
+fn common_prefix(a: &str, b: &str) -> TextSize {
+    /// Compares this many bytes at a time, which is faster than comparing each byte.
+    const BLOCK_BYTES: usize = 64;
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    let blocks = a
+        .as_chunks::<BLOCK_BYTES>()
+        .0
+        .iter()
+        .zip(b.as_chunks::<BLOCK_BYTES>().0)
+        .take_while(|(a, b)| a == b)
+        .count();
+    let mut equal = blocks * BLOCK_BYTES;
+    equal += a
+        .iter()
+        .skip(equal)
+        .zip(b.iter().skip(equal))
+        .take_while(|(a, b)| a == b)
+        .count();
+    // A change inside a character starts at its first byte.
+    while equal > 0 && a.get(equal).is_some_and(|byte| (byte & 0xC0) == 0x80) {
+        equal -= 1;
+    }
+    TextSize::try_from(equal).unwrap_or_default()
+}
 
-    (
-        result.ranges,
-        result
-            .errors
-            .into_iter()
-            .map(|err| {
-                SDiagnostic::new(
-                    err.clone()
-                        .with_file_span(err.location().span.map(|r| r + o)),
-                )
-            })
-            .collect(),
-    )
+/// The length of the longest common suffix of `a` and `b` that doesn't overlap the common
+/// prefix of length `prefix`, on a character boundary.
+fn common_suffix(a: &str, b: &str, prefix: TextSize) -> TextSize {
+    const BLOCK_BYTES: usize = 64;
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    let len = a.len().min(b.len()).saturating_sub(usize::from(prefix));
+    // The `equal` bytes at the end of `a` and `b`, and the `more` bytes before them.
+    let ends_equal = |equal: usize, more: usize| {
+        let (a_start, b_start) = (a.len() - equal - more, b.len() - equal - more);
+        a.get(a_start..a.len() - equal)
+            .is_some_and(|a| b.get(b_start..b.len() - equal) == Some(a))
+    };
+    let mut equal = 0;
+    while equal + BLOCK_BYTES <= len && ends_equal(equal, BLOCK_BYTES) {
+        equal += BLOCK_BYTES;
+    }
+    while equal < len && ends_equal(equal, 1) {
+        equal += 1;
+    }
+    // A change inside a character ends after its last byte.
+    while equal > 0
+        && a.get(a.len() - equal)
+            .is_some_and(|byte| (byte & 0xC0) == 0x80)
+    {
+        equal -= 1;
+    }
+    TextSize::try_from(equal).unwrap_or_default()
+}
+
+/// The indexes of the statements of the split `old` that an edit changed, given the split `new`
+/// of the text after it. The text before `unchanged`, and from `unchanged_from` on in the old
+/// text, is the same, and `shift` is the change in length. A statement is unchanged if it is in
+/// the same text, and the same range there, as before. Only the statements around the change
+/// are compared.
+fn changed_statements(
+    old: &[TextRange],
+    new: &[TextRange],
+    unchanged: TextSize,
+    unchanged_from: TextSize,
+    shift: i64,
+) -> std::ops::Range<usize> {
+    let before = old
+        .iter()
+        .zip(new)
+        .take_while(|(old, new)| old == new && old.end() <= unchanged)
+        .count();
+    let shifted = |range: &TextRange| {
+        let start = u32::try_from(i64::from(u32::from(range.start())) + shift).ok()?;
+        Some(TextRange::at(start.into(), range.len()))
+    };
+    let after = old
+        .get(before..)
+        .unwrap_or_default()
+        .iter()
+        .rev()
+        .zip(new.get(before..).unwrap_or_default().iter().rev())
+        .take_while(|(old, new)| old.start() >= unchanged_from && shifted(old) == Some(**new))
+        .count();
+    before..old.len() - after
+}
+
+/// The texts of `statements` that aren't the text of one of the statements at `ranges` of
+/// `content`. Only the statements of the same length as one of `statements` are compared.
+fn statements_not_in<'a>(
+    statements: impl Iterator<Item = &'a str>,
+    content: &str,
+    ranges: &[TextRange],
+) -> Vec<&'a str> {
+    let mut missing: FxHashSet<&str> = statements.collect();
+    if missing.is_empty() {
+        return Vec::new();
+    }
+    let lengths: FxHashSet<usize> = missing.iter().map(|text| text.len()).collect();
+    for range in ranges {
+        if lengths.contains(&usize::from(range.len())) {
+            missing.remove(&content[*range]);
+            if missing.is_empty() {
+                break;
+            }
+        }
+    }
+    missing.into_iter().collect()
+}
+
+/// The errors of the statement splitter as diagnostics.
+fn split_diagnostics(split: &SplitResult) -> Vec<SDiagnostic> {
+    split
+        .errors
+        .iter()
+        .map(|err| SDiagnostic::new(err.clone().with_file_span(err.location().span)))
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn common_prefix_stops_at_the_first_difference_on_a_char_boundary() {
+        let long = "select 1;\n".repeat(20);
+        assert_eq!(common_prefix("", ""), TextSize::from(0));
+        assert_eq!(common_prefix(&long, &long), TextSize::of(long.as_str()));
+        assert_eq!(common_prefix(&long, "select 2;"), TextSize::from(7));
+        assert_eq!(
+            common_prefix(&format!("{long}x"), &format!("{long}y")),
+            TextSize::of(long.as_str())
+        );
+        // `ä` and `ö` share their first byte, so the change starts at that byte.
+        assert_eq!(
+            common_prefix(&format!("{long}ä"), &format!("{long}ö")),
+            TextSize::of(long.as_str())
+        );
+    }
 
     #[test]
     fn sql_function_body() {
@@ -950,15 +1218,25 @@ $$ LANGUAGE plpgsql;";
         let mut d = Document::new("select 1;\nselect 2;".to_string(), 1);
         let first = StatementId::new("select 1;");
         let second = StatementId::new("select 2;");
-        let first_ast = d.cache.parse(&first);
-        let second_ast = d.cache.parse(&second);
-        let first_tree = d.cache.tree(&first);
+        let first_ast = d.cache.parse(&first, d.generation);
+        let second_ast = d.cache.parse(&second, d.generation);
+        let first_tree = d.cache.tree(&first, d.generation);
 
-        d.update_content("select 1;\nselect 3;".to_string(), 2);
+        d.update_content("select 1;\nselect 3;".to_string(), 2)
+            .drop_in_background();
 
-        assert!(Arc::ptr_eq(&first_ast, &d.cache.parse(&first)));
-        assert!(Arc::ptr_eq(&first_tree, &d.cache.tree(&first)));
-        assert!(!Arc::ptr_eq(&second_ast, &d.cache.parse(&second)));
+        assert!(Arc::ptr_eq(
+            &first_ast,
+            &d.cache.parse(&first, d.generation)
+        ));
+        assert!(Arc::ptr_eq(
+            &first_tree,
+            &d.cache.tree(&first, d.generation)
+        ));
+        assert!(!Arc::ptr_eq(
+            &second_ast,
+            &d.cache.parse(&second, d.generation)
+        ));
     }
 
     #[test]
@@ -1007,5 +1285,280 @@ $$ LANGUAGE plpgsql;";
         let fake_id = StatementId::new("SELECT 3;");
         let result = d.find(fake_id, DefaultMapper);
         assert!(result.is_none());
+    }
+
+    /// Each change splits only the statements around it, with the same result as splitting the
+    /// whole document.
+    #[test]
+    fn updates_split_like_the_whole_document() {
+        let statements = [
+            "create table t (id bigint primary key, name text);",
+            "create function f(a int) returns int language sql as $$ select a $$;",
+            "select c.relname from pg_class c where c.relnatts = 1;",
+            "insert into t values (1, 'x');",
+            "-- comment\nselect 1;",
+            "update t set name = 'y'",
+        ];
+        let snippets = [
+            "x",
+            " ",
+            "\n",
+            "\n\n",
+            ";",
+            "select 2;",
+            "'",
+            "$$",
+            "(",
+            ")",
+            "",
+        ];
+        let mut seed: u64 = 0x2545_f491_4f6c_dd1d;
+        let mut below = |n: usize| {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed % n as u64) as usize
+        };
+        let mut content: String = (0..200)
+            .map(|i| statements[i % statements.len()])
+            .collect::<Vec<_>>()
+            .join("\n");
+        let mut d = Document::new(content.clone(), 0);
+        for version in 1..1_000 {
+            let at = below(content.len() + 1);
+            let end = (at + below(20)).min(content.len());
+            let inserted = snippets[below(snippets.len())];
+            content = format!("{}{inserted}{}", &content[..at], &content[end..]);
+            d.update_content(content.clone(), version)
+                .drop_in_background();
+
+            let whole = pgls_statement_splitter::split(&content);
+            assert_eq!(d.split, whole, "{content}");
+            assert_eq!(
+                format!("{:?}", d.diagnostics),
+                format!("{:?}", split_diagnostics(&whole))
+            );
+        }
+    }
+
+    /// With goose's `ENVSUB`, the text that is split has placeholders, which can hide a `;`, and an
+    /// edit can change it after the edit, like `ENVSUB ON`. Edits split it like the whole text is
+    /// split.
+    #[test]
+    fn edits_split_the_text_with_the_placeholders_of_the_migration_tool() {
+        let goose = pgls_migrations::ToolId::Goose.tool();
+        let lines = [
+            "-- +goose Up",
+            "-- +goose ENVSUB ON",
+            "create schema ${SCHEMA:-app};",
+            "select '${A}'; select ${B};",
+            "-- +goose ENVSUB OFF",
+            "select ${C};",
+        ];
+        let edits = [
+            (1, "-- +goose ENVSUB OFF"),
+            (1, "-- +goose ENVSUB ON"),
+            (3, "select ${A; select ${B};"),
+            (4, "-- +goose ENVSUB ON"),
+            (2, "create schema ${SCHEMA:-app;x};"),
+            (4, "-- +goose ENVSUB OFF"),
+            (1, "-- +goose ENVSUB OFF"),
+            (1, "-- +goose ENVSUB ON"),
+        ];
+        let mut lines = lines.map(str::to_string);
+        let mut d = Document::open(ProjectKey::default(), 0, goose, lines.join("\n"), 0);
+        for (version, (line, text)) in (1..).zip(edits) {
+            lines[line] = text.to_string();
+            let content = lines.join("\n");
+            d.update_content(content.clone(), version)
+                .drop_in_background();
+
+            let whole = Document::open(ProjectKey::default(), 0, goose, content.clone(), 0);
+            assert_eq!(d.split, whole.split, "{content}");
+            assert_eq!(d.text(), whole.text(), "{content}");
+        }
+    }
+
+    /// After every edit, the cache holds what it held for the statements that are still in the
+    /// document, and nothing for the others: an edit drops the statements it removed, also when
+    /// another statement has the same text, and the statements of their function bodies.
+    #[test]
+    fn edits_drop_only_the_statements_they_removed() {
+        let statements = [
+            "create table t (id bigint primary key, name text);",
+            "create function f(a int) returns int language sql as $$ select a; select 2 $$;",
+            "select 1;",
+            "select 1;",
+            "insert into t values (1, 'x');",
+            "-- comment\nselect 2;",
+        ];
+        let snippets = ["x", " ", "\n\n", ";", "select 1;", "1", "(", ""];
+        let mut seed: u64 = 0x9e37_79b9_7f4a_7c15;
+        let mut below = |n: usize| {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed % n as u64) as usize
+        };
+        let mut content: String = (0..60)
+            .map(|i| statements[i % statements.len()])
+            .collect::<Vec<_>>()
+            .join("\n");
+        let mut d = Document::new(content.clone(), 0);
+        let fill = |d: &Document| {
+            for (stmt, _) in d.iter(WithCSTMapper) {
+                d.cache.parse(&stmt.id, d.generation);
+            }
+        };
+        fill(&d);
+        for version in 1..300 {
+            let at = below(content.len() + 1);
+            let end = (at + below(30)).min(content.len());
+            let inserted = snippets[below(snippets.len())];
+            content = format!("{}{inserted}{}", &content[..at], &content[end..]);
+            d.update_content(content.clone(), version)
+                .drop_in_background();
+            // Nothing is cached for a statement that isn't in the document.
+            let stats = d.cache_stats();
+            assert!(stats.parse_results <= stats.statements, "{content}");
+            assert!(stats.trees <= stats.statements, "{content}");
+            // Every statement is cached once.
+            fill(&d);
+            let stats = d.cache_stats();
+            assert_eq!(stats.parse_results, stats.statements, "{content}");
+            assert_eq!(stats.trees, stats.statements, "{content}");
+        }
+    }
+
+    #[test]
+    fn finds_the_statements_an_edit_changed() {
+        fn changed<'a>(old: &'a str, new: &str) -> Vec<&'a str> {
+            let (old_split, new_split) = (
+                pgls_statement_splitter::split(old),
+                pgls_statement_splitter::split(new),
+            );
+            let unchanged = common_prefix(old, new);
+            let range = changed_statements(
+                &old_split.ranges,
+                &new_split.ranges,
+                unchanged,
+                TextSize::of(old) - common_suffix(old, new, unchanged),
+                new.len() as i64 - old.len() as i64,
+            );
+            old_split.ranges[range]
+                .iter()
+                .map(|range| &old[*range])
+                .collect()
+        }
+        assert_eq!(
+            changed(
+                "select 1;\nselect 2;\nselect 3;",
+                "select 1;\nselect 22;\nselect 3;"
+            ),
+            ["select 2;"]
+        );
+        // The same text as the statement before it.
+        assert_eq!(
+            changed(
+                "select 1;\nselect 1;\nselect 1;",
+                "select 1;\nselect 1;\n\nselect 1;"
+            ),
+            Vec::<&str>::new()
+        );
+        assert_eq!(
+            changed("select 1;\nselect 2;", "select 1;\nselect 2;\nselect 3;"),
+            Vec::<&str>::new()
+        );
+        // An edit across two statements changes both.
+        assert_eq!(
+            changed(
+                "select 1;\nselect 2;\nselect 3;",
+                "select 1;\nselect 4;\nselect 5;"
+            ),
+            ["select 2;", "select 3;"]
+        );
+        assert_eq!(
+            changed("select 1;\nselect 2;\nselect 3;", "select 1;\nselect 2;\n"),
+            ["select 3;"]
+        );
+        assert_eq!(changed("select 1;", ""), ["select 1;"]);
+        // A change in a multi-byte character.
+        assert_eq!(
+            changed("select 'é';\nselect 2;", "select 'è';\nselect 2;"),
+            ["select 'é';"]
+        );
+    }
+
+    #[test]
+    fn requests_on_a_previous_version_add_nothing_to_the_cache() {
+        let previous = Document::new("select 1;\nselect 2;".into(), 1);
+        let mut current = previous.clone();
+        current
+            .update_content("select 1;\nselect 3;".into(), 2)
+            .drop_in_background();
+        // `select 2;` is no longer in the document, so it stays out of the cache.
+        for (stmt, _) in previous.iter(WithCSTMapper) {
+            previous.cache.parse(&stmt.id, previous.generation);
+        }
+        let stats = current.cache_stats();
+        assert_eq!((stats.parse_results, stats.trees), (0, 0));
+        // It still reads what is cached for the current version.
+        let first = StatementId::new("select 1;");
+        let cached = current.cache.parse(&first, current.generation);
+        assert!(Arc::ptr_eq(
+            &cached,
+            &previous.cache.parse(&first, previous.generation)
+        ));
+    }
+
+    /// A clone of a document shares its cache, but a request on the previous version neither
+    /// reads nor writes what is cached for the new one.
+    #[test]
+    fn clones_only_see_the_cache_of_their_content() {
+        use crate::workspace::{
+            ProjectKey,
+            server::document_cache::{CacheKey, MigrationContext, ResolvedStatement},
+        };
+
+        let previous = Document::new("select 1;".into(), 1);
+        let mut current = previous.clone();
+        current
+            .update_content("select 2;".into(), 2)
+            .drop_in_background();
+        let key = CacheKey::new(0, ProjectKey::default(), None);
+        let context = MigrationContext::default();
+        let resolved = || -> Arc<[ResolvedStatement]> { Arc::from(Vec::new()) };
+
+        previous
+            .cache()
+            .with_walk(&key, previous.generation(), &context, |walk| {
+                walk.record_resolved(0.into(), resolved())
+            });
+        assert!(
+            current
+                .cache()
+                .with_walk(&key, current.generation(), &context, |walk| walk
+                    .resolved(0.into()))
+                .is_none()
+        );
+        current
+            .cache()
+            .with_walk(&key, current.generation(), &context, |walk| {
+                walk.record_resolved(0.into(), resolved())
+            });
+        assert!(
+            previous
+                .cache()
+                .with_walk(&key, previous.generation(), &context, |walk| walk
+                    .resolved(0.into()))
+                .is_none()
+        );
+        assert!(
+            current
+                .cache()
+                .with_walk(&key, current.generation(), &context, |walk| walk
+                    .resolved(0.into()))
+                .is_some()
+        );
     }
 }

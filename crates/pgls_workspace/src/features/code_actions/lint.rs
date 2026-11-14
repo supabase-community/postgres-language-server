@@ -202,27 +202,24 @@ fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
         _ => "\n",
     };
 
-    let start = usize::from(start);
-    let line_start = content[..start]
-        .rfind('\n')
-        .map_or(0, |newline| newline + 1);
-    let before = &content[line_start..start];
+    let before_start = &content[..usize::from(start)];
+    let line_start = before_start.rfind('\n').map_or(0, |newline| newline + 1);
+    let before = &before_start[line_start..];
     let indentation: String = before
         .chars()
         .take_while(|c| *c == ' ' || *c == '\t')
         .collect();
-    let offset = |offset: usize| TextSize::try_from(offset).unwrap();
     if before.trim().is_empty() {
         TextEdit {
-            range: TextRange::empty(offset(line_start)),
+            range: TextRange::empty(start - TextSize::of(before)),
             new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
         }
     } else {
         // The statement starts after another one on the same line, so it moves to a line of its
         // own.
-        let previous_end = line_start + before.trim_end().len();
+        let previous_end = start - (TextSize::of(before) - TextSize::of(before.trim_end()));
         TextEdit {
-            range: TextRange::new(offset(previous_end), offset(start)),
+            range: TextRange::new(previous_end, start),
             new_text: format!(
                 "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"
             ),

@@ -27,6 +27,17 @@ impl SplitDiagnostic {
     }
 }
 
+impl SplitDiagnostic {
+    pub(crate) fn span(&self) -> Option<TextRange> {
+        self.span
+    }
+
+    pub(crate) fn with_span(mut self, span: TextRange) -> Self {
+        self.span = Some(span);
+        self
+    }
+}
+
 impl From<LexDiagnostic> for SplitDiagnostic {
     fn from(lex_diagnostic: LexDiagnostic) -> Self {
         Self {

@@ -349,10 +349,15 @@ fn row_values(row: &PgRow, truncated_values: &mut bool) -> Vec<Option<String>> {
             *truncated_values = true;
             // Cut before a UTF-8 continuation byte, so that no character is split.
             let mut end = EXECUTE_STATEMENT_MAX_VALUE_SIZE;
-            while end > 0 && bytes[end] & 0b1100_0000 == 0b1000_0000 {
+            while end > 0
+                && bytes
+                    .get(end)
+                    .is_some_and(|byte| byte & 0b1100_0000 == 0b1000_0000)
+            {
                 end -= 1;
             }
-            let mut value = String::from_utf8_lossy(&bytes[..end]).into_owned();
+            let mut value =
+                String::from_utf8_lossy(bytes.get(..end).unwrap_or_default()).into_owned();
             value.push('…');
             Some(value)
         })

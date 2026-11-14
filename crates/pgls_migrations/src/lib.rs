@@ -135,7 +135,7 @@ pub enum Version {
 }
 
 /// How a tool runs the text of a migration file.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Script {
     /// The parts of the file that the tool runs on their own, in file order. A file without
     /// markers has none, and is one migration.

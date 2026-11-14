@@ -8,7 +8,7 @@ use pgls_text_size::TextRange;
 /// The text that the analysis reads instead of the file as written, with placeholders where the
 /// migration tool replaces parts of it. It has the length of the file, so that the offsets of
 /// diagnostics, fixes and editor positions are the same in both.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Preprocessed {
     pub text: String,
     /// The ranges that the tool replaces when it runs the file, in file order. The text holds a

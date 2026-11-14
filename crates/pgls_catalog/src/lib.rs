@@ -29,9 +29,9 @@ pub mod snapshot;
 pub mod typing;
 
 pub use catalog::{Catalog, CatalogBase};
-pub use identifier::{NamePosition, identifier_name, needs_quotes, quote_identifier};
+pub use identifier::{NamePosition, identifier_name, quote_identifier};
 pub use lookup::{
-    Candidates, CastContext, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
+    Candidates, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
     FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
     OperatorInfo, OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
@@ -40,4 +40,7 @@ pub use session::{
     alter_table_lock, ends_transaction_block, prevents_transaction_block, relation_locks,
 };
 pub use snapshot::*;
-pub use typing::*;
+pub use typing::{
+    Decision, SerialType, Type, TypeId, TypedColumn, base_type, is_binary_coercible,
+    normalize_type_name, serial_type,
+};
