@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::str::FromStr;
-use std::sync::RwLock;
 use std::time::Duration;
 
+use parking_lot::RwLock;
 use sqlx::{PgPool, Postgres, pool::PoolOptions, postgres::PgConnectOptions};
 
 use crate::{
@@ -140,7 +140,7 @@ impl ConnectionManager {
     /// is false, e.g. because no configuration points at them any more. That includes the pool
     /// for executed statements.
     pub(crate) fn retain(&self, is_used: impl Fn(&ConnectionKey) -> bool) {
-        self.pools.write().unwrap().retain(|key, cached| {
+        self.pools.write().retain(|key, cached| {
             let used = is_used(key);
             if !used {
                 cached.pools.close();
@@ -153,13 +153,13 @@ impl ConnectionManager {
             }
             used
         });
-        self.failures.write().unwrap().retain(|key, _| is_used(key));
+        self.failures.write().retain(|key, _| is_used(key));
     }
 
     /// The number of cached pools.
     #[cfg(test)]
     pub(crate) fn pool_count(&self) -> usize {
-        self.pools.read().unwrap().len()
+        self.pools.read().len()
     }
 
     /// The cached pools of every database.
@@ -167,7 +167,6 @@ impl ConnectionManager {
     pub(crate) fn cached_pools(&self) -> Vec<DatabasePools> {
         self.pools
             .read()
-            .unwrap()
             .values()
             .map(|cached| cached.pools.clone())
             .collect()
@@ -183,13 +182,12 @@ impl ConnectionManager {
         let has_idle = self
             .pools
             .read()
-            .unwrap()
             .values()
             .any(|pool| pool.last_used.idle_for() > POOL_IDLE_TIMEOUT);
         if !has_idle {
             return;
         }
-        self.pools.write().unwrap().retain(|key, pool| {
+        self.pools.write().retain(|key, pool| {
             let idle_for = pool.last_used.idle_for();
             let idle = idle_for > POOL_IDLE_TIMEOUT;
             if idle {
@@ -229,8 +227,7 @@ impl ConnectionManager {
 
         self.close_idle_pools();
         {
-            if let Ok(pools) = self.pools.read()
-                && let Some(cached_pool) = pools.get(&key)
+            if let Some(cached_pool) = self.pools.read().get(&key)
                 && cached_pool.settings_fingerprint == settings_fingerprint
             {
                 cached_pool.last_used.touch();
@@ -238,7 +235,7 @@ impl ConnectionManager {
             }
         }
 
-        let mut pools = self.pools.write().unwrap();
+        let mut pools = self.pools.write();
 
         // Drop a pool created with stale connection parameters.
         if pools
@@ -363,7 +360,7 @@ impl ConnectionManager {
         error: &DatabaseConnectionError,
         message: &str,
     ) {
-        let mut failures = self.failures.write().unwrap();
+        let mut failures = self.failures.write();
         let backoff = Backoff::after_failure(failures.get(key).map(|failure| &failure.backoff));
         let delay = backoff.delay();
 
@@ -399,7 +396,7 @@ impl ConnectionManager {
         key: &ConnectionKey,
         settings_fingerprint: u64,
     ) -> Option<DatabaseConnectionError> {
-        let mut failures = self.failures.write().unwrap();
+        let mut failures = self.failures.write();
         if failures
             .get(key)
             .is_some_and(|failure| failure.settings_fingerprint != settings_fingerprint)
@@ -422,7 +419,7 @@ impl ConnectionManager {
     }
 
     fn clear_failure(&self, key: &ConnectionKey) {
-        self.failures.write().unwrap().remove(key);
+        self.failures.write().remove(key);
     }
 }
 
@@ -447,7 +444,7 @@ mod tests {
         let second = manager.get_pool(&settings).unwrap();
 
         assert!(second.is_closed());
-        assert_eq!(manager.pools.read().unwrap().len(), 1);
+        assert_eq!(manager.pools.read().len(), 1);
     }
 
     #[tokio::test]
@@ -463,7 +460,7 @@ mod tests {
         let pool = manager.get_pool(&settings).unwrap();
 
         assert!(!pool.is_closed());
-        let pools = manager.pools.read().unwrap();
+        let pools = manager.pools.read();
         let cached = pools.get(&ConnectionKey::from(&settings)).unwrap();
         assert_ne!(first_fingerprint, changed_fingerprint);
         assert_eq!(cached.settings_fingerprint, changed_fingerprint);
@@ -480,7 +477,7 @@ mod tests {
         let mut settings = settings();
         let key = ConnectionKey::from(&settings);
         let old_fingerprint = settings_fingerprint(&settings);
-        manager.failures.write().unwrap().insert(
+        manager.failures.write().insert(
             key.clone(),
             CachedFailure {
                 error: authentication_failed(),
@@ -493,7 +490,7 @@ mod tests {
         settings.password = Some("corrected-password".to_string());
         let new_fingerprint = settings_fingerprint(&settings);
         assert!(!manager.connection_is_in_backoff(&key, new_fingerprint));
-        assert!(!manager.failures.read().unwrap().contains_key(&key));
+        assert!(!manager.failures.read().contains_key(&key));
         assert!(manager.get_pool(&settings).is_some());
     }
 
@@ -517,9 +514,9 @@ mod tests {
         let used_key = ConnectionKey::from(&used);
         manager.retain(|key| key == &used_key);
 
-        let pools = manager.pools.read().unwrap();
+        let pools = manager.pools.read();
         assert_eq!(pools.keys().collect::<Vec<_>>(), [&used_key]);
-        assert!(manager.failures.read().unwrap().is_empty());
+        assert!(manager.failures.read().is_empty());
         // Both pools of the database are closed, also the one for executed statements, even
         // though a clone of them is still alive.
         assert!(unused_pools.pool.is_closed());
@@ -539,17 +536,17 @@ mod tests {
         let busy = settings();
         let idle_pools = manager.get_pools(&idle).unwrap();
         manager.get_pool(&busy).unwrap();
-        manager.pools.read().unwrap()[&ConnectionKey::from(&idle)]
+        manager.pools.read()[&ConnectionKey::from(&idle)]
             .last_used
             .backdate(POOL_IDLE_TIMEOUT * 2);
 
         // The sweep runs at most once per interval.
         manager.get_pool(&busy).unwrap();
-        assert_eq!(manager.pools.read().unwrap().len(), 2);
+        assert_eq!(manager.pools.read().len(), 2);
 
         manager.last_idle_sweep.backdate(IDLE_SWEEP_INTERVAL * 2);
         manager.get_pool(&busy).unwrap();
-        let pools = manager.pools.read().unwrap();
+        let pools = manager.pools.read();
         assert_eq!(
             pools.keys().collect::<Vec<_>>(),
             [&ConnectionKey::from(&busy)]

@@ -163,8 +163,11 @@ fn override_connection_string(
         let mut query = url.query_pairs_mut();
         query.extend_pairs(&kept);
         for (keys, value) in &options {
-            if let Some(value) = value.as_ref().filter(|value| !value.is_empty()) {
-                query.append_pair(keys[0], value);
+            if let (Some(key), Some(value)) = (
+                keys.first(),
+                value.as_ref().filter(|value| !value.is_empty()),
+            ) {
+                query.append_pair(key, value);
             }
         }
     }
