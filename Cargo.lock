@@ -2293,6 +2293,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "pgls_lexer",
+ "pgls_migrations",
  "pgls_postgres_regress",
  "pgls_query",
  "pgls_query_ext",
@@ -2356,6 +2357,7 @@ dependencies = [
  "pgls_fs",
  "pgls_lexer",
  "pgls_lsp",
+ "pgls_migrations",
  "pgls_query",
  "pgls_test_utils",
  "pgls_text_edit",
@@ -2370,7 +2372,6 @@ dependencies = [
  "tempfile",
  "tikv-jemallocator",
  "tokio",
- "toml",
  "tracing",
  "tracing-appender",
  "tracing-bunyan-formatter",
@@ -2386,6 +2387,7 @@ dependencies = [
  "fuzzy-matcher",
  "insta",
  "pgls_catalog",
+ "pgls_migrations",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter",
@@ -2414,6 +2416,7 @@ dependencies = [
  "pgls_diagnostics",
  "pgls_env",
  "pgls_matcher",
+ "pgls_migrations",
  "pgls_pretty_print",
  "pgls_text_size",
  "rustc-hash",
@@ -2623,6 +2626,21 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "rustc-hash",
+]
+
+[[package]]
+name = "pgls_migrations"
+version = "0.0.0"
+dependencies = [
+ "pgls_diagnostics",
+ "pgls_fs",
+ "pgls_lexer",
+ "pgls_statement_splitter",
+ "pgls_text_size",
+ "schemars",
+ "serde",
+ "tempfile",
+ "toml",
 ]
 
 [[package]]
@@ -2900,6 +2918,7 @@ name = "pgls_walk"
 version = "0.0.0"
 dependencies = [
  "pgls_catalog",
+ "pgls_migrations",
  "pgls_query",
  "pgls_query_ext",
  "pgls_statement_splitter",
@@ -2935,6 +2954,7 @@ dependencies = [
  "globset",
  "ignore",
  "json-strip-comments 3.1.0",
+ "parking_lot",
  "pgls_analyse",
  "pgls_analyser",
  "pgls_catalog",
@@ -2949,6 +2969,7 @@ dependencies = [
  "pgls_lexer",
  "pgls_line_index",
  "pgls_matcher",
+ "pgls_migrations",
  "pgls_pglinter",
  "pgls_plpgsql_check",
  "pgls_pretty_print",

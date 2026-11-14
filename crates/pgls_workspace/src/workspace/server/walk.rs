@@ -13,15 +13,12 @@ use pgls_catalog::{
 };
 use pgls_fs::PgLSPath;
 use pgls_text_size::{TextRange, TextSize};
-use pgls_walk::{
-    AnalysableStatement, AnalysedFileContext, MigrationSection, STOP_CHECK_INTERVAL, WalkParams,
-};
+use pgls_walk::{AnalysableStatement, AnalysedFileContext, STOP_CHECK_INTERVAL, Unit, WalkParams};
 
 use super::{
     WorkspaceServer,
     document::{AnalyserDiagnosticsMapper, Document, DocumentStatement},
     document_cache::{CacheKey, MigrationContext, ResolvedStatement, WalkCache},
-    document_sections,
 };
 use crate::settings::Settings;
 
@@ -35,7 +32,7 @@ pub(super) struct EditorRequest<'a> {
     pub(super) snapshot: Arc<Snapshot>,
     pub(super) key: CacheKey,
     /// The migration sections of the document.
-    sections: Vec<MigrationSection>,
+    sections: Vec<Unit>,
     context: MigrationContext,
 }
 
@@ -52,7 +49,7 @@ impl WorkspaceServer {
     /// What a request of `project_key` on `doc` with `settings` walks with, starting from the
     /// database `snapshot`.
     ///
-    /// Cost: O(lines) to find the migration sections of the document.
+    /// Cost: O(sections) to copy the migration sections of the document.
     pub(super) fn editor_request<'a>(
         &self,
         project_key: crate::workspace::ProjectKey,
@@ -61,9 +58,7 @@ impl WorkspaceServer {
         snapshot: Arc<Snapshot>,
         doc: &Document,
     ) -> EditorRequest<'a> {
-        let sections = settings
-            .map(|settings| document_sections(settings, doc))
-            .unwrap_or_default();
+        let sections = doc.migration_sections().to_vec();
         EditorRequest {
             path,
             settings,
@@ -76,7 +71,7 @@ impl WorkspaceServer {
 
     /// The indexed database snapshot, built once per snapshot.
     pub(super) fn catalog_base(&self, snapshot: &Arc<Snapshot>) -> Arc<CatalogBase> {
-        let mut cached = self.catalog_base.lock().unwrap();
+        let mut cached = self.catalog_base.lock();
         if let Some(base) = cached.as_ref().filter(|base| base.is_built_from(snapshot)) {
             return Arc::clone(base);
         }
@@ -207,11 +202,13 @@ impl WorkspaceServer {
         let mut cached: Vec<Option<Arc<[ResolvedStatement]>>> = request.with_walk(doc, |walk| {
             tops.iter().map(|top| walk.resolved(top.start())).collect()
         });
-        let Some(first_missing) = cached.iter().position(Option::is_none) else {
+        let Some(missing_start) = tops
+            .iter()
+            .zip(&cached)
+            .find_map(|(top, cached)| cached.is_none().then(|| top.start()))
+        else {
             return cached.into_iter().flatten().collect();
         };
-
-        let missing_start = tops[first_missing].start();
         let end = tops.last().map_or(range.end(), |top| top.end());
         // The index in `tops` of the top-level statement of a statement.
         let top_of = |stmt: &AnalysableStatement| {
@@ -224,7 +221,9 @@ impl WorkspaceServer {
                 return;
             };
             if stmt.has_identifier_parameters
-                || top_of(stmt).is_none_or(|top| cached[top].is_some())
+                || top_of(stmt)
+                    .and_then(|top| cached.get(top))
+                    .is_none_or(Option::is_some)
             {
                 return;
             }
@@ -255,8 +254,8 @@ impl WorkspaceServer {
             else {
                 continue;
             };
-            if let Some(top) = top_of(&stmt) {
-                resolved[top].push(ResolvedStatement {
+            if let Some(resolved) = top_of(&stmt).and_then(|top| resolved.get_mut(top)) {
+                resolved.push(ResolvedStatement {
                     stmt,
                     references: stmt_references,
                 });

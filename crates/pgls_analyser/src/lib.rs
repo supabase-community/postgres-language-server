@@ -28,7 +28,7 @@ pub use linter_registry::{
 };
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use pgls_walk::{
-    AnalysableStatement, AnalysedFileContext, Direction, MigrationSection, STOP_CHECK_INTERVAL,
+    AnalysableStatement, AnalysedFileContext, Direction, STOP_CHECK_INTERVAL, Unit,
     UnparsableStatement, Walk, WalkParams, WalkState, is_plain_query, walk_statements,
 };
 
@@ -89,7 +89,7 @@ pub struct AnalyserParams {
     pub file_kind: FileKind,
     /// The sections of a migration file, like dbmate's up and down migrations. Each section is
     /// analysed as a migration of its own. Without sections, the whole file is one migration.
-    pub sections: Vec<MigrationSection>,
+    pub sections: Vec<Unit>,
     /// Whether the rules of the typecheck group run.
     pub typecheck: bool,
     /// The text of the file. Fixes that also edit after their statement, like the `COMMIT` that
@@ -219,7 +219,10 @@ impl<'a> Analyser<'a> {
             // [`fmgr_sql_validator`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/pg_proc.c#L890
             let validated =
                 stmt.function.is_none() || file_context.session().check_function_bodies();
-            let typecheck_statement = typecheck && !stmt.has_identifier_parameters && validated;
+            let typecheck_statement = typecheck
+                && !stmt.has_identifier_parameters
+                && !stmt.has_unknown_values
+                && validated;
 
             let statement =
                 StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());

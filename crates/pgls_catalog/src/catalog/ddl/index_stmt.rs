@@ -1,11 +1,11 @@
 use pgls_query::{
-    NodeEnum,
+    NodeEnum, NodeRef,
     protobuf::{AlterTableType, ConstrType, IndexStmt, Node, ObjectType},
 };
 use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 use crate::catalog::{Catalog, Entry, key};
-use crate::lookup::{IndexInfo, Lookup, Origin, RelationKind};
+use crate::lookup::{IndexInfo, Lookup, Origin, RelationInfo, RelationKind};
 
 /// `CREATE INDEX`. Models where [`DefineIndex`] puts the index: in the schema of its table.
 ///
@@ -35,7 +35,7 @@ pub(super) fn apply_index_stmt(c: &mut Catalog, n: &IndexStmt, search_path: &[St
     // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L894
     // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/indexcmds.c#L1276
     let taken = if n.if_not_exists {
-        name_taken(c, &index_key.0, &index_key.1)
+        c.relation_or_index_in(&index_key.0, &index_key.1)
     } else {
         Lookup::Missing
     };
@@ -48,26 +48,172 @@ pub(super) fn apply_index_stmt(c: &mut Catalog, n: &IndexStmt, search_path: &[St
     if table.kind == RelationKind::PartitionedTable {
         c.indexes_incomplete = true;
     }
+    let columns = index_columns(n, &table);
     let entry = match taken {
         Lookup::Unknown => Entry::Unknown,
         _ => Entry::defined(IndexInfo {
             schema: table.schema,
             name: n.idxname.clone(),
             table: table.name,
+            columns,
             origin: Origin::File,
         }),
     };
     c.indexes.insert(index_key, entry);
 }
 
-/// Whether a relation of any kind has the name in the schema. Indexes share their namespace with
-/// tables, views, sequences and composite types.
-fn name_taken(c: &Catalog, schema: &str, name: &str) -> Lookup<()> {
-    match (c.index_in(schema, name), c.relation_in(schema, name)) {
-        (Lookup::Found(_), _) | (_, Lookup::Found(_)) => Lookup::Found(()),
-        (Lookup::Unknown, _) | (_, Lookup::Unknown) => Lookup::Unknown,
-        (Lookup::Missing, Lookup::Missing) => Lookup::Missing,
+/// The columns an index uses: those of its keys and `INCLUDE` list, and those its expressions
+/// and predicate reference. [`index_create`] makes the index depend on each of them, so dropping
+/// one drops the index. A whole-row reference adds no column: [`find_expr_references_walker`]
+/// records none for it, so dropping a column keeps the index. But `ROW(t.*)` expands to all
+/// columns ([`transformRowExpr`]), and `(t).b` selects the column `b` ([`ParseComplexProjection`]).
+/// `None` if an expression references a name we can't resolve, and for `b(t)`, which is the
+/// column `b` unless there is a function `b` ([`ParseFuncOrColumn`]).
+///
+/// [`index_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/index.c#L1132
+/// [`find_expr_references_walker`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/dependency.c#L1782
+/// [`transformRowExpr`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L2188
+/// [`ParseComplexProjection`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1967
+/// [`ParseFuncOrColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L223
+fn index_columns(n: &IndexStmt, table: &RelationInfo) -> Option<Vec<String>> {
+    let mut columns = Vec::new();
+    let mut expressions = Vec::new();
+    for element in n.index_params.iter().chain(&n.index_including_params) {
+        let NodeEnum::IndexElem(element) = element.node.as_ref()? else {
+            return None;
+        };
+        if element.name.is_empty() {
+            expressions.push(element.expr.as_deref()?.node.as_ref()?);
+        } else {
+            columns.push(element.name.clone());
+        }
     }
+    expressions.extend(
+        n.where_clause
+            .as_deref()
+            .and_then(|clause| clause.node.as_ref()),
+    );
+    for expression in expressions {
+        for node in expression.iter() {
+            match node {
+                NodeRef::ColumnRef(column) => match column_ref(&column.fields, table)? {
+                    ColumnUse::Column(name) => columns.push(name),
+                    ColumnUse::WholeRow => {}
+                },
+                NodeRef::RowExpr(row) => {
+                    for arg in &row.args {
+                        let Some(NodeEnum::ColumnRef(column)) = arg.node.as_ref() else {
+                            continue;
+                        };
+                        let is_star = matches!(
+                            column.fields.last().and_then(|field| field.node.as_ref()),
+                            Some(NodeEnum::AStar(_))
+                        );
+                        if is_star && is_whole_row(arg, table) {
+                            let all = table.columns.as_ref()?;
+                            columns.extend(all.iter().map(|column| column.name.clone()));
+                        }
+                    }
+                }
+                NodeRef::AIndirection(indirection) => {
+                    let first = indirection.indirection.first()?.node.as_ref()?;
+                    let whole_row = indirection
+                        .arg
+                        .as_deref()
+                        .is_some_and(|arg| is_whole_row(arg, table));
+                    match first {
+                        NodeEnum::String(name) if whole_row => {
+                            // Otherwise a function on the whole row, or an error.
+                            let columns_of_table = table.columns.as_ref()?;
+                            if !columns_of_table.iter().any(|known| known.name == name.sval) {
+                                return None;
+                            }
+                            columns.push(name.sval.clone());
+                        }
+                        // `(t).*` expands to all columns in `ROW`, and fails elsewhere.
+                        NodeEnum::AStar(_) => return None,
+                        _ if whole_row => return None,
+                        _ => {}
+                    }
+                }
+                NodeRef::FuncCall(call) => {
+                    let could_be_projection = call.funcname.len() == 1
+                        && call.agg_order.is_empty()
+                        && call.agg_filter.is_none()
+                        && !call.agg_star
+                        && !call.agg_distinct
+                        && call.over.is_none()
+                        && !call.func_variadic
+                        && matches!(call.args.as_slice(), [arg] if is_whole_row(arg, table));
+                    let name = call
+                        .funcname
+                        .first()
+                        .and_then(|name| match name.node.as_ref() {
+                            Some(NodeEnum::String(name)) => Some(name.sval.as_str()),
+                            _ => None,
+                        });
+                    let is_column = |name: &str| {
+                        table
+                            .columns
+                            .as_ref()
+                            .is_none_or(|known| known.iter().any(|column| column.name == name))
+                    };
+                    if could_be_projection && name.is_none_or(is_column) {
+                        return None;
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    Some(columns)
+}
+
+/// Whether an expression is a whole-row reference to the table: `t` or `t.*`.
+fn is_whole_row(node: &Node, table: &RelationInfo) -> bool {
+    match node.node.as_ref() {
+        Some(NodeEnum::ColumnRef(column)) => {
+            matches!(column_ref(&column.fields, table), Some(ColumnUse::WholeRow))
+        }
+        _ => false,
+    }
+}
+
+/// What a column reference in an index expression uses of the table.
+enum ColumnUse {
+    Column(String),
+    WholeRow,
+}
+
+/// What a column reference in an index expression uses, like [`transformColumnRef`] resolves it
+/// with the table as the only relation in scope: `a` is the column `a`, or else the whole row of
+/// a table named `a`, `t.*` is the whole row of the table `t`, and `a.b` is the column `b` of the
+/// table `a`, or else the field `b` of the column `a`. `None` for names we don't resolve.
+///
+/// [`transformColumnRef`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L509
+fn column_ref(fields: &[Node], table: &RelationInfo) -> Option<ColumnUse> {
+    // A name, or `None` for `*`.
+    let names = fields
+        .iter()
+        .map(|field| match field.node.as_ref()? {
+            NodeEnum::String(name) => Some(Some(name.sval.as_str())),
+            NodeEnum::AStar(_) => Some(None),
+            _ => None,
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let columns = table.columns.as_ref()?;
+    let is_column = |name: &str| columns.iter().any(|column| column.name == name);
+    let column = match names.as_slice() {
+        [Some(name)] if !is_column(name) && *name == table.name => {
+            return Some(ColumnUse::WholeRow);
+        }
+        [Some(name)] => name,
+        [Some(qualifier), None] if *qualifier == table.name => return Some(ColumnUse::WholeRow),
+        [Some(qualifier), Some(name)] if *qualifier == table.name => name,
+        [Some(column), Some(_)] => column,
+        _ => return None,
+    };
+    is_column(column).then(|| ColumnUse::Column((*column).to_owned()))
 }
 
 /// Whether a statement may create or rename indexes other than with `CREATE INDEX` and
