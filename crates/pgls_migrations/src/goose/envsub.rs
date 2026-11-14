@@ -3,7 +3,7 @@
 use pgls_lexer::SyntaxKind;
 use pgls_text_size::{TextRange, TextSize};
 
-use super::Preprocessed;
+use crate::Preprocessed;
 
 /// An `ENVSUB` expansion in the file.
 pub(crate) struct Expansion<'a> {
@@ -12,7 +12,7 @@ pub(crate) struct Expansion<'a> {
 }
 
 /// Replaces the identifiers with `expansions` with named parameters, see
-/// [`crate::Goose`].
+/// [`super::envsub`].
 pub(crate) fn substitute(text: &str, expansions: &[Expansion]) -> Preprocessed {
     // Lex the text with each expansion as an identifier of the same length, to find the tokens
     // that the expansions are part of.

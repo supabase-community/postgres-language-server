@@ -11,8 +11,6 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{AnalysableStatement, UnparsableStatement};
 use rustc_hash::FxHashSet;
 
-#[cfg(test)]
-use pgls_migrations::Plain;
 use pgls_migrations::{MigrationTool, Preprocessed, Script, Unit};
 
 use crate::workspace::ProjectKey;
@@ -42,7 +40,7 @@ pub struct Document {
     /// [`Document::has_migration_tool_of`].
     settings_version: u64,
     /// The migration tool that runs the file, from its settings. See [`Document::open`].
-    migration_tool: &'static dyn MigrationTool,
+    migration_tool: MigrationTool,
     /// How `migration_tool` runs the content.
     migration_script: Script,
     /// Where the last change of the content starts.
@@ -59,7 +57,13 @@ impl Document {
     /// A document without a project, and so without a migration tool: it is one migration.
     #[cfg(test)]
     pub fn new(content: String, version: i32) -> Document {
-        Self::open(ProjectKey::default(), 0, &Plain, content, version)
+        Self::open(
+            ProjectKey::default(),
+            0,
+            MigrationTool::Plain,
+            content,
+            version,
+        )
     }
 
     /// A document of the project `project_key`, whose settings at `settings_version` make
@@ -68,7 +72,7 @@ impl Document {
     pub(crate) fn open(
         project_key: ProjectKey,
         settings_version: u64,
-        migration_tool: &'static dyn MigrationTool,
+        migration_tool: MigrationTool,
         content: String,
         version: i32,
     ) -> Document {
@@ -181,7 +185,7 @@ impl Document {
         &mut self,
         project_key: ProjectKey,
         settings_version: u64,
-        migration_tool: &'static dyn MigrationTool,
+        migration_tool: MigrationTool,
     ) -> StaleEntries {
         self.project_key = project_key;
         self.settings_version = settings_version;
@@ -242,7 +246,7 @@ impl Document {
     }
 
     /// The migration tool that runs the file, from its settings.
-    pub(crate) fn migration_tool(&self) -> &'static dyn MigrationTool {
+    pub(crate) fn migration_tool(&self) -> MigrationTool {
         self.migration_tool
     }
 
@@ -1346,7 +1350,7 @@ $$ LANGUAGE plpgsql;";
     /// split.
     #[test]
     fn edits_split_the_text_with_the_placeholders_of_the_migration_tool() {
-        let goose = pgls_migrations::ToolId::Goose.tool();
+        let goose = MigrationTool::Goose;
         let lines = [
             "-- +goose Up",
             "-- +goose ENVSUB ON",

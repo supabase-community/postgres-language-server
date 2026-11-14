@@ -1,9 +1,9 @@
 //! Migration tools: everything the language server knows about a tool is one [`MigrationTool`].
 //!
-//! Every tool answers every question of the trait, so its file says all it does. What tools
-//! share are helpers that they call: [`naming`] for the file names, [`directives`] for the
-//! marker comments, [`units`] for the parts of a file that run on their own, and [`detect`] for
-//! finding projects.
+//! Every method of the enum matches every tool, so one place shows what each tool does. What is
+//! longer than a line lives in the tool's module, like the markers of dbmate in `dbmate.rs`. What
+//! tools share is written once: the file names here, the marker comments and the units of a file
+//! in `markers.rs`, and finding projects in [`detect`].
 //!
 //! The workspace asks the tool of a file's settings two things, and keeps the answers:
 //! - [`MigrationTool::file`]: what the path says, like the version of the migration.
@@ -13,16 +13,16 @@
 //! `init` asks every tool for its projects with [`detect::find_projects`].
 //!
 //! The tools:
-//! - [`Plain`]: no tool, every file is one migration.
-//! - [`Supabase`]: the Supabase CLI. Every file is one migration.
-//! - [`Dbmate`] and [`Goose`]: up and down sections in one file, separated by marker comments.
+//! - [`MigrationTool::Plain`]: no tool, every file is one migration.
+//! - [`MigrationTool::Supabase`]: the Supabase CLI. Every file is one migration.
+//! - [`MigrationTool::Dbmate`] and [`MigrationTool::Goose`]: up and down sections in one file,
+//!   separated by marker comments.
 
+mod dbmate;
 pub mod detect;
-mod directives;
-mod naming;
-mod templating;
-mod tools;
-mod units;
+mod goose;
+mod markers;
+mod supabase;
 
 use std::path::Path;
 
@@ -30,68 +30,100 @@ use pgls_fs::FileSystem;
 use pgls_text_size::TextRange;
 
 pub use detect::{Detected, LocalDatabase, Root};
-pub use directives::SectionMarkerDiagnostic;
-pub use templating::Preprocessed;
-pub use tools::{Dbmate, Goose, Plain, Supabase};
-pub use units::{Direction, Unit};
+pub use markers::{Direction, SectionMarkerDiagnostic, Unit};
 
-/// A migration tool. Implementations have no defaults: each one says what the tool does, and
-/// calls the shared helpers for what it does like other tools.
-pub trait MigrationTool: Sync {
-    /// The tool, as the settings name it.
-    fn id(&self) -> ToolId;
-
-    /// The name of the tool, as its users know it.
-    fn name(&self) -> &'static str;
-
-    /// The project of the tool in `root`, for `init`, if the tool has a reliable sign of its
-    /// projects.
-    fn detect(&self, fs: &dyn FileSystem, root: &Root) -> Option<Detected>;
-
-    /// What the tool keeps in the database it migrates.
-    fn database(&self) -> Database;
-
-    /// The folder of the migrations in a project of the tool, relative to the project, if the
-    /// tool has one by default.
-    fn default_dir(&self) -> Option<&'static str>;
-
-    /// What the path of a file says, given `migrations.migrationsDir`: whether it is a
-    /// migration, and its version.
-    fn file(&self, path: &Path, migrations_dir: &Path) -> FileInfo;
-
-    /// The version of a migration in the tool's format, like the number that starts the name of
-    /// its file.
-    fn version(&self, text: &str) -> Option<Version>;
-
-    /// How the tool runs the text of a migration file: its units, the problems with its markers,
-    /// and what the tool replaces in it.
-    ///
-    /// Markers are found line by line, like the migration tools do, without looking at the SQL.
-    fn read(&self, text: &str) -> Script;
-}
-
-/// The migration tools, as the settings name them.
+/// A migration tool.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ToolId {
+pub enum MigrationTool {
+    /// No tool: plain SQL files, every file is one migration.
     Plain,
     Supabase,
     Dbmate,
     Goose,
 }
 
-impl ToolId {
-    pub fn tool(self) -> &'static dyn MigrationTool {
+impl MigrationTool {
+    /// The tools, in the order `init` reports their projects.
+    pub const ALL: [MigrationTool; 4] = [Self::Supabase, Self::Dbmate, Self::Goose, Self::Plain];
+
+    /// The name of the tool, as its users know it.
+    pub fn name(self) -> &'static str {
         match self {
-            ToolId::Plain => &Plain,
-            ToolId::Supabase => &Supabase,
-            ToolId::Dbmate => &Dbmate,
-            ToolId::Goose => &Goose,
+            Self::Plain => "plain SQL",
+            Self::Supabase => "Supabase",
+            Self::Dbmate => "dbmate",
+            Self::Goose => "goose",
+        }
+    }
+
+    /// The project of the tool in `root`, for `init`, if the tool has a reliable sign of its
+    /// projects.
+    pub fn detect(self, fs: &dyn FileSystem, root: &Root) -> Option<Detected> {
+        match self {
+            // Plain SQL files have no sign of a project.
+            Self::Plain => None,
+            Self::Supabase => supabase::detect(fs, root),
+            Self::Dbmate => dbmate::detect(fs, root),
+            // goose has no configuration file and no migrations folder of its own.
+            Self::Goose => None,
+        }
+    }
+
+    /// What the tool keeps in the database it migrates.
+    pub fn database(self) -> Database {
+        let history = match self {
+            // Plain SQL files are run by hand, which records nothing.
+            Self::Plain => None,
+            // The Supabase CLI keeps its migrations and seed files in the schema.
+            Self::Supabase => Some(History::Schema("supabase_migrations")),
+            // The default of `--migrations-table`.
+            Self::Dbmate => Some(History::Table("schema_migrations")),
+            Self::Goose => Some(History::Table("goose_db_version")),
+        };
+        Database { history }
+    }
+
+    /// The folder of the migrations in a project of the tool, relative to the project, if the
+    /// tool has one by default.
+    pub fn default_dir(self) -> Option<&'static str> {
+        match self {
+            Self::Plain | Self::Goose => None,
+            Self::Supabase => Some("supabase/migrations"),
+            Self::Dbmate => Some(dbmate::DBMATE_MIGRATIONS_DIR),
+        }
+    }
+
+    /// What the path of a file says, given `migrations.migrationsDir`: whether it is a
+    /// migration, and its version.
+    ///
+    /// Every tool names its files the same way, `<version>_<name>.sql`, see [`numbered`].
+    pub fn file(self, path: &Path, migrations_dir: &Path) -> FileInfo {
+        numbered(path, migrations_dir, |text| self.version(text))
+    }
+
+    /// The version of a migration in the tool's format, like the number that starts the name of
+    /// its file.
+    ///
+    /// Every tool numbers its migrations, see [`number`].
+    pub fn version(self, text: &str) -> Option<Version> {
+        number(text)
+    }
+
+    /// How the tool runs the text of a migration file: its units, the problems with its markers,
+    /// and what the tool replaces in it.
+    ///
+    /// Markers are found line by line, like the migration tools do, without looking at the SQL.
+    pub fn read(self, text: &str) -> Script {
+        match self {
+            // The file is one migration, whatever its comments say.
+            Self::Plain => Script::default(),
+            // The Supabase CLI runs every migration file as one migration.
+            Self::Supabase => Script::default(),
+            Self::Dbmate => dbmate::read(text),
+            Self::Goose => goose::read(text),
         }
     }
 }
-
-/// The tools, in the order `init` reports their projects.
-pub const TOOLS: &[&dyn MigrationTool] = &[&Supabase, &Dbmate, &Goose, &Plain];
 
 /// What a migration tool keeps in the database it migrates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -173,23 +205,102 @@ impl Script {
     }
 }
 
+/// The text that the analysis reads instead of the file as written, with placeholders where the
+/// migration tool replaces parts of it, like goose's `ENVSUB`. It has the length of the file, so
+/// that the offsets of diagnostics, fixes and editor positions are the same in both.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Preprocessed {
+    pub text: String,
+    /// The ranges that the tool replaces when it runs the file, in file order. The text holds a
+    /// placeholder there, or the file as written where a placeholder wouldn't parse, like in a
+    /// string literal.
+    pub placeholders: Vec<TextRange>,
+}
+
+impl Preprocessed {
+    /// Whether `range` overlaps a placeholder. An empty range touches it if it's inside it.
+    pub fn touches_placeholder(&self, range: TextRange) -> bool {
+        self.placeholders.iter().any(|placeholder| {
+            if range.is_empty() {
+                placeholder.start() < range.start() && range.start() < placeholder.end()
+            } else {
+                placeholder.start() < range.end() && range.start() < placeholder.end()
+            }
+        })
+    }
+}
+
+/// A file in the migrations folder is a migration. Its version is the number that starts its
+/// name, `<version>_<name>.sql`, or the name of its folder, `<version>_<name>/up.sql`.
+fn numbered(
+    path: &Path,
+    migrations_dir: &Path,
+    version: impl Fn(&str) -> Option<Version>,
+) -> FileInfo {
+    if !is_in_migrations_dir(path, migrations_dir) {
+        return FileInfo {
+            role: Role::Other,
+            version: None,
+        };
+    }
+
+    // In the "root" pattern, all files are directly within the migrations directory, and their
+    // names follow <timestamp>_<name>.sql. This is used by Supabase. In the "subdirectory"
+    // pattern, each migration is in a subdirectory named <timestamp>_<name>. This is used by
+    // Prisma and Drizzle.
+    let version_of = |name: Option<&std::ffi::OsStr>| {
+        let (number, _name) = name?.to_str()?.split_once('_')?;
+        version(number)
+    };
+    FileInfo {
+        role: Role::Migration,
+        version: version_of(path.file_name())
+            .or_else(|| version_of(path.parent().and_then(Path::file_name))),
+    }
+}
+
+/// A number with leading zeros, like `000201` or `20240101120000`.
+fn number(text: &str) -> Option<Version> {
+    text.trim_start_matches('0')
+        .parse()
+        .ok()
+        .map(Version::Number)
+}
+
+/// Whether the path is inside the migrations directory.
+fn is_in_migrations_dir(path: &Path, migrations_dir: &Path) -> bool {
+    if path.starts_with(migrations_dir) {
+        return true;
+    }
+    path.canonicalize()
+        .ok()
+        .and_then(|canonical_child| {
+            migrations_dir
+                .canonicalize()
+                .ok()
+                .map(|canonical_dir| canonical_child.starts_with(&canonical_dir))
+        })
+        .unwrap_or(false)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+    use tempfile::TempDir;
 
-    pub(crate) fn sections(text: &str, tool: ToolId) -> Vec<(&str, Direction, bool)> {
-        tool.tool()
-            .read(text)
+    pub(crate) fn sections(text: &str, tool: MigrationTool) -> Vec<(&str, Direction, bool)> {
+        tool.read(text)
             .units
             .into_iter()
             .map(|unit| (&text[unit.range], unit.direction, unit.transaction))
             .collect()
     }
 
-    pub(crate) fn marker_problems(text: &str, tool: ToolId) -> Vec<(&str, String)> {
+    pub(crate) fn marker_problems(text: &str, tool: MigrationTool) -> Vec<(&str, String)> {
         let statements: Vec<TextRange> = pgls_statement_splitter::split(text).ranges;
-        tool.tool()
-            .read(text)
+        tool.read(text)
             .marker_diagnostics(&statements)
             .into_iter()
             .map(|diagnostic| (&text[diagnostic.span], diagnostic.message.to_string()))
@@ -197,9 +308,81 @@ mod tests {
     }
 
     #[test]
-    fn every_tool_has_its_id() {
-        for tool in TOOLS {
-            assert_eq!(tool.id().tool().name(), tool.name());
-        }
+    fn plain_sql_has_no_markers() {
+        let text = "-- migrate:up\nselect 1;\n-- +goose Down\n";
+        assert!(sections(text, MigrationTool::Plain).is_empty());
+        assert!(marker_problems(text, MigrationTool::Plain).is_empty());
+        assert!(sections("select 1;", MigrationTool::Dbmate).is_empty());
+    }
+
+    fn setup() -> TempDir {
+        TempDir::new().expect("Failed to create temp dir")
+    }
+
+    fn version_of(path: &Path, migrations_dir: &Path) -> Option<Version> {
+        let file = numbered(path, migrations_dir, number);
+        assert_eq!(file.role == Role::Migration, file.version.is_some());
+        file.version
+    }
+
+    #[test]
+    fn test_get_migration_root_pattern() {
+        let temp_dir = setup();
+        let migrations_dir = temp_dir.path().to_path_buf();
+        let path = migrations_dir.join("1234567890_create_users.sql");
+        fs::write(&path, "").unwrap();
+
+        assert_eq!(
+            version_of(&path, &migrations_dir),
+            Some(Version::Number(1234567890))
+        );
+    }
+
+    #[test]
+    fn test_get_migration_subdirectory_pattern() {
+        let temp_dir = setup();
+        let migrations_dir = temp_dir.path().to_path_buf();
+        let subdir = migrations_dir.join("1234567890_create_users");
+        fs::create_dir(&subdir).unwrap();
+        let path = subdir.join("up.sql");
+        fs::write(&path, "").unwrap();
+
+        assert_eq!(
+            version_of(&path, &migrations_dir),
+            Some(Version::Number(1234567890))
+        );
+    }
+
+    #[test]
+    fn test_get_migration_prefix_number() {
+        let temp_dir = setup();
+        let migrations_dir = temp_dir.path().to_path_buf();
+        let path = migrations_dir.join("000201_a_migration.sql");
+        fs::write(&path, "").unwrap();
+
+        assert_eq!(
+            version_of(&path, &migrations_dir),
+            Some(Version::Number(201))
+        );
+    }
+
+    #[test]
+    fn test_get_migration_not_timestamp_in_filename() {
+        let migrations_dir = PathBuf::from("/tmp/migrations");
+        let path = migrations_dir.join("not_a_migration.sql");
+
+        let file = numbered(&path, &migrations_dir, number);
+        assert_eq!(file.role, Role::Migration);
+        assert_eq!(file.version, None);
+    }
+
+    #[test]
+    fn test_get_migration_outside_migrations_dir() {
+        let migrations_dir = PathBuf::from("/tmp/migrations");
+        let path = PathBuf::from("/tmp/other/1234567890_create_users.sql");
+
+        let file = numbered(&path, &migrations_dir, number);
+        assert_eq!(file.role, Role::Other);
+        assert_eq!(file.version, None);
     }
 }

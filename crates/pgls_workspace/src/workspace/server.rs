@@ -36,12 +36,11 @@ use pgls_lexer::convert_to_positional_params_with_metadata;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::inlay_hints::ParameterNameHints;
-use pgls_configuration::migrations::SectionMarkers;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-use pgls_migrations::{MigrationTool, ToolId, Version};
+use pgls_migrations::{MigrationTool, Version};
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -344,11 +343,7 @@ impl WorkspaceServer {
 
     /// The migration tool of the settings that apply to the file, and the version of the settings
     /// it is from.
-    fn migration_tool(
-        &self,
-        project_key: ProjectKey,
-        path: &Path,
-    ) -> (u64, &'static dyn MigrationTool) {
+    fn migration_tool(&self, project_key: ProjectKey, path: &Path) -> (u64, MigrationTool) {
         // Read before the settings, so that settings that change in between make the version
         // older than the tool, and the document gets the tool again on the next request.
         let settings_version = self.settings_version.load(Ordering::Acquire);
@@ -358,7 +353,7 @@ impl WorkspaceServer {
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.section_markers)
             .unwrap_or_default();
-        (settings_version, tool_of_section_markers(section_markers))
+        (settings_version, section_markers.into())
     }
 
     /// Gives the open document at `path` the migration tool of the current settings of
@@ -629,17 +624,6 @@ struct DatabaseDiagnostics {
     plpgsql_checked: Vec<TextRange>,
 }
 
-/// The tool that the workspace runs files with for `migrations.sectionMarkers`. Supabase runs
-/// every file as one migration, so its projects use plain SQL.
-fn tool_of_section_markers(markers: SectionMarkers) -> &'static dyn MigrationTool {
-    match markers {
-        SectionMarkers::None => ToolId::Plain,
-        SectionMarkers::Dbmate => ToolId::Dbmate,
-        SectionMarkers::Goose => ToolId::Goose,
-    }
-    .tool()
-}
-
 /// Check whether a file is a migration before `migrations.after`
 fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
     settings
@@ -648,7 +632,7 @@ fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
         .and_then(|migration_settings| {
             let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let version = tool_of_section_markers(migration_settings.section_markers)
+            let version = MigrationTool::from(migration_settings.section_markers)
                 .file(path, migrations_dir)
                 .version?;
 
