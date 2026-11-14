@@ -2,7 +2,7 @@ use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_catalog::CatalogView;
-use pgls_catalog::resolve::{figure_column_name, query_output_columns, query_star_columns};
+use pgls_catalog::resolve::{query_output_columns, query_star_columns, target_name};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{
@@ -10,7 +10,7 @@ use pgls_query::protobuf::{
     SetOperation, Token,
 };
 use pgls_query::{NodeEnum, NodeRef};
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def, is_star};
 use pgls_text_size::TextRange;
 use std::cell::OnceCell;
 
@@ -472,7 +472,7 @@ fn select_columns(
                 };
                 star_columns.iter().cloned().map(Some).collect()
             }
-            _ => vec![entry_name(target, value, position, catalog)],
+            _ => vec![entry_name(target, position, catalog)],
         };
         let span = select_entry_range(tokens, target.location);
         for name in entry_names {
@@ -492,14 +492,10 @@ fn select_columns(
 /// from its expression, or the name the catalog knows for the output column at `position`.
 fn entry_name(
     target: &ResTarget,
-    value: Option<&NodeEnum>,
     position: Option<usize>,
     catalog: &CatalogColumns,
 ) -> Option<String> {
-    if !target.name.is_empty() {
-        return Some(target.name.clone());
-    }
-    figure_column_name(value?).or_else(|| catalog.name(position?))
+    target_name(target).or_else(|| catalog.name(position?))
 }
 
 /// The location that the catalog knows a `*` or `t.*` by.
@@ -508,18 +504,6 @@ fn star_location(value: &NodeEnum) -> Option<i32> {
         NodeEnum::ColumnRef(column) => Some(column.location),
         _ => None,
     }
-}
-
-fn is_star(value: &NodeEnum) -> bool {
-    let last = match value {
-        NodeEnum::ColumnRef(column) => column.fields.last(),
-        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
-        _ => None,
-    };
-    matches!(
-        last.and_then(|last| last.node.as_ref()),
-        Some(NodeEnum::AStar(_))
-    )
 }
 
 /// The names of a column list, like `copy t (a, b)` or `create view v (a, b)`, which directly

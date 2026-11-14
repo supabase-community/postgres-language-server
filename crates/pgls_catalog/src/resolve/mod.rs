@@ -14,7 +14,7 @@
 //! the right answer.
 
 mod column_name;
-pub use column_name::figure_column_name;
+pub use column_name::{figure_column_name, target_name};
 #[cfg(all(test, feature = "db"))]
 mod differential_tests;
 pub(crate) mod expr;
@@ -38,6 +38,7 @@ use pgls_text_size::TextRange;
 
 use crate::lookup::CatalogView;
 use crate::typing::{QueryColumns, Type};
+pub(crate) use nodes::rename;
 use resolver::Resolver;
 
 /// A parameter of the SQL function whose body is being resolved.

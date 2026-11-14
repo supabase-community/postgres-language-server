@@ -1,7 +1,7 @@
 use pgls_query::protobuf::CreateSeqStmt;
 
 use crate::catalog::{Catalog, base::sequence_columns};
-use crate::lookup::{Origin, RelationInfo, RelationKind};
+use crate::lookup::{CatalogView, Origin, RelationInfo, RelationKind};
 
 /// `CREATE SEQUENCE`. Models [`DefineSequence`].
 ///
@@ -16,11 +16,12 @@ pub(super) fn apply_create_seq_stmt(c: &mut Catalog, n: &CreateSeqStmt, search_p
     if c.skip_existing_relation(&key, n.if_not_exists) {
         return;
     }
+    let columns = sequence_columns(|name| c.builtin_type(name));
     c.define_relation(RelationInfo {
         schema: key.0,
         name: key.1,
         kind: RelationKind::Other,
-        columns: Some(sequence_columns(&rustc_hash::FxHashMap::default())),
+        columns: Some(columns),
         origin: Origin::File,
     });
 }

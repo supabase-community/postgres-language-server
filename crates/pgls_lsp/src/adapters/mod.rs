@@ -32,12 +32,11 @@ pub fn get_cursor_position(
     url: &Uri,
     position: Position,
 ) -> anyhow::Result<TextSize> {
-    let line_index = session
+    let doc = session
         .document(url)
-        .map(|doc| doc.line_index)
         .map_err(|_| anyhow::anyhow!("Document not found."))?;
 
-    let cursor_pos = from_lsp::offset(&line_index, position, session.position_encoding())?;
+    let cursor_pos = from_lsp::offset(&doc.line_index, position, session.position_encoding())?;
 
     Ok(cursor_pos)
 }
