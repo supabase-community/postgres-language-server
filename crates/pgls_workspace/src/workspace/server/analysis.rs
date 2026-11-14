@@ -9,12 +9,13 @@ use pgls_analyser::{
 };
 use pgls_configuration::RuleSelector;
 use pgls_fs::PgLSPath;
+use pgls_migrations::{MigrationTool, Role};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 
 use super::{
     WorkspaceServer, analyser::AnalyserVisitorBuilder, document::AnalyserDiagnosticsMapper,
-    document::Document, document_sections, migration,
+    document::Document,
 };
 use crate::{configuration::to_analyser_rules, settings::Settings, workspace::ProjectKey};
 
@@ -85,16 +86,15 @@ impl<'a> AnalysisRequest<'a> {
 impl WorkspaceServer {
     /// Whether the file is a migration. Migration-only rules don't run on other files.
     fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
-        match settings
-            .migrations
-            .as_ref()
-            .and_then(|migrations| migrations.path.as_ref())
-        {
-            Some(migrations_dir) if migration::is_in_migrations_dir(path, migrations_dir) => {
-                FileKind::Migration
-            }
-            Some(_) => FileKind::Other,
-            None => FileKind::Unknown,
+        let Some((tool, migrations_dir)) = settings.migrations.as_ref().and_then(|migrations| {
+            let tool = MigrationTool::from(migrations.section_markers);
+            Some((tool, migrations.path.as_ref()?))
+        }) else {
+            return FileKind::Unknown;
+        };
+        match tool.file(path, migrations_dir).role {
+            Role::Migration => FileKind::Migration,
+            Role::Other => FileKind::Other,
         }
     }
 
@@ -179,7 +179,7 @@ impl WorkspaceServer {
          * Each section is analysed as a migration of its own, and the down sections are only
          * checked with `lintDown`. Syntax errors are reported everywhere.
          */
-        let sections = document_sections(settings, doc);
+        let sections = doc.migration_sections();
         let skipped_sections: Vec<TextRange> = sections
             .iter()
             .filter(|section| {
@@ -218,7 +218,7 @@ impl WorkspaceServer {
                 catalog_base,
                 search_path,
                 file_kind: self.file_kind(settings, path.as_path()),
-                sections,
+                sections: sections.to_vec(),
                 typecheck,
                 source: Some(doc.get_document_content().to_owned()),
             },

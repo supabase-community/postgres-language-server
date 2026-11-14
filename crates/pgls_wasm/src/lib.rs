@@ -37,7 +37,7 @@ use pgls_workspace::features::format::PullFileFormattingParams;
 use pgls_workspace::features::on_hover::OnHoverParams;
 use pgls_workspace::workspace::{
     ChangeFileParams, CloseFileParams, OpenFileParams, ProjectKey, RegisterProjectFolderParams,
-    UnregisterProjectFolderParams, UpdateSettingsParams,
+    UpdateSettingsParams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -269,20 +269,9 @@ impl Workspace {
             .merge_with_configuration(configuration.clone(), None, None, &[])
             .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?;
 
-        // A fresh project has the default settings, so that the sections of the previous
-        // configuration that the new one leaves out go back to their defaults.
-        let _ = self
-            .inner
-            .unregister_project_folder(UnregisterProjectFolderParams {
-                path: PgLSPath::new(PathBuf::new()),
-            });
-        self.project_key = self
-            .inner
-            .register_project_folder(RegisterProjectFolderParams {
-                path: None,
-                real_path: None,
-            })
-            .map_err(|e| WasmError::Internal(format!("Failed to register the project: {e}")))?;
+        // `replace` resets the sections of the previous configuration that the new one leaves
+        // out to their defaults. The project stays the same, so the open documents pick up the
+        // new migration tool.
         self.inner
             .update_settings(UpdateSettingsParams {
                 project_key: self.project_key,

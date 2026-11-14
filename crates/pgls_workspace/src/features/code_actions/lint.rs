@@ -98,9 +98,12 @@ pub(crate) fn lint_actions<'a>(
 }
 
 /// Applies the fixes of the lint diagnostics to `code`, the content of the file at `path`, until
-/// no fix is left. `lint` returns the lint diagnostics of a document that are not suppressed.
+/// no fix is left. `open` is the open document of the file, whose migration tool the
+/// intermediate documents keep. `lint` returns the lint diagnostics of a document that are not
+/// suppressed.
 pub(crate) fn fix_file(
     path: &PgLSPath,
+    open: &Document,
     mut code: String,
     mode: FixFileMode,
     mut lint: impl FnMut(&Document) -> Vec<LinterDiagnostic>,
@@ -113,7 +116,13 @@ pub(crate) fn fix_file(
     let mut skipped_suggested_fixes = 0;
     let mut converged = false;
     for _ in 0..MAX_PASSES {
-        let doc = Document::new(code.clone(), 0);
+        let doc = Document::open(
+            open.project_key(),
+            open.settings_version(),
+            open.migration_tool(),
+            code.clone(),
+            0,
+        );
         let diagnostics = lint(&doc);
 
         skipped_suggested_fixes = 0;

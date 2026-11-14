@@ -1,0 +1,28 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "What the language server knows about migration tools: their projects, files and markers"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_migrations"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_diagnostics = { workspace = true }
+pgls_fs          = { workspace = true, features = ["serde"] }
+pgls_text_size   = { workspace = true }
+toml             = { workspace = true }
+
+[dev-dependencies]
+pgls_statement_splitter = { workspace = true }
+tempfile                = "3.15.0"
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

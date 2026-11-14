@@ -11,6 +11,10 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{AnalysableStatement, UnparsableStatement};
 use rustc_hash::FxHashSet;
 
+use pgls_migrations::{MigrationTool, Script, Unit};
+
+use crate::workspace::ProjectKey;
+
 use super::{
     document_cache::{ContentChange, DocumentCache, DocumentCacheStats, StaleEntries},
     statement_identifier::StatementId,
@@ -21,7 +25,8 @@ use super::{
 #[derive(Clone)]
 pub struct Document {
     content: String,
-    /// Changes on every change of the content, see [`Document::generation`].
+    /// Changes on every change of the content or of the migration tool, see
+    /// [`Document::generation`].
     generation: u64,
     version: i32,
     /// The statements of `content`, kept to split the next version of it incrementally.
@@ -29,6 +34,15 @@ pub struct Document {
     diagnostics: Vec<SDiagnostic>,
     cache: Arc<DocumentCache>,
     suppressions: Suppressions,
+    /// The project whose settings `migration_tool` is from.
+    project_key: ProjectKey,
+    /// The version of the settings that `migration_tool` is from, see
+    /// [`Document::has_migration_tool_of`].
+    settings_version: u64,
+    /// The migration tool that runs the file, from its settings. See [`Document::open`].
+    migration_tool: MigrationTool,
+    /// How `migration_tool` runs the content.
+    migration_script: Script,
     /// Where the last change of the content starts.
     edited_at: Option<TextSize>,
 }
@@ -40,11 +54,33 @@ fn next_generation() -> u64 {
 }
 
 impl Document {
+    /// A document without a project, and so without a migration tool: it is one migration.
+    #[cfg(test)]
     pub fn new(content: String, version: i32) -> Document {
+        Self::open(
+            ProjectKey::default(),
+            0,
+            MigrationTool::Plain,
+            content,
+            version,
+        )
+    }
+
+    /// A document of the project `project_key`, whose settings at `settings_version` make
+    /// `migration_tool` run the file. When the settings or the project change,
+    /// [`Document::set_migration_tool`] applies them.
+    pub(crate) fn open(
+        project_key: ProjectKey,
+        settings_version: u64,
+        migration_tool: MigrationTool,
+        content: String,
+        version: i32,
+    ) -> Document {
         let split = pgls_statement_splitter::split(&content);
         let diagnostics = split_diagnostics(&split);
         let suppressions =
             Suppressions::from(content.as_str()).with_statements(split.ranges.clone());
+        let migration_script = migration_tool.read(&content);
 
         let generation = next_generation();
         Document {
@@ -55,6 +91,10 @@ impl Document {
             version,
             cache: Arc::new(DocumentCache::new(generation)),
             suppressions,
+            project_key,
+            settings_version,
+            migration_tool,
+            migration_script,
             edited_at: None,
         }
     }
@@ -83,6 +123,7 @@ impl Document {
         let old_content = std::mem::replace(&mut self.content, content);
         let old_split = std::mem::replace(&mut self.split, split);
         self.version = version;
+        self.migration_script = self.migration_tool.read(&self.content);
         self.generation = next_generation();
         self.edited_at = Some(unchanged);
 
@@ -115,8 +156,8 @@ impl Document {
     }
 
     /// Which version of the content this is. Unlike the client's version, it is unique across
-    /// all documents: it changes on every change, and a document that is closed and opened
-    /// again gets a new one.
+    /// all documents: it changes on every change, also of the migration tool, and a document that
+    /// is closed and opened again gets a new one.
     pub fn generation(&self) -> u64 {
         self.generation
     }
@@ -129,6 +170,68 @@ impl Document {
     /// What is cached for the document.
     pub(crate) fn cache(&self) -> &DocumentCache {
         &self.cache
+    }
+
+    /// Applies the migration tool of the settings of `project_key` at `settings_version`.
+    /// Returns what the change invalidated in the cache, for the caller to drop, see
+    /// [`StaleEntries::drop_in_background`].
+    pub(crate) fn set_migration_tool(
+        &mut self,
+        project_key: ProjectKey,
+        settings_version: u64,
+        migration_tool: MigrationTool,
+    ) -> StaleEntries {
+        self.project_key = project_key;
+        self.settings_version = settings_version;
+        self.migration_tool = migration_tool;
+        self.migration_script = migration_tool.read(&self.content);
+        // The analysis and the walks depend on the sections. They may have been cached for the
+        // new settings before they reached the document, so the document gets a new generation:
+        // requests that still run with the old tool are outdated and don't cache what they
+        // compute. The parse results only depend on the text, and stay.
+        self.generation = next_generation();
+        self.cache.content_changed(
+            ContentChange {
+                unchanged: TextSize::from(0),
+                first_changed_statement: TextSize::from(0),
+            },
+            self.generation,
+        )
+    }
+
+    /// Whether the migration tool is the one of the settings of `project_key` at
+    /// `settings_version`. Otherwise the settings changed since, or the file now belongs to
+    /// another project, e.g. after the workspace folders changed.
+    pub(crate) fn has_migration_tool_of(
+        &self,
+        project_key: ProjectKey,
+        settings_version: u64,
+    ) -> bool {
+        self.project_key == project_key && self.settings_version == settings_version
+    }
+
+    pub(crate) fn project_key(&self) -> ProjectKey {
+        self.project_key
+    }
+
+    pub(crate) fn settings_version(&self) -> u64 {
+        self.settings_version
+    }
+
+    /// The migration tool that runs the file, from its settings.
+    pub(crate) fn migration_tool(&self) -> MigrationTool {
+        self.migration_tool
+    }
+
+    /// How the migration tool runs the document.
+    pub(crate) fn migration_script(&self) -> &Script {
+        &self.migration_script
+    }
+
+    /// The migration sections of the document, like the up and down migrations of dbmate and
+    /// goose. A tool without section markers has none.
+    pub fn migration_sections(&self) -> &[Unit] {
+        &self.migration_script.units
     }
 
     /// What the caches of the document hold, for tests of their memory. It doesn't fill them.

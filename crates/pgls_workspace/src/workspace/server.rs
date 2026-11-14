@@ -33,7 +33,6 @@ use pgls_analyse::AnalysisFilter;
 use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
 use pgls_lexer::convert_to_positional_params_with_metadata;
-use pgls_walk::MigrationSection;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::inlay_hints::ParameterNameHints;
@@ -41,6 +40,7 @@ use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
+use pgls_migrations::{MigrationTool, Version};
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -97,7 +97,6 @@ mod document_cache;
 mod formatting;
 #[cfg(feature = "db")]
 mod last_used;
-mod migration;
 #[cfg(feature = "db")]
 mod pgpass;
 mod snapshot_manager;
@@ -194,8 +193,9 @@ impl WorkspaceServer {
     fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut<'_> {
         let handle = WorkspaceSettingsHandleMut::new(&self.settings);
         // While the settings are locked, so that nothing is cached with the old settings under
-        // the new version.
-        self.settings_version.fetch_add(1, Ordering::Relaxed);
+        // the new version. Whoever reads the new version then waits for the lock to read the
+        // settings, see `migration_tool`.
+        self.settings_version.fetch_add(1, Ordering::AcqRel);
         handle
     }
 
@@ -339,6 +339,50 @@ impl WorkspaceServer {
 
         // Apply top-level `include`/`ignore`
         settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
+    }
+
+    /// The migration tool of the settings that apply to the file, and the version of the settings
+    /// it is from.
+    fn migration_tool(&self, project_key: ProjectKey, path: &Path) -> (u64, MigrationTool) {
+        // Read before the settings, so that settings that change in between make the version
+        // older than the tool, and the document gets the tool again on the next request.
+        let settings_version = self.settings_version.load(Ordering::Acquire);
+        let section_markers = self
+            .workspaces()
+            .settings_for(project_key, path)
+            .and_then(|settings| settings.migrations.as_ref())
+            .map(|migrations| migrations.section_markers)
+            .unwrap_or_default();
+        (settings_version, section_markers.into())
+    }
+
+    /// Gives the open document at `path` the migration tool of the current settings of
+    /// `project_key`, if the settings changed since it got its tool or the file belongs to
+    /// another project now, e.g. after the workspace folders changed. Requests call it before
+    /// they take the document or lock the settings, since it locks the documents for writing.
+    ///
+    /// Checking on every request, rather than going through the open documents when the settings
+    /// change, also covers a document that is opened while the settings change: it keeps the
+    /// version of the settings that it read the tool from.
+    fn refresh_migration_tool(&self, project_key: ProjectKey, path: &PgLSPath) {
+        let is_current = |doc: &Arc<Document>| {
+            doc.has_migration_tool_of(project_key, self.settings_version.load(Ordering::Acquire))
+        };
+        if self.documents.read().get(path).is_none_or(is_current) {
+            return;
+        }
+        // Neither the documents nor the settings are locked while taking the other lock.
+        let (settings_version, migration_tool) = self.migration_tool(project_key, path);
+        let mut documents = self.documents.write();
+        // A request that still works with the previous tool keeps its copy, and stops since it
+        // is outdated.
+        let stale = documents.get_mut(path).map(|doc| {
+            Arc::make_mut(doc).set_migration_tool(project_key, settings_version, migration_tool)
+        });
+        drop(documents);
+        if let Some(stale) = stale {
+            stale.drop_in_background();
+        }
     }
 
     /// The refactors offered at `position`: expanding a `*` into its columns. `settings` are the
@@ -588,9 +632,11 @@ fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
         .and_then(|migration_settings| {
             let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let migration = migration::get_migration(path, migrations_dir)?;
+            let version = MigrationTool::from(migration_settings.section_markers)
+                .file(path, migrations_dir)
+                .version?;
 
-            Some(&migration.sequence_number <= ignore_before)
+            Some(version <= Version::Number(*ignore_before))
         })
         .unwrap_or(false)
 }
@@ -741,10 +787,18 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
+        let (settings_version, migration_tool) =
+            self.migration_tool(params.project_key, &params.path);
         let mut documents = self.documents.write();
-        documents
-            .entry(params.path.clone())
-            .or_insert_with(|| Arc::new(Document::new(params.content, params.version)));
+        documents.entry(params.path.clone()).or_insert_with(|| {
+            Arc::new(Document::open(
+                params.project_key,
+                settings_version,
+                migration_tool,
+                params.content,
+                params.version,
+            ))
+        });
 
         Ok(())
     }
@@ -768,20 +822,40 @@ impl Workspace for WorkspaceServer {
     ), err)]
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
+        // Read before locking the documents, see `refresh_migration_tool`.
+        let (settings_version, migration_tool) =
+            self.migration_tool(params.project_key, &params.path);
         let mut documents = self.documents.write();
 
-        let stale = match documents.entry(params.path.clone()) {
+        let (stale_tool, stale) = match documents.entry(params.path.clone()) {
             // A request that still works on the previous version keeps it. The copy shares the
             // document's cache.
             std::collections::hash_map::Entry::Occupied(mut entry) => {
-                Arc::make_mut(entry.get_mut()).update_content(params.content, params.version)
+                let doc = Arc::make_mut(entry.get_mut());
+                let stale_tool = (!doc.has_migration_tool_of(params.project_key, settings_version))
+                    .then(|| {
+                        doc.set_migration_tool(params.project_key, settings_version, migration_tool)
+                    });
+                (
+                    stale_tool,
+                    doc.update_content(params.content, params.version),
+                )
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
-                entry.insert(Arc::new(Document::new(params.content, params.version)));
+                entry.insert(Arc::new(Document::open(
+                    params.project_key,
+                    settings_version,
+                    migration_tool,
+                    params.content,
+                    params.version,
+                )));
                 return Ok(());
             }
         };
         drop(documents);
+        if let Some(stale_tool) = stale_tool {
+            stale_tool.drop_in_background();
+        }
         stale.drop_in_background();
 
         Ok(())
@@ -806,6 +880,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: CodeActionsParams,
     ) -> Result<CodeActionsResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -880,6 +955,7 @@ impl Workspace for WorkspaceServer {
 
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let code = document.get_document_content().to_string();
 
@@ -895,6 +971,7 @@ impl Workspace for WorkspaceServer {
 
         Ok(code_actions::lint::fix_file(
             &params.path,
+            &document,
             code,
             params.fix_file_mode,
             |doc| {
@@ -1064,6 +1141,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullFileDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let settings = self.workspaces();
 
         let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
@@ -1089,18 +1167,12 @@ impl Workspace for WorkspaceServer {
         let mut diagnostics: Vec<SDiagnostic> = doc.document_diagnostics().to_vec();
         let path = params.path.as_path().display().to_string();
 
-        if let Some(migrations) = &settings.migrations {
-            diagnostics.extend(
-                migration::section_marker_diagnostics(
-                    doc.get_document_content(),
-                    migrations.section_markers,
-                    &document_sections(settings, doc),
-                    doc.statement_ranges(),
-                )
+        diagnostics.extend(
+            doc.migration_script()
+                .marker_diagnostics(doc.statement_ranges())
                 .into_iter()
                 .map(|diagnostic| SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))),
-            );
-        }
+        );
 
         let should_stop = self.should_stop(&params.path, doc);
         let Some(analysis) = self.analyse_document(
@@ -1431,6 +1503,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -1485,6 +1558,7 @@ impl Workspace for WorkspaceServer {
         position = params.position.to_string()
     ), err)]
     fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -1543,6 +1617,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullInlayHintsParams,
     ) -> Result<PullInlayHintsResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -1621,6 +1696,7 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullSemanticTokensParams,
     ) -> Result<PullSemanticTokensResult, WorkspaceError> {
+        self.refresh_migration_tool(params.project_key, &params.path);
         let document = self.document(&params.path)?;
         let doc = &*document;
 
@@ -1690,16 +1766,6 @@ impl Workspace for WorkspaceServer {
         self.charge_document_caches(&params.path, doc);
         Ok(PullSemanticTokensResult { tokens })
     }
-}
-
-/// The migration sections of `doc`, like the up and down migrations of dbmate and goose.
-fn document_sections(settings: &Settings, doc: &Document) -> Vec<MigrationSection> {
-    settings
-        .migrations
-        .as_ref()
-        .map_or_else(Vec::new, |migrations| {
-            migration::migration_sections(doc.get_document_content(), migrations.section_markers)
-        })
 }
 
 /// Moves the span of a diagnostic from the database, which is relative to the text of the

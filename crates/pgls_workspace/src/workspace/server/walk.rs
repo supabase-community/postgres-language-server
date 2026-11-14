@@ -13,15 +13,12 @@ use pgls_catalog::{
 };
 use pgls_fs::PgLSPath;
 use pgls_text_size::{TextRange, TextSize};
-use pgls_walk::{
-    AnalysableStatement, AnalysedFileContext, MigrationSection, STOP_CHECK_INTERVAL, WalkParams,
-};
+use pgls_walk::{AnalysableStatement, AnalysedFileContext, STOP_CHECK_INTERVAL, Unit, WalkParams};
 
 use super::{
     WorkspaceServer,
     document::{AnalyserDiagnosticsMapper, Document, DocumentStatement},
     document_cache::{CacheKey, MigrationContext, ResolvedStatement, WalkCache},
-    document_sections,
 };
 use crate::settings::Settings;
 
@@ -35,7 +32,7 @@ pub(super) struct EditorRequest<'a> {
     pub(super) snapshot: Arc<Snapshot>,
     pub(super) key: CacheKey,
     /// The migration sections of the document.
-    sections: Vec<MigrationSection>,
+    sections: Vec<Unit>,
     context: MigrationContext,
 }
 
@@ -52,7 +49,7 @@ impl WorkspaceServer {
     /// What a request of `project_key` on `doc` with `settings` walks with, starting from the
     /// database `snapshot`.
     ///
-    /// Cost: O(lines) to find the migration sections of the document.
+    /// Cost: O(sections) to copy the migration sections of the document.
     pub(super) fn editor_request<'a>(
         &self,
         project_key: crate::workspace::ProjectKey,
@@ -61,9 +58,7 @@ impl WorkspaceServer {
         snapshot: Arc<Snapshot>,
         doc: &Document,
     ) -> EditorRequest<'a> {
-        let sections = settings
-            .map(|settings| document_sections(settings, doc))
-            .unwrap_or_default();
+        let sections = doc.migration_sections().to_vec();
         EditorRequest {
             path,
             settings,
