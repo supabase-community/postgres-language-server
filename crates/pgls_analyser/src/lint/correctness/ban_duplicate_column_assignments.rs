@@ -1,7 +1,7 @@
 use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::resolve::{figure_column_name, query_output_columns};
+use pgls_catalog::resolve::{query_output_columns, target_name};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{
@@ -9,7 +9,7 @@ use pgls_query::protobuf::{
     SetOperation, Token,
 };
 use pgls_query::{NodeEnum, NodeRef};
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def, is_star};
 use pgls_text_size::TextRange;
 use std::cell::OnceCell;
 
@@ -424,10 +424,7 @@ fn select_columns(
     // The output columns before the first `*` are the entries of the select list.
     let columns_before_star = first_star.unwrap_or(targets.len());
     let name = |index: usize, target: &ResTarget| -> Option<String> {
-        if !target.name.is_empty() {
-            return Some(target.name.clone());
-        }
-        if let Some(name) = figure_column_name(target.val.as_deref()?.node.as_ref()?) {
+        if let Some(name) = target_name(target) {
             return Some(name);
         }
         if index >= columns_before_star {
@@ -453,18 +450,6 @@ fn select_columns(
             }),
     );
     columns
-}
-
-fn is_star(value: &NodeEnum) -> bool {
-    let last = match value {
-        NodeEnum::ColumnRef(column) => column.fields.last(),
-        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
-        _ => None,
-    };
-    matches!(
-        last.and_then(|last| last.node.as_ref()),
-        Some(NodeEnum::AStar(_))
-    )
 }
 
 /// The names of a column list, like `copy t (a, b)` or `create view v (a, b)`, which directly
