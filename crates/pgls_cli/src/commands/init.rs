@@ -3,7 +3,7 @@ use pgls_configuration::PartialConfiguration;
 use pgls_configuration::migrations::{PartialMigrationsConfiguration, SectionMarkers};
 use pgls_console::{ConsoleExt, markup};
 use pgls_fs::ConfigName;
-use pgls_migrations::{Detected, ToolId, detect::find_projects};
+use pgls_migrations::{Detected, detect::find_projects};
 use pgls_workspace::configuration::create_config;
 use std::path::Path;
 
@@ -44,7 +44,7 @@ Welcome to the Postgres Language Server! Let's get you started...
                 <Warn>{warning}</Warn>
             });
         }
-        let tool = project.tool.tool().name();
+        let tool = project.tool.name();
         let directory = &project.directory;
         let settings = configured_settings(&project);
         session.app.console.log(markup! {
@@ -54,7 +54,7 @@ Welcome to the Postgres Language Server! Let's get you started...
     } else if !ambiguous.is_empty() {
         let first = ambiguous[0].tool;
         let projects = if ambiguous.iter().all(|project| project.tool == first) {
-            let first = first.tool().name();
+            let first = first.name();
             let directories: Vec<&str> = ambiguous
                 .iter()
                 .map(|project| project.directory.as_str())
@@ -63,7 +63,7 @@ Welcome to the Postgres Language Server! Let's get you started...
         } else {
             let directories: Vec<String> = ambiguous
                 .iter()
-                .map(|project| format!("{}: {}", project.directory, project.tool.tool().name()))
+                .map(|project| format!("{}: {}", project.directory, project.tool.name()))
                 .collect();
             format!("several migration projects ({})", directories.join(", "))
         };
@@ -72,15 +72,6 @@ Welcome to the Postgres Language Server! Let's get you started...
         });
     }
     Ok(())
-}
-
-/// The section markers of the tool's migration files, if it has any.
-fn section_markers(tool: ToolId) -> Option<SectionMarkers> {
-    match tool {
-        ToolId::Plain | ToolId::Supabase => None,
-        ToolId::Dbmate => Some(SectionMarkers::Dbmate),
-        ToolId::Goose => Some(SectionMarkers::Goose),
-    }
 }
 
 /// Points the database connection at the local database of the project, and the migrations at
@@ -95,7 +86,7 @@ fn configure(project: &Detected, config: &mut PartialConfiguration) {
         db.database = Some(database.database.to_string());
         // Statement execution stays off: enabling it is the user's call.
     }
-    let section_markers = section_markers(project.tool);
+    let section_markers = SectionMarkers::of(project.tool);
     if project.migrations_dir.is_some() || section_markers.is_some() {
         config.migrations = Some(PartialMigrationsConfiguration {
             migrations_dir: project.migrations_dir.clone(),
@@ -115,7 +106,7 @@ fn configured_settings(project: &Detected) -> String {
             "is",
             format!(
                 "the local {} database at {}:{}",
-                project.tool.tool().name(),
+                project.tool.name(),
                 database.host,
                 database.port
             ),
@@ -124,11 +115,11 @@ fn configured_settings(project: &Detected) -> String {
     if let Some(migrations_dir) = &project.migrations_dir {
         settings.push(("the migrations", "are", migrations_dir.clone()));
     }
-    if section_markers(project.tool).is_some() {
+    if SectionMarkers::of(project.tool).is_some() {
         settings.push((
             "the section markers",
             "are",
-            project.tool.tool().name().to_string(),
+            project.tool.name().to_string(),
         ));
     }
     let mut text = String::new();

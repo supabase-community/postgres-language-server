@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use bpaf::Bpaf;
 use pgls_configuration_macros::{Merge, Partial};
+use pgls_migrations::MigrationTool;
 use serde::{Deserialize, Serialize};
 
 /// The configuration of the filesystem
@@ -65,6 +66,29 @@ impl FromStr for SectionMarkers {
             "dbmate" => Ok(Self::Dbmate),
             "goose" => Ok(Self::Goose),
             _ => Err("Value not supported for SectionMarkers. Use 'none', 'dbmate' or 'goose'."),
+        }
+    }
+}
+
+impl SectionMarkers {
+    /// The section markers of the tool's migration files, if it has any.
+    pub fn of(tool: MigrationTool) -> Option<Self> {
+        match tool {
+            MigrationTool::Plain | MigrationTool::Supabase => None,
+            MigrationTool::Dbmate => Some(Self::Dbmate),
+            MigrationTool::Goose => Some(Self::Goose),
+        }
+    }
+}
+
+/// The tool that the workspace runs files with. Supabase runs every file as one migration, so
+/// its projects use plain SQL.
+impl From<SectionMarkers> for MigrationTool {
+    fn from(markers: SectionMarkers) -> Self {
+        match markers {
+            SectionMarkers::None => Self::Plain,
+            SectionMarkers::Dbmate => Self::Dbmate,
+            SectionMarkers::Goose => Self::Goose,
         }
     }
 }
