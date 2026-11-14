@@ -28,7 +28,7 @@ pub struct TypedColumn {
 }
 
 /// Output columns of a query; inner unknown types are preserved.
-pub type QueryColumns = Option<Vec<TypedColumn>>;
+pub(crate) type QueryColumns = Option<Vec<TypedColumn>>;
 
 /// A result that may not be known statically.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,17 +37,30 @@ pub enum Decision<T> {
     Unknown,
 }
 
+impl<T> Decision<T> {
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Decision<U> {
+        match self {
+            Decision::Known(value) => Decision::Known(f(value)),
+            Decision::Unknown => Decision::Unknown,
+        }
+    }
+}
+
 /// A candidate selection result.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Selection<T> {
+pub(crate) enum Selection<T> {
     Match(T),
     NoMatch,
     Ambiguous,
     Unknown,
 }
 
-/// The coercion context requested by Postgres.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The context of a coercion, in Postgres' order: a cast applies in its own context and the
+/// ones after it ([`CoercionContext`], [`CoercionCodes`] of `pg_cast.castcontext`).
+///
+/// [`CoercionContext`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/nodes/primnodes.h#L731
+/// [`CoercionCodes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/catalog/pg_cast.h#L75
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CoercionContext {
     Implicit,
     Assignment,
@@ -56,7 +69,7 @@ pub enum CoercionContext {
 
 /// A selected function and its resolved result type.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ResolvedFunction {
+pub(crate) struct ResolvedFunction {
     pub function: crate::FunctionInfo,
     pub result: Option<Type>,
     /// The type each argument of the call is coerced to, in the order of the call's arguments,
@@ -67,14 +80,14 @@ pub struct ResolvedFunction {
 
 /// A selected operator and its resolved result type.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ResolvedOperator {
+pub(crate) struct ResolvedOperator {
     pub operator: OperatorInfo,
     pub result: Option<Type>,
 }
 
 /// An argument supplied to a function call.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CallArg {
+pub(crate) struct CallArg {
     pub ty: Option<Type>,
     pub name: Option<String>,
 }

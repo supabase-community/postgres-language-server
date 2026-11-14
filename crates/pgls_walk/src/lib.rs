@@ -9,4 +9,7 @@ mod walk;
 pub use file_context::AnalysedFileContext;
 pub use pgls_migrations::{Direction, Unit};
 pub use statement::{AnalysableStatement, UnparsableStatement};
-pub use walk::{WalkParams, is_plain_query, transaction_mode, walk_statements};
+pub use walk::{
+    STOP_CHECK_INTERVAL, Walk, WalkParams, WalkState, is_plain_query, transaction_mode,
+    walk_statements,
+};
