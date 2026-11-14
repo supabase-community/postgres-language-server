@@ -1,8 +1,27 @@
 //! The names Postgres gives to unnamed select list entries.
 
 use pgls_query::{NodeEnum, protobuf};
+use pgls_query_ext::utils::{is_star, string_value};
 
 const UNNAMED: &str = "?column?";
+
+/// The name of a select list entry: its alias, or else the name Postgres chooses for it
+/// ([`figure_column_name`]).
+pub fn target_name(target: &protobuf::ResTarget) -> Option<String> {
+    target_name_with(target, &|_| None)
+}
+
+/// Like [`target_name`], but `subquery_column` names the first output column of a scalar
+/// subquery, see [`figure_column_name_with`].
+pub(super) fn target_name_with(
+    target: &protobuf::ResTarget,
+    subquery_column: SubqueryColumn<'_>,
+) -> Option<String> {
+    if !target.name.is_empty() {
+        return Some(target.name.clone());
+    }
+    figure_column_name_with(target.val.as_deref()?.node.as_ref()?, subquery_column)
+}
 
 /// The column name Postgres chooses for an unnamed select list entry. Port of [`FigureColname`].
 ///
@@ -30,29 +49,9 @@ pub(super) fn figure_column_name_with(
 /// The name of the first output column of a scalar subquery, if it is known.
 pub(super) type SubqueryColumn<'a> = &'a dyn Fn(&protobuf::SubLink) -> Option<String>;
 
-/// Whether a select list entry is a `*` that expands to several columns, like `*`, `t.*` or
-/// `(t.c).*`.
-fn is_star(value: &NodeEnum) -> bool {
-    let last = match value {
-        NodeEnum::ColumnRef(column) => column.fields.last(),
-        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
-        _ => None,
-    };
-    matches!(
-        last.and_then(|last| last.node.as_ref()),
-        Some(NodeEnum::AStar(_))
-    )
-}
-
 /// The last field name of a column reference or indirection, ignoring `*` and subscripts.
 fn last_field_name(fields: &[pgls_query::protobuf::Node]) -> Option<&str> {
-    fields
-        .iter()
-        .rev()
-        .find_map(|field| match field.node.as_ref()? {
-            NodeEnum::String(name) => Some(name.sval.as_str()),
-            _ => None,
-        })
+    fields.iter().rev().find_map(string_value)
 }
 
 /// How deeply [`figure_column_name`] follows casts, `COLLATE`, the `ELSE` of `CASE`, field
@@ -125,10 +124,10 @@ impl Wrapper<'_> {
         match self {
             Wrapper::Same => Some(inner),
             Wrapper::Cast(_) | Wrapper::Case if inner.1 > 1 => Some(inner),
-            Wrapper::Cast(cast) => match cast.type_name.as_ref()?.names.last()?.node.as_ref()? {
-                NodeEnum::String(name) => Some((name.sval.clone(), 1)),
-                _ => None,
-            },
+            Wrapper::Cast(cast) => {
+                let type_name = cast.type_name.as_ref()?;
+                Some((string_value(type_name.names.last()?)?.to_owned(), 1))
+            }
             Wrapper::Case => Some(("case".into(), 1)),
             Wrapper::Subquery => Some((inner.0, 2)),
         }
@@ -153,12 +152,10 @@ fn step<'a>(value: &'a NodeEnum, subquery_column: SubqueryColumn<'_>) -> Step<'a
             Some(name) => named(name),
             None => into(indirection.arg.as_deref(), Wrapper::Same),
         },
-        NodeEnum::FuncCall(call) => {
-            match call.funcname.last().and_then(|name| name.node.as_ref()) {
-                Some(NodeEnum::String(name)) => named(&name.sval),
-                _ => Step::Named(None),
-            }
-        }
+        NodeEnum::FuncCall(call) => match call.funcname.last().and_then(string_value) {
+            Some(name) => named(name),
+            None => Step::Named(None),
+        },
         NodeEnum::AExpr(expr) if expr.kind() == protobuf::AExprKind::AexprNullif => named("nullif"),
         NodeEnum::TypeCast(cast) => into(cast.arg.as_deref(), Wrapper::Cast(cast)),
         NodeEnum::CollateClause(collate) => into(collate.arg.as_deref(), Wrapper::Same),
