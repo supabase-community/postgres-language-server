@@ -3,9 +3,9 @@
 
 use std::sync::Arc;
 
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
-use super::{Catalog, Entry, Key};
+use super::{Catalog, Entry, Key, key};
 use crate::lookup::{
     FunctionInfo, FunctionKind, IndexInfo, Origin, RelationInfo, RelationKind, TypeInfo,
 };
@@ -36,7 +36,11 @@ impl Catalog {
         let mut builder = Builder {
             snapshot: Snapshot::clone(base.snapshot()),
             next_id: -1,
-            type_ids: rustc_hash::FxHashMap::default(),
+            type_ids: FxHashMap::default(),
+            tables: FxHashMap::default(),
+            types: FxHashMap::default(),
+            type_names: FxHashMap::default(),
+            sequences: FxHashSet::default(),
         };
 
         for schema in &self.dropped_schemas {
@@ -47,6 +51,7 @@ impl Catalog {
                 builder.create_schema(name);
             }
         }
+        builder.index();
         for entry in self.types.values() {
             if let Entry::Defined(type_) = entry
                 && type_.origin == Origin::File
@@ -54,23 +59,26 @@ impl Catalog {
                 builder.allocate_type(type_);
             }
         }
-        for ((schema, name), entry) in &self.relations {
-            match entry {
-                Entry::Defined(relation) => builder.define_relation(relation),
-                Entry::Dropped => builder.drop_relation(schema, name),
-                Entry::Unknown => {}
+        // The relations have different names, so dropping them all after defining the others
+        // removes the same objects as dropping them in between.
+        let mut defined = Vec::new();
+        for entry in self.relations.values() {
+            if let Entry::Defined(relation) = entry
+                && let Some((table_id, class_kind)) = builder.define_relation(relation)
+            {
+                defined.push((table_id, class_kind, relation.as_ref()));
             }
         }
-        for (key, entry) in &self.types {
-            match entry {
-                Entry::Defined(type_) if type_.origin == Origin::File => {}
-                Entry::Dropped => builder
-                    .snapshot
-                    .types
-                    .retain(|type_| (&type_.schema, &type_.name) != (&key.0, &key.1)),
-                _ => {}
-            }
+        builder.drop_relations(&dropped(&self.relations));
+        builder.define_columns(&defined);
+
+        let dropped_types = dropped(&self.types);
+        if !dropped_types.is_empty() {
+            builder.snapshot.types.retain(|type_| {
+                !dropped_types.contains(&(type_.schema.as_str(), type_.name.as_str()))
+            });
         }
+        builder.index();
         for (key, entry) in &self.types {
             if let Entry::Defined(type_) = entry
                 && type_.origin == Origin::File
@@ -78,60 +86,93 @@ impl Catalog {
                 builder.define_type(key, type_);
             }
         }
+        // The same holds for the functions.
         for (key, entry) in &self.functions {
-            match entry {
-                Entry::Defined(overloads) => {
-                    for function in overloads {
-                        if function.origin == Origin::File {
-                            builder.add_function(key, function);
-                        }
+            if let Entry::Defined(overloads) = entry {
+                for function in overloads.iter() {
+                    if function.origin == Origin::File {
+                        builder.add_function(key, function);
                     }
                 }
-                Entry::Dropped => builder
-                    .snapshot
-                    .functions
-                    .retain(|function| (&function.schema, &function.name) != (&key.0, &key.1)),
-                Entry::Unknown => {}
             }
         }
+        let dropped_functions = dropped(&self.functions);
+        if !dropped_functions.is_empty() {
+            builder.snapshot.functions.retain(|function| {
+                !dropped_functions.contains(&(function.schema.as_str(), function.name.as_str()))
+            });
+        }
 
+        let mut replaced_indexes = FxHashSet::default();
+        let mut defined_indexes = Vec::new();
         for ((schema, name), entry) in &self.indexes {
             match entry {
                 Entry::Defined(index) if index.origin == Origin::File => {
-                    builder.define_index(index)
+                    replaced_indexes.insert((schema.as_str(), name.as_str()));
+                    defined_indexes.push(index.as_ref());
                 }
-                Entry::Dropped => builder
-                    .snapshot
-                    .indexes
-                    .retain(|index| (&index.schema, &index.name) != (schema, name)),
+                Entry::Dropped => {
+                    replaced_indexes.insert((schema.as_str(), name.as_str()));
+                }
                 _ => {}
             }
         }
+        builder.define_indexes(&replaced_indexes, &defined_indexes);
 
         Some(Arc::new(builder.snapshot))
     }
 }
 
-fn type_kind_code(kind: TypeKind) -> char {
-    match kind {
-        TypeKind::Base => 'b',
-        TypeKind::Composite => 'c',
-        TypeKind::Domain => 'd',
-        TypeKind::Enum => 'e',
-        TypeKind::Pseudo => 'p',
-        TypeKind::Range => 'r',
-        TypeKind::Multirange => 'm',
-    }
+/// The schemas and names of the objects that the file drops.
+fn dropped<T>(entries: &FxHashMap<Key, Entry<T>>) -> FxHashSet<(&str, &str)> {
+    entries
+        .iter()
+        .filter(|(_, entry)| matches!(entry, Entry::Dropped))
+        .map(|((schema, name), _)| (schema.as_str(), name.as_str()))
+        .collect()
 }
 
 struct Builder {
     snapshot: Snapshot,
     /// Ids of objects created by the file are negative, so they never collide with oids.
     next_id: i64,
-    type_ids: rustc_hash::FxHashMap<TypeId, i64>,
+    type_ids: FxHashMap<TypeId, i64>,
+    /// The ids of the tables and types of `snapshot` by schema and name, and of the types by
+    /// name, see [`Self::index`]. Each keeps the first object of a name in `snapshot`.
+    tables: FxHashMap<Key, i64>,
+    types: FxHashMap<Key, i64>,
+    type_names: FxHashMap<String, i64>,
+    sequences: FxHashSet<Key>,
 }
 
 impl Builder {
+    /// Indexes the tables, types and sequences of the snapshot, so that finding one by name
+    /// doesn't search all of them.
+    fn index(&mut self) {
+        let snapshot = &self.snapshot;
+        self.tables.clear();
+        for table in &snapshot.tables {
+            self.tables
+                .entry(key(&table.schema, &table.name))
+                .or_insert(table.id);
+        }
+        self.types.clear();
+        self.type_names.clear();
+        for type_ in &snapshot.types {
+            index_type(&mut self.types, &mut self.type_names, type_);
+        }
+        self.sequences = snapshot
+            .sequences
+            .iter()
+            .map(|sequence| key(&sequence.schema, &sequence.name))
+            .collect();
+    }
+
+    fn push_type(&mut self, type_: PostgresType) {
+        index_type(&mut self.types, &mut self.type_names, &type_);
+        self.snapshot.types.push(type_);
+    }
+
     fn next_id(&mut self) -> i64 {
         let id = self.next_id;
         self.next_id -= 1;
@@ -176,43 +217,55 @@ impl Builder {
         });
     }
 
-    fn drop_relation(&mut self, schema: &str, name: &str) {
+    fn drop_relations(&mut self, dropped: &FxHashSet<(&str, &str)>) {
+        if dropped.is_empty() {
+            return;
+        }
         let snapshot = &mut self.snapshot;
-        let is_relation = |s: &str, n: &str| s == schema && n == name;
+        let is_dropped = |schema: &str, name: &str| dropped.contains(&(schema, name));
         snapshot
             .tables
-            .retain(|table| !is_relation(&table.schema, &table.name));
+            .retain(|table| !is_dropped(&table.schema, &table.name));
         snapshot
             .columns
-            .retain(|column| !is_relation(&column.schema_name, &column.table_name));
+            .retain(|column| !is_dropped(&column.schema_name, &column.table_name));
         snapshot
             .sequences
-            .retain(|sequence| !is_relation(&sequence.schema, &sequence.name));
+            .retain(|sequence| !is_dropped(&sequence.schema, &sequence.name));
         snapshot
             .indexes
-            .retain(|index| !is_relation(&index.schema, &index.table_name));
+            .retain(|index| !is_dropped(&index.schema, &index.table_name));
         snapshot
             .policies
-            .retain(|policy| !is_relation(&policy.schema_name, &policy.table_name));
+            .retain(|policy| !is_dropped(&policy.schema_name, &policy.table_name));
         snapshot
             .triggers
-            .retain(|trigger| !is_relation(&trigger.table_schema, &trigger.table_name));
+            .retain(|trigger| !is_dropped(&trigger.table_schema, &trigger.table_name));
     }
 
-    fn define_index(&mut self, index: &IndexInfo) {
-        self.snapshot
-            .indexes
-            .retain(|existing| (&existing.schema, &existing.name) != (&index.schema, &index.name));
-        let id = self.next_id();
-        self.snapshot.indexes.push(Index {
-            id,
-            schema: index.schema.clone(),
-            name: index.name.clone(),
-            table_name: index.table.clone(),
-        });
+    /// Replaces the indexes of `replaced`, the schemas and names of the indexes that the file
+    /// defines or drops, with those it `defines`.
+    fn define_indexes(&mut self, replaced: &FxHashSet<(&str, &str)>, defines: &[&IndexInfo]) {
+        if !replaced.is_empty() {
+            self.snapshot
+                .indexes
+                .retain(|index| !replaced.contains(&(index.schema.as_str(), index.name.as_str())));
+        }
+        for index in defines {
+            let id = self.next_id();
+            self.snapshot.indexes.push(Index {
+                id,
+                schema: index.schema.clone(),
+                name: index.name.clone(),
+                table_name: index.table.clone(),
+                columns: index.columns.clone(),
+            });
+        }
     }
 
-    fn define_relation(&mut self, relation: &RelationInfo) {
+    /// Adds the table of a relation, or finds the one of the database. Returns its id and the
+    /// class of its columns when the columns are known, for [`Self::define_columns`].
+    fn define_relation(&mut self, relation: &RelationInfo) -> Option<(i64, ColumnClassKind)> {
         let (table_kind, class_kind) = match relation.kind {
             RelationKind::Table => (TableKind::Ordinary, ColumnClassKind::OrdinaryTable),
             RelationKind::PartitionedTable => {
@@ -226,18 +279,13 @@ impl Builder {
             RelationKind::ForeignTable => (TableKind::Ordinary, ColumnClassKind::ForeignTable),
             RelationKind::Other => {
                 self.define_sequence(relation);
-                return;
+                return None;
             }
         };
 
-        let existing = self
-            .snapshot
-            .tables
-            .iter()
-            .find(|table| table.schema == relation.schema && table.name == relation.name)
-            .map(|table| table.id);
-        let table_id = match existing {
-            Some(id) => id,
+        let key = key(&relation.schema, &relation.name);
+        let table_id = match self.tables.get(&key) {
+            Some(id) => *id,
             None => {
                 let id = self.next_id();
                 self.snapshot.tables.push(Table {
@@ -247,74 +295,83 @@ impl Builder {
                     table_kind,
                     ..Default::default()
                 });
+                self.tables.insert(key, id);
                 id
             }
         };
 
         // Without known columns, a database table keeps its columns.
-        let Some(columns) = &relation.columns else {
-            return;
-        };
+        relation.columns.is_some().then_some((table_id, class_kind))
+    }
 
-        let mut previous: FxHashMap<String, Column> = FxHashMap::default();
+    /// Replaces the columns of the tables of `defined`, in its order, keeping the database
+    /// definition of the columns that keep their type.
+    fn define_columns(&mut self, defined: &[(i64, ColumnClassKind, &RelationInfo)]) {
+        let table_ids: FxHashSet<i64> = defined.iter().map(|(id, _, _)| *id).collect();
+        let mut previous: FxHashMap<i64, FxHashMap<String, Column>> = FxHashMap::default();
         self.snapshot.columns.retain(|column| {
-            if column.table_oid == table_id {
-                previous.insert(column.name.clone(), column.clone());
+            if table_ids.contains(&column.table_oid) {
+                previous
+                    .entry(column.table_oid)
+                    .or_default()
+                    .insert(column.name.clone(), column.clone());
                 false
             } else {
                 true
             }
         });
 
-        for (number, column) in columns.iter().enumerate() {
-            let column = match previous.remove(&column.name) {
-                Some(mut previous) if previous.type_name == column.type_name => {
-                    previous.number = number as i64 + 1;
-                    // `DROP EXPRESSION` makes a generated column ordinary, without a default.
-                    if previous.generated.is_generated() && !column.generated.is_generated() {
-                        previous.default_expr = None;
+        for (table_id, class_kind, relation) in defined {
+            let table_id = *table_id;
+            let mut previous = previous.remove(&table_id).unwrap_or_default();
+            for (number, column) in relation.columns.iter().flatten().enumerate() {
+                let column = match previous.remove(&column.name) {
+                    Some(mut previous) if previous.type_name == column.type_name => {
+                        previous.number = number as i64 + 1;
+                        // `DROP EXPRESSION` makes a generated column ordinary, without a default.
+                        if previous.generated.is_generated() && !column.generated.is_generated() {
+                            previous.default_expr = None;
+                        }
+                        previous.generated = column.generated;
+                        previous.identity = column.identity;
+                        previous
                     }
-                    previous.generated = column.generated;
-                    previous.identity = column.identity;
-                    previous
-                }
-                _ => Column {
-                    name: column.name.clone(),
-                    table_name: relation.name.clone(),
-                    table_oid: table_id,
-                    class_kind: class_kind.clone(),
-                    number: number as i64 + 1,
-                    schema_name: relation.schema.clone(),
-                    type_id: column
-                        .ty
-                        .as_ref()
-                        .and_then(|ty| match ty {
-                            Type::Named(id) => self.id_for(id),
-                            _ => None,
-                        })
-                        .unwrap_or_else(|| self.type_id(column.type_name.as_deref())),
+                    _ => Column {
+                        name: column.name.clone(),
+                        table_name: relation.name.clone(),
+                        table_oid: table_id,
+                        class_kind: class_kind.clone(),
+                        number: number as i64 + 1,
+                        schema_name: relation.schema.clone(),
+                        type_id: column
+                            .ty
+                            .as_ref()
+                            .and_then(|ty| match ty {
+                                Type::Named(id) => self.id_for(id),
+                                _ => None,
+                            })
+                            .unwrap_or_else(|| self.type_id(column.type_name.as_deref())),
 
-                    type_name: column.type_name.clone(),
-                    is_nullable: true,
-                    is_primary_key: false,
-                    is_unique: false,
-                    default_expr: None,
-                    generated: column.generated,
-                    identity: column.identity,
-                    varchar_length: None,
-                    comment: None,
-                },
-            };
-            self.snapshot.columns.push(column);
+                        type_name: column.type_name.clone(),
+                        is_nullable: true,
+                        is_primary_key: false,
+                        is_unique: false,
+                        default_expr: None,
+                        generated: column.generated,
+                        identity: column.identity,
+                        varchar_length: None,
+                        comment: None,
+                    },
+                };
+                self.snapshot.columns.push(column);
+            }
         }
     }
 
     fn define_sequence(&mut self, relation: &RelationInfo) {
-        let exists =
-            self.snapshot.sequences.iter().any(|sequence| {
-                sequence.schema == relation.schema && sequence.name == relation.name
-            });
-        if !exists {
+        let key = key(&relation.schema, &relation.name);
+        if !self.sequences.contains(&key) {
+            self.sequences.insert(key);
             let id = self.next_id();
             self.snapshot.sequences.push(Sequence {
                 id,
@@ -328,12 +385,7 @@ impl Builder {
         let Some(TypeId::File(file_id)) = &info.id else {
             return;
         };
-        if self
-            .snapshot
-            .types
-            .iter()
-            .any(|type_| type_.schema == info.schema && type_.name == info.name)
-        {
+        if self.types.contains_key(&key(&info.schema, &info.name)) {
             return;
         }
         let id = self.next_id();
@@ -341,12 +393,7 @@ impl Builder {
     }
 
     fn define_type(&mut self, (schema, name): &Key, info: &TypeInfo) {
-        let exists = self
-            .snapshot
-            .types
-            .iter()
-            .any(|type_| &type_.schema == schema && &type_.name == name);
-        if exists {
+        if self.types.contains_key(&key(schema, name)) {
             return;
         }
         let Some(id) = info.id.as_ref().and_then(|id| self.id_for(id)) else {
@@ -378,7 +425,7 @@ impl Builder {
         };
         type_.typtype = info
             .kind
-            .map(type_kind_code)
+            .map(TypeKind::typtype)
             .unwrap_or_default()
             .to_string();
         type_.typcategory = info.category.map(|c| c.to_string()).unwrap_or_default();
@@ -398,15 +445,11 @@ impl Builder {
             .as_ref()
             .and_then(|id| self.id_for(id))
             .unwrap_or(0);
-        type_.typrelid = info.relation.unwrap_or_else(|| {
-            self.snapshot
-                .tables
-                .iter()
-                .find(|table| table.schema == *schema && table.name == *name)
-                .map_or(0, |table| table.id)
-        });
+        type_.typrelid = info
+            .relation
+            .unwrap_or_else(|| self.tables.get(&key(schema, name)).copied().unwrap_or(0));
         type_.is_array = info.element.is_some();
-        self.snapshot.types.push(type_);
+        self.push_type(type_);
     }
 
     fn add_function(&mut self, (schema, name): &Key, info: &FunctionInfo) {
@@ -478,15 +521,26 @@ impl Builder {
             Some((schema, name)) => (Some(schema), name),
             None => (None, type_name),
         };
-        let matches = |type_: &&PostgresType| {
-            type_.name == name && schema.is_none_or(|schema| type_.schema == schema)
+        // An unqualified name is the type in `pg_catalog`, or else the first of that name.
+        let found = match schema {
+            Some(schema) => self.types.get(&key(schema, name)),
+            None => self
+                .types
+                .get(&key("pg_catalog", name))
+                .or_else(|| self.type_names.get(name)),
         };
-        let types = &self.snapshot.types;
-        types
-            .iter()
-            .filter(matches)
-            .find(|type_| schema.is_some() || type_.schema == "pg_catalog")
-            .or_else(|| types.iter().find(matches))
-            .map_or(0, |type_| type_.id)
+        found.copied().unwrap_or(0)
     }
+}
+
+/// Adds a type to the indexes of [`Builder`], unless they have one of its name already.
+fn index_type(
+    types: &mut FxHashMap<Key, i64>,
+    type_names: &mut FxHashMap<String, i64>,
+    type_: &PostgresType,
+) {
+    types
+        .entry(key(&type_.schema, &type_.name))
+        .or_insert(type_.id);
+    type_names.entry(type_.name.clone()).or_insert(type_.id);
 }

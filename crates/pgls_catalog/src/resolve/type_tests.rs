@@ -124,6 +124,27 @@ async fn infers_query_output_types(test_db: PgPool) {
 }
 
 #[pgls_test_utils::db_test]
+async fn infers_fields_of_a_composite_without_its_kind(test_db: PgPool) {
+    // `typtype` is optional in a snapshot's JSON; the attributes still give the fields.
+    sqlx::raw_sql("create type pair as (a integer, b text); create table items (p pair);")
+        .execute(&test_db)
+        .await
+        .unwrap();
+    let mut snapshot = Snapshot::load(&test_db).await.unwrap();
+    let pair = snapshot
+        .types
+        .iter_mut()
+        .find(|ty| ty.schema == "public" && ty.name == "pair")
+        .expect("the composite type pair");
+    pair.typtype = String::new();
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    assert_eq!(
+        output_types(&mut catalog, "", "select (p).a from items"),
+        [Some("integer".into())]
+    );
+}
+
+#[pgls_test_utils::db_test]
 async fn infers_length_result_type(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
@@ -164,6 +185,30 @@ async fn infers_array_subscripts(test_db: PgPool) {
             "select (array[1,2])[1], (array[1,2])[1:2]"
         ),
         [Some("integer".into()), Some("integer[]".into())]
+    );
+}
+
+/// A field of a domain over a composite type has the type of the attribute, like for the
+/// composite type itself ([`get_expr_result_type`]).
+///
+/// [`get_expr_result_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/fmgr/funcapi.c#L299
+#[pgls_test_utils::db_test]
+async fn infers_fields_of_domains_over_composite_types(test_db: PgPool) {
+    let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    assert_eq!(
+        output_types(
+            &mut catalog,
+            "create type typed_pair as (a int4, b text); \
+             create domain typed_pair_domain as typed_pair; \
+             create table typed_pairs (p typed_pair, d typed_pair_domain);",
+            "select (p).a, (d).a, (d).b from typed_pairs"
+        ),
+        [
+            Some("integer".into()),
+            Some("integer".into()),
+            Some("text".into())
+        ]
     );
 }
 
