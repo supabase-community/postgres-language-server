@@ -36,12 +36,11 @@ use pgls_lexer::convert_to_positional_params_with_metadata;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::inlay_hints::ParameterNameHints;
-use pgls_configuration::migrations::MigrationTool as MigrationToolSetting;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-use pgls_migrations::{MigrationTool, ToolId, Version};
+use pgls_migrations::{MigrationTool, Version};
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -344,11 +343,7 @@ impl WorkspaceServer {
 
     /// The migration tool of the settings that apply to the file, and the version of the settings
     /// it is from.
-    fn migration_tool(
-        &self,
-        project_key: ProjectKey,
-        path: &Path,
-    ) -> (u64, &'static dyn MigrationTool) {
+    fn migration_tool(&self, project_key: ProjectKey, path: &Path) -> (u64, MigrationTool) {
         // Read before the settings, so that settings that change in between make the version
         // older than the tool, and the document gets the tool again on the next request.
         let settings_version = self.settings_version.load(Ordering::Acquire);
@@ -358,7 +353,7 @@ impl WorkspaceServer {
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.tool)
             .unwrap_or_default();
-        (settings_version, tool_of_setting(tool))
+        (settings_version, tool.into())
     }
 
     /// Gives the open document at `path` the migration tool of the current settings of
@@ -629,17 +624,6 @@ struct DatabaseDiagnostics {
     plpgsql_checked: Vec<TextRange>,
 }
 
-/// The tool that the workspace runs files with for `migrations.tool`.
-fn tool_of_setting(tool: MigrationToolSetting) -> &'static dyn MigrationTool {
-    match tool {
-        MigrationToolSetting::None => ToolId::Plain,
-        MigrationToolSetting::Supabase => ToolId::Supabase,
-        MigrationToolSetting::Dbmate => ToolId::Dbmate,
-        MigrationToolSetting::Goose => ToolId::Goose,
-    }
-    .tool()
-}
-
 /// Check whether a file is a migration before `migrations.after`
 fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
     settings
@@ -648,7 +632,7 @@ fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
         .and_then(|migration_settings| {
             let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let version = tool_of_setting(migration_settings.tool)
+            let version = MigrationTool::from(migration_settings.tool)
                 .file(path, migrations_dir)
                 .version?;
 

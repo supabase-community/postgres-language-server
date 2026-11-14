@@ -95,6 +95,30 @@ impl FromStr for MigrationTool {
     }
 }
 
+impl MigrationTool {
+    /// The value of `migrations.tool` for the tool, if it isn't the default.
+    pub fn of(tool: pgls_migrations::MigrationTool) -> Option<Self> {
+        match tool {
+            pgls_migrations::MigrationTool::Plain => None,
+            pgls_migrations::MigrationTool::Supabase => Some(Self::Supabase),
+            pgls_migrations::MigrationTool::Dbmate => Some(Self::Dbmate),
+            pgls_migrations::MigrationTool::Goose => Some(Self::Goose),
+        }
+    }
+}
+
+/// The tool that the workspace runs files with.
+impl From<MigrationTool> for pgls_migrations::MigrationTool {
+    fn from(tool: MigrationTool) -> Self {
+        match tool {
+            MigrationTool::None => Self::Plain,
+            MigrationTool::Supabase => Self::Supabase,
+            MigrationTool::Dbmate => Self::Dbmate,
+            MigrationTool::Goose => Self::Goose,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
