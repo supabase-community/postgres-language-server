@@ -300,6 +300,15 @@ impl Document {
             .is_some_and(|preprocessed| preprocessed.touches_placeholder(range))
     }
 
+    /// Whether `range` overlaps a value that the migration tool replaces, but that the text
+    /// holds as written, like a goose `ENVSUB` expansion in a string literal.
+    fn touches_unknown_value(&self, range: TextRange) -> bool {
+        self.migration_script
+            .preprocessed
+            .as_ref()
+            .is_some_and(|preprocessed| preprocessed.touches_unknown_value(range))
+    }
+
     pub fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
         &self.diagnostics
     }
@@ -633,6 +642,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
                     pgls_lexer::convert_to_positional_params_with_metadata(id.content())
                         .has_identifier_parameters,
                 )
+                .with_unknown_values(doc.touches_unknown_value(range))
             }),
             diagnostics,
             unparsable,

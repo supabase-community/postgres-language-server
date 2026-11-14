@@ -212,7 +212,8 @@ impl<'a> Analyser<'a> {
             if stmt.has_identifier_parameters && !is_plain_query(root) {
                 typecheck = false;
             }
-            let typecheck_statement = typecheck && !stmt.has_identifier_parameters;
+            let typecheck_statement =
+                typecheck && !stmt.has_identifier_parameters && !stmt.has_unknown_values;
 
             let statement =
                 StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());

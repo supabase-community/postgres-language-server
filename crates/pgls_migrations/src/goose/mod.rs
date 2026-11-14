@@ -87,7 +87,8 @@ pub(crate) fn read(text: &str) -> Script {
 /// `$PREFIX_events` or `$SCHEMA`, padded with `_` to the same length, so that the whole
 /// identifier is one token with room for the index of a parameter. Named parameters are
 /// analysed like psql variables: as values, or as identifiers that aren't typechecked.
-/// Expansions in string literals and comments stay as written.
+/// Expansions in string literals and comments stay as written, and those outside comments
+/// are [`Preprocessed::unknown_values`].
 ///
 /// [interpolate]: https://github.com/mfridman/interpolate/blob/v0.0.2/parser.go
 fn envsub(text: &str) -> Option<Preprocessed> {
@@ -269,6 +270,16 @@ mod tests {
         assert_eq!(
             envsub(text),
             Some((text.to_string(), vec!["${MESSAGE}", "${NOTE}"]))
+        );
+        // Only the one in the string literal is a value that we don't know.
+        let preprocessed = MigrationTool::Goose.read(text).preprocessed.unwrap();
+        assert_eq!(
+            preprocessed
+                .unknown_values
+                .iter()
+                .map(|range| &text[*range])
+                .collect::<Vec<_>>(),
+            ["${MESSAGE}"]
         );
     }
 
