@@ -347,13 +347,13 @@ impl WorkspaceServer {
         // Read before the settings, so that settings that change in between make the version
         // older than the tool, and the document gets the tool again on the next request.
         let settings_version = self.settings_version.load(Ordering::Acquire);
-        let section_markers = self
+        let tool = self
             .workspaces()
             .settings_for(project_key, path)
             .and_then(|settings| settings.migrations.as_ref())
-            .map(|migrations| migrations.section_markers)
+            .map(|migrations| migrations.tool)
             .unwrap_or_default();
-        (settings_version, section_markers.into())
+        (settings_version, tool)
     }
 
     /// Gives the open document at `path` the migration tool of the current settings of
@@ -632,9 +632,7 @@ fn is_ignored_by_migration_settings(settings: &Settings, path: &Path) -> bool {
         .and_then(|migration_settings| {
             let ignore_before = migration_settings.after.as_ref()?;
             let migrations_dir = migration_settings.path.as_ref()?;
-            let version = MigrationTool::from(migration_settings.section_markers)
-                .file(path, migrations_dir)
-                .version?;
+            let version = migration_settings.tool.file(path, migrations_dir).version?;
 
             Some(version <= Version::Number(*ignore_before))
         })

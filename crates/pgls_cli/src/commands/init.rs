@@ -1,6 +1,6 @@
 use crate::{CliDiagnostic, CliSession};
 use pgls_configuration::PartialConfiguration;
-use pgls_configuration::migrations::{PartialMigrationsConfiguration, SectionMarkers};
+use pgls_configuration::migrations::{MigrationTool, PartialMigrationsConfiguration};
 use pgls_console::{ConsoleExt, markup};
 use pgls_fs::ConfigName;
 use pgls_migrations::{Detected, detect::find_projects};
@@ -86,11 +86,11 @@ fn configure(project: &Detected, config: &mut PartialConfiguration) {
         db.database = Some(database.database.to_string());
         // Statement execution stays off: enabling it is the user's call.
     }
-    let section_markers = SectionMarkers::of(project.tool);
-    if project.migrations_dir.is_some() || section_markers.is_some() {
+    let tool = (project.tool != MigrationTool::Plain).then_some(project.tool);
+    if project.migrations_dir.is_some() || tool.is_some() {
         config.migrations = Some(PartialMigrationsConfiguration {
             migrations_dir: project.migrations_dir.clone(),
-            section_markers,
+            tool,
             ..Default::default()
         });
     }
@@ -115,12 +115,8 @@ fn configured_settings(project: &Detected) -> String {
     if let Some(migrations_dir) = &project.migrations_dir {
         settings.push(("the migrations", "are", migrations_dir.clone()));
     }
-    if SectionMarkers::of(project.tool).is_some() {
-        settings.push((
-            "the section markers",
-            "are",
-            project.tool.name().to_string(),
-        ));
+    if project.tool != MigrationTool::Plain {
+        settings.push(("the migration tool", "is", project.tool.name().to_string()));
     }
     let mut text = String::new();
     for (index, (setting, verb, value)) in settings.iter().enumerate() {

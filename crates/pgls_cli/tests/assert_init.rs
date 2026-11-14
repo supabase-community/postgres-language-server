@@ -70,6 +70,7 @@ fn init_with_supabase_project_sets_the_migrations_dir() {
 
     let config = read_config(dir.path());
     assert_eq!(config["migrations"]["migrationsDir"], "supabase/migrations");
+    assert_eq!(config["migrations"]["tool"], "supabase");
     // Executing statements stays opt-in.
     assert!(
         config["db"]["allowStatementExecutionsAgainst"]
@@ -207,7 +208,7 @@ fn db_config(port: u16) -> Value {
 }
 
 #[test]
-fn init_with_dbmate_project_sets_the_migrations_and_section_markers() {
+fn init_with_dbmate_project_sets_the_migrations_and_the_tool() {
     let dir = tempfile::tempdir().unwrap();
     fs::create_dir_all(dir.path().join("db/migrations")).unwrap();
     fs::write(
@@ -220,12 +221,12 @@ fn init_with_dbmate_project_sets_the_migrations_and_section_markers() {
     let stdout = run_init(dir.path());
 
     assert!(
-        stdout.contains("dbmate project detected in db: the migrations are set to db/migrations, and the section markers to dbmate."),
+        stdout.contains("dbmate project detected in db: the migrations are set to db/migrations, and the migration tool to dbmate."),
         "{stdout}"
     );
     let config = read_config(dir.path());
     assert_eq!(config["migrations"]["migrationsDir"], "db/migrations");
-    assert_eq!(config["migrations"]["sectionMarkers"], "dbmate");
+    assert_eq!(config["migrations"]["tool"], "dbmate");
     // dbmate reads the database from `DATABASE_URL`, so the connection stays the default one.
     assert_eq!(read_db_config(dir.path()), db_config(5432));
 }

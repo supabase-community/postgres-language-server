@@ -23,7 +23,7 @@ use pgls_configuration::{
         Layout, LogicalOperatorPlacement,
     },
     inlay_hints::InlayHintsConfiguration,
-    migrations::{MigrationsConfiguration, PartialMigrationsConfiguration, SectionMarkers},
+    migrations::{MigrationTool, MigrationsConfiguration, PartialMigrationsConfiguration},
     pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
     semantic_tokens::SemanticTokensConfiguration,
@@ -1096,7 +1096,7 @@ pub struct FilesSettings {
 pub struct MigrationSettings {
     pub path: Option<PathBuf>,
     pub after: Option<u64>,
-    pub section_markers: SectionMarkers,
+    pub tool: MigrationTool,
     pub lint_down: bool,
 }
 
@@ -1105,7 +1105,7 @@ impl Default for MigrationSettings {
         Self {
             path: None,
             after: None,
-            section_markers: SectionMarkers::None,
+            tool: MigrationTool::Plain,
             lint_down: true,
         }
     }
@@ -1114,9 +1114,9 @@ impl Default for MigrationSettings {
 impl From<PartialMigrationsConfiguration> for MigrationSettings {
     fn from(value: PartialMigrationsConfiguration) -> Self {
         Self {
+            tool: value.migration_tool(),
             path: value.migrations_dir.map(PathBuf::from),
             after: value.after,
-            section_markers: value.section_markers.unwrap_or_default(),
             lint_down: value.lint_down.unwrap_or(true),
         }
     }
@@ -1127,11 +1127,11 @@ fn to_migration_settings(
     conf: MigrationsConfiguration,
 ) -> MigrationSettings {
     MigrationSettings {
+        tool: conf.migration_tool(),
         // The migrations directory is relative to the working directory.
         path: working_directory
             .map(|working_directory| working_directory.join(conf.migrations_dir)),
         after: Some(conf.after),
-        section_markers: conf.section_markers,
         lint_down: conf.lint_down,
     }
 }
