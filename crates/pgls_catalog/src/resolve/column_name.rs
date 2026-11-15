@@ -8,10 +8,19 @@ const UNNAMED: &str = "?column?";
 /// The name of a select list entry: its alias, or else the name Postgres chooses for it
 /// ([`figure_column_name`]).
 pub fn target_name(target: &protobuf::ResTarget) -> Option<String> {
+    target_name_with(target, &|_| None)
+}
+
+/// Like [`target_name`], but `subquery_column` names the first output column of a scalar
+/// subquery, see [`figure_column_name_with`].
+pub(super) fn target_name_with(
+    target: &protobuf::ResTarget,
+    subquery_column: SubqueryColumn<'_>,
+) -> Option<String> {
     if !target.name.is_empty() {
         return Some(target.name.clone());
     }
-    figure_column_name(target.val.as_deref()?.node.as_ref()?)
+    figure_column_name_with(target.val.as_deref()?.node.as_ref()?, subquery_column)
 }
 
 /// The column name Postgres chooses for an unnamed select list entry. Port of [`FigureColname`].
@@ -21,11 +30,24 @@ pub fn target_name(target: &protobuf::ResTarget) -> Option<String> {
 ///
 /// [`FigureColname`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1713
 pub fn figure_column_name(value: &NodeEnum) -> Option<String> {
+    figure_column_name_with(value, &|_| None)
+}
+
+/// Like [`figure_column_name`], but `subquery_column` names the first output column of a scalar
+/// subquery whose name can't be read from its select list alone, like the first column of the
+/// relation of `(select * from t)`.
+pub(super) fn figure_column_name_with(
+    value: &NodeEnum,
+    subquery_column: SubqueryColumn<'_>,
+) -> Option<String> {
     if is_star(value) {
         return None;
     }
-    figure_column_name_with_strength(value).map(|(name, _)| name)
+    figure_column_name_with_strength(value, subquery_column).map(|(name, _)| name)
 }
+
+/// The name of the first output column of a scalar subquery, if it is known.
+pub(super) type SubqueryColumn<'a> = &'a dyn Fn(&protobuf::SubLink) -> Option<String>;
 
 /// The last field name of a column reference or indirection, ignoring `*` and subscripts.
 fn last_field_name(fields: &[pgls_query::protobuf::Node]) -> Option<&str> {
@@ -50,7 +72,10 @@ const SET_OPERATION_ARMS_MAX: usize = 100_000;
 /// names the column and then applies the casts and `CASE`s on the way back up.
 ///
 /// [`FigureColnameInternal`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1752
-fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
+fn figure_column_name_with_strength(
+    value: &NodeEnum,
+    subquery_column: SubqueryColumn<'_>,
+) -> Option<(String, u8)> {
     let mut wrappers = Vec::new();
     let mut value = value;
     let named = loop {
@@ -60,7 +85,7 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
             );
             return None;
         }
-        match step(value) {
+        match step(value, subquery_column) {
             Step::Named(named) => break named?,
             Step::Into(inner, wrapper) => {
                 wrappers.push(wrapper);
@@ -109,7 +134,7 @@ impl Wrapper<'_> {
     }
 }
 
-fn step(value: &NodeEnum) -> Step<'_> {
+fn step<'a>(value: &'a NodeEnum, subquery_column: SubqueryColumn<'_>) -> Step<'a> {
     fn into<'a>(inner: Option<&'a protobuf::Node>, wrapper: Wrapper<'a>) -> Step<'a> {
         match inner.and_then(|inner| inner.node.as_ref()) {
             Some(inner) => Step::Into(inner, wrapper),
@@ -144,7 +169,12 @@ fn step(value: &NodeEnum) -> Step<'_> {
                 .as_deref()
                 .and_then(|select| select.node.as_ref())
             {
-                Some(NodeEnum::SelectStmt(select)) => first_column(select, Wrapper::Subquery),
+                Some(NodeEnum::SelectStmt(select)) => match first_column(select, Wrapper::Subquery)
+                {
+                    // The select list doesn't name a `*`, but the resolver knows its columns.
+                    Step::Named(None) => Step::Named(subquery_column(link).map(|name| (name, 2))),
+                    step => step,
+                },
                 _ => Step::Named(None),
             },
             _ => unnamed(),
