@@ -23,8 +23,10 @@ pub(super) fn infer_column_ref(
             // A column takes precedence over a whole-row reference to a table.
             [column] => find_column_type(&r.levels, column)
                 .or_else(|| {
-                    find_item(&r.levels, column)
-                        .and_then(|item| item.typed_columns.clone().map(Type::Record))
+                    find_item(&r.levels, column).and_then(|item| {
+                        item.typed_columns()
+                            .map(|columns| Type::Record(columns.to_vec()))
+                    })
                 })
                 .or_else(|| {
                     let param = r.function_param(column)?;

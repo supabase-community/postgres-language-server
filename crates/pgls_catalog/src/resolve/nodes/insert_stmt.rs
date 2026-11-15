@@ -159,7 +159,7 @@ pub(super) fn insert_target_types<'a>(
     target: &'a Item,
     target_columns: &[&ResTarget],
 ) -> Vec<Option<&'a TypedColumn>> {
-    let targets = target.typed_columns.as_deref().unwrap_or_default();
+    let targets = target.typed_columns().unwrap_or_default();
     if target_columns.is_empty() {
         targets.iter().map(Some).collect()
     } else {
@@ -261,7 +261,7 @@ pub(super) fn check_generated_insert(
         columns
             .iter()
             .take(width)
-            .map(|column| (column.as_str(), None))
+            .map(|column| (column.name.as_str(), None))
             .collect()
     } else {
         target_columns

@@ -1,11 +1,7 @@
 use pgls_query::protobuf::JoinExpr;
 use pgls_query_ext::utils::string_values;
 
-use super::{
-    Resolver,
-    alias::{apply_alias, apply_typed_alias},
-    from_clause::resolve_from_item,
-};
+use super::{Resolver, alias::apply_alias, from_clause::resolve_from_item};
 use crate::{
     resolve::{
         scope::{Item, Level, StarEntry, StarOrder},
@@ -81,10 +77,7 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
     let mut joined = left;
     joined.extend(right);
     joined.has_natural_join |= merged_columns.is_none();
-    joined
-        .merged_columns
-        .extend(merged_columns.into_iter().flatten());
-    joined.merged_typed_columns.extend(merged);
+    joined.merged_columns.extend(merged);
     if let Some(star_order) = star_order {
         joined.star_order = star_order;
     }
@@ -97,11 +90,12 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
 
     if let Some(alias) = &n.alias {
         // Only the alias of the join is visible outside of it.
-        let mut item = Item::named(
+        let (columns, types_known) = joined.star_columns().unzip();
+        let item = Item::named(
             Some(alias.aliasname.clone()),
-            apply_alias(joined.star_columns(), Some(alias)),
+            apply_alias(columns, Some(alias)),
+            types_known.unwrap_or(false),
         );
-        item.typed_columns = apply_typed_alias(joined.star_typed_columns(), Some(alias));
         return Level {
             items: vec![item],
             has_opaque_items: joined.has_opaque_items,
@@ -110,9 +104,14 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
     }
 
     if let Some(alias) = &n.join_using_alias {
+        let columns = using_columns
+            .into_iter()
+            .map(|name| TypedColumn { name, ty: None })
+            .collect();
         joined.items.push(Item::named(
             Some(alias.aliasname.clone()),
-            Some(using_columns),
+            Some(columns),
+            false,
         ));
     }
     joined

@@ -2,15 +2,11 @@ use std::rc::Rc;
 
 use pgls_query::protobuf::RangeSubselect;
 
-use super::{
-    Resolver,
-    alias::{apply_alias, apply_typed_alias},
-    resolve_node,
-};
+use super::{Resolver, alias::apply_alias, resolve_node};
 use crate::resolve::{
     ColumnSource,
     output::QueryOutput,
-    scope::{Item, ItemSource, Level},
+    scope::{Item, ItemSource, Level, combine_columns},
 };
 
 /// A subquery in FROM. Only a LATERAL subquery sees the FROM items before it. Port of
@@ -32,28 +28,30 @@ pub(super) fn resolve_range_subselect(
             output
         }
     });
-    let columns = output.as_ref().and_then(QueryOutput::names);
-    let typed_columns = crate::resolve::resolve_unknown_outputs(
-        r.catalog,
-        output.as_ref().and_then(QueryOutput::columns),
+    let (columns, types_known) = combine_columns(
+        output.as_ref().and_then(QueryOutput::names),
+        crate::resolve::resolve_unknown_outputs(
+            r.catalog,
+            output.as_ref().and_then(QueryOutput::columns),
+        ),
     );
     let alias = n.alias.as_ref();
     let source = match &columns {
-        Some(names) if r.collects_references() => Some(Rc::new(ItemSource::derived(
+        Some(columns) if r.collects_references() => Some(Rc::new(ItemSource::derived(
             r,
             ColumnSource::Subquery {
                 alias: alias.map(|alias| alias.aliasname.clone()),
             },
-            names,
-            typed_columns.as_deref(),
+            columns,
+            types_known,
         ))),
         _ => None,
     };
     let mut item = Item::named(
         alias.map(|alias| alias.aliasname.clone()),
         apply_alias(columns, alias),
+        types_known,
     );
-    item.typed_columns = apply_typed_alias(typed_columns, alias);
     item.source = source;
     item
 }
