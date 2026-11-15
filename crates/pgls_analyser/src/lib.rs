@@ -183,6 +183,7 @@ impl<'a> Analyser<'a> {
                 runs_on_file && runs_typecheck
             })
             .collect();
+        let collect_lookups = rules.iter().any(|rule| rule.reads_lookups);
 
         let mut statement_ranges: Vec<TextRange> = params
             .stmts
@@ -224,8 +225,12 @@ impl<'a> Analyser<'a> {
                 && !stmt.has_unknown_values
                 && validated;
 
-            let statement =
-                StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
+            let statement = StatementContext::new(
+                root,
+                stmt.sql.as_deref(),
+                stmt.function.as_ref(),
+                collect_lookups,
+            );
             let mut has_typecheck_findings = false;
             let mut has_duplicate_assignments = false;
 

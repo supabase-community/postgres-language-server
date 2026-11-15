@@ -4,16 +4,18 @@ use pgls_query::{
 };
 use pgls_query_ext::utils::{QualifiedName, qualified_name, string_values};
 
-use super::{Resolver, resolve_list, resolve_node};
+use super::{Resolver, resolve_list, resolve_node, resolve_opt};
 use crate::TypeKind;
 use crate::lookup::Lookup;
 use crate::resolve::{
     FindingKind,
+    lookups::record_function,
     scope::{find_column_type, find_item},
 };
 use crate::typing::{Decision, Type, base_type};
 
 pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
+    record_function(r, n);
     resolve_list(r, &n.args);
     resolve_list(r, &n.agg_order);
     if let Some(filter) = n.agg_filter.as_deref() {
@@ -22,6 +24,8 @@ pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
     if let Some(window) = n.over.as_deref() {
         resolve_list(r, &window.partition_clause);
         resolve_list(r, &window.order_clause);
+        resolve_opt(r, &window.start_offset);
+        resolve_opt(r, &window.end_offset);
     }
 
     // SQL syntax like EXTRACT, TRIM, or AT TIME ZONE calls functions in pg_catalog.
