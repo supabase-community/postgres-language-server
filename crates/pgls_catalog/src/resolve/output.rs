@@ -15,7 +15,8 @@ pub struct TargetOutput {
     /// value of VALUES.
     pub(crate) entry_location: i32,
     /// The span of the whole entry, with its alias, like `coalesce(a, b) as x`. Only set for the
-    /// [`Resolution::output`](super::Resolution::output) of a statement whose text is known.
+    /// [`Resolution::output`](super::Resolution::output) of a view, `CREATE TABLE AS` or
+    /// `SELECT INTO` whose text is known.
     pub span: Option<TextRange>,
     /// Set if the entry is a `*` that expands to any number of columns.
     pub star: Option<Star>,
