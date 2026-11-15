@@ -16,8 +16,8 @@ The rule checks the statements that create, change, or drop a table:
 `CREATE [FOREIGN] TABLE`, `CREATE TABLE AS`, `SELECT INTO`, `ALTER [FOREIGN] TABLE`
 (including `RENAME` and `SET SCHEMA`), `CREATE INDEX`, and `DROP [FOREIGN] TABLE`. It also
 checks the tables these statements reference by name, like `REFERENCES`, `PARTITION OF`,
-`INHERITS`, `LIKE`, and `ATTACH PARTITION`. Queries, like the one of a view, are not
-checked.
+`INHERITS`, `LIKE`, and `ATTACH PARTITION`. Queries, like the one of a view, are checked
+by `requireRelationSchema`.
 
 ## Examples
 

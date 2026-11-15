@@ -18,6 +18,10 @@ pub use column_name::{figure_column_name, target_name};
 #[cfg(all(test, feature = "db"))]
 mod differential_tests;
 pub(crate) mod expr;
+mod lookups;
+pub use lookups::{LookupKind, OperatorConstruct, SearchPathLookup};
+#[cfg(test)]
+mod lookup_tests;
 mod nodes;
 #[cfg(all(test, feature = "db"))]
 mod reference_tests;
@@ -68,6 +72,8 @@ pub struct ResolveParams<'a> {
     pub sql: Option<&'a str>,
     /// Whether to collect the [`Resolution::references`].
     pub collect_references: bool,
+    /// Whether to collect the [`Resolution::lookups`].
+    pub collect_lookups: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -203,6 +209,10 @@ pub struct Resolution {
     /// The names that resolve to exactly one object, in the order the resolver visits them.
     /// Empty unless [`ResolveParams::collect_references`] is set.
     pub references: Vec<Reference>,
+    /// The names that Postgres looks up through the search path, whether or not their objects
+    /// exist, in the order the resolver visits them. Empty unless
+    /// [`ResolveParams::collect_lookups`] is set.
+    pub lookups: Vec<SearchPathLookup>,
 }
 
 /// A name in the statement that resolves to exactly one object. Names that match no object or
@@ -300,9 +310,10 @@ pub enum Reference {
         span: Option<TextRange>,
         name: String,
     },
-    /// The alias of a table or CTE in FROM, or of the target of INSERT, UPDATE, or DELETE, where
-    /// it is defined, like `u` in `from users as u`. References to it, like `u` in `u.name`,
-    /// are part of their column reference.
+    /// The alias of a table or CTE in FROM, of the target of INSERT, UPDATE, or DELETE, or of
+    /// `old` or `new` in RETURNING, where it is defined, like `u` in `from users as u` and `o` in
+    /// `returning with (old as o)`. References to it, like `u` in `u.name`, are part of their
+    /// column reference.
     Alias {
         /// The location of the alias in the statement.
         location: i32,
@@ -396,6 +407,9 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
     if params.collect_references {
         resolver.references = Some(Vec::new());
     }
+    if params.collect_lookups {
+        resolver.lookups = Some(Vec::new());
+    }
     nodes::resolve_node_enum(&mut resolver, params.stmt);
     roles_and_schemas::record_roles_and_schemas(&mut resolver, params.stmt);
     resolver.check_function_params();
@@ -411,6 +425,7 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         findings,
         database_only: supports_database_check(params.stmt) && resolver.database_only,
         references: resolver.references.unwrap_or_default(),
+        lookups: resolver.lookups.unwrap_or_default(),
     }
 }
 
