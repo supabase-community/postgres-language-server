@@ -4,11 +4,7 @@ use super::{
     Resolver, from_clause::resolve_from_clause, range_var::resolve_target_relation,
     res_target::resolve_returning_clause, with_clause::resolve_with_clause,
 };
-use crate::resolve::{
-    output::QueryOutput,
-    scope::Level,
-    utils::resolve_expr,
-};
+use crate::resolve::{output::QueryOutput, scope::Level, utils::resolve_expr};
 
 /// Resolves a DELETE and returns the columns of its RETURNING list. Port of
 /// [`transformDeleteStmt`].

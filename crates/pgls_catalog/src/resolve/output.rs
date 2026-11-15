@@ -55,7 +55,11 @@ impl QueryOutput {
 
     /// The names of the output columns, if known.
     pub fn names(&self) -> Option<Vec<String>> {
-        Some(self.known_columns()?.map(|column| column.name.clone()).collect())
+        Some(
+            self.known_columns()?
+                .map(|column| column.name.clone())
+                .collect(),
+        )
     }
 
     /// The output columns with their types, if the columns and their types are known.

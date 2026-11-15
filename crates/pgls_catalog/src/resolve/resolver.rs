@@ -88,7 +88,11 @@ impl<'a> Resolver<'a> {
     }
 
     /// Remembers the output columns of `query`, the subquery of a sublink.
-    pub fn remember_subquery_output(&mut self, query: &protobuf::Node, output: Option<QueryOutput>) {
+    pub fn remember_subquery_output(
+        &mut self,
+        query: &protobuf::Node,
+        output: Option<QueryOutput>,
+    ) {
         self.subquery_outputs
             .insert(std::ptr::from_ref(query) as usize, output);
     }

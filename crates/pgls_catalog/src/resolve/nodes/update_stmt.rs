@@ -7,11 +7,7 @@ use super::{
     res_target::{resolve_returning_clause, resolve_set_clause},
     with_clause::resolve_with_clause,
 };
-use crate::resolve::{
-    output::QueryOutput,
-    scope::Level,
-    utils::resolve_expr,
-};
+use crate::resolve::{output::QueryOutput, scope::Level, utils::resolve_expr};
 
 /// Resolves an UPDATE and returns the columns of its RETURNING list. Port of
 /// [`transformUpdateStmt`] and [`transformUpdateTargetList`].

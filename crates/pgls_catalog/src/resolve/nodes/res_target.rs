@@ -119,7 +119,11 @@ pub(super) fn infer_select_list(r: &mut Resolver, targets: &[Node], output: &mut
             continue;
         };
         let ty = infer_expr(r, value);
-        if let Some(column) = entry.columns.as_mut().and_then(|columns| columns.first_mut()) {
+        if let Some(column) = entry
+            .columns
+            .as_mut()
+            .and_then(|columns| columns.first_mut())
+        {
             column.ty = ty;
         }
     }
