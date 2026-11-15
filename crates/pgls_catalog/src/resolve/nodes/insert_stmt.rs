@@ -16,7 +16,8 @@ use crate::resolve::{
     FindingKind,
     column_name::leftmost_select,
     expr::{check_assignment, infer_expr},
-    scope::{Columns, DefaultOnly, Item, Level},
+    output::QueryOutput,
+    scope::{DefaultOnly, Item, Level},
     utils::node_location,
 };
 use crate::typing::{Type, TypedColumn};
@@ -29,17 +30,17 @@ use pgls_text_size::TextRange;
 /// [`transformInsertStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L633
 /// [`checkInsertTargets`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1018
 /// [`transformInsertRow`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1060
-pub(super) fn resolve_insert_stmt(r: &mut Resolver, n: &InsertStmt) -> Columns {
+pub(super) fn resolve_insert_stmt(r: &mut Resolver, n: &InsertStmt) -> Option<QueryOutput> {
     let ctes = r.ctes.len();
     if let Some(with) = &n.with_clause {
         resolve_with_clause(r, with);
     }
-    let columns = resolve_insert(r, n);
+    let output = resolve_insert(r, n);
     r.ctes.truncate(ctes);
-    columns
+    output
 }
 
-fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
+fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Option<QueryOutput> {
     let Some(relation) = &n.relation else {
         r.depends_on_file();
         return None;
@@ -51,8 +52,9 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     // The number of columns of the source query, if known.
     let mut source_width = None;
     if let Some(source) = n.select_stmt.as_deref() {
-        resolve_node(r, source);
-        let source_types = r.output.clone();
+        let source_types = resolve_node(r, source)
+            .as_ref()
+            .and_then(QueryOutput::columns);
         source_width = source_types.as_ref().map(Vec::len);
 
         let target_types = insert_target_types(&target, &target_columns);

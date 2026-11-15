@@ -394,11 +394,12 @@ fn output_columns(
     let function = FunctionContext::from_create_function(n)?;
     // The body is resolved on its own, and its findings are reported for its statements.
     let mut body = Resolver::new(r.catalog, r.search_path, Some(&function), None);
-    let columns = resolve_node_enum(&mut body, last)?;
+    let output = resolve_node_enum(&mut body, last)?;
+    let columns = output.names()?;
     if !body.findings.is_empty() {
         return None;
     }
-    match body.output.take() {
+    match output.columns() {
         Some(output) if output.len() == columns.len() => Some(
             resolve_unknown_outputs(r.catalog, Some(output))?
                 .into_iter()

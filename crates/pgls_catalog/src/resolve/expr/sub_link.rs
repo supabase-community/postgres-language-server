@@ -1,7 +1,7 @@
 use pgls_query::protobuf;
 
 use super::infer_expr;
-use crate::resolve::{resolver::Resolver, utils::named};
+use crate::resolve::{output::QueryOutput, resolver::Resolver, utils::named};
 use crate::typing::Type;
 
 /// `EXISTS`, `ANY`/`ALL` and `IN` subqueries are bool, a scalar subquery is the type of its only
@@ -21,7 +21,10 @@ pub(super) fn infer_sub_link(
             protobuf::SubLinkType::ExprSublink => {
                 let query = n.subselect.as_deref()?;
                 let columns = match r.subquery_output(query) {
-                    Some(columns) => columns.clone()?,
+                    Some(output) => crate::resolve::resolve_unknown_outputs(
+                        r.catalog,
+                        output.as_ref().and_then(QueryOutput::columns),
+                    )?,
                     None => crate::resolve::query_output_types(query, r.catalog, r.search_path)?,
                 };
                 (columns.len() == 1)

@@ -11,7 +11,7 @@ use crate::resolve::{
     FindingKind, Reference, StarColumn,
     expr::{check_assignment, infer_expr},
     output::{QueryOutput, TargetOutput},
-    scope::{Columns, DefaultOnly, Item, Level, StarEntry, find_item},
+    scope::{DefaultOnly, Item, Level, StarEntry, find_item},
     utils::node_location,
 };
 use crate::typing::TypedColumn;
@@ -259,7 +259,7 @@ pub(super) fn resolve_returning_clause(
     clause: Option<&ReturningClause>,
     target: &Item,
     mut level: Level,
-) -> Columns {
+) -> Option<QueryOutput> {
     let (options, list) = clause.map_or((&[][..], &[][..]), |clause| {
         (clause.options.as_slice(), clause.exprs.as_slice())
     });
@@ -270,8 +270,7 @@ pub(super) fn resolve_returning_clause(
     record_star_references(r, &output);
     infer_select_list(r, list, &mut output);
     r.exit_level();
-    r.output = output.columns();
-    output.names()
+    Some(output)
 }
 
 /// Resolves the `SET` list of UPDATE, `ON CONFLICT DO UPDATE`, or `MERGE ... UPDATE`: each

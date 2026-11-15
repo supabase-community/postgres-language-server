@@ -436,7 +436,7 @@ pub fn query_output_columns(
     catalog: &dyn CatalogView,
     search_path: &[String],
 ) -> Option<Vec<String>> {
-    nodes::resolve_node(&mut Resolver::new(catalog, search_path, None, None), query)
+    nodes::resolve_node(&mut Resolver::new(catalog, search_path, None, None), query)?.names()
 }
 
 /// The inferred output names and types of a query, or `None` when its shape is unknown.
@@ -446,8 +446,8 @@ pub fn query_output_types(
     search_path: &[String],
 ) -> QueryColumns {
     let mut resolver = Resolver::new(catalog, search_path, None, None);
-    nodes::resolve_node(&mut resolver, query);
-    resolve_unknown_outputs(catalog, resolver.output)
+    let output = nodes::resolve_node(&mut resolver, query);
+    resolve_unknown_outputs(catalog, output?.columns())
 }
 
 /// Port of [`resolveTargetListUnknowns`]: output columns of unknown type become

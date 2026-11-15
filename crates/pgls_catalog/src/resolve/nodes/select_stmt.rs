@@ -17,9 +17,11 @@ use super::{
 use crate::resolve::{
     expr::infer_expr,
     lookups::record_sort_by,
-    scope::{Columns, OutputNames},
-    utils::resolve_expr,
+    output::{QueryOutput, TargetOutput},
+    scope::OutputNames,
+    utils::{node_location, resolve_expr},
 };
+use crate::typing::TypedColumn;
 
 #[cfg(test)]
 thread_local! {
@@ -27,8 +29,8 @@ thread_local! {
     pub(crate) static RESOLVED_QUERIES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
-/// Resolves a query and returns its output columns, if known.
-pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
+/// Resolves a query and returns its output columns.
+pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
     #[cfg(test)]
     RESOLVED_QUERIES.with(|count| count.set(count.get() + 1));
     let ctes = r.ctes.len();
@@ -36,7 +38,7 @@ pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
         resolve_with_clause(r, with);
     }
 
-    let columns = if n.op() != SetOperation::SetopNone {
+    let output = if n.op() != SetOperation::SetopNone {
         resolve_set_operation(r, n)
     } else if !n.values_lists.is_empty() {
         resolve_values(r, n)
@@ -45,7 +47,7 @@ pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
     };
 
     r.ctes.truncate(ctes);
-    columns
+    output
 }
 
 /// Set operations take their column names from the left-most query and the common type of each
@@ -54,16 +56,15 @@ pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
 ///
 /// [`transformSetOperationStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1751
 /// [`transformSetOperationTree`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2056
-fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
-    let columns = n
+fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
+    let left = n
         .larg
         .as_deref()
         .and_then(|left| resolve_select_stmt(r, left));
-    let left_typed = r.output.clone();
-    if let Some(right) = n.rarg.as_deref() {
-        resolve_select_stmt(r, right);
-    }
-    let right_typed = r.output.clone();
+    let right = n
+        .rarg
+        .as_deref()
+        .and_then(|right| resolve_select_stmt(r, right));
     // ORDER BY and LIMIT see only the output columns.
     let clauses = n
         .sort_clause
@@ -73,85 +74,83 @@ fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
     for node in clauses {
         record_unresolved_node(r, node, false);
     }
-    r.output = match (left_typed, right_typed) {
-        (Some(left), Some(right)) if left.len() == right.len() => Some(
-            left.into_iter()
+    let mut output = left?;
+    let left = output.columns();
+    let right = right.as_ref().and_then(QueryOutput::columns);
+    match (left, right) {
+        (Some(left), Some(right)) if left.len() == right.len() => {
+            let types: Vec<_> = left
+                .into_iter()
                 .zip(right)
-                .map(|(left, right)| {
-                    let ty = match (left.ty, right.ty) {
-                        (Some(left), Some(right)) => {
-                            match crate::typing::select_common_type(r.catalog, &[left, right]) {
-                                crate::typing::Selection::Match(ty) => Some(ty),
-                                _ => None,
-                            }
+                .map(|(left, right)| match (left.ty, right.ty) {
+                    (Some(left), Some(right)) => {
+                        match crate::typing::select_common_type(r.catalog, &[left, right]) {
+                            crate::typing::Selection::Match(ty) => Some(ty),
+                            _ => None,
                         }
-                        _ => None,
-                    };
-                    crate::typing::TypedColumn {
-                        name: left.name,
-                        ty,
                     }
+                    _ => None,
                 })
-                .collect(),
-        ),
-        _ => None,
-    };
-    columns
+                .collect();
+            output.set_types(types);
+        }
+        _ => output.types_known = false,
+    }
+    Some(output)
 }
 
 /// `VALUES` names its columns `column1`, `column2`, ..., and types each as the common type of
 /// its rows. Port of [`transformValuesClause`].
 ///
 /// [`transformValuesClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1532
-fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
-    let mut width = None;
+fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
+    let mut first_row = None;
     for row in &n.values_lists {
         if let Some(NodeEnum::List(row)) = &row.node {
-            width.get_or_insert(row.items.len());
+            first_row.get_or_insert(row);
             resolve_list(r, &row.items);
         }
     }
-    let columns = width.map(|width| {
-        (1..=width)
-            .map(|i| format!("column{i}"))
-            .collect::<Vec<_>>()
-    });
-    r.output = columns.as_ref().map(|names| {
-        names
-            .iter()
-            .enumerate()
-            .map(|(index, name)| {
-                let values = n
-                    .values_lists
-                    .iter()
-                    .filter_map(|row| row.node.as_ref())
-                    .filter_map(|row| match row {
-                        NodeEnum::List(row) => row.items.get(index),
-                        _ => None,
-                    })
-                    .map(|node| node.node.as_ref().and_then(|expr| infer_expr(r, expr)))
-                    .collect::<Option<Vec<_>>>();
-                let ty = values.and_then(|values| {
-                    match crate::typing::select_common_type(r.catalog, &values) {
-                        crate::typing::Selection::Match(ty) => Some(ty),
-                        _ => None,
-                    }
-                });
-                crate::typing::TypedColumn {
-                    name: name.clone(),
-                    ty,
+    let first_row = first_row?;
+    let targets = first_row
+        .items
+        .iter()
+        .enumerate()
+        .map(|(index, first)| {
+            let values = n
+                .values_lists
+                .iter()
+                .filter_map(|row| row.node.as_ref())
+                .filter_map(|row| match row {
+                    NodeEnum::List(row) => row.items.get(index),
+                    _ => None,
+                })
+                .map(|node| node.node.as_ref().and_then(|expr| infer_expr(r, expr)))
+                .collect::<Option<Vec<_>>>();
+            let ty = values.and_then(|values| {
+                match crate::typing::select_common_type(r.catalog, &values) {
+                    crate::typing::Selection::Match(ty) => Some(ty),
+                    _ => None,
                 }
-            })
-            .collect()
-    });
-    columns
+            });
+            TargetOutput {
+                location: node_location(first).unwrap_or(-1),
+                star: None,
+                columns: Some(vec![TypedColumn {
+                    name: format!("column{}", index + 1),
+                    ty,
+                }]),
+            }
+        })
+        .collect();
+    Some(QueryOutput::new(targets))
 }
 
 /// A plain SELECT: its FROM clause, select list, WHERE, GROUP BY, HAVING, window and ORDER BY
 /// clauses, in the order of [`transformSelectStmt`].
 ///
 /// [`transformSelectStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1389
-fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
+fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
     let level = resolve_from_clause(r, &n.from_clause);
     r.enter_level(level);
 
@@ -218,8 +217,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     // Typing it last keeps the order of findings and references.
     infer_select_list(r, &n.target_list, &mut output);
     r.exit_level();
-    r.output = output.columns();
-    output.names()
+    Some(output)
 }
 
 /// Resolves the items of `GROUP BY`, `ORDER BY` or `DISTINCT ON`, where an item that is a bare

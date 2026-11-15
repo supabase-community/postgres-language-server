@@ -9,6 +9,7 @@ use super::{
 };
 use crate::resolve::{
     ColumnSource,
+    output::QueryOutput,
     scope::{Item, ItemSource, Level},
 };
 
@@ -21,19 +22,21 @@ pub(super) fn resolve_range_subselect(
     n: &RangeSubselect,
     preceding: &Level,
 ) -> Item {
-    let mut typed_columns = None;
-    let columns = n.subquery.as_deref().and_then(|query| {
-        let columns = if !n.lateral {
+    let output = n.subquery.as_deref().and_then(|query| {
+        if !n.lateral {
             resolve_node(r, query)
         } else {
             r.enter_level(preceding.clone());
-            let columns = resolve_node(r, query);
+            let output = resolve_node(r, query);
             r.exit_level();
-            columns
-        };
-        typed_columns = crate::resolve::resolve_unknown_outputs(r.catalog, r.output.clone());
-        columns
+            output
+        }
     });
+    let columns = output.as_ref().and_then(QueryOutput::names);
+    let typed_columns = crate::resolve::resolve_unknown_outputs(
+        r.catalog,
+        output.as_ref().and_then(QueryOutput::columns),
+    );
     let alias = n.alias.as_ref();
     let source = match &columns {
         Some(names) if r.collects_references() => Some(Rc::new(ItemSource::derived(

@@ -1,19 +1,20 @@
 use pgls_query::protobuf::{CommonTableExpr, Node};
 
-use super::{Resolver, alias::rename_columns, resolve_node};
-use crate::resolve::{scope::Columns, utils::common};
+use super::{Resolver, resolve_node};
+use crate::resolve::{output::QueryOutput, utils::common};
 use crate::typing::{Type, TypedColumn};
 
-/// Resolves the query of a CTE and returns its columns, if known, without the columns of
-/// `SEARCH` and `CYCLE` ([`search_cycle_columns`]). Port of [`analyzeCTE`].
+/// Resolves the query of a CTE and returns its output, without the column list of the CTE and
+/// the columns of `SEARCH` and `CYCLE` ([`search_cycle_columns`]). Port of [`analyzeCTE`].
 ///
 /// [`analyzeCTE`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L243
-pub(super) fn resolve_common_table_expr(r: &mut Resolver, n: &CommonTableExpr) -> Columns {
-    let columns = n
-        .ctequery
+pub(super) fn resolve_common_table_expr(
+    r: &mut Resolver,
+    n: &CommonTableExpr,
+) -> Option<QueryOutput> {
+    n.ctequery
         .as_deref()
-        .and_then(|query| resolve_node(r, query));
-    rename_columns(columns, &n.aliascolnames)
+        .and_then(|query| resolve_node(r, query))
 }
 
 /// The columns that `SEARCH` and `CYCLE` add after the columns of a CTE, like

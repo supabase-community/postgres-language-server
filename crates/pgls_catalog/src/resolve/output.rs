@@ -63,6 +63,11 @@ impl QueryOutput {
         Some(self.typed_columns()?.cloned().collect())
     }
 
+    /// The first output column, if the columns and their types are known.
+    pub fn first_column(&self) -> Option<&TypedColumn> {
+        self.typed_columns()?.next()
+    }
+
     fn typed_columns(&self) -> Option<impl Iterator<Item = &TypedColumn>> {
         if !self.types_known {
             return None;
@@ -82,6 +87,17 @@ impl QueryOutput {
             .filter_map(|target| target.columns.as_deref()?.first())
             .map(|column| column.name.clone())
             .collect()
+    }
+
+    /// Sets the types of the columns, in order.
+    pub fn set_types(&mut self, types: impl IntoIterator<Item = Option<Type>>) {
+        let columns = self
+            .targets
+            .iter_mut()
+            .flat_map(|target| target.columns.iter_mut().flatten());
+        for (column, ty) in columns.zip(types) {
+            column.ty = ty;
+        }
     }
 
     /// Forgets the types of all columns, but keeps them known: each is `None`.

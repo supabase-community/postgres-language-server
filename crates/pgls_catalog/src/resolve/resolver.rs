@@ -14,6 +14,7 @@ use super::{
     Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
     column_name::target_name_with,
     lookups::{LookupKind, SearchPathLookup},
+    output::QueryOutput,
     scope::{Cte, Level, OutputNames},
     span::Tokens,
 };
@@ -36,7 +37,6 @@ pub(super) struct Resolver<'a> {
     pub levels: Vec<Level>,
     /// The common table expressions in scope, innermost last.
     pub ctes: Vec<Cte>,
-    pub output: crate::typing::QueryColumns,
     /// The references resolved so far, when they are being collected.
     pub references: Option<Vec<Reference>>,
     /// The location and kind of each reference in `references`.
@@ -53,7 +53,7 @@ pub(super) struct Resolver<'a> {
     /// The output columns of the subqueries of sublinks resolved so far, by the address of the
     /// subquery's node, so that typing a sublink doesn't resolve its subquery again. Resolving
     /// it again at every level of nested subqueries took time exponential in their depth.
-    subquery_outputs: FxHashMap<usize, crate::typing::QueryColumns>,
+    subquery_outputs: FxHashMap<usize, Option<QueryOutput>>,
     /// Set while resolving the RETURNING list of MERGE, including its subqueries, where
     /// `merge_action()` is allowed.
     pub in_merge_returning: bool,
@@ -76,7 +76,6 @@ impl<'a> Resolver<'a> {
             database_only: true,
             levels: Vec::new(),
             ctes: Vec::new(),
-            output: None,
             references: None,
             recorded: FxHashSet::default(),
             lookups: None,
@@ -89,17 +88,13 @@ impl<'a> Resolver<'a> {
     }
 
     /// Remembers the output columns of `query`, the subquery of a sublink.
-    pub fn remember_subquery_output(
-        &mut self,
-        query: &protobuf::Node,
-        columns: crate::typing::QueryColumns,
-    ) {
+    pub fn remember_subquery_output(&mut self, query: &protobuf::Node, output: Option<QueryOutput>) {
         self.subquery_outputs
-            .insert(std::ptr::from_ref(query) as usize, columns);
+            .insert(std::ptr::from_ref(query) as usize, output);
     }
 
     /// The output columns of `query`, the subquery of a sublink, if it was resolved before.
-    pub fn subquery_output(&self, query: &protobuf::Node) -> Option<&crate::typing::QueryColumns> {
+    pub fn subquery_output(&self, query: &protobuf::Node) -> Option<&Option<QueryOutput>> {
         self.subquery_outputs
             .get(&(std::ptr::from_ref(query) as usize))
     }
@@ -163,7 +158,7 @@ impl<'a> Resolver<'a> {
     pub fn target_name(&self, target: &protobuf::ResTarget) -> Option<String> {
         target_name_with(target, &|link| {
             let output = self.subquery_output(link.subselect.as_deref()?)?;
-            Some(output.as_ref()?.first()?.name.clone())
+            Some(output.as_ref()?.first_column()?.name.clone())
         })
     }
 
