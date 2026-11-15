@@ -7,8 +7,8 @@ use crate::resolve::{
     FindingKind, Reference,
     lookups::LookupKind,
     scope::{
-        ColumnLookup, Item, find_column, find_column_item, find_item, has_opaque_items,
-        may_be_output_name,
+        ColumnLookup, Item, find_column, find_column_item, find_item, find_qualified_item,
+        has_opaque_items, may_be_output_name,
     },
 };
 
@@ -37,12 +37,7 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
         [qualifier, name] => resolve_qualified_column(r, qualifier, name, n.location),
         [schema, relation, name] => {
             // `schema.table.column`, if `schema.table` is an unaliased item.
-            let item = r.levels.iter().rev().find_map(|level| {
-                level.items.iter().find(|item| {
-                    item.schema.as_deref() == Some(schema.as_str())
-                        && item.name.as_deref() == Some(relation.as_str())
-                })
-            });
+            let item = find_qualified_item(&r.levels, &names[..2]);
             let reference = column_reference(r, item, name, n.location);
             let missing = item.is_some_and(|item| item.has_column(name) == Some(false));
             record(r, reference);

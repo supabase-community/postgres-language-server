@@ -1,8 +1,7 @@
 use pgls_query::{
     Node, NodeEnum,
-    protobuf::{InsertStmt, OverridingKind, ResTarget, SelectStmt, SetOperation},
+    protobuf::{InsertStmt, OverridingKind, ResTarget, SetOperation},
 };
-use pgls_query_ext::utils::is_star;
 
 use super::{
     Resolver,
@@ -14,14 +13,12 @@ use super::{
 };
 use crate::resolve::{
     FindingKind,
-    column_name::leftmost_select,
     expr::{check_assignment, infer_expr},
-    output::QueryOutput,
+    output::{QueryOutput, Star},
     scope::{DefaultOnly, Item, Level},
     utils::node_location,
 };
 use crate::typing::{Type, TypedColumn};
-use pgls_text_size::TextRange;
 
 /// Resolves an INSERT and returns the columns of its RETURNING list. Port of
 /// [`transformInsertStmt`]: the target columns ([`checkInsertTargets`]), the number of
@@ -49,14 +46,10 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Option<QueryOutput> {
 
     let target_columns = insert_target_columns(r, &target, &n.cols);
 
-    // The number of columns of the source query, if known.
-    let mut source_width = None;
+    // The output of the source query.
+    let mut source_output = None;
     if let Some(source) = n.select_stmt.as_deref() {
-        let source_types = resolve_node(r, source)
-            .as_ref()
-            .and_then(QueryOutput::columns);
-        source_width = source_types.as_ref().map(Vec::len);
-
+        let output = resolve_node(r, source);
         let target_types = insert_target_types(&target, &target_columns);
         let check = |r: &mut Resolver,
                      expr: Option<&NodeEnum>,
@@ -84,37 +77,32 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Option<QueryOutput> {
                 }
             }
             None => {
-                for (index, (value, target)) in source_types
-                    .unwrap_or_default()
-                    .iter()
-                    .zip(&target_types)
-                    .enumerate()
+                if let Some(output) = &output
+                    && let Some(columns) = output.columns()
                 {
-                    let location = select_target_location(source, index).unwrap_or_default();
-                    let expr = select_value(source, index);
-                    check(r, expr, value.ty.clone(), *target, location);
+                    for ((value, target), position) in
+                        columns.iter().zip(&target_types).zip(output.positions())
+                    {
+                        let expr = match position.target.star {
+                            None => select_value(source, position.entry),
+                            Some(_) => None,
+                        };
+                        check(r, expr, value.ty.clone(), *target, position.target.location);
+                    }
                 }
             }
         }
-        // PR 3: the width is read from the parse tree and unknown at a `*`, although
-        // `source_width` knows it.
-        let found = match &source.node {
-            Some(NodeEnum::SelectStmt(select)) => select_width(select),
-            _ => None,
-        };
-        if let Some(found) = found {
+        if let Some(found) = output.as_ref().and_then(QueryOutput::width) {
             check_insert_width(r, &target, &target_columns, found);
         }
+        source_output = Some(output);
     }
 
     // `DEFAULT VALUES` assigns nothing.
-    if let Some(source) = n.select_stmt.as_deref() {
+    if let (Some(source), Some(output)) = (n.select_stmt.as_deref(), &source_output) {
         let values = match values_rows(source) {
             Some(rows) => InsertValues::Rows(rows),
-            None => InsertValues::Query {
-                source,
-                width: source_width,
-            },
+            None => InsertValues::Query(output.as_ref()),
         };
         check_generated_insert(r, &target, &target_columns, n.r#override(), values);
     }
@@ -209,11 +197,8 @@ pub(super) fn check_insert_width(
 pub(super) enum InsertValues<'a> {
     /// The rows of a plain `VALUES` list, or the one row of a MERGE action.
     Rows(Vec<&'a [Node]>),
-    /// Any other query, with the number of columns it produces, if known.
-    Query {
-        source: &'a Node,
-        width: Option<usize>,
-    },
+    /// Any other query, with its output, if known.
+    Query(Option<&'a QueryOutput>),
 }
 
 /// Reports an INSERT that assigns anything but `DEFAULT` to a generated column, or to a
@@ -249,11 +234,7 @@ pub(super) fn check_generated_insert(
         // Without a column list, the values go to the first columns of the table.
         let width = match &values {
             InsertValues::Rows(rows) => rows.first().map(|row| row.len()),
-            // PR 3: the syntactic width first, see `resolve_insert`.
-            InsertValues::Query { source, width } => match &source.node {
-                Some(NodeEnum::SelectStmt(select)) => select_width(select).or(*width),
-                _ => None,
-            },
+            InsertValues::Query(output) => output.and_then(QueryOutput::width),
         };
         let (Some(width), Some(columns)) = (width, target.columns.as_ref()) else {
             return;
@@ -277,6 +258,11 @@ pub(super) fn check_generated_insert(
             .collect()
     };
 
+    // The entry of the query that produces each column.
+    let positions = match &values {
+        InsertValues::Query(Some(output)) => output.positions(),
+        _ => Vec::new(),
+    };
     for (index, (column, column_location)) in targets.into_iter().enumerate() {
         let Some(kind) = target.default_only(column, overriding) else {
             continue;
@@ -294,9 +280,15 @@ pub(super) fn check_generated_insert(
                     None => continue,
                 }
             }
-            InsertValues::Query { source, width } => match column_location {
+            InsertValues::Query(_) => match column_location {
                 Some(location) => r.name_span(location),
-                None => select_target_span(r, source, index, *width),
+                None => positions
+                    .get(index)
+                    .and_then(|position| match position.target.star {
+                        None => r.name_span(position.target.location),
+                        Some(Star::Columns(_)) => r.star_span(position.target.location),
+                        Some(Star::Fields) => None,
+                    }),
             },
         };
         r.report_with_span(
@@ -310,69 +302,7 @@ pub(super) fn check_generated_insert(
     }
 }
 
-fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32> {
-    let NodeEnum::SelectStmt(select) = source.node.as_ref()? else {
-        return None;
-    };
-    if let Some(row) = select.values_lists.first() {
-        let NodeEnum::List(row) = row.node.as_ref()? else {
-            return None;
-        };
-        return node_location(row.items.get(index)?);
-    }
-    let NodeEnum::ResTarget(target) = select.target_list.get(index)?.node.as_ref()? else {
-        return None;
-    };
-    node_location(target.val.as_deref()?)
-}
-
-/// The span of the select list entry that produces the column at `index` of a SELECT with
-/// `width` columns: the `*` or `t.*` it is part of, if any. With several `*`, it's not known which
-/// one expands to the column.
-fn select_target_span(
-    r: &Resolver,
-    source: &pgls_query::Node,
-    index: usize,
-    width: Option<usize>,
-) -> Option<TextRange> {
-    let NodeEnum::SelectStmt(select) = source.node.as_ref()? else {
-        return None;
-    };
-    let values: Vec<&NodeEnum> = select
-        .target_list
-        .iter()
-        .map(|target| match target.node.as_ref()? {
-            NodeEnum::ResTarget(target) => target.val.as_deref()?.node.as_ref(),
-            _ => None,
-        })
-        .collect::<Option<_>>()?;
-    let mut stars = (0..values.len()).filter(|&entry| is_star(values[entry]));
-    let Some(star) = stars.next() else {
-        return r.name_span(select_target_location(source, index)?);
-    };
-    if stars.next().is_some() {
-        return None;
-    }
-    // The `*` expands to the columns the other entries don't produce.
-    let star_width = (width? + 1).checked_sub(values.len())?;
-    if (star..star + star_width).contains(&index) {
-        let NodeEnum::ColumnRef(column) = values[star] else {
-            return None;
-        };
-        return r.star_span(column.location);
-    }
-    let entry = if index < star {
-        index
-    } else {
-        index + 1 - star_width
-    };
-    let NodeEnum::ResTarget(target) = select.target_list.get(entry)?.node.as_ref()? else {
-        return None;
-    };
-    r.name_span(node_location(target.val.as_deref()?)?)
-}
-
-/// The value of the select list entry at `index` of a plain SELECT. Postgres doesn't resolve
+/// The value of the select list entry at `entry` of a plain SELECT. Postgres doesn't resolve
 /// the unknown literals of the source of an INSERT, so they are coerced to the target columns
 /// like the values of `INSERT ... VALUES` ([`transformInsertStmt`]). Except where DISTINCT,
 /// GROUP BY or ORDER BY sort them, which makes them text ([`addTargetToSortList`]), so `None`
@@ -380,7 +310,7 @@ fn select_target_span(
 ///
 /// [`transformInsertStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L771
 /// [`addTargetToSortList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L3393
-fn select_value(source: &pgls_query::Node, index: usize) -> Option<&NodeEnum> {
+fn select_value(source: &pgls_query::Node, entry: usize) -> Option<&NodeEnum> {
     let NodeEnum::SelectStmt(select) = source.node.as_ref()? else {
         return None;
     };
@@ -392,20 +322,10 @@ fn select_value(source: &pgls_query::Node, index: usize) -> Option<&NodeEnum> {
     {
         return None;
     }
-    let mut values = select
-        .target_list
-        .iter()
-        .map(|target| match target.node.as_ref()? {
-            NodeEnum::ResTarget(target) => target.val.as_deref()?.node.as_ref(),
-            _ => None,
-        });
-    // A `*` before the entry expands to any number of columns.
-    for _ in 0..index {
-        if values.next()?.is_none_or(is_star) {
-            return None;
-        }
+    match select.target_list.get(entry)?.node.as_ref()? {
+        NodeEnum::ResTarget(target) => target.val.as_deref()?.node.as_ref(),
+        _ => None,
     }
-    values.next()?
 }
 
 /// The rows of a plain `VALUES` list.
@@ -424,84 +344,4 @@ fn values_rows(source: &pgls_query::Node) -> Option<Vec<&[pgls_query::Node]>> {
             _ => None,
         })
         .collect()
-}
-
-/// The number of columns a query produces, if it is certain.
-/// A set operation has the columns of its left-most select.
-fn select_width(select: &SelectStmt) -> Option<usize> {
-    let select = leftmost_select(select)?;
-    if let Some(row) = select.values_lists.first() {
-        return match &row.node {
-            Some(NodeEnum::List(row)) => Some(row.items.len()),
-            _ => None,
-        };
-    }
-    let mut width = 0;
-    for target in &select.target_list {
-        let NodeEnum::ResTarget(target) = target.node.as_ref()? else {
-            return None;
-        };
-        if is_star(target.val.as_deref()?.node.as_ref()?) {
-            return None;
-        }
-        width += 1;
-    }
-    Some(width)
-}
-
-#[cfg(test)]
-mod tests {
-    use pgls_query::protobuf::{AConst, Node, ResTarget};
-
-    use super::*;
-
-    /// A chain of `select 1, 2 union select 1, 2 union ...` with this many arms. Recursing once
-    /// per arm overflowed the stack below.
-    const ARMS: usize = 10_000;
-    const SMALL_STACK_BYTES: usize = 256 * 1024;
-
-    fn two_columns() -> SelectStmt {
-        let target = || Node {
-            node: Some(NodeEnum::ResTarget(Box::new(ResTarget {
-                val: Some(Box::new(Node {
-                    node: Some(NodeEnum::AConst(AConst::default())),
-                })),
-                ..Default::default()
-            }))),
-        };
-        SelectStmt {
-            target_list: vec![target(), target()],
-            op: SetOperation::SetopNone.into(),
-            ..Default::default()
-        }
-    }
-
-    #[test]
-    fn long_set_operation_chains_dont_overflow_the_stack() {
-        // Dropping the chain recurses, so it is built and dropped on a thread with a large stack.
-        std::thread::Builder::new()
-            .stack_size(256 * 1024 * 1024)
-            .spawn(|| {
-                let mut select = two_columns();
-                for _ in 0..ARMS {
-                    select = SelectStmt {
-                        op: SetOperation::SetopUnion.into(),
-                        larg: Some(Box::new(select)),
-                        rarg: Some(Box::new(two_columns())),
-                        ..Default::default()
-                    };
-                }
-                std::thread::scope(|scope| {
-                    std::thread::Builder::new()
-                        .stack_size(SMALL_STACK_BYTES)
-                        .spawn_scoped(scope, || assert_eq!(select_width(&select), Some(2)))
-                        .unwrap()
-                        .join()
-                        .unwrap();
-                });
-            })
-            .unwrap()
-            .join()
-            .unwrap();
-    }
 }

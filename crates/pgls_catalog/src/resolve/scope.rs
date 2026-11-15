@@ -22,9 +22,9 @@ pub(super) struct Cte {
 /// Columns named `names`, with the types of `typed`, and whether the types are known. Where the
 /// names are those of `typed`, the columns are `typed`. Otherwise each column has the type of
 /// the column of `typed` with its name, but the types are not known as a whole: they are not
-/// the row type of the columns. That happens for a function in FROM with column definitions,
-/// whose names don't come from the selected function. Without `names`, the columns are `typed`.
-// PR 3: column definitions should give both the names and the types.
+/// the row type of the columns. That happens for a function in FROM whose overloads agree on
+/// other names than the selected function has, like the attributes of a single composite output
+/// parameter, or whose function can't be selected. Without `names`, the columns are `typed`.
 pub(super) fn combine_columns(
     names: Option<Vec<String>>,
     typed: Option<Vec<TypedColumn>>,
@@ -389,14 +389,15 @@ impl Level {
     }
 
     /// The columns of `SELECT *`, including merged columns, and whether their types are known
-    /// as a whole: if they are known for every item. The type of a merged column is unknown if
-    /// nested joins merge the same name again. `None` if the columns are not known.
+    /// as a whole: if they are known for every item. The columns of an item whose types are not
+    /// known as a whole have no types. The type of a merged column is unknown if nested joins
+    /// merge the same name again. `None` if the columns are not known.
     pub fn star_columns(&self) -> Option<(Vec<TypedColumn>, bool)> {
         if self.items.is_empty() {
             return None;
         }
         let mut types_known = true;
-        let mut columns = self
+        let columns = self
             .star()?
             .iter()
             .map(|column| match column {
@@ -417,15 +418,14 @@ impl Level {
                 StarEntry::Item { item, column } => {
                     let item = self.items.get(*item)?;
                     types_known &= item.types_known;
-                    item.columns.as_ref()?.get(*column).cloned()
+                    let column = item.columns.as_ref()?.get(*column)?;
+                    Some(TypedColumn {
+                        name: column.name.clone(),
+                        ty: column.ty.clone().filter(|_| item.types_known),
+                    })
                 }
             })
             .collect::<Option<Vec<_>>>()?;
-        if !types_known {
-            for column in &mut columns {
-                column.ty = None;
-            }
-        }
         Some((columns, types_known))
     }
 
@@ -461,8 +461,8 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
                 [] => continue,
                 [entry] => {
                     let position = level.star()?.iter().position(|other| other == entry)?;
-                    let (columns, types_known) = level.star_columns()?;
-                    return columns.get(position)?.ty.clone().filter(|_| types_known);
+                    let (columns, _) = level.star_columns()?;
+                    return columns.get(position)?.ty.clone();
                 }
                 _ => return None,
             }
@@ -583,6 +583,27 @@ pub(super) fn find_column_item<'a>(levels: &'a [Level], column: &str) -> Option<
 /// Finds the item with this name, innermost level first.
 pub(super) fn find_item<'a>(levels: &'a [Level], name: &str) -> Option<&'a Item> {
     levels.iter().rev().find_map(|level| level.item(name))
+}
+
+/// Finds the item that the qualifier of a column reference or of `t.*` names, innermost level
+/// first: `t` is an item named `t`, and `s.t` an unaliased relation `t` of schema `s`. Port of
+/// [`refnameNamespaceItem`]. `None` for other qualifiers, like `db.s.t`.
+///
+/// [`refnameNamespaceItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L134
+pub(super) fn find_qualified_item<'a>(
+    levels: &'a [Level],
+    qualifier: &[String],
+) -> Option<&'a Item> {
+    match qualifier {
+        [name] => find_item(levels, name),
+        [schema, name] => levels.iter().rev().find_map(|level| {
+            level.items.iter().find(|item| {
+                item.schema.as_deref() == Some(schema.as_str())
+                    && item.name.as_deref() == Some(name.as_str())
+            })
+        }),
+        _ => None,
+    }
 }
 
 /// Whether some level contains items whose names we don't know.

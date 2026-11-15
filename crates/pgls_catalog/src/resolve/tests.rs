@@ -1579,3 +1579,86 @@ fn cte_column_lists_apply_to_typed_columns() {
         None
     );
 }
+
+#[test]
+fn stars_expand_like_expand_column_ref_star() {
+    // `t.*` finds its item in an outer level too, like `t.c`.
+    assert_eq!(
+        findings("select s.id, s.nope from users u, lateral (select u.*) s"),
+        [unknown_column(Some("s"), "nope")]
+    );
+    // `s.t.*` is an unaliased relation of the schema.
+    assert_eq!(
+        findings("select s.id, s.nope from (select public.users.* from public.users) s"),
+        [unknown_column(Some("s"), "nope")]
+    );
+    // An item whose name we don't know may be the one the qualifier names.
+    assert_eq!(
+        findings(
+            "select s.nope from users u, lateral (select u.* from xmltable('/a' passing '<a/>' columns x int)) s"
+        ),
+        []
+    );
+}
+
+#[test]
+fn field_stars_expand_to_the_fields_of_a_composite() {
+    let setup = "create table places (addr address, n int);";
+    assert_eq!(
+        findings_after(
+            setup,
+            "select s.street, s.city, s.nope from (select (p.addr).* from places p) s"
+        ),
+        [unknown_column(Some("s"), "nope")]
+    );
+    assert_eq!(
+        findings_after(
+            setup,
+            "select s.addr, s.nope from (select (places).* from places) s"
+        ),
+        [unknown_column(Some("s"), "nope")]
+    );
+    // Fields of a value that isn't composite, or whose type is unknown, are unknown.
+    assert_eq!(
+        findings_after(setup, "select s.nope from (select (n).* from places) s"),
+        []
+    );
+    assert_eq!(
+        findings_after(setup, "select s.nope from (select (x).* from nope) s"),
+        [FindingKind::UnknownRelation {
+            schema: None,
+            name: "nope".into()
+        }]
+    );
+}
+
+#[test]
+fn inserts_count_the_columns_of_stars() {
+    assert_eq!(
+        findings("insert into users (id) select * from users"),
+        [FindingKind::InsertColumnMismatch {
+            expected: 1,
+            found: 2
+        }]
+    );
+    assert_eq!(
+        findings("insert into users select p.*, 1 from posts p"),
+        [FindingKind::InsertColumnMismatch {
+            expected: 2,
+            found: 4
+        }]
+    );
+    assert_eq!(
+        findings("insert into users select 1 union select * from posts"),
+        []
+    );
+    // The width of `*` over something unknown is unknown.
+    assert_eq!(
+        findings("insert into users (id) select * from nope"),
+        [FindingKind::UnknownRelation {
+            schema: None,
+            name: "nope".into()
+        }]
+    );
+    assert_valid("insert into users (id, name) select * from users");
+}
