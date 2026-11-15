@@ -49,6 +49,8 @@ mod view_stmt;
 
 use pgls_query::NodeEnum;
 
+use crate::typing::TypedColumn;
+
 use super::Catalog;
 
 use alter_enum_stmt::apply_alter_enum_stmt;
@@ -74,30 +76,18 @@ use select_stmt::apply_select_stmt;
 use transaction_stmt::apply_transaction_stmt;
 use view_stmt::apply_view_stmt;
 
-/// Gives the output columns of `query`, the query of a view, `CREATE TABLE AS` or `SELECT INTO`,
-/// as the relation it creates has them, against the catalog before the statement. `None` if they
-/// are not known with certainty.
-pub type QueryColumnsHook<'a> = &'a dyn Fn(
-    &pgls_query::protobuf::Node,
-    &dyn crate::lookup::CatalogView,
-    &[String],
-) -> Option<Vec<crate::typing::TypedColumn>>;
-
 impl Catalog {
-    /// Applies the effects of a top-level statement, executed with the given search path. The
-    /// columns of views, `CREATE TABLE AS` and `SELECT INTO` come from the resolver
-    /// ([`crate::resolve::query_columns`]).
-    pub fn apply(&mut self, stmt: &NodeEnum, search_path: &[String]) {
-        self.apply_with(stmt, search_path, &crate::resolve::query_columns);
-    }
-
-    /// Like [`Catalog::apply`], with `query_columns` giving the columns of views,
-    /// `CREATE TABLE AS` and `SELECT INTO`.
-    pub fn apply_with(
+    /// Applies the effects of a top-level statement, executed with the given search path.
+    ///
+    /// `output` is the output columns of the statement's query, for a view, `CREATE TABLE AS`
+    /// or `SELECT INTO`: the [`Resolution::output`](crate::resolve::Resolution::output) of the
+    /// statement against this catalog. Without them, the columns of the relation are unknown.
+    /// Views among the elements of `CREATE SCHEMA` have unknown columns.
+    pub fn apply(
         &mut self,
         stmt: &NodeEnum,
         search_path: &[String],
-        query_columns: QueryColumnsHook<'_>,
+        output: Option<&[TypedColumn]>,
     ) {
         let c = self;
         c.skipped_existing = false;
@@ -105,18 +95,14 @@ impl Catalog {
             c.indexes_incomplete = true;
         }
         match stmt {
-            NodeEnum::CreateSchemaStmt(n) => {
-                apply_create_schema_stmt(c, n, search_path, query_columns)
-            }
+            NodeEnum::CreateSchemaStmt(n) => apply_create_schema_stmt(c, n, search_path),
             NodeEnum::CreateStmt(n) => apply_create_stmt(c, n, search_path),
             NodeEnum::CreateForeignTableStmt(n) => {
                 apply_create_foreign_table_stmt(c, n, search_path)
             }
-            NodeEnum::CreateTableAsStmt(n) => {
-                apply_create_table_as_stmt(c, n, search_path, query_columns)
-            }
-            NodeEnum::SelectStmt(n) => apply_select_stmt(c, n, search_path, query_columns),
-            NodeEnum::ViewStmt(n) => apply_view_stmt(c, n, search_path, query_columns),
+            NodeEnum::CreateTableAsStmt(n) => apply_create_table_as_stmt(c, n, search_path, output),
+            NodeEnum::SelectStmt(n) => apply_select_stmt(c, n, search_path, output),
+            NodeEnum::ViewStmt(n) => apply_view_stmt(c, n, search_path, output),
             NodeEnum::CreateSeqStmt(n) => apply_create_seq_stmt(c, n, search_path),
             NodeEnum::CompositeTypeStmt(n) => apply_composite_type_stmt(c, n, search_path),
             NodeEnum::CreateEnumStmt(n) => apply_create_enum_stmt(c, n, search_path),

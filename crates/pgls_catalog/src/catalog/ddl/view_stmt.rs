@@ -1,7 +1,8 @@
 use pgls_query::protobuf::ViewStmt;
 
-use crate::catalog::{Catalog, QueryColumnsHook, overlay::rename_columns};
+use crate::catalog::{Catalog, overlay::rename_columns};
 use crate::lookup::{Origin, RelationInfo, RelationKind};
+use crate::typing::TypedColumn;
 
 /// `CREATE VIEW`. Models [`DefineView`].
 ///
@@ -10,7 +11,7 @@ pub(super) fn apply_view_stmt(
     c: &mut Catalog,
     n: &ViewStmt,
     search_path: &[String],
-    query_columns: QueryColumnsHook<'_>,
+    output: Option<&[TypedColumn]>,
 ) {
     let Some(range_var) = &n.view else {
         return;
@@ -18,10 +19,7 @@ pub(super) fn apply_view_stmt(
     let Some(key) = c.relation_creation_key(range_var, search_path) else {
         return;
     };
-    let columns = n
-        .query
-        .as_deref()
-        .and_then(|query| c.query_columns(query, search_path, query_columns));
+    let columns = c.query_columns(output);
     let columns = rename_columns(columns, &n.aliases);
     c.define_relation(RelationInfo {
         schema: key.0,

@@ -42,7 +42,7 @@ use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
 
 use crate::lookup::CatalogView;
-use crate::typing::{QueryColumns, Type, TypedColumn};
+use crate::typing::{TypedColumn, resolve_unknown_outputs};
 pub(crate) use nodes::rename;
 use resolver::Resolver;
 
@@ -445,8 +445,7 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
 
 /// The output columns of `query`, like the query of a view, `CREATE TABLE AS` or `SELECT INTO`,
 /// as the relation it creates has them: unknown literals become `text`. `None` if they are not
-/// known with certainty. [`Catalog::apply`](crate::Catalog::apply) gets the columns of these
-/// relations through it.
+/// known with certainty.
 pub fn query_columns(
     query: &protobuf::Node,
     catalog: &dyn CatalogView,
@@ -464,28 +463,26 @@ pub fn query_columns(
     resolve_unknown_outputs(catalog, resolution.output?.columns())
 }
 
-/// Port of [`resolveTargetListUnknowns`]: output columns of unknown type become
-/// text. Postgres does this for every query except the source of an INSERT and the branches of a
-/// set operation, which coerce the unknowns to their target type instead.
-///
-/// [`resolveTargetListUnknowns`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L288
-pub(crate) fn resolve_unknown_outputs(
-    catalog: &dyn CatalogView,
-    columns: QueryColumns,
-) -> QueryColumns {
-    let mut columns = columns?;
-    if columns
-        .iter()
-        .any(|column| column.ty == Some(Type::UnknownLiteral))
-    {
-        let text = catalog.builtin_type("text").map(Type::Named);
-        for column in &mut columns {
-            if column.ty == Some(Type::UnknownLiteral) {
-                column.ty = text.clone();
-            }
-        }
-    }
-    Some(columns)
+/// Resolves `stmt` against `catalog` and applies it, with the output columns of its query, like
+/// the walk does.
+#[cfg(test)]
+pub(crate) fn apply_resolved(
+    catalog: &mut crate::Catalog,
+    stmt: &NodeEnum,
+    search_path: &[String],
+) {
+    let output = resolve(ResolveParams {
+        stmt,
+        catalog,
+        search_path,
+        function: None,
+        sql: None,
+        collect_references: false,
+        collect_lookups: false,
+    })
+    .output
+    .and_then(|output| output.columns());
+    catalog.apply(stmt, search_path, output.as_deref());
 }
 
 /// Whether the statement kind can be checked against the database with `EXPLAIN`.

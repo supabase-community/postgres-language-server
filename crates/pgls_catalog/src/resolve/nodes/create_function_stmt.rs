@@ -15,12 +15,10 @@ use pgls_query_ext::{
 use super::{Resolver, resolve_node_enum};
 use crate::TypeKind;
 use crate::lookup::Lookup;
-use crate::resolve::{
-    FindingKind, FunctionContext, FunctionParam, ReturnMismatch, resolve_unknown_outputs,
-};
+use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch};
 use crate::typing::{
     CoercionContext, Decision, Polymorphic, Type, TypeId, can_coerce, format_type_with_search_path,
-    normalize_type_name,
+    normalize_type_name, resolve_unknown_outputs,
 };
 
 /// The pseudo-types besides [`Polymorphic`] ones. Functions returning a pseudo-type have no

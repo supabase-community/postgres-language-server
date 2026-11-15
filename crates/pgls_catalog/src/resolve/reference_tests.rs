@@ -258,7 +258,7 @@ async fn procedure_call_references(test_db: PgPool) {
     .unwrap()
     .into_root()
     .unwrap();
-    file_catalog.apply(&create, &search_path);
+    crate::resolve::apply_resolved(&mut file_catalog, &create, &search_path);
     assert_eq!(
         references(&file_catalog, &search_path, "call file_out(1, null, 2)"),
         ["file_out => function public.file_out(integer, text, integer) <- x, y, z"]
@@ -288,7 +288,7 @@ async fn procedure_call_references(test_db: PgPool) {
         "create procedure same_type(a int, b int) language sql as 'select 1'",
     ] {
         let create = pgls_query::parse(create).unwrap().into_root().unwrap();
-        file_catalog.apply(&create, &search_path);
+        crate::resolve::apply_resolved(&mut file_catalog, &create, &search_path);
     }
     // Postgres: procedure same_name(integer, integer) is not unique
     assert_eq!(
@@ -318,7 +318,7 @@ async fn best_effort_catalogs_ignore_unmodelled_statements(test_db: PgPool) {
         .into_root()
         .unwrap();
     for catalog in [&mut strict, &mut best_effort] {
-        catalog.apply(&do_block, &search_path);
+        crate::resolve::apply_resolved(catalog, &do_block, &search_path);
         catalog.taint();
     }
     let sql = "select pick(1), name from users where name = 'x' and cheer('happy') = 'sad'";

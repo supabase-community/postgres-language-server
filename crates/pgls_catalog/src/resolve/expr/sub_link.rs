@@ -21,7 +21,7 @@ pub(super) fn infer_sub_link(
             protobuf::SubLinkType::ExprSublink => {
                 let query = n.subselect.as_deref()?;
                 let columns = match r.subquery_output(query) {
-                    Some(output) => crate::resolve::resolve_unknown_outputs(
+                    Some(output) => crate::typing::resolve_unknown_outputs(
                         r.catalog,
                         output.as_ref().and_then(QueryOutput::columns),
                     )?,

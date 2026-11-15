@@ -872,7 +872,7 @@ async fn check_cases(pool: &PgPool, cases: &[(&str, Expect)]) {
     let in_snapshot = Catalog::new(Some(after));
     let mut in_file = Catalog::new(Some(before));
     for stmt in pgls_query::parse(SETUP).unwrap().stmts() {
-        in_file.apply(stmt, &search_path);
+        crate::resolve::apply_resolved(&mut in_file, stmt, &search_path);
     }
 
     let mut failures = Vec::new();

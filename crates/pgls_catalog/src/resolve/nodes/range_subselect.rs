@@ -28,7 +28,7 @@ pub(super) fn resolve_range_subselect(
             output
         }
     });
-    let columns = crate::resolve::resolve_unknown_outputs(
+    let columns = crate::typing::resolve_unknown_outputs(
         r.catalog,
         output.as_ref().and_then(QueryOutput::columns),
     );

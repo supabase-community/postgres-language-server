@@ -1,6 +1,6 @@
 use pgls_query::protobuf::{CreateSchemaStmt, RoleSpecType};
 
-use crate::catalog::{Catalog, QueryColumnsHook};
+use crate::catalog::Catalog;
 use crate::lookup::CatalogView;
 
 /// `CREATE SCHEMA`, including the objects it creates. Models [`CreateSchemaCommand`].
@@ -10,7 +10,6 @@ pub(super) fn apply_create_schema_stmt(
     c: &mut Catalog,
     n: &CreateSchemaStmt,
     search_path: &[String],
-    query_columns: QueryColumnsHook<'_>,
 ) {
     let name = if !n.schemaname.is_empty() {
         n.schemaname.clone()
@@ -35,13 +34,14 @@ pub(super) fn apply_create_schema_stmt(
     }
     c.schemas.insert(name.clone(), true);
 
-    // Schema elements are created in the new schema, which is searched first.
+    // Schema elements are created in the new schema, which is searched first. Their views have
+    // unknown columns: the statement's resolution has no output for them.
     let element_path: Vec<String> = std::iter::once(name)
         .chain(search_path.iter().cloned())
         .collect();
     for element in &n.schema_elts {
         if let Some(element) = &element.node {
-            c.apply_with(element, &element_path, query_columns);
+            c.apply(element, &element_path, None);
         }
     }
 }

@@ -14,10 +14,12 @@
 //! - [`identifier_name`] (`identifier.rs`): the name an identifier in SQL text stands for, and
 //!   [`quote_identifier`] the identifier to write for a name.
 //!
-//! The analyser walks a file statement by statement. For each statement it runs the rules,
-//! which resolve names against the current [`Catalog`] with the [`Session`]'s search path, and
-//! then applies the statement to both: `catalog.apply(stmt, session.search_path())`, then
-//! `session.apply(stmt, &catalog)`, which resolves the names of the statement with the catalog.
+//! The analyser walks a file statement by statement. For each statement it resolves its names
+//! once against the current [`Catalog`] with the [`Session`]'s search path, runs the rules on
+//! that resolution, and then applies the statement to both:
+//! `catalog.apply(stmt, session.search_path(), output)`, where `output` is the output columns of
+//! the statement's query from its resolution, then `session.apply(stmt, &catalog)`, which looks
+//! up the names of the statement in the catalog.
 
 mod catalog;
 mod identifier;
@@ -28,7 +30,7 @@ mod session;
 pub mod snapshot;
 pub mod typing;
 
-pub use catalog::{Catalog, CatalogBase, QueryColumnsHook};
+pub use catalog::{Catalog, CatalogBase};
 pub use identifier::{
     MAX_IDENTIFIER_BYTES, NamePosition, identifier_name, quote_identifier, truncate_identifier,
     unicode_identifier_name, untruncated_identifier_name,
