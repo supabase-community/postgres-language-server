@@ -5,10 +5,11 @@ use pgls_query::{
 
 use super::{
     Resolver,
-    alias::{rename, rename_columns},
+    alias::rename_columns,
     common_table_expr::{resolve_common_table_expr, search_cycle_columns},
     select_stmt::resolve_select_stmt,
 };
+use crate::rename;
 use crate::resolve::{
     Reference,
     output::QueryOutput,

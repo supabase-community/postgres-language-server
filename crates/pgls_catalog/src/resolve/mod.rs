@@ -43,7 +43,6 @@ use pgls_text_size::TextRange;
 
 use crate::lookup::CatalogView;
 use crate::typing::{TypedColumn, resolve_unknown_outputs};
-pub(crate) use nodes::rename;
 use resolver::Resolver;
 
 /// A parameter of the SQL function whose body is being resolved.

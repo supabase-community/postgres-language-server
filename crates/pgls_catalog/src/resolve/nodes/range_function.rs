@@ -5,11 +5,10 @@ use pgls_query::{
 use pgls_query_ext::utils::{QualifiedName, qualified_name, string_value, string_values};
 
 use super::{
-    Resolver,
-    alias::{apply_alias, rename},
-    func_call::resolve_func_call,
-    record_unresolved_node, resolve_node,
+    Resolver, alias::apply_alias, func_call::resolve_func_call, record_unresolved_node,
+    resolve_node,
 };
+use crate::rename;
 use crate::resolve::{
     expr::call_args,
     scope::{Item, Level, combine_columns},
