@@ -269,7 +269,7 @@ fn sql_function_body(
     let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = root else {
         return Vec::new();
     };
-    let function = pgls_catalog::resolve::FunctionContext::from_create_function(create_fn);
+    let function = pgls_resolve::FunctionContext::from_create_function(create_fn);
     pgls_query_ext::function_body::sql_function_body(root, sql)
         .iter()
         .filter_map(|statement| {

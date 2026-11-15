@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use pgls_catalog::Snapshot;
-use pgls_catalog::resolve::ColumnSource;
+use pgls_resolve::ColumnSource;
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};

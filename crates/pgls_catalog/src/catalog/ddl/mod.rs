@@ -80,8 +80,9 @@ impl Catalog {
     /// Applies the effects of a top-level statement, executed with the given search path.
     ///
     /// `output` is the output columns of the statement's query, for a view, `CREATE TABLE AS`
-    /// or `SELECT INTO`: the [`Resolution::output`](crate::resolve::Resolution::output) of the
-    /// statement against this catalog. Without them, the columns of the relation are unknown.
+    /// or `SELECT INTO`: the output of the statement's resolution against this catalog
+    /// (`pgls_resolve::Resolution::output`). Without them, the columns of the relation are
+    /// unknown.
     /// Views among the elements of `CREATE SCHEMA` have unknown columns.
     pub fn apply(
         &mut self,
