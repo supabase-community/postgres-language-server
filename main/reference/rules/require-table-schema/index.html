@@ -1251,8 +1251,8 @@ on. Temporary tables, including the ones created earlier in the file, are not re
 <code>CREATE [FOREIGN] TABLE</code>, <code>CREATE TABLE AS</code>, <code>SELECT INTO</code>, <code>ALTER [FOREIGN] TABLE</code>
 (including <code>RENAME</code> and <code>SET SCHEMA</code>), <code>CREATE INDEX</code>, and <code>DROP [FOREIGN] TABLE</code>. It also
 checks the tables these statements reference by name, like <code>REFERENCES</code>, <code>PARTITION OF</code>,
-<code>INHERITS</code>, <code>LIKE</code>, and <code>ATTACH PARTITION</code>. Queries, like the one of a view, are not
-checked.</p>
+<code>INHERITS</code>, <code>LIKE</code>, and <code>ATTACH PARTITION</code>. Queries, like the one of a view, are checked
+by <code>requireRelationSchema</code>.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">);</span>

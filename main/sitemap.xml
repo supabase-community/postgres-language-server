@@ -355,6 +355,9 @@
         <loc>https://pg-language-server.com/main/reference/rules/renaming-table/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/reference/rules/require-column-qualifier/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/reference/rules/require-concurrent-detach-partition/</loc>
       </url>
       <url>
@@ -373,7 +376,16 @@
         <loc>https://pg-language-server.com/main/reference/rules/require-enum-value-ordering/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/reference/rules/require-function-schema/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/reference/rules/require-idle-in-transaction-timeout/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/require-operator-schema/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/require-relation-schema/</loc>
       </url>
       <url>
         <loc>https://pg-language-server.com/main/reference/rules/require-separate-constraint-validation/</loc>
@@ -383,6 +395,9 @@
       </url>
       <url>
         <loc>https://pg-language-server.com/main/reference/rules/require-table-schema/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/require-type-schema/</loc>
       </url>
       <url>
         <loc>https://pg-language-server.com/main/reference/rules/running-statement-while-holding-access-exclusive/</loc>
