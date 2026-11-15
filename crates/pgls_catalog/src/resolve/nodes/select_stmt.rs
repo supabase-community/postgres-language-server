@@ -10,7 +10,7 @@ use super::{
     Resolver,
     from_clause::resolve_from_clause,
     record_unresolved_node,
-    res_target::{record_star_references, target_list_columns, target_list_typed_columns},
+    res_target::{infer_select_list, record_star_references, select_list_output},
     resolve_list, resolve_node,
     with_clause::resolve_with_clause,
 };
@@ -157,15 +157,12 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
 
     resolve_list(r, &n.target_list);
     // Named after resolving the select list, which names its scalar subqueries.
-    let output_names: Vec<String> = n
-        .target_list
-        .iter()
-        .filter_map(|target| output_name(r, target))
-        .collect();
+    let mut output = select_list_output(r, &n.target_list);
+    let output_names = output.output_names();
     if let Some(level) = r.levels.last_mut() {
         level.output_names = output_names.clone();
     }
-    record_star_references(r, &n.target_list);
+    record_star_references(r, &output);
     for node in n.where_clause.iter().chain(&n.having_clause) {
         resolve_expr(r, node);
     }
@@ -217,12 +214,12 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
         resolve_expr(r, node);
     }
 
-    let columns = target_list_columns(r, &n.target_list);
-    r.output = columns
-        .as_ref()
-        .map(|names| target_list_typed_columns(r, &n.target_list, names));
+    // PR 3: Postgres types the select list before the other clauses (`transformTargetList`).
+    // Typing it last keeps the order of findings and references.
+    infer_select_list(r, &n.target_list, &mut output);
     r.exit_level();
-    columns
+    r.output = output.columns();
+    output.names()
 }
 
 /// Resolves the items of `GROUP BY`, `ORDER BY` or `DISTINCT ON`, where an item that is a bare
@@ -291,13 +288,5 @@ fn is_output_reference(expr: &NodeEnum, output_names: &[String]) -> bool {
             .as_ref()
             .is_some_and(|value| matches!(value, pgls_query::protobuf::a_const::Val::Ival(_))),
         _ => false,
-    }
-}
-
-/// The name of an entry of the select list, which `ORDER BY` and `GROUP BY` can reference.
-fn output_name(r: &Resolver, target: &Node) -> Option<String> {
-    match &target.node {
-        Some(NodeEnum::ResTarget(target)) => r.target_name(target),
-        _ => None,
     }
 }

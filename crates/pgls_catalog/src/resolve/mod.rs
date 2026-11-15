@@ -23,6 +23,7 @@ pub use lookups::{LookupKind, OperatorConstruct, SearchPathLookup};
 #[cfg(test)]
 mod lookup_tests;
 mod nodes;
+mod output;
 #[cfg(all(test, feature = "db"))]
 mod reference_tests;
 mod resolver;

@@ -4,120 +4,149 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{ReturningClause, ReturningOptionKind},
 };
-use pgls_query_ext::utils::{star_qualifier, string_value, string_values};
+use pgls_query_ext::utils::{star_qualifier, string_values};
 
 use super::{Resolver, resolve_list};
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
     expr::{check_assignment, infer_expr},
+    output::{QueryOutput, TargetOutput},
     scope::{Columns, DefaultOnly, Item, Level, StarEntry, find_item},
     utils::node_location,
 };
+use crate::typing::TypedColumn;
 
-/// The output columns of a select list or RETURNING list, whose `*` expands to the FROM items
-/// of the innermost level. Port of the names of [`transformTargetList`], with [`FigureColname`]
-/// for unnamed entries and [`ExpandColumnRefStar`] and [`ExpandAllTables`] for `*`.
+/// The output columns of a select list or RETURNING list, one entry at a time, whose `*`
+/// expands to the FROM items of the innermost level. Port of the names of
+/// [`transformTargetList`], with [`FigureColname`] for unnamed entries and
+/// [`ExpandColumnRefStar`] and [`ExpandAllTables`] for `*`. The columns of `*` and `t.*` have the
+/// types of their FROM item; the expressions are typed by [`infer_select_list`].
 ///
 /// [`transformTargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L121
 /// [`FigureColname`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1713
 /// [`ExpandColumnRefStar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1123
 /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
-pub(super) fn target_list_columns(r: &Resolver, targets: &[Node]) -> Columns {
-    let level = r.levels.last()?;
-    let mut columns = Vec::new();
-    for target in targets {
-        let NodeEnum::ResTarget(target) = target.node.as_ref()? else {
-            return None;
-        };
-        let value = target
-            .val
-            .as_deref()
-            .and_then(|value| value.node.as_ref())?;
-
-        if let NodeEnum::ColumnRef(column) = value
-            && let Some(qualifier) = star_qualifier(column)
-        {
-            let expanded = match qualifier {
-                [] => level.star_columns()?,
-                [name] => level.item(string_value(name)?)?.columns.clone()?,
-                _ => return None,
+pub(super) fn select_list_output(r: &Resolver, targets: &[Node]) -> QueryOutput {
+    let level = r.levels.last();
+    let mut star_types_missing = false;
+    let targets = targets
+        .iter()
+        .map(|target| {
+            let Some(NodeEnum::ResTarget(target)) = target.node.as_ref() else {
+                return TargetOutput {
+                    location: -1,
+                    star: None,
+                    columns: None,
+                };
             };
-            columns.extend(expanded);
-            continue;
-        }
-
-        columns.push(r.target_name(target)?);
-    }
-    Some(columns)
+            let value = target.val.as_deref().and_then(|value| value.node.as_ref());
+            if let Some(NodeEnum::ColumnRef(column)) = value
+                && let Some(qualifier) = star_qualifier(column).and_then(string_values)
+            {
+                let columns = level.and_then(|level| {
+                    let (columns, types_missing) = star_output(level, &qualifier)?;
+                    star_types_missing |= types_missing;
+                    Some(columns)
+                });
+                return TargetOutput {
+                    location: column.location,
+                    star: Some(qualifier),
+                    columns,
+                };
+            }
+            let name = value.and_then(|_| r.target_name(target));
+            TargetOutput {
+                location: target.location,
+                star: None,
+                columns: name.map(|name| vec![TypedColumn { name, ty: None }]),
+            }
+        })
+        .collect();
+    let mut output = QueryOutput::new(targets);
+    output.star_types_missing = star_types_missing;
+    output
 }
 
-/// The typed output columns of a select list or RETURNING list, whose names `names` are the
-/// [`target_list_columns`] of `targets`. The FROM items of the list must be the innermost
-/// level. The types are unknown if the expanded `*` entries don't add up to the names.
-pub(super) fn target_list_typed_columns(
-    r: &mut Resolver,
-    targets: &[Node],
-    names: &[String],
-) -> Vec<crate::typing::TypedColumn> {
-    let mut typed = Vec::new();
-    for target in targets {
+/// The columns that `*` (an empty `qualifier`) or `t.*` expands to in `level`, and whether the
+/// types of some of them are missing.
+fn star_output(level: &Level, qualifier: &[String]) -> Option<(Vec<TypedColumn>, bool)> {
+    let (names, typed) = match qualifier {
+        [] => (level.star_columns()?, level.star_typed_columns()),
+        // PR 3: `t.*` is read three ways. Here it's an item of the innermost level only. The
+        // types used to be read with `qualifier.last()` and a fallback to the whole `*`, which
+        // gives the same columns whenever the names are known. `record_star_references` looks
+        // the item up in every level.
+        [name] => {
+            let item = level.item(name)?;
+            (item.columns.clone()?, item.typed_columns.clone())
+        }
+        // PR 3: `s.t.*` makes the columns of the entry, and so of the whole list, unknown.
+        _ => return None,
+    };
+    let typed = typed.unwrap_or_default();
+    let types_missing = typed.len() != names.len();
+    let columns = names
+        .into_iter()
+        .enumerate()
+        .map(|(i, name)| TypedColumn {
+            name,
+            ty: if types_missing {
+                None
+            } else {
+                typed.get(i).and_then(|column| column.ty.clone())
+            },
+        })
+        .collect();
+    Some((columns, types_missing))
+}
+
+/// Types the expressions of a select list or RETURNING list whose output is `output`, the
+/// [`select_list_output`] of `targets`. Each is typed once, after the other clauses of the
+/// query, in order.
+pub(super) fn infer_select_list(r: &mut Resolver, targets: &[Node], output: &mut QueryOutput) {
+    // PR 3: the expressions are only typed if the names of all columns are known.
+    if output.names().is_none() {
+        return;
+    }
+    for (target, entry) in targets.iter().zip(&mut output.targets) {
+        if entry.star.is_some() {
+            continue;
+        }
         let Some(NodeEnum::ResTarget(target)) = target.node.as_ref() else {
             continue;
         };
         let Some(value) = target.val.as_deref().and_then(|value| value.node.as_ref()) else {
             continue;
         };
-        if let NodeEnum::ColumnRef(column) = value
-            && let Some(qualifier) = star_qualifier(column)
-        {
-            let qualifier = qualifier.last().and_then(string_value);
-            if let Some(item) =
-                qualifier.and_then(|name| r.levels.last().and_then(|level| level.item(name)))
-            {
-                typed.extend(item.typed_columns.clone().unwrap_or_default());
-            } else if let Some(level) = r.levels.last() {
-                typed.extend(level.star_typed_columns().unwrap_or_default());
-            }
-            continue;
+        let ty = infer_expr(r, value);
+        if let Some(column) = entry.columns.as_mut().and_then(|columns| columns.first_mut()) {
+            column.ty = ty;
         }
-        typed.push(crate::typing::TypedColumn {
-            name: r.target_name(target).unwrap_or_default(),
-            ty: infer_expr(r, value),
-        });
     }
-    if typed.len() == names.len() {
-        typed
-    } else {
-        names
-            .iter()
-            .map(|name| crate::typing::TypedColumn {
-                name: name.clone(),
-                ty: None,
-            })
-            .collect()
+    if output.star_types_missing {
+        output.clear_types();
     }
 }
 
 /// Records the columns that each `*` and `t.*` of a select list or RETURNING list expands to,
 /// when references are collected. The FROM items of the list must be the innermost level.
-pub(super) fn record_star_references(r: &mut Resolver, targets: &[Node]) {
+pub(super) fn record_star_references(r: &mut Resolver, output: &QueryOutput) {
     if !r.collects_references() {
         return;
     }
-    for target in targets {
-        let Some(NodeEnum::ResTarget(target)) = target.node.as_ref() else {
+    for target in &output.targets {
+        let Some(qualifier) = &target.star else {
             continue;
         };
-        let Some(NodeEnum::ColumnRef(column)) = target.val.as_deref().and_then(|v| v.node.as_ref())
-        else {
-            continue;
-        };
-        let Some(qualifier) = star_qualifier(column) else {
-            continue;
-        };
-        let columns = string_values(qualifier).and_then(|qualifier| match qualifier.as_slice() {
-            [] => r.levels.last().and_then(star_columns),
-            [name] => find_item(&r.levels, name).and_then(|item| item_columns(item, &qualifier)),
+        let columns = match qualifier.as_slice() {
+            [] => r
+                .levels
+                .last()
+                .zip(target.columns.as_deref())
+                .and_then(|(level, columns)| star_columns(level, columns)),
+            // PR 3: unlike the output, `t.*` and `s.t.*` find their item in every level here,
+            // and `s.t.*` copies the `(schema, name)` lookup of `column_ref.rs`.
+            [name] => find_item(&r.levels, name).and_then(|item| item_columns(item, qualifier)),
             [schema, name] => r
                 .levels
                 .iter()
@@ -128,26 +157,27 @@ pub(super) fn record_star_references(r: &mut Resolver, targets: &[Node]) {
                             && item.name.as_deref() == Some(name.as_str())
                     })
                 })
-                .and_then(|item| item_columns(item, &qualifier)),
+                .and_then(|item| item_columns(item, qualifier)),
             _ => None,
-        });
+        };
         if let Some(columns) = columns {
             r.record(Reference::Star {
-                location: column.location,
-                span: r.star_span(column.location),
+                location: target.location,
+                span: r.star_span(target.location),
                 columns,
             });
         }
     }
 }
 
-/// The columns of `*`, like [`ExpandAllTables`], in the order of [`Level::star`]. A column is
-/// qualified with the name of its FROM item when there are several, and a column merged by
-/// `JOIN ... USING` or a `NATURAL` join is referenced by its bare name. `None` if a column is not
-/// known, or if a name doesn't reference the column with certainty.
+/// The columns of `*`, like [`ExpandAllTables`], whose output is `output`, with the item of
+/// each from [`Level::star`]. A column is qualified with the name of its FROM item when there are
+/// several, and a column merged by `JOIN ... USING` or a `NATURAL` join is referenced by its bare
+/// name. `None` if a column is not known, or if a name doesn't reference the column with
+/// certainty.
 ///
 /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
-fn star_columns(level: &Level) -> Option<Vec<StarColumn>> {
+fn star_columns(level: &Level, output: &[TypedColumn]) -> Option<Vec<StarColumn>> {
     if level.items.is_empty() || level.has_opaque_items {
         return None;
     }
@@ -155,10 +185,10 @@ fn star_columns(level: &Level) -> Option<Vec<StarColumn>> {
     if let [item] = level.items.as_slice() {
         return item_columns(item, &[]);
     }
-    let names = entries
-        .iter()
-        .map(|entry| level.star_column_name(entry))
-        .collect::<Option<Vec<_>>>()?;
+    if entries.len() != output.len() {
+        return None;
+    }
+    let names: Vec<&str> = output.iter().map(|column| column.name.as_str()).collect();
     let mut columns = Vec::new();
     for (entry, name) in entries.iter().zip(&names) {
         let qualifier = match entry {
@@ -236,13 +266,12 @@ pub(super) fn resolve_returning_clause(
     add_old_and_new(r, options, target, &mut level);
     r.enter_level(level);
     resolve_list(r, list);
-    record_star_references(r, list);
-    let columns = target_list_columns(r, list);
-    r.output = columns
-        .as_ref()
-        .map(|names| target_list_typed_columns(r, list, names));
+    let mut output = select_list_output(r, list);
+    record_star_references(r, &output);
+    infer_select_list(r, list, &mut output);
     r.exit_level();
-    columns
+    r.output = output.columns();
+    output.names()
 }
 
 /// Resolves the `SET` list of UPDATE, `ON CONFLICT DO UPDATE`, or `MERGE ... UPDATE`: each
