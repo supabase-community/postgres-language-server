@@ -11,8 +11,8 @@
 // input takes down the server for every connected editor.
 #![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
-use pgls_catalog::CatalogView;
 use pgls_catalog::resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
+use pgls_catalog::{CatalogView, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
@@ -44,7 +44,8 @@ pub enum SemanticTokenKind {
     Parameter,
     /// A string literal that is coerced to an enum type.
     EnumMember,
-    /// The alias of a FROM item, like `u` in `from users u` and in `u.name`, or a role.
+    /// The alias of a FROM item, like `u` in `from users u` and in `u.name`, `old` and `new` in
+    /// RETURNING, or a role.
     Variable,
 }
 
@@ -67,6 +68,7 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
         function: params.function,
         sql: Some(params.sql),
         collect_references: true,
+        collect_lookups: false,
     })
     .references;
     semantic_tokens_of_references(&references, params.sql)
@@ -167,7 +169,7 @@ pub fn semantic_tokens_of_references(references: &[Reference], sql: &str) -> Vec
                     // `table.column` or `cte.column`, and otherwise `alias.column`: the qualifier
                     // is the name of the FROM item the column comes from.
                     [qualifier, _] => {
-                        let qualifier_name = identifier(&sql[*qualifier]);
+                        let qualifier_name = identifier_name(&sql[*qualifier]);
                         let is_own_name = match source {
                             ColumnSource::Relation { name, .. } | ColumnSource::Cte { name } => {
                                 qualifier_name == *name
@@ -297,18 +299,6 @@ fn token_range(token: &ScanToken) -> Option<TextRange> {
         TextSize::try_from(usize::try_from(token.start).ok()?).ok()?,
         TextSize::try_from(usize::try_from(token.end).ok()?).ok()?,
     ))
-}
-
-/// The name an identifier refers to: unquoted identifiers are folded to lower case. Like Postgres,
-/// only ASCII letters are folded.
-fn identifier(text: &str) -> String {
-    match text
-        .strip_prefix('"')
-        .and_then(|text| text.strip_suffix('"'))
-    {
-        Some(quoted) => quoted.replace("\"\"", "\""),
-        None => text.to_ascii_lowercase(),
-    }
 }
 
 #[cfg(test)]

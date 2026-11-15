@@ -28,7 +28,7 @@ pub use linter_registry::{
 };
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use pgls_walk::{
-    AnalysableStatement, AnalysedFileContext, Direction, MigrationSection, STOP_CHECK_INTERVAL,
+    AnalysableStatement, AnalysedFileContext, Direction, STOP_CHECK_INTERVAL, Unit,
     UnparsableStatement, Walk, WalkParams, WalkState, is_plain_query, walk_statements,
 };
 
@@ -89,7 +89,7 @@ pub struct AnalyserParams {
     pub file_kind: FileKind,
     /// The sections of a migration file, like dbmate's up and down migrations. Each section is
     /// analysed as a migration of its own. Without sections, the whole file is one migration.
-    pub sections: Vec<MigrationSection>,
+    pub sections: Vec<Unit>,
     /// Whether the rules of the typecheck group run.
     pub typecheck: bool,
     /// The text of the file. Fixes that also edit after their statement, like the `COMMIT` that
@@ -183,6 +183,7 @@ impl<'a> Analyser<'a> {
                 runs_on_file && runs_typecheck
             })
             .collect();
+        let collect_lookups = rules.iter().any(|rule| rule.reads_lookups);
 
         let mut statement_ranges: Vec<TextRange> = params
             .stmts
@@ -212,10 +213,15 @@ impl<'a> Analyser<'a> {
             if stmt.has_identifier_parameters && !is_plain_query(root) {
                 typecheck = false;
             }
-            let typecheck_statement = typecheck && !stmt.has_identifier_parameters;
+            let typecheck_statement =
+                typecheck && !stmt.has_identifier_parameters && !stmt.has_unknown_values;
 
-            let statement =
-                StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
+            let statement = StatementContext::new(
+                root,
+                stmt.sql.as_deref(),
+                stmt.function.as_ref(),
+                collect_lookups,
+            );
             let mut has_typecheck_findings = false;
             let mut has_duplicate_assignments = false;
 

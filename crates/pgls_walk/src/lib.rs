@@ -3,11 +3,13 @@
 //! catalog and session at each statement.
 
 mod file_context;
-mod migration;
 mod statement;
 mod walk;
 
 pub use file_context::AnalysedFileContext;
-pub use migration::{Direction, MigrationSection};
+pub use pgls_migrations::{Direction, Unit};
 pub use statement::{AnalysableStatement, UnparsableStatement};
-pub use walk::{STOP_CHECK_INTERVAL, Walk, WalkParams, WalkState, is_plain_query, walk_statements};
+pub use walk::{
+    STOP_CHECK_INTERVAL, Walk, WalkParams, WalkState, is_plain_query, transaction_mode,
+    walk_statements,
+};
