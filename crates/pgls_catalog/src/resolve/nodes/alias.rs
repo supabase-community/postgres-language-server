@@ -1,7 +1,7 @@
 use pgls_query::{Node, protobuf::Alias};
 use pgls_query_ext::utils::string_values;
 
-use crate::resolve::scope::{Columns, TypedColumns};
+use crate::resolve::scope::Columns;
 
 /// Applies the column names of an alias (`AS t(a, b)`) to the first columns.
 pub(super) fn apply_alias(columns: Columns, alias: Option<&Alias>) -> Columns {
@@ -11,21 +11,8 @@ pub(super) fn apply_alias(columns: Columns, alias: Option<&Alias>) -> Columns {
     }
 }
 
-/// Applies the column names of an alias (`AS t(a, b)`) to the first typed columns.
-pub(super) fn apply_typed_alias(columns: TypedColumns, alias: Option<&Alias>) -> TypedColumns {
-    match alias {
-        Some(alias) => rename_typed_columns(columns, &alias.colnames),
-        None => columns,
-    }
-}
-
 /// Applies a list of column names (`WITH c(a, b) AS ...`) to the first columns.
 pub(super) fn rename_columns(columns: Columns, names: &[Node]) -> Columns {
-    rename(columns, names, |column, name| *column = name)
-}
-
-/// Applies a list of column names (`WITH c(a, b) AS ...`) to the first typed columns.
-pub(super) fn rename_typed_columns(columns: TypedColumns, names: &[Node]) -> TypedColumns {
     rename(columns, names, |column, name| column.name = name)
 }
 

@@ -1,7 +1,7 @@
 use pgls_query::protobuf::OnConflictClause;
 
 use super::{Resolver, record_unresolved_node, res_target::resolve_set_clause, resolve_node};
-use crate::resolve::scope::{Item, Level};
+use crate::resolve::scope::{Item, Level, untyped};
 
 /// `ON CONFLICT` sees the target relation and the row proposed for insertion, `excluded`. Port
 /// of [`transformOnConflictClause`].
@@ -27,7 +27,11 @@ pub(super) fn resolve_on_conflict_clause(r: &mut Resolver, n: &OnConflictClause,
         }
     }
 
-    let excluded = Item::named(Some("excluded".into()), target.columns.clone());
+    let excluded = Item::named(
+        Some("excluded".into()),
+        untyped(target.columns.clone()),
+        false,
+    );
     r.enter_level(Level {
         items: vec![target.clone(), excluded],
         ..Default::default()

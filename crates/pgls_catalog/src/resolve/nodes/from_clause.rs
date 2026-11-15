@@ -33,7 +33,7 @@ pub(super) fn resolve_from_item(r: &mut Resolver, node: &Node, preceding: &Level
             r.depends_on_file();
             record_unresolved_node(r, node, true);
             return Level {
-                items: vec![Item::named(None, None)],
+                items: vec![Item::named(None, None, false)],
                 has_opaque_items: true,
                 ..Default::default()
             };

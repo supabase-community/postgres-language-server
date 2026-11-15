@@ -5,7 +5,7 @@ use pgls_query::{
 
 use super::{
     Resolver,
-    alias::{rename_columns, rename_typed_columns},
+    alias::{rename, rename_columns},
     common_table_expr::{resolve_common_table_expr, search_cycle_columns},
     select_stmt::resolve_select_stmt,
 };
@@ -13,7 +13,7 @@ use crate::resolve::{
     Reference,
     output::QueryOutput,
     resolve_unknown_outputs,
-    scope::{Cte, TypedColumns},
+    scope::{Columns, Cte, combine_columns},
 };
 use crate::typing::TypedColumn;
 
@@ -36,7 +36,7 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
         r.ctes.extend(definitions.iter().map(|cte| Cte {
             name: cte.ctename.clone(),
             columns: None,
-            typed_columns: None,
+            types_known: false,
         }));
     }
 
@@ -63,18 +63,18 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
         if let Some(Some(columns)) = &non_recursive
             && let Some(placeholder) = r.ctes.iter_mut().rev().find(|c| c.name == cte.ctename)
         {
-            let columns = with_added(columns.clone());
-            placeholder.columns = Some(columns.iter().map(|c| c.name.clone()).collect());
-            placeholder.typed_columns = Some(columns);
+            placeholder.columns = Some(with_added(columns.clone()));
+            placeholder.types_known = true;
         }
 
         let output = resolve_common_table_expr(r, cte);
         // The column list renames the first columns ([`analyzeCTETargetList`]).
         //
         // [`analyzeCTETargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L571
-        let columns = rename_columns(
+        let names = rename(
             output.as_ref().and_then(QueryOutput::names),
             &cte.aliascolnames,
+            |column, name| *column = name,
         )
         .map(|columns| {
             columns
@@ -82,7 +82,7 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
                 .chain(added.iter().map(|column| column.name.clone()))
                 .collect()
         });
-        let output = rename_typed_columns(
+        let output = rename_columns(
             resolve_unknown_outputs(r.catalog, output.as_ref().and_then(QueryOutput::columns)),
             &cte.aliascolnames,
         );
@@ -91,10 +91,11 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
             None => output,
         }
         .map(with_added);
+        let (columns, types_known) = combine_columns(names, typed_columns);
         let resolved = Cte {
             name: cte.ctename.clone(),
             columns,
-            typed_columns,
+            types_known,
         };
         match r
             .ctes
@@ -121,7 +122,7 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
 /// [`determineRecursiveColTypes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2387
 /// [`analyzeCTETargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L571
 /// [`checkWellFormedRecursion`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L915
-fn non_recursive_term_columns(r: &mut Resolver, cte: &CommonTableExpr) -> Option<TypedColumns> {
+fn non_recursive_term_columns(r: &mut Resolver, cte: &CommonTableExpr) -> Option<Columns> {
     let query = match cte
         .ctequery
         .as_deref()
@@ -137,7 +138,7 @@ fn non_recursive_term_columns(r: &mut Resolver, cte: &CommonTableExpr) -> Option
         return Some(None);
     };
     let output = resolve_select_stmt(r, left);
-    Some(rename_typed_columns(
+    Some(rename_columns(
         resolve_unknown_outputs(r.catalog, output.as_ref().and_then(QueryOutput::columns)),
         &cte.aliascolnames,
     ))
@@ -149,7 +150,7 @@ fn non_recursive_term_columns(r: &mut Resolver, cte: &CommonTableExpr) -> Option
 /// apart, so a column has a type only where both agree.
 ///
 /// [`analyzeCTE`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L385
-fn recursive_cte_types(non_recursive: TypedColumns, output: TypedColumns) -> TypedColumns {
+fn recursive_cte_types(non_recursive: Columns, output: Columns) -> Columns {
     let non_recursive = non_recursive?;
     let mut output = output?;
     if non_recursive.len() != output.len() {
