@@ -1101,7 +1101,7 @@ fn sequence_columns_have_types() {
             .stmts()
             .first()
             .map(|node| (**node).clone());
-        let output = crate::resolve::query_output_types(
+        let output = crate::resolve::query_columns(
             &pgls_query::protobuf::Node { node: query },
             &catalog,
             &search_path,

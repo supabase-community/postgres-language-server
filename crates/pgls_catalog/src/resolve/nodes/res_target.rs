@@ -41,6 +41,8 @@ fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
     let Some(NodeEnum::ResTarget(target)) = target.node.as_ref() else {
         return TargetOutput {
             location: -1,
+            entry_location: -1,
+            span: None,
             star: None,
             columns: None,
         };
@@ -52,6 +54,8 @@ fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
         let columns = expand_column_ref_star(r, &qualifier);
         return TargetOutput {
             location: column.location,
+            entry_location: target.location,
+            span: None,
             star: Some(Star::Columns(qualifier)),
             columns,
         };
@@ -62,6 +66,8 @@ fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
     {
         return TargetOutput {
             location: target.location,
+            entry_location: target.location,
+            span: None,
             star: Some(Star::Fields),
             columns: expand_indirection_star(r, indirection.arg.as_deref(), fields),
         };
@@ -73,6 +79,8 @@ fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
             .as_deref()
             .and_then(node_location)
             .unwrap_or(target.location),
+        entry_location: target.location,
+        span: None,
         star: None,
         columns: name.map(|name| vec![TypedColumn { name, ty: None }]),
     }

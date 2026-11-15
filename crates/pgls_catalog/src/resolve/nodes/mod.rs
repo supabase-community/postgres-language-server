@@ -57,6 +57,25 @@ use type_name::{record_type_names, resolve_type_name};
 use update_stmt::resolve_update_stmt;
 use view_stmt::resolve_view_stmt;
 
+/// Resolves a statement. Returns the output of its top-level query: of a SELECT, also with
+/// `INTO`, of the query of `CREATE VIEW` or `CREATE TABLE AS`, or of the RETURNING list of a
+/// data-modifying statement.
+pub(super) fn resolve_statement(r: &mut Resolver, stmt: &NodeEnum) -> Option<QueryOutput> {
+    match stmt {
+        NodeEnum::SelectStmt(_)
+        | NodeEnum::InsertStmt(_)
+        | NodeEnum::UpdateStmt(_)
+        | NodeEnum::DeleteStmt(_)
+        | NodeEnum::MergeStmt(_) => resolve_node_enum(r, stmt),
+        NodeEnum::ViewStmt(n) => resolve_view_stmt(r, n),
+        NodeEnum::CreateTableAsStmt(n) => resolve_create_table_as_stmt(r, n),
+        _ => {
+            resolve_node_enum(r, stmt);
+            None
+        }
+    }
+}
+
 /// Resolves a node. Returns the output columns of queries, and of data-modifying statements
 /// with `RETURNING`.
 pub(super) fn resolve_node(r: &mut Resolver, node: &Node) -> Option<QueryOutput> {
@@ -87,8 +106,12 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Option<Que
             record_create_function(r, n);
             resolve_create_function_stmt(r, n);
         }
-        NodeEnum::CreateTableAsStmt(n) => resolve_create_table_as_stmt(r, n),
-        NodeEnum::ViewStmt(n) => resolve_view_stmt(r, n),
+        NodeEnum::CreateTableAsStmt(n) => {
+            resolve_create_table_as_stmt(r, n);
+        }
+        NodeEnum::ViewStmt(n) => {
+            resolve_view_stmt(r, n);
+        }
         NodeEnum::ExplainStmt(n) => resolve_explain_stmt(r, n),
         NodeEnum::DeclareCursorStmt(n) => resolve_declare_cursor_stmt(r, n),
         NodeEnum::CopyStmt(n) => resolve_copy_stmt(r, n),

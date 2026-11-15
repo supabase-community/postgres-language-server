@@ -14,7 +14,6 @@
 //! the right answer.
 
 mod column_name;
-pub use column_name::target_name;
 #[cfg(all(test, feature = "db"))]
 mod differential_tests;
 pub(crate) mod expr;
@@ -24,6 +23,7 @@ pub use lookups::{LookupKind, OperatorConstruct, SearchPathLookup};
 mod lookup_tests;
 mod nodes;
 mod output;
+pub use output::{QueryOutput, Star, TargetOutput};
 #[cfg(all(test, feature = "db"))]
 mod reference_tests;
 mod resolver;
@@ -42,7 +42,7 @@ use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
 
 use crate::lookup::CatalogView;
-use crate::typing::{QueryColumns, Type};
+use crate::typing::{QueryColumns, Type, TypedColumn};
 pub(crate) use nodes::rename;
 use resolver::Resolver;
 
@@ -214,6 +214,11 @@ pub struct Resolution {
     /// exist, in the order the resolver visits them. Empty unless
     /// [`ResolveParams::collect_lookups`] is set.
     pub lookups: Vec<SearchPathLookup>,
+    /// The output of the statement's top-level query: of a SELECT, also with `INTO`, of the
+    /// query of `CREATE VIEW` or `CREATE TABLE AS`, or of the RETURNING list of INSERT, UPDATE,
+    /// DELETE or MERGE. `None` for other statements. The entries have their
+    /// [`TargetOutput::span`] if the statement text is known.
+    pub output: Option<QueryOutput>,
 }
 
 /// A name in the statement that resolves to exactly one object. Names that match no object or
@@ -411,7 +416,14 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
     if params.collect_lookups {
         resolver.lookups = Some(Vec::new());
     }
-    nodes::resolve_node_enum(&mut resolver, params.stmt);
+    let mut output = nodes::resolve_statement(&mut resolver, params.stmt);
+    if params.sql.is_some()
+        && let Some(output) = output.as_mut()
+    {
+        for target in &mut output.targets {
+            target.span = resolver.target_span(target.entry_location);
+        }
+    }
     roles_and_schemas::record_roles_and_schemas(&mut resolver, params.stmt);
     resolver.check_function_params();
 
@@ -427,27 +439,29 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         database_only: supports_database_check(params.stmt) && resolver.database_only,
         references: resolver.references.unwrap_or_default(),
         lookups: resolver.lookups.unwrap_or_default(),
+        output,
     }
 }
 
-/// The output column names of a query, or `None` if they are not known with certainty.
-pub fn query_output_columns(
+/// The output columns of `query`, like the query of a view, `CREATE TABLE AS` or `SELECT INTO`,
+/// as the relation it creates has them: unknown literals become `text`. `None` if they are not
+/// known with certainty. [`Catalog::apply`](crate::Catalog::apply) gets the columns of these
+/// relations through it.
+pub fn query_columns(
     query: &protobuf::Node,
     catalog: &dyn CatalogView,
     search_path: &[String],
-) -> Option<Vec<String>> {
-    nodes::resolve_node(&mut Resolver::new(catalog, search_path, None, None), query)?.names()
-}
-
-/// The inferred output names and types of a query, or `None` when its shape is unknown.
-pub fn query_output_types(
-    query: &protobuf::Node,
-    catalog: &dyn CatalogView,
-    search_path: &[String],
-) -> QueryColumns {
-    let mut resolver = Resolver::new(catalog, search_path, None, None);
-    let output = nodes::resolve_node(&mut resolver, query);
-    resolve_unknown_outputs(catalog, output?.columns())
+) -> Option<Vec<TypedColumn>> {
+    let resolution = resolve(ResolveParams {
+        stmt: query.node.as_ref()?,
+        catalog,
+        search_path,
+        function: None,
+        sql: None,
+        collect_references: false,
+        collect_lookups: false,
+    });
+    resolve_unknown_outputs(catalog, resolution.output?.columns())
 }
 
 /// Port of [`resolveTargetListUnknowns`]: output columns of unknown type become

@@ -28,7 +28,7 @@ mod session;
 pub mod snapshot;
 pub mod typing;
 
-pub use catalog::{Catalog, CatalogBase};
+pub use catalog::{Catalog, CatalogBase, QueryColumnsHook};
 pub use identifier::{
     MAX_IDENTIFIER_BYTES, NamePosition, identifier_name, quote_identifier, truncate_identifier,
     unicode_identifier_name, untruncated_identifier_name,
