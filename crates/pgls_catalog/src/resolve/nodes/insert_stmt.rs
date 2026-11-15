@@ -96,6 +96,8 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Option<QueryOutput> {
                 }
             }
         }
+        // PR 3: the width is read from the parse tree and unknown at a `*`, although
+        // `source_width` knows it.
         let found = match &source.node {
             Some(NodeEnum::SelectStmt(select)) => select_width(select),
             _ => None,
@@ -247,6 +249,7 @@ pub(super) fn check_generated_insert(
         // Without a column list, the values go to the first columns of the table.
         let width = match &values {
             InsertValues::Rows(rows) => rows.first().map(|row| row.len()),
+            // PR 3: the syntactic width first, see `resolve_insert`.
             InsertValues::Query { source, width } => match &source.node {
                 Some(NodeEnum::SelectStmt(select)) => select_width(select).or(*width),
                 _ => None,

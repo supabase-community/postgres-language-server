@@ -15,6 +15,7 @@ use super::{
     with_clause::resolve_with_clause,
 };
 use crate::resolve::{
+    column_name::values_column_name,
     expr::infer_expr,
     lookups::record_sort_by,
     output::{QueryOutput, TargetOutput},
@@ -137,7 +138,7 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
                 location: node_location(first).unwrap_or(-1),
                 star: None,
                 columns: Some(vec![TypedColumn {
-                    name: format!("column{}", index + 1),
+                    name: values_column_name(index),
                     ty,
                 }]),
             }
