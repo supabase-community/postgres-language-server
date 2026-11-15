@@ -236,9 +236,9 @@ export interface PartialLinterConfiguration {
  */
 export interface PartialMigrationsConfiguration {
   /**
-   * Ignore any migrations before this timestamp
+   * Ignore the migrations up to this version, in the version format of the migration tool: a number like `20250301120000`, or a string like `"0042"`. The version of a migration is the number its file name starts with.
    */
-  after?: number;
+  after?: MigrationVersion;
   /**
    * If `false`, the down sections of migration files are not linted. Default: `true`.
    */
@@ -248,9 +248,13 @@ export interface PartialMigrationsConfiguration {
    */
   migrationsDir?: string;
   /**
-   * The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
+   * Deprecated: use `tool`, which wins if both are set.
    */
-  sectionMarkers?: SectionMarkers;
+  sectionMarkers?: MigrationTool;
+  /**
+   * The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
+   */
+  tool?: MigrationTool;
 }
 export interface PartialPglinterConfiguration {
   /**
@@ -721,6 +725,10 @@ export interface LinterRules {
    */
   renamingTable?: RuleConfiguration_for_Null;
   /**
+   * Columns in queries should be qualified with their table.
+   */
+  requireColumnQualifier?: RuleConfiguration_for_Null;
+  /**
    * Detaching a partition without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.
    */
   requireConcurrentDetachPartition?: RuleConfiguration_for_Null;
@@ -745,9 +753,21 @@ export interface LinterRules {
    */
   requireEnumValueOrdering?: RuleConfiguration_for_Null;
   /**
+   * Function calls should be schema-qualified.
+   */
+  requireFunctionSchema?: RuleConfiguration_for_Null;
+  /**
    * Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.
    */
   requireIdleInTransactionTimeout?: RuleConfiguration_for_Null;
+  /**
+   * Operators should be schema-qualified.
+   */
+  requireOperatorSchema?: RuleConfiguration_for_Null;
+  /**
+   * Relations in queries should be schema-qualified.
+   */
+  requireRelationSchema?: RuleConfiguration_for_Null;
   /**
    * Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.
    */
@@ -760,6 +780,10 @@ export interface LinterRules {
    * Table names in DDL should be schema-qualified.
    */
   requireTableSchema?: RuleConfiguration_for_Null;
+  /**
+   * Type names should be schema-qualified.
+   */
+  requireTypeSchema?: RuleConfiguration_for_Null;
   /**
    * Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.
    */
@@ -794,9 +818,13 @@ export interface LinterRules {
   unknownType?: RuleConfiguration_for_Null;
 }
 /**
- * The marker comments of a migration tool.
+ * The version of a migration, as the configuration writes it: a number, or a string that the migration tool reads in its own format.
  */
-export type SectionMarkers = "none" | "dbmate" | "goose";
+export type MigrationVersion = number | string;
+/**
+ * The migration tool that runs the migration files.
+ */
+export type MigrationTool = "none" | "supabase" | "dbmate" | "goose";
 export interface PglinterRules {
   /**
    * It enables ALL rules. The rules that belong to `nursery` won't be enabled.

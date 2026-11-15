@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_15_19: 39967 statements and 381 in SQL function bodies, 1619 findings on statements Postgres rejected
+REL_15_19: 39967 statements and 381 in SQL function bodies, 1628 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 ambiguousColumn 42712: 2
@@ -27,8 +27,9 @@ unknownFunction 42883: 92
 unknownFunction 42P01: 18
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
+unknownRelation 25P01: 3
 unknownRelation 42501: 1
-unknownRelation 42P01: 1289
+unknownRelation 42P01: 1295
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -232,6 +233,7 @@ create_am.sql:57:1 42P01 unknownRelation
 create_am.sql:59:1 42P01 unknownRelation
 create_am.sql:61:1 42P01 unknownRelation
 create_am.sql:63:1 42P01 unknownRelation
+create_am.sql:74:1 25P01 unknownRelation
 create_cast.sql:28:1 42883 functionArgumentMismatch
 create_function_sql.sql:203:1 (body) 42883 operatorTypeMismatch
 create_function_sql.sql:409:1 42P13 functionReturnTypeMismatch
@@ -847,6 +849,9 @@ join.sql:580:1 42P01 unknownRelation
 join.sql:580:1 42P01 unknownRelation
 join.sql:692:1 42P01 unknownRelation
 join.sql:692:1 42P01 unknownRelation
+join.sql:700:1 42P01 unknownRelation
+join.sql:700:1 42P01 unknownRelation
+join.sql:700:1 42P01 unknownRelation
 join.sql:2089:1 42P01 unknownColumn
 join.sql:2090:1 42P01 missingFromClauseEntry
 join.sql:2091:1 42P01 unknownColumn
@@ -1113,6 +1118,8 @@ portals_p2.sql:34:1 42P01 unknownRelation
 portals_p2.sql:37:1 42P01 unknownRelation
 portals_p2.sql:40:1 42P01 unknownRelation
 portals_p2.sql:43:1 42P01 unknownRelation
+prepared_xacts.sql:137:1 25P01 unknownRelation
+prepared_xacts.sql:148:1 25P01 unknownRelation
 prepared_xacts.sql:161:1 42P01 unknownRelation
 privileges.sql:197:1 42501 unknownRelation
 privileges.sql:359:1 42P01 unknownRelation
@@ -1290,6 +1297,7 @@ select_parallel.sql:88:1 42P01 unknownRelation
 select_parallel.sql:90:1 42P01 unknownRelation
 select_parallel.sql:92:1 42P01 unknownRelation
 select_parallel.sql:97:1 42P01 unknownRelation
+select_parallel.sql:102:1 42P01 unknownRelation
 select_views.sql:6:1 42P01 unknownRelation
 select_views.sql:8:1 42P01 unknownRelation
 select_views.sql:10:1 42P01 unknownRelation
@@ -1578,6 +1586,7 @@ window.sql:254:1 42P01 unknownRelation
 window.sql:258:1 42P01 unknownRelation
 window.sql:262:1 42P01 unknownRelation
 window.sql:268:1 42P01 unknownRelation
+window.sql:268:1 42P01 unknownRelation
 window.sql:330:1 42P01 unknownRelation
 window.sql:334:1 42P01 unknownRelation
 window.sql:338:1 42P01 unknownRelation
@@ -1652,6 +1661,7 @@ write_parallel.sql:23:1 42P01 unknownRelation
 write_parallel.sql:25:1 42P01 unknownRelation
 write_parallel.sql:29:1 42P01 unknownRelation
 write_parallel.sql:31:1 42P01 unknownRelation
+write_parallel.sql:38:1 42P01 unknownRelation
 xid.sql:30:1 42883 operatorTypeMismatch
 xid.sql:31:1 42883 operatorTypeMismatch
 xid.sql:32:1 42883 operatorTypeMismatch

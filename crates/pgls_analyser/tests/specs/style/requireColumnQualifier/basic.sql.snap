@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireColumnQualifier
+select relid from pg_catalog.pg_statio_all_tables;
+
+```
+
+# Diagnostics
+lint/requireColumnQualifier ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column relid is not qualified with its table.
+  
+  i Without a table, the column is looked up in every relation of the query and of the queries around it, so a column with the same name in another relation can take its place.
+  
+  i Qualify the column with the name or alias of its table, e.g. t.relid.
