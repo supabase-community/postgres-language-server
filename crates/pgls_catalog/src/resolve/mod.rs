@@ -217,7 +217,8 @@ pub struct Resolution {
     /// The output of the statement's top-level query: of a SELECT, also with `INTO`, of the
     /// query of `CREATE VIEW` or `CREATE TABLE AS`, or of the RETURNING list of INSERT, UPDATE,
     /// DELETE or MERGE. `None` for other statements. The entries have their
-    /// [`TargetOutput::span`] if the statement text is known.
+    /// [`TargetOutput::span`] if the statement creates a relation from the output (a view,
+    /// `CREATE TABLE AS` or `SELECT INTO`) and its text is known.
     pub output: Option<QueryOutput>,
 }
 
@@ -417,7 +418,10 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         resolver.lookups = Some(Vec::new());
     }
     let mut output = nodes::resolve_statement(&mut resolver, params.stmt);
+    // Only the entries of a relation's columns need spans, and computing them scans the tokens
+    // of the statement.
     if params.sql.is_some()
+        && creates_relation(params.stmt)
         && let Some(output) = output.as_mut()
     {
         for target in &mut output.targets {
@@ -486,6 +490,19 @@ pub(crate) fn resolve_unknown_outputs(
         }
     }
     Some(columns)
+}
+
+/// Whether `stmt` creates a relation with the output columns of its query: a view,
+/// `CREATE TABLE AS` or `SELECT INTO`, whose `INTO` is on the left-most select of a set
+/// operation.
+fn creates_relation(stmt: &NodeEnum) -> bool {
+    match stmt {
+        NodeEnum::ViewStmt(_) | NodeEnum::CreateTableAsStmt(_) => true,
+        NodeEnum::SelectStmt(select) => {
+            column_name::leftmost_select(select).is_some_and(|select| select.into_clause.is_some())
+        }
+        _ => false,
+    }
 }
 
 /// Whether the statement kind can be checked against the database with `EXPLAIN`.
