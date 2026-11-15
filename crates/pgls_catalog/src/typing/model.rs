@@ -45,7 +45,7 @@ impl<T> Decision<T> {
 
 /// A candidate selection result.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Selection<T> {
+pub enum Selection<T> {
     Match(T),
     NoMatch,
     Ambiguous,
@@ -66,7 +66,7 @@ pub enum CoercionContext {
 
 /// A selected function and its resolved result type.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ResolvedFunction {
+pub struct ResolvedFunction {
     pub function: crate::FunctionInfo,
     pub result: Option<Type>,
     /// The type each argument of the call is coerced to, in the order of the call's arguments,
@@ -77,14 +77,14 @@ pub(crate) struct ResolvedFunction {
 
 /// A selected operator and its resolved result type.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ResolvedOperator {
+pub struct ResolvedOperator {
     pub operator: OperatorInfo,
     pub result: Option<Type>,
 }
 
 /// An argument supplied to a function call.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct CallArg {
+pub struct CallArg {
     pub ty: Option<Type>,
     pub name: Option<String>,
 }
