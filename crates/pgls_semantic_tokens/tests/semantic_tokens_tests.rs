@@ -14,6 +14,7 @@ const SETUP: &str = r#"
     create function amb(a int, b text) returns int language sql as 'select 1';
     create function amb(c text, d int) returns int language sql as 'select 1';
     create table "cafÉ" (größe int, "Ölstand" int);
+    create table customer_subscription_billing_cycle_adjustments_history_archive (id int);
 "#;
 
 struct Fixture {
@@ -22,13 +23,21 @@ struct Fixture {
 }
 
 async fn fixture(test_db: &PgPool) -> Fixture {
+    fixture_on(test_db, None).await
+}
+
+/// The fixture as if the server had the version `version_num`, like `180000`.
+async fn fixture_on(test_db: &PgPool, version_num: Option<i64>) -> Fixture {
     test_db
         .execute(SETUP)
         .await
         .expect("Failed to setup test database");
-    let snapshot = Snapshot::load(test_db)
+    let mut snapshot = Snapshot::load(test_db)
         .await
         .expect("Failed to load snapshot");
+    if version_num.is_some() {
+        snapshot.version.version_num = version_num;
+    }
     Fixture {
         search_path: snapshot.expand_search_path(&["public".to_string()]),
         catalog: Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot))))),
@@ -123,6 +132,22 @@ async fn ctes_and_aliases(test_db: PgPool) {
     assert_eq!(
         f.highlighted("select s.id from (select id from users) s"),
         "select [s:variable].[id:property] from (select [id:property] from [users:class]) s"
+    );
+}
+
+#[pgls_test_utils::db_test]
+async fn returning_old_and_new(test_db: PgPool) {
+    // `old` and `new` exist since Postgres 18, and the test database can be older.
+    let f = fixture_on(&test_db, Some(180000)).await;
+    assert_eq!(
+        f.highlighted("update users set name = 'x' returning old.name, new.name"),
+        "update [users:class] set name = 'x' \
+         returning [old:variable].[name:property], [new:variable].[name:property]"
+    );
+    assert_eq!(
+        f.highlighted("delete from users returning with (old as o) o.id"),
+        "delete from [users:class] returning with (old as [o:variable]) \
+         [o:variable].[id:property]"
     );
 }
 
@@ -289,6 +314,18 @@ async fn non_ascii_identifiers(test_db: PgPool) {
     assert_eq!(
         f.highlighted(r#"select CAFÉ.größe, "Ölstand" from CAFÉ"#),
         r#"select [CAFÉ:class].[größe:property], ["Ölstand":property] from [CAFÉ:class]"#
+    );
+}
+
+#[pgls_test_utils::db_test]
+async fn identifiers_longer_than_postgres_keeps(test_db: PgPool) {
+    let f = fixture(&test_db).await;
+    // Postgres truncates both names to 63 bytes, so they name the same table.
+    let long = "customer_subscription_billing_cycle_adjustments_history_archives";
+    let sql = format!("select {long}.id from {long}_v2");
+    assert_eq!(
+        f.highlighted(&sql),
+        format!("select [{long}:class].[id:property] from [{long}_v2:class]")
     );
 }
 

@@ -1,0 +1,5 @@
+-- The serial columns of CREATE TABLE and ALTER TABLE ... ADD COLUMN are not looked up.
+-- expect_no_diagnostics
+create table public.t (a serial, b "bigserial", c smallserial);
+alter table public.t add column d serial8;
+create foreign table public.ft (a serial) server s;

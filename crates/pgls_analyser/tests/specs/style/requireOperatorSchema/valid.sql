@@ -1,0 +1,6 @@
+-- Operators written with OPERATOR(schema.op), and expressions without operators.
+-- expect_no_diagnostics
+select * from pg_catalog.pg_stat_io where backend_type operator(pg_catalog.=) 'client backend';
+select * from pg_catalog.pg_class where relkind operator(pg_catalog.=) any (array['r', 'p']);
+select * from pg_catalog.pg_class where reltablespace is null and relispartition;
+select -1, 'a'::pg_catalog.text;

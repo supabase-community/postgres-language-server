@@ -1,0 +1,6 @@
+-- Qualified calls and the SQL syntax that Postgres turns into calls of pg_catalog functions.
+-- expect_no_diagnostics
+select pg_catalog.abs(1);
+select extract(year from pg_catalog.now()), position('a' in 'abc'), substring('abc' from 2);
+select overlay('abc' placing 'x' from 2), trim(both ' ' from ' a '), current_date, current_user;
+select coalesce(null, 1), nullif(1, 2), greatest(1, 2), least(1, 2);
