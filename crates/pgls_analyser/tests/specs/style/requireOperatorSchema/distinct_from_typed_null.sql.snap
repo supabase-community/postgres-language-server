@@ -1,0 +1,20 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- A NULL with a cast is not a bare NULL, so = is looked up.
+-- expect_lint/requireOperatorSchema
+select p.payload is distinct from null::pg_catalog.jsonb from public.payloads p;
+
+```
+
+# Diagnostics
+lint/requireOperatorSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × IS DISTINCT FROM uses the operator = without a schema.
+  
+  i Without a schema, the operator is resolved through the search_path: an operator with the same name earlier on the search_path, or one whose argument types match better, is used instead.
+  
+  i IS DISTINCT FROM has no schema-qualified form. Write the comparison with OPERATOR(pg_catalog.=) instead.

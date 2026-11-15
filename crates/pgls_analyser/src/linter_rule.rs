@@ -17,6 +17,10 @@ use crate::linter_context::LinterRuleContext;
 pub trait LinterRule: RuleMeta + Sized {
     type Options: Default + Clone + Debug;
 
+    /// Whether the rule reads [`LinterRuleContext::lookups`]. The lookups are collected by the
+    /// name resolution of each statement, only when an enabled rule reads them.
+    const READS_LOOKUPS: bool = false;
+
     /// Execute the rule on the given AST context
     fn run(rule_context: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic>;
 }
