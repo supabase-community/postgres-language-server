@@ -20,6 +20,10 @@ pub struct AnalysableStatement {
     /// Set when identifiers of the statement are client-side parameters, like psql's
     /// `:schema.table`. The parsed names are placeholders, so the statement isn't typechecked.
     pub has_identifier_parameters: bool,
+    /// Set when values of the statement are only known when it runs, like a goose `ENVSUB`
+    /// expansion in a string literal. The statement isn't typechecked, but unlike identifier
+    /// parameters, it still changes the catalog, so the statements after it are typechecked.
+    pub has_unknown_values: bool,
     /// Where the text of the statement is in the file, when it is embedded in another statement
     /// and its text is not the source text, like a function body with escaped quotes.
     pub offsets: OffsetMap,
@@ -33,6 +37,7 @@ impl AnalysableStatement {
             sql: None,
             function: None,
             has_identifier_parameters: false,
+            has_unknown_values: false,
             offsets: OffsetMap::default(),
         }
     }
@@ -80,6 +85,11 @@ impl AnalysableStatement {
 
     pub fn with_identifier_parameters(mut self, has_identifier_parameters: bool) -> Self {
         self.has_identifier_parameters = has_identifier_parameters;
+        self
+    }
+
+    pub fn with_unknown_values(mut self, has_unknown_values: bool) -> Self {
+        self.has_unknown_values = has_unknown_values;
         self
     }
 }

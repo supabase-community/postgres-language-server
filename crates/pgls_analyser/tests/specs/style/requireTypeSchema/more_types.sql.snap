@@ -1,0 +1,66 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/requireTypeSchema
+create table public.users (id uuid, name varchar(100));
+-- expect_lint/requireTypeSchema
+-- expect_lint/requireTypeSchema
+create function public.f(x jsonb) returns text language sql as 'select pg_catalog.jsonb_typeof(x)';
+-- expect_lint/requireTypeSchema
+select cast('{}' as jsonb);
+-- expect_lint/requireTypeSchema
+create domain public.email as citext;
+
+```
+
+# Diagnostics
+lint/requireTypeSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Type uuid is not schema-qualified.
+  
+  i Without a schema, the type is resolved through the search_path: a type with the same name in a schema earlier on the search_path is used instead.
+  
+  i Specify the schema, e.g. pg_catalog.uuid for a built-in type.
+  
+
+
+lint/requireTypeSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Type jsonb is not schema-qualified.
+  
+  i Without a schema, the type is resolved through the search_path: a type with the same name in a schema earlier on the search_path is used instead.
+  
+  i Specify the schema, e.g. pg_catalog.jsonb for a built-in type.
+  
+
+
+lint/requireTypeSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Type text is not schema-qualified.
+  
+  i Without a schema, the type is resolved through the search_path: a type with the same name in a schema earlier on the search_path is used instead.
+  
+  i Specify the schema, e.g. pg_catalog.text for a built-in type.
+  
+
+
+lint/requireTypeSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Type jsonb is not schema-qualified.
+  
+  i Without a schema, the type is resolved through the search_path: a type with the same name in a schema earlier on the search_path is used instead.
+  
+  i Specify the schema, e.g. pg_catalog.jsonb for a built-in type.
+  
+
+
+lint/requireTypeSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Type citext is not schema-qualified.
+  
+  i Without a schema, the type is resolved through the search_path: a type with the same name in a schema earlier on the search_path is used instead.
+  
+  i Specify the schema, e.g. pg_catalog.citext for a built-in type.

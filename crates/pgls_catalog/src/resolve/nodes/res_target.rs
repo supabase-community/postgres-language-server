@@ -367,7 +367,7 @@ fn check_generated_update(r: &mut Resolver, target: &Item, assignments: &[Node])
 ///
 /// [`transformReturningClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2661
 /// [`addNSItemForReturning`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2621
-fn add_old_and_new(r: &Resolver, options: &[Node], target: &Item, level: &mut Level) {
+fn add_old_and_new(r: &mut Resolver, options: &[Node], target: &Item, level: &mut Level) {
     if r.catalog.server_version_at_least(18) == Some(false) {
         return;
     }
@@ -375,9 +375,7 @@ fn add_old_and_new(r: &Resolver, options: &[Node], target: &Item, level: &mut Le
         options
             .iter()
             .find_map(|option| match option.node.as_ref() {
-                Some(NodeEnum::ReturningOption(option)) if option.option() == kind => {
-                    Some(option.value.as_str())
-                }
+                Some(NodeEnum::ReturningOption(option)) if option.option() == kind => Some(option),
                 _ => None,
             })
     };
@@ -387,7 +385,11 @@ fn add_old_and_new(r: &Resolver, options: &[Node], target: &Item, level: &mut Le
         (ReturningOptionKind::ReturningOptionNew, "new"),
     ] {
         let name = match explicit(kind) {
-            Some(name) => name,
+            Some(option) => {
+                // The location of an option is that of its `OLD` or `NEW`.
+                r.record_alias_name(option.location, &option.value);
+                option.value.as_str()
+            }
             // `refnameNamespaceItem` searches the outer queries too.
             None if level.item(default).is_none() && find_item(&r.levels, default).is_none() => {
                 default

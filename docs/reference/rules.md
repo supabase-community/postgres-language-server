@@ -104,8 +104,13 @@ Schema design preferences. Not enabled by the recommended preset.
 | [preferJsonb](./rules/prefer-jsonb.md) 🔧 | Prefer JSONB over JSON types. |
 | [preferTextField](./rules/prefer-text-field.md) 🔧 | Prefer using TEXT over VARCHAR(n) types. |
 | [preferTimestamptz](./rules/prefer-timestamptz.md) 🔧 | Prefer TIMESTAMPTZ over TIMESTAMP types. |
+| [requireColumnQualifier](./rules/require-column-qualifier.md) | Columns in queries should be qualified with their table. |
 | [requireEnumValueOrdering](./rules/require-enum-value-ordering.md) 🛠 | `ALTER TYPE ... ADD VALUE` without `BEFORE` or `AFTER` appends the value to the end of the enum. |
+| [requireFunctionSchema](./rules/require-function-schema.md) | Function calls should be schema-qualified. |
+| [requireOperatorSchema](./rules/require-operator-schema.md) | Operators should be schema-qualified. |
+| [requireRelationSchema](./rules/require-relation-schema.md) | Relations in queries should be schema-qualified. |
 | [requireTableSchema](./rules/require-table-schema.md) | Table names in DDL should be schema-qualified. |
+| [requireTypeSchema](./rules/require-type-schema.md) | Type names should be schema-qualified. |
 
 ## Typecheck
 

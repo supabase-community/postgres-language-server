@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use bpaf::Bpaf;
 use pgls_configuration_macros::{Merge, Partial};
+pub use pgls_migrations::MigrationTool;
 use serde::{Deserialize, Serialize};
 
 /// The configuration of the filesystem
@@ -14,15 +15,23 @@ pub struct MigrationsConfiguration {
     #[partial(bpaf(long("migrations-dir")))]
     pub migrations_dir: String,
 
-    /// Ignore any migrations before this timestamp
-    #[partial(bpaf(long("after")))]
-    pub after: u64,
+    /// Ignore the migrations up to this version, in the version format of the migration tool: a
+    /// number like `20250301120000`, or a string like `"0042"`. The version of a migration is the
+    /// number its file name starts with.
+    #[partial(bpaf(long("after"), argument("VERSION")))]
+    pub after: MigrationVersion,
 
-    /// The comments that split a migration file into up and down sections, which are analysed
-    /// as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose"
-    /// (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
-    #[partial(bpaf(long("section-markers")))]
-    pub section_markers: SectionMarkers,
+    /// The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none".
+    /// The marker comments of the tool split a migration file into up and down sections, which
+    /// are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate,
+    /// `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one
+    /// migration. Default: "none", every file is one migration.
+    #[partial(bpaf(long("migration-tool")))]
+    pub tool: Option<MigrationTool>,
+
+    /// Deprecated: use `tool`, which wins if both are set.
+    #[partial(bpaf(long("section-markers"), hide))]
+    pub section_markers: Option<MigrationTool>,
 
     /// If `false`, the down sections of migration files are not linted. Default: `true`.
     #[partial(bpaf(long("lint-down"), argument("true|false")))]
@@ -33,39 +42,67 @@ impl Default for MigrationsConfiguration {
     fn default() -> Self {
         Self {
             migrations_dir: String::new(),
-            after: 0,
-            section_markers: SectionMarkers::default(),
+            after: MigrationVersion::default(),
+            tool: None,
+            section_markers: None,
             lint_down: true,
         }
     }
 }
 
-/// The marker comments of a migration tool.
-#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[serde(rename_all = "camelCase")]
-pub enum SectionMarkers {
-    /// The whole file is one migration (default).
-    #[default]
-    None,
-    /// `-- migrate:up` and `-- migrate:down` of dbmate. `transaction:false` runs the section
-    /// without a transaction, but still as one query.
-    Dbmate,
-    /// `-- +goose Up` and `-- +goose Down` of goose. `-- +goose NO TRANSACTION` runs the file
-    /// without a transaction, statement by statement.
-    Goose,
+impl MigrationsConfiguration {
+    /// The migration tool, from `tool` or the deprecated `sectionMarkers`.
+    pub fn migration_tool(&self) -> MigrationTool {
+        self.tool.or(self.section_markers).unwrap_or_default()
+    }
 }
 
-impl FromStr for SectionMarkers {
+impl PartialMigrationsConfiguration {
+    /// The migration tool, from `tool` or the deprecated `sectionMarkers`.
+    pub fn migration_tool(&self) -> MigrationTool {
+        self.tool.or(self.section_markers).unwrap_or_default()
+    }
+}
+
+/// Like the `Merge` derive of an enum: the tool of the other configuration wins.
+impl crate::Merge for MigrationTool {
+    fn merge_with(&mut self, other: Self) {
+        *self = other;
+    }
+}
+
+/// The version of a migration, as the configuration writes it: a number, or a string that the
+/// migration tool reads in its own format.
+#[derive(Clone, Debug, Deserialize, Eq, Merge, PartialEq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(untagged)]
+pub enum MigrationVersion {
+    Number(u64),
+    Text(String),
+}
+
+impl Default for MigrationVersion {
+    fn default() -> Self {
+        Self::Number(0)
+    }
+}
+
+impl MigrationVersion {
+    /// The version as text, like a migration file writes it.
+    pub fn text(&self) -> String {
+        match self {
+            Self::Number(number) => number.to_string(),
+            Self::Text(text) => text.clone(),
+        }
+    }
+}
+
+impl FromStr for MigrationVersion {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "none" => Ok(Self::None),
-            "dbmate" => Ok(Self::Dbmate),
-            "goose" => Ok(Self::Goose),
-            _ => Err("Value not supported for SectionMarkers. Use 'none', 'dbmate' or 'goose'."),
-        }
+        Ok(s.parse()
+            .map_or_else(|_| Self::Text(s.to_string()), Self::Number))
     }
 }
 
@@ -74,25 +111,75 @@ mod tests {
     use super::*;
 
     #[test]
-    fn deserializes_section_markers() {
+    fn deserializes_the_tool() {
         let config: PartialMigrationsConfiguration =
-            serde_json::from_str(r#"{ "sectionMarkers": "goose", "lintDown": false }"#)
+            serde_json::from_str(r#"{ "tool": "goose", "lintDown": false }"#)
                 .expect("migrations configuration should deserialize");
-        assert_eq!(config.section_markers, Some(SectionMarkers::Goose));
+        assert_eq!(config.migration_tool(), MigrationTool::Goose);
         assert_eq!(config.lint_down, Some(false));
 
+        let config: PartialMigrationsConfiguration =
+            serde_json::from_str(r#"{ "tool": "supabase" }"#)
+                .expect("migrations configuration should deserialize");
+        assert_eq!(config.migration_tool(), MigrationTool::Supabase);
+
         let config = MigrationsConfiguration::from(PartialMigrationsConfiguration::default());
-        assert_eq!(config.section_markers, SectionMarkers::None);
+        assert_eq!(config.migration_tool(), MigrationTool::Plain);
         assert!(config.lint_down);
     }
 
     #[test]
-    fn rejects_unknown_section_markers() {
-        assert!(
-            serde_json::from_str::<PartialMigrationsConfiguration>(
-                r#"{ "sectionMarkers": "flyway" }"#
-            )
-            .is_err()
+    fn after_is_a_number_or_a_string() {
+        let after = |json: &str| {
+            serde_json::from_str::<PartialMigrationsConfiguration>(json)
+                .expect("migrations configuration should deserialize")
+                .after
+        };
+        assert_eq!(
+            after(r#"{ "after": 20250301120000 }"#),
+            Some(MigrationVersion::Number(20250301120000))
         );
+        assert_eq!(
+            after(r#"{ "after": "0042" }"#),
+            Some(MigrationVersion::Text("0042".into()))
+        );
+        assert_eq!(
+            "0042".parse::<MigrationVersion>(),
+            Ok(MigrationVersion::Number(42))
+        );
+        assert_eq!(
+            "v1".parse::<MigrationVersion>(),
+            Ok(MigrationVersion::Text("v1".into()))
+        );
+        assert!(
+            serde_json::from_str::<PartialMigrationsConfiguration>(r#"{ "after": -1 }"#).is_err()
+        );
+    }
+
+    #[test]
+    fn section_markers_still_select_the_tool() {
+        let config: PartialMigrationsConfiguration =
+            serde_json::from_str(r#"{ "sectionMarkers": "dbmate" }"#)
+                .expect("migrations configuration should deserialize");
+        assert_eq!(config.migration_tool(), MigrationTool::Dbmate);
+        assert_eq!(
+            MigrationsConfiguration::from(config).migration_tool(),
+            MigrationTool::Dbmate
+        );
+
+        let config: PartialMigrationsConfiguration =
+            serde_json::from_str(r#"{ "tool": "goose", "sectionMarkers": "dbmate" }"#)
+                .expect("migrations configuration should deserialize");
+        assert_eq!(config.migration_tool(), MigrationTool::Goose);
+    }
+
+    #[test]
+    fn rejects_unknown_tools() {
+        for config in [
+            r#"{ "tool": "flyway" }"#,
+            r#"{ "sectionMarkers": "flyway" }"#,
+        ] {
+            assert!(serde_json::from_str::<PartialMigrationsConfiguration>(config).is_err());
+        }
     }
 }

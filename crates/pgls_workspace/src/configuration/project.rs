@@ -72,6 +72,8 @@ pub enum ConfigurationNotice {
     },
     /// The configuration uses deprecated settings, with a description of each.
     DeprecatedSettings(Vec<String>),
+    /// The configuration has settings that can't apply as written, with a description of each.
+    InvalidSettings(Vec<String>),
     /// The connection string is invalid, so the database features are disabled.
     InvalidConnectionString(String),
 }
@@ -169,6 +171,10 @@ fn file_notices(loaded: &LoadedConfiguration) -> Vec<ConfigurationNotice> {
     let deprecations = loaded.configuration.deprecations();
     if !deprecations.is_empty() {
         notices.push(ConfigurationNotice::DeprecatedSettings(deprecations));
+    }
+    let problems = crate::settings::migrations_problems(&loaded.configuration);
+    if !problems.is_empty() {
+        notices.push(ConfigurationNotice::InvalidSettings(problems));
     }
     notices
 }
