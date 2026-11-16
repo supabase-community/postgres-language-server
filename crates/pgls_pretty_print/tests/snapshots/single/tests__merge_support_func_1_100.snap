@@ -1,0 +1,18 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/merge_support_func_1.sql
+---
+create function merge_sf_test()
+returns table (
+  action text,
+  id int
+)
+language sql
+begin atomic
+  merge into sf_target as t
+  using rule_merge1 as s
+  on s.a = t.id
+  when not matched by target then insert (filling[1], id) values (s.a, s.a)
+  returning merge_action() as action,
+    t.id;
+end;

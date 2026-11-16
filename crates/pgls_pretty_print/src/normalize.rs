@@ -22,7 +22,6 @@ pub fn normalize_ast(node: &mut NodeEnum) {
     clear_location(node);
     normalize_bool_expr_associativity(node);
     normalize_foreign_table_partbound(node);
-    normalize_merge_support_func(node);
     normalize_function_options(node);
 }
 
@@ -359,6 +358,9 @@ fn clear_location(node: &mut NodeEnum) {
             NodeMut::CtecycleClause(n) => {
                 (*n).location = 0;
             }
+            NodeMut::MergeSupportFunc(n) => {
+                (*n).location = 0;
+            }
             NodeMut::SubLink(n) => {
                 (*n).location = 0;
             }
@@ -496,157 +498,6 @@ fn normalize_foreign_table_partbound(node: &mut NodeEnum) {
             // Clear table_elts since partition columns come from parent
             base.table_elts.clear();
         }
-    }
-}
-
-/// Normalize MergeSupportFunc nodes.
-///
-/// MergeSupportFunc is an internal executor node that gets emitted as `mergesupport#<oid>`.
-/// When re-parsed, this becomes a ColumnRef. To match, we need to convert MergeSupportFunc
-/// in the original AST to the equivalent ColumnRef.
-fn normalize_merge_support_func(node: &mut NodeEnum) {
-    normalize_merge_support_func_recursive(node);
-}
-
-fn normalize_merge_support_func_recursive(node: &mut NodeEnum) {
-    // First check if this node itself is a MergeSupportFunc and replace it
-    if let NodeEnum::MergeSupportFunc(msf) = node {
-        let ident = format!("mergesupport#{}", msf.msftype);
-        *node = NodeEnum::ColumnRef(pgls_query::protobuf::ColumnRef {
-            fields: vec![pgls_query::protobuf::Node {
-                node: Some(NodeEnum::String(pgls_query::protobuf::String {
-                    sval: ident,
-                })),
-            }],
-            location: 0,
-        });
-        return;
-    }
-
-    // Manually handle types that can contain MergeSupportFunc
-    match node {
-        NodeEnum::SelectStmt(stmt) => {
-            process_node_list(&mut stmt.target_list);
-            process_node_list(&mut stmt.from_clause);
-            process_optional_boxed_node(&mut stmt.where_clause);
-            if let Some(ref mut wc) = stmt.with_clause {
-                wc.location = 0;
-                process_node_list(&mut wc.ctes);
-            }
-            // Handle set operations (UNION/INTERSECT/EXCEPT)
-            if let Some(ref mut larg) = stmt.larg {
-                process_select_stmt_box(larg.as_mut());
-            }
-            if let Some(ref mut rarg) = stmt.rarg {
-                process_select_stmt_box(rarg.as_mut());
-            }
-        }
-        NodeEnum::ResTarget(rt) => {
-            process_optional_boxed_node(&mut rt.val);
-        }
-        NodeEnum::CommonTableExpr(cte) => {
-            process_optional_boxed_node(&mut cte.ctequery);
-        }
-        NodeEnum::MergeStmt(stmt) => {
-            process_returning_clause(&mut stmt.returning_clause);
-            process_node_list(&mut stmt.merge_when_clauses);
-        }
-        NodeEnum::MergeWhenClause(mwc) => {
-            process_node_list(&mut mwc.target_list);
-            process_node_list(&mut mwc.values);
-            process_optional_boxed_node(&mut mwc.condition);
-        }
-        NodeEnum::UpdateStmt(stmt) => {
-            process_node_list(&mut stmt.target_list);
-            process_returning_clause(&mut stmt.returning_clause);
-        }
-        NodeEnum::InsertStmt(stmt) => {
-            process_returning_clause(&mut stmt.returning_clause);
-            process_optional_boxed_node(&mut stmt.select_stmt);
-            if let Some(ref mut wc) = stmt.with_clause {
-                process_node_list(&mut wc.ctes);
-            }
-        }
-        NodeEnum::DeleteStmt(stmt) => {
-            process_returning_clause(&mut stmt.returning_clause);
-        }
-        NodeEnum::CaseExpr(ce) => {
-            process_optional_boxed_node(&mut ce.arg);
-            process_node_list(&mut ce.args);
-            process_optional_boxed_node(&mut ce.defresult);
-        }
-        NodeEnum::CaseWhen(cw) => {
-            process_optional_boxed_node(&mut cw.expr);
-            process_optional_boxed_node(&mut cw.result);
-        }
-        NodeEnum::FuncCall(fc) => {
-            process_node_list(&mut fc.args);
-        }
-        NodeEnum::AExpr(expr) => {
-            process_optional_boxed_node(&mut expr.lexpr);
-            process_optional_boxed_node(&mut expr.rexpr);
-        }
-        NodeEnum::SubLink(sl) => {
-            process_optional_boxed_node(&mut sl.subselect);
-            process_optional_boxed_node(&mut sl.testexpr);
-        }
-        NodeEnum::RangeSubselect(rs) => {
-            process_optional_boxed_node(&mut rs.subquery);
-        }
-        NodeEnum::JoinExpr(je) => {
-            process_optional_boxed_node(&mut je.larg);
-            process_optional_boxed_node(&mut je.rarg);
-        }
-        NodeEnum::ViewStmt(vs) => {
-            process_optional_boxed_node(&mut vs.query);
-        }
-        NodeEnum::ExplainStmt(explain) => {
-            process_optional_boxed_node(&mut explain.query);
-        }
-        NodeEnum::WithClause(wc) => {
-            wc.location = 0;
-            process_node_list(&mut wc.ctes);
-        }
-        NodeEnum::CopyStmt(cs) => {
-            if let Some(query) = &mut cs.query
-                && let Some(n) = &mut query.node
-            {
-                normalize_merge_support_func_recursive(n);
-            }
-        }
-        _ => {}
-    }
-}
-
-fn process_node_list(list: &mut [pgls_query::protobuf::Node]) {
-    for node in list.iter_mut() {
-        if let Some(ref mut n) = node.node {
-            normalize_merge_support_func_recursive(n);
-        }
-    }
-}
-
-fn process_returning_clause(clause: &mut Option<pgls_query::protobuf::ReturningClause>) {
-    if let Some(clause) = clause {
-        process_node_list(&mut clause.exprs);
-    }
-}
-
-fn process_optional_boxed_node(opt: &mut Option<Box<pgls_query::protobuf::Node>>) {
-    if let Some(node) = opt
-        && let Some(n) = &mut node.node
-    {
-        normalize_merge_support_func_recursive(n);
-    }
-}
-
-fn process_select_stmt_box(stmt: &mut pgls_query::protobuf::SelectStmt) {
-    // Recursively process the SelectStmt
-    let inner = std::mem::take(stmt);
-    let mut node_enum = NodeEnum::SelectStmt(Box::new(inner));
-    normalize_merge_support_func_recursive(&mut node_enum);
-    if let NodeEnum::SelectStmt(updated) = node_enum {
-        *stmt = *updated;
     }
 }
 

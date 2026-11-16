@@ -118,7 +118,6 @@ fn known_exceptions() -> HashSet<&'static str> {
         "Var",                 // variable reference - planner node (ColumnRef is parser)
         "WindowFunc",          // window function - planner node (FuncCall is parser)
         // ===== Handled in separate normalization functions =====
-        "MergeSupportFunc", // handled in normalize_merge_support_func
         "SqlValueFunction", // handled in normalize_sql_value_function
         // ===== Handled via parent node =====
         "JsonFormat",          // handled via JsonFuncExpr, JsonArrayConstructor, etc.
