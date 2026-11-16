@@ -29,8 +29,8 @@ mod tree;
 mod walk;
 
 pub(crate) use budget::CacheBudget;
-pub(crate) use parse::ParseResult;
 use parse::PgQueryStore;
+pub(crate) use parse::{ParseResult, parse_statement};
 use tree::TreeSitterStore;
 pub(crate) use walk::{ContentChange, MigrationContext, ResolvedStatement, WalkCache};
 

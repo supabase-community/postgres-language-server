@@ -22,6 +22,28 @@ use crate::error::*;
 /// assert_eq!(result, Err(pgls_query::Error::Split(err.to_string())));
 /// ```
 pub fn split_with_parser(query: &str) -> Result<Vec<&str>> {
+    split_ranges_with_parser(query)?
+        .into_iter()
+        .map(|range| {
+            // not sure the range'll hold up for non-utf8 charsets
+            query.get(range).ok_or_else(|| {
+                Error::Split("a statement does not start or end at a character boundary".into())
+            })
+        })
+        .collect()
+}
+
+/// The byte ranges of the statements of a well-formed query, like [`split_with_parser`]: from the
+/// first token of a statement to its `;`, without it, or to the end of the query for the last
+/// statement without a `;`. Comments before a statement are not in its range, those before its
+/// `;` are.
+///
+/// ```rust
+/// let query = "select 1; -- one\nselect 2 ;";
+/// let ranges = pgls_query::split_ranges_with_parser(query).unwrap();
+/// assert_eq!(ranges, vec![0..8, 17..26]);
+/// ```
+pub fn split_ranges_with_parser(query: &str) -> Result<Vec<std::ops::Range<usize>>> {
     let input = CString::new(query)?;
     let result = unsafe { pg_query_split_with_parser(input.as_ptr()) };
     let split_result = if !result.error.is_null() {
@@ -31,15 +53,13 @@ pub fn split_with_parser(query: &str) -> Result<Vec<&str>> {
         Err(Error::Split(message))
     } else {
         let n_stmts = result.n_stmts as usize;
-        let mut statements = Vec::with_capacity(n_stmts);
+        let mut ranges = Vec::with_capacity(n_stmts);
         for offset in 0..n_stmts {
             let split_stmt = unsafe { *result.stmts.add(offset).read() };
             let start = split_stmt.stmt_location as usize;
-            let end = start + split_stmt.stmt_len as usize;
-            statements.push(&query[start..end]);
-            // not sure the start..end slice'll hold up for non-utf8 charsets
+            ranges.push(start..start + split_stmt.stmt_len as usize);
         }
-        Ok(statements)
+        Ok(ranges)
     };
     unsafe { pg_query_free_split_result(result) };
     split_result

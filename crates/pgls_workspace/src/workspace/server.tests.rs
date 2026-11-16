@@ -1775,6 +1775,11 @@ async fn test_format_keeps_sql_function_body_intact() {
 }
 
 fn format_content(content: &str) -> String {
+    format_range(content, None)
+}
+
+/// Formats the statements of `content` that intersect `range`, or all of them.
+fn format_range(content: &str, range: Option<TextRange>) -> String {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
         format: Some(PartialFormatConfiguration {
@@ -1801,10 +1806,103 @@ fn format_content(content: &str) -> String {
         .pull_file_formatting(PullFileFormattingParams {
             project_key,
             path,
-            range: None,
+            range,
         })
         .expect("Unable to pull formatting")
         .formatted
+}
+
+/// The normalized statements of `sql`, which parses as a whole.
+fn parsed_statements(sql: &str) -> Vec<pgls_query::NodeEnum> {
+    pgls_query::parse(sql)
+        .expect("parses")
+        .protobuf
+        .stmts
+        .into_iter()
+        .filter_map(|raw| raw.stmt.and_then(|stmt| stmt.node))
+        .map(|mut stmt| {
+            pgls_pretty_print::normalize_ast(&mut stmt);
+            stmt
+        })
+        .collect()
+}
+
+/// The splitter ends the `CREATE SCHEMA` before the `CREATE TABLE`, which would format the table
+/// outside of the schema. The file parses, so the formatter takes the statements of the parser.
+#[tokio::test]
+async fn test_format_keeps_schema_elements_in_the_schema() {
+    let content = "CREATE SCHEMA s CREATE TABLE t (a int);\nSELECT   1;\n";
+    let formatted = format_content(content);
+
+    assert_eq!(
+        parsed_statements(&formatted),
+        parsed_statements(content),
+        "{formatted}"
+    );
+}
+
+/// The splitter ends the `COPY` before `WITH (`.
+#[tokio::test]
+async fn test_format_statement_that_the_splitter_cuts_as_one() {
+    let content = "SELECT   1;\nCOPY t TO stdout WITH (FORMAT csv);\nSELECT   2;\n";
+    let formatted = format_content(content);
+
+    assert_eq!(
+        formatted,
+        "select 1;\ncopy t to stdout with (format 'csv');\nselect 2;\n"
+    );
+    assert_eq!(parsed_statements(&formatted), parsed_statements(content));
+}
+
+/// The splitter ends the function before the `END` of its `BEGIN ATOMIC` body, whose statement
+/// is formatted on its own.
+#[tokio::test]
+async fn test_format_sql_function_body_of_a_statement_that_the_splitter_cuts() {
+    let content = "CREATE FUNCTION f(x int) RETURNS boolean LANGUAGE SQL\nBEGIN ATOMIC\n    SELECT   x  >  0;\nEND;\n";
+    let formatted = format_content(content);
+
+    assert_eq!(
+        formatted,
+        "create function f(x int)\nreturns boolean\nlanguage sql\nbegin atomic\n  select x > 0;\nend;\n"
+    );
+    assert_eq!(parsed_statements(&formatted), parsed_statements(content));
+}
+
+/// A file that doesn't parse as a whole is formatted by the statements of the splitter.
+#[tokio::test]
+async fn test_format_file_that_does_not_parse() {
+    assert_eq!(
+        format_content("SELECT   1;\nselect from where;\nSELECT   2;\n"),
+        "select 1;\nselect from where;\nselect 2;\n"
+    );
+    assert_eq!(
+        format_content("SELECT   1;\n\\set x 1\nSELECT   2;\n"),
+        "select 1;\n\\set x 1\nselect 2;\n"
+    );
+}
+
+#[tokio::test]
+async fn test_format_keeps_comments_around_the_statements_of_the_parser() {
+    let content = "-- header\n/* before */ CREATE SCHEMA s CREATE TABLE t (a int); -- after\n\n-- between\nSELECT   1 -- before the semicolon\n;\nselect   2 -- at the end\n";
+    let formatted = format_content(content);
+
+    assert_eq!(
+        formatted,
+        "-- header\n/* before */ create schema s create table t (a int); -- after\n\n-- between\nselect\n  1 -- before the semicolon\n;\nselect 2; -- at the end\n"
+    );
+}
+
+#[tokio::test]
+async fn test_format_range_with_the_statements_of_the_parser() {
+    let content = "SELECT   1;\nCOPY t TO stdout WITH (FORMAT csv);\nSELECT   2;\n";
+    // In the part of the `COPY` that the splitter cuts off.
+    let start = TextSize::try_from(content.find("WITH").unwrap()).unwrap();
+    let formatted = format_range(content, Some(TextRange::at(start, TextSize::from(4))));
+
+    assert_eq!(
+        formatted,
+        "SELECT   1;\ncopy t to stdout with (format 'csv');\nSELECT   2;\n"
+    );
 }
 
 #[tokio::test]

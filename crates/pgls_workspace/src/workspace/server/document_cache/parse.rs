@@ -128,15 +128,7 @@ impl PgQueryStore {
             return existing.clone();
         }
 
-        let r = Arc::new(
-            pgls_query::parse(&convert_to_positional_params(statement.content()))
-                .map_err(SyntaxDiagnostic::from)
-                .and_then(|ast| {
-                    ast.into_root().map(Arc::new).ok_or_else(|| {
-                        SyntaxDiagnostic::new("No root node found in parse result", None)
-                    })
-                }),
-        );
+        let r = Arc::new(parse_statement(statement.content()));
         if may_insert() {
             cache.insert(statement.clone(), r.clone());
         }
@@ -186,6 +178,17 @@ impl PgQueryStore {
 
         Some(r)
     }
+}
+
+/// The tree of the statement `sql`, or why it doesn't parse.
+pub fn parse_statement(sql: &str) -> ParseResult {
+    pgls_query::parse(&convert_to_positional_params(sql))
+        .map_err(SyntaxDiagnostic::from)
+        .and_then(|ast| {
+            ast.into_root()
+                .map(Arc::new)
+                .ok_or_else(|| SyntaxDiagnostic::new("No root node found in parse result", None))
+        })
 }
 
 #[expect(

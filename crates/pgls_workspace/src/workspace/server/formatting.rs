@@ -1,16 +1,18 @@
 //! Formatting of a document. Each statement is printed on its own, and the text between the
 //! statements is kept, since the parser drops comments.
 
-use std::{collections::HashMap, sync::Arc};
+use std::{ops::Range, sync::Arc};
 
 use pgls_analyser::STOP_CHECK_INTERVAL;
 use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
+use pgls_lexer::SyntaxKind;
 use pgls_pretty_print::FormatConfig;
-use pgls_text_size::TextRange;
+use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::sql_function_body};
+use pgls_text_size::{TextRange, TextSize};
 
 use super::{
-    StatementId,
     document::{Document, FormatStatementMapper},
+    document_cache::parse_statement,
     sql_function,
 };
 use crate::{
@@ -66,76 +68,82 @@ pub(super) fn format_document(
     let mut statements = Vec::new();
     let mut formatted_output = String::new();
 
-    let mut format_candidates = Vec::new();
-    for candidate in doc.iter(FormatStatementMapper) {
+    let mut split_statements: Vec<FormatStatement> = Vec::new();
+    for (id, stmt_range, text, ast) in doc.iter(FormatStatementMapper) {
         if stops() {
             return None;
         }
-        format_candidates.push(candidate);
-    }
-    let mut formatted_sql_fn_bodies = HashMap::new();
-
-    // Only format SQL function bodies if skip_fn_bodies is false. A body with several
-    // statements is left as written.
-    if !settings.skip_fn_bodies {
-        let mut statements_per_body: HashMap<StatementId, usize> = HashMap::new();
-        for (id, ..) in &format_candidates {
-            if let Some(parent_id) = id.parent() {
-                *statements_per_body.entry(parent_id).or_default() += 1;
+        // The statements of a SQL function body follow the function.
+        if id.is_child() {
+            if let Some(function) = split_statements.last_mut() {
+                function.body.push((text, ast));
             }
+            continue;
         }
-        for (id, _stmt_range, text, ast_result) in &format_candidates {
-            if !id.is_child() {
-                continue;
-            }
-
-            let Some(parent_id) = id.parent() else {
-                continue;
-            };
-
-            if statements_per_body.get(&parent_id) != Some(&1) {
-                continue;
-            }
-            if stops() {
-                return None;
-            }
-
-            let Ok(ast) = ast_result else {
-                continue;
-            };
-
-            let Ok(result) = pgls_pretty_print::format_statement(ast, text, &config) else {
-                continue;
-            };
-
-            let Some(formatted) = restore_named_parameters(text, &result.formatted, ast) else {
-                continue;
-            };
-
-            formatted_sql_fn_bodies.insert(parent_id, formatted);
-        }
+        split_statements.push(FormatStatement {
+            range: stmt_range,
+            text,
+            ast,
+            body: Vec::new(),
+        });
     }
+
+    let source = doc.get_document_content();
+
+    // The splitter guesses the boundaries of the statements, so that it can deal with SQL that is
+    // being written. When the file parses as a whole, the parser knows them.
+    let format_statements = match parser_statement_ranges(doc.text(), source) {
+        Some(ranges) => {
+            // Most statements are those of the splitter, whose trees are cached.
+            let mut split_statements = split_statements.into_iter().peekable();
+            let mut statements = Vec::with_capacity(ranges.len());
+            for (stmt_range, text) in ranges {
+                if stops() {
+                    return None;
+                }
+                while split_statements
+                    .next_if(|stmt| stmt.range.start() < stmt_range.start())
+                    .is_some()
+                {}
+                statements.push(
+                    split_statements
+                        .next_if(|stmt| stmt.range == stmt_range)
+                        .unwrap_or_else(|| FormatStatement::parse(stmt_range, text)),
+                );
+            }
+            statements
+        }
+        None => split_statements,
+    };
 
     // Reconstruct the file by replacing each statement's source span with its
     // formatted output while copying the gaps between statements (whitespace and
     // standalone comments) verbatim. libpg_query drops comments from the AST, so
     // anything that lives outside a statement's range would otherwise be lost.
-    let source = doc.get_document_content();
     let mut last_end = 0usize;
 
     // Formatting a range leaves everything outside its statements as written.
     let collapses_blank_lines = range.is_none();
 
-    for (id, stmt_range, text, ast_result) in format_candidates {
-        if id.is_child() {
-            continue;
-        }
+    for FormatStatement {
+        range: stmt_range,
+        text,
+        ast: ast_result,
+        body,
+    } in format_statements
+    {
         if stops() {
             return None;
         }
 
         let stmt_start = usize::from(stmt_range.start());
         let stmt_end = usize::from(stmt_range.end());
+        debug_assert!(
+            last_end <= stmt_start
+                && source.is_char_boundary(stmt_start)
+                && source.is_char_boundary(stmt_end),
+            "statement {stmt_range:?} overlaps the one before it or isn't at character boundaries"
+        );
 
         // Preserve the standalone comments that precede this statement, with at most one
         // blank line between statements and none before the first.
@@ -164,11 +172,16 @@ pub(super) fn format_document(
         match ast_result {
             Ok(ast) => {
                 let mut ast = ast;
-                if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
+                // A SQL function body with several statements is left as written.
+                if let [(body_text, Ok(body_ast))] = body.as_slice()
+                    && !settings.skip_fn_bodies
+                    && let Some(formatted_sql_fn_body) =
+                        format_sql_fn_body(body_text, body_ast, &config)
+                {
                     // Copies the tree only for the functions whose body is replaced.
                     sql_function::set_formatted_sql_fn_body(
                         Arc::make_mut(&mut ast),
-                        formatted_sql_fn_body,
+                        &formatted_sql_fn_body,
                     );
                 }
 
@@ -245,6 +258,111 @@ pub(super) fn format_document(
         statements,
         diagnostics,
     })
+}
+
+/// A top-level statement to format.
+struct FormatStatement {
+    range: TextRange,
+    text: String,
+    ast: Result<Arc<pgls_query::NodeEnum>, SyntaxDiagnostic>,
+    /// The text and tree of each statement of its SQL function body.
+    body: Vec<(String, Result<Arc<pgls_query::NodeEnum>, SyntaxDiagnostic>)>,
+}
+
+impl FormatStatement {
+    /// Parses the statement `text` at `range`, which the splitter does not have, so its tree
+    /// isn't cached.
+    fn parse(range: TextRange, text: &str) -> Self {
+        let ast = parse_statement(text).map_err(|diag| diag.span(range));
+        let body = match &ast {
+            Ok(ast) => sql_function_body(ast, text)
+                .into_iter()
+                .map(|embedded| {
+                    let ast = parse_statement(&embedded.sql);
+                    (embedded.sql, ast)
+                })
+                .collect(),
+            Err(_) => Vec::new(),
+        };
+        Self {
+            range,
+            text: text.to_string(),
+            ast,
+            body,
+        }
+    }
+}
+
+/// The formatted body of a SQL function with the single statement `text`, or `None` if it can't
+/// be formatted.
+fn format_sql_fn_body(
+    text: &str,
+    ast: &pgls_query::NodeEnum,
+    config: &FormatConfig,
+) -> Option<String> {
+    let result = pgls_pretty_print::format_statement(ast, text, config).ok()?;
+    restore_named_parameters(text, &result.formatted, ast)
+}
+
+/// The range and text of each top-level statement of `text`, as the parser finds them, or `None`
+/// if `text` does not parse as a whole, e.g. because of a syntax error or a psql meta-command.
+/// The ranges are those the splitter would have: from the first token of the statement to its
+/// `;`. `source` is the content of the document, of which `text` replaces the placeholders of
+/// the migration tool.
+///
+/// The splitter can cut a statement in the wrong place, e.g. `CREATE SCHEMA s CREATE TABLE t (a
+/// int);` before the second `CREATE`, and formatting the parts on their own would change what
+/// the file means.
+///
+/// Costs one parse of the file, without building its tree, about TODO_COST.
+fn parser_statement_ranges<'a>(text: &'a str, source: &str) -> Option<Vec<(TextRange, &'a str)>> {
+    let converted = pgls_lexer::convert_to_positional_params(text);
+    // Named parameters are replaced in place, so the offsets are those of `text`.
+    debug_assert_eq!(converted.len(), text.len());
+    if converted.len() != text.len() {
+        return None;
+    }
+    let ranges = pgls_query::split_ranges_with_parser(&converted).ok()?;
+
+    let mut statements: Vec<(TextRange, &str)> = Vec::with_capacity(ranges.len());
+    for range in ranges {
+        let range = statement_range(text, range)?;
+        let stmt_range = Range::<usize>::from(range);
+        // The text between the statements is copied from `source`.
+        if !source.is_char_boundary(stmt_range.start) || !source.is_char_boundary(stmt_range.end) {
+            debug_assert!(false, "statement {range:?} isn't at character boundaries");
+            return None;
+        }
+        debug_assert!(
+            statements
+                .last()
+                .is_none_or(|(last, _)| last.end() <= range.start()),
+            "statement {range:?} overlaps the one before it"
+        );
+        statements.push((range, text.get(stmt_range)?));
+    }
+    Some(statements)
+}
+
+/// The range of the statement at `range` of `text`, as the parser reports it, with its `;`. The
+/// last statement without a `;` ends at its last token, before the comments after it.
+fn statement_range(text: &str, range: Range<usize>) -> Option<TextRange> {
+    let stmt = text.get(range.clone())?;
+    let end = if text.get(range.end..)?.starts_with(';') {
+        range.end + 1
+    } else {
+        let lexed = pgls_lexer::lex(stmt);
+        let last = (0..lexed.len()).rev().find(|&idx| {
+            let kind = lexed.kind(idx);
+            kind != SyntaxKind::EOF && !kind.is_trivia()
+        })?;
+        range.start + usize::from(lexed.range(last).end())
+    };
+    debug_assert!(text.is_char_boundary(end));
+    Some(TextRange::new(
+        TextSize::try_from(range.start).ok()?,
+        TextSize::try_from(end).ok()?,
+    ))
 }
 
 /// Keeps at most one blank line in `text`, which only holds whitespace and comments.
