@@ -187,6 +187,16 @@ impl<'a> Splitter<'a> {
         pos.map_or(SyntaxKind::EOF, |pos| self.lexed.kind(pos))
     }
 
+    /// The `n`th token after the current one (`n` starts at 1), ignoring trivia, or EOF after
+    /// the end. Looks at most `n` tokens ahead, so it costs no more than [`look_ahead`] for a
+    /// constant `n`.
+    fn nth(&self, n: usize) -> SyntaxKind {
+        (self.current_pos + 1..self.lexed.len())
+            .filter(|&idx| !self.is_trivia(idx))
+            .nth(n.saturating_sub(1))
+            .map_or(SyntaxKind::EOF, |pos| self.lexed.kind(pos))
+    }
+
     /// Returns `None` if there are no previous relevant tokens
     fn look_back(&self, ignore_trivia: bool) -> Option<SyntaxKind> {
         if ignore_trivia {

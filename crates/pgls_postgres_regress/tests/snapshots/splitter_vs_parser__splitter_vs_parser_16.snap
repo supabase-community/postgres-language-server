@@ -2,50 +2,10 @@
 source: crates/pgls_postgres_regress/tests/splitter_vs_parser.rs
 expression: report(&version)
 ---
-REL_16_15: 41303 statements, 565 not checked because no text up to a `;` parses, 11 mismatches
-23 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
-
-copy.sql:210:1: the parser reads 210:1-210:52, the splitter 210:1-210:31, 210:32-323:22
-  210:1    copy header_copytest to stdout
-  210:32   with (header match); copy header_copytest from stdin with (header wrong_choice);…
-
-copy2.sql:126:1: the parser reads 126:1-126:52, the splitter 126:1-126:18, 126:19-614:55
-  126:1    COPY x from stdin
-  126:19   WITH DELIMITER AS ';' NULL AS ''; COPY x from stdin WITH DELIMITER AS ':' NULL A…
-
-drop_if_exists.sql:302:1: the parser reads 302:1-302:49, the splitter 302:1-302:35, 302:36-304:59
-  302:1    drop database test_database_exists
-  302:36   with (force); drop database if exists test_database_exists (force); drop databas…
-
-guc.sql:186:1: the parser reads 186:1-186:43, the splitter 186:1-186:19, 186:20-355:31
-  186:1    DECLARE foo CURSOR
-  186:20   WITH HOLD FOR SELECT 1; PREPARE foo AS SELECT 1; LISTEN foo_event; SET vacuum_co…
-
-limit.sql:74:1: the parser reads 74:1-74:87, the splitter 74:1-74:76, 74:77-202:48
-  74:1     declare c5 cursor for select * from int8_tbl order by q1 fetch first 2 rows
-  74:77    with ties; fetch all in c5; fetch 1 in c5; fetch backward 1 in c5; fetch backwar…
-
-matview.sql:96:1: the parser reads 96:1-96:65, the splitter 96:1-96:51, 96:52-314:40
-  96:1     REFRESH MATERIALIZED VIEW CONCURRENTLY mvtest_tvmm
-  96:52    WITH NO DATA; -- no tuple locks on materialized views SELECT * FROM mvtest_tvvm …
+REL_16_15: 43634 statements, 568 not checked because no text up to a `;` parses, 1 mismatches
+15 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
 
 namespace.sql:9:1: the parser reads 9:1-18:10, the splitter 9:1-10:48, 12:8-13:49, 15:8-18:10
   9:1      CREATE SCHEMA test_ns_schema_1 CREATE UNIQUE INDEX abc_a_idx ON abc (a)
   12:8     CREATE VIEW abc_view AS SELECT a+1 AS a, b+1 AS b FROM abc
   15:8     CREATE TABLE abc ( a serial, b int UNIQUE );
-
-portals.sql:214:1: the parser reads 214:1-214:63, the splitter 214:1-214:28, 214:29-607:33
-  214:1    DECLARE foo25 SCROLL CURSOR
-  214:29   WITH HOLD FOR SELECT * FROM tenk2; FETCH FROM foo25; FETCH FROM foo25; COMMIT; F…
-
-rowsecurity.sql:239:1: the parser reads 239:1-239:26, the splitter 239:1-239:19, 239:20-2326:61
-  239:1    COPY t1 FROM stdin
-  239:20   WITH ; CREATE TABLE t2 (c float) INHERITS (t1); GRANT ALL ON t2 TO public; COPY …
-
-sqljson.sql:346:1: the parser reads 346:1-357:15, the splitter 346:1-355:12, 355:13-462:19
-  346:1    SELECT js, js IS JSON "IS JSON", js IS NOT JSON "IS NOT JSON", js IS JSON VALUE …
-  355:13   WITH UNIQUE KEYS "WITH UNIQUE" FROM test_is_json; SELECT js, js IS JSON "IS JSON…
-
-xmlmap.sql:37:1: the parser reads 37:1-37:81, the splitter 37:1-37:18, 37:19-63:60
-  37:1     DECLARE xc CURSOR
-  37:19    WITH HOLD FOR SELECT * FROM testxmlschema.test1 ORDER BY 1, 2; SELECT cursor_to_…
