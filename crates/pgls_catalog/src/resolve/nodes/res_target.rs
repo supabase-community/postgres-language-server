@@ -70,33 +70,25 @@ pub(super) fn select_list_output(r: &Resolver, targets: &[Node]) -> QueryOutput 
 /// The columns that `*` (an empty `qualifier`) or `t.*` expands to in `level`, and whether the
 /// types of some of them are missing.
 fn star_output(level: &Level, qualifier: &[String]) -> Option<(Vec<TypedColumn>, bool)> {
-    let (names, typed) = match qualifier {
-        [] => (level.star_columns()?, level.star_typed_columns()),
+    let (mut columns, types_known) = match qualifier {
+        [] => level.star_columns()?,
         // PR 3: `t.*` is read three ways. Here it's an item of the innermost level only. The
         // types used to be read with `qualifier.last()` and a fallback to the whole `*`, which
         // gives the same columns whenever the names are known. `record_star_references` looks
         // the item up in every level.
         [name] => {
             let item = level.item(name)?;
-            (item.columns.clone()?, item.typed_columns.clone())
+            (item.columns.clone()?, item.types_known)
         }
         // PR 3: `s.t.*` makes the columns of the entry, and so of the whole list, unknown.
         _ => return None,
     };
-    let typed = typed.unwrap_or_default();
-    let types_missing = typed.len() != names.len();
-    let columns = names
-        .into_iter()
-        .enumerate()
-        .map(|(i, name)| TypedColumn {
-            name,
-            ty: if types_missing {
-                None
-            } else {
-                typed.get(i).and_then(|column| column.ty.clone())
-            },
-        })
-        .collect();
+    let types_missing = !types_known && !columns.is_empty();
+    if types_missing {
+        for column in &mut columns {
+            column.ty = None;
+        }
+    }
     Some((columns, types_missing))
 }
 
@@ -217,7 +209,7 @@ fn star_columns(level: &Level, output: &[TypedColumn]) -> Option<Vec<StarColumn>
                         .columns
                         .as_ref()?
                         .iter()
-                        .filter(|column| column == name)
+                        .filter(|column| column.name == *name)
                         .count()
                         != 1
                 {
@@ -237,20 +229,20 @@ fn star_columns(level: &Level, output: &[TypedColumn]) -> Option<Vec<StarColumn>
 /// The columns of `item`, qualified with `qualifier`. `None` if they are not known, or if two
 /// have the same name, which then doesn't reference either.
 fn item_columns(item: &Item, qualifier: &[String]) -> Option<Vec<StarColumn>> {
-    let names = item.columns.as_ref()?;
-    if names
+    let columns = item.columns.as_ref()?;
+    if columns
         .iter()
         .enumerate()
-        .any(|(i, name)| names[..i].contains(name))
+        .any(|(i, column)| columns[..i].iter().any(|other| other.name == column.name))
     {
         return None;
     }
     Some(
-        names
+        columns
             .iter()
-            .map(|name| StarColumn {
+            .map(|column| StarColumn {
                 qualifier: qualifier.to_vec(),
-                name: name.clone(),
+                name: column.name.clone(),
             })
             .collect(),
     )

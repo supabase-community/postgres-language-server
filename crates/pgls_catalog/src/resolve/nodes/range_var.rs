@@ -5,10 +5,7 @@ use std::rc::Rc;
 use pgls_query::protobuf::RangeVar;
 use pgls_query_ext::utils::range_var_name;
 
-use super::{
-    Resolver,
-    alias::{apply_alias, apply_typed_alias},
-};
+use super::{Resolver, alias::apply_alias};
 use crate::lookup::{Lookup, RelationKind};
 use crate::resolve::{
     ColumnSource, FindingKind, Reference,
@@ -44,18 +41,18 @@ pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
         let mut item = Item::named(
             Some(ref_name(n).to_owned()),
             apply_alias(cte.columns.clone(), alias),
+            cte.types_known,
         );
-        item.typed_columns = apply_typed_alias(cte.typed_columns.clone(), alias);
         if r.collects_references()
-            && let Some(names) = &cte.columns
+            && let Some(columns) = &cte.columns
         {
             item.source = Some(Rc::new(ItemSource::derived(
                 r,
                 ColumnSource::Cte {
                     name: cte.name.clone(),
                 },
-                names,
-                cte.typed_columns.as_deref(),
+                columns,
+                cte.types_known,
             )));
         }
         return item;
@@ -74,8 +71,8 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
     Item {
         name: Some(ref_name(n).to_owned()),
         schema: relation.schema.filter(|_| alias.is_none()),
+        types_known: relation.columns.is_some(),
         columns: apply_alias(relation.columns, alias),
-        typed_columns: apply_typed_alias(relation.typed_columns, alias),
         has_system_columns: relation.has_system_columns,
         default_only_columns: relation.default_only_columns,
         source: relation.source,
@@ -87,7 +84,6 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
 pub(super) struct ResolvedRelation {
     pub schema: Option<String>,
     pub columns: Columns,
-    pub typed_columns: Option<Vec<crate::typing::TypedColumn>>,
     pub has_system_columns: bool,
     /// The columns of a table that INSERT and UPDATE can only set to `DEFAULT`.
     pub default_only_columns: Vec<(String, DefaultOnly)>,
@@ -151,10 +147,6 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
             ResolvedRelation {
                 schema: Some(relation.schema),
                 columns: relation
-                    .columns
-                    .as_ref()
-                    .map(|columns| columns.iter().map(|column| column.name.clone()).collect()),
-                typed_columns: relation
                     .columns
                     .map(|columns| columns.into_iter().map(Into::into).collect()),
                 has_system_columns: relation.kind != RelationKind::View,

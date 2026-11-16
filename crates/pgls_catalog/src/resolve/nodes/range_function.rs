@@ -6,13 +6,13 @@ use pgls_query_ext::utils::{QualifiedName, qualified_name, string_value, string_
 
 use super::{
     Resolver,
-    alias::{apply_alias, apply_typed_alias},
+    alias::{apply_alias, rename},
     func_call::resolve_func_call,
     record_unresolved_node, resolve_node,
 };
 use crate::resolve::{
     expr::call_args,
-    scope::{Columns, Item, Level},
+    scope::{Item, Level, combine_columns},
     utils::{named, row_columns},
 };
 use crate::{
@@ -35,7 +35,9 @@ pub(super) fn resolve_range_function(
     }
     r.enter_level(preceding.clone());
 
-    let mut columns: Columns = Some(Vec::new());
+    // The names of the columns, from the return columns that all overloads agree on and the
+    // column definitions.
+    let mut columns: Option<Vec<String>> = Some(Vec::new());
     let mut function_name = None;
     for entry in &n.functions {
         // Each entry is a list of the function call and its column definitions.
@@ -99,6 +101,8 @@ pub(super) fn resolve_range_function(
     {
         columns.push("ordinality".into());
     }
+    // The function is selected outside the FROM items before it, so a LATERAL argument has no
+    // type there.
     let mut typed_columns = typed_return_columns(r, n);
     if n.ordinality
         && let Some(columns) = typed_columns.as_mut()
@@ -109,20 +113,19 @@ pub(super) fn resolve_range_function(
         });
     }
 
-    // When the overloads disagree on their columns, the selected one decides.
-    if columns.is_none() {
-        columns = typed_columns
-            .as_ref()
-            .map(|columns| columns.iter().map(|column| column.name.clone()).collect());
-    }
-
+    // When the overloads disagree on their columns, the selected one decides, see
+    // `combine_columns`.
     let alias = n.alias.as_ref();
-    let mut item = Item::named(
-        alias.map(|alias| alias.aliasname.clone()).or(function_name),
-        apply_alias(columns, alias),
+    let colnames = alias.map_or(&[][..], |alias| alias.colnames.as_slice());
+    let (columns, types_known) = combine_columns(
+        rename(columns, colnames, |column, name| *column = name),
+        apply_alias(typed_columns, alias),
     );
-    item.typed_columns = apply_typed_alias(typed_columns, alias);
-    item
+    Item::named(
+        alias.map(|alias| alias.aliasname.clone()).or(function_name),
+        columns,
+        types_known,
+    )
 }
 
 /// `unnest(a, b)` in FROM, also as an entry of `ROWS FROM`, is `unnest(a), unnest(b)`. Port of
@@ -206,7 +209,7 @@ fn unnest_entry(call: &FuncCall, arg: &Node) -> Node {
 }
 
 /// The output columns of a function call in FROM, if all its overloads agree on them.
-fn return_columns(r: &Resolver, call: &FuncCall) -> Columns {
+fn return_columns(r: &Resolver, call: &FuncCall) -> Option<Vec<String>> {
     let QualifiedName { schema, name, .. } = qualified_name(&call.funcname)?;
     let Lookup::Found(overloads) = r.catalog.functions(schema, name, r.search_path) else {
         return None;
@@ -282,7 +285,7 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
     Some(output)
 }
 
-fn column_definition_names(definitions: &[Node]) -> Columns {
+fn column_definition_names(definitions: &[Node]) -> Option<Vec<String>> {
     definitions
         .iter()
         .map(|definition| match &definition.node {

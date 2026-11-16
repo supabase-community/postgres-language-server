@@ -7,16 +7,64 @@ use super::{ColumnSource, resolver::Resolver};
 use crate::ColumnInfo;
 use crate::typing::{Type, TypedColumn};
 
-/// Columns of an item in scope. `None` when they are not known.
-pub(super) type Columns = Option<Vec<String>>;
-pub(super) type TypedColumns = Option<Vec<TypedColumn>>;
+/// The columns of something in scope, with their types. `None` when they are not known.
+pub(super) type Columns = Option<Vec<TypedColumn>>;
 
 /// A common table expression.
 #[derive(Debug, Clone)]
 pub(super) struct Cte {
     pub name: String,
     pub columns: Columns,
-    pub typed_columns: TypedColumns,
+    /// Whether the types of the columns are known, see [`Item::types_known`].
+    pub types_known: bool,
+}
+
+/// Columns named `names`, with the types of `typed`, and whether the types are known. Where the
+/// names are those of `typed`, the columns are `typed`. Otherwise each column has the type of
+/// the column of `typed` with its name, but the types are not known as a whole: they are not
+/// the row type of the columns. That happens for a function in FROM with column definitions,
+/// whose names don't come from the selected function. Without `names`, the columns are `typed`.
+// PR 3: column definitions should give both the names and the types.
+pub(super) fn combine_columns(
+    names: Option<Vec<String>>,
+    typed: Option<Vec<TypedColumn>>,
+) -> (Columns, bool) {
+    match (names, typed) {
+        (None, typed) => {
+            let known = typed.is_some();
+            (typed, known)
+        }
+        (Some(names), Some(typed)) if names.iter().eq(typed.iter().map(|column| &column.name)) => {
+            (Some(typed), true)
+        }
+        (Some(names), typed) => {
+            let columns = names
+                .into_iter()
+                .map(|name| {
+                    let ty = typed
+                        .iter()
+                        .flatten()
+                        .find(|column| column.name == name)
+                        .and_then(|column| column.ty.clone());
+                    TypedColumn { name, ty }
+                })
+                .collect();
+            (Some(columns), false)
+        }
+    }
+}
+
+/// The columns `columns` with types that are not known.
+pub(super) fn untyped(columns: Columns) -> Columns {
+    columns.map(|columns| {
+        columns
+            .into_iter()
+            .map(|column| TypedColumn {
+                name: column.name,
+                ty: None,
+            })
+            .collect()
+    })
 }
 
 /// Something in a FROM clause that columns can come from.
@@ -28,7 +76,9 @@ pub(super) struct Item {
     /// The schema of an unaliased relation, for `schema.table.column`.
     pub schema: Option<String>,
     pub columns: Columns,
-    pub typed_columns: TypedColumns,
+    /// Whether the types of `columns` are known as a whole, as the row type of the item. If not,
+    /// the columns have no types, except for a function in FROM, see [`combine_columns`].
+    pub types_known: bool,
     /// Whether the item has system columns (`ctid`, `xmin`, ...).
     pub has_system_columns: bool,
     /// The columns of a table that INSERT and UPDATE can only set to `DEFAULT`.
@@ -46,24 +96,23 @@ pub(super) struct ItemSource {
 }
 
 impl ItemSource {
-    /// The source of a CTE or subquery with these output columns.
+    /// The source of a CTE or subquery with these output columns, whose types are known if
+    /// `types_known`.
     pub fn derived(
         r: &Resolver,
         source: ColumnSource,
-        names: &[String],
-        typed: Option<&[TypedColumn]>,
+        columns: &[TypedColumn],
+        types_known: bool,
     ) -> Self {
-        let typed = typed.filter(|typed| typed.len() == names.len());
-        let columns = names
+        let columns = columns
             .iter()
-            .enumerate()
-            .map(|(i, name)| {
-                let ty = typed.and_then(|typed| typed[i].ty.clone());
+            .map(|column| {
+                let ty = column.ty.clone().filter(|_| types_known);
                 let type_name = match &ty {
                     Some(Type::Named(id)) => r.catalog.type_by_id(id).found().map(|info| info.name),
                     _ => None,
                 };
-                ColumnInfo::new(name.clone(), type_name, ty)
+                ColumnInfo::new(column.name.clone(), type_name, ty)
             })
             .collect();
         Self { source, columns }
@@ -92,12 +141,13 @@ impl DefaultOnly {
 }
 
 impl Item {
-    pub fn named(name: Option<String>, columns: Columns) -> Self {
+    /// An item with these columns, whose types are known if `types_known`.
+    pub fn named(name: Option<String>, columns: Columns, types_known: bool) -> Self {
         Self {
             name,
             schema: None,
             columns,
-            typed_columns: None,
+            types_known,
             has_system_columns: false,
             default_only_columns: Vec::new(),
             source: None,
@@ -113,7 +163,7 @@ impl Item {
             .as_ref()?
             .iter()
             .enumerate()
-            .filter(|(_, name)| *name == column)
+            .filter(|(_, other)| other.name == column)
             .map(|(position, _)| position);
         let position = positions.next()?;
         if positions.next().is_some() {
@@ -123,13 +173,19 @@ impl Item {
         Some((source.source.clone(), info.clone()))
     }
 
-    /// Whether the item certainly has the column. `None` if its columns are not known.
+    /// The type of the column with this name, if the item has it. `None` if its columns are not
+    /// known.
     pub fn type_of(&self, column: &str) -> Option<Option<Type>> {
-        let columns = self.typed_columns.as_ref()?;
+        let columns = self.columns.as_ref()?;
         columns
             .iter()
             .find(|c| c.name == column)
             .map(|c| c.ty.clone())
+    }
+
+    /// The columns of the item, if their types are known as a whole.
+    pub fn typed_columns(&self) -> Option<&[TypedColumn]> {
+        self.columns.as_deref().filter(|_| self.types_known)
     }
 
     /// Why a value for the column can only be `DEFAULT`, if it can. An INSERT with an
@@ -145,7 +201,7 @@ impl Item {
     pub fn has_column(&self, column: &str) -> Option<bool> {
         let columns = self.columns.as_ref()?;
         Some(
-            columns.iter().any(|c| c == column)
+            columns.iter().any(|c| c.name == column)
                 || (self.has_system_columns && is_system_column(column)),
         )
     }
@@ -195,11 +251,10 @@ pub(super) struct Level {
     pub items: Vec<Item>,
     /// The order of the columns of `*`.
     pub star_order: StarOrder,
-    /// Columns merged by `JOIN ... USING` and `NATURAL` joins. An unqualified reference to them
-    /// is not ambiguous.
-    pub merged_columns: Vec<String>,
-    /// Types of columns merged by USING, in USING-clause order.
-    pub merged_typed_columns: Vec<TypedColumn>,
+    /// Columns merged by `JOIN ... USING` and `NATURAL` joins, with their common types, in the
+    /// order of the joins and their `USING` clauses. An unqualified reference to them is not
+    /// ambiguous.
+    pub merged_columns: Vec<TypedColumn>,
     /// Set if the level contains a `NATURAL` join whose merged columns are not known, because
     /// the columns of a side are not known.
     pub has_natural_join: bool,
@@ -265,7 +320,6 @@ impl Level {
         };
         self.items.extend(other.items);
         self.merged_columns.extend(other.merged_columns);
-        self.merged_typed_columns.extend(other.merged_typed_columns);
         self.has_natural_join |= other.has_natural_join;
         self.has_opaque_items |= other.has_opaque_items;
     }
@@ -301,7 +355,7 @@ impl Level {
                 .columns
                 .as_ref()?
                 .get(*column)
-                .map(String::as_str),
+                .map(|column| column.name.as_str()),
         }
     }
 
@@ -334,22 +388,25 @@ impl Level {
             .collect()
     }
 
-    /// Typed columns of `SELECT *`, including merged columns. The type of a merged column is
-    /// unknown if nested joins merge the same name again.
-    pub fn star_typed_columns(&self) -> TypedColumns {
+    /// The columns of `SELECT *`, including merged columns, and whether their types are known
+    /// as a whole: if they are known for every item. The type of a merged column is unknown if
+    /// nested joins merge the same name again. `None` if the columns are not known.
+    pub fn star_columns(&self) -> Option<(Vec<TypedColumn>, bool)> {
         if self.items.is_empty() {
             return None;
         }
-        self.star()?
+        let mut types_known = true;
+        let mut columns = self
+            .star()?
             .iter()
             .map(|column| match column {
                 StarEntry::Merged(name) => {
                     let mut merged = self
-                        .merged_typed_columns
+                        .merged_columns
                         .iter()
-                        .filter(|typed| typed.name == *name);
+                        .filter(|merged| merged.name == *name);
                     let ty = match (merged.next(), merged.next()) {
-                        (Some(typed), None) => typed.ty.clone(),
+                        (Some(merged), None) => merged.ty.clone(),
                         _ => None,
                     };
                     Some(TypedColumn {
@@ -357,26 +414,19 @@ impl Level {
                         ty,
                     })
                 }
-                StarEntry::Item { item, column } => self
-                    .items
-                    .get(*item)?
-                    .typed_columns
-                    .as_ref()?
-                    .get(*column)
-                    .cloned(),
+                StarEntry::Item { item, column } => {
+                    let item = self.items.get(*item)?;
+                    types_known &= item.types_known;
+                    item.columns.as_ref()?.get(*column).cloned()
+                }
             })
-            .collect()
-    }
-
-    /// The columns of `SELECT *`, if known.
-    pub fn star_columns(&self) -> Columns {
-        if self.items.is_empty() {
-            return None;
+            .collect::<Option<Vec<_>>>()?;
+        if !types_known {
+            for column in &mut columns {
+                column.ty = None;
+            }
         }
-        self.star()?
-            .iter()
-            .map(|column| self.star_column_name(column).map(str::to_owned))
-            .collect()
+        Some((columns, types_known))
     }
 
     pub fn item(&self, name: &str) -> Option<&Item> {
@@ -411,14 +461,15 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
                 [] => continue,
                 [entry] => {
                     let position = level.star()?.iter().position(|other| other == entry)?;
-                    return level.star_typed_columns()?.get(position)?.ty.clone();
+                    let (columns, types_known) = level.star_columns()?;
+                    return columns.get(position)?.ty.clone().filter(|_| types_known);
                 }
                 _ => return None,
             }
         }
-        if level.merged_columns.iter().any(|c| c == column) {
+        if level.merged_columns.iter().any(|c| c.name == column) {
             return level
-                .merged_typed_columns
+                .merged_columns
                 .iter()
                 .find(|c| c.name == column)
                 .and_then(|c| c.ty.clone());
@@ -432,7 +483,7 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
         if !matches.is_empty() {
             if matches.len() != 1
                 || uncertain
-                || level.merged_columns.iter().any(|c| c == column)
+                || level.merged_columns.iter().any(|c| c.name == column)
                 || level.has_natural_join
                 || is_system_column(column)
             {
@@ -480,7 +531,7 @@ pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
             }
         }
 
-        let merged = level.merged_columns.iter().any(|c| c == column);
+        let merged = level.merged_columns.iter().any(|c| c.name == column);
         match matches.len() {
             0 if unknown => return ColumnLookup::Unknown,
             0 => {}
@@ -511,7 +562,7 @@ pub(super) fn find_column_item<'a>(levels: &'a [Level], column: &str) -> Option<
                 _ => return None,
             }
         }
-        if level.merged_columns.iter().any(|c| c == column) {
+        if level.merged_columns.iter().any(|c| c.name == column) {
             return None;
         }
         let mut found = None;
