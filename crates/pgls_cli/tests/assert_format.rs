@@ -98,6 +98,40 @@ fn format_stdin_with_syntax_error_snapshot() {
     ));
 }
 
+/// A formatted file with a syntax error comes back as written, with a diagnostic.
+#[test]
+fn format_write_keeps_unchanged_file() {
+    let content = "select a, b from t;\nselect from where;\n";
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("formatted.sql");
+    std::fs::write(&path, content).unwrap();
+
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .args([
+            "format",
+            "--config-path",
+            CONFIG_PATH,
+            "--log-level",
+            "none",
+            "--write",
+            path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("failed to run CLI");
+
+    let report = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        std::fs::read(&path).unwrap(),
+        content.as_bytes(),
+        "{report}"
+    );
+    assert!(report.contains("No fixes applied"), "{report}");
+}
+
 #[test]
 #[cfg_attr(
     target_os = "windows",
