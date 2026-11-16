@@ -7,7 +7,7 @@ mod splitter;
 use diagnostics::SplitDiagnostic;
 use pgls_lexer::{Lexed, Lexer, SyntaxKind, convert_to_positional_params};
 use pgls_text_size::{TextRange, TextSize};
-use splitter::{SplitResult as PassResult, Splitter, source};
+use splitter::{SplitResult as PassResult, Splitter, TRIVIA_TOKENS, source};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SplitResult {
@@ -24,7 +24,9 @@ pub struct SplitResult {
 /// knows about. A blank line is *not* a statement boundary, unless splitting on
 /// it is the only reading that makes sense: either the fragment does not parse
 /// as a whole, or it does but splitting it yields several statements that are
-/// each valid on their own — which is what a missing `;` looks like.
+/// each valid on their own — which is what a missing `;` looks like. The
+/// elements of a `CREATE SCHEMA` are such statements too, so a schema that has
+/// elements before the blank line is kept whole.
 ///
 /// That keeps error recovery working while typing, without cutting valid SQL in
 /// two just because it is formatted across a blank line.
@@ -85,7 +87,10 @@ pub fn split(sql: &str) -> SplitResult {
         let fragment = Lexer::new(&sql[range]).lex();
         let recovered = split_pass(&fragment, true);
 
-        if parses(&sql[range]) && !splits_into_valid_statements(&sql[range], &recovered.ranges) {
+        if parses(&sql[range])
+            && (continues_schema_elements(&fragment, &recovered.ranges)
+                || !splits_into_valid_statements(&sql[range], &recovered.ranges))
+        {
             // PostgreSQL is happy with the fragment as a whole, so any splitter
             // complaint about it was a false positive. Drop it with the blank line.
             ranges.push(range);
@@ -385,6 +390,32 @@ fn split_pass(lexed: &Lexed, blank_line_is_boundary: bool) -> PassResult {
 fn parses(fragment: &str) -> bool {
     let normalized = convert_to_positional_params(fragment);
     pgls_query::split_with_parser(&normalized).is_ok()
+}
+
+/// Whether the first of the `pieces` of `fragment` is a `CREATE SCHEMA` that already has schema
+/// elements, which the pieces after its blank lines continue.
+///
+/// Every schema element starts with `CREATE` or `GRANT`, so if the whole fragment parses, Postgres
+/// reads the pieces after the first as more elements of the schema, even though each is a valid
+/// statement on its own. A `CREATE SCHEMA` without elements before the blank line is still split
+/// from what follows it: that is a half-written file missing a `;`, not a schema.
+///
+/// Only looks at the tokens of the first piece, which are already lexed.
+///
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1574-L1594
+fn continues_schema_elements(fragment: &Lexed, pieces: &[TextRange]) -> bool {
+    let [first, _, ..] = pieces else {
+        return false;
+    };
+
+    let mut tokens = (0..fragment.len())
+        .take_while(|&idx| fragment.range(idx).end() <= first.end())
+        .map(|idx| fragment.kind(idx))
+        .filter(|kind| !TRIVIA_TOKENS.contains(kind) && *kind != SyntaxKind::LINE_ENDING);
+
+    tokens.next() == Some(SyntaxKind::CREATE_KW)
+        && tokens.next() == Some(SyntaxKind::SCHEMA_KW)
+        && tokens.any(|kind| matches!(kind, SyntaxKind::CREATE_KW | SyntaxKind::GRANT_KW))
 }
 
 /// Whether splitting `fragment` on its blank lines yields more than one piece,
@@ -1509,6 +1540,23 @@ VALUES
             "CREATE SCHEMA s\n  CREATE TABLE t (a int)\n  CREATE VIEW v AS SELECT * FROM t\n  CREATE INDEX ON t (a)\n  CREATE SEQUENCE q\n  CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW EXECUTE FUNCTION f();",
             "CREATE SCHEMA AUTHORIZATION r CREATE TABLE t (a int);",
         ]);
+    }
+
+    /// Postgres reads the elements after a blank line as part of the schema, even though each is
+    /// a valid statement on its own.
+    #[test]
+    fn create_schema_with_elements_across_blank_lines() {
+        let schema = "CREATE SCHEMA s\n  CREATE UNIQUE INDEX i ON t (a)\n\n  CREATE VIEW v AS\n    SELECT a + 1 AS a FROM t\n\n  CREATE TABLE t (\n    a serial\n  );";
+        Tester::from(format!("{schema}\n\nSELECT 1;").as_str())
+            .expect_statements(vec![schema, "SELECT 1;"])
+            .assert_no_errors();
+    }
+
+    /// A `CREATE SCHEMA` without elements before the blank line is missing its `;`.
+    #[test]
+    fn create_schema_without_elements_before_blank_line() {
+        Tester::from("CREATE SCHEMA s\n\nCREATE TABLE t (a int);")
+            .expect_statements(vec!["CREATE SCHEMA s", "CREATE TABLE t (a int);"]);
     }
 
     #[test]
