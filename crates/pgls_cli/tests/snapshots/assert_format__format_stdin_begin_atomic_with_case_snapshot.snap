@@ -1,0 +1,13 @@
+---
+source: crates/pgls_cli/tests/assert_format.rs
+expression: "run_format_stdin(&[\"--stdin-file-path\", \"virtual.sql\"],\nBEGIN_ATOMIC_WITH_CASE)"
+---
+status: success
+stdout:
+create function f()
+returns int
+language sql
+begin atomic
+  select case when true then 1 else 2 end;
+end;
+stderr:
