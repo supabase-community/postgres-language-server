@@ -1,0 +1,16 @@
+-- Postgres doesn't validate the body of a SQL function created while check_function_bodies is
+-- off, so its statements can use a table that an earlier statement of the body creates.
+-- Once it is on again, a body that uses a missing table is reported.
+-- expect_lint/unknownRelation
+set check_function_bodies to off;
+
+create function create_and_insert() returns void language sql as $$
+  create table ddl_test (f1 int);
+  insert into ddl_test values (1);
+$$;
+
+reset check_function_bodies;
+
+create function insert_missing() returns void language sql as $$
+  insert into missing_table values (1);
+$$;
