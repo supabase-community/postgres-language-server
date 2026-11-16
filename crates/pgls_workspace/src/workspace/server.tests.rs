@@ -1807,6 +1807,52 @@ fn format_content(content: &str) -> String {
         .formatted
 }
 
+/// The normalized statements of `sql`, which parses as a whole.
+fn parsed_statements(sql: &str) -> Vec<pgls_query::NodeEnum> {
+    pgls_query::parse(sql)
+        .expect("parses")
+        .protobuf
+        .stmts
+        .into_iter()
+        .filter_map(|raw| raw.stmt.and_then(|stmt| stmt.node))
+        .map(|mut stmt| {
+            pgls_pretty_print::normalize_ast(&mut stmt);
+            stmt
+        })
+        .collect()
+}
+
+/// The elements of a `CREATE SCHEMA` are formatted in the schema, not as statements of their own
+/// outside of it, also across blank lines.
+#[tokio::test]
+async fn test_format_keeps_schema_elements_in_the_schema() {
+    for content in [
+        "CREATE SCHEMA s CREATE TABLE t (a int);\nSELECT   1;\n",
+        "CREATE SCHEMA s\n  CREATE UNIQUE INDEX i ON t (a)\n\n  CREATE VIEW v AS\n    SELECT a + 1 AS a FROM t\n\n  CREATE TABLE t (a serial);\nSELECT   1;\n",
+    ] {
+        let formatted = format_content(content);
+
+        assert_eq!(
+            parsed_statements(&formatted),
+            parsed_statements(content),
+            "{formatted}"
+        );
+    }
+}
+
+/// The `WITH (` of a `COPY` is no CTE.
+#[tokio::test]
+async fn test_format_statement_that_the_splitter_cuts_as_one() {
+    let content = "SELECT   1;\nCOPY t TO stdout WITH (FORMAT csv);\nSELECT   2;\n";
+    let formatted = format_content(content);
+
+    assert_eq!(
+        formatted,
+        "select 1;\ncopy t to stdout with (format 'csv');\nselect 2;\n"
+    );
+    assert_eq!(parsed_statements(&formatted), parsed_statements(content));
+}
+
 /// The `END` of a `CASE` in a `BEGIN ATOMIC` body was taken as the end of the body, and the real
 /// `END` was formatted as `COMMIT`, see #1142.
 #[tokio::test]
