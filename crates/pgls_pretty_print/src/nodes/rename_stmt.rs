@@ -31,8 +31,9 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
             emit_relation_head(e, n);
             emit_keyworded_rename(e, TokenKind::CONSTRAINT_KW, &n.subname, &n.newname);
         }
-        ObjectType::ObjectTrigger => {
-            // ALTER TRIGGER trigger_name ON table_name RENAME TO new_name
+        ObjectType::ObjectTrigger | ObjectType::ObjectRule => {
+            // ALTER {TRIGGER | RULE} name ON table_name RENAME TO new_name
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L9838
             e.space();
             emit_identifier_maybe_quoted(e, &n.subname);
             if let Some(ref relation) = n.relation {
@@ -42,10 +43,6 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
                 emit_range_var(e, relation);
             }
             emit_simple_rename(e, &n.newname);
-        }
-        ObjectType::ObjectRule => {
-            emit_relation_head(e, n);
-            emit_keyworded_rename(e, TokenKind::RULE_KW, &n.subname, &n.newname);
         }
         ObjectType::ObjectPolicy => emit_policy_statement(e, n),
         ObjectType::ObjectOpfamily => {
@@ -90,7 +87,7 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
 
 fn resolve_alter_target(rename_type: ObjectType, relation_type: ObjectType) -> ObjectType {
     match rename_type {
-        ObjectType::ObjectColumn | ObjectType::ObjectTabconstraint | ObjectType::ObjectRule => {
+        ObjectType::ObjectColumn | ObjectType::ObjectTabconstraint => {
             // Only accept valid table-like relation types
             match relation_type {
                 ObjectType::ObjectView
@@ -99,10 +96,8 @@ fn resolve_alter_target(rename_type: ObjectType, relation_type: ObjectType) -> O
                 _ => ObjectType::ObjectTable, // Default to TABLE for others
             }
         }
-        ObjectType::ObjectTrigger => {
-            // ALTER TRIGGER syntax, not ALTER TABLE
-            ObjectType::ObjectTrigger
-        }
+        // ALTER TRIGGER and ALTER RULE, not ALTER TABLE
+        ObjectType::ObjectTrigger | ObjectType::ObjectRule => rename_type,
         ObjectType::ObjectDomconstraint => {
             // Domain constraint renames should always be ALTER DOMAIN
             ObjectType::ObjectDomain
