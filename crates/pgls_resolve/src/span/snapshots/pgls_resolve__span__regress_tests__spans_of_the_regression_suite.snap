@@ -130,7 +130,7 @@ money: Name 234/490 54315ac8 Type 98/98 55f572fc Star 9/9 b63b3252 Operator 57/5
 multirangetypes: Name 2935/3902 0e7773d3 Type 316/316 478091d4 Star 56/56 bc5a9a2e Operator 368/368 ae30c3eb Cast 209/209 f00a1f29 Literal 319/1418 db2df0fe Alias 156/176 d7b6defa Expression 3902/3902 4c211c3d
 mvcc: Name 12/15 73263b69 Type 2/2 15761310 Star 0/0 84222325 Operator 0/0 84222325 Cast 0/0 84222325 Literal 1/5 6a030f20 Alias 0/3 a441872c Expression 15/15 e7f3dc08
 name: Name 82/143 6139df21 Type 6/6 69a8b345 Star 1/1 ab5d6ac7 Operator 16/16 9376e0bb Cast 1/1 8557c71a Literal 42/47 6d7aaf30 Alias 10/19 a2753777 Expression 143/143 56c49b79
-namespace: Name 74/92 b9f78184 Type 5/5 222f2f3b Star 2/2 86e66666 Operator 8/8 a6611125 Cast 0/0 84222325 Literal 5/16 b7e8d847 Alias 15/29 fe0ca0c6 Expression 89/92 0e13dcf4
+namespace: Name 74/92 ebb8a7a6 Type 5/5 d3352525 Star 2/2 d4b45ee2 Operator 8/8 3a2ab2e5 Cast 0/0 84222325 Literal 5/16 bf6f1ee5 Alias 16/29 ca02203e Expression 89/92 1e271d5a
 numa: Name 6/8 ec2a4033 Type 0/0 84222325 Star 0/0 84222325 Operator 2/2 b6f6d685 Cast 0/0 84222325 Literal 0/2 ddeb0777 Alias 0/2 0a0069e9 Expression 8/8 acbb4600
 numeric: Name 3440/5007 4ab00617 Type 343/343 a3f1fe03 Star 19/19 ccf3b13c Operator 213/213 672977d2 Cast 296/296 157719f0 Literal 959/2511 8de6e433 Alias 551/701 a8332c67 Expression 4992/5007 ce54b5e1
 numeric_big: Name 2500/3541 85d555a4 Type 48/48 3cd22ecc Star 0/0 84222325 Operator 85/85 0f0c5231 Cast 22/22 cd417d31 Literal 711/2444 f612f702 Alias 505/562 68a66406 Expression 3541/3541 20ad203b
