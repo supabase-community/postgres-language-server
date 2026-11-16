@@ -74,23 +74,49 @@ use select_stmt::apply_select_stmt;
 use transaction_stmt::apply_transaction_stmt;
 use view_stmt::apply_view_stmt;
 
+/// Gives the output columns of `query`, the query of a view, `CREATE TABLE AS` or `SELECT INTO`,
+/// as the relation it creates has them, against the catalog before the statement. `None` if they
+/// are not known with certainty.
+pub type QueryColumnsHook<'a> = &'a dyn Fn(
+    &pgls_query::protobuf::Node,
+    &dyn crate::lookup::CatalogView,
+    &[String],
+) -> Option<Vec<crate::typing::TypedColumn>>;
+
 impl Catalog {
-    /// Applies the effects of a top-level statement, executed with the given search path.
+    /// Applies the effects of a top-level statement, executed with the given search path. The
+    /// columns of views, `CREATE TABLE AS` and `SELECT INTO` come from the resolver
+    /// ([`crate::resolve::query_columns`]).
     pub fn apply(&mut self, stmt: &NodeEnum, search_path: &[String]) {
+        self.apply_with(stmt, search_path, &crate::resolve::query_columns);
+    }
+
+    /// Like [`Catalog::apply`], with `query_columns` giving the columns of views,
+    /// `CREATE TABLE AS` and `SELECT INTO`.
+    pub fn apply_with(
+        &mut self,
+        stmt: &NodeEnum,
+        search_path: &[String],
+        query_columns: QueryColumnsHook<'_>,
+    ) {
         let c = self;
         c.skipped_existing = false;
         if creates_implicit_indexes(stmt) {
             c.indexes_incomplete = true;
         }
         match stmt {
-            NodeEnum::CreateSchemaStmt(n) => apply_create_schema_stmt(c, n, search_path),
+            NodeEnum::CreateSchemaStmt(n) => {
+                apply_create_schema_stmt(c, n, search_path, query_columns)
+            }
             NodeEnum::CreateStmt(n) => apply_create_stmt(c, n, search_path),
             NodeEnum::CreateForeignTableStmt(n) => {
                 apply_create_foreign_table_stmt(c, n, search_path)
             }
-            NodeEnum::CreateTableAsStmt(n) => apply_create_table_as_stmt(c, n, search_path),
-            NodeEnum::SelectStmt(n) => apply_select_stmt(c, n, search_path),
-            NodeEnum::ViewStmt(n) => apply_view_stmt(c, n, search_path),
+            NodeEnum::CreateTableAsStmt(n) => {
+                apply_create_table_as_stmt(c, n, search_path, query_columns)
+            }
+            NodeEnum::SelectStmt(n) => apply_select_stmt(c, n, search_path, query_columns),
+            NodeEnum::ViewStmt(n) => apply_view_stmt(c, n, search_path, query_columns),
             NodeEnum::CreateSeqStmt(n) => apply_create_seq_stmt(c, n, search_path),
             NodeEnum::CompositeTypeStmt(n) => apply_composite_type_stmt(c, n, search_path),
             NodeEnum::CreateEnumStmt(n) => apply_create_enum_stmt(c, n, search_path),

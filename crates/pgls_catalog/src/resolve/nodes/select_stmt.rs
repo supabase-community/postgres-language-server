@@ -155,8 +155,11 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt, coerce: bool) -> Option<Quer
             if coerce {
                 record_enum_values(r, values, ty.as_ref());
             }
+            let location = node_location(first).unwrap_or(-1);
             TargetOutput {
-                location: node_location(first).unwrap_or(-1),
+                location,
+                entry_location: location,
+                span: None,
                 star: None,
                 columns: Some(vec![TypedColumn {
                     name: values_column_name(index),

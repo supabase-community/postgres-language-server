@@ -154,11 +154,11 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    /// The name of a select list entry, see [`target_name`]. Scalar subqueries the resolver has
-    /// resolved are named after their first output column, which is also known when it is a `*`,
-    /// as in `(select * from t)`.
+    /// The name of a select list entry: its alias, or else the name Postgres chooses for it
+    /// ([`FigureColname`]). Scalar subqueries the resolver has resolved are named after their
+    /// first output column, which is also known when it is a `*`, as in `(select * from t)`.
     ///
-    /// [`target_name`]: super::target_name
+    /// [`FigureColname`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1713
     pub fn target_name(&self, target: &protobuf::ResTarget) -> Option<String> {
         target_name_with(target, &|link| {
             let output = self.subquery_output(link.subselect.as_deref()?)?;
@@ -363,6 +363,11 @@ impl<'a> Resolver<'a> {
     /// The span of the `*` or `t.*` starting at `location`.
     pub fn star_span(&self, location: i32) -> Option<TextRange> {
         self.span_to(location, Tokens::star_end)
+    }
+
+    /// The span of the select list entry starting at `location`, with its alias.
+    pub fn target_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, Tokens::target_end)
     }
 
     /// The span of the token starting at `location`.

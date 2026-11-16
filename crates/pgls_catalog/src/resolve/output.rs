@@ -1,14 +1,23 @@
 //! The output columns of queries, with names and types together.
 
+use pgls_text_size::TextRange;
+
 use crate::typing::{Type, TypedColumn};
 
 /// The output columns of one entry of a select list or RETURNING list, or of one column of
 /// VALUES.
-#[derive(Debug, Clone)]
-pub(super) struct TargetOutput {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TargetOutput {
     /// The location of the entry's value. For `*`, `t.*` and `s.t.*`, that of the column
     /// reference.
     pub location: i32,
+    /// The location where the entry starts, with its alias: of the select list entry, or of the
+    /// value of VALUES.
+    pub(crate) entry_location: i32,
+    /// The span of the whole entry, with its alias, like `coalesce(a, b) as x`. Only set for the
+    /// [`Resolution::output`](super::Resolution::output) of a view, `CREATE TABLE AS` or
+    /// `SELECT INTO` whose text is known.
+    pub span: Option<TextRange>,
     /// Set if the entry is a `*` that expands to any number of columns.
     pub star: Option<Star>,
     /// The columns of the entry, in order: one for an expression, the ones it expands to for a
@@ -19,7 +28,7 @@ pub(super) struct TargetOutput {
 
 /// A select list entry that expands to any number of columns.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) enum Star {
+pub enum Star {
     /// `*`, `t.*` or `s.t.*`, with the names before the `*`: none for `*`.
     Columns(Vec<String>),
     /// `(expr).*`, the fields of a composite value.
@@ -33,21 +42,21 @@ pub(super) enum Star {
 /// What is known is known per entry: an entry whose columns are not known doesn't hide the names
 /// and positions of the others, but the columns of the whole query are only known if those of
 /// every entry are.
-#[derive(Debug, Clone)]
-pub(super) struct QueryOutput {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QueryOutput {
     pub targets: Vec<TargetOutput>,
 }
 
 /// The entry of a [`QueryOutput`] that produces an output column.
 #[derive(Debug, Clone, Copy)]
-pub(super) struct OutputPosition<'a> {
+pub(crate) struct OutputPosition<'a> {
     /// The index of the entry in [`QueryOutput::targets`].
     pub entry: usize,
     pub target: &'a TargetOutput,
 }
 
 impl QueryOutput {
-    pub fn new(targets: Vec<TargetOutput>) -> Self {
+    pub(crate) fn new(targets: Vec<TargetOutput>) -> Self {
         Self { targets }
     }
 
@@ -84,7 +93,7 @@ impl QueryOutput {
     }
 
     /// The first output column, if the entries up to it are known.
-    pub fn first_column(&self) -> Option<&TypedColumn> {
+    pub(crate) fn first_column(&self) -> Option<&TypedColumn> {
         for target in &self.targets {
             if let Some(column) = target.columns.as_deref()?.first() {
                 return Some(column);
@@ -95,7 +104,7 @@ impl QueryOutput {
 
     /// The entry that produces each output column, in order, as far as the entries are known:
     /// the columns after an entry whose columns are not known have no known position.
-    pub fn positions(&self) -> Vec<OutputPosition<'_>> {
+    pub(crate) fn positions(&self) -> Vec<OutputPosition<'_>> {
         let mut positions = Vec::new();
         for (entry, target) in self.targets.iter().enumerate() {
             let Some(columns) = &target.columns else {
@@ -114,7 +123,7 @@ impl QueryOutput {
     /// match, which Postgres rejects, is not reported.
     ///
     /// [`findTargetlistEntrySQL92`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L2006
-    pub fn output_names(&self) -> Vec<String> {
+    pub(crate) fn output_names(&self) -> Vec<String> {
         self.targets
             .iter()
             .filter(|target| target.star.is_none())
@@ -124,7 +133,7 @@ impl QueryOutput {
     }
 
     /// Sets the types of the columns, in order.
-    pub fn set_types(&mut self, types: impl IntoIterator<Item = Option<Type>>) {
+    pub(crate) fn set_types(&mut self, types: impl IntoIterator<Item = Option<Type>>) {
         let columns = self
             .targets
             .iter_mut()
@@ -135,7 +144,7 @@ impl QueryOutput {
     }
 
     /// Forgets the types of all columns, but keeps them known: each is `None`.
-    pub fn clear_types(&mut self) {
+    pub(crate) fn clear_types(&mut self) {
         for column in self
             .targets
             .iter_mut()

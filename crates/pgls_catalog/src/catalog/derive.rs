@@ -2,17 +2,19 @@
 
 use pgls_query::protobuf;
 
-use super::Catalog;
+use super::{Catalog, QueryColumnsHook};
 use crate::lookup::ColumnInfo;
 
 impl Catalog {
-    /// The output columns of a query, or `None` when they can't be derived with certainty.
+    /// The output columns of a query from `query_columns`, or `None` when they can't be derived
+    /// with certainty.
     pub(super) fn query_columns(
         &self,
         query: &protobuf::Node,
         search_path: &[String],
+        query_columns: QueryColumnsHook<'_>,
     ) -> Option<Vec<ColumnInfo>> {
-        let columns = crate::resolve::query_output_types(query, self, search_path)?;
+        let columns = query_columns(query, self, search_path)?;
         // Postgres rejects a relation with duplicate column names.
         if columns
             .iter()
