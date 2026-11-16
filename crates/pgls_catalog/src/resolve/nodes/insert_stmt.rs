@@ -10,6 +10,7 @@ use super::{
     range_var::resolve_target_relation,
     res_target::{check_target_column, resolve_returning_clause},
     resolve_node,
+    select_stmt::resolve_insert_source,
     with_clause::resolve_with_clause,
 };
 use crate::resolve::{
@@ -52,9 +53,11 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Option<QueryOutput> {
     // The number of columns of the source query, if known.
     let mut source_width = None;
     if let Some(source) = n.select_stmt.as_deref() {
-        let source_types = resolve_node(r, source)
-            .as_ref()
-            .and_then(QueryOutput::columns);
+        let source_output = match source.node.as_ref() {
+            Some(NodeEnum::SelectStmt(select)) => resolve_insert_source(r, select),
+            _ => resolve_node(r, source),
+        };
+        let source_types = source_output.as_ref().and_then(QueryOutput::columns);
         source_width = source_types.as_ref().map(Vec::len);
 
         let target_types = insert_target_types(&target, &target_columns);

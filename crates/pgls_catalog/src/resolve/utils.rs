@@ -199,7 +199,8 @@ pub(super) fn record_enum_operands(
 }
 
 /// Records the string literals among `values` that are coerced to `common`, the common type of
-/// the values of `CASE` or `COALESCE`, if it is an enum ([`coerce_to_common_type`]).
+/// the values of `CASE`, `COALESCE`, `GREATEST`, `LEAST` or a column of `VALUES`, if it is an
+/// enum ([`coerce_to_common_type`]).
 ///
 /// [`coerce_to_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1592
 pub(super) fn record_enum_values<'a>(

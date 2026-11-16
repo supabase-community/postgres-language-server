@@ -1,0 +1,24 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select * from orders
+                 ↑ hovered here
+```
+
+# Hover Results
+### `public.orders` - 🔓 RLS disabled  
+```plain  
+Columns:
+- price: int4 - not null
+- quantity: int4 - not null
+- total: int4 - nullable - generated STORED
+  
+```  
+---    
+```plain  
+
+~0 rows, ~0 dead rows, 0 B  
+```
