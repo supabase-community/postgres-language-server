@@ -1,15 +1,14 @@
 use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::resolve::target_name;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{
-    AlterTableStmt, AlterTableType, CreateTableAsStmt, Node, RangeVar, ResTarget, SelectStmt,
-    SetOperation, Token,
+    AlterTableStmt, AlterTableType, CreateTableAsStmt, Node, RangeVar, ResTarget, Token,
 };
 use pgls_query::{NodeEnum, NodeRef};
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def, is_star};
+use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
+use pgls_resolve::{QueryOutput, Star};
 use pgls_text_size::TextRange;
 
 declare_lint_rule! {
@@ -20,7 +19,8 @@ declare_lint_rule! {
     /// the same column twice, like `insert into t (a, a)` or `copy t (a, a)`, tables, views and
     /// composite types that declare the same column twice, and `ALTER TABLE` commands that add
     /// the same column twice with `42701 duplicate_column`. This includes view columns that get
-    /// the same name from their expressions, like `select a.id, b.id`.
+    /// the same name from their expressions, like `select a.id, b.id`, or from the tables a `*`
+    /// expands to, like `select a.*, b.*` when both tables have an `id`.
     ///
     /// Assigning different elements or fields of the same column, like `set a[1] = 1, a[2] = 2`,
     /// is fine.
@@ -98,11 +98,13 @@ impl LinterRule for BanDuplicateColumnAssignments {
                     Definition::AddedColumn,
                     &mut diagnostics,
                 ),
-                NodeRef::ViewStmt(stmt) => report_definitions(
+                // The columns of the relation that the statement creates come from the output of
+                // its query, so only the statement itself counts, not a view among the elements
+                // of `CREATE SCHEMA`.
+                NodeRef::ViewStmt(stmt) if is_statement(ctx, node) => report_definitions(
                     output_columns(
                         column_list(&stmt.aliases, stmt.view.as_ref(), tokens),
-                        stmt.query.as_deref(),
-                        tokens,
+                        ctx.output(),
                     ),
                     Definition::Relation,
                     &mut diagnostics,
@@ -110,26 +112,43 @@ impl LinterRule for BanDuplicateColumnAssignments {
                 // Postgres skips the statement without looking at its columns if the relation
                 // exists.
                 NodeRef::CreateTableAsStmt(stmt) if may_skip(stmt, ctx) => {}
-                NodeRef::CreateTableAsStmt(stmt) => {
+                NodeRef::CreateTableAsStmt(stmt) if is_statement(ctx, node) => {
                     let names = stmt.into.as_ref().map_or(Vec::new(), |into| {
                         column_list(&into.col_names, into.rel.as_ref(), tokens)
                     });
                     report_definitions(
-                        output_columns(names, stmt.query.as_deref(), tokens),
+                        output_columns(names, ctx.output()),
                         Definition::Relation,
                         &mut diagnostics,
                     );
                 }
-                NodeRef::SelectStmt(stmt) if stmt.into_clause.is_some() => report_definitions(
-                    select_columns(Vec::new(), stmt, tokens),
-                    Definition::Relation,
-                    &mut diagnostics,
-                ),
+                // The `INTO` of a set operation is on its left-most select.
+                NodeRef::SelectStmt(stmt)
+                    if stmt.into_clause.is_some()
+                        && matches!(ctx.stmt(), NodeEnum::SelectStmt(_)) =>
+                {
+                    report_definitions(
+                        output_columns(Vec::new(), ctx.output()),
+                        Definition::Relation,
+                        &mut diagnostics,
+                    )
+                }
                 _ => {}
             }
         }
 
         diagnostics
+    }
+}
+
+/// Whether `node` is the statement itself rather than a node inside it.
+fn is_statement(ctx: &LinterRuleContext<BanDuplicateColumnAssignments>, node: NodeRef) -> bool {
+    match (node, ctx.stmt()) {
+        (NodeRef::ViewStmt(node), NodeEnum::ViewStmt(stmt)) => std::ptr::eq(node, stmt.as_ref()),
+        (NodeRef::CreateTableAsStmt(node), NodeEnum::CreateTableAsStmt(stmt)) => {
+            std::ptr::eq(node, stmt.as_ref())
+        }
+        _ => false,
     }
 }
 
@@ -351,67 +370,44 @@ fn added_columns(stmt: &AlterTableStmt, tokens: Option<StatementTokens>) -> Vec<
     columns
 }
 
-/// The column names of a view or `CREATE TABLE AS`: the explicit names, then the names of the
-/// remaining entries of the select list.
-fn output_columns(
-    names: Vec<Column>,
-    query: Option<&Node>,
-    tokens: Option<StatementTokens>,
-) -> Vec<Column> {
-    match query.and_then(|query| query.node.as_ref()) {
-        Some(NodeEnum::SelectStmt(select)) => select_columns(names, select, tokens),
-        _ => names,
-    }
-}
-
-/// Columns we can't name, like the expansion of `*`, are left out.
-fn select_columns(
-    names: Vec<Column>,
-    select: &SelectStmt,
-    tokens: Option<StatementTokens>,
-) -> Vec<Column> {
-    let mut select = select;
-    // The left-most select of a set operation names the columns.
-    while select.op() != SetOperation::SetopNone {
-        match select.larg.as_deref() {
-            Some(larg) => select = larg,
-            None => return names,
+/// The columns of a view, `CREATE TABLE AS` or `SELECT INTO`: the explicit names, then the names
+/// of the remaining output columns of its query. The columns that a `*` expands to all point at
+/// the `*`. Columns whose names are not known are left out.
+fn output_columns(names: Vec<Column>, output: Option<&QueryOutput>) -> Vec<Column> {
+    let Some(output) = output else {
+        return names;
+    };
+    let explicit = names.len();
+    let mut columns = names;
+    // The explicit names rename the first output columns. The position of the next column,
+    // while we know it.
+    let mut position = Some(0);
+    for target in &output.targets {
+        let Some(entry_columns) = &target.columns else {
+            match target.star {
+                // An expression is one column, whose name we don't know.
+                None => position = position.map(|position| position + 1),
+                // If the explicit names reach into a `*` whose columns we don't know, we can't
+                // tell which of the entries after it keep their own names.
+                Some(Star::Columns(_) | Star::Fields) => {
+                    if position.is_some_and(|position| position < explicit) {
+                        return columns;
+                    }
+                    position = None;
+                }
+            }
+            continue;
+        };
+        for column in entry_columns {
+            if !position.is_some_and(|position| position < explicit) {
+                columns.push(Column {
+                    name: column.name.clone(),
+                    span: target.span,
+                });
+            }
+            position = position.map(|position| position + 1);
         }
     }
-
-    if !select.values_lists.is_empty() {
-        return names;
-    }
-    let targets: Vec<_> = select
-        .target_list
-        .iter()
-        .filter_map(|target| match &target.node {
-            Some(NodeEnum::ResTarget(target)) => Some(target),
-            _ => None,
-        })
-        .collect();
-    // Explicit names apply to the entries in order, and a `*` expands to an unknown number of
-    // them. If the explicit names reach into a `*`, we can't tell which of the entries after it
-    // keep their own names.
-    let first_star = targets.iter().position(|target| {
-        target
-            .val
-            .as_deref()
-            .and_then(|value| value.node.as_ref())
-            .is_some_and(is_star)
-    });
-    if first_star.is_some_and(|star| star < names.len()) {
-        return names;
-    }
-
-    let skipped = names.len();
-    let mut columns = names;
-    columns.extend(targets.iter().skip(skipped).filter_map(|target| {
-        Some(Column {
-            name: target_name(target)?,
-            span: select_entry_range(tokens, target.location),
-        })
-    }));
     columns
 }
 
@@ -450,49 +446,6 @@ fn list_element_ranges(tokens: StatementTokens, location: i32) -> Option<Vec<Tex
     tokens.list_elements(open + 1, tokens.closing_paren(open)?)
 }
 
-/// The range of the select list entry that starts at `location`: up to the next `,` outside
-/// parentheses, or the keyword that ends the select list.
-fn select_entry_range(tokens: Option<StatementTokens>, location: i32) -> Option<TextRange> {
-    let tokens = tokens?;
-    let start = tokens.at(location)?;
-    let mut depth = 0usize;
-    let mut last = start;
-    let mut index = start;
-    while let Some(kind) = tokens.kind(index) {
-        match kind {
-            Token::Ascii40 => depth += 1,
-            Token::Ascii41 if depth == 0 => break,
-            Token::Ascii41 => depth -= 1,
-            Token::Ascii44
-            | Token::Ascii59
-            | Token::From
-            | Token::Into
-            | Token::Where
-            | Token::GroupP
-            | Token::Having
-            | Token::Window
-            | Token::Union
-            | Token::Intersect
-            | Token::Except
-            | Token::Order
-            | Token::Limit
-            | Token::Offset
-            | Token::Fetch
-            | Token::For
-                if depth == 0 =>
-            {
-                break;
-            }
-            _ => {}
-        }
-        if !matches!(kind, Token::SqlComment | Token::CComment) {
-            last = index;
-        }
-        index += 1;
-    }
-    Some(tokens.range(start).cover(tokens.range(last)))
-}
-
 #[cfg(test)]
 mod tests {
     fn spans(sql: &str) -> Vec<String> {
@@ -528,6 +481,27 @@ mod tests {
         assert_eq!(
             spans("select 1 as x, 2 as x into t union select 3, 4"),
             ["2 as x"]
+        );
+    }
+
+    #[test]
+    fn columns_of_a_star_point_at_the_star() {
+        let tables = "create table a (id int, x int); create table b (id int, y int);";
+        assert_eq!(
+            spans(&format!(
+                "{tables} create view v as select a.*, b.* /* b */ from a, b"
+            )),
+            ["b.*"]
+        );
+        assert_eq!(
+            spans(&format!(
+                "{tables} create view v as select a.*, 1 as x from a"
+            )),
+            ["1 as x"]
+        );
+        assert_eq!(
+            spans(&format!("{tables} create view v as select * from a, b")),
+            ["*"]
         );
     }
 

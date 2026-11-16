@@ -1,0 +1,33 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "Name resolution of a single statement against the catalog"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_resolve"
+repository.workspace = true
+version              = "0.0.0"
+
+[dependencies]
+pgls_catalog   = { workspace = true }
+pgls_query     = { workspace = true }
+pgls_query_ext = { workspace = true }
+pgls_text_size = { workspace = true }
+rustc-hash     = { workspace = true }
+tracing        = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }
+# The tests load database snapshots.
+pgls_catalog          = { workspace = true, features = ["db"] }
+pgls_postgres_regress = { workspace = true }
+pgls_test_utils       = { workspace = true }
+sqlx                  = { workspace = true }
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

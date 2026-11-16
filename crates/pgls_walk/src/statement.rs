@@ -2,8 +2,8 @@
 
 use std::sync::Arc;
 
-use pgls_catalog::resolve::FunctionContext;
 use pgls_query_ext::function_body::{EmbeddedStatement, OffsetMap};
+use pgls_resolve::FunctionContext;
 use pgls_text_size::{TextRange, TextSize};
 
 #[derive(Debug)]

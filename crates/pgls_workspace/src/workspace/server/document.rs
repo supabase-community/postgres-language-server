@@ -628,7 +628,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
             else {
                 return None;
             };
-            pgls_catalog::resolve::FunctionContext::from_create_function(create_fn)
+            pgls_resolve::FunctionContext::from_create_function(create_fn)
         });
 
         (

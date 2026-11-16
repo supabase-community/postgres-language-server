@@ -9,7 +9,8 @@
 
 use std::{collections::BTreeMap, sync::Arc};
 
-use pgls_catalog::{Snapshot, resolve::Reference};
+use pgls_catalog::Snapshot;
+use pgls_resolve::Reference;
 use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{AnalysableStatement, Direction, Unit, WalkState};
 

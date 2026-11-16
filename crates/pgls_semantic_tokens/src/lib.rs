@@ -11,10 +11,10 @@
 // input takes down the server for every connected editor.
 #![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
-use pgls_catalog::resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
 use pgls_catalog::{CatalogView, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
+use pgls_resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
 use pgls_text_size::{TextRange, TextSize};
 
 pub struct SemanticTokensParams<'a> {
@@ -75,7 +75,7 @@ pub fn semantic_tokens(params: SemanticTokensParams<'_>) -> Vec<SemanticToken> {
 }
 
 /// The semantic tokens of the statement `sql` from its `references`, which
-/// [`pgls_catalog::resolve::resolve`] collected. Ordered by their start. Tokens don't overlap,
+/// [`pgls_resolve::resolve`] collected. Ordered by their start. Tokens don't overlap,
 /// and each is on a single line.
 pub fn semantic_tokens_of_references(references: &[Reference], sql: &str) -> Vec<SemanticToken> {
     let Some(scanned) = scan(sql) else {
