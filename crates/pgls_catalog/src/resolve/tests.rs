@@ -367,7 +367,10 @@ fn search_and_cycle_add_columns_to_ctes() {
     };
     let catalog = Catalog::new(Some(database()));
     assert_eq!(
-        crate::resolve::query_output_columns(&query, &catalog, &search_path()),
+        query_columns(&query, &catalog, &search_path()).map(|columns| columns
+            .into_iter()
+            .map(|column| column.name)
+            .collect::<Vec<_>>()),
         Some(vec![
             "a".to_owned(),
             "ord".to_owned(),
@@ -385,7 +388,7 @@ fn search_and_cycle_columns_have_types() {
         let query = pgls_query::protobuf::Node {
             node: parsed.stmts().first().map(|node| (**node).clone()),
         };
-        query_output_types(&query, &catalog, &search_path())
+        query_columns(&query, &catalog, &search_path())
             .expect("known columns")
             .into_iter()
             .map(|column| column.ty)
@@ -803,7 +806,7 @@ fn merge_action_is_a_function_call_before_postgres_17() {
     let node = pgls_query::protobuf::Node { node: Some(stmt) };
     for (version, typed) in [(150000, false), (160000, false), (170000, true)] {
         let catalog = Catalog::new(Some(database_of_version(version)));
-        let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+        let columns = query_columns(&node, &catalog, &search_path).unwrap();
         assert_eq!(columns[0].ty.is_some(), typed, "{version}");
     }
 }
@@ -819,7 +822,7 @@ fn merge_returning_star_expands_the_source_first() {
     .into_root()
     .unwrap();
     let node = pgls_query::protobuf::Node { node: Some(stmt) };
-    let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+    let columns = query_columns(&node, &catalog, &search_path).unwrap();
     let names = columns.iter().map(|c| c.name.as_str()).collect::<Vec<_>>();
     assert_eq!(names, ["id", "user_id", "title", "id", "name"]);
 }
@@ -928,19 +931,15 @@ fn names_of_sql_json_and_xml_expressions() {
     );
 }
 
-/// The output column names of a query, which must be the same as the names of its typed
-/// output columns.
+/// The output column names of a query.
 fn star_output_names(sql: &str) -> Option<Vec<String>> {
     let catalog = Catalog::new(Some(database()));
     let parsed = pgls_query::parse(sql).expect("valid sql");
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    let names = query_output_columns(&query, &catalog, &search_path());
-    let typed = query_output_types(&query, &catalog, &search_path())
-        .map(|columns| columns.into_iter().map(|column| column.name).collect());
-    assert_eq!(names, typed, "{sql}");
-    names
+    query_columns(&query, &catalog, &search_path())
+        .map(|columns| columns.into_iter().map(|column| column.name).collect())
 }
 
 #[test]
@@ -1025,7 +1024,7 @@ fn natural_joins_merge_the_columns_both_sides_have() {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    let types: Vec<_> = query_output_types(&query, &catalog, &search_path())
+    let types: Vec<_> = query_columns(&query, &catalog, &search_path())
         .expect("known columns")
         .into_iter()
         .map(|column| column.ty)
@@ -1048,7 +1047,7 @@ fn natural_joins_merge_the_columns_both_sides_have() {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    let types: Vec<_> = query_output_types(&query, &catalog, &search_path())
+    let types: Vec<_> = query_columns(&query, &catalog, &search_path())
         .expect("known columns")
         .into_iter()
         .map(|column| column.ty)
@@ -1506,7 +1505,7 @@ fn correlated_scalar_subquery_has_the_type_of_the_outer_column() {
         .into_root()
         .unwrap();
     let node = pgls_query::protobuf::Node { node: Some(stmt) };
-    let columns = query_output_types(&node, &catalog, &search_path).unwrap();
+    let columns = query_columns(&node, &catalog, &search_path).unwrap();
     assert_eq!(columns.len(), 1);
     assert_eq!(columns[0].name, "id");
     // `users.id` is int8, oid 20.
@@ -1525,7 +1524,7 @@ fn typed_output_names(sql: &str) -> Option<Vec<String>> {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    query_output_types(&query, &catalog, &search_path())
+    query_columns(&query, &catalog, &search_path())
         .map(|columns| columns.into_iter().map(|column| column.name).collect())
 }
 
@@ -1568,7 +1567,7 @@ fn cte_column_lists_apply_to_typed_columns() {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    let columns = query_output_types(&query, &catalog, &search_path()).expect("known columns");
+    let columns = query_columns(&query, &catalog, &search_path()).expect("known columns");
     assert_eq!(
         columns[0].ty,
         catalog.builtin_type("int8").map(crate::typing::Type::Named)

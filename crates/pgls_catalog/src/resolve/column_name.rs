@@ -6,17 +6,10 @@ use pgls_query_ext::utils::{is_star, string_value};
 const UNNAMED: &str = "?column?";
 
 /// The name of a select list entry: its alias, or else the name Postgres chooses for it
-/// ([`FigureColname`]), as far as the parse tree tells. The resolver names entries with
-/// `Resolver::target_name` instead, which also knows the columns of the subqueries it resolved.
+/// ([`FigureColname`]), with `subquery_column` naming the first output column of a scalar
+/// subquery, see [`figure_column_name_with`].
 ///
 /// [`FigureColname`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1713
-// PR 4: only `banDuplicateColumnAssignments` uses this, until it reads the resolver's output.
-pub fn target_name(target: &protobuf::ResTarget) -> Option<String> {
-    target_name_with(target, &|_| None)
-}
-
-/// Like [`target_name`], with `subquery_column` naming the first output column of a scalar
-/// subquery, see [`figure_column_name_with`].
 pub(super) fn target_name_with(
     target: &protobuf::ResTarget,
     subquery_column: SubqueryColumn<'_>,

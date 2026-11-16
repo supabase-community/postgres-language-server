@@ -1,6 +1,6 @@
 use pgls_query::protobuf::{CreateSchemaStmt, RoleSpecType};
 
-use crate::catalog::Catalog;
+use crate::catalog::{Catalog, QueryColumnsHook};
 use crate::lookup::CatalogView;
 
 /// `CREATE SCHEMA`, including the objects it creates. Models [`CreateSchemaCommand`].
@@ -10,6 +10,7 @@ pub(super) fn apply_create_schema_stmt(
     c: &mut Catalog,
     n: &CreateSchemaStmt,
     search_path: &[String],
+    query_columns: QueryColumnsHook<'_>,
 ) {
     let name = if !n.schemaname.is_empty() {
         n.schemaname.clone()
@@ -40,7 +41,7 @@ pub(super) fn apply_create_schema_stmt(
         .collect();
     for element in &n.schema_elts {
         if let Some(element) = &element.node {
-            c.apply(element, &element_path);
+            c.apply_with(element, &element_path, query_columns);
         }
     }
 }

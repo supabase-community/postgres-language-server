@@ -222,6 +222,44 @@ impl<'a> Tokens<'a> {
         Some(token.end)
     }
 
+    /// The end of the select list entry starting at `start`, with its alias: before the next `,`
+    /// outside parentheses, the `)` around the list, or the keyword after the select list.
+    pub fn target_end(&self, start: usize) -> Option<usize> {
+        let first = self.at(start)?;
+        let mut depth = 0usize;
+        let mut last = None;
+        for (index, token) in self.tokens.iter().enumerate().skip(first) {
+            match token.kind {
+                Kind::Ascii40 => depth += 1,
+                Kind::Ascii41 if depth == 0 => break,
+                Kind::Ascii41 => depth -= 1,
+                Kind::Ascii44
+                | Kind::Ascii59
+                | Kind::From
+                | Kind::Into
+                | Kind::Where
+                | Kind::GroupP
+                | Kind::Having
+                | Kind::Window
+                | Kind::Union
+                | Kind::Intersect
+                | Kind::Except
+                | Kind::Order
+                | Kind::Limit
+                | Kind::Offset
+                | Kind::Fetch
+                | Kind::For
+                    if depth == 0 =>
+                {
+                    break;
+                }
+                _ => {}
+            }
+            last = Some(index);
+        }
+        self.end(last?)
+    }
+
     /// The end of the first token of the expression starting at `start`, or of the whole name if
     /// it starts with one.
     pub fn expression_end(&self, start: usize) -> Option<usize> {
@@ -516,6 +554,22 @@ mod tests {
         }
         assert_eq!(literal_end("x", 0), None);
         assert_eq!(literal_end("'open", 0), None);
+    }
+
+    #[test]
+    fn target_spans_cover_the_entry_and_its_alias() {
+        let end = |sql: &str, start| Tokens::scan(sql)?.target_end(start);
+        let sql = "select a.id, (b.id) /* id */, coalesce(a, b) as x from t";
+        let start = sql.find("(b").unwrap();
+        assert_eq!(text(sql, start, end(sql, start)), "(b.id)");
+        let start = sql.find("coalesce").unwrap();
+        assert_eq!(text(sql, start, end(sql, start)), "coalesce(a, b) as x");
+        let sql = "select 1 as x, 2 as x into t union select 3, 4";
+        let start = sql.find("2 as").unwrap();
+        assert_eq!(text(sql, start, end(sql, start)), "2 as x");
+        let sql = "values (1, f(2, 3))";
+        let start = sql.find("f(").unwrap();
+        assert_eq!(text(sql, start, end(sql, start)), "f(2, 3)");
     }
 
     #[test]
