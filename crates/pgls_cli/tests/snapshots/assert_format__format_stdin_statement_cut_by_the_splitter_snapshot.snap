@@ -1,0 +1,25 @@
+---
+source: crates/pgls_cli/tests/assert_format.rs
+expression: "run_format_stdin(&[\"--stdin-file-path\", \"virtual.sql\"],\nCOPY_CUT_BY_THE_SPLITTER)"
+---
+status: failure
+stdout:
+COPY t TO stdout WITH (FORMAT csv);
+stderr:
+virtual.sql:1:18 syntax ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Invalid statement: syntax error at or near "("
+  
+  > 1 │ COPY t TO stdout WITH (FORMAT csv);
+      │                  ^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+
+virtual.sql format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Format error: The formatted file would not mean the same as the original (it has a syntax error), the file was left untouched
+  
+
+format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.

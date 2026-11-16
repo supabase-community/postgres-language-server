@@ -1826,6 +1826,15 @@ END;
     assert_eq!(parsed.stmts().len(), 1, "{formatted}");
 }
 
+/// The statement splitter ends the `COPY` before `WITH (`, so the formatter would end the `COPY`
+/// with a `;` and keep `WITH (FORMAT csv);` as written, which does not parse.
+#[tokio::test]
+async fn test_format_keeps_file_with_a_statement_cut_by_the_splitter() {
+    let content = "SELECT   1;\nCOPY t TO stdout WITH (FORMAT csv);\nSELECT   2;\n";
+
+    assert_eq!(format_content(content), content);
+}
+
 #[tokio::test]
 async fn test_format_preserves_leading_comment() {
     let formatted = format_content("-- a header comment\nselect   1;");

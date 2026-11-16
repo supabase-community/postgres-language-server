@@ -98,12 +98,10 @@ fn format_stdin_with_syntax_error_snapshot() {
     ));
 }
 
-/// The `END` of the `CASE` was taken as the end of the body, which turned the real `END` into
-/// `COMMIT`, see #1142.
-const BEGIN_ATOMIC_WITH_CASE: &str = "CREATE FUNCTION f() RETURNS integer LANGUAGE sql
-BEGIN ATOMIC
-  SELECT CASE WHEN true THEN 1 ELSE 2 END;
-END;
+/// The statement splitter ends the `COPY` before `WITH (`, so the formatter would end the `COPY`
+/// with a `;` and keep `WITH (FORMAT csv);` as written, which does not parse. The file is kept as
+/// written instead.
+const COPY_CUT_BY_THE_SPLITTER: &str = "COPY t TO stdout WITH (FORMAT csv);
 ";
 
 #[test]
@@ -111,18 +109,18 @@ END;
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
-fn format_stdin_begin_atomic_with_case_snapshot() {
+fn format_stdin_statement_cut_by_the_splitter_snapshot() {
     assert_snapshot!(run_format_stdin(
         &["--stdin-file-path", "virtual.sql"],
-        BEGIN_ATOMIC_WITH_CASE
+        COPY_CUT_BY_THE_SPLITTER
     ));
 }
 
 #[test]
-fn format_write_begin_atomic_with_case() {
+fn format_write_keeps_statement_cut_by_the_splitter() {
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("repro.sql");
-    std::fs::write(&path, BEGIN_ATOMIC_WITH_CASE).unwrap();
+    let path = dir.path().join("copy.sql");
+    std::fs::write(&path, COPY_CUT_BY_THE_SPLITTER).unwrap();
 
     let output = cargo_bin_cmd!("postgres-language-server")
         .args([
@@ -137,16 +135,15 @@ fn format_write_begin_atomic_with_case() {
         .expect("failed to run CLI");
 
     let written = std::fs::read_to_string(&path).unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
+    let report = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(
-        written.trim_end().to_lowercase().ends_with("end;"),
-        "{written}"
-    );
-    assert!(!written.to_lowercase().contains("commit"), "{written}");
+    assert_eq!(written, COPY_CUT_BY_THE_SPLITTER, "{report}");
+    assert!(report.contains("the file was left untouched"), "{report}");
+    // The file that was kept as written is not reported as fixed.
+    assert!(report.contains("No fixes applied"), "{report}");
 }
 
 #[test]
