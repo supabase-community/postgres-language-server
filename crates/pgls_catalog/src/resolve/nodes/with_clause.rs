@@ -5,12 +5,14 @@ use pgls_query::{
 
 use super::{
     Resolver,
-    alias::rename_typed_columns,
+    alias::{rename_columns, rename_typed_columns},
     common_table_expr::{resolve_common_table_expr, search_cycle_columns},
     select_stmt::resolve_select_stmt,
 };
 use crate::resolve::{
-    Reference, resolve_unknown_outputs,
+    Reference,
+    output::QueryOutput,
+    resolve_unknown_outputs,
     scope::{Cte, TypedColumns},
 };
 use crate::typing::TypedColumn;
@@ -66,17 +68,22 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
             placeholder.typed_columns = Some(columns);
         }
 
-        let columns = resolve_common_table_expr(r, cte).map(|columns| {
+        let output = resolve_common_table_expr(r, cte);
+        // The column list renames the first columns ([`analyzeCTETargetList`]).
+        //
+        // [`analyzeCTETargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L571
+        let columns = rename_columns(
+            output.as_ref().and_then(QueryOutput::names),
+            &cte.aliascolnames,
+        )
+        .map(|columns| {
             columns
                 .into_iter()
                 .chain(added.iter().map(|column| column.name.clone()))
                 .collect()
         });
-        // The column list renames the first columns ([`analyzeCTETargetList`]).
-        //
-        // [`analyzeCTETargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L571
         let output = rename_typed_columns(
-            resolve_unknown_outputs(r.catalog, r.output.clone()),
+            resolve_unknown_outputs(r.catalog, output.as_ref().and_then(QueryOutput::columns)),
             &cte.aliascolnames,
         );
         let typed_columns = match non_recursive {
@@ -129,9 +136,9 @@ fn non_recursive_term_columns(r: &mut Resolver, cte: &CommonTableExpr) -> Option
     let Some(left) = query.larg.as_deref() else {
         return Some(None);
     };
-    resolve_select_stmt(r, left);
+    let output = resolve_select_stmt(r, left);
     Some(rename_typed_columns(
-        resolve_unknown_outputs(r.catalog, r.output.clone()),
+        resolve_unknown_outputs(r.catalog, output.as_ref().and_then(QueryOutput::columns)),
         &cte.aliascolnames,
     ))
 }

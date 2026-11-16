@@ -4,26 +4,23 @@ use super::{
     Resolver, from_clause::resolve_from_clause, range_var::resolve_target_relation,
     res_target::resolve_returning_clause, with_clause::resolve_with_clause,
 };
-use crate::resolve::{
-    scope::{Columns, Level},
-    utils::resolve_expr,
-};
+use crate::resolve::{output::QueryOutput, scope::Level, utils::resolve_expr};
 
 /// Resolves a DELETE and returns the columns of its RETURNING list. Port of
 /// [`transformDeleteStmt`].
 ///
 /// [`transformDeleteStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L553
-pub(super) fn resolve_delete_stmt(r: &mut Resolver, n: &DeleteStmt) -> Columns {
+pub(super) fn resolve_delete_stmt(r: &mut Resolver, n: &DeleteStmt) -> Option<QueryOutput> {
     let ctes = r.ctes.len();
     if let Some(with) = &n.with_clause {
         resolve_with_clause(r, with);
     }
-    let columns = resolve_delete(r, n);
+    let output = resolve_delete(r, n);
     r.ctes.truncate(ctes);
-    columns
+    output
 }
 
-fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Columns {
+fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Option<QueryOutput> {
     let Some(relation) = &n.relation else {
         r.depends_on_file();
         return None;
