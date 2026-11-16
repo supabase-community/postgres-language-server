@@ -168,12 +168,28 @@ fn common_suffix(a: &[u8], b: &[u8]) -> usize {
             .count()
 }
 
+/// The work of [`split_edited`]. `None` means that the region can't be split on its own, and the
+/// caller splits all of `new`.
+///
+/// It works in four steps:
+/// 1. Find the change: the text between the common prefix and the common suffix of `old` and
+///    `new`. Give up if it touches a quote, a comment or a psql command.
+/// 2. Pick the region: the statements of `previous` that the change touches, plus
+///    [`EDIT_CONTEXT_STATEMENTS`] on each side, and split that part of `new` alone.
+/// 3. Check that the context statements come out of the region as before. If they don't, the
+///    change reaches beyond the region, or the region's start isn't a statement start.
+/// 4. Put the result together: `previous` before the region, the region, and `previous` after
+///    the region, shifted by the change in length. The errors are combined the same way.
 fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitResult> {
+    // Step 1: the change is `prefix..old_end` in `old` and `prefix..new_end` in `new`. Both ends
+    // are moved back to a char boundary, so the slices below never cut a character.
     let (old_bytes, new_bytes) = (old.as_bytes(), new.as_bytes());
     let mut prefix = common_prefix(old_bytes, new_bytes);
     while !old.is_char_boundary(prefix) || !new.is_char_boundary(prefix) {
         prefix -= 1;
     }
+    // The suffix is searched only after the prefix, so the two don't overlap: in `aa` → `aaa`
+    // both would otherwise cover the whole of `old`.
     let max_suffix = old.len().min(new.len()) - prefix;
     let mut suffix = common_suffix(
         &old_bytes[old.len() - max_suffix..],
@@ -183,6 +199,7 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
         suffix -= 1;
     }
     let (old_end, new_end) = (old.len() - suffix, new.len() - suffix);
+    // Nothing changed.
     if old_end == prefix && new_end == prefix {
         return Some(previous.clone());
     }
@@ -198,16 +215,25 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
         return None;
     }
 
+    // Step 2: pick the region. All indices are into the statements of `previous`, so into `old`.
     let ranges = &previous.ranges;
     let to_size = |offset: usize| TextSize::try_from(offset).ok();
     let (prefix_size, old_end_size) = (to_size(prefix)?, to_size(old_end)?);
-    // The statements from `first` to `last` (exclusive) are split again: the ones that the
-    // change touches, and `EDIT_CONTEXT_STATEMENTS` on each side.
+    // The statements from `touched` to `after` (exclusive) are the ones that the change touches:
+    // `touched` is the first one that doesn't end before the change, `after` the first one that
+    // starts at or after its end. A statement that ends right where the change starts counts as
+    // touched, because typing at its end can extend it. The statements from `first` to `last`
+    // (exclusive) are split again: the touched ones, and `EDIT_CONTEXT_STATEMENTS` on each side,
+    // fewer at the start or the end of the file.
     let touched = ranges.partition_point(|range| range.end() < prefix_size);
     let after = ranges.partition_point(|range| range.start() < old_end_size);
     let first = touched.saturating_sub(EDIT_CONTEXT_STATEMENTS);
     let last = (after + EDIT_CONTEXT_STATEMENTS).min(ranges.len());
 
+    // The region in `new`: from the start of statement `first` to the end of statement
+    // `last - 1`, moved by the change in length because it lies after the change. With no
+    // statement left on a side, the region runs to that end of the file, so text before the
+    // first or after the last statement, like a newly typed one, is split too.
     let start = if first == 0 {
         0
     } else {
@@ -218,21 +244,27 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     } else {
         (usize::from(ranges[last - 1].end()) + new.len()).checked_sub(old.len())?
     };
+    // The region has to contain the whole change.
     if start > prefix || new_region_end < new_end {
         return None;
     }
     let offset = to_size(start)?;
+    // Moves a range of `old` that lies after the change to where it is in `new`.
     let shift = |range: TextRange| -> Option<TextRange> {
         let start = (usize::from(range.start()) + new.len()).checked_sub(old.len())?;
         let end = (usize::from(range.end()) + new.len()).checked_sub(old.len())?;
         Some(TextRange::new(to_size(start)?, to_size(end)?))
     };
 
+    // `split` returns ranges relative to the region; `+ offset` makes them offsets into `new`.
     let region = split(&new[start..new_region_end]);
     let region_ranges: Vec<TextRange> = region.ranges.iter().map(|range| *range + offset).collect();
 
-    // The statements before and after the change come out as before, so the region doesn't
-    // depend on the text around it.
+    // Step 3: the statements before and after the change come out as before, so the region
+    // doesn't depend on the text around it. The context statements before the change must be
+    // exactly the old ones, the context statements after it the old ones shifted. If the change
+    // reaches one of them, e.g. it merges a touched statement into it, the ranges differ here
+    // and the whole file is split instead.
     let before = touched - first;
     if first > 0
         && (region_ranges.len() < before || region_ranges[..before] != ranges[first..touched])
@@ -253,10 +285,16 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
         }
     }
 
+    // Step 4: put the result together.
+    //
     // The first and the last statement of the region only show that the region lines up with
     // the statements around it: the first one is split without the statements before it, and
     // the last one runs into the end of the region. Both are unchanged, so they are taken from
     // `previous`, like the statements outside the region.
+    //
+    // So the new statements are those of the region that start in `low..new_high`: after the
+    // region's first statement and before its last one. `old_high` is where `new_high` was in
+    // `old`. Statements `..kept_before` and `kept_after..` come from `previous`.
     let low = if first > 0 {
         ranges[first].end()
     } else {
@@ -286,7 +324,10 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
         result_ranges.push(shift(*range)?);
     }
 
-    // The same for the errors. The errors of the lexer come first, as in `split`.
+    // The same for the errors: the old ones before `low`, the region's in `low..new_high`, and
+    // the old ones from `old_high` on, shifted. An error without a span can't be placed, so the
+    // whole file is split instead. The errors of the lexer come first, as in `split`, so the two
+    // kinds are placed separately.
     let place = |errors: &[SplitDiagnostic], region: &[SplitDiagnostic]| {
         let mut placed = Vec::new();
         for error in errors {
