@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/rename_stmt_5.sql
+---
+alter rule rules_parted_table_insert on public.rules_parted_table
+rename to rules_parted_table_insert_redirect;
