@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_17_11: 43687 statements and 392 in SQL function bodies, 1791 findings on statements Postgres rejected
+REL_17_11: 43649 statements and 392 in SQL function bodies, 1790 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 ambiguousColumn 42712: 2
@@ -30,7 +30,7 @@ unknownRelation 0A000: 2
 unknownRelation 25006: 1
 unknownRelation 25P01: 3
 unknownRelation 42501: 1
-unknownRelation 42P01: 1453
+unknownRelation 42P01: 1452
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -1804,23 +1804,22 @@ with.sql:369:1 42P01 unknownRelation
 with.sql:369:1 42P01 unknownRelation
 with.sql:376:1 42P01 unknownRelation
 with.sql:376:1 42P01 unknownRelation
-with.sql:400:1 42P01 unknownRelation
-with.sql:409:1 42P01 unknownRelation
-with.sql:418:1 42P01 unknownRelation
-with.sql:428:1 42P01 unknownRelation
-with.sql:437:1 42P01 unknownRelation
-with.sql:446:1 42P01 unknownRelation
-with.sql:456:1 42P01 unknownRelation
-with.sql:464:1 42P01 unknownRelation
-with.sql:473:1 42P01 unknownRelation
-with.sql:481:1 42P01 unknownRelation
-with.sql:491:1 42P01 unknownRelation
-with.sql:500:1 42P01 unknownRelation
-with.sql:509:1 42P01 unknownRelation
-with.sql:520:1 42P01 unknownRelation
-with.sql:531:1 42P01 unknownRelation
-with.sql:541:1 42P01 unknownRelation
+with.sql:1078:1 42P01 unknownRelation
+with.sql:1082:1 42P01 unknownRelation
+with.sql:1093:1 42P01 unknownRelation
+with.sql:1137:1 42P01 unknownRelation
+with.sql:1168:1 42P01 unknownRelation
+with.sql:1373:1 42P01 unknownRelation
+with.sql:1373:1 42P01 unknownRelation
+with.sql:1381:1 42P01 unknownRelation
+with.sql:1381:1 42P01 unknownRelation
+with.sql:1388:1 42P01 unknownRelation
+with.sql:1388:1 42P01 unknownRelation
+with.sql:1396:1 42P01 unknownRelation
+with.sql:1396:1 42P01 unknownRelation
 with.sql:1496:1 42601 invalidMerge
+with.sql:1677:1 42P01 unknownRelation
+with.sql:1677:1 42P01 unknownRelation
 write_parallel.sql:17:1 42P01 unknownRelation
 write_parallel.sql:19:1 42P01 unknownRelation
 write_parallel.sql:23:1 42P01 unknownRelation
