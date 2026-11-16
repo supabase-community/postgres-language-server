@@ -111,7 +111,8 @@ pub struct Walk {
 ///   after the up sections before it, and its changes don't carry into the next section.
 /// - A top-level statement that doesn't parse taints the catalog if it may have changed it.
 /// - The statements of SQL function bodies are visited, but they don't run. A statement that
-///   calls a SQL function of the file whose body may change the catalog taints it.
+///   calls a function of the file whose body may change the catalog taints it, see
+///   [`CatalogFunctions`].
 /// - The names of a statement with identifier parameters, like psql's `:name`, are placeholders.
 ///   Such a statement is visited and applied to the session (its locks and its effect on the
 ///   transaction), but if it may change the catalog, it taints it instead of being applied to it.
@@ -302,7 +303,7 @@ pub fn walk_statements(
             match &stmt.function {
                 Some(function) => catalog_functions.record_body_statement(function, &stmt.root),
                 None if catalog_functions.called_by(&stmt.root) => file_context.taint_catalog(),
-                None => {}
+                None => catalog_functions.record_function(stmt),
             }
         }
 
@@ -350,16 +351,23 @@ fn skip_unparsable<'a>(
     }
 }
 
-/// The SQL functions of the file whose bodies may change the catalog, by name. The catalog
-/// can't follow what a call to one of them does, so a statement that calls one taints it, like
-/// `CALL` does.
+/// The functions of the file whose bodies may change the catalog, by name. The catalog can't
+/// follow what a call to one of them does, so a statement that calls one taints it, like `CALL`
+/// does.
+///
+/// - SQL functions may if a statement of their body may, see [`Self::record_body_statement`].
+/// - PL/pgSQL functions may if their body has a statement that may, or dynamic SQL, see
+///   [`crate::plpgsql::may_change_catalog`].
+/// - Functions in other languages, like PL/Python or C, always may, except `internal` ones: they
+///   are built-in functions under another name, and calls to database functions don't taint the
+///   catalog.
 ///
 /// Functions are known by their name only, without schema or arguments: a call to any function
-/// of that name taints the catalog. The bodies of other languages, like PL/pgSQL, are not looked
-/// at.
+/// of that name taints the catalog. Database functions aren't looked at.
 ///
 /// Cost: one pass over the nodes of each statement that runs, once the file created such a
-/// function, and of each statement of a function body.
+/// function, and of each statement of a function body. A PL/pgSQL body is parsed once, when the
+/// statement that creates the function runs.
 #[derive(Clone, Default)]
 struct CatalogFunctions(Arc<HashSet<String>>);
 
@@ -376,6 +384,42 @@ impl CatalogFunctions {
         }
         if !is_plain_query(stmt) || self.called_by(stmt) {
             Arc::make_mut(&mut self.0).insert(function.function_name.clone());
+        }
+    }
+
+    /// Records the function that `stmt` creates if it isn't a SQL function, whose body
+    /// statements [`Self::record_body_statement`] gets. A `CREATE FUNCTION` without a language
+    /// has a SQL body, or fails. Procedures only run with `CALL`, which taints the catalog
+    /// anyway.
+    fn record_function(&mut self, stmt: &AnalysableStatement) {
+        use pgls_query_ext::utils::{find_option_value, string_value};
+        let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = &*stmt.root else {
+            return;
+        };
+        let Some(language) = find_option_value(create_fn, "language") else {
+            return;
+        };
+        let Some(name) = create_fn.funcname.last().and_then(string_value) else {
+            return;
+        };
+        if create_fn.is_procedure
+            || language.eq_ignore_ascii_case("sql")
+            || language.eq_ignore_ascii_case("internal")
+            || self.0.contains(name)
+        {
+            return;
+        }
+        let may_change_catalog = !language.eq_ignore_ascii_case("plpgsql")
+            || stmt.sql.as_deref().is_none_or(|sql| {
+                crate::plpgsql::may_change_catalog(
+                    sql,
+                    |stmt| self.called_by(stmt),
+                    |name| self.0.contains(name),
+                    !self.0.is_empty(),
+                )
+            });
+        if may_change_catalog {
+            Arc::make_mut(&mut self.0).insert(name.to_owned());
         }
     }
 
@@ -744,6 +788,72 @@ mod tests {
 
         let (tainted, _) = walk_with_function_body(sql, "insert into ddl_test values (1);");
         assert_eq!(tainted, [false, false, false, false]);
+    }
+
+    #[test]
+    fn calls_to_functions_in_other_languages_taint_the_catalog() {
+        let tainted = |function: &str| {
+            let sql = format!("{function};\nselect 1; select f(); select 2;");
+            walk_with_function_body(&sql, "").0
+        };
+        let plpgsql = |body: &str| {
+            tainted(&format!(
+                "create function f() returns void language plpgsql as $$begin {body} end$$"
+            ))
+        };
+        assert_eq!(
+            plpgsql("create table t (a int);"),
+            [false, false, false, true]
+        );
+        assert_eq!(
+            plpgsql("execute 'drop table t';"),
+            [false, false, false, true]
+        );
+        assert_eq!(
+            plpgsql("insert into t values (1);"),
+            [false, false, false, false]
+        );
+        assert_eq!(
+            tainted("create function f() returns void language plpython3u as 'pass'"),
+            [false, false, false, true]
+        );
+        assert_eq!(
+            tainted("create procedure f() language plpython3u as 'pass'"),
+            [false, false, false, false]
+        );
+        assert_eq!(
+            tainted("create function f(int) returns int language internal as 'int4abs'"),
+            [false, false, false, false]
+        );
+
+        // A PL/pgSQL function that calls a function of the file that changes the catalog.
+        let sql = "create function create_and_insert() returns void language sql as 'body';
+            create function f() returns void language plpgsql as $$begin
+              perform create_and_insert();
+            end$$;
+            select f(); select 2;";
+        let (tainted, _) = walk_with_function_body(sql, "create table ddl_test (f1 int);");
+        assert_eq!(tainted, [false, false, false, true]);
+    }
+
+    #[test]
+    fn plpgsql_functions_are_looked_at_in_linear_time() {
+        let statements = 20_000;
+        let sql = format!(
+            "create function create_and_insert() returns void language sql as 'body';\n{}",
+            (0..statements)
+                .map(|i| format!(
+                    "create function f{i}(a int) returns int language plpgsql as $$
+                    begin
+                      insert into t values (a);
+                      return a + 1;
+                    end $$;\n"
+                ))
+                .collect::<String>()
+        );
+        let (tainted, elapsed) = walk_with_function_body(&sql, "create table ddl_test (f1 int);");
+        assert!(tainted.iter().all(|tainted| !tainted));
+        assert!(elapsed < Duration::from_secs(10), "{elapsed:?}");
     }
 
     #[test]
