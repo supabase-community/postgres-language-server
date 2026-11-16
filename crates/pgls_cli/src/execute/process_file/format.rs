@@ -37,22 +37,18 @@ fn format_with_guard<'ctx>(
     }
 
     if ctx.config.allows_writes() {
-        // The workspace keeps what it cannot format safely as written, up to the whole file.
-        let changed = format_result.original != format_result.formatted;
-        if changed {
-            let file_path = path.to_path_buf();
-            let mut file = std::fs::File::create(&file_path).map_err(|e| {
+        let file_path = path.to_path_buf();
+        let mut file = std::fs::File::create(&file_path).map_err(|e| {
+            Message::from(pgls_workspace::WorkspaceError::runtime(&format!(
+                "Could not write to file: {e}"
+            )))
+        })?;
+        file.write_all(format_result.formatted.as_bytes())
+            .map_err(|e| {
                 Message::from(pgls_workspace::WorkspaceError::runtime(&format!(
                     "Could not write to file: {e}"
                 )))
             })?;
-            file.write_all(format_result.formatted.as_bytes())
-                .map_err(|e| {
-                    Message::from(pgls_workspace::WorkspaceError::runtime(&format!(
-                        "Could not write to file: {e}"
-                    )))
-                })?;
-        }
 
         if !diagnostics.is_empty() {
             ctx.push_message(Message::Diagnostics {
@@ -63,11 +59,7 @@ fn format_with_guard<'ctx>(
             });
         }
 
-        return Ok(if changed {
-            FileStatus::Changed
-        } else {
-            FileStatus::Unchanged
-        });
+        return Ok(FileStatus::Changed);
     }
 
     let only_layout_between_statements = format_result.statements.is_empty();
