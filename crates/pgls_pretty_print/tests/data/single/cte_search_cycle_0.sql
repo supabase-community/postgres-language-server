@@ -1,0 +1,1 @@
+WITH RECURSIVE search_graph(f, t, label) AS (SELECT * FROM graph g UNION ALL SELECT g.* FROM graph g, search_graph sg WHERE g.f = sg.t) SEARCH BREADTH FIRST BY f, t SET seq CYCLE f, t SET is_cycle TO 'Y' DEFAULT 'N' USING path SELECT * FROM search_graph ORDER BY seq;
