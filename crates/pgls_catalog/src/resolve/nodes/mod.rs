@@ -33,8 +33,8 @@ use super::{
         record_a_expr, record_create_function, record_function, record_sort_by, record_sub_link,
         record_unresolved,
     },
+    output::QueryOutput,
     resolver::Resolver,
-    scope::Columns,
 };
 
 pub(crate) use alias::rename;
@@ -58,12 +58,12 @@ use update_stmt::resolve_update_stmt;
 use view_stmt::resolve_view_stmt;
 
 /// Resolves a node. Returns the output columns of queries, and of data-modifying statements
-/// with `RETURNING`, if they are known.
-pub(super) fn resolve_node(r: &mut Resolver, node: &Node) -> Columns {
+/// with `RETURNING`.
+pub(super) fn resolve_node(r: &mut Resolver, node: &Node) -> Option<QueryOutput> {
     resolve_node_enum(r, node.node.as_ref()?)
 }
 
-pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
+pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Option<QueryOutput> {
     match node {
         NodeEnum::SelectStmt(_)
         | NodeEnum::InsertStmt(_)
@@ -71,7 +71,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         | NodeEnum::DeleteStmt(_)
         | NodeEnum::MergeStmt(_) => {
             r.query_depth += 1;
-            let columns = match node {
+            let output = match node {
                 NodeEnum::SelectStmt(n) => resolve_select_stmt(r, n),
                 NodeEnum::InsertStmt(n) => resolve_insert_stmt(r, n),
                 NodeEnum::UpdateStmt(n) => resolve_update_stmt(r, n),
@@ -80,7 +80,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
                 _ => None,
             };
             r.query_depth -= 1;
-            return columns;
+            return output;
         }
         NodeEnum::CreateFunctionStmt(n) => {
             record_type_names(r, node);
@@ -135,10 +135,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
             if let Some(query) = n.subselect.as_deref() {
                 // The subquery sees the enclosing queries, like in Postgres, where
                 // `transformSubLink` analyses it with the enclosing query as its parent.
-                let enclosing_output = r.output.take();
-                resolve_node(r, query);
-                let output = crate::resolve::resolve_unknown_outputs(r.catalog, r.output.take());
-                r.output = enclosing_output;
+                let output = resolve_node(r, query);
                 r.remember_subquery_output(query, output);
             }
         }

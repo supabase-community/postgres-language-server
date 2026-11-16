@@ -14,7 +14,7 @@
 //! the right answer.
 
 mod column_name;
-pub use column_name::{figure_column_name, target_name};
+pub use column_name::target_name;
 #[cfg(all(test, feature = "db"))]
 mod differential_tests;
 pub(crate) mod expr;
@@ -23,6 +23,7 @@ pub use lookups::{LookupKind, OperatorConstruct, SearchPathLookup};
 #[cfg(test)]
 mod lookup_tests;
 mod nodes;
+mod output;
 #[cfg(all(test, feature = "db"))]
 mod reference_tests;
 mod resolver;
@@ -436,7 +437,7 @@ pub fn query_output_columns(
     catalog: &dyn CatalogView,
     search_path: &[String],
 ) -> Option<Vec<String>> {
-    nodes::resolve_node(&mut Resolver::new(catalog, search_path, None, None), query)
+    nodes::resolve_node(&mut Resolver::new(catalog, search_path, None, None), query)?.names()
 }
 
 /// The inferred output names and types of a query, or `None` when its shape is unknown.
@@ -446,8 +447,8 @@ pub fn query_output_types(
     search_path: &[String],
 ) -> QueryColumns {
     let mut resolver = Resolver::new(catalog, search_path, None, None);
-    nodes::resolve_node(&mut resolver, query);
-    resolve_unknown_outputs(catalog, resolver.output)
+    let output = nodes::resolve_node(&mut resolver, query);
+    resolve_unknown_outputs(catalog, output?.columns())
 }
 
 /// Port of [`resolveTargetListUnknowns`]: output columns of unknown type become
