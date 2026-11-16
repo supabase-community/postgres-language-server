@@ -1,4 +1,17 @@
 6:1 rejected 42601
 17:1 accepted
 23:1 rejected 42601
-23:40 rejected 42601
+25:1 rejected 42601
+28:1 accepted
+30:1 rejected 42601
+32:1 accepted
+33:1 rejected 42601
+34:1 accepted
+40:1 rejected 42601
+42:1 rejected 42601
+45:1 accepted
+47:1 rejected 42601
+49:1 accepted
+50:1 rejected 42601
+51:1 accepted
+53:1 accepted
