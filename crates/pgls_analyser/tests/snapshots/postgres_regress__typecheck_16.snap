@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_16_15: 41303 statements and 387 in SQL function bodies, 1731 findings on statements Postgres rejected
+REL_16_15: 43634 statements and 403 in SQL function bodies, 1761 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 ambiguousColumn 42712: 2
@@ -20,16 +20,17 @@ invalidMerge 42712: 1
 missingFromClauseEntry 42P01: 12
 operatorTypeMismatch 42725: 1
 operatorTypeMismatch 42883: 12
-unknownColumn 42703: 38
+unknownColumn 42703: 37
 unknownColumn 42P01: 2
 unknownFunction 42704: 4
-unknownFunction 42883: 97
+unknownFunction 42883: 101
 unknownFunction 42P01: 19
 unknownRelation 0A000: 2
 unknownRelation 25006: 1
 unknownRelation 25P01: 3
 unknownRelation 42501: 1
-unknownRelation 42P01: 1398
+unknownRelation 42P01: 1424
+unknownRelation 55000: 1
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -962,6 +963,32 @@ limit.sql:42:1 42P01 unknownRelation
 limit.sql:50:1 42P01 unknownRelation
 limit.sql:58:1 42P01 unknownRelation
 limit.sql:66:1 42P01 unknownRelation
+limit.sql:74:1 42P01 unknownRelation
+limit.sql:102:1 42P01 unknownRelation
+limit.sql:106:1 42P01 unknownRelation
+limit.sql:111:1 42P01 unknownRelation
+limit.sql:115:1 42P01 unknownRelation
+limit.sql:120:1 42P01 unknownRelation
+limit.sql:124:1 42P01 unknownRelation
+limit.sql:127:1 42P01 unknownRelation
+limit.sql:131:1 42P01 unknownRelation
+limit.sql:148:1 42P01 unknownRelation
+limit.sql:152:1 42P01 unknownRelation
+limit.sql:160:1 42P01 unknownRelation
+limit.sql:164:1 42P01 unknownRelation
+limit.sql:168:1 42P01 unknownRelation
+limit.sql:172:1 42P01 unknownRelation
+limit.sql:187:1 42P01 unknownRelation
+limit.sql:190:1 42P01 unknownRelation
+limit.sql:193:1 42P01 unknownRelation
+limit.sql:195:1 42P01 unknownRelation
+limit.sql:198:1 42P01 unknownRelation
+limit.sql:201:1 42P01 unknownRelation
+matview.sql:217:1 42883 unknownFunction
+matview.sql:217:1 42883 unknownFunction
+matview.sql:217:1 42883 unknownFunction
+matview.sql:217:1 42883 unknownFunction
+matview.sql:262:1 55000 unknownRelation
 memoize.sql:43:1 42P01 unknownRelation
 memoize.sql:43:1 42P01 unknownRelation
 memoize.sql:55:1 42P01 unknownRelation
@@ -1192,6 +1219,11 @@ portals.sql:49:1 42P01 unknownRelation
 portals.sql:51:1 42P01 unknownRelation
 portals.sql:185:1 42P01 unknownRelation
 portals.sql:195:1 42P01 unknownRelation
+portals.sql:214:1 42P01 unknownRelation
+portals.sql:234:1 42P01 unknownRelation
+portals.sql:258:1 42P01 unknownRelation
+portals.sql:271:1 (body) 42P01 unknownRelation
+portals.sql:329:1 42P01 unknownRelation
 portals_p2.sql:7:1 42P01 unknownRelation
 portals_p2.sql:10:1 42P01 unknownRelation
 portals_p2.sql:13:1 42P01 unknownRelation
@@ -1390,7 +1422,6 @@ select_parallel.sql:102:1 42P01 unknownRelation
 select_views.sql:6:1 42P01 unknownRelation
 select_views.sql:8:1 42P01 unknownRelation
 select_views.sql:10:1 42P01 unknownRelation
-sqljson.sql:346:1 42703 unknownColumn
 stats.sql:94:1 42P01 unknownRelation
 stats.sql:98:1 42P01 unknownRelation
 subselect.sql:87:1 42P01 unknownRelation
