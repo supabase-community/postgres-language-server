@@ -1,15 +1,16 @@
 //! The refactor that replaces a `*` in a select list with the columns it expands to.
 
 use pgls_analyse::{ActionCategory, Applicability, RefactorKind};
-use pgls_catalog::resolve::{Reference, StarColumn};
 use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
+use pgls_resolve::{Reference, StarColumn};
 use pgls_text_size::TextSize;
 
 use crate::features::code_actions::{CodeAction, CodeActionKind, EditAction, TextEdit};
 
 /// The action that replaces the `*` or `t.*` of `reference` with its columns. `content` is the
-/// text of the file, and the statement of the reference starts at `stmt_start`.
+/// text of the file, and the statement of the reference starts at `stmt_start`. `None` if a
+/// column can't be written as a name that references it.
 pub(crate) fn expand_star_action(
     reference: &Reference,
     content: &str,
@@ -20,7 +21,7 @@ pub(crate) fn expand_star_action(
     };
     let range = (*span)? + stmt_start;
     let star = content.get(usize::from(range.start())..usize::from(range.end()))?;
-    let new_text = column_list(columns);
+    let new_text = column_list(columns)?;
     // In the body of a function quoted with `'`, a quote in a column name would end the body.
     if new_text.contains('\'')
         && content
@@ -137,29 +138,33 @@ fn is_name(token: &ScanToken) -> bool {
 }
 
 /// The columns as a select list, e.g. `u.id, u."Name"`. The first name of each column is a
-/// `ColId`, and the names after a dot are labels, which can be any keyword.
-fn column_list(columns: &[StarColumn]) -> String {
-    columns
+/// `ColId`, and the names after a dot are labels, which can be any keyword. `None` if a column
+/// has no qualifier.
+fn column_list(columns: &[StarColumn]) -> Option<String> {
+    let columns = columns
         .iter()
         .map(|column| {
-            column
-                .qualifier
-                .iter()
-                .chain(std::iter::once(&column.name))
-                .enumerate()
-                .map(|(i, name)| {
-                    let position = if i == 0 {
-                        NamePosition::ColId
-                    } else {
-                        NamePosition::ColLabel
-                    };
-                    quote_identifier(name, position)
-                })
-                .collect::<Vec<_>>()
-                .join(".")
+            Some(
+                column
+                    .qualifier
+                    .as_ref()?
+                    .iter()
+                    .chain(std::iter::once(&column.name))
+                    .enumerate()
+                    .map(|(i, name)| {
+                        let position = if i == 0 {
+                            NamePosition::ColId
+                        } else {
+                            NamePosition::ColLabel
+                        };
+                        quote_identifier(name, position)
+                    })
+                    .collect::<Vec<_>>()
+                    .join("."),
+            )
         })
-        .collect::<Vec<_>>()
-        .join(", ")
+        .collect::<Option<Vec<_>>>()?;
+    Some(columns.join(", "))
 }
 
 #[cfg(test)]
@@ -204,25 +209,43 @@ mod tests {
     fn qualifies_columns() {
         let columns = [
             StarColumn {
-                qualifier: vec!["u".into()],
+                qualifier: Some(vec!["u".into()]),
                 name: "id".into(),
             },
             StarColumn {
-                qualifier: vec!["public".into(), "Posts".into()],
+                qualifier: Some(vec!["public".into(), "Posts".into()]),
                 name: "user".into(),
             },
             StarColumn {
-                qualifier: vec![],
+                qualifier: Some(vec![]),
                 name: "title".into(),
             },
         ];
-        assert_eq!(column_list(&columns), r#"u.id, public."Posts".user, title"#);
+        assert_eq!(
+            column_list(&columns).as_deref(),
+            Some(r#"u.id, public."Posts".user, title"#)
+        );
+    }
+
+    #[test]
+    fn refuses_columns_without_a_qualifier() {
+        let columns = [
+            StarColumn {
+                qualifier: Some(vec![]),
+                name: "id".into(),
+            },
+            StarColumn {
+                qualifier: None,
+                name: "id".into(),
+            },
+        ];
+        assert_eq!(column_list(&columns), None);
     }
 
     #[test]
     fn quotes_names_where_postgres_needs_it() {
         let column = |qualifier: &[&str], name: &str| StarColumn {
-            qualifier: qualifier.iter().map(|part| part.to_string()).collect(),
+            qualifier: Some(qualifier.iter().map(|part| part.to_string()).collect()),
             name: name.into(),
         };
         // Postgres reads a column name keyword (`between`) as a column, but not a reserved
@@ -241,8 +264,10 @@ mod tests {
             column(&[], "Café"),
         ];
         assert_eq!(
-            column_list(&columns),
-            r#"between, "select", "left", t.select, "left".id, "Name", "my col", "a""b", größe, "Café""#
+            column_list(&columns).as_deref(),
+            Some(
+                r#"between, "select", "left", t.select, "left".id, "Name", "my col", "a""b", größe, "Café""#
+            )
         );
     }
 }

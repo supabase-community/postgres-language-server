@@ -115,7 +115,7 @@ fn target_pseudo(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<Polymorphi
 /// [`crate::typing::check_generic_type_consistency`] instead.
 ///
 /// [`can_coerce_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557
-pub(crate) fn can_coerce(
+pub fn can_coerce(
     c: &dyn CatalogView,
     from: &Type,
     to: &TypeId,

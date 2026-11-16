@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/json_is_predicate_1.sql
+---
+select
+  js is json,
+  js is json object with unique keys,
+  js is json with unique keys,
+  not js is json array,
+  js is json scalar
+from
+  t;

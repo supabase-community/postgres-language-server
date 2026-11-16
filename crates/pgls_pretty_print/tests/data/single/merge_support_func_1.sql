@@ -1,0 +1,1 @@
+CREATE FUNCTION merge_sf_test() RETURNS TABLE(action text, id int) LANGUAGE sql BEGIN ATOMIC MERGE INTO sf_target t USING rule_merge1 s ON s.a = t.id WHEN NOT MATCHED THEN INSERT (filling[1], id) VALUES (s.a, s.a) RETURNING merge_action() AS action, t.id; END;

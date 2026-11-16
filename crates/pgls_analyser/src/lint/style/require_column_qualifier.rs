@@ -1,8 +1,8 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::resolve::{LookupKind, SearchPathLookup};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_resolve::{LookupKind, SearchPathLookup};
 
 declare_lint_rule! {
     /// Columns in queries should be qualified with their table.

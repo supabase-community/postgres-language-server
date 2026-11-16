@@ -34,13 +34,14 @@ pub(super) fn apply_create_schema_stmt(
     }
     c.schemas.insert(name.clone(), true);
 
-    // Schema elements are created in the new schema, which is searched first.
+    // Schema elements are created in the new schema, which is searched first. Their views have
+    // unknown columns: the statement's resolution has no output for them.
     let element_path: Vec<String> = std::iter::once(name)
         .chain(search_path.iter().cloned())
         .collect();
     for element in &n.schema_elts {
         if let Some(element) = &element.node {
-            c.apply(element, &element_path);
+            c.apply(element, &element_path, None);
         }
     }
 }

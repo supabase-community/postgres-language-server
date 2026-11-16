@@ -5,7 +5,9 @@ use std::sync::Arc;
 
 use crate::{FunctionSignature, Generated, Identity};
 use pgls_query::{Node, NodeEnum, protobuf};
-use pgls_query_ext::utils::{QualifiedName, qualified_name, range_var_name, type_name};
+use pgls_query_ext::utils::{
+    QualifiedName, qualified_name, range_var_name, string_values, type_name,
+};
 use rustc_hash::FxHashSet;
 
 use super::{Catalog, Entry, Key, explicit_schemas, key};
@@ -903,5 +905,28 @@ pub(super) fn rename_columns(
     columns: Option<Vec<ColumnInfo>>,
     names: &[Node],
 ) -> Option<Vec<ColumnInfo>> {
-    crate::resolve::rename(columns, names, |column, name| column.name = name)
+    rename(columns, names, |column, name| column.name = name)
+}
+
+/// Renames the first columns, like [`buildRelationAliases`]. The columns are unknown if there
+/// are more names than columns, which Postgres rejects.
+///
+/// [`buildRelationAliases`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L1224
+pub fn rename<T>(
+    columns: Option<Vec<T>>,
+    names: &[Node],
+    set_name: impl Fn(&mut T, String),
+) -> Option<Vec<T>> {
+    if names.is_empty() {
+        return columns;
+    }
+    let mut columns = columns?;
+    let names = string_values(names)?;
+    if names.len() > columns.len() {
+        return None;
+    }
+    for (column, name) in columns.iter_mut().zip(names) {
+        set_name(column, name);
+    }
+    Some(columns)
 }

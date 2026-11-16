@@ -1,0 +1,1 @@
+ALTER RULE rules_parted_table_insert ON public.rules_parted_table RENAME TO rules_parted_table_insert_redirect;

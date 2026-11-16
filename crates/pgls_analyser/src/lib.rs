@@ -28,7 +28,7 @@ pub use linter_registry::{
 };
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use pgls_walk::{
-    AnalysableStatement, AnalysedFileContext, Direction, STOP_CHECK_INTERVAL, Unit,
+    AnalysableStatement, AnalysedFileContext, Direction, ResolveOptions, STOP_CHECK_INTERVAL, Unit,
     UnparsableStatement, Walk, WalkParams, WalkState, is_plain_query, walk_statements,
 };
 
@@ -204,6 +204,10 @@ impl<'a> Analyser<'a> {
             best_effort: false,
             from: None,
             checkpoints: &[],
+            resolve: ResolveOptions {
+                collect_references: false,
+                collect_lookups,
+            },
             should_stop,
         };
         let walk = walk_statements(walk, |stmt, file_context| {
@@ -225,12 +229,7 @@ impl<'a> Analyser<'a> {
                 && !stmt.has_unknown_values
                 && validated;
 
-            let statement = StatementContext::new(
-                root,
-                stmt.sql.as_deref(),
-                stmt.function.as_ref(),
-                collect_lookups,
-            );
+            let statement = StatementContext::new(stmt, collect_lookups);
             let mut has_typecheck_findings = false;
             let mut has_duplicate_assignments = false;
 
@@ -390,11 +389,29 @@ pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
             ..Default::default()
         },
     });
-    let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
-    let range = TextRange::up_to(TextSize::of(sql));
+    // Each statement, so that later ones see the objects that earlier ones create.
+    let stmts = pgls_query::parse(sql)
+        .unwrap()
+        .protobuf
+        .stmts
+        .into_iter()
+        .map(|raw| {
+            let start = usize::try_from(raw.stmt_location).unwrap();
+            let end = match raw.stmt_len {
+                0 => sql.len(),
+                len => start + usize::try_from(len).unwrap(),
+            };
+            let text = sql[start..end].trim_start();
+            let start = TextSize::from(u32::try_from(end - text.len()).unwrap());
+            let range = TextRange::at(start, TextSize::of(text));
+            let root = pgls_query::parse(text).unwrap().into_root().unwrap();
+            AnalysableStatement::new(root, range).with_sql(text)
+        })
+        .collect();
     analyser
         .run(AnalyserParams {
-            stmts: vec![AnalysableStatement::new(root, range).with_sql(sql)],
+            stmts,
+            search_path: vec!["public".into()],
             source: Some(sql.to_owned()),
             ..Default::default()
         })

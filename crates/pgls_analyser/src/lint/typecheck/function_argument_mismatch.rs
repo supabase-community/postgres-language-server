@@ -1,9 +1,9 @@
 use crate::utils::qualified_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::resolve::{FindingKind, MatchFailure};
 use pgls_catalog::typing::format_type;
 use pgls_diagnostics::Severity;
+use pgls_resolve::{FindingKind, MatchFailure};
 
 declare_lint_rule! {
     /// A function name and argument count exist, but its argument types do not select exactly

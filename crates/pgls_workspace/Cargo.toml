@@ -58,6 +58,7 @@ futures            = { version = "0.3.31", optional = true }
 pgls_line_index    = { workspace = true, optional = true }
 pgls_pglinter      = { workspace = true, optional = true }
 pgls_plpgsql_check = { workspace = true, optional = true }
+pgls_resolve       = { workspace = true }
 pgls_splinter      = { workspace = true, optional = true }
 pgls_typecheck     = { workspace = true, optional = true }
 sqlx               = { workspace = true, optional = true }

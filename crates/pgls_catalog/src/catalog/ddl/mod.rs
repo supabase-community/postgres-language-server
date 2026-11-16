@@ -49,6 +49,8 @@ mod view_stmt;
 
 use pgls_query::NodeEnum;
 
+use crate::typing::TypedColumn;
+
 use super::Catalog;
 
 use alter_enum_stmt::apply_alter_enum_stmt;
@@ -76,7 +78,18 @@ use view_stmt::apply_view_stmt;
 
 impl Catalog {
     /// Applies the effects of a top-level statement, executed with the given search path.
-    pub fn apply(&mut self, stmt: &NodeEnum, search_path: &[String]) {
+    ///
+    /// `output` is the output columns of the statement's query, for a view, `CREATE TABLE AS`
+    /// or `SELECT INTO`: the output of the statement's resolution against this catalog
+    /// (`pgls_resolve::Resolution::output`). Without them, the columns of the relation are
+    /// unknown.
+    /// Views among the elements of `CREATE SCHEMA` have unknown columns.
+    pub fn apply(
+        &mut self,
+        stmt: &NodeEnum,
+        search_path: &[String],
+        output: Option<&[TypedColumn]>,
+    ) {
         let c = self;
         c.skipped_existing = false;
         if creates_implicit_indexes(stmt) {
@@ -88,9 +101,9 @@ impl Catalog {
             NodeEnum::CreateForeignTableStmt(n) => {
                 apply_create_foreign_table_stmt(c, n, search_path)
             }
-            NodeEnum::CreateTableAsStmt(n) => apply_create_table_as_stmt(c, n, search_path),
-            NodeEnum::SelectStmt(n) => apply_select_stmt(c, n, search_path),
-            NodeEnum::ViewStmt(n) => apply_view_stmt(c, n, search_path),
+            NodeEnum::CreateTableAsStmt(n) => apply_create_table_as_stmt(c, n, search_path, output),
+            NodeEnum::SelectStmt(n) => apply_select_stmt(c, n, search_path, output),
+            NodeEnum::ViewStmt(n) => apply_view_stmt(c, n, search_path, output),
             NodeEnum::CreateSeqStmt(n) => apply_create_seq_stmt(c, n, search_path),
             NodeEnum::CompositeTypeStmt(n) => apply_composite_type_stmt(c, n, search_path),
             NodeEnum::CreateEnumStmt(n) => apply_create_enum_stmt(c, n, search_path),

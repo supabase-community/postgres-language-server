@@ -6,7 +6,7 @@ mod file_context;
 mod statement;
 mod walk;
 
-pub use file_context::AnalysedFileContext;
+pub use file_context::{AnalysedFileContext, ResolveOptions};
 pub use pgls_migrations::{Direction, Unit};
 pub use statement::{AnalysableStatement, UnparsableStatement};
 pub use walk::{
