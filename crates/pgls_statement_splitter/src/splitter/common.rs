@@ -8,6 +8,7 @@ use super::{
     data::at_statement_start,
     ddl::{alter, create},
     dml::{cte, delete, explain, insert, select, update},
+    is_col_id,
 };
 
 #[derive(Debug)]
@@ -123,7 +124,12 @@ fn at_label(p: &Splitter) -> bool {
 }
 
 pub(crate) fn parenthesis(p: &mut Splitter) -> SplitterResult {
-    p.expect(SyntaxKind::L_PAREN)?;
+    // Without the `(`, e.g. in half-written SQL, there's no `)` to look for: the next one could
+    // be statements away.
+    if p.current() != SyntaxKind::L_PAREN {
+        return p.expect(SyntaxKind::L_PAREN);
+    }
+    p.advance()?;
 
     let mut depth = 1;
 
@@ -199,6 +205,31 @@ pub(crate) fn case(p: &mut Splitter) -> SplitterResult {
     }
 
     Ok(())
+}
+
+/// Whether the `WITH` at the current token starts common table expressions, rather than being
+/// part of a clause like `COPY ... WITH (...)`, `DECLARE ... WITH HOLD` or `WITH NO DATA`. A CTE
+/// is `WITH RECURSIVE`, `WITH name (` or `WITH name AS [NOT] MATERIALIZED (`. The end of the text
+/// counts as a match, so a half-written CTE still starts a statement. Looks at most three tokens
+/// ahead.
+///
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L13040
+pub(crate) fn at_cte(p: &Splitter) -> bool {
+    match p.nth(1) {
+        SyntaxKind::RECURSIVE_KW | SyntaxKind::EOF => true,
+        name if is_col_id(name) => match p.nth(2) {
+            SyntaxKind::L_PAREN | SyntaxKind::EOF => true,
+            SyntaxKind::AS_KW => matches!(
+                p.nth(3),
+                SyntaxKind::L_PAREN
+                    | SyntaxKind::NOT_KW
+                    | SyntaxKind::MATERIALIZED_KW
+                    | SyntaxKind::EOF
+            ),
+            _ => false,
+        },
+        _ => false,
+    }
 }
 
 pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResult {
@@ -378,39 +409,26 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                         t == SyntaxKind::INSERT_KW && p.look_ahead(true) == SyntaxKind::INTO_KW;
                     p.advance()?;
                 }
+                // Part of a clause, e.g. `WITH ORDINALITY`, `WITH CHECK` or `WITH TIME ZONE`.
+                Some(SyntaxKind::WITH_KW) if !at_cte(p) => {
+                    p.advance()?;
+                }
                 Some(SyntaxKind::WITH_KW) => {
-                    let next = p.look_ahead(true);
-                    if [
-                        // WITH ORDINALITY should not start a new statement
-                        SyntaxKind::ORDINALITY_KW,
-                        // WITH CHECK should not start a new statement
-                        SyntaxKind::CHECK_KW,
-                        // TIMESTAMP WITH TIME ZONE should not start a new statement
-                        SyntaxKind::TIME_KW,
-                        SyntaxKind::GRANT_KW,
-                        SyntaxKind::ADMIN_KW,
-                        SyntaxKind::INHERIT_KW,
-                        SyntaxKind::SET_KW,
-                    ]
-                    .iter()
-                    .all(|x| x != &next)
-                    {
-                        // CTEs in a statement that takes a query: `CREATE VIEW v AS`, `PREPARE
-                        // p AS`, `DECLARE c CURSOR FOR` and the actions of a rule.
-                        if !matches!(
-                            p.look_back(true),
-                            Some(
-                                SyntaxKind::AS_KW
-                                    | SyntaxKind::FOR_KW
-                                    | SyntaxKind::DO_KW
-                                    | SyntaxKind::INSTEAD_KW
-                                    | SyntaxKind::ALSO_KW
-                            )
-                        ) {
-                            break;
-                        }
-                        cte_query = true;
+                    // The query of a statement that takes one: `CREATE VIEW v AS`, `PREPARE p
+                    // AS`, `DECLARE c CURSOR FOR` and the actions of a rule.
+                    if !matches!(
+                        p.look_back(true),
+                        Some(
+                            SyntaxKind::AS_KW
+                                | SyntaxKind::FOR_KW
+                                | SyntaxKind::DO_KW
+                                | SyntaxKind::INSTEAD_KW
+                                | SyntaxKind::ALSO_KW
+                        )
+                    ) {
+                        break;
                     }
+                    cte_query = true;
                     p.advance()?;
                 }
                 Some(SyntaxKind::CREATE_KW) => {
