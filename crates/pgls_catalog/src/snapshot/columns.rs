@@ -66,6 +66,15 @@ impl Generated {
     pub fn is_generated(self) -> bool {
         self != Generated::No
     }
+
+    /// The keyword of the kind in `GENERATED ALWAYS AS (...)`, `None` for an ordinary column.
+    pub fn keyword(self) -> Option<&'static str> {
+        match self {
+            Generated::No => None,
+            Generated::Stored => Some("STORED"),
+            Generated::Virtual => Some("VIRTUAL"),
+        }
+    }
 }
 
 impl From<String> for Generated {
