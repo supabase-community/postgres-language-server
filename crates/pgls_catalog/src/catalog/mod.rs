@@ -29,6 +29,7 @@ use crate::typing::TypeId;
 use crate::{CastInfo, OperatorInfo, OperatorKind};
 
 pub use base::CatalogBase;
+pub use overlay::rename;
 
 /// `(schema, name)` of a catalog object.
 type Key = (String, String);

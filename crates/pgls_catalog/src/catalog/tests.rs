@@ -95,7 +95,7 @@ fn catalog_after(sql: &str, search_path: &[String]) -> Catalog {
     let mut catalog = Catalog::new(Some(base()));
     let parsed = pgls_query::parse(sql).expect("valid sql");
     for stmt in parsed.stmts() {
-        crate::resolve::apply_resolved(&mut catalog, stmt, search_path);
+        catalog.apply(stmt, search_path, None);
     }
     catalog
 }
@@ -403,7 +403,7 @@ fn identities_after<const N: usize>(
     };
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
     for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
-        crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
+        catalog.apply(stmt, &search_path, None);
     }
     tables.map(|table| {
         catalog
@@ -416,58 +416,6 @@ fn identities_after<const N: usize>(
             .map(|column| column.identity)
             .collect()
     })
-}
-
-#[test]
-fn derived_columns_of_views_and_table_as() {
-    let search_path = path(&["public"]);
-    let catalog = catalog_after(
-        "create view v1 as select * from users;
-         create view v2 (ident) as select u.id, upper(name), 1, name::text as n2, case when true then 1 end, now()::date from users u;
-         create table t3 as select users.* from users;
-         create materialized view m4 as select id from users union select 2;
-         select id, name into t5 from users;
-         create view v6 as select * from users join users u2 using (id);
-         create view v7 as values (1, 2);
-         create view v8 as select exists (select 1), array[1], coalesce(1, 2), greatest(1), current_date;",
-        &search_path,
-    );
-    assert_eq!(
-        column_names(&catalog, None, "v1", &search_path).unwrap(),
-        ["id", "name"]
-    );
-    assert_eq!(
-        column_names(&catalog, None, "v2", &search_path).unwrap(),
-        ["ident", "upper", "?column?", "n2", "case", "now"]
-    );
-    assert_eq!(
-        column_names(&catalog, None, "t3", &search_path).unwrap(),
-        ["id", "name"]
-    );
-    let m4 = catalog.relation(None, "m4", &search_path).found().unwrap();
-    assert_eq!(m4.kind, RelationKind::MaterializedView);
-    assert_eq!(m4.columns.unwrap()[0].name, "id");
-    assert_eq!(
-        column_names(&catalog, None, "t5", &search_path).unwrap(),
-        ["id", "name"]
-    );
-    // `USING (id)` merges `id`, but `name` appears twice, which Postgres rejects.
-    assert!(
-        catalog
-            .relation(None, "v6", &search_path)
-            .found()
-            .unwrap()
-            .columns
-            .is_none()
-    );
-    assert_eq!(
-        column_names(&catalog, None, "v7", &search_path).unwrap(),
-        ["column1", "column2"]
-    );
-    assert_eq!(
-        column_names(&catalog, None, "v8", &search_path).unwrap(),
-        ["exists", "array", "coalesce", "greatest", "current_date"]
-    );
 }
 
 #[test]
@@ -812,7 +760,7 @@ fn column_changes_make_database_children_unknown() {
     };
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(cache)))));
     let parsed = pgls_query::parse("alter table events add column at timestamptz").unwrap();
-    crate::resolve::apply_resolved(&mut catalog, parsed.stmts()[0], &search_path);
+    catalog.apply(parsed.stmts()[0], &search_path, None);
     let child = catalog
         .relation(None, "events_2024", &search_path)
         .found()
@@ -1084,7 +1032,7 @@ fn sequence_columns_have_types() {
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
     let parsed = pgls_query::parse("create sequence file_seq;").expect("valid sql");
     for stmt in parsed.stmts() {
-        crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
+        catalog.apply(stmt, &search_path, None);
     }
 
     let int8 = Some(Type::Named(TypeId::Snapshot(20)));
@@ -1107,20 +1055,6 @@ fn sequence_columns_have_types() {
             ],
             "{sequence}"
         );
-
-        let query = pgls_query::parse(&format!("select last_value from {sequence}"))
-            .expect("valid sql")
-            .stmts()
-            .first()
-            .map(|node| (**node).clone());
-        let output = crate::resolve::query_columns(
-            &pgls_query::protobuf::Node { node: query },
-            &catalog,
-            &search_path,
-        )
-        .unwrap_or_else(|| panic!("output of {sequence}"));
-        assert_eq!(output.len(), 1);
-        assert_eq!(output[0].ty, int8, "{sequence}");
     }
 }
 
@@ -1586,7 +1520,7 @@ fn snapshot_includes_indexes_of_the_file() {
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
     let parsed = pgls_query::parse("alter table users drop column renamed;").expect("valid sql");
     for stmt in parsed.stmts() {
-        crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
+        catalog.apply(stmt, &search_path, None);
     }
     assert!(matches!(
         catalog.index(None, "users_name_idx", &search_path),
@@ -1610,7 +1544,7 @@ fn snapshot_lists_changed_database_functions_once() {
     let snapshot_after = |sql: &str| {
         let mut catalog = Catalog::new(Some(Arc::clone(&base)));
         for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
-            crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
+            catalog.apply(stmt, &search_path, None);
         }
         catalog.snapshot().unwrap()
     };
@@ -1711,7 +1645,7 @@ fn snapshot_drops_the_expression_of_a_generated_column() {
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(cache)))));
     let parsed =
         pgls_query::parse("alter table orders alter column total drop expression").unwrap();
-    crate::resolve::apply_resolved(&mut catalog, parsed.stmts()[0], &search_path);
+    catalog.apply(parsed.stmts()[0], &search_path, None);
 
     let snapshot = catalog.snapshot().unwrap();
     let total = snapshot
@@ -1743,6 +1677,21 @@ fn snapshot_excludes_dropped_objects() {
     assert_eq!(table_columns(&snapshot, "public", "people"), ["id", "name"]);
 }
 /// The snapshot of a file with many changes, one line per object with every field.
+/// The relation that the query of a view selects from, like `t` in `create view v as select
+/// id from t`.
+fn view_source(stmt: &pgls_query::NodeEnum) -> Option<&str> {
+    let pgls_query::NodeEnum::ViewStmt(view) = stmt else {
+        return None;
+    };
+    let pgls_query::NodeEnum::SelectStmt(select) = view.query.as_deref()?.node.as_ref()? else {
+        return None;
+    };
+    match select.from_clause.first()?.node.as_ref()? {
+        pgls_query::NodeEnum::RangeVar(range_var) => Some(&range_var.relname),
+        _ => None,
+    }
+}
+
 #[test]
 fn snapshot_of_a_file_with_many_changes() {
     let base = base();
@@ -1817,7 +1766,25 @@ fn snapshot_of_a_file_with_many_changes() {
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(database)))));
     let search_path = path(&["public"]);
     for stmt in pgls_query::parse(&sql).expect("valid sql").stmts() {
-        crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
+        // The output columns that the resolution of `create view v{i} as select id, name from
+        // t{i}` gives: the columns `id` and `name` of `t{i}`.
+        let output = view_source(stmt).and_then(|table| {
+            let columns = catalog
+                .relation(None, table, &search_path)
+                .found()?
+                .columns?;
+            Some(
+                columns
+                    .into_iter()
+                    .filter(|column| column.name == "id" || column.name == "name")
+                    .map(|column| crate::TypedColumn {
+                        name: column.name,
+                        ty: column.ty,
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        });
+        catalog.apply(stmt, &search_path, output.as_deref());
     }
     let snapshot = catalog.snapshot().unwrap();
 
@@ -1900,7 +1867,7 @@ mod typing_overlay_tests {
     fn apply(catalog: &mut Catalog, sql: &str, search_path: &[String]) {
         let parsed = pgls_query::parse(sql).expect("valid sql");
         for stmt in parsed.stmts() {
-            crate::resolve::apply_resolved(catalog, stmt, search_path);
+            catalog.apply(stmt, search_path, None);
         }
     }
 
@@ -2106,34 +2073,16 @@ mod typing_overlay_tests {
     }
 
     #[pgls_test_utils::db_test]
-    async fn derived_columns_and_ddl_invalidation_are_typed(test_db: PgPool) {
+    async fn ddl_invalidation_is_typed(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;
+        // The typed columns of views and `CREATE TABLE AS` come from the resolver, see
+        // `pgls_resolve`'s `derived_columns_are_typed`.
         apply(
             &mut catalog,
-            "create table typed_source (id int, name text);
-             create view typed_view as select id, name from typed_source;
-             create table typed_ctas as select 1 as a, 'x'::text as b;
-             create cast (int as text) with inout;
+            "create cast (int as text) with inout;
              create operator public.## (leftarg = int, rightarg = int, function = int4pl);",
             &path,
-        );
-        let source = catalog
-            .relation(None, "typed_source", &path)
-            .found()
-            .unwrap();
-        let view = catalog.relation(None, "typed_view", &path).found().unwrap();
-        let source_columns = source.columns.unwrap();
-        let view_columns = view.columns.unwrap();
-        assert_eq!(view_columns[0].ty, source_columns[0].ty);
-        assert_eq!(view_columns[1].ty, source_columns[1].ty);
-        assert_eq!(
-            column_type(&catalog, "typed_ctas", "a", &path),
-            Some(Type::Named(type_id(&catalog, "int4", &path)))
-        );
-        assert_eq!(
-            column_type(&catalog, "typed_ctas", "b", &path),
-            Some(Type::Named(type_id(&catalog, "text", &path)))
         );
         assert!(matches!(
             catalog.cast(

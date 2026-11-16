@@ -173,7 +173,7 @@ pub fn format_type(c: &dyn CatalogView, ty: &Type) -> Option<String> {
 }
 
 /// Formats a type using the supplied path to determine whether qualification is needed.
-pub(crate) fn format_type_with_search_path(
+pub fn format_type_with_search_path(
     c: &dyn CatalogView,
     ty: &Type,
     search_path: &[String],

@@ -7,11 +7,9 @@
 
 use std::sync::Arc;
 
-use pgls_catalog::{
-    Catalog, CatalogBase, Origin, Snapshot,
-    resolve::{ColumnSource, Reference},
-};
+use pgls_catalog::{Catalog, CatalogBase, Origin, Snapshot};
 use pgls_fs::PgLSPath;
+use pgls_resolve::{ColumnSource, Reference};
 use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{
     AnalysableStatement, AnalysedFileContext, ResolveOptions, STOP_CHECK_INTERVAL, Unit, WalkParams,

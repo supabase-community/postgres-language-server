@@ -2,11 +2,9 @@
 
 use std::cell::OnceCell;
 
-use pgls_catalog::{
-    Catalog, Session,
-    resolve::{Resolution, ResolveParams, resolve},
-};
+use pgls_catalog::{Catalog, Session};
 use pgls_query::NodeEnum;
+use pgls_resolve::{Resolution, ResolveParams, resolve};
 use pgls_text_size::TextSize;
 
 use crate::AnalysableStatement;
@@ -166,7 +164,7 @@ impl<'a> AnalysedFileContext<'a> {
     fn resolve(
         &self,
         stmt: &NodeEnum,
-        function: Option<&pgls_catalog::resolve::FunctionContext>,
+        function: Option<&pgls_resolve::FunctionContext>,
         sql: Option<&str>,
     ) -> &Resolution {
         self.resolution.get_or_init(|| {

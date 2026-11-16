@@ -1,9 +1,9 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::resolve::{FindingKind, ReturnMismatch};
 use pgls_catalog::typing::format_type;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_resolve::{FindingKind, ReturnMismatch};
 
 declare_lint_rule! {
     /// The final statement of a SQL function doesn't return what the function is declared to

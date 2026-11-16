@@ -121,7 +121,8 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_analyser` & `pgls_analyse` - Linting and analysis framework
 - `pgls_walk` - The walk over a file's statements that lint and the editor features share: the catalog and session as each statement sees them
 - `pgls_typecheck` - EXPLAIN fallback for typecheck
-- `pgls_catalog` - Database snapshot, the file's DDL on top of it, name resolution, and type inference
+- `pgls_catalog` - Database snapshot, the file's DDL on top of it, and Postgres' type rules
+- `pgls_resolve` - Name resolution and type inference of a statement against the catalog: its findings, the output columns of its query, and what its names refer to
 
 **Utilities:**
 - `pgls_diagnostics` - Error and warning reporting
@@ -156,7 +157,7 @@ The server connects to a Postgres database and loads a snapshot of its schema (`
 - Postgres regression fixtures: `crates/pgls_postgres_regress/data/<major>/` (15–18): the upstream regression SQL, Postgres' verdict per statement, and the catalog of a fresh database. Re-record a version with `just record-regress <major>` (needs Docker), or only its catalog with `just record-regress <major> --catalog-only` after changing the snapshot queries.
 
 ### Type Checking
-The type rules in `pgls_catalog::typing` and `pgls_catalog::resolve` port Postgres' parser from the latest supported version. Link the Postgres function next to each port, at the tag of the newest fixtures (e.g. `https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557`). Only report what Postgres would certainly reject; anything not modelled is unknown and never reported. `crates/pgls_analyser/tests/postgres_regress.rs` fails on any finding on a statement Postgres accepted, on every version.
+The type rules in `pgls_catalog::typing` and `pgls_resolve` port Postgres' parser from the latest supported version. Link the Postgres function next to each port, at the tag of the newest fixtures (e.g. `https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557`). Only report what Postgres would certainly reject; anything not modelled is unknown and never reported. `crates/pgls_analyser/tests/postgres_regress.rs` fails on any finding on a statement Postgres accepted, on every version.
 
 ### Database Tests
 Write tests that need a database as `#[pgls_test_utils::db_test] async fn name(test_db: PgPool)`, not `#[sqlx::test]`. sqlx still creates a database per test from `template1` and runs the migrations of `pgls_test_utils`, but `db_test` fails fast when the database isn't running, and gives each test a pool of at most 2 connections that waits up to 2 minutes for one (see `pgls_test_utils::db`), so tests don't time out when several worktrees share the database.

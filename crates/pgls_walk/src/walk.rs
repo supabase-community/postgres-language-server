@@ -368,7 +368,7 @@ impl CatalogFunctions {
     /// the catalog, or that calls a function that may, makes `function` one that may.
     fn record_body_statement(
         &mut self,
-        function: &pgls_catalog::resolve::FunctionContext,
+        function: &pgls_resolve::FunctionContext,
         stmt: &pgls_query::NodeEnum,
     ) {
         if self.0.contains(&function.function_name) {
@@ -685,7 +685,7 @@ mod tests {
     /// first statement creates. Returns whether the catalog is tainted before each statement
     /// that runs, and how long the walk took.
     fn walk_with_function_body(sql: &str, body: &str) -> (Vec<bool>, Duration) {
-        let function = pgls_catalog::resolve::FunctionContext {
+        let function = pgls_resolve::FunctionContext {
             function_name: "create_and_insert".to_string(),
             params: Vec::new(),
         };

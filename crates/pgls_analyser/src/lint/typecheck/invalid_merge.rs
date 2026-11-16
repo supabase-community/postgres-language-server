@@ -1,8 +1,8 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::resolve::{FindingKind, MergeError};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_resolve::{FindingKind, MergeError};
 
 declare_lint_rule! {
     /// A `MERGE`, or `merge_action()`, that Postgres rejects.

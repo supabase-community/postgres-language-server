@@ -1,10 +1,8 @@
 use std::cell::OnceCell;
 
 use pgls_analyse::{GroupCategory, RuleCategory, RuleGroup, RuleMetadata};
-use pgls_catalog::{
-    Catalog, Session,
-    resolve::{Finding, FunctionContext, QueryOutput, Resolution, SearchPathLookup},
-};
+use pgls_catalog::{Catalog, Session};
+use pgls_resolve::{Finding, FunctionContext, QueryOutput, Resolution, SearchPathLookup};
 
 use pgls_query::protobuf::{RangeVar, ScanToken, Token};
 
