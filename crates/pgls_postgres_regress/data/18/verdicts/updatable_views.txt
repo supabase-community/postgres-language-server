@@ -711,11 +711,10 @@
 1355:1 rejected 44000
 1357:1 accepted
 1358:1 rejected 44000
-1360:1 rejected 42601
-1360:28 rejected 42P02
-1361:1 rejected 26000
-1362:1 rejected 26000
-1363:1 rejected 26000
+1360:1 accepted
+1361:1 accepted
+1362:1 rejected 44000
+1363:1 accepted
 1365:1 accepted
 1369:1 accepted
 1370:1 accepted
@@ -1090,8 +1089,7 @@
 2074:1 accepted
 2075:1 accepted
 2078:1 accepted
-2079:1 rejected 42601
-2080:46 rejected 42P01
+2079:1 accepted
 2081:1 accepted
 2082:1 accepted
 2083:1 accepted

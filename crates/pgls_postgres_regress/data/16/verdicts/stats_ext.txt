@@ -779,7 +779,6 @@
 1741:1 accepted
 1745:1 accepted
 1746:1 accepted
-1746:24 accepted
 1747:1 accepted
 1748:1 accepted
 1749:1 accepted
