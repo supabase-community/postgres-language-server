@@ -3,7 +3,7 @@ source: crates/pgls_postgres_regress/tests/splitter_vs_parser.rs
 expression: report(&version)
 ---
 REL_17_11: 43837 statements, 582 not checked because no text up to a `;` parses, 146 mismatches
-18 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
+24 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
 
 alter_table.sql:960:1: the parser reads 960:1-962:47, the splitter 960:1-962:33, 962:34-962:47
   960:1    create rule def_view_test_ins as on insert to def_view_test do instead insert in…
