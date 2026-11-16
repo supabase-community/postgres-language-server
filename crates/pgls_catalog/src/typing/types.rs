@@ -1,7 +1,7 @@
 //! Facts about a single type: its base type, category, and array element, and the
 //! conversion between type names and type identities.
 
-use crate::typing::{Decision, Type, TypeId};
+use crate::typing::{Decision, Type, TypeId, TypedColumn};
 use crate::{CatalogView, Lookup, TypeInfo, TypeKind};
 use pgls_query::protobuf;
 use pgls_query_ext::utils::{QualifiedName, qualified_name};
@@ -269,6 +269,30 @@ mod tests {
             Some("record")
         );
     }
+}
+
+/// Port of [`resolveTargetListUnknowns`]: output columns of unknown type become
+/// text. Postgres does this for every query except the source of an INSERT and the branches of a
+/// set operation, which coerce the unknowns to their target type instead.
+///
+/// [`resolveTargetListUnknowns`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L288
+pub fn resolve_unknown_outputs(
+    catalog: &dyn CatalogView,
+    columns: Option<Vec<TypedColumn>>,
+) -> Option<Vec<TypedColumn>> {
+    let mut columns = columns?;
+    if columns
+        .iter()
+        .any(|column| column.ty == Some(Type::UnknownLiteral))
+    {
+        let text = catalog.builtin_type("text").map(Type::Named);
+        for column in &mut columns {
+            if column.ty == Some(Type::UnknownLiteral) {
+                column.ty = text.clone();
+            }
+        }
+    }
+    Some(columns)
 }
 
 #[cfg(test)]

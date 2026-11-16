@@ -9,11 +9,13 @@ use std::sync::Arc;
 
 use pgls_catalog::{
     Catalog, CatalogBase, Origin, Snapshot,
-    resolve::{ColumnSource, Reference, ResolveParams, resolve},
+    resolve::{ColumnSource, Reference},
 };
 use pgls_fs::PgLSPath;
 use pgls_text_size::{TextRange, TextSize};
-use pgls_walk::{AnalysableStatement, AnalysedFileContext, STOP_CHECK_INTERVAL, Unit, WalkParams};
+use pgls_walk::{
+    AnalysableStatement, AnalysedFileContext, ResolveOptions, STOP_CHECK_INTERVAL, Unit, WalkParams,
+};
 
 use super::{
     WorkspaceServer,
@@ -163,6 +165,11 @@ impl WorkspaceServer {
                 best_effort: true,
                 from,
                 checkpoints: &checkpoints,
+                // The references of the statements, which the editor features read.
+                resolve: ResolveOptions {
+                    collect_references: true,
+                    collect_lookups: false,
+                },
                 should_stop: &should_stop,
             },
             visit,
@@ -217,29 +224,15 @@ impl WorkspaceServer {
         };
         let mut references = Vec::new();
         let walked = self.walk(request, doc, missing_start, end, |stmt, file_context| {
-            let Some(sql) = stmt.sql.as_deref() else {
-                return;
-            };
-            if stmt.has_identifier_parameters
+            if stmt.sql.is_none()
+                || stmt.has_identifier_parameters
                 || top_of(stmt)
                     .and_then(|top| cached.get(top))
                     .is_none_or(Option::is_some)
             {
                 return;
             }
-            references.push((
-                stmt.range,
-                resolve(ResolveParams {
-                    stmt: &stmt.root,
-                    catalog: file_context.catalog(),
-                    search_path: file_context.session().search_path(),
-                    function: stmt.function.as_ref(),
-                    sql: Some(sql),
-                    collect_references: true,
-                    collect_lookups: false,
-                })
-                .references,
-            ));
+            references.push((stmt.range, file_context.resolution(stmt).references.clone()));
         });
 
         // An outdated or cancelled request has no result.

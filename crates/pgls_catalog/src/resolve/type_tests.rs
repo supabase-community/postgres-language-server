@@ -10,7 +10,7 @@ fn output_types(catalog: &mut Catalog, setup_sql: &str, query: &str) -> Vec<Opti
             .expect("valid setup SQL")
             .stmts()
         {
-            catalog.apply(stmt, &search_path);
+            crate::resolve::apply_resolved(catalog, stmt, &search_path);
         }
     }
     let parsed = pgls_query::parse(query).expect("valid query");

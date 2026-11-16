@@ -28,7 +28,7 @@ pub use linter_registry::{
 };
 pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use pgls_walk::{
-    AnalysableStatement, AnalysedFileContext, Direction, STOP_CHECK_INTERVAL, Unit,
+    AnalysableStatement, AnalysedFileContext, Direction, ResolveOptions, STOP_CHECK_INTERVAL, Unit,
     UnparsableStatement, Walk, WalkParams, WalkState, is_plain_query, walk_statements,
 };
 
@@ -204,6 +204,10 @@ impl<'a> Analyser<'a> {
             best_effort: false,
             from: None,
             checkpoints: &[],
+            resolve: ResolveOptions {
+                collect_references: false,
+                collect_lookups,
+            },
             should_stop,
         };
         let walk = walk_statements(walk, |stmt, file_context| {
@@ -225,12 +229,7 @@ impl<'a> Analyser<'a> {
                 && !stmt.has_unknown_values
                 && validated;
 
-            let statement = StatementContext::new(
-                root,
-                stmt.sql.as_deref(),
-                stmt.function.as_ref(),
-                collect_lookups,
-            );
+            let statement = StatementContext::new(stmt, collect_lookups);
             let mut has_typecheck_findings = false;
             let mut has_duplicate_assignments = false;
 

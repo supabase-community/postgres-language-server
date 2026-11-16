@@ -27,9 +27,6 @@ pub struct TypedColumn {
     pub ty: Option<Type>,
 }
 
-/// Output columns of a query; inner unknown types are preserved.
-pub(crate) type QueryColumns = Option<Vec<TypedColumn>>;
-
 /// A result that may not be known statically.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Decision<T> {

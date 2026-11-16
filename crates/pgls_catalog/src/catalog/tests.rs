@@ -95,7 +95,7 @@ fn catalog_after(sql: &str, search_path: &[String]) -> Catalog {
     let mut catalog = Catalog::new(Some(base()));
     let parsed = pgls_query::parse(sql).expect("valid sql");
     for stmt in parsed.stmts() {
-        catalog.apply(stmt, search_path);
+        crate::resolve::apply_resolved(&mut catalog, stmt, search_path);
     }
     catalog
 }
@@ -403,7 +403,7 @@ fn identities_after<const N: usize>(
     };
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
     for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
-        catalog.apply(stmt, &search_path);
+        crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
     }
     tables.map(|table| {
         catalog
@@ -675,8 +675,20 @@ fn create_schema_elements_go_into_the_schema() {
     );
     assert_eq!(catalog.schema("reporting"), Lookup::Found(()));
     assert_eq!(
-        column_names(&catalog, Some("reporting"), "recent", &search_path).unwrap(),
+        column_names(&catalog, Some("reporting"), "daily", &search_path).unwrap(),
         ["id"]
+    );
+    // The view exists, but its columns come from the resolution of its query, and the
+    // resolution of `CREATE SCHEMA` has none for its elements.
+    assert!(
+        catalog
+            .relation(Some("reporting"), "recent", &search_path)
+            .found()
+            .is_some()
+    );
+    assert_eq!(
+        column_names(&catalog, Some("reporting"), "recent", &search_path),
+        None
     );
 }
 
@@ -800,7 +812,7 @@ fn column_changes_make_database_children_unknown() {
     };
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(cache)))));
     let parsed = pgls_query::parse("alter table events add column at timestamptz").unwrap();
-    catalog.apply(parsed.stmts()[0], &search_path);
+    crate::resolve::apply_resolved(&mut catalog, parsed.stmts()[0], &search_path);
     let child = catalog
         .relation(None, "events_2024", &search_path)
         .found()
@@ -1072,7 +1084,7 @@ fn sequence_columns_have_types() {
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
     let parsed = pgls_query::parse("create sequence file_seq;").expect("valid sql");
     for stmt in parsed.stmts() {
-        catalog.apply(stmt, &search_path);
+        crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
     }
 
     let int8 = Some(Type::Named(TypeId::Snapshot(20)));
@@ -1574,7 +1586,7 @@ fn snapshot_includes_indexes_of_the_file() {
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
     let parsed = pgls_query::parse("alter table users drop column renamed;").expect("valid sql");
     for stmt in parsed.stmts() {
-        catalog.apply(stmt, &search_path);
+        crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
     }
     assert!(matches!(
         catalog.index(None, "users_name_idx", &search_path),
@@ -1598,7 +1610,7 @@ fn snapshot_lists_changed_database_functions_once() {
     let snapshot_after = |sql: &str| {
         let mut catalog = Catalog::new(Some(Arc::clone(&base)));
         for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
-            catalog.apply(stmt, &search_path);
+            crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
         }
         catalog.snapshot().unwrap()
     };
@@ -1699,7 +1711,7 @@ fn snapshot_drops_the_expression_of_a_generated_column() {
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(cache)))));
     let parsed =
         pgls_query::parse("alter table orders alter column total drop expression").unwrap();
-    catalog.apply(parsed.stmts()[0], &search_path);
+    crate::resolve::apply_resolved(&mut catalog, parsed.stmts()[0], &search_path);
 
     let snapshot = catalog.snapshot().unwrap();
     let total = snapshot
@@ -1805,7 +1817,7 @@ fn snapshot_of_a_file_with_many_changes() {
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(database)))));
     let search_path = path(&["public"]);
     for stmt in pgls_query::parse(&sql).expect("valid sql").stmts() {
-        catalog.apply(stmt, &search_path);
+        crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
     }
     let snapshot = catalog.snapshot().unwrap();
 
@@ -1888,7 +1900,7 @@ mod typing_overlay_tests {
     fn apply(catalog: &mut Catalog, sql: &str, search_path: &[String]) {
         let parsed = pgls_query::parse(sql).expect("valid sql");
         for stmt in parsed.stmts() {
-            catalog.apply(stmt, search_path);
+            crate::resolve::apply_resolved(catalog, stmt, search_path);
         }
     }
 

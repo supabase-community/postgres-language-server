@@ -17,7 +17,7 @@ fn lookups_in(
     let search_path = vec!["public".to_owned()];
     if !setup.is_empty() {
         for stmt in pgls_query::parse(setup).expect("valid setup").stmts() {
-            catalog.apply(stmt, &search_path);
+            crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
         }
     }
     let stmt = pgls_query::parse(sql)

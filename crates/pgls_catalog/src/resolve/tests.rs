@@ -148,7 +148,7 @@ fn resolve_after(setup: &str, sql: &str, function: Option<&FunctionContext>) -> 
     let mut catalog = Catalog::new(Some(database()));
     if !setup.is_empty() {
         for stmt in pgls_query::parse(setup).expect("valid setup").stmts() {
-            catalog.apply(stmt, &search_path);
+            crate::resolve::apply_resolved(&mut catalog, stmt, &search_path);
         }
     }
     let stmt = pgls_query::parse(sql)
@@ -1040,7 +1040,7 @@ fn natural_joins_merge_the_columns_both_sides_have() {
     // A column that an inner join merged keeps its type in the outer one.
     let mut catalog = Catalog::new(Some(database()));
     for stmt in pgls_query::parse(setup).unwrap().stmts() {
-        catalog.apply(stmt, &search_path());
+        crate::resolve::apply_resolved(&mut catalog, stmt, &search_path());
     }
     let parsed =
         pgls_query::parse("select name from users natural join people natural join posts").unwrap();

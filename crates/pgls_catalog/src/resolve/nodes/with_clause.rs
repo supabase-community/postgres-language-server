@@ -12,10 +12,9 @@ use super::{
 use crate::resolve::{
     Reference,
     output::QueryOutput,
-    resolve_unknown_outputs,
     scope::{Columns, Cte, combine_columns},
 };
-use crate::typing::TypedColumn;
+use crate::typing::{TypedColumn, resolve_unknown_outputs};
 
 /// Resolves the CTEs of a WITH clause and brings them into scope. The query that owns the
 /// clause removes them again. Port of [`transformWithClause`].

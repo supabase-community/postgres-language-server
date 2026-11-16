@@ -3,16 +3,14 @@ use std::cell::OnceCell;
 use pgls_analyse::{GroupCategory, RuleCategory, RuleGroup, RuleMetadata};
 use pgls_catalog::{
     Catalog, Session,
-    resolve::{
-        Finding, FunctionContext, QueryOutput, Resolution, ResolveParams, SearchPathLookup, resolve,
-    },
+    resolve::{Finding, FunctionContext, QueryOutput, Resolution, SearchPathLookup},
 };
 
 use pgls_query::protobuf::{RangeVar, ScanToken, Token};
 
 use crate::fix::StatementTokens;
 use crate::linter_rule::LinterRule;
-use pgls_walk::AnalysedFileContext;
+use pgls_walk::{AnalysableStatement, AnalysedFileContext};
 
 /// The kind of file being analysed.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -72,7 +70,7 @@ where
 
     /// The text of the current statement, if the caller provided it.
     pub fn sql(&self) -> Option<&str> {
-        self.statement.sql
+        self.statement.stmt.sql.as_deref()
     }
 
     /// The catalog as it is before the current statement: the database snapshot plus the
@@ -129,20 +127,20 @@ where
 
     /// The SQL function whose body the current statement is in, if it is in one.
     pub fn function(&self) -> Option<&FunctionContext> {
-        self.statement.function
+        self.statement.stmt.function.as_ref()
     }
 
     /// Whether the current statement runs in a transaction block. A statement in a function body
     /// runs in the transaction of the statement that calls the function. Otherwise, see
     /// [`AnalysedFileContext::in_transaction`].
     pub fn in_transaction(&self) -> bool {
-        self.statement.function.is_some() || self.file_context.in_transaction()
+        self.statement.stmt.function.is_some() || self.file_context.in_transaction()
     }
 
     /// Whether [`Self::in_transaction`] is known, rather than assumed because we don't know how
     /// the migration tool runs the file.
     pub fn knows_transaction(&self) -> bool {
-        self.statement.function.is_some() || self.session().in_transaction().is_some()
+        self.statement.stmt.function.is_some() || self.session().in_transaction().is_some()
     }
 
     /// The tokens of the current statement, to compute the edits of fixes. `None` if the
@@ -170,36 +168,24 @@ where
 
 /// Per-statement state shared by all rules that run on a statement.
 pub struct StatementContext<'a> {
-    stmt: &'a pgls_query::NodeEnum,
-    sql: Option<&'a str>,
-    function: Option<&'a FunctionContext>,
+    stmt: &'a AnalysableStatement,
     /// Whether an enabled rule reads the [`Resolution::lookups`].
     collect_lookups: bool,
-    /// The name resolution of the statement, computed when a rule first needs it.
-    resolution: OnceCell<Resolution>,
     /// The tokens of the statement without its comments, and the comments.
     tokens: OnceCell<Option<(Vec<ScanToken>, Vec<ScanToken>)>>,
 }
 
 impl<'a> StatementContext<'a> {
-    pub fn new(
-        stmt: &'a pgls_query::NodeEnum,
-        sql: Option<&'a str>,
-        function: Option<&'a FunctionContext>,
-        collect_lookups: bool,
-    ) -> Self {
+    pub fn new(stmt: &'a AnalysableStatement, collect_lookups: bool) -> Self {
         Self {
             stmt,
-            sql,
-            function,
             collect_lookups,
-            resolution: OnceCell::new(),
             tokens: OnceCell::new(),
         }
     }
 
     pub(crate) fn tokens(&self) -> Option<StatementTokens<'_>> {
-        let sql = self.sql?;
+        let sql = self.stmt.sql.as_deref()?;
         let (tokens, comments) = self
             .tokens
             .get_or_init(|| {
@@ -212,39 +198,26 @@ impl<'a> StatementContext<'a> {
         Some(StatementTokens::new(sql, tokens, comments))
     }
 
-    /// The name resolution of the statement, `None` without a database snapshot.
-    pub fn resolution(&self, file_context: &AnalysedFileContext) -> Option<&Resolution> {
+    /// The name resolution of the statement, `None` without a database snapshot. It is the
+    /// walk's resolution of the statement, see [`AnalysedFileContext::resolution`], which the
+    /// catalog reuses for the columns of views and `CREATE TABLE AS`.
+    pub fn resolution(&self, file_context: &'a AnalysedFileContext) -> Option<&'a Resolution> {
         if !file_context.catalog().has_base() {
             return None;
         }
-        Some(self.resolve(file_context))
+        Some(file_context.resolution(self.stmt))
     }
 
-    pub fn lookups(&self, file_context: &AnalysedFileContext) -> &[SearchPathLookup] {
+    pub fn lookups(&self, file_context: &'a AnalysedFileContext) -> &'a [SearchPathLookup] {
         // Without a database snapshot, the resolution is only needed for the lookups.
         if !file_context.catalog().has_base() && !self.collect_lookups {
             return &[];
         }
-        &self.resolve(file_context).lookups
+        &file_context.resolution(self.stmt).lookups
     }
 
     /// The output of the statement's query, also without a database snapshot.
-    pub fn output(&self, file_context: &AnalysedFileContext) -> Option<&QueryOutput> {
-        self.resolve(file_context).output.as_ref()
-    }
-
-    /// Resolves the statement once for every rule.
-    fn resolve(&self, file_context: &AnalysedFileContext) -> &Resolution {
-        self.resolution.get_or_init(|| {
-            resolve(ResolveParams {
-                stmt: self.stmt,
-                catalog: file_context.catalog(),
-                search_path: file_context.session().search_path(),
-                function: self.function,
-                sql: self.sql,
-                collect_references: false,
-                collect_lookups: self.collect_lookups,
-            })
-        })
+    pub fn output(&self, file_context: &'a AnalysedFileContext) -> Option<&'a QueryOutput> {
+        file_context.resolution(self.stmt).output.as_ref()
     }
 }
