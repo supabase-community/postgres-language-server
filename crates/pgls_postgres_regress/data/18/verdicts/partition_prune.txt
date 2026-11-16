@@ -715,15 +715,14 @@
 1388:1 accepted
 1389:1 accepted
 1390:1 accepted
-1391:1 rejected 42601
-1391:33 rejected 42P02
-1394:1 rejected 26000
-1395:1 rejected 26000
-1396:1 rejected 26000
-1397:1 rejected 26000
-1399:1 rejected 26000
-1400:1 rejected 26000
-1401:1 rejected 26000
+1391:1 accepted
+1394:1 accepted
+1395:1 accepted
+1396:1 accepted
+1397:1 rejected 44000
+1399:1 accepted
+1400:1 accepted
+1401:1 accepted
 1404:1 accepted
 1405:1 accepted
 1409:1 accepted

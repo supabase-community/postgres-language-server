@@ -202,6 +202,13 @@ pub(crate) fn case(p: &mut Splitter) -> SplitterResult {
 }
 
 pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResult {
+    // Set by CTEs in a statement that takes a query, e.g. `PREPARE p AS WITH ...`: the statement
+    // after the CTEs is that query.
+    let mut cte_query = false;
+    // Set by an `INSERT INTO` in a statement that takes one, e.g. `PREPARE p AS INSERT INTO ...`:
+    // a `SELECT` or `WITH` after it is its query, like in `insert`.
+    let mut insert_query = false;
+
     loop {
         match p.current() {
             SyntaxKind::SEMICOLON => {
@@ -266,7 +273,17 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     begin_end(p)?;
                 }
             },
-            t => match at_statement_start(t, exclude) {
+            // The `SEARCH` and `CYCLE` clauses after CTEs aren't skipped yet, so the query after
+            // them starts a statement, like after the CTEs of a top-level `WITH`.
+            SyntaxKind::SEARCH_KW | SyntaxKind::CYCLE_KW
+                if cte_query && p.look_back(true) == Some(SyntaxKind::R_PAREN) =>
+            {
+                cte_query = false;
+                p.advance()?;
+            }
+            t => match at_statement_start(t, exclude).filter(|_| {
+                !(insert_query && matches!(t, SyntaxKind::WITH_KW | SyntaxKind::SELECT_KW))
+            }) {
                 Some(SyntaxKind::SELECT_KW) => {
                     let prev = p.look_back(true);
                     if [
@@ -286,6 +303,10 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                         SyntaxKind::ALL_KW,
                         // for UNION ... EXCEPT
                         SyntaxKind::EXCEPT_KW,
+                        // for INTERSECT and UNION DISTINCT
+                        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12935
+                        SyntaxKind::INTERSECT_KW,
+                        SyntaxKind::DISTINCT_KW,
                         // for grant
                         SyntaxKind::GRANT_KW,
                         // for revoke
@@ -296,15 +317,24 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
+                        && !cte_query
                     {
                         break;
                     }
 
+                    cte_query = false;
                     p.advance()?;
                 }
-                // DELETE is also an unreserved keyword used by hstore's delete() function.
-                // A DELETE statement must be followed by FROM, so `delete(` cannot start one.
-                Some(SyntaxKind::DELETE_KW) if p.look_ahead(true) == SyntaxKind::L_PAREN => {
+                // DELETE is also an unreserved keyword used by hstore's delete() function, and
+                // in `ON COMMIT DELETE ROWS`. A DELETE statement must be followed by FROM, so
+                // neither `delete(` nor `DELETE ROWS` can start one.
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L4674
+                Some(SyntaxKind::DELETE_KW)
+                    if matches!(
+                        p.look_ahead(true),
+                        SyntaxKind::L_PAREN | SyntaxKind::ROWS_KW
+                    ) =>
+                {
                     p.advance()?;
                 }
                 Some(SyntaxKind::INSERT_KW)
@@ -338,12 +368,22 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                         SyntaxKind::KEY_KW,
                         // WHEN MATCHED THEN
                         SyntaxKind::THEN_KW,
+                        // PREPARE p AS INSERT
+                        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12107
+                        SyntaxKind::AS_KW,
+                        // LOCK t IN SHARE UPDATE EXCLUSIVE MODE
+                        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12469
+                        SyntaxKind::SHARE_KW,
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
+                        && !cte_query
                     {
                         break;
                     }
+                    cte_query = false;
+                    insert_query |=
+                        t == SyntaxKind::INSERT_KW && p.look_ahead(true) == SyntaxKind::INTO_KW;
                     p.advance()?;
                 }
                 Some(SyntaxKind::WITH_KW) => {
@@ -363,7 +403,21 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     .iter()
                     .all(|x| x != &next)
                     {
-                        break;
+                        // CTEs in a statement that takes a query: `CREATE VIEW v AS`, `PREPARE
+                        // p AS`, `DECLARE c CURSOR FOR` and the actions of a rule.
+                        if !matches!(
+                            p.look_back(true),
+                            Some(
+                                SyntaxKind::AS_KW
+                                    | SyntaxKind::FOR_KW
+                                    | SyntaxKind::DO_KW
+                                    | SyntaxKind::INSTEAD_KW
+                                    | SyntaxKind::ALSO_KW
+                            )
+                        ) {
+                            break;
+                        }
+                        cte_query = true;
                     }
                     p.advance()?;
                 }

@@ -796,7 +796,6 @@
 1761:1 accepted
 1765:1 accepted
 1766:1 accepted
-1766:24 accepted
 1767:1 accepted
 1768:1 accepted
 1769:1 accepted
