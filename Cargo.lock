@@ -2297,6 +2297,7 @@ dependencies = [
  "pgls_postgres_regress",
  "pgls_query",
  "pgls_query_ext",
+ "pgls_resolve",
  "pgls_statement_splitter",
  "pgls_test_macros",
  "pgls_test_utils",
@@ -2525,6 +2526,7 @@ dependencies = [
  "insta",
  "pgls_catalog",
  "pgls_query",
+ "pgls_resolve",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter",
@@ -2543,6 +2545,7 @@ version = "0.0.0"
 dependencies = [
  "pgls_catalog",
  "pgls_query",
+ "pgls_resolve",
  "pgls_test_utils",
  "pgls_text_size",
  "sqlx",
@@ -2760,11 +2763,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_resolve"
+version = "0.0.0"
+dependencies = [
+ "insta",
+ "pgls_catalog",
+ "pgls_postgres_regress",
+ "pgls_query",
+ "pgls_query_ext",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "rustc-hash",
+ "sqlx",
+ "tracing",
+]
+
+[[package]]
 name = "pgls_semantic_tokens"
 version = "0.0.0"
 dependencies = [
  "pgls_catalog",
  "pgls_query",
+ "pgls_resolve",
  "pgls_test_utils",
  "pgls_text_size",
  "sqlx",
@@ -2923,6 +2943,7 @@ dependencies = [
  "pgls_migrations",
  "pgls_query",
  "pgls_query_ext",
+ "pgls_resolve",
  "pgls_statement_splitter",
  "pgls_text_size",
 ]
@@ -2977,6 +2998,7 @@ dependencies = [
  "pgls_pretty_print",
  "pgls_query",
  "pgls_query_ext",
+ "pgls_resolve",
  "pgls_semantic_tokens",
  "pgls_splinter",
  "pgls_statement_splitter",

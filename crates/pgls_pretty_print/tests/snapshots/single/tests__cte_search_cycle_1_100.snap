@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/cte_search_cycle_1.sql
+---
+with recursive search_graph (f, t, label) as (
+  select * from graph as g union all select g.* from graph as g, search_graph as sg where g.f = sg.t
+)
+search depth first by f, t set seq
+cycle f, t set is_cycle to true default false using path
+select
+  *
+from
+  search_graph;

@@ -17,11 +17,12 @@ use pgls_analyser::{
     AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterOptions, TYPECHECK_GROUP,
     UnparsableStatement,
 };
-use pgls_catalog::{CatalogBase, Snapshot, resolve::FunctionContext};
+use pgls_catalog::{CatalogBase, Snapshot};
 use pgls_console::StdDisplay;
 use pgls_diagnostics::{Diagnostic, PrintDiagnostic};
 use pgls_postgres_regress::{File, Verdict, Version};
 use pgls_query::NodeEnum;
+use pgls_resolve::FunctionContext;
 use pgls_text_size::TextRange;
 use rayon::prelude::*;
 

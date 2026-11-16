@@ -1,8 +1,8 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::resolve::{FindingKind, MatchFailure};
 use pgls_catalog::typing::format_type;
 use pgls_diagnostics::Severity;
+use pgls_resolve::{FindingKind, MatchFailure};
 
 declare_lint_rule! {
     /// An operator exists by name but cannot be resolved for the operand types, or has

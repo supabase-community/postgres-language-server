@@ -81,9 +81,8 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
                         emit_node(emitter, node);
                         return;
                     };
-                    if !target.name.is_empty() {
-                        emit_identifier_maybe_quoted(emitter, &target.name);
-                    }
+                    // Keeps the subscripts and fields of `INSERT (col[1], col.f)`.
+                    emit_column_name(emitter, target);
                 });
                 e.indent_end();
                 e.line(LineType::Soft);

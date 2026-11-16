@@ -48,7 +48,8 @@ fn extract_types_with_location() -> HashSet<String> {
     types_with_location
 }
 
-/// Extract all NodeMut variants handled in clear_location from normalize.rs
+/// Extract all NodeMut variants handled in clear_location from normalize.rs, lowercased: a variant
+/// can differ from its struct in case only (`NodeMut::CtesearchClause` for `CteSearchClause`).
 fn extract_handled_types() -> HashSet<String> {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let normalize_path = manifest_dir.join("src/normalize.rs");
@@ -71,7 +72,7 @@ fn extract_handled_types() -> HashSet<String> {
 
     variant_re
         .captures_iter(clear_location_body)
-        .map(|cap| cap[1].to_string())
+        .map(|cap| cap[1].to_lowercase())
         .collect()
 }
 
@@ -117,7 +118,6 @@ fn known_exceptions() -> HashSet<&'static str> {
         "Var",                 // variable reference - planner node (ColumnRef is parser)
         "WindowFunc",          // window function - planner node (FuncCall is parser)
         // ===== Handled in separate normalization functions =====
-        "MergeSupportFunc", // handled in normalize_merge_support_func
         "SqlValueFunction", // handled in normalize_sql_value_function
         // ===== Handled via parent node =====
         "JsonFormat",          // handled via JsonFuncExpr, JsonArrayConstructor, etc.
@@ -126,8 +126,6 @@ fn known_exceptions() -> HashSet<&'static str> {
         // ===== Parser nodes that need review =====
         // These appear in parsed ASTs but may not need explicit handling
         // if the pretty-print tests pass without them
-        "CteCycleClause",      // CTE CYCLE clause - rarely used
-        "CteSearchClause",     // CTE SEARCH clause - rarely used
         "PartitionRangeDatum", // partition range datum - handled via PartitionBoundSpec
         "PlAssignStmt",        // PL/pgSQL assignment - not standard SQL
     ]
@@ -143,7 +141,7 @@ fn all_location_fields_are_normalized() {
 
     let mut missing: Vec<_> = types_with_location
         .iter()
-        .filter(|t| !handled_types.contains(*t) && !exceptions.contains(t.as_str()))
+        .filter(|t| !handled_types.contains(&t.to_lowercase()) && !exceptions.contains(t.as_str()))
         .collect();
 
     missing.sort();
@@ -179,6 +177,10 @@ fn no_obsolete_handlers() {
     let handled_types = extract_handled_types();
 
     // Check for handlers that reference types that don't exist or don't have location
+    let types_with_location: HashSet<_> = types_with_location
+        .iter()
+        .map(|t| t.to_lowercase())
+        .collect();
     let mut obsolete: Vec<_> = handled_types
         .iter()
         .filter(|t| !types_with_location.contains(*t))

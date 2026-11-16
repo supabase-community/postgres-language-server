@@ -1,8 +1,8 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::resolve::{LookupKind, OperatorConstruct, SearchPathLookup};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_resolve::{LookupKind, OperatorConstruct, SearchPathLookup};
 
 declare_lint_rule! {
     /// Operators should be schema-qualified.

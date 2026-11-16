@@ -54,7 +54,7 @@ just test-doc               # doc tests
 - **New lint rule:** `just new-lintrule <group> <ruleName> [severity]` scaffolds the rule, its spec folder and the generated configuration. Rule docs are generated from the rule's doc comment.
 - **Codegen:** after changing rules, configuration or the workspace API, run `just gen-lint`. It regenerates the rule registry, configuration, JSON schema, TypeScript bindings and docs.
 - **Snapshot queries:** the introspection queries live in `crates/pgls_catalog/src/snapshot/queries/`. After changing one, run `cargo sqlx prepare --workspace` against the test database and commit the `.sqlx/` changes.
-- **Type checking:** the rules in `pgls_catalog::typing` and `pgls_catalog::resolve` port Postgres' parser. Link the Postgres function next to each port and only report what Postgres would certainly reject.
+- **Type checking:** the rules in `pgls_catalog::typing` and `pgls_resolve` port Postgres' parser. Link the Postgres function next to each port and only report what Postgres would certainly reject.
 - **Docs:** the documentation site lives in `docs/`. Preview it with `just serve-docs`.
 
 ## Engineering rules

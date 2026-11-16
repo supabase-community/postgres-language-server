@@ -1,0 +1,172 @@
+//! Relations and CTEs referenced by name.
+
+use std::rc::Rc;
+
+use pgls_query::protobuf::RangeVar;
+use pgls_query_ext::utils::range_var_name;
+
+use super::{Resolver, alias::apply_alias};
+use crate::{
+    ColumnSource, FindingKind, Reference,
+    lookups::record_relation,
+    scope::{Columns, DefaultOnly, Item, ItemSource},
+    utils::ref_name,
+};
+use pgls_catalog::{Lookup, RelationKind};
+
+/// A relation or CTE in FROM. A name without schema is a CTE first ([`transformFromClauseItem`]
+/// and [`addRangeTableEntryForCTE`]).
+///
+/// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
+/// [`addRangeTableEntryForCTE`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L2364
+pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
+    let alias = n.alias.as_ref();
+    let is_unqualified = n.schemaname.is_empty() && n.catalogname.is_empty();
+    if is_unqualified
+        && let Some(cte) = r
+            .ctes
+            .iter()
+            .rev()
+            .find(|cte| cte.name == n.relname)
+            .cloned()
+    {
+        if r.collects_references() {
+            r.record(Reference::Cte {
+                location: n.location,
+                span: r.name_span(n.location),
+                name: cte.name.clone(),
+            });
+            r.record_alias(n.location, alias);
+        }
+        let mut item = Item::named(
+            Some(ref_name(n).to_owned()),
+            apply_alias(cte.columns.clone(), alias),
+            cte.types_known,
+        );
+        if r.collects_references()
+            && let Some(columns) = &cte.columns
+        {
+            item.source = Some(Rc::new(ItemSource::derived(
+                r,
+                ColumnSource::Cte {
+                    name: cte.name.clone(),
+                },
+                columns,
+                cte.types_known,
+            )));
+        }
+        return item;
+    }
+    resolve_target_relation(r, n)
+}
+
+/// A relation that is never a CTE: the target of INSERT, UPDATE, and DELETE.
+pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
+    let alias = n.alias.as_ref();
+    let relation = lookup_relation(r, n);
+    // Like the relation, its alias only has a reference if the relation is known.
+    if relation.schema.is_some() {
+        r.record_alias(n.location, alias);
+    }
+    Item {
+        name: Some(ref_name(n).to_owned()),
+        schema: relation.schema.filter(|_| alias.is_none()),
+        types_known: relation.columns.is_some(),
+        columns: apply_alias(relation.columns, alias),
+        has_system_columns: relation.has_system_columns,
+        default_only_columns: relation.default_only_columns,
+        source: relation.source,
+    }
+}
+
+/// A relation found in the catalog. Everything is `None` if it was not found.
+#[derive(Debug, Default)]
+pub(super) struct ResolvedRelation {
+    pub schema: Option<String>,
+    pub columns: Columns,
+    pub has_system_columns: bool,
+    /// The columns of a table that INSERT and UPDATE can only set to `DEFAULT`.
+    pub default_only_columns: Vec<(String, DefaultOnly)>,
+    /// Only set when references are collected.
+    pub source: Option<Rc<ItemSource>>,
+}
+
+/// Looks up a relation. Reports it if it doesn't exist. Port of [`RangeVarGetRelidExtended`],
+/// which searches the schemas of the search path in order.
+///
+/// [`RangeVarGetRelidExtended`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L441
+pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelation {
+    let unknown = ResolvedRelation::default();
+    let name = range_var_name(n);
+    // Postgres only accepts the current database, which we don't know.
+    if name.catalog.is_some() {
+        r.depends_on_file();
+        return unknown;
+    }
+    let schema = name.schema;
+    if let Some(schema) = schema
+        && r.check_schema(schema, n.location)
+    {
+        return unknown;
+    }
+
+    let relation = r.catalog.relation(schema, name.name, r.search_path);
+    let temporary = matches!(&relation, Lookup::Found(relation) if relation.schema == "pg_temp");
+    record_relation(r, n, temporary);
+    match relation {
+        Lookup::Found(relation) => {
+            r.uses(relation.origin);
+            let mut source = None;
+            if r.collects_references() {
+                source = relation.columns.as_ref().map(|columns| {
+                    Rc::new(ItemSource {
+                        source: ColumnSource::Relation {
+                            schema: relation.schema.clone(),
+                            name: relation.name.clone(),
+                        },
+                        columns: columns.clone(),
+                    })
+                });
+                r.record(Reference::Relation {
+                    location: n.location,
+                    span: r.name_span(n.location),
+                    relation: relation.clone(),
+                });
+            }
+            let default_only_columns = match relation.kind {
+                RelationKind::Table
+                | RelationKind::PartitionedTable
+                | RelationKind::ForeignTable => relation
+                    .columns
+                    .iter()
+                    .flatten()
+                    .filter_map(|column| Some((column.name.clone(), DefaultOnly::of(column)?)))
+                    .collect(),
+                _ => Vec::new(),
+            };
+            ResolvedRelation {
+                schema: Some(relation.schema),
+                columns: relation
+                    .columns
+                    .map(|columns| columns.into_iter().map(Into::into).collect()),
+                has_system_columns: relation.kind != RelationKind::View,
+                default_only_columns,
+                source,
+            }
+        }
+        Lookup::Missing => {
+            r.report(
+                FindingKind::UnknownRelation {
+                    schema: schema.map(str::to_owned),
+                    name: n.relname.clone(),
+                },
+                n.location,
+            );
+            unknown
+        }
+        Lookup::Unknown => {
+            r.depends_on_file();
+            unknown
+        }
+    }
+}
