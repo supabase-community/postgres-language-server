@@ -21,6 +21,10 @@ serde_json   = { workspace = true, optional = true }
 sqlx         = { workspace = true, optional = true }
 tokio        = { workspace = true, optional = true }
 
+[dev-dependencies]
+insta.workspace      = true
+pgls_query.workspace = true
+
 [features]
 # Dependencies of the recorder, which needs Docker and the network.
 record = ["dep:pgls_catalog", "dep:serde_json", "dep:sqlx", "dep:tokio"]

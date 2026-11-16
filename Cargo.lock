@@ -2688,7 +2688,9 @@ name = "pgls_postgres_regress"
 version = "0.0.0"
 dependencies = [
  "flate2",
+ "insta",
  "pgls_catalog",
+ "pgls_query",
  "pgls_statement_splitter",
  "pgls_text_size",
  "serde_json",

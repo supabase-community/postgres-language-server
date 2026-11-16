@@ -1,0 +1,659 @@
+---
+source: crates/pgls_postgres_regress/tests/splitter_vs_parser.rs
+expression: report(&version)
+---
+REL_18_6: 47288 statements, 636 not checked because no text up to a `;` parses, 150 mismatches
+24 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
+
+alter_table.sql:968:1: the parser reads 968:1-970:47, the splitter 968:1-970:33, 970:34-970:47
+  968:1    create rule def_view_test_ins as on insert to def_view_test do instead insert in…
+  970:34   select new.*;
+
+collate.sql:139:1: the parser reads 139:1-139:108, the splitter 139:1-139:53, 139:54-139:108
+  139:1    SELECT a, b FROM collate_test2 WHERE a < 4 INTERSECT
+  139:54   SELECT a, b FROM collate_test2 WHERE a > 1 ORDER BY 2;
+
+collate.sql:146:1: the parser reads 146:1-146:84, the splitter 146:1-146:41, 146:42-146:84
+  146:1    SELECT a, b FROM collate_test1 INTERSECT
+  146:42   SELECT a, b FROM collate_test2 ORDER BY 2;
+
+collate.icu.utf8.sql:237:1: the parser reads 237:1-237:108, the splitter 237:1-237:53, 237:54-237:108
+  237:1    SELECT a, b FROM collate_test3 WHERE a < 4 INTERSECT
+  237:54   SELECT a, b FROM collate_test3 WHERE a > 1 ORDER BY 2;
+
+collate.icu.utf8.sql:244:1: the parser reads 244:1-244:84, the splitter 244:1-244:41, 244:42-244:84
+  244:1    SELECT a, b FROM collate_test1 INTERSECT
+  244:42   SELECT a, b FROM collate_test3 ORDER BY 2;
+
+collate.icu.utf8.sql:602:1: the parser reads 602:1-602:55, the splitter 602:1-602:32, 602:33-602:55
+  602:1    SELECT x FROM test1cs INTERSECT
+  602:33   SELECT x FROM test2cs;
+
+collate.icu.utf8.sql:603:1: the parser reads 603:1-603:55, the splitter 603:1-603:32, 603:33-603:55
+  603:1    SELECT x FROM test2cs INTERSECT
+  603:33   SELECT x FROM test1cs;
+
+collate.icu.utf8.sql:736:1: the parser reads 736:1-736:66, the splitter 736:1-736:32, 736:33-736:66
+  736:1    SELECT x FROM test1ci INTERSECT
+  736:33   SELECT x FROM test2ci ORDER BY x;
+
+collate.icu.utf8.sql:737:1: the parser reads 737:1-737:66, the splitter 737:1-737:32, 737:33-737:66
+  737:1    SELECT x FROM test2ci INTERSECT
+  737:33   SELECT x FROM test1ci ORDER BY x;
+
+collate.icu.utf8.sql:971:1: the parser reads 971:1-971:70, the splitter 971:1-971:34, 971:35-971:70
+  971:1    SELECT x FROM test1bpci INTERSECT
+  971:35   SELECT x FROM test2bpci ORDER BY x;
+
+collate.icu.utf8.sql:972:1: the parser reads 972:1-972:70, the splitter 972:1-972:34, 972:35-972:70
+  972:1    SELECT x FROM test2bpci INTERSECT
+  972:35   SELECT x FROM test1bpci ORDER BY x;
+
+collate.linux.utf8.sql:243:1: the parser reads 243:1-243:108, the splitter 243:1-243:53, 243:54-243:108
+  243:1    SELECT a, b FROM collate_test3 WHERE a < 4 INTERSECT
+  243:54   SELECT a, b FROM collate_test3 WHERE a > 1 ORDER BY 2;
+
+collate.linux.utf8.sql:250:1: the parser reads 250:1-250:84, the splitter 250:1-250:41, 250:42-250:84
+  250:1    SELECT a, b FROM collate_test1 INTERSECT
+  250:42   SELECT a, b FROM collate_test3 ORDER BY 2;
+
+copy.sql:246:1: the parser reads 246:1-246:52, the splitter 246:1-246:31, 246:32-378:36
+  246:1    copy header_copytest to stdout
+  246:32   with (header match); copy header_copytest from stdin with (header wrong_choice);…
+
+copy2.sql:119:1: the parser reads 119:1-119:41, the splitter 119:1-119:18, 119:19-755:55
+  119:1    COPY x from stdin
+  119:19   with (reject_limit 1); COPY x from stdin with (on_error ignore, reject_limit 0);…
+
+create_index.sql:560:1: the parser reads 560:1-561:25, the splitter 560:1-561:12, 561:13-561:25
+  560:1    CREATE TEMP TABLE concur_temp (f1 int, f2 text) ON COMMIT
+  561:13   DELETE ROWS;
+
+create_index.sql:1394:1: the parser reads 1394:1-1395:25, the splitter 1394:1-1395:12, 1395:13-1395:25
+  1394:1   CREATE TEMP TABLE concur_temp_tab_2 (c1 int, c2 text) ON COMMIT
+  1395:13  DELETE ROWS;
+
+create_schema.sql:12:1: the parser reads 12:1-13:43, the splitter 12:1-12:55, 13:3-13:43
+  12:1     CREATE SCHEMA AUTHORIZATION regress_create_schema_role
+  13:3     CREATE SEQUENCE schema_not_existing.seq;
+
+create_schema.sql:14:1: the parser reads 14:1-15:49, the splitter 14:1-14:55, 15:3-15:49
+  14:1     CREATE SCHEMA AUTHORIZATION regress_create_schema_role
+  15:3     CREATE TABLE schema_not_existing.tab (id int);
+
+create_schema.sql:16:1: the parser reads 16:1-17:52, the splitter 16:1-16:55, 17:3-17:52
+  16:1     CREATE SCHEMA AUTHORIZATION regress_create_schema_role
+  17:3     CREATE VIEW schema_not_existing.view AS SELECT 1;
+
+create_schema.sql:18:1: the parser reads 18:1-19:48, the splitter 18:1-18:55, 19:3-19:48
+  18:1     CREATE SCHEMA AUTHORIZATION regress_create_schema_role
+  19:3     CREATE INDEX ON schema_not_existing.tab (id);
+
+create_schema.sql:20:1: the parser reads 20:1-22:42, the splitter 20:1-20:55, 21:3-22:42
+  20:1     CREATE SCHEMA AUTHORIZATION regress_create_schema_role
+  21:3     CREATE TRIGGER schema_trig BEFORE INSERT ON schema_not_existing.tab EXECUTE FUNC…
+
+create_schema.sql:25:1: the parser reads 25:1-26:43, the splitter 25:1-25:41, 26:3-26:43
+  25:1     CREATE SCHEMA AUTHORIZATION CURRENT_ROLE
+  26:3     CREATE SEQUENCE schema_not_existing.seq;
+
+create_schema.sql:27:1: the parser reads 27:1-28:49, the splitter 27:1-27:41, 28:3-28:49
+  27:1     CREATE SCHEMA AUTHORIZATION CURRENT_ROLE
+  28:3     CREATE TABLE schema_not_existing.tab (id int);
+
+create_schema.sql:29:1: the parser reads 29:1-30:52, the splitter 29:1-29:41, 30:3-30:52
+  29:1     CREATE SCHEMA AUTHORIZATION CURRENT_ROLE
+  30:3     CREATE VIEW schema_not_existing.view AS SELECT 1;
+
+create_schema.sql:31:1: the parser reads 31:1-32:48, the splitter 31:1-31:41, 32:3-32:48
+  31:1     CREATE SCHEMA AUTHORIZATION CURRENT_ROLE
+  32:3     CREATE INDEX ON schema_not_existing.tab (id);
+
+create_schema.sql:33:1: the parser reads 33:1-35:42, the splitter 33:1-33:41, 34:3-35:42
+  33:1     CREATE SCHEMA AUTHORIZATION CURRENT_ROLE
+  34:3     CREATE TRIGGER schema_trig BEFORE INSERT ON schema_not_existing.tab EXECUTE FUNC…
+
+create_schema.sql:37:1: the parser reads 37:1-38:43, the splitter 37:1-37:58, 38:3-38:43
+  37:1     CREATE SCHEMA regress_schema_1 AUTHORIZATION CURRENT_ROLE
+  38:3     CREATE SEQUENCE schema_not_existing.seq;
+
+create_schema.sql:39:1: the parser reads 39:1-40:49, the splitter 39:1-39:58, 40:3-40:49
+  39:1     CREATE SCHEMA regress_schema_1 AUTHORIZATION CURRENT_ROLE
+  40:3     CREATE TABLE schema_not_existing.tab (id int);
+
+create_schema.sql:41:1: the parser reads 41:1-42:52, the splitter 41:1-41:58, 42:3-42:52
+  41:1     CREATE SCHEMA regress_schema_1 AUTHORIZATION CURRENT_ROLE
+  42:3     CREATE VIEW schema_not_existing.view AS SELECT 1;
+
+create_schema.sql:43:1: the parser reads 43:1-44:48, the splitter 43:1-43:58, 44:3-44:48
+  43:1     CREATE SCHEMA regress_schema_1 AUTHORIZATION CURRENT_ROLE
+  44:3     CREATE INDEX ON schema_not_existing.tab (id);
+
+create_schema.sql:45:1: the parser reads 45:1-47:42, the splitter 45:1-45:58, 46:3-47:42
+  45:1     CREATE SCHEMA regress_schema_1 AUTHORIZATION CURRENT_ROLE
+  46:3     CREATE TRIGGER schema_trig BEFORE INSERT ON schema_not_existing.tab EXECUTE FUNC…
+
+create_schema.sql:52:1: the parser reads 52:1-53:56, the splitter 52:1-52:55, 53:3-53:56
+  52:1     CREATE SCHEMA AUTHORIZATION regress_create_schema_role
+  53:3     CREATE TABLE regress_create_schema_role.tab (id int);
+
+create_schema.sql:58:1: the parser reads 58:1-59:56, the splitter 58:1-58:41, 59:3-59:56
+  58:1     CREATE SCHEMA AUTHORIZATION CURRENT_ROLE
+  59:3     CREATE TABLE regress_create_schema_role.tab (id int);
+
+create_schema.sql:63:1: the parser reads 63:1-64:46, the splitter 63:1-63:58, 64:3-64:46
+  63:1     CREATE SCHEMA regress_schema_1 AUTHORIZATION CURRENT_ROLE
+  64:3     CREATE TABLE regress_schema_1.tab (id int);
+
+create_view.sql:121:1: the parser reads 121:1-123:46, the splitter 121:1-121:29, 122:5-122:44, 123:5-123:46
+  121:1    CREATE SCHEMA temp_view_test
+  122:5    CREATE TABLE base_table (a int, id int)
+  123:5    CREATE TABLE base_table2 (a int, id int);
+
+create_view.sql:140:1: the parser reads 140:1-141:43, the splitter 140:1-140:31, 141:5-141:43
+  140:1    CREATE SCHEMA test_view_schema
+  141:5    CREATE TEMP VIEW testview AS SELECT 1;
+
+drop_if_exists.sql:302:1: the parser reads 302:1-302:49, the splitter 302:1-302:35, 302:36-304:59
+  302:1    drop database test_database_exists
+  302:36   with (force); drop database if exists test_database_exists (force); drop databas…
+
+event_trigger.sql:323:1: the parser reads 323:1-327:68, the splitter 323:1-323:22, 324:2-324:91, 325:2-325:37, 326:2-326:78, 327:2-327:68
+  323:1    CREATE SCHEMA evttrig
+  324:2    CREATE TABLE one (col_a SERIAL PRIMARY KEY, col_b text DEFAULT 'forty two', col_…
+  325:2    CREATE INDEX one_idx ON one (col_b)
+  326:2    CREATE TABLE two (col_c INTEGER CHECK (col_c > 0) REFERENCES one DEFAULT 42)
+  327:2    CREATE TABLE id (col_d int NOT NULL GENERATED ALWAYS AS IDENTITY);
+
+foreign_key.sql:1788:1: the parser reads 1788:1-1796:71, the splitter 1788:1-1788:22, 1789:3-1789:40, 1790:3-1790:53, 1791:3-1792:66, 1793:3-1795:28, 1796:3-1796:71
+  1788:1   create schema fkpart0
+  1789:3   create table pkey (a int primary key)
+  1790:3   create table fk_part (a int) partition by list (a)
+  1791:3   create table fk_part_1 partition of fk_part (foreign key (a) references fkpart0.…
+  1793:3   create table fk_part_23 partition of fk_part (foreign key (a) references fkpart0…
+  1796:3   create table fk_part_23_2 partition of fk_part_23 for values in (2);
+
+foreign_key.sql:1821:1: the parser reads 1821:1-1825:69, the splitter 1821:1-1821:22, 1822:3-1822:40, 1823:3-1823:53, 1824:3-1824:86, 1825:3-1825:69
+  1821:1   create schema fkpart1
+  1822:3   create table pkey (a int primary key)
+  1823:3   create table fk_part (a int) partition by list (a)
+  1824:3   create table fk_part_1 partition of fk_part for values in (1) partition by list …
+  1825:3   create table fk_part_1_1 partition of fk_part_1 for values in (1);
+
+foreign_key.sql:1838:1: the parser reads 1838:1-1842:96, the splitter 1838:1-1838:22, 1839:3-1839:40, 1840:3-1840:110, 1841:3-1841:94, 1842:3-1842:96
+  1838:1   create schema fkpart2
+  1839:3   create table pkey (a int primary key)
+  1840:3   create table fk_part (a int, constraint fkey foreign key (a) references fkpart2.…
+  1841:3   create table fk_part_1 partition of fkpart2.fk_part for values in (1) partition …
+  1842:3   create table fk_part_1_1 (a int, constraint my_fkey foreign key (a) references f…
+
+foreign_key.sql:1851:1: the parser reads 1851:1-1856:73, the splitter 1851:1-1851:22, 1852:3-1852:40, 1853:3-1853:141, 1854:3-1854:94, 1855:3-1855:76, 1856:3-1856:73
+  1851:1   create schema fkpart3
+  1852:3   create table pkey (a int primary key)
+  1853:3   create table fk_part (a int, constraint fkey foreign key (a) references fkpart3.…
+  1854:3   create table fk_part_1 partition of fkpart3.fk_part for values in (1) partition …
+  1855:3   create table fk_part_1_1 partition of fkpart3.fk_part_1 for values in (1)
+  1856:3   create table fk_part_2 partition of fkpart3.fk_part for values in (2);
+
+foreign_key.sql:2181:1: the parser reads 2181:1-2183:62, the splitter 2181:1-2181:22, 2182:3-2182:52, 2183:3-2183:62
+  2181:1   CREATE SCHEMA fkpart7
+  2182:3   CREATE TABLE pkpart (a int) PARTITION BY LIST (a)
+  2183:3   CREATE TABLE pkpart1 PARTITION OF pkpart FOR VALUES IN (1);
+
+foreign_key.sql:2190:1: the parser reads 2190:1-2193:83, the splitter 2190:1-2190:22, 2191:3-2191:40, 2192:3-2192:97, 2193:3-2193:83
+  2190:1   CREATE SCHEMA fkpart8
+  2191:3   CREATE TABLE tbl1(f1 int PRIMARY KEY)
+  2192:3   CREATE TABLE tbl2(f1 int REFERENCES tbl1 DEFERRABLE INITIALLY DEFERRED) PARTITIO…
+  2193:3   CREATE TABLE tbl2_p1 PARTITION OF tbl2 FOR VALUES FROM (minvalue) TO (maxvalue);
+
+foreign_key.sql:2203:1: the parser reads 2203:1-2209:67, the splitter 2203:1-2203:22, 2204:3-2204:61, 2205:3-2207:4, 2208:3-2208:87, 2209:3-2209:67
+  2203:1   CREATE SCHEMA fkpart9
+  2204:3   CREATE TABLE pk (a INT PRIMARY KEY) PARTITION BY RANGE (a)
+  2205:3   CREATE TABLE fk ( fk_a INT REFERENCES pk(a) ON DELETE CASCADE )
+  2208:3   CREATE TABLE pk1 PARTITION OF pk FOR VALUES FROM (30) TO (50) PARTITION BY RANGE…
+  2209:3   CREATE TABLE pk11 PARTITION OF pk1 FOR VALUES FROM (30) TO (40);
+
+foreign_key.sql:2219:1: the parser reads 2219:1-2227:75, the splitter 2219:1-2219:23, 2220:3-2220:63, 2221:3-2221:75, 2222:3-2222:75, 2223:3-2223:74, 2224:3-2224:63, 2225:3-2225:75, 2226:3-2226:75, 2227:3-2227:75
+  2219:1   CREATE SCHEMA fkpart10
+  2220:3   CREATE TABLE tbl1(f1 int PRIMARY KEY) PARTITION BY RANGE(f1)
+  2221:3   CREATE TABLE tbl1_p1 PARTITION OF tbl1 FOR VALUES FROM (minvalue) TO (1)
+  2222:3   CREATE TABLE tbl1_p2 PARTITION OF tbl1 FOR VALUES FROM (1) TO (maxvalue)
+  2223:3   CREATE TABLE tbl2(f1 int REFERENCES tbl1 DEFERRABLE INITIALLY DEFERRED)
+  2224:3   CREATE TABLE tbl3(f1 int PRIMARY KEY) PARTITION BY RANGE(f1)
+  2225:3   CREATE TABLE tbl3_p1 PARTITION OF tbl3 FOR VALUES FROM (minvalue) TO (1)
+  2226:3   CREATE TABLE tbl3_p2 PARTITION OF tbl3 FOR VALUES FROM (1) TO (maxvalue)
+  2227:3   CREATE TABLE tbl4(f1 int REFERENCES tbl3 DEFERRABLE INITIALLY DEFERRED);
+
+foreign_key.sql:2281:1: the parser reads 2281:1-2300:61, the splitter 2281:1-2281:23, 2282:3-2282:68, 2283:3-2286:4, 2287:3-2290:26, 2291:3-2294:4, 2295:3-2295:78, 2296:3-2296:53, 2297:3-2297:53, 2298:3-2298:63, 2299:3-2299:60, 2300:3-2300:61
+  2281:1   CREATE SCHEMA fkpart11
+  2282:3   CREATE TABLE pk (a INT PRIMARY KEY, b text) PARTITION BY LIST (a)
+  2283:3   CREATE TABLE fk ( a INT, CONSTRAINT fkey FOREIGN KEY (a) REFERENCES pk(a) ON UPD…
+  2287:3   CREATE TABLE fk_parted ( a INT PRIMARY KEY, CONSTRAINT fkey FOREIGN KEY (a) REFE…
+  2291:3   CREATE TABLE fk_another ( a INT, CONSTRAINT fkey FOREIGN KEY (a) REFERENCES fk_p…
+  2295:3   CREATE TABLE pk1 PARTITION OF pk FOR VALUES IN (1, 2) PARTITION BY LIST (a)
+  2296:3   CREATE TABLE pk2 PARTITION OF pk FOR VALUES IN (3)
+  2297:3   CREATE TABLE pk3 PARTITION OF pk FOR VALUES IN (4)
+  2298:3   CREATE TABLE fk1 PARTITION OF fk_parted FOR VALUES IN (1, 2)
+  2299:3   CREATE TABLE fk2 PARTITION OF fk_parted FOR VALUES IN (3)
+  2300:3   CREATE TABLE fk3 PARTITION OF fk_parted FOR VALUES IN (4);
+
+foreign_key.sql:2372:1: the parser reads 2372:1-2385:28, the splitter 2372:1-2372:23, 2373:3-2373:82, 2374:3-2374:81, 2375:3-2375:62, 2376:3-2376:73, 2377:3-2377:81, 2378:3-2378:62, 2379:3-2379:62, 2380:3-2380:89, 2381:3-2381:105, 2382:3-2382:65, 2383:3-2385:28
+  2372:1   CREATE SCHEMA fkpart12
+  2373:3   CREATE TABLE fk_p ( id int, jd int, PRIMARY KEY(id, jd)) PARTITION BY list (id)
+  2374:3   CREATE TABLE fk_p_1 PARTITION OF fk_p FOR VALUES IN (1) PARTITION BY list (jd)
+  2375:3   CREATE TABLE fk_p_1_1 PARTITION OF fk_p_1 FOR VALUES IN (1)
+  2376:3   CREATE TABLE fk_p_1_2 (x int, y int, jd int NOT NULL, id int NOT NULL)
+  2377:3   CREATE TABLE fk_p_2 PARTITION OF fk_p FOR VALUES IN (2) PARTITION BY list (jd)
+  2378:3   CREATE TABLE fk_p_2_1 PARTITION OF fk_p_2 FOR VALUES IN (1)
+  2379:3   CREATE TABLE fk_p_2_2 PARTITION OF fk_p_2 FOR VALUES IN (2)
+  2380:3   CREATE TABLE fk_r_1 ( p_jd int NOT NULL, x int, id int PRIMARY KEY, p_id int NOT…
+  2381:3   CREATE TABLE fk_r_2 ( id int PRIMARY KEY, p_id int NOT NULL, p_jd int NOT NULL) …
+  2382:3   CREATE TABLE fk_r_2_1 PARTITION OF fk_r_2 FOR VALUES IN (2, 1)
+  2383:3   CREATE TABLE fk_r ( id int PRIMARY KEY, p_id int NOT NULL, p_jd int NOT NULL, FO…
+
+guc.sql:179:1: the parser reads 179:1-179:66, the splitter 179:1-179:53, 179:54-179:66
+  179:1    CREATE TEMP TABLE reset_test ( data text ) ON COMMIT
+  179:54   DELETE ROWS;
+
+guc.sql:189:1: the parser reads 189:1-189:43, the splitter 189:1-189:19, 189:20-370:31
+  189:1    DECLARE foo CURSOR
+  189:20   WITH HOLD FOR SELECT 1; PREPARE foo AS SELECT 1; LISTEN foo_event; SET vacuum_co…
+
+insert.sql:101:1: the parser reads 101:1-103:25, the splitter 101:1-102:51, 103:3-103:25
+  101:1    create rule irule3 as on insert to inserttest2 do also insert into inserttest (f…
+  103:3    select new.f1, new.f2;
+
+insert.sql:154:1: the parser reads 154:1-156:25, the splitter 154:1-155:52, 156:3-156:25
+  154:1    create rule irule3 as on insert to inserttest2 do also insert into inserttestb (…
+  156:3    select new.f1, new.f2;
+
+limit.sql:74:1: the parser reads 74:1-74:87, the splitter 74:1-74:76, 74:77-202:48
+  74:1     declare c5 cursor for select * from int8_tbl order by q1 fetch first 2 rows
+  74:77    with ties; fetch all in c5; fetch 1 in c5; fetch backward 1 in c5; fetch backwar…
+
+lock.sql:31:1: the parser reads 31:1-31:53, the splitter 31:1-31:30, 31:31-31:53
+  31:1     LOCK TABLE lock_tbl1 IN SHARE
+  31:31    UPDATE EXCLUSIVE MODE;
+
+lock.sql:43:1: the parser reads 43:1-43:60, the splitter 43:1-43:30, 43:31-43:60
+  43:1     LOCK TABLE lock_tbl1 IN SHARE
+  43:31    UPDATE EXCLUSIVE MODE NOWAIT;
+
+maintain_every.sql:11:1: the parser reads 11:1-11:63, the splitter 11:1-11:50, 11:51-11:63
+  11:1     CREATE TEMP TABLE past_inh_db_parent () ON COMMIT
+  11:51    DELETE ROWS;
+
+matview.sql:96:1: the parser reads 96:1-96:65, the splitter 96:1-96:51, 96:52-316:40
+  96:1     REFRESH MATERIALIZED VIEW CONCURRENTLY mvtest_tvmm
+  96:52    WITH NO DATA; -- no tuple locks on materialized views SELECT * FROM mvtest_tvvm …
+
+namespace.sql:9:1: the parser reads 9:1-18:10, the splitter 9:1-9:31, 10:8-10:48, 12:8-13:49, 15:8-18:10
+  9:1      CREATE SCHEMA test_ns_schema_1
+  10:8     CREATE UNIQUE INDEX abc_a_idx ON abc (a)
+  12:8     CREATE VIEW abc_view AS SELECT a+1 AS a, b+1 AS b FROM abc
+  15:8     CREATE TABLE abc ( a serial, b int UNIQUE );
+
+namespace.sql:24:1: the parser reads 24:1-25:50, the splitter 24:1-24:31, 25:8-25:50
+  24:1     CREATE SCHEMA test_ns_schema_2
+  25:8     CREATE VIEW abc_view AS SELECT c FROM abc;
+
+namespace.sql:33:1: the parser reads 33:1-34:50, the splitter 33:1-33:31, 34:8-34:50
+  33:1     CREATE SCHEMA test_ns_schema_2
+  34:8     CREATE VIEW abc_view AS SELECT a FROM abc;
+
+partition_prune.sql:1391:1: the parser reads 1391:1-1391:90, the splitter 1391:1-1391:32, 1391:33-1391:90
+  1391:1   prepare update_part_abc_view as
+  1391:33  update part_abc_view set b = $2 where a = $1 returning *;
+
+plancache.sql:99:1: the parser reads 99:1-100:29, the splitter 99:1-99:17, 100:3-100:29
+  99:1     create schema s1
+  100:3    create table abc (f1 int);
+
+plancache.sql:102:1: the parser reads 102:1-103:29, the splitter 102:1-102:17, 103:3-103:29
+  102:1    create schema s2
+  103:3    create table abc (f1 int);
+
+plancache.sql:166:1: the parser reads 166:1-166:75, the splitter 166:1-166:34, 166:35-166:75
+  166:1    prepare pstmt_def_insert (int) as
+  166:35   insert into pc_list_part_def values($1);
+
+portals.sql:214:1: the parser reads 214:1-214:63, the splitter 214:1-214:28, 214:29-612:33
+  214:1    DECLARE foo25 SCROLL CURSOR
+  214:29   WITH HOLD FOR SELECT * FROM tenk2; FETCH FROM foo25; FETCH FROM foo25; COMMIT; F…
+
+prepare.sql:75:1: the parser reads 75:1-76:55, the splitter 75:1-75:14, 76:5-76:55
+  75:1     PREPARE q8 AS
+  76:5     UPDATE tenk1 SET stringu1 = $2 WHERE unique1 = $1;
+
+publication.sql:1289:1: the parser reads 1289:1-1289:76, the splitter 1289:1-1289:20, 1289:21-1289:51, 1289:52-1289:76
+  1289:1   CREATE SCHEMA pubme
+  1289:21  CREATE TABLE t0 (c int, d int)
+  1289:52  CREATE TABLE t1 (c int);
+
+publication.sql:1290:1: the parser reads 1290:1-1290:53, the splitter 1290:1-1290:21, 1290:22-1290:53
+  1290:1   CREATE SCHEMA pubme2
+  1290:22  CREATE TABLE t0 (c int, d int);
+
+rowsecurity.sql:239:1: the parser reads 239:1-239:26, the splitter 239:1-239:19, 239:20-2438:61
+  239:1    COPY t1 FROM stdin
+  239:20   WITH ; CREATE TABLE t2 (c float) INHERITS (t1); GRANT ALL ON t2 TO public; COPY …
+
+sqljson.sql:444:1: the parser reads 444:1-455:15, the splitter 444:1-453:12, 453:13-572:19
+  444:1    SELECT js, js IS JSON "IS JSON", js IS NOT JSON "IS NOT JSON", js IS JSON VALUE …
+  453:13   WITH UNIQUE KEYS "WITH UNIQUE" FROM test_is_json; SELECT js, js IS JSON "IS JSON…
+
+stats_ext.sql:1766:1: the parser reads 1766:1-1766:107, the splitter 1766:1-1766:23, 1766:24-1766:107
+  1766:1   CREATE SCHEMA sts_sch1
+  1766:24  CREATE TABLE sts_sch1.tbl (a INT, b INT, c INT GENERATED ALWAYS AS (b * 2) STORE…
+
+temp.sql:56:1: the parser reads 56:1-56:59, the splitter 56:1-56:46, 56:47-56:59
+  56:1     CREATE TEMP TABLE temptest(col int) ON COMMIT
+  56:47    DELETE ROWS;
+
+temp.sql:73:1: the parser reads 73:1-73:67, the splitter 73:1-73:42, 73:43-73:67
+  73:1     CREATE TEMP TABLE temptest(col) ON COMMIT
+  73:43    DELETE ROWS AS SELECT 1;
+
+temp.sql:122:1: the parser reads 122:1-122:54, the splitter 122:1-122:41, 122:42-122:54
+  122:1    CREATE TABLE temptest(col int) ON COMMIT
+  122:42   DELETE ROWS;
+
+temp.sql:123:1: the parser reads 123:1-123:62, the splitter 123:1-123:37, 123:38-123:62
+  123:1    CREATE TABLE temptest(col) ON COMMIT
+  123:38   DELETE ROWS AS SELECT 1;
+
+temp.sql:128:1: the parser reads 128:1-129:25, the splitter 128:1-129:12, 129:13-129:25
+  128:1    CREATE TEMP TABLE temptest2(col int REFERENCES temptest1) ON COMMIT
+  129:13   DELETE ROWS;
+
+temp.sql:137:1: the parser reads 137:1-137:72, the splitter 137:1-137:59, 137:60-137:72
+  137:1    CREATE TEMP TABLE temptest3(col int PRIMARY KEY) ON COMMIT
+  137:60   DELETE ROWS;
+
+temp.sql:188:1: the parser reads 188:1-189:47, the splitter 188:1-189:34, 189:35-189:47
+  188:1    create temp table temp_parted_oncommit (a int) partition by list (a) on commit
+  189:35   delete rows;
+
+temp.sql:190:1: the parser reads 190:1-192:43, the splitter 190:1-192:30, 192:31-192:43
+  190:1    create temp table temp_parted_oncommit_1 partition of temp_parted_oncommit for v…
+  192:31   delete rows;
+
+temp.sql:205:1: the parser reads 205:1-207:43, the splitter 205:1-207:30, 207:31-207:43
+  205:1    create temp table temp_parted_oncommit_test1 partition of temp_parted_oncommit_t…
+  207:31   delete rows;
+
+temp.sql:218:1: the parser reads 218:1-219:47, the splitter 218:1-219:34, 219:35-219:47
+  218:1    create temp table temp_parted_oncommit_test (a int) partition by list (a) on com…
+  219:35   delete rows;
+
+temp.sql:240:1: the parser reads 240:1-241:58, the splitter 240:1-241:45, 241:46-241:58
+  240:1    create temp table temp_inh_oncommit_test1 () inherits(temp_inh_oncommit_test) on…
+  241:46   delete rows;
+
+temp.sql:248:1: the parser reads 248:1-248:72, the splitter 248:1-248:59, 248:60-248:72
+  248:1    create temp table temp_inh_oncommit_test (a int) on commit
+  248:60   delete rows;
+
+transactions.sql:111:1: the parser reads 111:1-111:44, the splitter 111:1-111:16, 111:17-111:44
+  111:1    PREPARE test AS
+  111:17   UPDATE writetest SET a = 0;
+
+union.sql:97:1: the parser reads 97:1-97:70, the splitter 97:1-97:34, 97:35-97:70
+  97:1     SELECT q2 FROM int8_tbl INTERSECT
+  97:35    SELECT q1 FROM int8_tbl ORDER BY 1;
+
+union.sql:116:1: the parser reads 116:1-116:58, the splitter 116:1-116:44, 116:45-116:58
+  116:1    (SELECT 1,2,3 UNION SELECT 4,5,6) INTERSECT
+  116:45   SELECT 4,5,6;
+
+union.sql:117:1: the parser reads 117:1-117:71, the splitter 117:1-117:57, 117:58-117:71
+  117:1    (SELECT 1,2,3 UNION SELECT 4,5,6 ORDER BY 1,2) INTERSECT
+  117:58   SELECT 4,5,6;
+
+union.sql:147:1: the parser reads 147:1-148:76, the splitter 147:1-148:33, 148:34-148:76
+  147:1    explain (costs off) select * from int8_tbl intersect
+  148:34   select q2, q1 from int8_tbl order by 1, 2;
+
+union.sql:149:1: the parser reads 149:1-149:76, the splitter 149:1-149:33, 149:34-149:76
+  149:1    select * from int8_tbl intersect
+  149:34   select q2, q1 from int8_tbl order by 1, 2;
+
+union.sql:150:1: the parser reads 150:1-150:76, the splitter 150:1-150:38, 150:39-150:76
+  150:1    select q2, q1 from int8_tbl intersect
+  150:39   select * from int8_tbl order by 1, 2;
+
+union.sql:195:1: the parser reads 195:1-196:125, the splitter 195:1-196:67, 196:68-196:125
+  195:1    explain (costs off) select x from (values (array[1, 2]), (array[1, 3])) _(x) int…
+  196:68   select x from (values (array[1, 2]), (array[1, 4])) _(x);
+
+union.sql:197:1: the parser reads 197:1-197:125, the splitter 197:1-197:67, 197:68-197:125
+  197:1    select x from (values (array[1, 2]), (array[1, 3])) _(x) intersect
+  197:68   select x from (values (array[1, 2]), (array[1, 4])) _(x);
+
+union.sql:212:1: the parser reads 212:1-213:125, the splitter 212:1-213:67, 213:68-213:125
+  212:1    explain (costs off) select x from (values (array[1, 2]), (array[1, 3])) _(x) int…
+  213:68   select x from (values (array[1, 2]), (array[1, 4])) _(x);
+
+union.sql:214:1: the parser reads 214:1-214:125, the splitter 214:1-214:67, 214:68-214:125
+  214:1    select x from (values (array[1, 2]), (array[1, 3])) _(x) intersect
+  214:68   select x from (values (array[1, 2]), (array[1, 4])) _(x);
+
+union.sql:227:1: the parser reads 227:1-228:117, the splitter 227:1-228:63, 228:64-228:117
+  227:1    explain (costs off) select x from (values (row(1, 2)), (row(1, 3))) _(x) interse…
+  228:64   select x from (values (row(1, 2)), (row(1, 4))) _(x);
+
+union.sql:229:1: the parser reads 229:1-229:117, the splitter 229:1-229:63, 229:64-229:117
+  229:1    select x from (values (row(1, 2)), (row(1, 3))) _(x) intersect
+  229:64   select x from (values (row(1, 2)), (row(1, 4))) _(x);
+
+union.sql:255:1: the parser reads 255:1-256:117, the splitter 255:1-256:63, 256:64-256:117
+  255:1    explain (costs off) select x from (values (row(1, 2)), (row(1, 3))) _(x) interse…
+  256:64   select x from (values (row(1, 2)), (row(1, 4))) _(x);
+
+union.sql:257:1: the parser reads 257:1-257:117, the splitter 257:1-257:63, 257:64-257:117
+  257:1    select x from (values (row(1, 2)), (row(1, 3))) _(x) intersect
+  257:64   select x from (values (row(1, 2)), (row(1, 4))) _(x);
+
+union.sql:274:1: the parser reads 274:1-274:72, the splitter 274:1-274:36, 274:37-274:72
+  274:1    SELECT f1 FROM float8_tbl INTERSECT
+  274:37   SELECT f1 FROM int4_tbl ORDER BY 1;
+
+union.sql:282:1: the parser reads 282:1-282:105, the splitter 282:1-282:34, 282:35-282:105
+  282:1    SELECT q1 FROM int8_tbl INTERSECT
+  282:35   SELECT q2 FROM int8_tbl UNION ALL SELECT q2 FROM int8_tbl ORDER BY 1;
+
+union.sql:319:1: the parser reads 319:1-319:25, the splitter 319:1-319:17, 319:18-319:25
+  319:1    select intersect
+  319:18   select;
+
+union.sql:329:1: the parser reads 329:1-330:77, the splitter 329:1-330:43, 330:44-330:77
+  329:1    explain (costs off) select from generate_series(1,5) intersect
+  330:44   select from generate_series(1,3);
+
+union.sql:333:1: the parser reads 333:1-333:77, the splitter 333:1-333:43, 333:44-333:77
+  333:1    select from generate_series(1,5) intersect
+  333:44   select from generate_series(1,3);
+
+union.sql:344:1: the parser reads 344:1-345:77, the splitter 344:1-345:43, 345:44-345:77
+  344:1    explain (costs off) select from generate_series(1,5) intersect
+  345:44   select from generate_series(1,3);
+
+union.sql:349:1: the parser reads 349:1-349:77, the splitter 349:1-349:43, 349:44-349:77
+  349:1    select from generate_series(1,5) intersect
+  349:44   select from generate_series(1,3);
+
+updatable_views.sql:1360:1: the parser reads 1360:1-1360:64, the splitter 1360:1-1360:27, 1360:28-1360:64
+  1360:1   PREPARE ins(int, int[]) AS
+  1360:28  INSERT INTO rw_view1 VALUES($1, $2);
+
+updatable_views.sql:2079:1: the parser reads 2079:1-2080:73, the splitter 2079:1-2080:45, 2080:46-2080:73
+  2079:1   create rule base_tab_def_view_ins_rule as on insert to base_tab_def_view do also…
+  2080:46  select new.a, new.b, 'xxx';
+
+with.sql:406:1: the parser reads 406:1-414:41, the splitter 406:1-413:37, 414:1-414:41
+  406:1    explain (verbose, costs off) with recursive search_graph(f, t, label) as ( selec…
+  414:1    select * from search_graph order by seq;
+
+with.sql:416:1: the parser reads 416:1-423:41, the splitter 416:1-422:37, 423:1-423:41
+  416:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  423:1    select * from search_graph order by seq;
+
+with.sql:425:1: the parser reads 425:1-432:41, the splitter 425:1-431:37, 432:1-432:41
+  425:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union disti…
+  432:1    select * from search_graph order by seq;
+
+with.sql:434:1: the parser reads 434:1-442:41, the splitter 434:1-441:39, 442:1-442:41
+  434:1    explain (verbose, costs off) with recursive search_graph(f, t, label) as ( selec…
+  442:1    select * from search_graph order by seq;
+
+with.sql:444:1: the parser reads 444:1-451:41, the splitter 444:1-450:39, 451:1-451:41
+  444:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  451:1    select * from search_graph order by seq;
+
+with.sql:453:1: the parser reads 453:1-460:41, the splitter 453:1-459:39, 460:1-460:41
+  453:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union disti…
+  460:1    select * from search_graph order by seq;
+
+with.sql:463:1: the parser reads 463:1-470:28, the splitter 463:1-469:32, 470:1-470:28
+  463:1    explain (verbose, costs off) with recursive test as ( select 1 as x union all se…
+  470:1    select * from test limit 5;
+
+with.sql:472:1: the parser reads 472:1-478:28, the splitter 472:1-477:32, 478:1-478:28
+  472:1    with recursive test as ( select 1 as x union all select x + 1 from test ) search…
+  478:1    select * from test limit 5;
+
+with.sql:480:1: the parser reads 480:1-487:28, the splitter 480:1-486:34, 487:1-487:28
+  480:1    explain (verbose, costs off) with recursive test as ( select 1 as x union all se…
+  487:1    select * from test limit 5;
+
+with.sql:489:1: the parser reads 489:1-495:28, the splitter 489:1-494:34, 495:1-495:28
+  489:1    with recursive test as ( select 1 as x union all select x + 1 from test ) search…
+  495:1    select * from test limit 5;
+
+with.sql:498:1: the parser reads 498:1-505:28, the splitter 498:1-504:41, 505:1-505:28
+  498:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  505:1    select * from search_graph;
+
+with.sql:507:1: the parser reads 507:1-514:28, the splitter 507:1-513:39, 514:1-514:28
+  507:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  514:1    select * from search_graph;
+
+with.sql:516:1: the parser reads 516:1-523:28, the splitter 516:1-522:40, 523:1-523:28
+  516:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  523:1    select * from search_graph;
+
+with.sql:525:1: the parser reads 525:1-534:41, the splitter 525:1-533:37, 534:1-534:41
+  525:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  534:1    select * from search_graph order by seq;
+
+with.sql:536:1: the parser reads 536:1-545:41, the splitter 536:1-544:37, 545:1-545:41
+  536:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all (…
+  545:1    select * from search_graph order by seq;
+
+with.sql:549:1: the parser reads 549:1-555:17, the splitter 549:1-554:36, 555:1-555:17
+  549:1    with recursive x(col) as ( select 1 union (with x as (select * from x) select * …
+  555:1    select * from x;
+
+with.sql:558:1: the parser reads 558:1-566:38, the splitter 558:1-565:37, 566:1-566:38
+  558:1    create temp view v_search as with recursive search_graph(f, t, label) as ( selec…
+  566:1    select f, t, label from search_graph;
+
+with.sql:616:1: the parser reads 616:1-624:28, the splitter 616:1-623:37, 624:1-624:28
+  616:1    explain (verbose, costs off) with recursive search_graph(f, t, label) as ( selec…
+  624:1    select * from search_graph;
+
+with.sql:626:1: the parser reads 626:1-633:28, the splitter 626:1-632:37, 633:1-633:28
+  626:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  633:1    select * from search_graph;
+
+with.sql:635:1: the parser reads 635:1-642:28, the splitter 635:1-641:56, 642:1-642:28
+  635:1    with recursive search_graph(f, t, label) as ( select * from graph g union distin…
+  642:1    select * from search_graph;
+
+with.sql:644:1: the parser reads 644:1-651:20, the splitter 644:1-650:34, 651:1-651:20
+  644:1    explain (verbose, costs off) with recursive test as ( select 0 as x union all se…
+  651:1    select * from test;
+
+with.sql:653:1: the parser reads 653:1-659:20, the splitter 653:1-658:34, 659:1-659:20
+  653:1    with recursive test as ( select 0 as x union all select (x + 1) % 10 from test )…
+  659:1    select * from test;
+
+with.sql:661:1: the parser reads 661:1-668:20, the splitter 661:1-667:34, 668:1-668:20
+  661:1    with recursive test as ( select 0 as x union all select (x + 1) % 10 from test w…
+  668:1    select * from test;
+
+with.sql:671:1: the parser reads 671:1-687:38, the splitter 671:1-686:59, 687:1-687:38
+  671:1    with recursive graph(f, t, label) as ( values (1, 2, 'arc 1 -> 2'), (1, 3, 'arc …
+  687:1    select f, t, label from search_graph;
+
+with.sql:690:1: the parser reads 690:1-695:17, the splitter 690:1-694:24, 695:1-695:17
+  690:1    with recursive a as ( select 1 as b union all select * from a ) cycle b set c us…
+  695:1    select * from a;
+
+with.sql:698:1: the parser reads 698:1-706:28, the splitter 698:1-705:37, 706:1-706:28
+  698:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  706:1    select * from search_graph;
+
+with.sql:708:1: the parser reads 708:1-716:28, the splitter 708:1-715:37, 716:1-716:28
+  708:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  716:1    select * from search_graph;
+
+with.sql:719:1: the parser reads 719:1-726:28, the splitter 719:1-725:41, 726:1-726:28
+  719:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  726:1    select * from search_graph;
+
+with.sql:728:1: the parser reads 728:1-735:28, the splitter 728:1-734:56, 735:1-735:28
+  728:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  735:1    select * from search_graph;
+
+with.sql:737:1: the parser reads 737:1-744:28, the splitter 737:1-743:76, 744:1-744:28
+  737:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  744:1    select * from search_graph;
+
+with.sql:746:1: the parser reads 746:1-753:28, the splitter 746:1-752:56, 753:1-753:28
+  746:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  753:1    select * from search_graph;
+
+with.sql:755:1: the parser reads 755:1-762:28, the splitter 755:1-761:60, 762:1-762:28
+  755:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  762:1    select * from search_graph;
+
+with.sql:764:1: the parser reads 764:1-771:28, the splitter 764:1-770:53, 771:1-771:28
+  764:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  771:1    select * from search_graph;
+
+with.sql:773:1: the parser reads 773:1-780:28, the splitter 773:1-779:62, 780:1-780:28
+  773:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  780:1    select * from search_graph;
+
+with.sql:782:1: the parser reads 782:1-790:28, the splitter 782:1-789:54, 790:1-790:28
+  782:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  790:1    select * from search_graph;
+
+with.sql:792:1: the parser reads 792:1-800:28, the splitter 792:1-799:58, 800:1-800:28
+  792:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  800:1    select * from search_graph;
+
+with.sql:803:1: the parser reads 803:1-811:38, the splitter 803:1-810:37, 811:1-811:38
+  803:1    create temp view v_cycle1 as with recursive search_graph(f, t, label) as ( selec…
+  811:1    select f, t, label from search_graph;
+
+with.sql:813:1: the parser reads 813:1-821:38, the splitter 813:1-820:56, 821:1-821:38
+  813:1    create temp view v_cycle2 as with recursive search_graph(f, t, label) as ( selec…
+  821:1    select f, t, label from search_graph;
+
+with.sql:1081:1: the parser reads 1081:1-1082:58, the splitter 1081:1-1082:29, 1082:30-1082:58
+  1081:1   CREATE RULE r2 AS ON UPDATE TO x DO INSTEAD WITH t AS (SELECT OLD.*)
+  1082:30  UPDATE y SET a = t.n FROM t;
+
+with.sql:1340:1: the parser reads 1340:1-1342:15, the splitter 1340:1-1341:23, 1342:2-1342:15
+  1340:1   CREATE OR REPLACE RULE bug6051_ins AS ON INSERT TO bug6051 DO INSTEAD INSERT INT…
+  1342:2   SELECT NEW.i;
+
+with.sql:1371:1: the parser reads 1371:1-1373:57, the splitter 1371:1-1372:62, 1373:5-1373:57
+  1371:1   CREATE RULE id_alw3_ins AS ON INSERT TO id_alw3 DO INSTEAD WITH t1 AS (INSERT IN…
+  1373:5   INSERT INTO id_alw2_view DEFAULT VALUES RETURNING i;
+
+xmlmap.sql:37:1: the parser reads 37:1-37:81, the splitter 37:1-37:18, 37:19-63:60
+  37:1     DECLARE xc CURSOR
+  37:19    WITH HOLD FOR SELECT * FROM testxmlschema.test1 ORDER BY 1, 2; SELECT cursor_to_…
