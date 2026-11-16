@@ -3,6 +3,7 @@
 //! catalog and session at each statement.
 
 mod file_context;
+mod plpgsql;
 mod statement;
 mod walk;
 

@@ -1,0 +1,39 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- A call to a PL/pgSQL function of the file whose body changes the catalog may have created
+-- anything, like the materialized view in Postgres' matview.sql. A call to a PL/pgSQL function
+-- whose body only reads and writes rows doesn't change the catalog: the missing table after it
+-- is reported.
+-- expect_lint/unknownRelation
+create table rows_table (f1 int);
+
+create function insert_row() returns void as $$
+begin
+  insert into rows_table values (1);
+end;
+$$ language plpgsql;
+
+select insert_row();
+
+table missing_after_call;
+
+create function mvtest_func() returns void as $$
+begin
+  create materialized view mvtest1 as select 1 as x;
+end;
+$$ language plpgsql;
+
+select mvtest_func();
+
+select * from mvtest1;
+
+```
+
+# Diagnostics
+lint/unknownRelation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation missing_after_call does not exist.

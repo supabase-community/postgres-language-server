@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_16_15: 41491 statements and 387 in SQL function bodies, 1738 findings on statements Postgres rejected
+REL_16_15: 41491 statements and 387 in SQL function bodies, 1709 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 ambiguousColumn 42712: 2
@@ -23,13 +23,13 @@ operatorTypeMismatch 42883: 12
 unknownColumn 42703: 38
 unknownColumn 42P01: 3
 unknownFunction 42704: 4
-unknownFunction 42883: 97
+unknownFunction 42883: 95
 unknownFunction 42P01: 19
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
 unknownRelation 25P01: 3
 unknownRelation 42501: 1
-unknownRelation 42P01: 1396
+unknownRelation 42P01: 1369
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -612,19 +612,6 @@ identity.sql:158:1 42P01 unknownRelation
 identity.sql:381:1 428C9 generatedColumnAssignment
 incremental_sort.sql:3:1 42P01 unknownRelation
 incremental_sort.sql:10:1 42P01 unknownRelation
-incremental_sort.sql:244:1 42P01 unknownRelation
-incremental_sort.sql:246:1 42P01 unknownRelation
-incremental_sort.sql:250:1 42P01 unknownRelation
-incremental_sort.sql:252:1 42P01 unknownRelation
-incremental_sort.sql:257:1 42P01 unknownRelation
-incremental_sort.sql:257:1 42P01 unknownRelation
-incremental_sort.sql:257:1 42P01 unknownRelation
-incremental_sort.sql:264:1 42P01 unknownRelation
-incremental_sort.sql:264:1 42P01 unknownRelation
-incremental_sort.sql:268:1 42P01 unknownRelation
-incremental_sort.sql:268:1 42P01 unknownRelation
-incremental_sort.sql:274:1 42P01 unknownRelation
-incremental_sort.sql:276:1 42P01 unknownRelation
 inherit.sql:517:1 42P01 unknownRelation
 inherit.sql:519:1 42P01 unknownRelation
 inherit.sql:523:1 42P01 unknownRelation
@@ -964,21 +951,6 @@ limit.sql:42:1 42P01 unknownRelation
 limit.sql:50:1 42P01 unknownRelation
 limit.sql:58:1 42P01 unknownRelation
 limit.sql:66:1 42P01 unknownRelation
-memoize.sql:43:1 42P01 unknownRelation
-memoize.sql:43:1 42P01 unknownRelation
-memoize.sql:55:1 42P01 unknownRelation
-memoize.sql:55:1 42P01 unknownRelation
-memoize.sql:115:1 42883 unknownFunction
-memoize.sql:161:1 42P01 unknownRelation
-memoize.sql:161:1 42P01 unknownRelation
-memoize.sql:161:1 42P01 unknownRelation
-memoize.sql:170:1 42P01 unknownRelation
-memoize.sql:170:1 42P01 unknownRelation
-memoize.sql:170:1 42P01 unknownRelation
-memoize.sql:191:1 42P01 unknownRelation
-memoize.sql:191:1 42P01 unknownRelation
-memoize.sql:197:1 42P01 unknownRelation
-memoize.sql:197:1 42P01 unknownRelation
 merge.sql:87:1 42712 ambiguousColumn
 merge.sql:87:1 42712 ambiguousColumn
 merge.sql:87:1 42712 invalidMerge
@@ -1123,7 +1095,6 @@ plancache.sql:5:1 42P01 unknownRelation
 plpgsql.sql:1617:1 42883 unknownFunction
 plpgsql.sql:1635:1 42883 unknownFunction
 plpgsql.sql:1652:1 42883 unknownFunction
-plpgsql.sql:1766:1 42883 unknownFunction
 point.sql:11:1 42P01 unknownRelation
 point.sql:13:1 42P01 unknownRelation
 point.sql:15:1 42P01 unknownRelation
