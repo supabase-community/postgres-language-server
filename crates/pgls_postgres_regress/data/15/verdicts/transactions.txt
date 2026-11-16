@@ -57,8 +57,9 @@
 90:1 accepted
 91:1 accepted
 92:1 accepted
-93:1 accepted
-94:1 rejected 25006
+93:1 rejected 42601
+93:17 rejected 25006
+94:1 rejected 26000
 95:1 accepted
 96:1 rejected 25006
 98:1 skipped

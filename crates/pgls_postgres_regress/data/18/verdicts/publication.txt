@@ -700,11 +700,14 @@
 1285:1 accepted
 1286:1 accepted
 1289:1 accepted
+1289:21 accepted
+1289:52 accepted
 1290:1 accepted
+1290:22 rejected 42P07
 1291:1 accepted
-1292:1 accepted
-1294:1 accepted
+1292:1 rejected 42P01
+1294:1 rejected 42P01
 1297:1 accepted
 1299:1 accepted
-1302:1 accepted
+1302:1 rejected 42P01
 1308:1 accepted

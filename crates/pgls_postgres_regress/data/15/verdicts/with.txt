@@ -48,55 +48,93 @@
 355:1 accepted
 364:1 accepted
 366:1 accepted
-373:1 accepted
-383:1 accepted
-392:1 accepted
-401:1 accepted
-411:1 accepted
-420:1 accepted
-430:1 accepted
-439:1 accepted
-447:1 accepted
-456:1 accepted
+373:1 rejected 42601
+381:1 rejected 42P01
+383:1 rejected 42601
+390:1 rejected 42P01
+392:1 rejected 42601
+399:1 rejected 42P01
+401:1 rejected 42601
+409:1 rejected 42P01
+411:1 rejected 42601
+418:1 rejected 42P01
+420:1 rejected 42601
+427:1 rejected 42P01
+430:1 rejected 42601
+437:1 rejected 42P01
+439:1 rejected 42601
+445:1 rejected 42P01
+447:1 rejected 42601
+454:1 rejected 42P01
+456:1 rejected 42601
+462:1 rejected 42P01
 465:1 rejected 42601
+472:1 rejected 42P01
 474:1 rejected 42601
-483:1 rejected 42701
-492:1 rejected 0A000
+481:1 rejected 42P01
+483:1 rejected 42601
+490:1 rejected 42P01
+492:1 rejected 42601
+501:1 rejected 42P01
 503:1 rejected 42601
-516:1 rejected 0A000
-525:1 accepted
-535:1 accepted
-537:1 accepted
+512:1 rejected 42P01
+516:1 rejected 42601
+522:1 rejected 42P01
+525:1 rejected 42601
+533:1 rejected 42P01
+535:1 rejected 42P01
+537:1 rejected 42P01
 542:1 accepted
 544:1 accepted
 552:1 accepted
 562:1 accepted
 572:1 accepted
-583:1 accepted
-593:1 accepted
-602:1 accepted
-611:1 accepted
-620:1 accepted
-628:1 accepted
-638:1 accepted
-657:1 accepted
-665:1 accepted
-675:1 accepted
+583:1 rejected 42601
+591:1 rejected 42P01
+593:1 rejected 42601
+600:1 rejected 42P01
+602:1 rejected 42601
+609:1 rejected 42P01
+611:1 rejected 42601
+618:1 rejected 42P01
+620:1 rejected 42601
+626:1 rejected 42P01
+628:1 rejected 42601
+635:1 rejected 42P01
+638:1 rejected 42601
+654:1 rejected 42P01
+657:1 rejected 42601
+662:1 rejected 42P01
+665:1 rejected 42601
+673:1 rejected 42P01
+675:1 rejected 42601
+683:1 rejected 42P01
 686:1 rejected 42601
-695:1 rejected 42804
-704:1 rejected 42883
+693:1 rejected 42P01
+695:1 rejected 42601
+702:1 rejected 42P01
+704:1 rejected 42601
+711:1 rejected 42P01
 713:1 rejected 42601
+720:1 rejected 42P01
 722:1 rejected 42601
+729:1 rejected 42P01
 731:1 rejected 42601
-740:1 rejected 42701
+738:1 rejected 42P01
+740:1 rejected 42601
+747:1 rejected 42P01
 749:1 rejected 42601
+757:1 rejected 42P01
 759:1 rejected 42601
-770:1 accepted
-780:1 accepted
-790:1 accepted
-791:1 accepted
-793:1 accepted
-794:1 accepted
+767:1 rejected 42P01
+770:1 rejected 42601
+778:1 rejected 42P01
+780:1 rejected 42601
+788:1 rejected 42P01
+790:1 rejected 42P01
+791:1 rejected 42P01
+793:1 rejected 42P01
+794:1 rejected 42P01
 799:1 accepted
 805:1 accepted
 810:1 accepted
@@ -144,7 +182,8 @@
 1033:1 rejected 42804
 1040:1 rejected 42804
 1047:1 accepted
-1048:1 rejected 0A000
+1048:1 rejected 42601
+1049:30 rejected 42P01
 1054:1 accepted
 1055:1 accepted
 1059:1 rejected 42P01
@@ -181,8 +220,9 @@
 1299:1 accepted
 1302:1 accepted
 1303:1 accepted
-1307:1 accepted
-1311:1 rejected 0A000
+1307:1 rejected 42601
+1309:2 rejected 42P01
+1311:1 accepted
 1315:1 accepted
 1318:1 accepted
 1321:1 skipped
@@ -194,7 +234,8 @@
 1334:1 accepted
 1335:1 accepted
 1337:1 accepted
-1338:1 accepted
+1338:1 rejected 42601
+1340:5 accepted
 1341:1 accepted
 1343:1 accepted
 1345:1 accepted

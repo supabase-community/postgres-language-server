@@ -25,7 +25,6 @@ pub(crate) fn cte(p: &mut Splitter) -> SplitterResult {
         p.eat(SyntaxKind::NOT_KW)?;
         p.eat(SyntaxKind::MATERIALIZED_KW)?;
         parenthesis(p)?;
-        search_and_cycle(p)?;
 
         if p.current() == SyntaxKind::COMMA {
             p.advance()?;
@@ -41,35 +40,6 @@ pub(crate) fn cte(p: &mut Splitter) -> SplitterResult {
         SyntaxKind::DELETE_KW => delete(p),
         _ => unknown(p, &[]),
     }
-}
-
-/// Skips the `SEARCH ... SET column` and `CYCLE ... USING column` clauses after a CTE. A clause
-/// without its end, e.g. while it's typed, ends at the next `;`.
-///
-/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L13061
-fn search_and_cycle(p: &mut Splitter) -> SplitterResult {
-    for (start, end) in [
-        (SyntaxKind::SEARCH_KW, SyntaxKind::SET_KW),
-        (SyntaxKind::CYCLE_KW, SyntaxKind::USING_KW),
-    ] {
-        if p.current() != start {
-            continue;
-        }
-        loop {
-            match p.current() {
-                kind if kind == end => {
-                    p.advance()?;
-                    p.expect_col_id()?;
-                    break;
-                }
-                SyntaxKind::SEMICOLON | SyntaxKind::EOF => return Ok(()),
-                _ => {
-                    p.advance()?;
-                }
-            }
-        }
-    }
-    Ok(())
 }
 
 /// `EXPLAIN [ ANALYZE ] [ VERBOSE ] <statement>` and

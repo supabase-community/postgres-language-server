@@ -60,13 +60,15 @@
 135:1 rejected 42P21
 137:1 accepted
 138:1 accepted
-139:1 accepted
+139:1 rejected 42601
+139:54 accepted
 140:1 accepted
 142:1 rejected 42P22
 143:1 accepted
 144:1 rejected 42P21
 145:1 accepted
-146:1 rejected 42P21
+146:1 rejected 42601
+146:42 accepted
 147:1 rejected 42P21
 149:1 rejected 42P22
 152:1 rejected 42P22

@@ -138,24 +138,5 @@
 324:1 rejected 22021
 326:1 accepted
 328:1 accepted
-346:1 accepted
-359:1 accepted
-372:1 accepted
-385:1 accepted
-399:1 accepted
-402:1 accepted
-407:1 accepted
-413:1 accepted
-414:1 accepted
-415:1 accepted
-416:1 accepted
-417:1 accepted
-418:1 accepted
-419:1 accepted
-420:1 accepted
-421:1 accepted
-425:1 accepted
-435:1 accepted
-447:1 accepted
-451:1 accepted
-457:1 accepted
+346:1 rejected 42703
+355:13 rejected 42601

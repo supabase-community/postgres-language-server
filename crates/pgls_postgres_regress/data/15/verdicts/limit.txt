@@ -38,43 +38,5 @@
 70:1 rejected 34000
 71:1 rejected 34000
 72:1 rejected 34000
-74:1 rejected 42P01
-75:1 rejected 34000
-76:1 rejected 34000
-77:1 rejected 34000
-78:1 rejected 34000
-79:1 rejected 34000
-80:1 rejected 34000
-81:1 rejected 34000
-82:1 rejected 34000
-84:1 skipped
-88:1 accepted
-100:1 accepted
-102:1 rejected 42P01
-106:1 rejected 42P01
-109:1 rejected 55000
-111:1 rejected 42P01
-115:1 rejected 42P01
-118:1 rejected 55000
-120:1 rejected 42P01
-124:1 rejected 42P01
-127:1 rejected 42P01
-131:1 rejected 42P01
-135:1 accepted
-138:1 accepted
-140:1 accepted
-144:1 accepted
-148:1 rejected 42P01
-152:1 rejected 42P01
-160:1 rejected 42P01
-164:1 rejected 42P01
-168:1 rejected 42P01
-172:1 rejected 42P01
-177:1 rejected 42601
-182:1 rejected 42601
-187:1 rejected 42P01
-190:1 rejected 42P01
-193:1 rejected 42P01
-195:1 rejected 42P01
-198:1 rejected 42P01
-201:1 rejected 42P01
+74:1 rejected 42601
+74:77 rejected 42601

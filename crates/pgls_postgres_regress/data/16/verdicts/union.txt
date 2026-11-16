@@ -24,7 +24,8 @@
 77:1 rejected 42P01
 82:1 rejected 42P01
 86:1 rejected 42P01
-97:1 rejected 42P01
+97:1 rejected 42601
+97:35 rejected 42P01
 99:1 rejected 42P01
 101:1 rejected 42P01
 103:1 rejected 42P01
@@ -33,8 +34,10 @@
 109:1 rejected 42P01
 111:1 rejected 42P01
 113:1 rejected 0A000
-116:1 accepted
-117:1 accepted
+116:1 rejected 42601
+116:45 accepted
+117:1 rejected 42601
+117:58 accepted
 118:1 accepted
 119:1 accepted
 123:1 accepted
@@ -60,8 +63,10 @@
 175:1 accepted
 177:1 accepted
 179:1 accepted
-180:1 accepted
-182:1 accepted
+180:1 rejected 42601
+181:68 accepted
+182:1 rejected 42601
+182:68 accepted
 183:1 accepted
 185:1 accepted
 188:1 accepted
@@ -69,16 +74,20 @@
 192:1 accepted
 194:1 accepted
 196:1 accepted
-197:1 accepted
-199:1 accepted
+197:1 rejected 42601
+198:68 accepted
+199:1 rejected 42601
+199:68 accepted
 200:1 accepted
 202:1 accepted
 204:1 accepted
 207:1 accepted
 209:1 accepted
 211:1 accepted
-212:1 accepted
-214:1 accepted
+212:1 rejected 42601
+213:64 accepted
+214:1 rejected 42601
+214:64 accepted
 215:1 accepted
 217:1 accepted
 223:1 accepted
@@ -90,14 +99,18 @@
 235:1 accepted
 237:1 accepted
 239:1 accepted
-240:1 accepted
-242:1 accepted
+240:1 rejected 42601
+241:64 accepted
+242:1 rejected 42601
+242:64 accepted
 243:1 accepted
 245:1 accepted
 247:1 accepted
-253:1 rejected 42P01
+253:1 rejected 42601
+253:37 rejected 42P01
 255:1 rejected 42P01
-261:1 rejected 42P01
+261:1 rejected 42601
+261:35 rejected 42P01
 263:1 rejected 42P01
 265:1 rejected 42P01
 267:1 rejected 42P01
@@ -108,25 +121,30 @@
 285:1 rejected 42P01
 291:1 rejected 42P01
 297:1 accepted
-298:1 accepted
+298:1 rejected 42601
+298:18 accepted
 299:1 accepted
 302:1 accepted
 303:1 accepted
 305:1 accepted
-307:1 accepted
+307:1 rejected 42601
+308:44 accepted
 310:1 accepted
 311:1 accepted
-312:1 accepted
+312:1 rejected 42601
+312:44 accepted
 313:1 accepted
 314:1 accepted
 315:1 accepted
 318:1 accepted
 319:1 accepted
 321:1 accepted
-323:1 accepted
+323:1 rejected 42601
+324:44 accepted
 326:1 accepted
 327:1 accepted
-328:1 accepted
+328:1 rejected 42601
+328:44 accepted
 329:1 accepted
 330:1 accepted
 331:1 accepted

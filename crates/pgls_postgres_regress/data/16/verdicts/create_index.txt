@@ -262,11 +262,12 @@
 549:1 rejected 42P01
 551:1 rejected 42P01
 552:1 skipped
-554:1 accepted
-556:1 accepted
-557:1 accepted
-558:1 accepted
-559:1 accepted
+554:1 rejected 42601
+555:13 rejected 42601
+556:1 rejected 42P01
+557:1 rejected 42P01
+558:1 rejected 42704
+559:1 rejected 42P01
 564:1 accepted
 565:1 accepted
 568:1 rejected 0A000
@@ -545,10 +546,11 @@
 1174:1 skipped
 1175:1 accepted
 1176:1 skipped
-1178:1 accepted
-1180:1 accepted
-1181:1 accepted
-1182:1 accepted
+1178:1 rejected 42601
+1179:13 rejected 42601
+1180:1 rejected 42P01
+1181:1 rejected 42P01
+1182:1 rejected 42P01
 1184:1 skipped
 1185:1 accepted
 1187:1 accepted
@@ -558,7 +560,7 @@
 1193:1 accepted
 1197:1 rejected 42601
 1199:1 accepted
-1205:1 accepted
+1205:1 rejected 42P01
 1210:1 rejected 3F000
 1211:1 accepted
 1212:1 accepted

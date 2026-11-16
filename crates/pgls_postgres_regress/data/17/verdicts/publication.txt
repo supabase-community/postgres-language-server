@@ -645,11 +645,14 @@
 1167:1 accepted
 1168:1 accepted
 1171:1 accepted
+1171:21 accepted
+1171:52 accepted
 1172:1 accepted
+1172:22 rejected 42P07
 1173:1 accepted
-1174:1 accepted
-1176:1 accepted
+1174:1 rejected 42P01
+1176:1 rejected 42P01
 1179:1 accepted
 1181:1 accepted
-1184:1 accepted
+1184:1 rejected 42P01
 1190:1 accepted

@@ -529,14 +529,15 @@
 948:1 accepted
 951:1 rejected 42703
 956:1 accepted
-957:1 accepted
+957:1 rejected 42601
+959:34 rejected 42P01
 960:1 accepted
 961:1 accepted
 962:1 accepted
 963:1 accepted
 964:1 accepted
 965:1 accepted
-967:1 accepted
+967:1 rejected 42704
 968:1 accepted
 969:1 accepted
 973:1 rejected 42501

@@ -201,32 +201,5 @@
 422:1 rejected 22021
 424:1 accepted
 426:1 accepted
-444:1 accepted
-457:1 accepted
-470:1 accepted
-483:1 accepted
-497:1 accepted
-500:1 accepted
-505:1 accepted
-508:1 rejected 22001
-509:1 rejected 22001
-510:1 rejected 22001
-511:1 rejected 22001
-512:1 rejected 22001
-515:1 accepted
-516:1 rejected 22001
-517:1 rejected 23514
-523:1 accepted
-524:1 accepted
-525:1 accepted
-526:1 accepted
-527:1 accepted
-528:1 accepted
-529:1 accepted
-530:1 accepted
-531:1 accepted
-535:1 accepted
-545:1 accepted
-557:1 accepted
-561:1 accepted
-567:1 accepted
+444:1 rejected 42703
+453:13 rejected 42601

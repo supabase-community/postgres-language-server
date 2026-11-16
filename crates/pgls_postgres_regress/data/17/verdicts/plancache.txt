@@ -32,17 +32,19 @@
 93:1 rejected 42P01
 95:1 accepted
 99:1 accepted
+100:3 accepted
 102:1 accepted
-105:1 accepted
-106:1 accepted
+103:3 rejected 42P07
+105:1 rejected 42P01
+106:1 rejected 42P01
 108:1 accepted
-110:1 accepted
-112:1 accepted
+110:1 rejected 42P01
+112:1 rejected 26000
 114:1 accepted
-116:1 accepted
-118:1 accepted
-120:1 accepted
-122:1 accepted
+116:1 rejected 42P01
+118:1 rejected 26000
+120:1 rejected 42P01
+122:1 rejected 26000
 124:1 accepted
 125:1 accepted
 127:1 accepted
@@ -59,17 +61,18 @@
 163:1 accepted
 164:1 accepted
 165:1 accepted
-166:1 accepted
-168:1 rejected 23514
-169:1 rejected 23514
+166:1 rejected 42601
+166:35 rejected 42P02
+168:1 rejected 26000
+169:1 rejected 26000
 170:1 accepted
-171:1 rejected 23514
+171:1 rejected 26000
 172:1 accepted
-174:1 accepted
+174:1 rejected 26000
 175:1 accepted
-177:1 accepted
+177:1 rejected 26000
 178:1 accepted
-179:1 accepted
+179:1 rejected 26000
 183:1 accepted
 184:1 accepted
 185:1 accepted

@@ -27,7 +27,8 @@
 66:1 rejected 42P01
 69:1 rejected 42P01
 71:1 rejected 42P01
-75:1 rejected 42P01
+75:1 rejected 42601
+76:5 rejected 42P01
 78:1 accepted
 82:1 accepted
 83:1 accepted

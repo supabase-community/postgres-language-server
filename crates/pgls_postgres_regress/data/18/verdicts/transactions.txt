@@ -70,8 +70,9 @@
 108:1 accepted
 109:1 accepted
 110:1 accepted
-111:1 accepted
-112:1 rejected 25006
+111:1 rejected 42601
+111:17 rejected 25006
+112:1 rejected 26000
 113:1 accepted
 114:1 rejected 25006
 116:1 skipped

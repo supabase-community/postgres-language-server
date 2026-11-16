@@ -22,19 +22,5 @@
 33:1 accepted
 34:1 accepted
 35:1 accepted
-37:1 accepted
-38:1 accepted
-39:1 accepted
-40:1 accepted
-41:1 accepted
-42:1 accepted
-44:1 accepted
-45:1 accepted
-46:1 accepted
-47:1 accepted
-48:1 accepted
-53:1 accepted
-54:1 accepted
-56:1 accepted
-62:1 accepted
-63:1 accepted
+37:1 rejected 42601
+37:19 rejected 42601

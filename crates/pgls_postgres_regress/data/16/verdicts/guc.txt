@@ -138,77 +138,10 @@
 169:1 accepted
 170:1 rejected 42602
 171:1 rejected 42704
-176:1 accepted
+176:1 rejected 42601
+176:54 rejected 42601
 177:1 accepted
 178:1 accepted
 179:1 accepted
-186:1 accepted
-187:1 accepted
-188:1 accepted
-189:1 accepted
-190:1 accepted
-191:1 accepted
-192:1 accepted
-194:1 accepted
-195:1 accepted
-196:1 accepted
-197:1 accepted
-198:1 accepted
-199:1 accepted
-201:1 accepted
-203:1 accepted
-204:1 accepted
-205:1 accepted
-206:1 accepted
-207:1 accepted
-208:1 accepted
-209:1 accepted
-215:1 accepted
-216:1 accepted
-217:1 accepted
-218:1 accepted
-219:1 accepted
-220:1 accepted
-221:1 accepted
-227:1 accepted
-229:1 accepted
-233:1 accepted
-235:1 accepted
-237:1 accepted
-239:1 accepted
-241:1 accepted
-244:1 accepted
-252:1 accepted
-254:1 accepted
-256:1 accepted
-258:1 accepted
-261:1 accepted
-269:1 accepted
-271:1 accepted
-274:1 accepted
-283:1 rejected 22012
-284:1 accepted
-285:1 accepted
-289:1 rejected 42704
-290:1 rejected 42704
-291:1 accepted
-294:1 accepted
-296:1 accepted
-297:1 accepted
-298:1 accepted
-304:1 rejected 22023
-308:1 accepted
-310:1 accepted
-314:1 rejected 22023
-316:1 accepted
-318:1 accepted
-320:1 rejected 0A000
-323:1 accepted
-324:1 accepted
-325:1 accepted
-335:1 accepted
-340:1 accepted
-344:1 accepted
-348:1 accepted
-352:1 accepted
-355:1 accepted
+186:1 rejected 42601
+186:20 rejected 42601

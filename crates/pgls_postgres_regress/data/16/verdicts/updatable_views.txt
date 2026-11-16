@@ -596,10 +596,11 @@
 1051:1 rejected 44000
 1053:1 accepted
 1054:1 rejected 44000
-1056:1 accepted
-1057:1 accepted
-1058:1 rejected 44000
-1059:1 accepted
+1056:1 rejected 42601
+1056:28 rejected 42P02
+1057:1 rejected 26000
+1058:1 rejected 26000
+1059:1 rejected 26000
 1061:1 accepted
 1065:1 accepted
 1066:1 accepted
@@ -962,7 +963,8 @@
 1735:1 accepted
 1736:1 accepted
 1739:1 accepted
-1740:1 accepted
+1740:1 rejected 42601
+1741:46 rejected 42P01
 1742:1 accepted
 1743:1 accepted
 1744:1 accepted

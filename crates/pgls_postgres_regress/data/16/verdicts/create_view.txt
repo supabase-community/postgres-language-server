@@ -29,6 +29,8 @@
 116:1 accepted
 117:1 accepted
 121:1 accepted
+122:5 accepted
+123:5 accepted
 125:1 accepted
 127:1 accepted
 130:1 accepted
@@ -36,7 +38,8 @@
 134:1 accepted
 136:1 accepted
 138:1 rejected 42P16
-140:1 rejected 42P16
+140:1 accepted
+141:5 accepted
 147:1 accepted
 152:1 accepted
 157:1 accepted

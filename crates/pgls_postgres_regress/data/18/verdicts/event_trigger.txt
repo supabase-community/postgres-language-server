@@ -97,18 +97,22 @@
 308:1 accepted
 320:1 accepted
 323:1 accepted
+324:2 accepted
+325:2 accepted
+326:2 accepted
+327:2 accepted
 330:1 accepted
 333:1 accepted
 335:1 accepted
 337:1 accepted
 339:1 accepted
-342:1 accepted
-343:1 accepted
-344:1 accepted
-345:1 accepted
-346:1 accepted
-347:1 accepted
-349:1 accepted
+342:1 rejected 42P01
+343:1 rejected 42P01
+344:1 rejected 42P01
+345:1 rejected 42P01
+346:1 rejected 42P01
+347:1 rejected 42P01
+349:1 rejected 42704
 350:1 accepted
 351:1 accepted
 354:1 accepted
