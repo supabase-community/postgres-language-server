@@ -1493,6 +1493,108 @@ VALUES
         .assert_no_errors();
     }
 
+    /// Each statement, followed by `SELECT 1;`, splits into itself and `SELECT 1;`, without errors.
+    fn assert_splits_like_psql(statements: &[&str]) {
+        for statement in statements {
+            Tester::from(format!("{statement}\nSELECT 1;").as_str())
+                .expect_statements(vec![statement, "SELECT 1;"])
+                .assert_no_errors();
+        }
+    }
+
+    #[test]
+    fn create_schema_with_elements() {
+        assert_splits_like_psql(&[
+            "CREATE SCHEMA s CREATE TABLE t (a int);",
+            "CREATE SCHEMA s\n  CREATE TABLE t (a int)\n  CREATE VIEW v AS SELECT * FROM t\n  CREATE INDEX ON t (a)\n  CREATE SEQUENCE q\n  CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW EXECUTE FUNCTION f();",
+            "CREATE SCHEMA AUTHORIZATION r CREATE TABLE t (a int);",
+        ]);
+    }
+
+    #[test]
+    fn with_that_starts_no_cte() {
+        assert_splits_like_psql(&[
+            "COPY t TO stdout WITH (FORMAT csv);",
+            "COPY t TO stdout WITH CSV HEADER;",
+            "COPY t FROM stdin WITH DELIMITER AS '|';",
+            "DECLARE c CURSOR WITH HOLD FOR SELECT 1;",
+            "DECLARE c CURSOR FOR SELECT * FROM t FETCH FIRST 2 ROWS WITH TIES;",
+            "DROP DATABASE d WITH (FORCE);",
+            "REFRESH MATERIALIZED VIEW m WITH NO DATA;",
+            "SELECT js IS JSON WITH UNIQUE KEYS FROM t;",
+            "CREATE CAST (int4 AS t) WITH INOUT AS IMPLICIT;",
+            "CREATE ROLE r WITH LOGIN PASSWORD 'x';",
+        ]);
+    }
+
+    #[test]
+    fn cte_search_and_cycle() {
+        let cte = "WITH RECURSIVE t(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM t)";
+        assert_splits_like_psql(&[
+            &format!("{cte} SEARCH DEPTH FIRST BY n SET seq\nSELECT * FROM t;"),
+            &format!("{cte} SEARCH BREADTH FIRST BY n SET seq SELECT * FROM t;"),
+            &format!("{cte} CYCLE n SET is_cycle USING path\nSELECT * FROM t;"),
+            &format!(
+                "{cte} CYCLE n SET is_cycle TO true DEFAULT false USING path SELECT * FROM t;"
+            ),
+            &format!(
+                "{cte} SEARCH DEPTH FIRST BY n SET seq CYCLE n SET is_cycle USING path\nSELECT * FROM t;"
+            ),
+            &format!("EXPLAIN (COSTS OFF) {cte} SEARCH DEPTH FIRST BY n SET seq\nSELECT * FROM t;"),
+            &format!("CREATE VIEW v AS {cte} SEARCH DEPTH FIRST BY n SET seq\nSELECT * FROM t;"),
+        ]);
+    }
+
+    #[test]
+    fn intersect_and_distinct_before_select() {
+        assert_splits_like_psql(&[
+            "SELECT a FROM t INTERSECT\nSELECT a FROM u;",
+            "SELECT a FROM t INTERSECT ALL SELECT a FROM u;",
+            "(SELECT 1 UNION SELECT 2) INTERSECT\nSELECT 2;",
+            "SELECT 1 UNION DISTINCT SELECT 2;",
+            "select intersect select;",
+        ]);
+    }
+
+    #[test]
+    fn on_commit_delete_rows() {
+        assert_splits_like_psql(&[
+            "CREATE TEMP TABLE t (a int) ON COMMIT DELETE ROWS;",
+            "CREATE TEMP TABLE t ON COMMIT DELETE ROWS AS SELECT 1;",
+        ]);
+    }
+
+    #[test]
+    fn lock_share_update_exclusive() {
+        assert_splits_like_psql(&["LOCK TABLE t IN SHARE UPDATE EXCLUSIVE MODE;"]);
+    }
+
+    #[test]
+    fn queries_of_prepare_declare_and_rules() {
+        assert_splits_like_psql(&[
+            "PREPARE p AS UPDATE t SET a = $1;",
+            "PREPARE p (int) AS\n  INSERT INTO t SELECT $1;",
+            "PREPARE p AS DELETE FROM t;",
+            "PREPARE p AS WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x;",
+            "DECLARE c CURSOR FOR WITH x AS (SELECT 1) SELECT * FROM x;",
+            "create rule r as on insert to t do also\n  insert into u (a)\n  select new.a;",
+            "CREATE RULE r AS ON UPDATE TO x DO INSTEAD WITH t AS (SELECT OLD.*)\n  UPDATE y SET a = t.n FROM t;",
+            "CREATE RULE r AS ON INSERT TO x DO INSTEAD WITH t AS (INSERT INTO y DEFAULT VALUES RETURNING *)\n  INSERT INTO z SELECT * FROM t;",
+        ]);
+    }
+
+    /// The fixes above must not keep half-written SQL from splitting.
+    #[test]
+    fn half_written_with() {
+        Tester::from("SELECT 1\nWITH x AS (SELECT 2) SELECT * FROM x;")
+            .expect_statements(vec!["SELECT 1", "WITH x AS (SELECT 2) SELECT * FROM x;"]);
+        Tester::from("COPY t TO stdout WITH\nSELECT 1;")
+            .expect_statements(vec!["COPY t TO stdout WITH", "SELECT 1;"]);
+        // Without the `(`, the CTE doesn't run to the next `)`.
+        Tester::from("WITH x AS SELECT 1;\nSELECT (2);")
+            .expect_statements(vec!["WITH x AS SELECT 1;", "SELECT (2);"]);
+    }
+
     #[test]
     fn with_at_the_end_does_not_panic() {
         for (sql, last) in [

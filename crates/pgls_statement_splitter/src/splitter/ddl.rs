@@ -2,31 +2,19 @@ use pgls_lexer::SyntaxKind;
 
 use crate::splitter::common::SplitterResult;
 
-use super::{
-    Splitter,
-    common::{parenthesis, unknown},
-    dml::cte,
-};
+use super::{Splitter, common::unknown};
 
 pub(crate) fn create(p: &mut Splitter) -> SplitterResult {
     p.expect(SyntaxKind::CREATE_KW)?;
 
-    loop {
-        unknown(p, &[])?;
-
-        if p.current() != SyntaxKind::WITH_KW {
-            return Ok(());
-        }
-
-        if p.look_back(true) == Some(SyntaxKind::AS_KW) {
-            return cte(p);
-        }
-
-        p.expect(SyntaxKind::WITH_KW)?;
-        if p.current() == SyntaxKind::L_PAREN {
-            parenthesis(p)?;
-        }
+    // `CREATE SCHEMA s CREATE TABLE t (...) CREATE VIEW ...` creates the objects in the schema.
+    // psql sends it as one statement, up to the `;`.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1517
+    if p.current() == SyntaxKind::SCHEMA_KW {
+        return unknown(p, &[SyntaxKind::CREATE_KW]);
     }
+
+    unknown(p, &[])
 }
 
 pub(crate) fn alter(p: &mut Splitter) -> SplitterResult {
