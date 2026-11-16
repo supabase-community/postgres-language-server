@@ -7,27 +7,24 @@ use super::{
     res_target::{resolve_returning_clause, resolve_set_clause},
     with_clause::resolve_with_clause,
 };
-use crate::resolve::{
-    scope::{Columns, Level},
-    utils::resolve_expr,
-};
+use crate::resolve::{output::QueryOutput, scope::Level, utils::resolve_expr};
 
 /// Resolves an UPDATE and returns the columns of its RETURNING list. Port of
 /// [`transformUpdateStmt`] and [`transformUpdateTargetList`].
 ///
 /// [`transformUpdateStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2472
 /// [`transformUpdateTargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2546
-pub(super) fn resolve_update_stmt(r: &mut Resolver, n: &UpdateStmt) -> Columns {
+pub(super) fn resolve_update_stmt(r: &mut Resolver, n: &UpdateStmt) -> Option<QueryOutput> {
     let ctes = r.ctes.len();
     if let Some(with) = &n.with_clause {
         resolve_with_clause(r, with);
     }
-    let columns = resolve_update(r, n);
+    let output = resolve_update(r, n);
     r.ctes.truncate(ctes);
-    columns
+    output
 }
 
-fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
+fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Option<QueryOutput> {
     let Some(relation) = &n.relation else {
         r.depends_on_file();
         return None;

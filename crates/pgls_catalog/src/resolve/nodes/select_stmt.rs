@@ -10,17 +10,19 @@ use super::{
     Resolver,
     from_clause::resolve_from_clause,
     record_unresolved_node,
-    res_target::{record_star_references, target_list_columns, target_list_typed_columns},
+    res_target::{infer_select_list, record_star_references, select_list_output},
     resolve_list, resolve_node,
     with_clause::resolve_with_clause,
 };
-use crate::resolve::column_name::target_name;
 use crate::resolve::{
+    column_name::values_column_name,
     expr::infer_expr,
     lookups::record_sort_by,
-    scope::{Columns, OutputNames},
-    utils::{record_enum_values, resolve_expr},
+    output::{QueryOutput, TargetOutput},
+    scope::OutputNames,
+    utils::{node_location, record_enum_values, resolve_expr},
 };
+use crate::typing::TypedColumn;
 
 #[cfg(test)]
 thread_local! {
@@ -28,8 +30,8 @@ thread_local! {
     pub(crate) static RESOLVED_QUERIES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
-/// Resolves a query and returns its output columns, if known.
-pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
+/// Resolves a query and returns its output columns.
+pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
     resolve_query(r, n, false)
 }
 
@@ -38,11 +40,11 @@ pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
 /// ([`transformInsertStmt`]).
 ///
 /// [`transformInsertStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L838
-pub(super) fn resolve_insert_source(r: &mut Resolver, n: &SelectStmt) -> Columns {
+pub(super) fn resolve_insert_source(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
     resolve_query(r, n, true)
 }
 
-fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Columns {
+fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Option<QueryOutput> {
     #[cfg(test)]
     RESOLVED_QUERIES.with(|count| count.set(count.get() + 1));
     let ctes = r.ctes.len();
@@ -50,7 +52,7 @@ fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Colum
         resolve_with_clause(r, with);
     }
 
-    let columns = if n.op() != SetOperation::SetopNone {
+    let output = if n.op() != SetOperation::SetopNone {
         resolve_set_operation(r, n)
     } else if !n.values_lists.is_empty() {
         resolve_values(r, n, !insert_source)
@@ -59,7 +61,7 @@ fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Colum
     };
 
     r.ctes.truncate(ctes);
-    columns
+    output
 }
 
 /// Set operations take their column names from the left-most query and the common type of each
@@ -68,16 +70,15 @@ fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Colum
 ///
 /// [`transformSetOperationStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1751
 /// [`transformSetOperationTree`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2056
-fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
-    let columns = n
+fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
+    let left = n
         .larg
         .as_deref()
         .and_then(|left| resolve_select_stmt(r, left));
-    let left_typed = r.output.clone();
-    if let Some(right) = n.rarg.as_deref() {
-        resolve_select_stmt(r, right);
-    }
-    let right_typed = r.output.clone();
+    let right = n
+        .rarg
+        .as_deref()
+        .and_then(|right| resolve_select_stmt(r, right));
     // ORDER BY and LIMIT see only the output columns.
     let clauses = n
         .sort_clause
@@ -87,99 +88,101 @@ fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
     for node in clauses {
         record_unresolved_node(r, node, false);
     }
-    r.output = match (left_typed, right_typed) {
-        (Some(left), Some(right)) if left.len() == right.len() => Some(
-            left.into_iter()
+    let mut output = left?;
+    let left = output.columns();
+    let right = right.as_ref().and_then(QueryOutput::columns);
+    match (left, right) {
+        (Some(left), Some(right)) if left.len() == right.len() => {
+            let types: Vec<_> = left
+                .into_iter()
                 .zip(right)
-                .map(|(left, right)| {
-                    let ty = match (left.ty, right.ty) {
-                        (Some(left), Some(right)) => {
-                            match crate::typing::select_common_type(r.catalog, &[left, right]) {
-                                crate::typing::Selection::Match(ty) => Some(ty),
-                                _ => None,
-                            }
+                .map(|(left, right)| match (left.ty, right.ty) {
+                    (Some(left), Some(right)) => {
+                        match crate::typing::select_common_type(r.catalog, &[left, right]) {
+                            crate::typing::Selection::Match(ty) => Some(ty),
+                            _ => None,
                         }
-                        _ => None,
-                    };
-                    crate::typing::TypedColumn {
-                        name: left.name,
-                        ty,
                     }
+                    _ => None,
                 })
-                .collect(),
-        ),
-        _ => None,
-    };
-    columns
+                .collect();
+            output.set_types(types);
+        }
+        _ => output.types_known = false,
+    }
+    Some(output)
 }
 
 /// `VALUES` names its columns `column1`, `column2`, ..., and types each as the common type of
 /// its rows. With `coerce`, the values are coerced to it. Port of [`transformValuesClause`].
 ///
 /// [`transformValuesClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1532
-fn resolve_values(r: &mut Resolver, n: &SelectStmt, coerce: bool) -> Columns {
-    let mut width = None;
+fn resolve_values(r: &mut Resolver, n: &SelectStmt, coerce: bool) -> Option<QueryOutput> {
+    let mut first_row = None;
     for row in &n.values_lists {
         if let Some(NodeEnum::List(row)) = &row.node {
-            width.get_or_insert(row.items.len());
+            first_row.get_or_insert(row);
             resolve_list(r, &row.items);
         }
     }
-    let columns = width.map(|width| {
-        (1..=width)
-            .map(|i| format!("column{i}"))
-            .collect::<Vec<_>>()
-    });
-    r.output = columns.as_ref().map(|names| {
-        names
-            .iter()
-            .enumerate()
-            .map(|(index, name)| {
-                let values: Vec<Option<&NodeEnum>> = n
-                    .values_lists
-                    .iter()
-                    .filter_map(|row| row.node.as_ref())
-                    .filter_map(|row| match row {
-                        NodeEnum::List(row) => row.items.get(index),
-                        _ => None,
-                    })
-                    .map(|node| node.node.as_ref())
-                    .collect();
-                let types = values
-                    .iter()
-                    .map(|value| value.and_then(|expr| infer_expr(r, expr)))
-                    .collect::<Option<Vec<_>>>();
-                let ty = types.and_then(|types| {
-                    match crate::typing::select_common_type(r.catalog, &types) {
-                        crate::typing::Selection::Match(ty) => Some(ty),
-                        _ => None,
-                    }
-                });
-                if coerce {
-                    record_enum_values(r, values, ty.as_ref());
+    let first_row = first_row?;
+    let targets = first_row
+        .items
+        .iter()
+        .enumerate()
+        .map(|(index, first)| {
+            let values: Vec<Option<&NodeEnum>> = n
+                .values_lists
+                .iter()
+                .filter_map(|row| row.node.as_ref())
+                .filter_map(|row| match row {
+                    NodeEnum::List(row) => row.items.get(index),
+                    _ => None,
+                })
+                .map(|node| node.node.as_ref())
+                .collect();
+            let types = values
+                .iter()
+                .map(|value| value.and_then(|expr| infer_expr(r, expr)))
+                .collect::<Option<Vec<_>>>();
+            let ty = types.and_then(|types| {
+                match crate::typing::select_common_type(r.catalog, &types) {
+                    crate::typing::Selection::Match(ty) => Some(ty),
+                    _ => None,
                 }
-                crate::typing::TypedColumn {
-                    name: name.clone(),
+            });
+            if coerce {
+                record_enum_values(r, values, ty.as_ref());
+            }
+            TargetOutput {
+                location: node_location(first).unwrap_or(-1),
+                star: None,
+                columns: Some(vec![TypedColumn {
+                    name: values_column_name(index),
                     ty,
-                }
-            })
-            .collect()
-    });
-    columns
+                }]),
+            }
+        })
+        .collect();
+    Some(QueryOutput::new(targets))
 }
 
 /// A plain SELECT: its FROM clause, select list, WHERE, GROUP BY, HAVING, window and ORDER BY
 /// clauses, in the order of [`transformSelectStmt`].
 ///
 /// [`transformSelectStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1389
-fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
-    let mut level = resolve_from_clause(r, &n.from_clause);
-    level.output_names = n.target_list.iter().filter_map(output_name).collect();
-    let output_names = level.output_names.clone();
+fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
+    let level = resolve_from_clause(r, &n.from_clause);
     r.enter_level(level);
 
     resolve_list(r, &n.target_list);
-    record_star_references(r, &n.target_list);
+    // Named after resolving the select list, which names its scalar subqueries.
+    let mut output = select_list_output(r, &n.target_list);
+    let output_names = output.output_names();
+    if let Some(level) = r.levels.last_mut() {
+        level.output_names = output_names.clone();
+    }
+    record_star_references(r, &output);
     for node in n.where_clause.iter().chain(&n.having_clause) {
         resolve_expr(r, node);
     }
@@ -231,12 +234,11 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
         resolve_expr(r, node);
     }
 
-    let columns = target_list_columns(r, &n.target_list);
-    r.output = columns
-        .as_ref()
-        .map(|names| target_list_typed_columns(r, &n.target_list, names));
+    // PR 3: Postgres types the select list before the other clauses (`transformTargetList`).
+    // Typing it last keeps the order of findings and references.
+    infer_select_list(r, &n.target_list, &mut output);
     r.exit_level();
-    columns
+    Some(output)
 }
 
 /// Resolves the items of `GROUP BY`, `ORDER BY` or `DISTINCT ON`, where an item that is a bare
@@ -305,13 +307,5 @@ fn is_output_reference(expr: &NodeEnum, output_names: &[String]) -> bool {
             .as_ref()
             .is_some_and(|value| matches!(value, pgls_query::protobuf::a_const::Val::Ival(_))),
         _ => false,
-    }
-}
-
-/// The name of an entry of the select list, which `ORDER BY` and `GROUP BY` can reference.
-fn output_name(target: &Node) -> Option<String> {
-    match &target.node {
-        Some(NodeEnum::ResTarget(target)) => target_name(target),
-        _ => None,
     }
 }

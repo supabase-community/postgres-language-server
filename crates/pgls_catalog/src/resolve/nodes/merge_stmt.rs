@@ -18,7 +18,8 @@ use super::{
 use crate::resolve::{
     FindingKind, MergeError,
     expr::{check_assignment, infer_expr},
-    scope::{Columns, Item, Level},
+    output::QueryOutput,
+    scope::{Item, Level},
     utils::{node_location, ref_name, resolve_expr},
 };
 
@@ -26,7 +27,7 @@ use crate::resolve::{
 /// [`transformMergeStmt`].
 ///
 /// [`transformMergeStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L107
-pub(super) fn resolve_merge_stmt(r: &mut Resolver, n: &MergeStmt) -> Columns {
+pub(super) fn resolve_merge_stmt(r: &mut Resolver, n: &MergeStmt) -> Option<QueryOutput> {
     let ctes = r.ctes.len();
     if let Some(with) = &n.with_clause {
         if with.recursive {
@@ -37,12 +38,12 @@ pub(super) fn resolve_merge_stmt(r: &mut Resolver, n: &MergeStmt) -> Columns {
         }
         resolve_with_clause(r, with);
     }
-    let columns = resolve_merge(r, n);
+    let output = resolve_merge(r, n);
     r.ctes.truncate(ctes);
-    columns
+    output
 }
 
-fn resolve_merge(r: &mut Resolver, n: &MergeStmt) -> Columns {
+fn resolve_merge(r: &mut Resolver, n: &MergeStmt) -> Option<QueryOutput> {
     let Some(relation) = &n.relation else {
         r.depends_on_file();
         return None;
@@ -90,9 +91,9 @@ fn resolve_merge(r: &mut Resolver, n: &MergeStmt) -> Columns {
     let mut returning = source;
     returning.extend(Level::with_item(target.clone()));
     let in_merge_returning = std::mem::replace(&mut r.in_merge_returning, true);
-    let columns = resolve_returning_clause(r, n.returning_clause.as_ref(), &target, returning);
+    let output = resolve_returning_clause(r, n.returning_clause.as_ref(), &target, returning);
     r.in_merge_returning = in_merge_returning;
-    columns
+    output
 }
 
 /// What `NOT MATCHED BY SOURCE` sees of the source. [`setNamespaceForMergeWhen`] hides only the
