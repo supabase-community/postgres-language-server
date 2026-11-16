@@ -1,11 +1,9 @@
-use std::{ops::Range, sync::Arc};
+use std::{collections::HashSet, ops::Range, sync::Arc};
 
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
 use pgls_text_size::{TextRange, TextSize};
 
-use crate::{
-    AnalysableStatement, AnalysedFileContext, Direction, MigrationSection, UnparsableStatement,
-};
+use crate::{AnalysableStatement, AnalysedFileContext, Direction, Unit, UnparsableStatement};
 
 pub struct WalkParams<'a> {
     /// The statements that parse, in file order, including the statements of SQL function
@@ -15,7 +13,7 @@ pub struct WalkParams<'a> {
     pub unparsable: &'a [UnparsableStatement],
     /// The ranges of all top-level statements of the file, parsed or not, in order. The walk
     /// counts the statements of a section and of its queries with them, also when it is only
-    /// given some of the statements, see [`MigrationSection::implicit_blocks`].
+    /// given some of the statements, see [`Unit::implicit_blocks`].
     pub statement_ranges: &'a [TextRange],
     /// The database snapshot the catalog starts from.
     pub catalog_base: Option<Arc<CatalogBase>>,
@@ -23,7 +21,7 @@ pub struct WalkParams<'a> {
     pub search_path: &'a [String],
     /// The sections of a migration file, like dbmate's up and down migrations. Without sections,
     /// the whole file is one migration.
-    pub sections: &'a [MigrationSection],
+    pub sections: &'a [Unit],
     /// The walk visits the statements that start before `end`.
     pub end: TextSize,
     /// Whether the catalog resolves names as well as it can after statements it can't follow,
@@ -59,6 +57,8 @@ pub struct WalkState {
     up_catalog: Option<Catalog>,
     /// The start of the query whose implicit transaction block the session is in.
     implicit_block: Option<TextSize>,
+    /// See [`CatalogFunctions`].
+    catalog_functions: CatalogFunctions,
 }
 
 impl WalkState {
@@ -70,13 +70,13 @@ impl WalkState {
     /// Whether `sections` put the statement at [`Self::at`] in the section it was in when the
     /// walk stopped. A marker inserted right before the statement changes that, even though the
     /// text before the statement's old start is the same.
-    pub fn fits(&self, sections: &[MigrationSection]) -> bool {
+    pub fn fits(&self, sections: &[Unit]) -> bool {
         section_start(sections, self.at) == self.section_start
     }
 }
 
 /// The start of the section that `offset` is in, or zero before the first section.
-fn section_start(sections: &[MigrationSection], offset: TextSize) -> TextSize {
+fn section_start(sections: &[Unit], offset: TextSize) -> TextSize {
     sections
         .iter()
         .take_while(|section| section.range.start() <= offset)
@@ -105,7 +105,8 @@ pub struct Walk {
 /// - Each migration section runs in a session and transaction of its own. A down section runs
 ///   after the up sections before it, and its changes don't carry into the next section.
 /// - A top-level statement that doesn't parse taints the catalog if it may have changed it.
-/// - The statements of SQL function bodies are visited, but they don't run.
+/// - The statements of SQL function bodies are visited, but they don't run. A statement that
+///   calls a SQL function of the file whose body may change the catalog taints it.
 /// - The names of a statement with identifier parameters, like psql's `:name`, are placeholders.
 ///   Such a statement is visited and applied to the session (its locks and its effect on the
 ///   transaction), but if it may change the catalog, it taints it instead of being applied to it.
@@ -135,6 +136,10 @@ pub fn walk_statements(
         .filter(|at| *at >= resumes_at)
         .peekable();
     let mut checkpoints = Vec::new();
+    let mut catalog_functions = from
+        .as_ref()
+        .map(|from| from.catalog_functions.clone())
+        .unwrap_or_default();
     let mut visited = 0usize;
     for unit in migration_units(params.stmts, params.sections) {
         if unit.start >= params.end {
@@ -168,7 +173,7 @@ pub fn walk_statements(
                 // Each section runs in a session and transaction of its own.
                 let session = Session::new(params.search_path.to_vec()).with_transaction_mode(
                     unit.section
-                        .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
+                        .map_or(TransactionMode::Unknown, transaction_mode),
                 );
                 (unit_catalog, session)
             }
@@ -222,13 +227,15 @@ pub fn walk_statements(
         let state = |at: TextSize,
                      file_context: &AnalysedFileContext,
                      catalog: &Catalog,
-                     implicit_block: Option<TextSize>| WalkState {
+                     implicit_block: Option<TextSize>,
+                     catalog_functions: &CatalogFunctions| WalkState {
             at,
             section_start: unit.start,
             catalog: file_context.catalog().clone(),
             session: file_context.session().clone(),
             up_catalog: is_down.then(|| catalog.clone()),
             implicit_block,
+            catalog_functions: catalog_functions.clone(),
         };
 
         for stmt in stmts {
@@ -245,7 +252,13 @@ pub fn walk_statements(
             }
             while let Some(at) = checkpoint_at.next_if(|at| stmt.range.start() >= *at) {
                 skip_unparsable(&mut unparsable, at, &mut file_context);
-                checkpoints.push(state(at, &file_context, &catalog, implicit_block));
+                checkpoints.push(state(
+                    at,
+                    &file_context,
+                    &catalog,
+                    implicit_block,
+                    &catalog_functions,
+                ));
             }
             let runs = stmt.function.is_none();
             if runs {
@@ -279,11 +292,23 @@ pub fn walk_statements(
                 file_context.taint_catalog();
             }
             file_context.next(runs, !placeholders);
+
+            match &stmt.function {
+                Some(function) => catalog_functions.record_body_statement(function, &stmt.root),
+                None if catalog_functions.called_by(&stmt.root) => file_context.taint_catalog(),
+                None => {}
+            }
         }
 
         while let Some(at) = checkpoint_at.next_if(|at| *at < unit.end && *at <= params.end) {
             skip_unparsable(&mut unparsable, at, &mut file_context);
-            checkpoints.push(state(at, &file_context, &catalog, implicit_block));
+            checkpoints.push(state(
+                at,
+                &file_context,
+                &catalog,
+                implicit_block,
+                &catalog_functions,
+            ));
         }
         skip_unparsable(&mut unparsable, unit.end.min(params.end), &mut file_context);
         // The section that contains `end` decides what a statement there sees.
@@ -319,9 +344,66 @@ fn skip_unparsable<'a>(
     }
 }
 
+/// The SQL functions of the file whose bodies may change the catalog, by name. The catalog
+/// can't follow what a call to one of them does, so a statement that calls one taints it, like
+/// `CALL` does.
+///
+/// Functions are known by their name only, without schema or arguments: a call to any function
+/// of that name taints the catalog. The bodies of other languages, like PL/pgSQL, are not looked
+/// at.
+///
+/// Cost: one pass over the nodes of each statement that runs, once the file created such a
+/// function, and of each statement of a function body.
+#[derive(Clone, Default)]
+struct CatalogFunctions(Arc<HashSet<String>>);
+
+impl CatalogFunctions {
+    /// Records `stmt`, a statement of the body of `function`. A body statement that may change
+    /// the catalog, or that calls a function that may, makes `function` one that may.
+    fn record_body_statement(
+        &mut self,
+        function: &pgls_catalog::resolve::FunctionContext,
+        stmt: &pgls_query::NodeEnum,
+    ) {
+        if self.0.contains(&function.function_name) {
+            return;
+        }
+        if !is_plain_query(stmt) || self.called_by(stmt) {
+            Arc::make_mut(&mut self.0).insert(function.function_name.clone());
+        }
+    }
+
+    /// Whether `stmt` calls one of the functions. Creating a function doesn't call the
+    /// functions its `BEGIN ATOMIC` body calls.
+    fn called_by(&self, stmt: &pgls_query::NodeEnum) -> bool {
+        use pgls_query::{NodeEnum, NodeRef};
+        if self.0.is_empty() || matches!(stmt, NodeEnum::CreateFunctionStmt(_)) {
+            return false;
+        }
+        stmt.iter().any(|node| {
+            let NodeRef::FuncCall(call) = node else {
+                return false;
+            };
+            call.funcname
+                .last()
+                .and_then(pgls_query_ext::utils::string_value)
+                .is_some_and(|name| self.0.contains(name))
+        })
+    }
+}
+
+/// The transaction mode that a migration section starts in.
+pub fn transaction_mode(section: &Unit) -> TransactionMode {
+    if section.transaction {
+        TransactionMode::Transaction
+    } else {
+        TransactionMode::Autocommit
+    }
+}
+
 /// Statements that run together: those before the first section marker, then each section.
 struct MigrationUnit<'a> {
-    section: Option<&'a MigrationSection>,
+    section: Option<&'a Unit>,
     /// The indices of the statements.
     stmts: Range<usize>,
     start: TextSize,
@@ -331,7 +413,7 @@ struct MigrationUnit<'a> {
 
 fn migration_units<'a>(
     stmts: &[AnalysableStatement],
-    sections: &'a [MigrationSection],
+    sections: &'a [Unit],
 ) -> Vec<MigrationUnit<'a>> {
     let end_of_text = TextSize::from(u32::MAX);
     let before_sections = sections
@@ -435,7 +517,7 @@ mod tests {
     use pgls_text_size::{TextRange, TextSize};
 
     use super::{WalkParams, walk_statements};
-    use crate::{AnalysableStatement, Direction, MigrationSection, UnparsableStatement};
+    use crate::{AnalysableStatement, Direction, Unit, UnparsableStatement};
 
     /// Walks the statements of `sql` in a section without a transaction, with the given queries.
     /// Returns each statement that parses with whether it runs in an implicit transaction block,
@@ -456,7 +538,7 @@ mod tests {
                 }),
             }
         }
-        let sections = [MigrationSection {
+        let sections = [Unit {
             range: TextRange::up_to(TextSize::of(sql)),
             direction: Direction::Up,
             transaction: false,
@@ -516,6 +598,82 @@ mod tests {
                 ("select 6;".to_string(), false),
             ]
         );
+    }
+
+    /// Walks `sql`, with `body` as the body of the SQL function `create_and_insert`, which the
+    /// first statement creates. Returns whether the catalog is tainted before each statement
+    /// that runs, and how long the walk took.
+    fn walk_with_function_body(sql: &str, body: &str) -> (Vec<bool>, Duration) {
+        let function = pgls_catalog::resolve::FunctionContext {
+            function_name: "create_and_insert".to_string(),
+            params: Vec::new(),
+        };
+        let mut stmts = Vec::new();
+        let statement_ranges = pgls_statement_splitter::split(sql).ranges;
+        for (i, &range) in statement_ranges.iter().enumerate() {
+            let text = &sql[range];
+            let root = pgls_query::parse(text).unwrap().into_root().unwrap();
+            stmts.push(AnalysableStatement::new(root, range).with_sql(text));
+            if i == 0 {
+                for stmt in pgls_statement_splitter::split(body).ranges {
+                    let root = pgls_query::parse(&body[stmt]).unwrap().into_root().unwrap();
+                    stmts.push(
+                        AnalysableStatement::new(root, range)
+                            .with_sql(&body[stmt])
+                            .with_function(Some(function.clone())),
+                    );
+                }
+            }
+        }
+        let mut tainted = Vec::new();
+        let start = Instant::now();
+        walk_statements(
+            WalkParams {
+                stmts: &stmts,
+                unparsable: &[],
+                statement_ranges: &statement_ranges,
+                catalog_base: None,
+                search_path: &[],
+                sections: &[],
+                end: TextSize::of(sql),
+                best_effort: false,
+                from: None,
+                checkpoints: &[],
+                should_stop: &|| false,
+            },
+            |stmt, file_context| {
+                if stmt.function.is_none() {
+                    tainted.push(file_context.catalog().is_tainted());
+                }
+            },
+        );
+        (tainted, start.elapsed())
+    }
+
+    #[test]
+    fn calls_to_functions_whose_body_changes_the_catalog_taint_it() {
+        let sql = "create function create_and_insert() returns void language sql as 'body';
+            select 1; select create_and_insert(); select 2;";
+        let (tainted, _) = walk_with_function_body(
+            sql,
+            "create table ddl_test (f1 int); insert into ddl_test values (1);",
+        );
+        assert_eq!(tainted, [false, false, false, true]);
+
+        let (tainted, _) = walk_with_function_body(sql, "insert into ddl_test values (1);");
+        assert_eq!(tainted, [false, false, false, false]);
+    }
+
+    #[test]
+    fn calls_to_functions_are_looked_up_in_linear_time() {
+        let statements = 20_000;
+        let sql = format!(
+            "create function create_and_insert() returns void language sql as 'body';\n{}",
+            "select other_function(1, 2) from t where a = b;\n".repeat(statements)
+        );
+        let (tainted, elapsed) = walk_with_function_body(&sql, "create table ddl_test (f1 int);");
+        assert!(tainted.iter().all(|tainted| !tainted));
+        assert!(elapsed < Duration::from_secs(1), "{elapsed:?}");
     }
 
     #[test]

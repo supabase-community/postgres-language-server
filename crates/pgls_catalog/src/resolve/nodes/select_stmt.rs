@@ -2,19 +2,25 @@
 
 use pgls_query::{
     Node, NodeEnum,
-    protobuf::{SelectStmt, SetOperation},
+    protobuf::{CoercionForm, SelectStmt, SetOperation},
 };
 use pgls_query_ext::utils::string_value;
 
 use super::{
     Resolver,
     from_clause::resolve_from_clause,
+    record_unresolved_node,
     res_target::{record_star_references, target_list_columns, target_list_typed_columns},
     resolve_list, resolve_node,
     with_clause::resolve_with_clause,
 };
 use crate::resolve::column_name::target_name;
-use crate::resolve::{expr::infer_expr, scope::Columns, utils::resolve_expr};
+use crate::resolve::{
+    expr::infer_expr,
+    lookups::record_sort_by,
+    scope::{Columns, OutputNames},
+    utils::{record_enum_values, resolve_expr},
+};
 
 #[cfg(test)]
 thread_local! {
@@ -24,6 +30,19 @@ thread_local! {
 
 /// Resolves a query and returns its output columns, if known.
 pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
+    resolve_query(r, n, false)
+}
+
+/// Resolves the source of an INSERT, like [`resolve_select_stmt`]. Except that the rows of a
+/// plain `VALUES` are not coerced to a common type, but each row to the target columns
+/// ([`transformInsertStmt`]).
+///
+/// [`transformInsertStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L838
+pub(super) fn resolve_insert_source(r: &mut Resolver, n: &SelectStmt) -> Columns {
+    resolve_query(r, n, true)
+}
+
+fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Columns {
     #[cfg(test)]
     RESOLVED_QUERIES.with(|count| count.set(count.get() + 1));
     let ctes = r.ctes.len();
@@ -34,7 +53,7 @@ pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
     let columns = if n.op() != SetOperation::SetopNone {
         resolve_set_operation(r, n)
     } else if !n.values_lists.is_empty() {
-        resolve_values(r, n)
+        resolve_values(r, n, !insert_source)
     } else {
         resolve_select(r, n)
     };
@@ -59,6 +78,15 @@ fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
         resolve_select_stmt(r, right);
     }
     let right_typed = r.output.clone();
+    // ORDER BY and LIMIT see only the output columns.
+    let clauses = n
+        .sort_clause
+        .iter()
+        .chain(n.limit_offset.as_deref())
+        .chain(n.limit_count.as_deref());
+    for node in clauses {
+        record_unresolved_node(r, node, false);
+    }
     r.output = match (left_typed, right_typed) {
         (Some(left), Some(right)) if left.len() == right.len() => Some(
             left.into_iter()
@@ -86,10 +114,10 @@ fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
 }
 
 /// `VALUES` names its columns `column1`, `column2`, ..., and types each as the common type of
-/// its rows. Port of [`transformValuesClause`].
+/// its rows. With `coerce`, the values are coerced to it. Port of [`transformValuesClause`].
 ///
 /// [`transformValuesClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1532
-fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
+fn resolve_values(r: &mut Resolver, n: &SelectStmt, coerce: bool) -> Columns {
     let mut width = None;
     for row in &n.values_lists {
         if let Some(NodeEnum::List(row)) = &row.node {
@@ -107,7 +135,7 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
             .iter()
             .enumerate()
             .map(|(index, name)| {
-                let values = n
+                let values: Vec<Option<&NodeEnum>> = n
                     .values_lists
                     .iter()
                     .filter_map(|row| row.node.as_ref())
@@ -115,14 +143,21 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
                         NodeEnum::List(row) => row.items.get(index),
                         _ => None,
                     })
-                    .map(|node| node.node.as_ref().and_then(|expr| infer_expr(r, expr)))
+                    .map(|node| node.node.as_ref())
+                    .collect();
+                let types = values
+                    .iter()
+                    .map(|value| value.and_then(|expr| infer_expr(r, expr)))
                     .collect::<Option<Vec<_>>>();
-                let ty = values.and_then(|values| {
-                    match crate::typing::select_common_type(r.catalog, &values) {
+                let ty = types.and_then(|types| {
+                    match crate::typing::select_common_type(r.catalog, &types) {
                         crate::typing::Selection::Match(ty) => Some(ty),
                         _ => None,
                     }
                 });
+                if coerce {
+                    record_enum_values(r, values, ty.as_ref());
+                }
                 crate::typing::TypedColumn {
                     name: name.clone(),
                     ty,
@@ -148,17 +183,18 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     for node in n.where_clause.iter().chain(&n.having_clause) {
         resolve_expr(r, node);
     }
-    r.set_output_names_visible(true);
+    // In `GROUP BY`, a column of FROM takes precedence over an output column with its name,
+    // unlike in `ORDER BY` and `DISTINCT ON`.
+    resolve_clause_items(r, &n.group_clause, OutputNames::AfterColumns, true);
     for node in &n.group_clause {
-        resolve_node(r, node);
         if let Some(expr) = node.node.as_ref()
             && !is_output_reference(expr, &output_names)
         {
             infer_expr(r, expr);
         }
     }
+    resolve_clause_items(r, &n.sort_clause, OutputNames::BeforeColumns, false);
     for node in &n.sort_clause {
-        resolve_node(r, node);
         if let Some(expr) = node.node.as_ref().and_then(|sort| match sort {
             NodeEnum::SortBy(sort) => sort.node.as_deref().and_then(|node| node.node.as_ref()),
             _ => Some(sort),
@@ -167,15 +203,14 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
             infer_expr(r, expr);
         }
     }
+    resolve_clause_items(r, &n.distinct_clause, OutputNames::BeforeColumns, false);
     for node in &n.distinct_clause {
-        resolve_node(r, node);
         if let Some(expr) = node.node.as_ref()
             && !is_output_reference(expr, &output_names)
         {
             infer_expr(r, expr);
         }
     }
-    r.set_output_names_visible(false);
     for node in &n.window_clause {
         resolve_node(r, node);
         if let Some(NodeEnum::WindowDef(window)) = node.node.as_ref() {
@@ -202,6 +237,56 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
         .map(|names| target_list_typed_columns(r, &n.target_list, names));
     r.exit_level();
     columns
+}
+
+/// Resolves the items of `GROUP BY`, `ORDER BY` or `DISTINCT ON`, where an item that is a bare
+/// name can be an output column, with the precedence of `output_names` ([`findTargetlistEntrySQL92`]).
+/// The names in an expression are columns, like elsewhere ([`findTargetlistEntrySQL99`]). In
+/// `GROUP BY` (`grouping`), the items of grouping sets and of parenthesized lists are items of
+/// their own ([`flatten_grouping_sets`]). Every node of the clause is visited once, without
+/// recursion.
+///
+/// [`findTargetlistEntrySQL92`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L2006
+/// [`findTargetlistEntrySQL99`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L2172
+/// [`flatten_grouping_sets`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L2258
+fn resolve_clause_items(
+    r: &mut Resolver,
+    items: &[Node],
+    output_names: OutputNames,
+    grouping: bool,
+) {
+    let mut pending: Vec<&Node> = items.iter().rev().collect();
+    while let Some(node) = pending.pop() {
+        let item = match node.node.as_ref() {
+            Some(NodeEnum::GroupingSet(set)) if grouping => {
+                pending.extend(set.content.iter().rev());
+                continue;
+            }
+            Some(NodeEnum::RowExpr(row))
+                if grouping && row.row_format() == CoercionForm::CoerceImplicitCast =>
+            {
+                pending.extend(row.args.iter().rev());
+                continue;
+            }
+            Some(NodeEnum::SortBy(sort)) => {
+                record_sort_by(r, sort);
+                match sort.node.as_deref() {
+                    Some(item) => item,
+                    None => continue,
+                }
+            }
+            _ => node,
+        };
+        let is_bare_name = matches!(
+            item.node.as_ref(),
+            Some(NodeEnum::ColumnRef(column)) if matches!(column.fields.as_slice(), [field] if string_value(field).is_some())
+        );
+        if is_bare_name {
+            r.set_output_names_visible(output_names);
+        }
+        resolve_node(r, item);
+        r.set_output_names_visible(OutputNames::Hidden);
+    }
 }
 
 /// Bare output names and ordinal references are resolved by Postgres against the target list

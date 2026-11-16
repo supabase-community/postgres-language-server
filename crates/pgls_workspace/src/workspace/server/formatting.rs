@@ -152,11 +152,12 @@ pub(super) fn format_document(
         }
         last_end = stmt_end;
 
-        // Leave statements outside the requested range untouched.
-        if let Some(filter_range) = range
-            && stmt_range.intersect(filter_range).is_none()
+        // Leave statements outside the requested range untouched, and those with `ENVSUB`
+        // expansions, whose text holds placeholders.
+        if range.is_some_and(|filter_range| stmt_range.intersect(filter_range).is_none())
+            || doc.touches_placeholder(stmt_range)
         {
-            formatted_output.push_str(&text);
+            formatted_output.push_str(&source[stmt_start..stmt_end]);
             continue;
         }
 

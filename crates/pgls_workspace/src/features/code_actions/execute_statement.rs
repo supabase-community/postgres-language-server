@@ -86,6 +86,10 @@ pub struct ExecuteStatementError {
     pub position: Option<TextSize>,
 }
 
+/// Why a statement with placeholders, like goose `ENVSUB` expansions, can't be executed: neither
+/// the text as written nor the analysed text with placeholders is what the migration tool runs.
+pub(crate) const PLACEHOLDER_EXECUTION_DISABLED: &str = "The migration tool replaces parts of this statement before it runs it, like goose's `ENVSUB` expansions, so it can't be executed here.";
+
 /// The actions that execute the statements at `cursor`. `disabled_reason` says why statement
 /// execution isn't allowed, if it isn't.
 pub(crate) fn execute_statement_actions(
@@ -94,7 +98,7 @@ pub(crate) fn execute_statement_actions(
     disabled_reason: Option<String>,
 ) -> Vec<CodeAction> {
     doc.iter_at(DefaultMapper, cursor)
-        .map(|(stmt, _, txt)| {
+        .map(|(stmt, range, txt)| {
             let title = format!(
                 "Execute Statement: {}...",
                 txt.chars().take(50).collect::<String>()
@@ -105,7 +109,11 @@ pub(crate) fn execute_statement_actions(
                 kind: CodeActionKind::Command(CommandAction {
                     category: CommandActionCategory::ExecuteStatement(stmt),
                 }),
-                disabled_reason: disabled_reason.clone(),
+                disabled_reason: if doc.touches_placeholder(range) {
+                    Some(PLACEHOLDER_EXECUTION_DISABLED.into())
+                } else {
+                    disabled_reason.clone()
+                },
             }
         })
         .collect()

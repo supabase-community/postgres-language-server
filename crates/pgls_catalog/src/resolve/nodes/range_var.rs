@@ -12,6 +12,7 @@ use super::{
 use crate::lookup::{Lookup, RelationKind};
 use crate::resolve::{
     ColumnSource, FindingKind, Reference,
+    lookups::record_relation,
     scope::{Columns, DefaultOnly, Item, ItemSource},
     utils::ref_name,
 };
@@ -113,7 +114,10 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
         return unknown;
     }
 
-    match r.catalog.relation(schema, name.name, r.search_path) {
+    let relation = r.catalog.relation(schema, name.name, r.search_path);
+    let temporary = matches!(&relation, Lookup::Found(relation) if relation.schema == "pg_temp");
+    record_relation(r, n, temporary);
+    match relation {
         Lookup::Found(relation) => {
             r.uses(relation.origin);
             let mut source = None;
