@@ -3,7 +3,7 @@ source: crates/pgls_postgres_regress/tests/splitter_vs_parser.rs
 expression: report(&version)
 ---
 REL_16_15: 43634 statements, 568 not checked because no text up to a `;` parses, 1 mismatches
-9 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
+15 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
 
 namespace.sql:9:1: the parser reads 9:1-18:10, the splitter 9:1-10:48, 12:8-13:49, 15:8-18:10
   9:1      CREATE SCHEMA test_ns_schema_1 CREATE UNIQUE INDEX abc_a_idx ON abc (a)

@@ -8,7 +8,8 @@
 //! of the splitter, the splitter cut it in pieces, ran past its end, or both.
 //!
 //! Where no text up to a `;` parses, e.g. at a statement with a syntax error, the check moves on
-//! to the next statement of the splitter.
+//! to the next statement of the splitter. Such a statement is tried with the statements after it
+//! too, since the splitter may have cut at a `;` inside it, e.g. in a `BEGIN ATOMIC` body.
 //!
 //! The mismatches are snapshotted per version, so a new one fails the test and a fixed one shows
 //! up as a diff.
@@ -17,9 +18,9 @@ use pgls_postgres_regress::{File, Version};
 use pgls_query::protobuf::Token;
 use pgls_text_size::{TextRange, TextSize};
 
-/// How many statements of the splitter after a statement without a `;` are scanned for the end of
-/// the statement. A wrong cut makes a handful of fragments; the limit bounds the scan of a long
-/// run of statements without a `;`.
+/// How many statements of the splitter after a statement are scanned for the end of the
+/// statement. A wrong cut makes a handful of fragments; the limit bounds the scan of a long run of
+/// statements without a `;`, and of the statements after one that doesn't parse.
 const SCANNED_STATEMENTS_MAX: usize = 16;
 
 /// How many `;` the check tries as the end of a statement. A `BEGIN ATOMIC` body holds one per
@@ -119,18 +120,44 @@ fn mismatches(file: &File, counts: &mut Counts) -> Vec<Mismatch> {
 
 /// The statement psql sends from the start of `ranges[0]`: the shortest text up to a `;` that the
 /// parser reads as one statement. At the end of the file, the text up to the end counts too.
+///
+/// The `;` are first looked for up to the first statement of the splitter that ends with one. If
+/// none of them ends a statement, the splitter may have cut at a `;` inside the statement, e.g. in
+/// a `BEGIN ATOMIC` body, so the `;` of the statements after it are tried too.
 fn parser_statement(file: &File, ranges: &[TextRange], counts: &mut Counts) -> Option<TextRange> {
     let first = ranges.first()?;
-    // The statements of the splitter up to the first one that ends with a `;`.
-    let scanned = ranges
+    let last = ranges.len() - 1;
+    let with_semicolon = ranges
         .iter()
         .position(|range| file.source[*range].ends_with(';'))
-        .unwrap_or(ranges.len() - 1);
-    if scanned > SCANNED_STATEMENTS_MAX {
+        .unwrap_or(last);
+    if with_semicolon > SCANNED_STATEMENTS_MAX {
         counts.limits_hit += 1;
     }
-    let last = ranges.get(scanned.min(SCANNED_STATEMENTS_MAX))?;
-    let window = TextRange::new(first.start(), last.end());
+    let mut tried = first.start();
+    for scanned in [with_semicolon, last].map(|x| x.min(SCANNED_STATEMENTS_MAX)) {
+        let window = TextRange::new(first.start(), ranges.get(scanned)?.end());
+        if window.end() <= tried {
+            continue;
+        }
+        let found = statement_end(file, window, tried, scanned == last, counts);
+        if found.is_some() {
+            return found;
+        }
+        tried = window.end();
+    }
+    None
+}
+
+/// The shortest text from the start of `window` up to a `;` after `tried` that the parser reads
+/// as one statement starting at the start of `window`. With `at_end`, the text up to the end of `window` counts too.
+fn statement_end(
+    file: &File,
+    window: TextRange,
+    tried: TextSize,
+    at_end: bool,
+    counts: &mut Counts,
+) -> Option<TextRange> {
     let text = &file.source[window];
     let tokens = pgls_query::scan(text).ok()?.tokens;
     let mut ends = tokens
@@ -138,19 +165,24 @@ fn parser_statement(file: &File, ranges: &[TextRange], counts: &mut Counts) -> O
         .filter(|token| token.token == Token::Ascii59 as i32)
         .filter_map(|token| u32::try_from(token.end).ok())
         .map(|end| window.start() + TextSize::from(end))
+        .filter(|&end| end > tried)
         .collect::<Vec<_>>();
     if ends.len() > TRIED_SEMICOLONS_MAX {
         counts.limits_hit += 1;
         ends.truncate(TRIED_SEMICOLONS_MAX);
     }
-    if scanned + 1 == ranges.len() && !text.ends_with(';') {
+    if at_end && !text.ends_with(';') {
         ends.push(window.end());
     }
     ends.into_iter()
         .map(|end| TextRange::new(window.start(), end))
         .find(|&candidate| {
-            pgls_query::split_with_parser(&file.source[candidate])
-                .is_ok_and(|statements| statements.len() == 1)
+            // The statement starts where the one of the splitter does, rather than after an
+            // empty statement, e.g. a lone `;`.
+            let text = &file.source[candidate];
+            pgls_query::split_with_parser(text).is_ok_and(|statements| {
+                matches!(statements.as_slice(), [statement] if statement.as_ptr() == text.as_ptr())
+            })
         })
 }
 
