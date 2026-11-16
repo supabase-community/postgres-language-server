@@ -1,0 +1,53 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+select * from t where (t.starts_at, t.ends_at) overlaps (date '2020-01-01', interval '1 day') and t.id = 1;
+-----------------------
+program [0..107] 'select * from t where (t.starts_at, t.ends_at) overlaps (date '2020-01-01', interval '1 day') and t.id = 1;'
+  statement [0..106] 'select * from t where (t.starts_at, t.ends_at) overlaps (date '2020-01-01', interval '1 day') and t.id = 1'
+    select [0..8] 'select *'
+      keyword_select [0..6] 'select'
+      select_expression [7..8] '*' (@end)
+        term [7..8] '*' (@end)
+          all_fields [7..8] '*' (@end)
+            * [7..8] '*' (@end)
+    from [9..15] 'from t'
+      keyword_from [9..13] 'from'
+      relation [14..15] 't' (@end)
+        table_reference [14..15] 't' (@end)
+          any_identifier [14..15] 't' (@table_reference_1of1)
+    where [16..106] 'where (t.starts_at, t.ends_at) overlaps (date '2020-01-01', interval '1 day') and t.id = 1'
+      keyword_where [16..21] 'where'
+      binary_expression [22..106] '(t.starts_at, t.ends_at) overlaps (date '2020-01-01', interval '1 day') and t.id = 1' (@end)
+        binary_expression [22..93] '(t.starts_at, t.ends_at) overlaps (date '2020-01-01', interval '1 day')' (@binary_expr_left)
+          list [22..46] '(t.starts_at, t.ends_at)' (@binary_expr_left)
+            ( [22..23] '('
+            object_reference [23..34] 't.starts_at'
+              any_identifier [23..24] 't' (@object_reference_1of2)
+              . [24..25] '.'
+              any_identifier [25..34] 'starts_at' (@object_reference_2of2)
+            , [34..35] ','
+            object_reference [36..45] 't.ends_at'
+              any_identifier [36..37] 't' (@object_reference_1of2)
+              . [37..38] '.'
+              any_identifier [38..45] 'ends_at' (@object_reference_2of2)
+            ) [45..46] ')' (@end)
+          keyword_overlaps [47..55] 'overlaps' (@binary_expr_operator)
+          list [56..93] '(date '2020-01-01', interval '1 day')' (@end)
+            ( [56..57] '('
+            literal [57..74] 'date '2020-01-01''
+              any_identifier [57..61] 'date'
+            , [74..75] ','
+            interval [76..92] 'interval '1 day''
+              keyword_interval [76..84] 'interval'
+            ) [92..93] ')' (@end)
+        keyword_and [94..97] 'and' (@binary_expr_operator)
+        binary_expression [98..106] 't.id = 1' (@end)
+          object_reference [98..102] 't.id' (@binary_expr_left)
+            any_identifier [98..99] 't' (@object_reference_1of2)
+            . [99..100] '.'
+            any_identifier [100..102] 'id' (@object_reference_2of2)
+          = [103..104] '=' (@binary_expr_operator)
+          literal [105..106] '1' (@end)
+  ; [106..107] ';'
