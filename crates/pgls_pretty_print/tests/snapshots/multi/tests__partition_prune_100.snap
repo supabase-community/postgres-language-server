@@ -1971,7 +1971,7 @@ with t as (
   using (select stable_one() + 1 as pid) as q inner join part_abc_2 as pt2 on q.pid = pt2.a
   on pt.a = stable_one() + 2
   when not matched by target then insert values (1, 'd', false)
-  returning "mergesupport#25",
+  returning merge_action(),
     pt.*
 )
 insert into part_abc_log
@@ -1983,7 +1983,7 @@ with t as (
   using (select stable_one() + 1 as pid) as q inner join part_abc_2 as pt2 on q.pid = pt2.a
   on pt.a = stable_one() + 2
   when not matched by target then insert values (1, 'd', false)
-  returning "mergesupport#25",
+  returning merge_action(),
     pt.*
 )
 insert into part_abc_log

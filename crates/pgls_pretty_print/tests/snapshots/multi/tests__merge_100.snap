@@ -634,9 +634,9 @@ insert into merge_actions values ('INSERT', 'ins'), ('UPDATE', 'upd'), ('DELETE'
 
 rollback;
 
-select "mergesupport#25" from sq_target;
+select merge_action() from sq_target;
 
-update sq_target set balance = balance + 1 returning "mergesupport#25";
+update sq_target set balance = balance + 1 returning merge_action();
 
 create table sq_target_merge_log (
   tid int not null,
@@ -654,11 +654,11 @@ with m as (
   when matched and tid >= 2 then update set balance = t.balance + delta
   when not matched by target then insert (balance, tid) values (balance + delta, sid)
   when matched and tid < 2 then delete
-  returning "mergesupport#25" as action,
+  returning merge_action() as action,
     old as old_data,
     new as new_data,
     t.*,
-    case "mergesupport#25"
+    case merge_action()
       when 'INSERT' then 'Inserted ' || t
       when 'UPDATE' then 'Added ' || delta || ' to balance'
       when 'DELETE' then 'Removed ' || t
@@ -672,7 +672,7 @@ m2 as (
   when matched then update set last_change = description
   when not matched by target then insert values (m.tid, description)
   returning m.*,
-    "mergesupport#25" as log_action,
+    merge_action() as log_action,
     old as old_log,
     new as new_log,
     l.*
@@ -694,7 +694,7 @@ on tid = sid
 when matched and tid >= 2 then update set balance = t.balance + delta
 when not matched by target then insert (balance, tid) values (balance + delta, sid)
 when matched and tid < 2 then delete
-returning "mergesupport#25",
+returning merge_action(),
   old.*,
   new.*)
 to stdout;

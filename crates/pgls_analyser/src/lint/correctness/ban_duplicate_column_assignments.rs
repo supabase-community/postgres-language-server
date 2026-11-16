@@ -1,7 +1,6 @@
 use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::resolve::{QueryOutput, Star};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{
@@ -9,6 +8,7 @@ use pgls_query::protobuf::{
 };
 use pgls_query::{NodeEnum, NodeRef};
 use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
+use pgls_resolve::{QueryOutput, Star};
 use pgls_text_size::TextRange;
 
 declare_lint_rule! {

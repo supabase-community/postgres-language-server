@@ -1,7 +1,7 @@
 //! Hover for names that the resolver resolved to exactly one object.
 
-use pgls_catalog::resolve::{ColumnSource, Reference};
 use pgls_catalog::{Function, FunctionInfo, Snapshot, TypeId};
+use pgls_resolve::{ColumnSource, Reference};
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::{hoverables::Hoverable, hovered_node::HoveredNode};

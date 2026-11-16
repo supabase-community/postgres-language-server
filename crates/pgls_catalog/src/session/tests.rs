@@ -8,7 +8,7 @@ use crate::Catalog;
 fn apply(s: &mut Session, q: &str) {
     let n = pgls_query::parse(q).unwrap().into_root().unwrap();
     let mut catalog = Catalog::new(None);
-    catalog.apply(&n, s.search_path());
+    catalog.apply(&n, s.search_path(), None);
     s.apply(&n, &catalog);
 }
 fn dangerous(s: &Session, q: &str) -> bool {
@@ -529,7 +529,7 @@ fn catalog_with_users(schemas: &[&str]) -> Catalog {
 fn run(s: &mut Session, catalog: &mut Catalog, q: &str) -> bool {
     let n = pgls_query::parse(q).unwrap().into_root().unwrap();
     let dangerous = s.is_dangerous_lock_stmt(&n, catalog);
-    catalog.apply(&n, s.search_path());
+    catalog.apply(&n, s.search_path(), None);
     s.apply(&n, catalog);
     dangerous
 }

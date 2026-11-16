@@ -1,0 +1,203 @@
+---
+source: crates/pgls_postgres_regress/tests/splitter_vs_parser.rs
+expression: report(&version)
+---
+REL_18_6: 47134 statements, 636 not checked because no text up to a `;` parses, 49 mismatches
+24 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
+
+copy.sql:246:1: the parser reads 246:1-246:52, the splitter 246:1-246:31, 246:32-378:36
+  246:1    copy header_copytest to stdout
+  246:32   with (header match); copy header_copytest from stdin with (header wrong_choice);…
+
+copy2.sql:119:1: the parser reads 119:1-119:41, the splitter 119:1-119:18, 119:19-755:55
+  119:1    COPY x from stdin
+  119:19   with (reject_limit 1); COPY x from stdin with (on_error ignore, reject_limit 0);…
+
+drop_if_exists.sql:302:1: the parser reads 302:1-302:49, the splitter 302:1-302:35, 302:36-304:59
+  302:1    drop database test_database_exists
+  302:36   with (force); drop database if exists test_database_exists (force); drop databas…
+
+guc.sql:189:1: the parser reads 189:1-189:43, the splitter 189:1-189:19, 189:20-370:31
+  189:1    DECLARE foo CURSOR
+  189:20   WITH HOLD FOR SELECT 1; PREPARE foo AS SELECT 1; LISTEN foo_event; SET vacuum_co…
+
+limit.sql:74:1: the parser reads 74:1-74:87, the splitter 74:1-74:76, 74:77-202:48
+  74:1     declare c5 cursor for select * from int8_tbl order by q1 fetch first 2 rows
+  74:77    with ties; fetch all in c5; fetch 1 in c5; fetch backward 1 in c5; fetch backwar…
+
+matview.sql:96:1: the parser reads 96:1-96:65, the splitter 96:1-96:51, 96:52-316:40
+  96:1     REFRESH MATERIALIZED VIEW CONCURRENTLY mvtest_tvmm
+  96:52    WITH NO DATA; -- no tuple locks on materialized views SELECT * FROM mvtest_tvvm …
+
+namespace.sql:9:1: the parser reads 9:1-18:10, the splitter 9:1-10:48, 12:8-13:49, 15:8-18:10
+  9:1      CREATE SCHEMA test_ns_schema_1 CREATE UNIQUE INDEX abc_a_idx ON abc (a)
+  12:8     CREATE VIEW abc_view AS SELECT a+1 AS a, b+1 AS b FROM abc
+  15:8     CREATE TABLE abc ( a serial, b int UNIQUE );
+
+portals.sql:214:1: the parser reads 214:1-214:63, the splitter 214:1-214:28, 214:29-612:33
+  214:1    DECLARE foo25 SCROLL CURSOR
+  214:29   WITH HOLD FOR SELECT * FROM tenk2; FETCH FROM foo25; FETCH FROM foo25; COMMIT; F…
+
+rowsecurity.sql:239:1: the parser reads 239:1-239:26, the splitter 239:1-239:19, 239:20-2438:61
+  239:1    COPY t1 FROM stdin
+  239:20   WITH ; CREATE TABLE t2 (c float) INHERITS (t1); GRANT ALL ON t2 TO public; COPY …
+
+sqljson.sql:444:1: the parser reads 444:1-455:15, the splitter 444:1-453:12, 453:13-572:19
+  444:1    SELECT js, js IS JSON "IS JSON", js IS NOT JSON "IS NOT JSON", js IS JSON VALUE …
+  453:13   WITH UNIQUE KEYS "WITH UNIQUE" FROM test_is_json; SELECT js, js IS JSON "IS JSON…
+
+with.sql:406:1: the parser reads 406:1-414:41, the splitter 406:1-413:37, 414:1-414:41
+  406:1    explain (verbose, costs off) with recursive search_graph(f, t, label) as ( selec…
+  414:1    select * from search_graph order by seq;
+
+with.sql:416:1: the parser reads 416:1-423:41, the splitter 416:1-422:37, 423:1-423:41
+  416:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  423:1    select * from search_graph order by seq;
+
+with.sql:425:1: the parser reads 425:1-432:41, the splitter 425:1-431:37, 432:1-432:41
+  425:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union disti…
+  432:1    select * from search_graph order by seq;
+
+with.sql:434:1: the parser reads 434:1-442:41, the splitter 434:1-441:39, 442:1-442:41
+  434:1    explain (verbose, costs off) with recursive search_graph(f, t, label) as ( selec…
+  442:1    select * from search_graph order by seq;
+
+with.sql:444:1: the parser reads 444:1-451:41, the splitter 444:1-450:39, 451:1-451:41
+  444:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  451:1    select * from search_graph order by seq;
+
+with.sql:453:1: the parser reads 453:1-460:41, the splitter 453:1-459:39, 460:1-460:41
+  453:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union disti…
+  460:1    select * from search_graph order by seq;
+
+with.sql:463:1: the parser reads 463:1-470:28, the splitter 463:1-469:32, 470:1-470:28
+  463:1    explain (verbose, costs off) with recursive test as ( select 1 as x union all se…
+  470:1    select * from test limit 5;
+
+with.sql:472:1: the parser reads 472:1-478:28, the splitter 472:1-477:32, 478:1-478:28
+  472:1    with recursive test as ( select 1 as x union all select x + 1 from test ) search…
+  478:1    select * from test limit 5;
+
+with.sql:480:1: the parser reads 480:1-487:28, the splitter 480:1-486:34, 487:1-487:28
+  480:1    explain (verbose, costs off) with recursive test as ( select 1 as x union all se…
+  487:1    select * from test limit 5;
+
+with.sql:489:1: the parser reads 489:1-495:28, the splitter 489:1-494:34, 495:1-495:28
+  489:1    with recursive test as ( select 1 as x union all select x + 1 from test ) search…
+  495:1    select * from test limit 5;
+
+with.sql:498:1: the parser reads 498:1-505:28, the splitter 498:1-504:41, 505:1-505:28
+  498:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  505:1    select * from search_graph;
+
+with.sql:507:1: the parser reads 507:1-514:28, the splitter 507:1-513:39, 514:1-514:28
+  507:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  514:1    select * from search_graph;
+
+with.sql:516:1: the parser reads 516:1-523:28, the splitter 516:1-522:40, 523:1-523:28
+  516:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  523:1    select * from search_graph;
+
+with.sql:525:1: the parser reads 525:1-534:41, the splitter 525:1-533:37, 534:1-534:41
+  525:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all s…
+  534:1    select * from search_graph order by seq;
+
+with.sql:536:1: the parser reads 536:1-545:41, the splitter 536:1-544:37, 545:1-545:41
+  536:1    with recursive search_graph(f, t, label) as ( select * from graph0 g union all (…
+  545:1    select * from search_graph order by seq;
+
+with.sql:549:1: the parser reads 549:1-555:17, the splitter 549:1-554:36, 555:1-555:17
+  549:1    with recursive x(col) as ( select 1 union (with x as (select * from x) select * …
+  555:1    select * from x;
+
+with.sql:558:1: the parser reads 558:1-566:38, the splitter 558:1-565:37, 566:1-566:38
+  558:1    create temp view v_search as with recursive search_graph(f, t, label) as ( selec…
+  566:1    select f, t, label from search_graph;
+
+with.sql:616:1: the parser reads 616:1-624:28, the splitter 616:1-623:37, 624:1-624:28
+  616:1    explain (verbose, costs off) with recursive search_graph(f, t, label) as ( selec…
+  624:1    select * from search_graph;
+
+with.sql:626:1: the parser reads 626:1-633:28, the splitter 626:1-632:37, 633:1-633:28
+  626:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  633:1    select * from search_graph;
+
+with.sql:635:1: the parser reads 635:1-642:28, the splitter 635:1-641:56, 642:1-642:28
+  635:1    with recursive search_graph(f, t, label) as ( select * from graph g union distin…
+  642:1    select * from search_graph;
+
+with.sql:644:1: the parser reads 644:1-651:20, the splitter 644:1-650:34, 651:1-651:20
+  644:1    explain (verbose, costs off) with recursive test as ( select 0 as x union all se…
+  651:1    select * from test;
+
+with.sql:653:1: the parser reads 653:1-659:20, the splitter 653:1-658:34, 659:1-659:20
+  653:1    with recursive test as ( select 0 as x union all select (x + 1) % 10 from test )…
+  659:1    select * from test;
+
+with.sql:661:1: the parser reads 661:1-668:20, the splitter 661:1-667:34, 668:1-668:20
+  661:1    with recursive test as ( select 0 as x union all select (x + 1) % 10 from test w…
+  668:1    select * from test;
+
+with.sql:671:1: the parser reads 671:1-687:38, the splitter 671:1-686:59, 687:1-687:38
+  671:1    with recursive graph(f, t, label) as ( values (1, 2, 'arc 1 -> 2'), (1, 3, 'arc …
+  687:1    select f, t, label from search_graph;
+
+with.sql:690:1: the parser reads 690:1-695:17, the splitter 690:1-694:24, 695:1-695:17
+  690:1    with recursive a as ( select 1 as b union all select * from a ) cycle b set c us…
+  695:1    select * from a;
+
+with.sql:698:1: the parser reads 698:1-706:28, the splitter 698:1-705:37, 706:1-706:28
+  698:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  706:1    select * from search_graph;
+
+with.sql:708:1: the parser reads 708:1-716:28, the splitter 708:1-715:37, 716:1-716:28
+  708:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  716:1    select * from search_graph;
+
+with.sql:719:1: the parser reads 719:1-726:28, the splitter 719:1-725:41, 726:1-726:28
+  719:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  726:1    select * from search_graph;
+
+with.sql:728:1: the parser reads 728:1-735:28, the splitter 728:1-734:56, 735:1-735:28
+  728:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  735:1    select * from search_graph;
+
+with.sql:737:1: the parser reads 737:1-744:28, the splitter 737:1-743:76, 744:1-744:28
+  737:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  744:1    select * from search_graph;
+
+with.sql:746:1: the parser reads 746:1-753:28, the splitter 746:1-752:56, 753:1-753:28
+  746:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  753:1    select * from search_graph;
+
+with.sql:755:1: the parser reads 755:1-762:28, the splitter 755:1-761:60, 762:1-762:28
+  755:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  762:1    select * from search_graph;
+
+with.sql:764:1: the parser reads 764:1-771:28, the splitter 764:1-770:53, 771:1-771:28
+  764:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  771:1    select * from search_graph;
+
+with.sql:773:1: the parser reads 773:1-780:28, the splitter 773:1-779:62, 780:1-780:28
+  773:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  780:1    select * from search_graph;
+
+with.sql:782:1: the parser reads 782:1-790:28, the splitter 782:1-789:54, 790:1-790:28
+  782:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  790:1    select * from search_graph;
+
+with.sql:792:1: the parser reads 792:1-800:28, the splitter 792:1-799:58, 800:1-800:28
+  792:1    with recursive search_graph(f, t, label) as ( select * from graph g union all se…
+  800:1    select * from search_graph;
+
+with.sql:803:1: the parser reads 803:1-811:38, the splitter 803:1-810:37, 811:1-811:38
+  803:1    create temp view v_cycle1 as with recursive search_graph(f, t, label) as ( selec…
+  811:1    select f, t, label from search_graph;
+
+with.sql:813:1: the parser reads 813:1-821:38, the splitter 813:1-820:56, 821:1-821:38
+  813:1    create temp view v_cycle2 as with recursive search_graph(f, t, label) as ( selec…
+  821:1    select f, t, label from search_graph;
+
+xmlmap.sql:37:1: the parser reads 37:1-37:81, the splitter 37:1-37:18, 37:19-63:60
+  37:1     DECLARE xc CURSOR
+  37:19    WITH HOLD FOR SELECT * FROM testxmlschema.test1 ORDER BY 1, 2; SELECT cursor_to_…

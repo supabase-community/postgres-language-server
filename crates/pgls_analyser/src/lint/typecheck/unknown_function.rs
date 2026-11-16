@@ -1,9 +1,9 @@
 use crate::utils::qualified_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::resolve::FindingKind;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_resolve::FindingKind;
 
 declare_lint_rule! {
     /// No function with this name accepts this number of arguments.

@@ -43,8 +43,7 @@
 94:1 accepted
 95:1 accepted
 98:1 accepted
-101:1 rejected 42601
-103:3 rejected 42P01
+101:1 accepted
 106:1 accepted
 107:1 accepted
 111:1 accepted
@@ -76,8 +75,7 @@
 147:1 accepted
 148:1 accepted
 151:1 accepted
-154:1 rejected 42601
-156:3 rejected 42P01
+154:1 accepted
 159:1 accepted
 160:1 accepted
 161:1 accepted

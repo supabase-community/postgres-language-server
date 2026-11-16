@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_18_6: 47288 statements and 403 in SQL function bodies, 1879 findings on statements Postgres rejected
+REL_18_6: 47134 statements and 403 in SQL function bodies, 1876 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 ambiguousColumn 42712: 2
@@ -18,19 +18,19 @@ invalidCast 42846: 2
 invalidMerge 42601: 2
 invalidMerge 42712: 1
 invalidMerge 42P01: 2
-missingFromClauseEntry 42P01: 20
+missingFromClauseEntry 42P01: 13
 operatorTypeMismatch 42725: 1
 operatorTypeMismatch 42883: 12
 unknownColumn 42703: 41
-unknownColumn 42P01: 3
+unknownColumn 42P01: 2
 unknownFunction 42704: 4
 unknownFunction 42883: 95
 unknownFunction 42P01: 19
 unknownRelation 0A000: 2
-unknownRelation 25006: 2
+unknownRelation 25006: 1
 unknownRelation 25P01: 3
 unknownRelation 42501: 1
-unknownRelation 42P01: 1529
+unknownRelation 42P01: 1535
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -42,6 +42,8 @@ foreign_key.sql:1193:1
 transactions.sql:108:1
   `DROP TABLE writetest` fails in a read-only session, so the table still exists
 transactions.sql:110:1
+  `DROP TABLE writetest` fails in a read-only session, so the table still exists
+transactions.sql:111:1
   `DROP TABLE writetest` fails in a read-only session, so the table still exists
 
 Findings
@@ -666,10 +668,6 @@ insert.sql:16:1 42601 insertColumnMismatch
 insert.sql:17:1 42601 insertColumnMismatch
 insert.sql:18:1 42601 insertColumnMismatch
 insert.sql:19:1 42601 insertColumnMismatch
-insert.sql:103:3 42P01 missingFromClauseEntry
-insert.sql:103:3 42P01 missingFromClauseEntry
-insert.sql:156:3 42P01 missingFromClauseEntry
-insert.sql:156:3 42P01 missingFromClauseEntry
 insert_conflict.sql:106:1 42P01 missingFromClauseEntry
 insert_conflict.sql:112:1 42703 unknownColumn
 insert_conflict.sql:123:1 42P01 missingFromClauseEntry
@@ -1088,7 +1086,6 @@ multirangetypes.sql:645:1 42704 unknownType
 multirangetypes.sql:647:1 42P01 unknownFunction
 multirangetypes.sql:647:1 42P01 unknownFunction
 namespace.sql:12:8 42P01 unknownRelation
-namespace.sql:25:8 42P01 unknownColumn
 namespace.sql:44:1 42P01 unknownRelation
 namespace.sql:45:1 42P01 unknownRelation
 namespace.sql:46:1 42P01 unknownRelation
@@ -1635,7 +1632,6 @@ tidscan.sql:94:1 42P01 unknownRelation
 time.sql:59:1 42725 operatorTypeMismatch
 timetz.sql:64:1 42883 operatorTypeMismatch
 transactions.sql:107:1 25006 unknownRelation
-transactions.sql:111:17 25006 unknownRelation
 transactions.sql:167:3 42703 unknownColumn
 transactions.sql:202:3 42703 unknownColumn
 triggers.sql:522:1 42703 unknownColumn
@@ -1661,7 +1657,8 @@ union.sql:82:1 42P01 unknownRelation
 union.sql:86:1 42P01 unknownRelation
 union.sql:86:1 42P01 unknownRelation
 union.sql:86:1 42P01 unknownRelation
-union.sql:97:35 42P01 unknownRelation
+union.sql:97:1 42P01 unknownRelation
+union.sql:97:1 42P01 unknownRelation
 union.sql:99:1 42P01 unknownRelation
 union.sql:99:1 42P01 unknownRelation
 union.sql:101:1 42P01 unknownRelation
@@ -1690,9 +1687,12 @@ union.sql:140:1 42P01 unknownRelation
 union.sql:140:1 42P01 unknownRelation
 union.sql:142:1 42P01 unknownRelation
 union.sql:142:1 42P01 unknownRelation
-union.sql:148:34 42P01 unknownRelation
-union.sql:149:34 42P01 unknownRelation
-union.sql:150:39 42P01 unknownRelation
+union.sql:147:1 42P01 unknownRelation
+union.sql:147:1 42P01 unknownRelation
+union.sql:149:1 42P01 unknownRelation
+union.sql:149:1 42P01 unknownRelation
+union.sql:150:1 42P01 unknownRelation
+union.sql:150:1 42P01 unknownRelation
 union.sql:154:1 42P01 unknownRelation
 union.sql:154:1 42P01 unknownRelation
 union.sql:157:1 42P01 unknownRelation
@@ -1708,11 +1708,13 @@ union.sql:168:1 42P01 unknownRelation
 union.sql:170:1 42P01 unknownRelation
 union.sql:170:1 42P01 unknownRelation
 union.sql:170:1 42P01 unknownRelation
-union.sql:274:37 42P01 unknownRelation
+union.sql:274:1 42P01 unknownRelation
+union.sql:274:1 42P01 unknownRelation
 union.sql:276:1 42P01 unknownRelation
 union.sql:276:1 42P01 unknownRelation
-union.sql:282:35 42P01 unknownRelation
-union.sql:282:35 42P01 unknownRelation
+union.sql:282:1 42P01 unknownRelation
+union.sql:282:1 42P01 unknownRelation
+union.sql:282:1 42P01 unknownRelation
 union.sql:284:1 42P01 unknownRelation
 union.sql:284:1 42P01 unknownRelation
 union.sql:284:1 42P01 unknownRelation
@@ -1758,8 +1760,6 @@ union.sql:583:1 42P01 unknownRelation
 union.sql:590:1 42P01 unknownRelation
 union.sql:590:1 42P01 unknownRelation
 updatable_views.sql:1189:1 428C9 generatedColumnAssignment
-updatable_views.sql:2080:46 42P01 missingFromClauseEntry
-updatable_views.sql:2080:46 42P01 missingFromClauseEntry
 update.sql:35:1 42703 unknownColumn
 update.sql:62:1 42601 banDuplicateColumnAssignments
 update.sql:89:1 42P01 missingFromClauseEntry
@@ -1909,7 +1909,6 @@ with.sql:523:1 42P01 unknownRelation
 with.sql:534:1 42P01 unknownRelation
 with.sql:545:1 42P01 unknownRelation
 with.sql:555:1 42P01 unknownRelation
-with.sql:1342:2 42P01 missingFromClauseEntry
 with.sql:1510:1 42601 invalidMerge
 write_parallel.sql:17:1 42P01 unknownRelation
 write_parallel.sql:19:1 42P01 unknownRelation

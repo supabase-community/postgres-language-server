@@ -29,7 +29,7 @@ use crate::typing::TypeId;
 use crate::{CastInfo, OperatorInfo, OperatorKind};
 
 pub use base::CatalogBase;
-pub use ddl::QueryColumnsHook;
+pub use overlay::rename;
 
 /// `(schema, name)` of a catalog object.
 type Key = (String, String);

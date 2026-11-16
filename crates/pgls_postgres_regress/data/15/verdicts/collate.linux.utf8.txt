@@ -111,15 +111,13 @@
 239:1 accepted
 241:1 accepted
 242:1 rejected 42P01
-243:1 rejected 42601
-243:54 accepted
+243:1 accepted
 244:1 accepted
 246:1 rejected 42P22
 247:1 accepted
 248:1 rejected 42P21
 249:1 accepted
-250:1 rejected 42601
-250:42 accepted
+250:1 rejected 42P21
 251:1 rejected 42P21
 253:1 rejected 42P22
 256:1 rejected 42P01
