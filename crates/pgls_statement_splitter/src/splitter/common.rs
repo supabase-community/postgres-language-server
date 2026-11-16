@@ -273,14 +273,6 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     begin_end(p)?;
                 }
             },
-            // The `SEARCH` and `CYCLE` clauses after CTEs aren't skipped yet, so the query after
-            // them starts a statement, like after the CTEs of a top-level `WITH`.
-            SyntaxKind::SEARCH_KW | SyntaxKind::CYCLE_KW
-                if cte_query && p.look_back(true) == Some(SyntaxKind::R_PAREN) =>
-            {
-                cte_query = false;
-                p.advance()?;
-            }
             t => match at_statement_start(t, exclude).filter(|_| {
                 !(insert_query && matches!(t, SyntaxKind::WITH_KW | SyntaxKind::SELECT_KW))
             }) {

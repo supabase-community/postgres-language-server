@@ -1512,6 +1512,24 @@ VALUES
     }
 
     #[test]
+    fn cte_search_and_cycle() {
+        let cte = "WITH RECURSIVE t(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM t)";
+        assert_splits_like_psql(&[
+            &format!("{cte} SEARCH DEPTH FIRST BY n SET seq\nSELECT * FROM t;"),
+            &format!("{cte} SEARCH BREADTH FIRST BY n SET seq SELECT * FROM t;"),
+            &format!("{cte} CYCLE n SET is_cycle USING path\nSELECT * FROM t;"),
+            &format!(
+                "{cte} CYCLE n SET is_cycle TO true DEFAULT false USING path SELECT * FROM t;"
+            ),
+            &format!(
+                "{cte} SEARCH DEPTH FIRST BY n SET seq CYCLE n SET is_cycle USING path\nSELECT * FROM t;"
+            ),
+            &format!("EXPLAIN (COSTS OFF) {cte} SEARCH DEPTH FIRST BY n SET seq\nSELECT * FROM t;"),
+            &format!("CREATE VIEW v AS {cte} SEARCH DEPTH FIRST BY n SET seq\nSELECT * FROM t;"),
+        ]);
+    }
+
+    #[test]
     fn intersect_and_distinct_before_select() {
         assert_splits_like_psql(&[
             "SELECT a FROM t INTERSECT\nSELECT a FROM u;",
