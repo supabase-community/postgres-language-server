@@ -63,11 +63,15 @@ Tree-sitter integration used by features (e.g. completions and hover) that need 
 
 ##### `crates/pgls_catalog`
 
-The database catalog. `Snapshot` is the schema of the connected database (tables, columns, functions, types, ...), loaded by introspection queries or from JSON. `Catalog` applies the DDL of the current file on top of it without touching the database, and the name resolver checks statements against the result. On request, the resolver also returns what names resolve to with certainty (functions, columns, relations, types, SQL function parameters, and string literals coerced to enums), for features like inlay hints and semantic tokens. Lookups answer found, missing, or unknown, so the typecheck rules only report what is certainly wrong.
+The database catalog. `Snapshot` is the schema of the connected database (tables, columns, functions, types, ...), loaded by introspection queries or from JSON. `Catalog` applies the DDL of the current file on top of it without touching the database. The columns of a view or `CREATE TABLE AS` come from the caller, which takes them from the statement's resolution. Lookups answer found, missing, or unknown, so the typecheck rules only report what is certainly wrong.
 
 `typing/` ports Postgres' type rules (coercion, common types, polymorphic types, and function and operator overload resolution) from the latest supported Postgres, and links the Postgres function each port follows. The resolver infers the type of every expression with them.
 
-Like `pgls_pretty_print`, the per-statement code has one module per parse node: `resolve/nodes/<node>.rs` (`resolve_<node>`) for name resolution and `catalog/ddl/<node>.rs` (`apply_<node>`) for the effects of DDL, each with a single dispatcher in its `mod.rs`.
+Like `pgls_pretty_print`, the per-statement code has one module per parse node: `catalog/ddl/<node>.rs` (`apply_<node>`) for the effects of DDL, with a single dispatcher in its `mod.rs`.
+
+##### `crates/pgls_resolve`
+
+The name resolver: it checks a statement against the catalog and returns its findings, the output columns of its query, and, on request, what names resolve to with certainty (functions, columns, relations, types, SQL function parameters, and string literals coerced to enums), for features like inlay hints and semantic tokens. It has one module per parse node, `nodes/<node>.rs` (`resolve_<node>`), with a single dispatcher in `nodes/mod.rs`. The walk (`pgls_walk`) resolves each statement once and shares the resolution with lint, the editor features and the catalog.
 
 #### Formatting
 
@@ -99,7 +103,7 @@ Integration with `plpgsql_check` to validate PL/pgSQL function bodies.
 
 ##### `crates/pgls_typecheck`
 
-The fallback type check against the database (via `EXPLAIN`), for statements that only reference objects that exist unchanged in the database. The static checks are the `typecheck` rules, built on `pgls_catalog`.
+The fallback type check against the database (via `EXPLAIN`), for statements that only reference objects that exist unchanged in the database. The static checks are the `typecheck` rules, built on `pgls_catalog` and `pgls_resolve`.
 
 ##### `crates/pgls_suppressions`
 

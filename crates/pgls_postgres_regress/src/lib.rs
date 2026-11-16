@@ -78,7 +78,12 @@ impl File {
 
     /// The 1-based line and column where the statement starts, which key its verdict.
     pub fn line_col(&self, statement: &Statement) -> (usize, usize) {
-        line_cols(&self.source, std::iter::once(statement.range.start()))[0]
+        self.line_col_at(statement.range.start())
+    }
+
+    /// The 1-based line and column of an offset in [`File::source`].
+    pub fn line_col_at(&self, offset: TextSize) -> (usize, usize) {
+        line_cols(&self.source, std::iter::once(offset))[0]
     }
 }
 

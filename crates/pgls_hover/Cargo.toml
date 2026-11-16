@@ -15,6 +15,7 @@ version              = "0.0.0"
 humansize                         = { version = "2.1.3" }
 pgls_catalog                      = { workspace = true }
 pgls_query.workspace              = true
+pgls_resolve                      = { workspace = true }
 pgls_text_size.workspace          = true
 pgls_treesitter.workspace         = true
 pgls_treesitter_grammar.workspace = true

@@ -16,7 +16,7 @@ use crate::{CatalogView, Lookup};
 /// [`select_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1345
 /// [`verify_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1609
 /// [`coerce_to_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1575
-pub(crate) fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type> {
+pub fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type> {
     let Some(first) = types.first() else {
         return Selection::Unknown;
     };

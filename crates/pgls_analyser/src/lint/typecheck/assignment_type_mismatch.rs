@@ -1,8 +1,8 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::resolve::FindingKind;
 use pgls_catalog::typing::format_type;
 use pgls_diagnostics::Severity;
+use pgls_resolve::FindingKind;
 
 declare_lint_rule! {
     /// An expression assigned to a column cannot be coerced to that column's type.

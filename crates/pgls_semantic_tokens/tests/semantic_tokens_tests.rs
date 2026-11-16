@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use pgls_catalog::resolve::{FunctionContext, FunctionParam};
 use pgls_catalog::{Catalog, CatalogBase, Snapshot};
+use pgls_resolve::{FunctionContext, FunctionParam};
 use pgls_semantic_tokens::{SemanticTokenKind, SemanticTokensParams, semantic_tokens};
 use sqlx::{Executor, PgPool};
 

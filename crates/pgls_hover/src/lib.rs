@@ -3,7 +3,7 @@
 #![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
 use pgls_catalog::Snapshot;
-use pgls_catalog::resolve::Reference;
+use pgls_resolve::Reference;
 use pgls_text_size::TextSize;
 use pgls_treesitter::TreeSitterContextParams;
 
@@ -26,7 +26,7 @@ pub struct OnHoverParams<'a> {
     pub snapshot: &'a Snapshot,
     pub stmt_sql: &'a str,
     pub ts_tree: &'a tree_sitter::Tree,
-    /// The references of [`pgls_catalog::resolve::resolve`] whose span contains the cursor.
+    /// The references of [`pgls_resolve::resolve`] whose span contains the cursor.
     /// When one of them is of the hovered kind, hover shows the object it resolves to instead of
     /// the objects found by name.
     pub references: &'a [Reference],

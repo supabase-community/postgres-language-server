@@ -352,6 +352,12 @@ fn clear_location(node: &mut NodeEnum) {
             NodeMut::CommonTableExpr(n) => {
                 (*n).location = 0;
             }
+            NodeMut::CtesearchClause(n) => {
+                (*n).location = 0;
+            }
+            NodeMut::CtecycleClause(n) => {
+                (*n).location = 0;
+            }
             NodeMut::MergeSupportFunc(n) => {
                 (*n).location = 0;
             }

@@ -1,9 +1,9 @@
 //! The refactor that replaces a `*` in a select list with the columns it expands to.
 
 use pgls_analyse::{ActionCategory, Applicability, RefactorKind};
-use pgls_catalog::resolve::{Reference, StarColumn};
 use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
+use pgls_resolve::{Reference, StarColumn};
 use pgls_text_size::TextSize;
 
 use crate::features::code_actions::{CodeAction, CodeActionKind, EditAction, TextEdit};

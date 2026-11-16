@@ -9,10 +9,10 @@
 // takes down the server for every connected editor.
 #![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
-use pgls_catalog::resolve::{FunctionContext, Reference, ResolveParams, resolve};
 use pgls_catalog::{CatalogView, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{ScanToken, Token};
+use pgls_resolve::{FunctionContext, Reference, ResolveParams, resolve};
 use pgls_text_size::TextSize;
 
 pub struct InlayHintsParams<'a> {
@@ -68,7 +68,7 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
 }
 
 /// The inlay hints of the statement `sql` from its `references`, which
-/// [`pgls_catalog::resolve::resolve`] collected. Ordered by offset.
+/// [`pgls_resolve::resolve`] collected. Ordered by offset.
 pub fn inlay_hints_of_references(
     references: &[Reference],
     sql: &str,
