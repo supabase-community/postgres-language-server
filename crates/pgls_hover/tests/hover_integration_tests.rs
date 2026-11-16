@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use pgls_catalog::resolve::{ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Snapshot};
 use pgls_hover::{OnHoverParams, on_hover};
+use pgls_resolve::{ResolveParams, resolve};
 use pgls_test_utils::QueryWithCursorPosition;
 use pgls_text_size::TextSize;
 use sqlx::{Executor, PgPool};

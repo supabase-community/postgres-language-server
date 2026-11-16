@@ -2,7 +2,7 @@
 //! another, which type several inputs agree on, and which function or operator a call picks.
 //!
 //! The functions here only answer questions about types. The facts they need come from
-//! [`crate::CatalogView`], and [`crate::resolve`] walks statements and asks them. Every
+//! [`crate::CatalogView`], and the resolver of `pgls_resolve` walks statements and asks them. Every
 //! answer can be unknown, and unknown never proves an error.
 //!
 //! The algorithms are ported from the latest supported Postgres, [`REL_18_6`], and each port
@@ -25,11 +25,13 @@ mod unify;
 
 pub use coerce::is_binary_coercible;
 pub use model::{CoercionContext, Decision, Type, TypeId, TypedColumn};
-pub use types::{SerialType, base_type, format_type, normalize_type_name, serial_type};
+pub use types::{
+    SerialType, base_type, format_type, normalize_type_name, resolve_unknown_outputs, serial_type,
+};
 
-pub(crate) use coerce::*;
-pub(crate) use model::*;
-pub(crate) use overload::*;
-pub(crate) use pseudo::*;
-pub(crate) use types::*;
-pub(crate) use unify::*;
+pub use coerce::*;
+pub use model::*;
+pub use overload::*;
+pub use pseudo::*;
+pub use types::*;
+pub use unify::*;

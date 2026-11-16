@@ -13,7 +13,8 @@ Postgres rejects statements that assign the same column twice in a SET clause, l
 the same column twice, like `insert into t (a, a)` or `copy t (a, a)`, tables, views and
 composite types that declare the same column twice, and `ALTER TABLE` commands that add
 the same column twice with `42701 duplicate_column`. This includes view columns that get
-the same name from their expressions, like `select a.id, b.id`.
+the same name from their expressions, like `select a.id, b.id`, or from the tables a `*`
+expands to, like `select a.*, b.*` when both tables have an `id`.
 
 Assigning different elements or fields of the same column, like `set a[1] = 1, a[2] = 2`,
 is fine.

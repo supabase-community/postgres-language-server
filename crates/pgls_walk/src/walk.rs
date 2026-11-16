@@ -3,7 +3,9 @@ use std::{collections::HashSet, ops::Range, sync::Arc};
 use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode};
 use pgls_text_size::{TextRange, TextSize};
 
-use crate::{AnalysableStatement, AnalysedFileContext, Direction, Unit, UnparsableStatement};
+use crate::{
+    AnalysableStatement, AnalysedFileContext, Direction, ResolveOptions, Unit, UnparsableStatement,
+};
 
 pub struct WalkParams<'a> {
     /// The statements that parse, in file order, including the statements of SQL function
@@ -34,6 +36,9 @@ pub struct WalkParams<'a> {
     /// The starts of top-level statements where to record the state of the walk, in file
     /// order, see [`Walk::checkpoints`].
     pub checkpoints: &'a [TextSize],
+    /// What the resolution of each statement collects, see
+    /// [`AnalysedFileContext::resolution`].
+    pub resolve: ResolveOptions,
     /// Checked every [`STOP_CHECK_INTERVAL`] statements. The walk stops when it returns `true`,
     /// e.g. because the document changed or the request was cancelled.
     pub should_stop: &'a dyn Fn() -> bool,
@@ -218,6 +223,7 @@ pub fn walk_statements(
             .peekable();
         let mut file_context =
             AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
+                .with_resolve_options(params.resolve)
                 .with_positions(
                     stmts.iter().map(|stmt| stmt.range.start()).collect(),
                     last_end,
@@ -362,7 +368,7 @@ impl CatalogFunctions {
     /// the catalog, or that calls a function that may, makes `function` one that may.
     fn record_body_statement(
         &mut self,
-        function: &pgls_catalog::resolve::FunctionContext,
+        function: &pgls_resolve::FunctionContext,
         stmt: &pgls_query::NodeEnum,
     ) {
         if self.0.contains(&function.function_name) {
@@ -516,6 +522,8 @@ mod tests {
 
     use pgls_text_size::{TextRange, TextSize};
 
+    use pgls_catalog::CatalogView;
+
     use super::{WalkParams, walk_statements};
     use crate::{AnalysableStatement, Direction, Unit, UnparsableStatement};
 
@@ -558,6 +566,7 @@ mod tests {
                 best_effort: false,
                 from: None,
                 checkpoints: &[],
+                resolve: Default::default(),
                 should_stop: &|| false,
             },
             |stmt, file_context| {
@@ -600,11 +609,83 @@ mod tests {
         );
     }
 
+    /// Walks the statements of `sql` without a database. `visit` gets each statement with the
+    /// file context before it. Returns the catalog after the statements.
+    fn walk_file(
+        sql: &str,
+        mut visit: impl FnMut(&AnalysableStatement, &crate::AnalysedFileContext),
+    ) -> pgls_catalog::Catalog {
+        let statement_ranges = pgls_statement_splitter::split(sql).ranges;
+        let stmts: Vec<_> = statement_ranges
+            .iter()
+            .map(|&range| {
+                let text = &sql[range];
+                let root = pgls_query::parse(text).unwrap().into_root().unwrap();
+                AnalysableStatement::new(root, range).with_sql(text)
+            })
+            .collect();
+        walk_statements(
+            WalkParams {
+                stmts: &stmts,
+                unparsable: &[],
+                statement_ranges: &statement_ranges,
+                catalog_base: None,
+                search_path: &["public".into()],
+                sections: &[],
+                end: TextSize::of(sql),
+                best_effort: false,
+                from: None,
+                checkpoints: &[],
+                resolve: Default::default(),
+                should_stop: &|| false,
+            },
+            |stmt, file_context| visit(stmt, file_context),
+        )
+        .catalog
+    }
+
+    #[test]
+    fn relations_from_queries_get_the_columns_of_the_resolution() {
+        let columns = |catalog: &pgls_catalog::Catalog, name: &str| {
+            catalog
+                .relation(None, name, &["public".into()])
+                .found()
+                .and_then(|relation| relation.columns)
+                .map(|columns| columns.into_iter().map(|c| c.name).collect::<Vec<_>>())
+        };
+        let catalog = walk_file(
+            "create table t (a int, b text); \
+             create view v as select a, b as c, 'x' as d from t; \
+             create table s as select * from v; \
+             select c into u from s;",
+            |_, _| {},
+        );
+        assert_eq!(columns(&catalog, "v").unwrap(), ["a", "c", "d"]);
+        assert_eq!(columns(&catalog, "s").unwrap(), ["a", "c", "d"]);
+        assert_eq!(columns(&catalog, "u").unwrap(), ["c"]);
+    }
+
+    #[test]
+    fn a_statement_is_resolved_once() {
+        // The resolution that `visit` asks for is the one the catalog gets the columns from.
+        let mut outputs = Vec::new();
+        walk_file(
+            "create table t (a int); create view v as select a from t;",
+            |stmt, file_context| {
+                let first = file_context.resolution(stmt);
+                let second = file_context.resolution(stmt);
+                assert!(std::ptr::eq(first, second));
+                outputs.push(first.output.is_some());
+            },
+        );
+        assert_eq!(outputs, [false, true]);
+    }
+
     /// Walks `sql`, with `body` as the body of the SQL function `create_and_insert`, which the
     /// first statement creates. Returns whether the catalog is tainted before each statement
     /// that runs, and how long the walk took.
     fn walk_with_function_body(sql: &str, body: &str) -> (Vec<bool>, Duration) {
-        let function = pgls_catalog::resolve::FunctionContext {
+        let function = pgls_resolve::FunctionContext {
             function_name: "create_and_insert".to_string(),
             params: Vec::new(),
         };
@@ -639,6 +720,7 @@ mod tests {
                 best_effort: false,
                 from: None,
                 checkpoints: &[],
+                resolve: Default::default(),
                 should_stop: &|| false,
             },
             |stmt, file_context| {

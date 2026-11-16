@@ -3,6 +3,7 @@ use pgls_query::protobuf::{CreateTableAsStmt, ObjectType};
 use super::into_clause::apply_into_clause;
 use crate::catalog::Catalog;
 use crate::lookup::RelationKind;
+use crate::typing::TypedColumn;
 
 /// `CREATE TABLE AS` and `CREATE MATERIALIZED VIEW`. Models [`ExecCreateTableAs`].
 ///
@@ -11,6 +12,7 @@ pub(super) fn apply_create_table_as_stmt(
     c: &mut Catalog,
     n: &CreateTableAsStmt,
     search_path: &[String],
+    output: Option<&[TypedColumn]>,
 ) {
     let Some(into) = &n.into else {
         return;
@@ -20,9 +22,6 @@ pub(super) fn apply_create_table_as_stmt(
     } else {
         RelationKind::Table
     };
-    let columns = n
-        .query
-        .as_deref()
-        .and_then(|query| c.query_columns(query, search_path));
+    let columns = c.query_columns(output);
     apply_into_clause(c, into, kind, columns, n.if_not_exists, search_path);
 }

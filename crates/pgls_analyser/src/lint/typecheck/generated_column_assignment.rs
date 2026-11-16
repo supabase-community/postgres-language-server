@@ -1,8 +1,8 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
-use pgls_catalog::resolve::FindingKind;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_resolve::FindingKind;
 
 declare_lint_rule! {
     /// An `INSERT` or `UPDATE` assigns a value to a generated column or a `GENERATED ALWAYS`
