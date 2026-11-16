@@ -6,7 +6,7 @@ use super::{Resolver, alias::apply_alias, resolve_node};
 use crate::resolve::{
     ColumnSource,
     output::QueryOutput,
-    scope::{Item, ItemSource, Level, combine_columns},
+    scope::{Item, ItemSource, Level},
 };
 
 /// A subquery in FROM. Only a LATERAL subquery sees the FROM items before it. Port of
@@ -28,13 +28,11 @@ pub(super) fn resolve_range_subselect(
             output
         }
     });
-    let (columns, types_known) = combine_columns(
-        output.as_ref().and_then(QueryOutput::names),
-        crate::resolve::resolve_unknown_outputs(
-            r.catalog,
-            output.as_ref().and_then(QueryOutput::columns),
-        ),
+    let columns = crate::resolve::resolve_unknown_outputs(
+        r.catalog,
+        output.as_ref().and_then(QueryOutput::columns),
     );
+    let types_known = columns.is_some();
     let alias = n.alias.as_ref();
     let source = match &columns {
         Some(columns) if r.collects_references() => Some(Rc::new(ItemSource::derived(

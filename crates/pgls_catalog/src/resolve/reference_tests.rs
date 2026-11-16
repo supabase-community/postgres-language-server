@@ -149,11 +149,13 @@ fn function_references_in(
                     let columns = columns
                         .iter()
                         .map(|column| {
+                            // `?` for a column that no name references.
                             column
                                 .qualifier
-                                .iter()
-                                .chain(std::iter::once(&column.name))
-                                .cloned()
+                                .clone()
+                                .unwrap_or_else(|| vec!["?".into()])
+                                .into_iter()
+                                .chain(std::iter::once(column.name.clone()))
                                 .collect::<Vec<_>>()
                                 .join(".")
                         })
@@ -633,26 +635,39 @@ async fn star_references(test_db: PgPool) {
         stars("select * from (users join posts using (id)) j"),
         ["* => star id, name, user_id, title"]
     );
-    // Unknown columns, duplicate column names, ambiguous merged columns, and items without a
-    // name have no reference.
+    // Unknown columns have no reference.
     assert_eq!(stars("select * from nope"), [""; 0]);
     assert_eq!(stars("select * from users, nope"), [""; 0]);
-    assert_eq!(
-        stars("select j.* from (users join posts on true) j"),
-        [""; 0]
-    );
-    assert_eq!(
-        stars("select * from users join posts using (id), people"),
-        [""; 0]
-    );
     assert_eq!(
         stars("select * from users join posts using (nope)"),
         [""; 0]
     );
-    assert_eq!(stars("select * from users, (select 1 as one)"), [""; 0]);
     assert_eq!(
         stars("select 1 from users where (users.*) is not null"),
         [""; 0]
+    );
+    // Duplicate column names, ambiguous merged columns, and items without a name have no
+    // qualifier (`?`): no name references them.
+    assert_eq!(
+        stars("select j.* from (users join posts on true) j"),
+        ["j.* => star ?.id, j.name, ?.id, j.user_id, j.title"]
+    );
+    assert_eq!(
+        stars("select * from users join posts using (id), people"),
+        ["* => star ?.id, users.name, posts.user_id, posts.title, people.id, people.current"]
+    );
+    assert_eq!(
+        stars("select * from users, (select 1 as one)"),
+        ["* => star users.id, users.name, ?.one"]
+    );
+    assert_eq!(
+        stars("select * from (select 1 as a, 2 as a) s"),
+        ["* => star ?.a, ?.a"]
+    );
+    // `t.*` finds its item in any level, like `t.c`.
+    assert_eq!(
+        stars("select (select u.* from posts limit 1) from users u"),
+        ["u.* => star u.id, u.name"]
     );
 }
 

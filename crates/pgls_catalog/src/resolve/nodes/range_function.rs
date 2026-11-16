@@ -104,6 +104,10 @@ pub(super) fn resolve_range_function(
     // The function is selected outside the FROM items before it, so a LATERAL argument has no
     // type there.
     let mut typed_columns = typed_return_columns(r, n);
+    // Column definitions give the names and types of a function returning `record`.
+    if !n.coldeflist.is_empty() {
+        typed_columns = column_definitions(r, &n.coldeflist);
+    }
     if n.ordinality
         && let Some(columns) = typed_columns.as_mut()
     {
@@ -231,6 +235,10 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
         let NodeEnum::FuncCall(call) = call else {
             return None;
         };
+        let definitions = entry.items.get(1).and_then(|node| match &node.node {
+            Some(NodeEnum::List(list)) if !list.items.is_empty() => Some(&list.items),
+            _ => None,
+        });
         let QualifiedName { schema, name, .. } = qualified_name(&call.funcname)?;
         if call.agg_within_group {
             return None;
@@ -245,9 +253,15 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
             false,
             r.search_path,
         ) else {
-            return None;
+            // Column definitions give the columns without the function.
+            output.extend(column_definitions(r, definitions?)?);
+            continue;
         };
         r.record_call(call, &selected);
+        if let Some(definitions) = definitions {
+            output.extend(column_definitions(r, definitions)?);
+            continue;
+        }
         match selected.function.return_columns {
             // A single output parameter of a composite type expands to its attributes.
             Some(columns) if columns.len() == 1 => {
@@ -271,18 +285,27 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
             },
         }
     }
-    if !n.coldeflist.is_empty() {
-        for (column, definition) in output.iter_mut().zip(&n.coldeflist) {
-            if let Some(NodeEnum::ColumnDef(definition)) = definition.node.as_ref() {
-                column.name = definition.colname.clone();
-                column.ty = definition.type_name.as_ref().and_then(|ty| {
+    Some(output)
+}
+
+/// The columns of a column definition list, like `(a int, b text)` in
+/// `f() as t(a int, b text)`, with their types ([`addRangeTableEntryForFunction`]).
+///
+/// [`addRangeTableEntryForFunction`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L1783
+fn column_definitions(r: &Resolver, definitions: &[Node]) -> Option<Vec<TypedColumn>> {
+    definitions
+        .iter()
+        .map(|definition| match &definition.node {
+            Some(NodeEnum::ColumnDef(definition)) => Some(TypedColumn {
+                name: definition.colname.clone(),
+                ty: definition.type_name.as_ref().and_then(|ty| {
                     let (id, _) = crate::typing::normalize_type_name(r.catalog, ty, r.search_path);
                     id.map(Type::Named)
-                });
-            }
-        }
-    }
-    Some(output)
+                }),
+            }),
+            _ => None,
+        })
+        .collect()
 }
 
 fn column_definition_names(definitions: &[Node]) -> Option<Vec<String>> {

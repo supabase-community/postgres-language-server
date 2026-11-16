@@ -108,7 +108,8 @@ fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput
                 .collect();
             output.set_types(types);
         }
-        _ => output.types_known = false,
+        // The names come from the left-most select, but the types are not known.
+        _ => output.clear_types(),
     }
     Some(output)
 }
@@ -234,8 +235,6 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
         resolve_expr(r, node);
     }
 
-    // PR 3: Postgres types the select list before the other clauses (`transformTargetList`).
-    // Typing it last keeps the order of findings and references.
     infer_select_list(r, &n.target_list, &mut output);
     r.exit_level();
     Some(output)

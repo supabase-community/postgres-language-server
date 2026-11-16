@@ -323,8 +323,7 @@ pub enum Reference {
         span: Option<TextRange>,
         name: String,
     },
-    /// A `*` or `t.*` in a select list or RETURNING list whose columns are all known, and each
-    /// can be referenced by a name that resolves to it.
+    /// A `*`, `t.*` or `s.t.*` in a select list or RETURNING list whose columns are all known.
     Star {
         /// The location of the `*`, or of the qualifier of `t.*`.
         location: i32,
@@ -339,8 +338,9 @@ pub enum Reference {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StarColumn {
     /// The qualifier of the column, e.g. `["u"]` for `u.name`. Empty if the column name alone
-    /// references it.
-    pub qualifier: Vec<String>,
+    /// references it. `None` if no name references it with certainty: another column of its
+    /// FROM item has its name, or the item has no name, or another item has the item's name.
+    pub qualifier: Option<Vec<String>>,
     pub name: String,
 }
 

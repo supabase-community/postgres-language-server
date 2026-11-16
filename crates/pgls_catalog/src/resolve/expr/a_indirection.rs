@@ -17,13 +17,21 @@ pub(super) fn infer_a_indirection(
     r: &mut Resolver<'_>,
     n: &pgls_query::protobuf::AIndirection,
 ) -> Option<Type> {
+    infer_indirection(r, n.arg.as_deref(), &n.indirection)
+}
+
+/// The type of `arg` followed by the subscripts and field selections of `indirection`, like
+/// [`infer_a_indirection`]. For `(expr).*`, `indirection` is the part before the `*`.
+pub(in crate::resolve) fn infer_indirection(
+    r: &mut Resolver<'_>,
+    arg: Option<&pgls_query::Node>,
+    indirection: &[pgls_query::Node],
+) -> Option<Type> {
     {
-        let mut ty = n
-            .arg
-            .as_deref()
+        let mut ty = arg
             .and_then(|x| x.node.as_ref())
             .and_then(|x| infer_expr(r, x))?;
-        let mut items = n.indirection.iter().peekable();
+        let mut items = indirection.iter().peekable();
         while let Some(item) = items.next() {
             ty = match item.node.as_ref()? {
                 // Consecutive subscripts index one array: `a[1][2]` is an element of a

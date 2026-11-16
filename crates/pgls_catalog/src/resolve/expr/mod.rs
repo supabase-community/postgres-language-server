@@ -25,6 +25,7 @@ use pgls_query::NodeEnum;
 
 use super::resolver::Resolver;
 use crate::typing::Type;
+pub(super) use a_indirection::infer_indirection;
 pub(super) use assignment::check_assignment;
 pub(super) use func_call::{call_args, resolve_procedure_call};
 

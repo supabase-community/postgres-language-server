@@ -9,97 +9,128 @@ use pgls_query_ext::utils::{star_qualifier, string_values};
 use super::{Resolver, resolve_list};
 use crate::resolve::{
     FindingKind, Reference, StarColumn,
-    expr::{check_assignment, infer_expr},
-    output::{QueryOutput, TargetOutput},
-    scope::{DefaultOnly, Item, Level, StarEntry, find_item},
-    utils::node_location,
+    expr::{check_assignment, infer_expr, infer_indirection},
+    output::{QueryOutput, Star, TargetOutput},
+    scope::{
+        DefaultOnly, Item, Level, StarEntry, find_item, find_qualified_item, has_opaque_items,
+    },
+    utils::{node_location, row_columns},
 };
 use crate::typing::TypedColumn;
 
-/// The output columns of a select list or RETURNING list, one entry at a time, whose `*`
-/// expands to the FROM items of the innermost level. Port of the names of
-/// [`transformTargetList`], with [`FigureColname`] for unnamed entries and
-/// [`ExpandColumnRefStar`] and [`ExpandAllTables`] for `*`. The columns of `*` and `t.*` have the
-/// types of their FROM item; the expressions are typed by [`infer_select_list`].
+/// The output columns of a select list or RETURNING list, one entry at a time. Port of the
+/// names of [`transformTargetList`], with [`FigureColname`] for unnamed entries,
+/// [`ExpandColumnRefStar`] for `*`, `t.*` and `s.t.*`, and [`ExpandIndirectionStar`] for
+/// `(expr).*`. The columns of a `*` have the types of their FROM item; the expressions are typed
+/// by [`infer_select_list`].
 ///
 /// [`transformTargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L121
 /// [`FigureColname`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1713
 /// [`ExpandColumnRefStar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1123
-/// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
-pub(super) fn select_list_output(r: &Resolver, targets: &[Node]) -> QueryOutput {
-    let level = r.levels.last();
-    let mut star_types_missing = false;
-    let targets = targets
-        .iter()
-        .map(|target| {
-            let Some(NodeEnum::ResTarget(target)) = target.node.as_ref() else {
-                return TargetOutput {
-                    location: -1,
-                    star: None,
-                    columns: None,
-                };
-            };
-            let value = target.val.as_deref().and_then(|value| value.node.as_ref());
-            if let Some(NodeEnum::ColumnRef(column)) = value
-                && let Some(qualifier) = star_qualifier(column).and_then(string_values)
-            {
-                let columns = level.and_then(|level| {
-                    let (columns, types_missing) = star_output(level, &qualifier)?;
-                    star_types_missing |= types_missing;
-                    Some(columns)
-                });
-                return TargetOutput {
-                    location: column.location,
-                    star: Some(qualifier),
-                    columns,
-                };
-            }
-            let name = value.and_then(|_| r.target_name(target));
-            TargetOutput {
-                location: target.location,
-                star: None,
-                columns: name.map(|name| vec![TypedColumn { name, ty: None }]),
-            }
-        })
-        .collect();
-    let mut output = QueryOutput::new(targets);
-    output.star_types_missing = star_types_missing;
-    output
+/// [`ExpandIndirectionStar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1444
+pub(super) fn select_list_output(r: &mut Resolver, targets: &[Node]) -> QueryOutput {
+    QueryOutput::new(
+        targets
+            .iter()
+            .map(|target| target_output(r, target))
+            .collect(),
+    )
 }
 
-/// The columns that `*` (an empty `qualifier`) or `t.*` expands to in `level`, and whether the
-/// types of some of them are missing.
-fn star_output(level: &Level, qualifier: &[String]) -> Option<(Vec<TypedColumn>, bool)> {
-    let (mut columns, types_known) = match qualifier {
-        [] => level.star_columns()?,
-        // PR 3: `t.*` is read three ways. Here it's an item of the innermost level only. The
-        // types used to be read with `qualifier.last()` and a fallback to the whole `*`, which
-        // gives the same columns whenever the names are known. `record_star_references` looks
-        // the item up in every level.
-        [name] => {
-            let item = level.item(name)?;
-            (item.columns.clone()?, item.types_known)
-        }
-        // PR 3: `s.t.*` makes the columns of the entry, and so of the whole list, unknown.
-        _ => return None,
+fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
+    let Some(NodeEnum::ResTarget(target)) = target.node.as_ref() else {
+        return TargetOutput {
+            location: -1,
+            star: None,
+            columns: None,
+        };
     };
-    let types_missing = !types_known && !columns.is_empty();
-    if types_missing {
-        for column in &mut columns {
-            column.ty = None;
-        }
+    let value = target.val.as_deref().and_then(|value| value.node.as_ref());
+    if let Some(NodeEnum::ColumnRef(column)) = value
+        && let Some(qualifier) = star_qualifier(column).and_then(string_values)
+    {
+        let columns = expand_column_ref_star(r, &qualifier);
+        return TargetOutput {
+            location: column.location,
+            star: Some(Star::Columns(qualifier)),
+            columns,
+        };
     }
-    Some((columns, types_missing))
+    if let Some(NodeEnum::AIndirection(indirection)) = value
+        && let Some((last, fields)) = indirection.indirection.split_last()
+        && matches!(last.node, Some(NodeEnum::AStar(_)))
+    {
+        return TargetOutput {
+            location: target.location,
+            star: Some(Star::Fields),
+            columns: expand_indirection_star(r, indirection.arg.as_deref(), fields),
+        };
+    }
+    let name = value.and_then(|_| r.target_name(target));
+    TargetOutput {
+        location: target
+            .val
+            .as_deref()
+            .and_then(node_location)
+            .unwrap_or(target.location),
+        star: None,
+        columns: name.map(|name| vec![TypedColumn { name, ty: None }]),
+    }
+}
+
+/// The columns that `*` (an empty `qualifier`), `t.*` or `s.t.*` expands to. Port of
+/// [`ExpandColumnRefStar`]: `*` expands to the FROM items of the innermost level
+/// ([`ExpandAllTables`]), and `t.*` and `s.t.*` to the item that the qualifier names in any
+/// level ([`refnameNamespaceItem`], [`ExpandSingleTable`]). The columns of an item whose types
+/// are not known as a whole have no types. `None` if the columns are not known, also if a level
+/// has items whose names we don't know, which may be the one the qualifier names.
+///
+/// [`ExpandColumnRefStar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1123
+/// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
+/// [`refnameNamespaceItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L134
+/// [`ExpandSingleTable`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1401
+fn expand_column_ref_star(r: &Resolver, qualifier: &[String]) -> Option<Vec<TypedColumn>> {
+    if qualifier.is_empty() {
+        let (columns, _) = r.levels.last()?.star_columns()?;
+        return Some(columns);
+    }
+    if has_opaque_items(&r.levels) {
+        return None;
+    }
+    let item = find_qualified_item(&r.levels, qualifier)?;
+    Some(
+        item.columns
+            .as_ref()?
+            .iter()
+            .map(|column| TypedColumn {
+                name: column.name.clone(),
+                ty: column.ty.clone().filter(|_| item.types_known),
+            })
+            .collect(),
+    )
+}
+
+/// The columns that `(arg).*` expands to, where `fields` are the subscripts and field
+/// selections between `arg` and the `*`: the fields of its composite type. Port of
+/// [`ExpandIndirectionStar`] and [`ExpandRowReference`]. `None` if the type or its fields are
+/// not known, or if it isn't composite, which Postgres rejects.
+///
+/// [`ExpandIndirectionStar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1444
+/// [`ExpandRowReference`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1486
+fn expand_indirection_star(
+    r: &mut Resolver,
+    arg: Option<&Node>,
+    fields: &[Node],
+) -> Option<Vec<TypedColumn>> {
+    let ty = infer_indirection(r, arg, fields)?;
+    row_columns(r, &ty).flatten()
 }
 
 /// Types the expressions of a select list or RETURNING list whose output is `output`, the
 /// [`select_list_output`] of `targets`. Each is typed once, after the other clauses of the
-/// query, in order.
+/// query, in order. Typing them first, like Postgres, would only change the order of findings
+/// and references.
 pub(super) fn infer_select_list(r: &mut Resolver, targets: &[Node], output: &mut QueryOutput) {
-    // PR 3: the expressions are only typed if the names of all columns are known.
-    if output.names().is_none() {
-        return;
-    }
     for (target, entry) in targets.iter().zip(&mut output.targets) {
         if entry.star.is_some() {
             continue;
@@ -119,42 +150,27 @@ pub(super) fn infer_select_list(r: &mut Resolver, targets: &[Node], output: &mut
             column.ty = ty;
         }
     }
-    if output.star_types_missing {
-        output.clear_types();
-    }
 }
 
-/// Records the columns that each `*` and `t.*` of a select list or RETURNING list expands to,
-/// when references are collected. The FROM items of the list must be the innermost level.
+/// Records the columns that each `*`, `t.*` and `s.t.*` of a select list or RETURNING list
+/// expands to, when references are collected and the columns are known. The FROM items of the
+/// list must be the innermost level.
 pub(super) fn record_star_references(r: &mut Resolver, output: &QueryOutput) {
     if !r.collects_references() {
         return;
     }
     for target in &output.targets {
-        let Some(qualifier) = &target.star else {
+        let (Some(Star::Columns(qualifier)), Some(columns)) = (&target.star, &target.columns)
+        else {
             continue;
         };
         let columns = match qualifier.as_slice() {
             [] => r
                 .levels
                 .last()
-                .zip(target.columns.as_deref())
-                .and_then(|(level, columns)| star_columns(level, columns)),
-            // PR 3: unlike the output, `t.*` and `s.t.*` find their item in every level here,
-            // and `s.t.*` copies the `(schema, name)` lookup of `column_ref.rs`.
-            [name] => find_item(&r.levels, name).and_then(|item| item_columns(item, qualifier)),
-            [schema, name] => r
-                .levels
-                .iter()
-                .rev()
-                .find_map(|level| {
-                    level.items.iter().find(|item| {
-                        item.schema.as_deref() == Some(schema.as_str())
-                            && item.name.as_deref() == Some(name.as_str())
-                    })
-                })
-                .and_then(|item| item_columns(item, qualifier)),
-            _ => None,
+                .and_then(|level| star_columns(level, columns)),
+            _ => find_qualified_item(&r.levels, qualifier)
+                .map(|item| item_columns(item, qualifier, columns)),
         };
         if let Some(columns) = columns {
             r.record(Reference::Star {
@@ -166,86 +182,71 @@ pub(super) fn record_star_references(r: &mut Resolver, output: &QueryOutput) {
     }
 }
 
-/// The columns of `*`, like [`ExpandAllTables`], whose output is `output`, with the item of
-/// each from [`Level::star`]. A column is qualified with the name of its FROM item when there are
-/// several, and a column merged by `JOIN ... USING` or a `NATURAL` join is referenced by its bare
-/// name. `None` if a column is not known, or if a name doesn't reference the column with
-/// certainty.
+/// The columns of `*` in `level`, like [`ExpandAllTables`], which expands to `columns`, with the
+/// item of each from [`Level::star`]. A column is qualified with the name of its FROM item when
+/// there are several, and a column merged by `JOIN ... USING` or a `NATURAL` join is referenced
+/// by its bare name. A column has no qualifier if no name references it with certainty.
 ///
 /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
-fn star_columns(level: &Level, output: &[TypedColumn]) -> Option<Vec<StarColumn>> {
-    if level.items.is_empty() || level.has_opaque_items {
-        return None;
+fn star_columns(level: &Level, columns: &[TypedColumn]) -> Option<Vec<StarColumn>> {
+    if let [item] = level.items.as_slice() {
+        return Some(item_columns(item, &[], columns));
     }
     let entries = level.star()?;
-    if let [item] = level.items.as_slice() {
-        return item_columns(item, &[]);
-    }
-    if entries.len() != output.len() {
+    if entries.len() != columns.len() {
         return None;
     }
-    let names: Vec<&str> = output.iter().map(|column| column.name.as_str()).collect();
-    let mut columns = Vec::new();
-    for (entry, name) in entries.iter().zip(&names) {
-        let qualifier = match entry {
-            // The bare name must reference only the merged column.
-            StarEntry::Merged(_) => {
-                if names.iter().filter(|other| *other == name).count() != 1 {
-                    return None;
+    let names: Vec<&str> = columns.iter().map(|column| column.name.as_str()).collect();
+    let columns = entries
+        .iter()
+        .zip(&names)
+        .map(|(entry, name)| {
+            let qualifier = match entry {
+                // The bare name must reference only the merged column.
+                StarEntry::Merged(_) => {
+                    (names.iter().filter(|other| *other == name).count() == 1).then(Vec::new)
                 }
-                Vec::new()
-            }
-            StarEntry::Item { item, .. } => {
-                let item = level.items.get(*item)?;
-                let item_name = item.name.as_ref()?;
                 // The qualifier must reference only this item, and the name only this column.
-                if level
-                    .items
-                    .iter()
-                    .filter(|other| other.name.as_ref() == Some(item_name))
-                    .count()
-                    != 1
-                    || item
-                        .columns
-                        .as_ref()?
+                StarEntry::Item { item, .. } => level.items.get(*item).and_then(|item| {
+                    let item_name = item.name.as_ref()?;
+                    let unique_item = level
+                        .items
                         .iter()
-                        .filter(|column| column.name == *name)
+                        .filter(|other| other.name.as_ref() == Some(item_name))
                         .count()
-                        != 1
-                {
-                    return None;
-                }
-                vec![item_name.clone()]
+                        == 1;
+                    (unique_item && has_unique_column(item, name)).then(|| vec![item_name.clone()])
+                }),
+            };
+            StarColumn {
+                qualifier,
+                name: (*name).to_owned(),
             }
-        };
-        columns.push(StarColumn {
-            qualifier,
-            name: (*name).to_owned(),
-        });
-    }
+        })
+        .collect();
     Some(columns)
 }
 
-/// The columns of `item`, qualified with `qualifier`. `None` if they are not known, or if two
-/// have the same name, which then doesn't reference either.
-fn item_columns(item: &Item, qualifier: &[String]) -> Option<Vec<StarColumn>> {
-    let columns = item.columns.as_ref()?;
-    if columns
+/// The columns `columns` of `item`, qualified with `qualifier`. A column whose name another
+/// column of the item has too has no qualifier: its name doesn't reference it.
+fn item_columns(item: &Item, qualifier: &[String], columns: &[TypedColumn]) -> Vec<StarColumn> {
+    columns
         .iter()
-        .enumerate()
-        .any(|(i, column)| columns[..i].iter().any(|other| other.name == column.name))
-    {
-        return None;
-    }
-    Some(
-        columns
-            .iter()
-            .map(|column| StarColumn {
-                qualifier: qualifier.to_vec(),
-                name: column.name.clone(),
-            })
-            .collect(),
-    )
+        .map(|column| StarColumn {
+            qualifier: has_unique_column(item, &column.name).then(|| qualifier.to_vec()),
+            name: column.name.clone(),
+        })
+        .collect()
+}
+
+/// Whether `item` has exactly one column named `name`.
+fn has_unique_column(item: &Item, name: &str) -> bool {
+    item.columns
+        .iter()
+        .flatten()
+        .filter(|column| column.name == name)
+        .count()
+        == 1
 }
 
 /// Resolves a RETURNING clause of a statement on `target` against `level` and returns its

@@ -301,3 +301,52 @@ async fn unknown_output_types_stay_unknown(test_db: PgPool) {
         }
     }
 }
+
+#[pgls_test_utils::db_test]
+async fn knows_the_types_of_each_select_list_entry(test_db: PgPool) {
+    let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
+    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let setup = "create type place as (street text, zip int4); \
+        create table places (p place); \
+        create function pairs() returns setof record language sql as 'select 1, ''a''';";
+    // `(t.c).*` has the fields of the composite type.
+    assert_eq!(
+        output_types(&mut catalog, setup, "select (p).*, (x.p).zip from places x"),
+        [
+            Some("text".into()),
+            Some("integer".into()),
+            Some("integer".into())
+        ]
+    );
+    // Column definitions give the types of a function returning `record`.
+    assert_eq!(
+        output_types(
+            &mut catalog,
+            "",
+            "select * from pairs() as t(a int, b text)"
+        ),
+        [Some("integer".into()), Some("text".into())]
+    );
+    assert_eq!(
+        output_types(
+            &mut catalog,
+            "",
+            "select * from rows from (pairs() as (a int8, b text), pairs() as (c bool, d int))"
+        ),
+        [
+            Some("bigint".into()),
+            Some("text".into()),
+            Some("boolean".into()),
+            Some("integer".into())
+        ]
+    );
+    // A `*` whose columns have no types doesn't hide the types of the other entries.
+    assert_eq!(
+        output_types(
+            &mut catalog,
+            "",
+            "select *, 1 as one from (select 1 as a union select x from nope) s"
+        ),
+        [None, Some("integer".into())]
+    );
+}

@@ -6,42 +6,52 @@ use crate::typing::{Type, TypedColumn};
 /// VALUES.
 #[derive(Debug, Clone)]
 pub(super) struct TargetOutput {
-    /// The location of the entry. For `*`, `t.*` and `s.t.*`, that of the column reference.
+    /// The location of the entry's value. For `*`, `t.*` and `s.t.*`, that of the column
+    /// reference.
     pub location: i32,
-    /// For `*`, `t.*` and `s.t.*`, the names before the `*`: empty for `*`.
-    pub star: Option<Vec<String>>,
+    /// Set if the entry is a `*` that expands to any number of columns.
+    pub star: Option<Star>,
     /// The columns of the entry, in order: one for an expression, the ones it expands to for a
-    /// `*`. `None` if they are not known.
+    /// `*` or `(expr).*`. `None` if they are not known. A column whose type is not known has no
+    /// type.
     pub columns: Option<Vec<TypedColumn>>,
+}
+
+/// A select list entry that expands to any number of columns.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) enum Star {
+    /// `*`, `t.*` or `s.t.*`, with the names before the `*`: none for `*`.
+    Columns(Vec<String>),
+    /// `(expr).*`, the fields of a composite value.
+    Fields,
 }
 
 /// The output columns of a query: one [`TargetOutput`] per entry of its select list or
 /// RETURNING list, in order. A set operation has the entries of its left-most select, and VALUES
 /// one per column.
+///
+/// What is known is known per entry: an entry whose columns are not known doesn't hide the names
+/// and positions of the others, but the columns of the whole query are only known if those of
+/// every entry are.
 #[derive(Debug, Clone)]
 pub(super) struct QueryOutput {
     pub targets: Vec<TargetOutput>,
-    /// Whether the types of the columns are known. Not for a set operation whose arms don't have
-    /// known columns of the same number.
-    pub types_known: bool,
-    /// Set if a `*` of a select list has types for only some of its columns. The types of the
-    /// whole list are then `None`, once its expressions are typed.
-    // PR 3: types are all-or-nothing too.
-    pub star_types_missing: bool,
+}
+
+/// The entry of a [`QueryOutput`] that produces an output column.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct OutputPosition<'a> {
+    /// The index of the entry in [`QueryOutput::targets`].
+    pub entry: usize,
+    pub target: &'a TargetOutput,
 }
 
 impl QueryOutput {
     pub fn new(targets: Vec<TargetOutput>) -> Self {
-        Self {
-            targets,
-            types_known: true,
-            star_types_missing: false,
-        }
+        Self { targets }
     }
 
     /// The columns of all entries, if the columns of every entry are known.
-    // PR 3: the names are all-or-nothing: one unknown entry makes every column unknown, also to
-    // the subqueries and CTEs that have this output.
     fn known_columns(&self) -> Option<impl Iterator<Item = &TypedColumn>> {
         if self.targets.iter().any(|target| target.columns.is_none()) {
             return None;
@@ -53,7 +63,7 @@ impl QueryOutput {
         )
     }
 
-    /// The names of the output columns, if known.
+    /// The names of the output columns, if the columns of every entry are known.
     pub fn names(&self) -> Option<Vec<String>> {
         Some(
             self.known_columns()?
@@ -62,28 +72,48 @@ impl QueryOutput {
         )
     }
 
-    /// The output columns with their types, if the columns and their types are known.
+    /// The output columns with their types, if the columns of every entry are known. A column
+    /// whose type is not known has no type.
     pub fn columns(&self) -> Option<Vec<TypedColumn>> {
-        Some(self.typed_columns()?.cloned().collect())
+        Some(self.known_columns()?.cloned().collect())
     }
 
-    /// The first output column, if the columns and their types are known.
+    /// The number of output columns, if the columns of every entry are known.
+    pub fn width(&self) -> Option<usize> {
+        Some(self.known_columns()?.count())
+    }
+
+    /// The first output column, if the entries up to it are known.
     pub fn first_column(&self) -> Option<&TypedColumn> {
-        self.typed_columns()?.next()
+        for target in &self.targets {
+            if let Some(column) = target.columns.as_deref()?.first() {
+                return Some(column);
+            }
+        }
+        None
     }
 
-    fn typed_columns(&self) -> Option<impl Iterator<Item = &TypedColumn>> {
-        if !self.types_known {
-            return None;
+    /// The entry that produces each output column, in order, as far as the entries are known:
+    /// the columns after an entry whose columns are not known have no known position.
+    pub fn positions(&self) -> Vec<OutputPosition<'_>> {
+        let mut positions = Vec::new();
+        for (entry, target) in self.targets.iter().enumerate() {
+            let Some(columns) = &target.columns else {
+                break;
+            };
+            positions.extend(columns.iter().map(|_| OutputPosition { entry, target }));
         }
-        self.known_columns()
+        positions
     }
 
     /// The names of the entries that aren't a `*`, which `ORDER BY` and `GROUP BY` can reference
     /// by bare name ([`findTargetlistEntrySQL92`]).
     ///
+    /// Postgres matches the columns that a `*` expands to as well. Those are columns of the FROM
+    /// items, which the lookup finds with the same meaning, so they are left out. An ambiguous
+    /// match, which Postgres rejects, is not reported.
+    ///
     /// [`findTargetlistEntrySQL92`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L2006
-    // PR 3: Postgres matches the columns that a `*` expands to as well.
     pub fn output_names(&self) -> Vec<String> {
         self.targets
             .iter()
