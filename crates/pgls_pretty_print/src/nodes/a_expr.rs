@@ -533,20 +533,46 @@ fn extract_simple_operator(name: &[Node]) -> Option<&str> {
 }
 
 /// Whether the emitted operand begins with an operator character: a prefix operator, or a numeric
-/// constant carrying its own minus sign.
+/// constant carrying its own minus sign, possibly as the leftmost operand of an operator without
+/// parentheses, like `-j` in `-j - s`.
+///
+/// The loop follows left operands only, so the parser bounds its length like the depth of the AST.
 fn starts_with_operator_char(node: &Node) -> bool {
-    match node.node.as_ref() {
-        Some(NodeEnum::AExpr(expr)) => {
-            matches!(expr.kind(), AExprKind::AexprOp)
-                && expr.lexpr.is_none()
-                && extract_simple_operator(&expr.name).is_some_and(|op| !operator_needs_space(op))
+    let mut node = node;
+    loop {
+        match node.node.as_ref() {
+            Some(NodeEnum::AExpr(expr)) => match expr.lexpr.as_deref() {
+                // A prefix operator. NOT and other keyword operators are followed by a space.
+                None => {
+                    return matches!(expr.kind(), AExprKind::AexprOp)
+                        && extract_simple_operator(&expr.name)
+                            .is_some_and(|op| !operator_needs_space(op));
+                }
+                Some(lexpr) => {
+                    let parent = aexpr_operator_info(expr);
+                    if matches!(expr.kind(), AExprKind::AexprNullif)
+                        || needs_parentheses(
+                            lexpr,
+                            Position::Operand {
+                                parent,
+                                side: OperandSide::Left,
+                            },
+                        )
+                    {
+                        return false;
+                    }
+                    node = lexpr;
+                }
+            },
+            Some(NodeEnum::AConst(c)) => {
+                return match c.val.as_ref() {
+                    Some(pgls_query::protobuf::a_const::Val::Ival(i)) => i.ival < 0,
+                    Some(pgls_query::protobuf::a_const::Val::Fval(f)) => f.fval.starts_with('-'),
+                    _ => false,
+                };
+            }
+            _ => return false,
         }
-        Some(NodeEnum::AConst(c)) => match c.val.as_ref() {
-            Some(pgls_query::protobuf::a_const::Val::Ival(i)) => i.ival < 0,
-            Some(pgls_query::protobuf::a_const::Val::Fval(f)) => f.fval.starts_with('-'),
-            _ => false,
-        },
-        _ => false,
     }
 }
 
