@@ -1,6 +1,6 @@
 use crate::execute::StdinPayload;
 use crate::execute::config::{ExecutionConfig, ExecutionMode};
-use crate::execute::diagnostics::{SkippedDiagnostic, has_syntax_errors};
+use crate::execute::diagnostics::SkippedDiagnostic;
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession};
 use pgls_analyse::RuleCategoriesBuilder;
@@ -67,10 +67,7 @@ fn check(
         };
         // `--skip-errors` prints a file with syntax errors as it is, so it looks for them before
         // the fixes.
-        if config.skip_errors
-            && fix.is_some()
-            && has_syntax_errors(&pull_diagnostics()?.diagnostics)
-        {
+        if config.skip_errors && fix.is_some() && config.skips(&pull_diagnostics()?.diagnostics) {
             None
         } else {
             let mut content = payload.content.clone();
@@ -88,13 +85,12 @@ fn check(
                 }
             }
             let result = pull_diagnostics()?;
-            (!(config.skip_errors && has_syntax_errors(&result.diagnostics)))
-                .then_some((content, result.diagnostics))
+            (!config.skips(&result.diagnostics)).then_some((content, result.diagnostics))
         }
     };
 
     let Some((content, diagnostics)) = checked else {
-        return Ok(skip_file(session.console(), &payload));
+        return Ok(payload.print_skipped(session.console()));
     };
 
     let console = session.console();
@@ -138,8 +134,8 @@ fn format(
         })?
     };
 
-    if config.skip_errors && has_syntax_errors(&result.diagnostics) {
-        return Ok(skip_file(session.console(), &payload));
+    if config.skips(&result.diagnostics) {
+        return Ok(payload.print_skipped(session.console()));
     }
 
     // The workspace returns an empty result for an ignored file or a disabled formatter.
@@ -160,16 +156,18 @@ fn format(
     ))
 }
 
-/// Skips the code read from stdin for `--skip-errors` because of its syntax errors: prints it to
-/// stdout as it is, and reports that it was skipped instead of its diagnostics.
-fn skip_file(console: &mut dyn Console, payload: &StdinPayload) -> Vec<Error> {
-    console.append(markup! {{payload.content}});
-    print_diagnostics(
-        console,
-        [SkippedDiagnostic],
-        &payload.path.display().to_string(),
-        &payload.content,
-    )
+impl StdinPayload {
+    /// Skips the code for `--skip-errors` because of its syntax errors: prints it to stdout as it
+    /// is, and reports that it was skipped instead of its diagnostics.
+    fn print_skipped(&self, console: &mut dyn Console) -> Vec<Error> {
+        console.append(markup! {{self.content}});
+        print_diagnostics(
+            console,
+            [SkippedDiagnostic],
+            &self.path.display().to_string(),
+            &self.content,
+        )
+    }
 }
 
 /// Prints the diagnostics of the code read from stdin to stderr, as stdout gets the code.

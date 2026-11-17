@@ -1,5 +1,5 @@
 use pgls_diagnostics::adapters::{IoError, StdError};
-use pgls_diagnostics::{Category, Diagnostic, DiagnosticExt, DiagnosticTags, Error, category};
+use pgls_diagnostics::{Category, Diagnostic, DiagnosticExt, DiagnosticTags, Error};
 use std::io;
 
 #[derive(Debug, Diagnostic)]
@@ -18,15 +18,6 @@ pub(crate) struct PanicDiagnostic {
     severity = Information
 )]
 pub(crate) struct SkippedDiagnostic;
-
-/// Whether `diagnostics` contain a syntax error, which makes `--skip-errors` skip the file.
-pub(crate) fn has_syntax_errors<'a, D: Diagnostic + 'a>(
-    diagnostics: impl IntoIterator<Item = &'a D>,
-) -> bool {
-    diagnostics
-        .into_iter()
-        .any(|diagnostic| diagnostic.category() == Some(category!("syntax")))
-}
 
 /// Extension trait for turning [Display]-able error types into [TraversalError]
 pub(crate) trait ResultExt {

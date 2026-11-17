@@ -1,8 +1,8 @@
 use pgls_analyse::RuleCategoriesBuilder;
-use pgls_diagnostics::{DiagnosticExt, Error, category};
+use pgls_diagnostics::{Error, category};
 
 use crate::execute::config::ExecutionMode;
-use crate::execute::diagnostics::{ResultExt, SkippedDiagnostic, has_syntax_errors};
+use crate::execute::diagnostics::ResultExt;
 use crate::execute::process_file::workspace_file::WorkspaceFile;
 use crate::execute::process_file::{FileResult, FileStatus, Message, SharedTraversalOptions};
 use pgls_fs::PgLSPath;
@@ -51,8 +51,8 @@ pub(crate) fn check_with_guard<'ctx>(
                         category!("check"),
                     )?
                     .diagnostics;
-                if has_syntax_errors(&diagnostics) {
-                    return Ok(skip_file(ctx, workspace_file));
+                if ctx.config.skips(&diagnostics) {
+                    return Ok(ctx.skip_file(&workspace_file.path));
                 }
             }
 
@@ -109,8 +109,8 @@ pub(crate) fn check_with_guard<'ctx>(
                     category!("check"),
                 )?;
 
-            if ctx.config.skip_errors && has_syntax_errors(&pull_diagnostics_result.diagnostics) {
-                return Ok(skip_file(ctx, workspace_file));
+            if ctx.config.skips(&pull_diagnostics_result.diagnostics) {
+                return Ok(ctx.skip_file(&workspace_file.path));
             }
 
             let no_diagnostics = pull_diagnostics_result.diagnostics.is_empty()
@@ -136,11 +136,4 @@ pub(crate) fn check_with_guard<'ctx>(
             }
         },
     )
-}
-
-/// Skips a file with syntax errors for `--skip-errors`: it reports that it skipped the file instead
-/// of its diagnostics. The file counts as processed, so a run that skips every file succeeds.
-fn skip_file(ctx: &SharedTraversalOptions<'_, '_>, workspace_file: &WorkspaceFile) -> FileStatus {
-    ctx.push_message(SkippedDiagnostic.with_file_path(workspace_file.path.display().to_string()));
-    FileStatus::Unchanged
 }

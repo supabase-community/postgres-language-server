@@ -1,6 +1,6 @@
 use super::config::ExecutionConfig;
 use super::process_file::{FileStatus, Message, process_file};
-use crate::execute::diagnostics::PanicDiagnostic;
+use crate::execute::diagnostics::{PanicDiagnostic, SkippedDiagnostic};
 use crate::reporter::{Report, TraversalData};
 use crate::{CliDiagnostic, CliSession};
 use crossbeam::channel::{Receiver, Sender, unbounded};
@@ -18,7 +18,7 @@ use std::{
     env::current_dir,
     ffi::OsString,
     panic::catch_unwind,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         Once,
         atomic::{AtomicUsize, Ordering},
@@ -360,6 +360,14 @@ impl TraversalOptions<'_, '_> {
     /// Send a message to the display thread
     pub(crate) fn push_message(&self, msg: impl Into<Message>) {
         self.messages.send(msg.into()).ok();
+    }
+
+    /// Skips the file at `path` for `--skip-errors` because of its syntax errors: reports that it
+    /// skipped the file instead of its diagnostics. The file counts as processed, so a run that
+    /// skips every file succeeds.
+    pub(crate) fn skip_file(&self, path: &Path) -> FileStatus {
+        self.push_message(SkippedDiagnostic.with_file_path(path.display().to_string()));
+        FileStatus::Unchanged
     }
 }
 
