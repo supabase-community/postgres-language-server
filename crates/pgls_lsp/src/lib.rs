@@ -10,6 +10,8 @@ mod documents;
 mod handlers;
 mod server;
 mod session;
+#[cfg(feature = "testing")]
+pub mod testing;
 mod utils;
 
 pub use crate::blocking::Blocking;
