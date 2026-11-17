@@ -1,4 +1,5 @@
 use crate::adapters::{PositionEncoding, negotiated_encoding};
+use crate::blocking::Blocking;
 use crate::diagnostics::LspError;
 use crate::documents::Document;
 use crate::utils;
@@ -35,7 +36,7 @@ use std::sync::atomic::{AtomicBool, AtomicU8};
 use std::time::Duration;
 use tokio::sync::Notify;
 use tokio::sync::OnceCell;
-use tokio::task::{AbortHandle, spawn_blocking};
+use tokio::task::AbortHandle;
 use tower_lsp_server::ls_types::Uri;
 use tower_lsp_server::ls_types::{self, ClientCapabilities};
 use tower_lsp_server::ls_types::{
@@ -162,6 +163,9 @@ pub(crate) struct Session {
     /// unreachable. The next diagnostics run that finds it reachable asks the client to request
     /// them again.
     editor_features_without_database: AtomicBool,
+
+    /// Where the work that blocks runs.
+    pub(crate) blocking: Blocking,
 }
 
 /// A debounced diagnostic task that hasn't started yet.
@@ -247,6 +251,7 @@ impl Session {
         cancellation: Arc<Notify>,
         fs: DynRef<'static, dyn FileSystem>,
         environment: Option<PartialDatabaseConfiguration>,
+        blocking: Blocking,
     ) -> Self {
         let documents = Default::default();
         Self {
@@ -277,6 +282,7 @@ impl Session {
             max_running_transitions: std::sync::atomic::AtomicUsize::new(0),
             diagnostic_debounce: Arc::new(Mutex::new(FxHashMap::default())),
             editor_features_without_database: AtomicBool::new(false),
+            blocking,
         }
     }
 
@@ -542,8 +548,8 @@ impl Session {
         let categories = RuleCategoriesBuilder::default().all();
 
         let diagnostics: Vec<ls_types::Diagnostic> = {
-            // The analysis takes long on large files, so it runs on the blocking thread pool. It
-            // stops early if the document changes meanwhile.
+            // The analysis takes long on large files, so it runs off the async runtime. It stops
+            // early if the document changes meanwhile.
             let workspace = Arc::clone(&self.workspace);
             let params = features::diagnostics::PullFileDiagnosticsParams {
                 project_key: self.project_key(&pgls_path),
@@ -554,7 +560,9 @@ impl Session {
                 skip: Vec::new(),
                 database_checks,
             };
-            let result = spawn_blocking(move || workspace.pull_file_diagnostics(params))
+            let result = self
+                .blocking
+                .spawn(move || workspace.pull_file_diagnostics(params))
                 .await
                 .map_err(anyhow::Error::from)??;
 
@@ -1077,19 +1085,21 @@ impl Session {
     ) -> ConfigurationStatus {
         // Walking a large folder takes a while, so keep it off the async runtime.
         let session = Arc::clone(self);
-        let result = spawn_blocking(move || {
-            apply_nested_configurations(
-                &*session.workspace,
-                &session.fs,
-                project_key,
-                NestedConfigurationSearch {
-                    root_files: Some(root_files),
-                    ..NestedConfigurationSearch::new(root)
-                },
-                &layers,
-            )
-        })
-        .await;
+        let result = self
+            .blocking
+            .spawn(move || {
+                apply_nested_configurations(
+                    &*session.workspace,
+                    &session.fs,
+                    project_key,
+                    NestedConfigurationSearch {
+                        root_files: Some(root_files),
+                        ..NestedConfigurationSearch::new(root)
+                    },
+                    &layers,
+                )
+            })
+            .await;
         let nested = match result {
             Ok(Ok(nested)) => nested,
             Ok(Err(error)) => {

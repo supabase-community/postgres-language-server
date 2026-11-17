@@ -36,7 +36,7 @@ pub fn format(
         write: args.write,
         vcs: args.targets.vcs(),
     };
-    let execution = ExecutionConfig::new(mode, u32::MAX);
+    let execution = ExecutionConfig::new(mode, u32::MAX).with_skip_errors(cli_options.skip_errors);
 
     let paths = args.targets.resolve_paths(session.fs(), &configuration)?;
     let configuration_errors = session.apply_nested_configurations(
