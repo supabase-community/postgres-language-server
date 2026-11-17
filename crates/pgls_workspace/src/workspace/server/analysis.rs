@@ -36,10 +36,10 @@ impl DocumentAnalysis {
         &self.result.diagnostics
     }
 
-    /// What the analyser learned about each statement.
+    /// What the analyser learned about the statement at `range`, if it analysed it.
     #[cfg(feature = "db")]
-    pub(crate) fn statements(&self) -> &[pgls_analyser::StatementAnalysis] {
-        &self.result.statements
+    pub(crate) fn statement(&self, range: TextRange) -> Option<&pgls_analyser::StatementAnalysis> {
+        self.result.statement(range)
     }
 
     pub(crate) fn syntax_diagnostics(&self) -> &[SyntaxDiagnostic] {
@@ -235,6 +235,13 @@ impl WorkspaceServer {
         if result.stopped {
             return None;
         }
+        #[cfg(feature = "db")]
+        debug_assert!(
+            result
+                .statements
+                .is_sorted_by(|a, b| a.range.start() < b.range.start()),
+            "the analysed statements are in the order of the document"
+        );
         if !result.rule_timings.is_empty() {
             let mut timings: Vec<_> = result.rule_timings.iter().collect();
             timings.sort_unstable_by_key(|timing| std::cmp::Reverse(timing.duration));

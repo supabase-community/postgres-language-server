@@ -1,40 +1,40 @@
-7:1 accepted
-9:1 accepted
-15:1 accepted
-17:1 accepted
-19:1 accepted
-21:1 accepted
-23:1 accepted
-25:1 accepted
-27:1 accepted
-29:1 accepted
-32:1 accepted
-34:1 accepted
-36:1 accepted
-38:1 accepted
-40:1 accepted
-42:1 accepted
-44:1 accepted
-46:1 accepted
-48:1 accepted
-50:1 accepted
-52:1 accepted
-54:1 accepted
-56:1 accepted
-66:1 accepted
-67:1 rejected 22023
-68:1 accepted
-71:1 rejected 22023
-72:1 rejected 22023
-73:1 rejected 22023
-74:1 rejected 22023
-75:1 rejected 22023
-77:1 accepted
-79:1 accepted
-80:1 accepted
-82:1 rejected 22023
-83:1 rejected 22023
-84:1 rejected 22023
-85:1 rejected 22023
-86:1 rejected 22023
-87:1 rejected 22023
+114..171 accepted
+173..232 accepted
+244..275 accepted
+277..378 accepted
+380..481 accepted
+483..530 accepted
+532..576 accepted
+578..624 accepted
+626..663 accepted
+665..774 accepted
+777..800 accepted
+802..911 accepted
+913..1021 accepted
+1023..1131 accepted
+1133..1242 accepted
+1244..1352 accepted
+1354..1463 accepted
+1465..1511 accepted
+1513..1560 accepted
+1562..1611 accepted
+1613..1665 accepted
+1667..1687 accepted
+1689..1905 accepted
+1907..1937 accepted
+1938..1970 rejected 22023
+1986..2035 accepted
+2058..2082 rejected 22023
+2083..2111 rejected 22023
+2112..2142 rejected 22023
+2143..2173 rejected 22023
+2174..2251 rejected 22023
+2253..3020 accepted
+3022..3111 accepted
+3112..3209 accepted
+3211..3255 rejected 22023
+3256..3283 rejected 22023
+3284..3312 rejected 22023
+3313..3337 rejected 22023
+3338..3366 rejected 22023
+3367..3398 rejected 22023

@@ -1,94 +1,94 @@
-8:1 rejected 42P01
-9:1 rejected 42P01
-10:1 rejected 42P01
-11:1 rejected 42P01
-12:1 rejected 42P01
-13:1 rejected 42P01
-14:1 rejected 42P01
-15:1 rejected 42P01
-18:1 rejected 42P01
-21:1 accepted
-22:1 accepted
-23:1 accepted
-24:1 accepted
-26:1 rejected 42P01
-28:1 rejected 42P01
-30:1 rejected 42P01
-32:1 rejected 42P01
-34:1 rejected 42P01
-36:1 rejected 42P01
-38:1 rejected 42P01
-40:1 rejected 42P01
-42:1 rejected 42P01
-44:1 rejected 42P01
-46:1 rejected 42P01
-48:1 rejected 42P01
-51:1 rejected 42P01
-54:1 rejected 42P01
-56:1 rejected 42P01
-58:1 rejected 42P01
-61:1 rejected 42P01
-63:1 rejected 42P01
-66:1 rejected 42P01
-68:1 rejected 42P01
-71:1 rejected 42P01
-73:1 rejected 42P01
-76:1 rejected 42P01
-78:1 rejected 42P01
-81:1 rejected 42P01
-83:1 rejected 42P01
-86:1 rejected 42P01
-88:1 rejected 42P01
-95:1 accepted
-97:1 accepted
-99:1 accepted
-101:1 accepted
-103:1 accepted
-105:1 accepted
-107:1 accepted
-109:1 accepted
-111:1 accepted
-113:1 accepted
-115:1 accepted
-118:1 accepted
-119:1 accepted
-122:1 rejected 22003
-123:1 rejected 22003
-124:1 accepted
-125:1 rejected 22003
-126:1 rejected 22003
-127:1 accepted
-130:1 accepted
-140:1 accepted
-150:1 accepted
-159:1 rejected 22003
-160:1 rejected 22003
-163:1 accepted
-171:1 rejected 22003
-172:1 rejected 22003
-177:1 accepted
-178:1 accepted
-179:1 accepted
-181:1 rejected 22P02
-182:1 rejected 22P02
-183:1 rejected 22P02
-186:1 accepted
-187:1 rejected 22003
-188:1 accepted
-189:1 rejected 22003
-190:1 accepted
-191:1 rejected 22003
-193:1 accepted
-194:1 rejected 22003
-195:1 accepted
-196:1 rejected 22003
-197:1 accepted
-198:1 rejected 22003
-203:1 accepted
-204:1 accepted
-205:1 accepted
-206:1 accepted
-207:1 accepted
-210:1 rejected 22P02
-211:1 rejected 22P02
-212:1 rejected 22P02
+120..161 rejected 42P01
+162..212 rejected 42P01
+213..254 rejected 42P01
+255..297 rejected 42P01
+298..345 rejected 42P01
+346..389 rejected 42P01
+390..438 rejected 42P01
+439..476 rejected 42P01
+479..502 rejected 42P01
+547..586 accepted
+587..628 accepted
+629..679 accepted
+680..739 accepted
+741..791 rejected 42P01
+793..843 rejected 42P01
+845..894 rejected 42P01
+896..945 rejected 42P01
+947..996 rejected 42P01
+998..1047 rejected 42P01
+1049..1099 rejected 42P01
+1101..1151 rejected 42P01
+1153..1202 rejected 42P01
+1204..1253 rejected 42P01
+1255..1305 rejected 42P01
+1307..1357 rejected 42P01
+1376..1438 rejected 42P01
+1453..1515 rejected 42P01
+1517..1567 rejected 42P01
+1569..1646 rejected 42P01
+1648..1698 rejected 42P01
+1700..1777 rejected 42P01
+1779..1829 rejected 42P01
+1831..1903 rejected 42P01
+1905..1955 rejected 42P01
+1957..2029 rejected 42P01
+2031..2081 rejected 42P01
+2083..2156 rejected 42P01
+2158..2208 rejected 42P01
+2210..2283 rejected 42P01
+2285..2335 rejected 42P01
+2337..2387 rejected 42P01
+2461..2480 accepted
+2482..2500 accepted
+2502..2524 accepted
+2526..2548 accepted
+2550..2608 accepted
+2610..2668 accepted
+2670..2728 accepted
+2730..2771 accepted
+2773..2825 accepted
+2827..2853 accepted
+2855..2881 accepted
+2898..2926 accepted
+2927..2959 accepted
+3010..3050 rejected 22003
+3051..3091 rejected 22003
+3092..3132 accepted
+3133..3173 rejected 22003
+3174..3214 rejected 22003
+3215..3255 accepted
+3299..3535 accepted
+3581..3824 accepted
+3840..4227 accepted
+4229..4270 rejected 22003
+4283..4336 rejected 22003
+4364..4655 accepted
+4657..4698 rejected 22003
+4711..4758 rejected 22003
+4798..4821 accepted
+4822..4842 accepted
+4843..4863 accepted
+4865..4882 rejected 22P02
+4883..4900 rejected 22P02
+4901..4918 rejected 22P02
+4943..4991 accepted
+4992..5041 rejected 22003
+5042..5070 accepted
+5071..5099 rejected 22003
+5100..5125 accepted
+5126..5151 rejected 22003
+5153..5203 accepted
+5204..5254 rejected 22003
+5255..5284 accepted
+5285..5314 rejected 22003
+5315..5341 accepted
+5342..5368 rejected 22003
+5387..5411 accepted
+5412..5432 accepted
+5433..5459 accepted
+5460..5481 accepted
+5482..5507 accepted
+5524..5543 rejected 22P02
+5544..5563 rejected 22P02
+5564..5587 rejected 22P02

@@ -1,5 +1,5 @@
 ---
-source: crates/pgls_postgres_regress/tests/splitter_vs_parser.rs
+source: crates/pgls_postgres_regress/tests/splitter.rs
 expression: report(&version)
 ---
 REL_15_19: 42062 statements, 500 not checked because no text up to a `;` parses, 0 mismatches

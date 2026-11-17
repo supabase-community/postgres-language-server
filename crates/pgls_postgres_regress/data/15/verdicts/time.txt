@@ -1,39 +1,39 @@
-5:1 accepted
-7:1 accepted
-8:1 accepted
-10:1 accepted
-11:1 accepted
-12:1 accepted
-13:1 accepted
-14:1 accepted
-15:1 accepted
-17:1 accepted
-18:1 accepted
-20:1 rejected 22007
-23:1 accepted
-25:1 accepted
-27:1 accepted
-29:1 accepted
-31:1 accepted
-34:1 accepted
-35:1 accepted
-36:1 accepted
-37:1 accepted
-38:1 rejected 22008
-39:1 rejected 22008
-40:1 rejected 22008
-41:1 rejected 22008
-52:1 rejected 42725
-57:1 accepted
-58:1 accepted
-59:1 accepted
-60:1 accepted
-61:1 accepted
-62:1 rejected 0A000
-63:1 rejected 22023
-64:1 rejected 0A000
-65:1 accepted
-69:1 accepted
-70:1 accepted
-71:1 accepted
-72:1 accepted
+15..50 accepted
+52..90 accepted
+91..129 accepted
+189..231 accepted
+232..274 accepted
+275..313 accepted
+314..352 accepted
+353..391 accepted
+392..439 accepted
+441..510 accepted
+511..580 accepted
+636..694 rejected 22007
+697..731 accepted
+733..790 accepted
+792..848 accepted
+850..903 accepted
+905..960 accepted
+982..1013 accepted
+1014..1046 accepted
+1061..1085 accepted
+1100..1124 accepted
+1137..1164 rejected 22008
+1181..1208 rejected 22008
+1225..1249 rejected 22008
+1266..1290 rejected 22008
+1607..1659 rejected 42725
+1683..1750 accepted
+1751..1818 accepted
+1819..1886 accepted
+1887..1954 accepted
+1955..2022 accepted
+2023..2090 rejected 0A000
+2101..2168 rejected 22023
+2179..2246 rejected 0A000
+2257..2324 accepted
+2438..2505 accepted
+2506..2573 accepted
+2574..2641 accepted
+2642..2709 accepted
