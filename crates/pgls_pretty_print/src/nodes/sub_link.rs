@@ -21,7 +21,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::AllSublink as i32 => {
             // expr op ALL(subquery)
             if let Some(ref testexpr) = n.testexpr {
-                emit_node(e, testexpr);
+                emit_test_expr(e, n, testexpr);
                 e.space();
 
                 // Emit operator if present
@@ -42,7 +42,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::AnySublink as i32 => {
             // expr op ANY(subquery) - includes IN which is = ANY
             if let Some(ref testexpr) = n.testexpr {
-                emit_node(e, testexpr);
+                emit_test_expr(e, n, testexpr);
                 e.space();
 
                 // Special case: empty oper_name means it's IN not = ANY
@@ -127,6 +127,24 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
     }
 
     e.group_end();
+}
+
+/// The expression before `op ANY`, `op ALL` or `IN`, which ends at an operator that binds less
+/// tightly than `op`: `(a = b) = any (select …)` keeps its parentheses.
+fn emit_test_expr(e: &mut EventEmitter, n: &SubLink, testexpr: &Node) {
+    if needs_parentheses(
+        testexpr,
+        Position::Operand {
+            parent: sub_link_operator_info(n),
+            side: OperandSide::Left,
+        },
+    ) {
+        e.token(TokenKind::L_PAREN);
+        emit_node(e, testexpr);
+        e.token(TokenKind::R_PAREN);
+    } else {
+        emit_node(e, testexpr);
+    }
 }
 
 fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {

@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/aexpr_precedence_non_associative.sql
+---
+select
+  (a = f(x)) = any (select true),
+  (a = b) = all (array[true]),
+  (a like b) like c,
+  a between (b = c) and (d and e),
+  (a is distinct from b) is distinct from c,
+  a + (b = any (select 1))
+from
+  t;

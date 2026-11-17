@@ -1,6 +1,6 @@
 //! Questions about the shape of a node that decide how it is printed.
 
-use pgls_query::protobuf::{AExpr, AExprKind, BoolExprType, SubLinkType, a_const::Val};
+use pgls_query::protobuf::{AExpr, AExprKind, BoolExprType, SubLink, SubLinkType, a_const::Val};
 use pgls_query::{Node, NodeEnum};
 
 use crate::emitter::EventEmitter;
@@ -106,6 +106,8 @@ pub(crate) const PREC_POWER: u8 = 80;
 pub(crate) const PREC_MULTIPLICATIVE: u8 = 70;
 pub(crate) const PREC_ADDITIVE: u8 = 60;
 pub(crate) const PREC_OTHER: u8 = 55;
+/// `BETWEEN`, `IN`, `LIKE`, `ILIKE` and `SIMILAR TO`.
+pub(crate) const PREC_LIKE: u8 = 50;
 pub(crate) const PREC_COMPARISON: u8 = 45;
 pub(crate) const PREC_IS: u8 = 40;
 pub(crate) const PREC_NOT: u8 = 35;
@@ -120,6 +122,9 @@ pub(crate) struct OperatorInfo {
 pub(crate) enum OperatorAssociativity {
     Left,
     Right,
+    /// `a < b < c` and `a like b like c` are syntax errors, so a nested operator of the same
+    /// precedence needs parentheses on either side.
+    None,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -147,20 +152,64 @@ pub(crate) enum OperandSide {
 
 pub(crate) fn node_operator_info(node: &Node) -> Option<OperatorInfo> {
     match node.node.as_ref()? {
-        NodeEnum::AExpr(expr) if matches!(expr.kind(), AExprKind::AexprOp) => {
-            operator_info(&expr.name, OperatorArity::from_aexpr(expr))
-        }
-        // IS NULL / IS NOT NULL have PREC_IS precedence
-        NodeEnum::NullTest(_) => Some(OperatorInfo {
+        NodeEnum::AExpr(expr) => aexpr_operator_info(expr),
+        // IS [NOT] NULL and IS [NOT] TRUE have PREC_IS precedence
+        NodeEnum::NullTest(_) | NodeEnum::BooleanTest(_) => Some(OperatorInfo {
             precedence: PREC_IS,
-            associativity: OperatorAssociativity::Left,
+            associativity: OperatorAssociativity::None,
         }),
+        NodeEnum::SubLink(sub_link) => sub_link_operator_info(sub_link),
         // Boolean expressions (AND/OR) need parens when nested in comparison
         // Use a low precedence so they get wrapped
         NodeEnum::BoolExpr(_) => Some(OperatorInfo {
             precedence: 20, // Lower than PREC_NOT (35)
             associativity: OperatorAssociativity::Left,
         }),
+        _ => None,
+    }
+}
+
+/// The precedence of an operator expression, from the precedence table of the grammar.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L825
+pub(crate) fn aexpr_operator_info(expr: &AExpr) -> Option<OperatorInfo> {
+    match expr.kind() {
+        AExprKind::AexprOp => operator_info(&expr.name, OperatorArity::from_aexpr(expr)),
+        // The parser decides by the operator before `ANY` whether the left operand ends there.
+        AExprKind::AexprOpAny | AExprKind::AexprOpAll => {
+            operator_info(&expr.name, OperatorArity::Binary)
+        }
+        AExprKind::AexprDistinct | AExprKind::AexprNotDistinct => Some(OperatorInfo {
+            precedence: PREC_IS,
+            associativity: OperatorAssociativity::None,
+        }),
+        AExprKind::AexprIn
+        | AExprKind::AexprLike
+        | AExprKind::AexprIlike
+        | AExprKind::AexprSimilar
+        | AExprKind::AexprBetween
+        | AExprKind::AexprNotBetween
+        | AExprKind::AexprBetweenSym
+        | AExprKind::AexprNotBetweenSym => Some(OperatorInfo {
+            precedence: PREC_LIKE,
+            associativity: OperatorAssociativity::None,
+        }),
+        // `nullif(a, b)` is written like a function call.
+        AExprKind::AexprNullif | AExprKind::Undefined => None,
+    }
+}
+
+/// The precedence of `a op ANY (subquery)`, `a op ALL (subquery)` and `a IN (subquery)`, written
+/// like the operator expressions of the same shape. The others are self-contained.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L15318
+pub(crate) fn sub_link_operator_info(sub_link: &SubLink) -> Option<OperatorInfo> {
+    match sub_link.sub_link_type() {
+        SubLinkType::AnySublink if sub_link.oper_name.is_empty() => Some(OperatorInfo {
+            precedence: PREC_LIKE,
+            associativity: OperatorAssociativity::None,
+        }),
+        SubLinkType::AnySublink | SubLinkType::AllSublink => {
+            operator_info(&sub_link.oper_name, OperatorArity::Binary)
+        }
         _ => None,
     }
 }
@@ -180,9 +229,9 @@ pub(crate) fn operator_info(name: &[Node], arity: OperatorArity) -> Option<Opera
         "||" | "<<" | ">>" | "#" | "&" | "|" => (PREC_OTHER, OperatorAssociativity::Left),
         "not" => (PREC_NOT, OperatorAssociativity::Right),
         "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" => {
-            (PREC_COMPARISON, OperatorAssociativity::Left)
+            (PREC_COMPARISON, OperatorAssociativity::None)
         }
-        "is" | "isnull" | "notnull" => (PREC_IS, OperatorAssociativity::Left),
+        "is" | "isnull" | "notnull" => (PREC_IS, OperatorAssociativity::None),
         _ => (PREC_OTHER, OperatorAssociativity::Left),
     };
 
@@ -208,10 +257,6 @@ fn operand_needs_parentheses(node: &Node, parent: Option<OperatorInfo>, side: Op
         return false;
     };
 
-    if matches!(side, OperandSide::Unary) {
-        return child_info.precedence < parent_info.precedence;
-    }
-
     if child_info.precedence < parent_info.precedence {
         return true;
     }
@@ -220,16 +265,20 @@ fn operand_needs_parentheses(node: &Node, parent: Option<OperatorInfo>, side: Op
         return false;
     }
 
-    // Same precedence - PostgreSQL comparison operators are non-associative
-    // (you can't chain a < b < c), so always need parens when nesting
-    // comparison expressions at the same level
-    if parent_info.precedence == PREC_COMPARISON && child_info.precedence == PREC_COMPARISON {
-        return true;
+    if matches!(side, OperandSide::Unary) {
+        // `| a || b` is `(| a) || b`: a prefix operator ends its operand before a binary operator
+        // of the same precedence, unless it is right-associative like unary minus.
+        let child_is_binary = matches!(
+            node.node.as_ref(),
+            Some(NodeEnum::AExpr(expr)) if expr.lexpr.is_some() && expr.rexpr.is_some()
+        );
+        return child_is_binary && parent_info.associativity != OperatorAssociativity::Right;
     }
 
     match parent_info.associativity {
         OperatorAssociativity::Left => matches!(side, OperandSide::Right),
         OperatorAssociativity::Right => matches!(side, OperandSide::Left),
+        OperatorAssociativity::None => true,
     }
 }
 

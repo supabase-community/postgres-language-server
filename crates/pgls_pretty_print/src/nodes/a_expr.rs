@@ -152,7 +152,7 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
 // expr op ANY (subquery)
 fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.space();
     }
 
@@ -179,7 +179,7 @@ fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
 // expr op ALL (subquery)
 fn emit_aexpr_op_all(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.space();
     }
 
@@ -205,11 +205,7 @@ fn emit_aexpr_op_all(e: &mut EventEmitter, n: &AExpr) {
 
 // expr IS DISTINCT FROM expr2
 fn emit_aexpr_distinct(e: &mut EventEmitter, n: &AExpr) {
-    // IS DISTINCT FROM has PREC_IS (40) precedence
-    let parent_info = Some(OperatorInfo {
-        precedence: PREC_IS,
-        associativity: OperatorAssociativity::Left,
-    });
+    let parent_info = aexpr_operator_info(n);
 
     if let Some(ref lexpr) = n.lexpr {
         emit_operand_with_parens(e, lexpr, parent_info, OperandSide::Left);
@@ -231,11 +227,7 @@ fn emit_aexpr_distinct(e: &mut EventEmitter, n: &AExpr) {
 
 // expr IS NOT DISTINCT FROM expr2
 fn emit_aexpr_not_distinct(e: &mut EventEmitter, n: &AExpr) {
-    // IS NOT DISTINCT FROM has PREC_IS (40) precedence
-    let parent_info = Some(OperatorInfo {
-        precedence: PREC_IS,
-        associativity: OperatorAssociativity::Left,
-    });
+    let parent_info = aexpr_operator_info(n);
 
     if let Some(ref lexpr) = n.lexpr {
         emit_operand_with_parens(e, lexpr, parent_info, OperandSide::Left);
@@ -279,7 +271,7 @@ fn emit_aexpr_nullif(e: &mut EventEmitter, n: &AExpr) {
 // expr IN (values)
 fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -327,7 +319,7 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
 // expr LIKE pattern [ESCAPE escape]
 fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.space();
     }
 
@@ -345,14 +337,14 @@ fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
-        emit_node(e, rexpr);
+        emit_operand_with_parens(e, rexpr, aexpr_operator_info(n), OperandSide::Right);
     }
 }
 
 // expr ILIKE pattern [ESCAPE escape]
 fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.space();
     }
 
@@ -370,14 +362,14 @@ fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
-        emit_node(e, rexpr);
+        emit_operand_with_parens(e, rexpr, aexpr_operator_info(n), OperandSide::Right);
     }
 }
 
 // expr SIMILAR TO pattern [ESCAPE escape]
 fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.space();
     }
 
@@ -404,27 +396,27 @@ fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
                 matches!(n.node.as_ref(), Some(pgls_query::NodeEnum::String(s)) if s.sval == "similar_to_escape")
             }) {
                 // Emit just the pattern (first argument)
-                if !func.args.is_empty() {
-                    emit_node(e, &func.args[0]);
+                if let Some(pattern) = func.args.first() {
+                    emit_operand_with_parens(e, pattern, aexpr_operator_info(n), OperandSide::Right);
                 }
                 // If there's a second argument, it's the ESCAPE character
-                if func.args.len() >= 2 {
+                if let Some(escape) = func.args.get(1) {
                     e.space();
                     e.token(TokenKind::ESCAPE_KW);
                     e.space();
-                    emit_node(e, &func.args[1]);
+                    emit_operand_with_parens(e, escape, aexpr_operator_info(n), OperandSide::Right);
                 }
                 return;
             }
         // Fallback for other patterns
-        emit_node(e, rexpr);
+        emit_operand_with_parens(e, rexpr, aexpr_operator_info(n), OperandSide::Right);
     }
 }
 
 // expr BETWEEN expr2 AND expr3
 fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -434,15 +426,7 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
     // rexpr is a List node with two elements, but we need "expr AND expr" not "expr, expr"
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
-            if !list.items.is_empty() {
-                emit_node(e, &list.items[0]);
-            }
-            if list.items.len() >= 2 {
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::AND_KW);
-                e.space();
-                emit_node(e, &list.items[1]);
-            }
+            emit_between_bounds(e, n, &list.items);
         } else {
             emit_node(e, rexpr);
         }
@@ -452,7 +436,7 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
 // expr NOT BETWEEN expr2 AND expr3
 fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -464,15 +448,7 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
     // rexpr is a List node with two elements, but we need "expr AND expr" not "expr, expr"
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
-            if !list.items.is_empty() {
-                emit_node(e, &list.items[0]);
-            }
-            if list.items.len() >= 2 {
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::AND_KW);
-                e.space();
-                emit_node(e, &list.items[1]);
-            }
+            emit_between_bounds(e, n, &list.items);
         } else {
             emit_node(e, rexpr);
         }
@@ -482,7 +458,7 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
 // expr BETWEEN SYMMETRIC expr2 AND expr3
 fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -494,15 +470,7 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
     // rexpr is a List node with two elements, but we need "expr AND expr" not "expr, expr"
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
-            if !list.items.is_empty() {
-                emit_node(e, &list.items[0]);
-            }
-            if list.items.len() >= 2 {
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::AND_KW);
-                e.space();
-                emit_node(e, &list.items[1]);
-            }
+            emit_between_bounds(e, n, &list.items);
         } else {
             emit_node(e, rexpr);
         }
@@ -512,7 +480,7 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
 // expr NOT BETWEEN SYMMETRIC expr2 AND expr3
 fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_node(e, lexpr);
+        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -526,18 +494,26 @@ fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     // rexpr is a List node with two elements, but we need "expr AND expr" not "expr, expr"
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
-            if !list.items.is_empty() {
-                emit_node(e, &list.items[0]);
-            }
-            if list.items.len() >= 2 {
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::AND_KW);
-                e.space();
-                emit_node(e, &list.items[1]);
-            }
+            emit_between_bounds(e, n, &list.items);
         } else {
             emit_node(e, rexpr);
         }
+    }
+}
+
+/// The lower bound is a `b_expr`, which has no `AND`, and the upper bound ends at an operator that
+/// binds less tightly than `BETWEEN`, so both are operands on the right.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L15241
+fn emit_between_bounds(e: &mut EventEmitter, n: &AExpr, bounds: &[Node]) {
+    let parent_info = aexpr_operator_info(n);
+    if let Some(lower) = bounds.first() {
+        emit_operand_with_parens(e, lower, parent_info, OperandSide::Right);
+    }
+    if let Some(upper) = bounds.get(1) {
+        e.line(LineType::SoftOrSpace);
+        e.token(TokenKind::AND_KW);
+        e.space();
+        emit_operand_with_parens(e, upper, parent_info, OperandSide::Right);
     }
 }
 
