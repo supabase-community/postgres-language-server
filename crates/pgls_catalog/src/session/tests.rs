@@ -353,6 +353,54 @@ fn rollback_forgets_local_role() {
 }
 
 #[test]
+fn rollback_to_savepoint_restores_settings() {
+    let mut s = Session::new(vec!["public".into()]);
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "SAVEPOINT a");
+    apply(&mut s, "SET search_path = other");
+    apply(&mut s, "SET ROLE some_role");
+    apply(&mut s, "SAVEPOINT b");
+    apply(&mut s, "SET LOCAL check_function_bodies = off");
+    apply(&mut s, "ROLLBACK TO SAVEPOINT b");
+    assert!(s.check_function_bodies());
+    assert_eq!(s.search_path(), ["other"]);
+    // The savepoint stays after `ROLLBACK TO`, and the one rolled back to forgets later ones.
+    apply(&mut s, "SET search_path = third");
+    apply(&mut s, "ROLLBACK TO b");
+    assert_eq!(s.search_path(), ["other"]);
+    apply(&mut s, "ROLLBACK TO a");
+    assert_eq!(s.search_path(), ["public"]);
+    assert_eq!(s.role(), None);
+    apply(&mut s, "ROLLBACK TO b");
+    assert_eq!(s.search_path(), ["public"]);
+
+    // `RELEASE` keeps the settings, and a `SET LOCAL` in it still ends with the transaction.
+    apply(&mut s, "SAVEPOINT c");
+    apply(&mut s, "SET LOCAL search_path = local_schema");
+    apply(&mut s, "RELEASE SAVEPOINT c");
+    assert_eq!(s.search_path(), ["local_schema"]);
+    apply(&mut s, "ROLLBACK TO c");
+    assert_eq!(s.search_path(), ["local_schema"]);
+    apply(&mut s, "COMMIT");
+    assert_eq!(s.search_path(), ["public"]);
+
+    // `COMMIT` forgets the savepoints.
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "SET search_path = other");
+    apply(&mut s, "ROLLBACK TO a");
+    assert_eq!(s.search_path(), ["other"]);
+    apply(&mut s, "COMMIT");
+
+    // Postgres rejects a savepoint outside of a transaction block.
+    let mut s =
+        Session::new(vec!["public".into()]).with_transaction_mode(TransactionMode::Autocommit);
+    apply(&mut s, "SAVEPOINT a");
+    apply(&mut s, "SET search_path = other");
+    apply(&mut s, "ROLLBACK TO a");
+    assert_eq!(s.search_path(), ["other"]);
+}
+
+#[test]
 fn check_function_bodies() {
     let mut s = Session::new(vec!["public".into()]);
     assert!(s.check_function_bodies());
