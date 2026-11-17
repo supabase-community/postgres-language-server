@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "db")]
 use super::SnapshotItem;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum ColumnClassKind {
     OrdinaryTable,
@@ -11,32 +11,23 @@ pub enum ColumnClassKind {
     MaterializedView,
     ForeignTable,
     PartitionedTable,
+    /// A `pg_class.relkind` we don't know.
+    #[serde(other)]
+    #[cfg_attr(feature = "schema", schemars(skip))]
+    Unknown,
 }
 
-impl From<&str> for ColumnClassKind {
-    fn from(value: &str) -> Self {
-        match value {
+// `pg_class.relkind`.
+impl From<String> for ColumnClassKind {
+    fn from(code: String) -> Self {
+        match code.as_str() {
             "r" => ColumnClassKind::OrdinaryTable,
             "v" => ColumnClassKind::View,
             "m" => ColumnClassKind::MaterializedView,
             "f" => ColumnClassKind::ForeignTable,
             "p" => ColumnClassKind::PartitionedTable,
-            _ => panic!(
-                "Columns belonging to a class with pg_class.relkind = '{value}' should be filtered out in the query."
-            ),
+            _ => ColumnClassKind::Unknown,
         }
-    }
-}
-
-impl From<String> for ColumnClassKind {
-    fn from(value: String) -> Self {
-        ColumnClassKind::from(value.as_str())
-    }
-}
-
-impl From<char> for ColumnClassKind {
-    fn from(value: char) -> Self {
-        ColumnClassKind::from(String::from(value))
     }
 }
 

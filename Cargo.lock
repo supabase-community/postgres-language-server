@@ -2244,6 +2244,7 @@ dependencies = [
  "pgls_diagnostics",
  "schemars",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

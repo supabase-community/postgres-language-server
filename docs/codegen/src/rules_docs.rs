@@ -511,17 +511,19 @@ fn print_diagnostics(
     // Typecheck rules need a database. Examples run against the built-in catalog of a fresh
     // database on the latest supported Postgres, and create everything else themselves.
     let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
-    let diagnostics = analyser.run(pgls_analyser::AnalyserParams {
-        stmts,
-        catalog_base: if is_typecheck {
-            Some(builtin_catalog()?)
-        } else {
-            None
-        },
-        search_path: vec!["public".into()],
-        typecheck: is_typecheck,
-        ..Default::default()
-    });
+    let diagnostics = analyser
+        .analyse(pgls_analyser::AnalyserParams {
+            stmts,
+            catalog_base: if is_typecheck {
+                Some(builtin_catalog()?)
+            } else {
+                None
+            },
+            search_path: vec!["public".into()],
+            typecheck: is_typecheck,
+            ..Default::default()
+        })
+        .diagnostics;
     for rule_diag in diagnostics {
         let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
 

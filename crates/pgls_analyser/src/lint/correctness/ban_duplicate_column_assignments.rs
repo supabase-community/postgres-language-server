@@ -59,6 +59,8 @@ declare_lint_rule! {
 
 impl LinterRule for BanDuplicateColumnAssignments {
     type Options = ();
+    // Postgres' rewriter raises `multiple assignments to same column`, without a position.
+    const REPORTS_DATABASE_ERROR: bool = true;
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let tokens = ctx.tokens();

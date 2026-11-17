@@ -650,6 +650,34 @@ mod tests {
     }
 
     #[test]
+    fn test_workspace_schema_with_codes_of_a_newer_postgres() {
+        // A domain cycle, which Postgres can't produce, and codes that a newer Postgres could
+        // have: the schema loads, and linting a cast to the domain finishes.
+        let schema = r#"{
+            "types": [
+                {"id": 23, "name": "int4", "schema": "pg_catalog", "format": "int4",
+                 "typtype": "b", "enums": {"values": []}, "attributes": {"attrs": []}},
+                {"id": 901, "name": "d1", "schema": "public", "format": "d1",
+                 "typtype": "d", "typbasetype": 902,
+                 "enums": {"values": []}, "attributes": {"attrs": []}},
+                {"id": 902, "name": "d2", "schema": "public", "format": "d2",
+                 "typtype": "d", "typbasetype": 901,
+                 "enums": {"values": []}, "attributes": {"attrs": []}},
+                {"id": 903, "name": "future", "schema": "public", "format": "future",
+                 "typtype": "x", "enums": {"values": []}, "attributes": {"attrs": []}}
+            ],
+            "casts": [{"source": 23, "target": 901, "context": "q", "method": "f"}],
+            "operators": [{"oid": 1, "schema": "pg_catalog", "name": "!", "kind": "r",
+                           "left": 23, "right": 0, "result": 23}],
+            "typing_metadata": true
+        }"#;
+        let mut workspace = Workspace::new();
+        workspace.set_schema(schema).unwrap();
+        workspace.insert_file("/test.sql", "select 1::d1, 1::future;");
+        workspace.lint("/test.sql").unwrap();
+    }
+
+    #[test]
     fn test_workspace_parse() {
         let workspace = Workspace::new();
 

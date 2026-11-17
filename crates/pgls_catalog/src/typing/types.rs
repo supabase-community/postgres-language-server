@@ -23,12 +23,16 @@ pub(super) fn lookup_builtin(c: &dyn CatalogView, name: &str) -> Decision<Option
         .map(|t| t.and_then(|t| t.id))
 }
 
+/// The most domains [`base_type`] follows. Postgres' catalog has no cycles, but a `SchemaCache`
+/// from JSON may.
+const BASE_TYPE_DOMAINS_MAX: usize = 64;
+
 /// Port of [`getBaseType`]: the type a domain is based on, through nested domains.
 ///
 /// [`getBaseType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/cache/lsyscache.c#L2823
 pub fn base_type(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeId> {
     let mut current = id.clone();
-    loop {
+    for _ in 0..BASE_TYPE_DOMAINS_MAX {
         let meta = match info(c, &current) {
             Decision::Known(t) => t,
             Decision::Unknown => return Decision::Unknown,
@@ -46,6 +50,11 @@ pub fn base_type(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeId> {
         }
         current = base;
     }
+    tracing::warn!(
+        "The base type of {id:?} is more than {BASE_TYPE_DOMAINS_MAX} domains away; the catalog \
+         may have a cycle of domains"
+    );
+    Decision::Unknown
 }
 
 /// The `typcategory` and `typispreferred` of a type. Port of [`get_type_category_preferred`],
@@ -181,33 +190,38 @@ pub fn format_type_with_search_path(
     match ty {
         Type::UnknownLiteral => Some("unknown".into()),
         Type::Record(_) => Some("record".into()),
-        Type::Named(id) => format_named(c, id, search_path, 0),
+        Type::Named(id) => format_named(c, id, search_path),
     }
 }
+
+/// The most array element types [`format_named`] follows. Postgres has no arrays of arrays,
+/// but a `SchemaCache` from JSON may have a cycle of element types.
+const FORMAT_ELEMENTS_MAX: usize = 16;
 
 /// Port of [`format_type_extended`] without typmods: SQL-standard names for built-in types,
 /// and the schema only when the type is not visible on the search path.
 ///
 /// [`format_type_extended`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/adt/format_type.c#L112
-fn format_named(
-    c: &dyn CatalogView,
-    id: &TypeId,
-    search_path: &[String],
-    depth: usize,
-) -> Option<String> {
-    if depth > 16 {
-        return None;
-    }
-    let info = match c.type_by_id(id) {
-        Lookup::Found(info) => info,
-        _ => return None,
+fn format_named(c: &dyn CatalogView, id: &TypeId, search_path: &[String]) -> Option<String> {
+    let mut id = id.clone();
+    let mut dimensions = 0;
+    let info = loop {
+        let Lookup::Found(info) = c.type_by_id(&id) else {
+            return None;
+        };
+        let Some(element) = info.element else {
+            break info;
+        };
+        if dimensions == FORMAT_ELEMENTS_MAX {
+            tracing::warn!(
+                "Type {id:?} is more than {FORMAT_ELEMENTS_MAX} element types deep; the catalog \
+                 may have a cycle of array types"
+            );
+            return None;
+        }
+        dimensions += 1;
+        id = element;
     };
-    if let Some(element) = info.element.as_ref() {
-        return Some(format!(
-            "{}[]",
-            format_named(c, element, search_path, depth + 1)?
-        ));
-    }
     let standard = match info.name.as_str() {
         "int2" => "smallint",
         "int4" => "integer",
@@ -227,12 +241,14 @@ fn format_named(
         name => name,
     };
     let visible = info.schema == "pg_catalog"
-        || matches!(c.type_(None, &info.name, search_path), Lookup::Found(visible) if visible.id.as_ref() == Some(id));
-    Some(if visible {
+        || matches!(c.type_(None, &info.name, search_path), Lookup::Found(visible) if visible.id.as_ref() == Some(&id));
+    let mut name = if visible {
         standard.to_owned()
     } else {
         format!("{}.{}", info.schema, standard)
-    })
+    };
+    name.push_str(&"[]".repeat(dimensions));
+    Some(name)
 }
 
 #[cfg(all(test, feature = "db"))]
