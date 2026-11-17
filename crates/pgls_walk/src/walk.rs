@@ -127,7 +127,9 @@ pub fn walk_statements(
     let roots: Vec<&pgls_query::NodeEnum> = params.stmts.iter().map(|s| &*s.root).collect();
 
     // The catalog after the up sections so far.
-    let mut catalog = Catalog::new(params.catalog_base);
+    let mut catalog = params
+        .catalog_base
+        .map_or_else(Catalog::without_database, Catalog::from_base);
     if params.best_effort {
         catalog = catalog.best_effort();
     }
@@ -174,7 +176,7 @@ pub fn walk_statements(
                 let unit_catalog = if is_down {
                     catalog.clone()
                 } else {
-                    std::mem::replace(&mut catalog, Catalog::new(None))
+                    std::mem::replace(&mut catalog, Catalog::without_database())
                 };
                 // Each section runs in a session and transaction of its own.
                 let session = Session::new(params.search_path.to_vec()).with_transaction_mode(
@@ -565,8 +567,6 @@ mod tests {
     use std::time::{Duration, Instant};
 
     use pgls_text_size::{TextRange, TextSize};
-
-    use pgls_catalog::CatalogView;
 
     use super::{WalkParams, walk_statements};
     use crate::{AnalysableStatement, Direction, Unit, UnparsableStatement};

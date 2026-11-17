@@ -1,4 +1,4 @@
-//! Conservative name resolution of a single statement against a [`CatalogView`].
+//! Conservative name resolution of a single statement against a [`Catalog`].
 //!
 //! The resolver reports a [`Finding`] only when Postgres would certainly raise the error. Whenever
 //! something is not known with certainty (an unknown object, a relation whose columns are not
@@ -38,11 +38,10 @@ mod utils;
 mod volatility;
 pub use volatility::contains_volatile_functions;
 
+use pgls_catalog::Catalog;
+use pgls_catalog::typing::{TypedColumn, resolve_unknown_outputs};
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
-
-use pgls_catalog::CatalogView;
-use pgls_catalog::typing::{TypedColumn, resolve_unknown_outputs};
 use resolver::Resolver;
 
 /// A parameter of the SQL function whose body is being resolved.
@@ -63,7 +62,7 @@ pub struct FunctionContext {
 
 pub struct ResolveParams<'a> {
     pub stmt: &'a NodeEnum,
-    pub catalog: &'a dyn CatalogView,
+    pub catalog: &'a Catalog,
     /// The explicit search path of the session.
     pub search_path: &'a [String],
     /// Set when the statement is the body of a SQL function.
@@ -452,7 +451,7 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
 /// known with certainty.
 pub fn query_columns(
     query: &protobuf::Node,
-    catalog: &dyn CatalogView,
+    catalog: &Catalog,
     search_path: &[String],
 ) -> Option<Vec<TypedColumn>> {
     let resolution = resolve(ResolveParams {

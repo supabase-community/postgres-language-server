@@ -13,6 +13,7 @@ mod overlay;
 #[cfg(test)]
 mod tests;
 
+use crate::Snapshot;
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
@@ -23,7 +24,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::Candidates;
 use crate::lookup::{
-    CatalogView, ColumnInfo, FunctionInfo, IndexInfo, Lookup, RelationInfo, RelationKind, TypeInfo,
+    ColumnInfo, FunctionInfo, IndexInfo, Lookup, RelationInfo, RelationKind, TypeInfo,
 };
 use crate::typing::TypeId;
 use crate::{CastInfo, OperatorInfo, OperatorKind};
@@ -106,7 +107,23 @@ struct Savepoint {
 }
 
 impl Catalog {
-    pub fn new(base: Option<Arc<CatalogBase>>) -> Self {
+    /// The catalog of a database snapshot, before the file changed it.
+    pub fn from_snapshot(snapshot: impl Into<Arc<Snapshot>>) -> Self {
+        Self::from_base(Arc::new(CatalogBase::new(snapshot.into())))
+    }
+
+    /// The catalog of an indexed snapshot, which files share.
+    pub fn from_base(base: Arc<CatalogBase>) -> Self {
+        Self::new(Some(base))
+    }
+
+    /// A catalog without a database: every lookup of an object the file didn't create is
+    /// [`Lookup::Unknown`].
+    pub fn without_database() -> Self {
+        Self::new(None)
+    }
+
+    fn new(base: Option<Arc<CatalogBase>>) -> Self {
         Self {
             base,
             schemas: FxHashMap::default(),
@@ -499,8 +516,18 @@ fn explicit_schemas(search_path: &[String]) -> impl Iterator<Item = String> + '_
         .cloned()
 }
 
-impl CatalogView for Catalog {
-    fn relation(
+/// Read-only lookups in the catalog as it is before the statement being analysed.
+///
+/// All `search_path` arguments are the explicit search path of the session. The lookups
+/// apply Postgres' implicit rules on top of it: `pg_catalog` is searched first unless it is
+/// listed explicitly, and `pg_temp` is searched first for relations and types (never for
+/// functions) unless it is listed explicitly ([`finalNamespacePath`], [`FuncnameGetCandidates`]).
+///
+/// [`finalNamespacePath`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L4201
+/// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
+impl Catalog {
+    /// Looks up a relation. With `schema: None`, the search path is used.
+    pub fn relation(
         &self,
         schema: Option<&str>,
         name: &str,
@@ -514,7 +541,8 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn role(&self, name: &str) -> Lookup<()> {
+    /// Looks up a role. Never `Missing`, since roles that the file creates aren't followed.
+    pub fn role(&self, name: &str) -> Lookup<()> {
         // The file can create and drop roles, which the catalog doesn't follow.
         match &self.base {
             Some(base) if base.has_role(name) => Lookup::Found(()),
@@ -522,7 +550,8 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn schema(&self, name: &str) -> Lookup<()> {
+    /// Looks up a schema. `pg_temp` and `pg_catalog` always exist.
+    pub fn schema(&self, name: &str) -> Lookup<()> {
         if name == "pg_catalog" || name == "pg_temp" {
             return Lookup::Found(());
         }
@@ -539,7 +568,9 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn functions(
+    /// Returns all overloads with this name that are visible. With `schema: None`, all schemas
+    /// on the search path are considered.
+    pub fn functions(
         &self,
         schema: Option<&str>,
         name: &str,
@@ -569,7 +600,14 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn type_(&self, schema: Option<&str>, name: &str, search_path: &[String]) -> Lookup<TypeInfo> {
+    /// Looks up a type by its internal name (e.g. `int4`, not `integer`). With `schema: None`,
+    /// the search path is used.
+    pub fn type_(
+        &self,
+        schema: Option<&str>,
+        name: &str,
+        search_path: &[String],
+    ) -> Lookup<TypeInfo> {
         match schema {
             Some(schema) => self.type_in(schema, name),
             None => self.search(relation_search_path(search_path), |schema| {
@@ -578,7 +616,8 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn type_by_id(&self, id: &TypeId) -> Lookup<TypeInfo> {
+    /// Looks up a type by identity.
+    pub fn type_by_id(&self, id: &TypeId) -> Lookup<TypeInfo> {
         match id {
             TypeId::Snapshot(_) => self
                 .base
@@ -601,7 +640,8 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn cast(&self, source: &TypeId, target: &TypeId) -> Lookup<CastInfo> {
+    /// Looks up a direct cast.
+    pub fn cast(&self, source: &TypeId, target: &TypeId) -> Lookup<CastInfo> {
         let Some(base) = self.base.as_ref() else {
             return Lookup::Unknown;
         };
@@ -611,7 +651,8 @@ impl CatalogView for Catalog {
         base.cast(source, target)
     }
 
-    fn function_candidates(
+    /// The functions with this name that are visible, and whether they are all of them.
+    pub fn function_candidates(
         &self,
         schema: Option<&str>,
         name: &str,
@@ -645,7 +686,9 @@ impl CatalogView for Catalog {
         Candidates { items, complete }
     }
 
-    fn operator_candidates(
+    /// The operators of this kind with this name that are visible, and whether they are all of
+    /// them.
+    pub fn operator_candidates(
         &self,
         schema: Option<&str>,
         name: &str,
@@ -680,9 +723,23 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn server_version_num(&self) -> Option<i64> {
+    /// Returns the server version when available.
+    pub fn server_version_num(&self) -> Option<i64> {
         self.base
             .as_ref()
             .and_then(|b| b.snapshot().version.version_num)
+    }
+
+    /// The identity of the builtin type `pg_catalog.<name>`, if it is known.
+    pub fn builtin_type(&self, name: &str) -> Option<TypeId> {
+        self.type_(Some("pg_catalog"), name, &[]).found()?.id
+    }
+
+    /// Whether the server runs Postgres `major` or later, like `server_version_at_least(12)`.
+    /// `None` when the version is not known. Since Postgres 10, `server_version_num` is the major
+    /// version times 10000 plus the minor version.
+    pub fn server_version_at_least(&self, major: i64) -> Option<bool> {
+        self.server_version_num()
+            .map(|version| version >= major * 10_000)
     }
 }
