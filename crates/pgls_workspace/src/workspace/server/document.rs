@@ -1,3 +1,4 @@
+use std::num::NonZeroU64;
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
@@ -13,6 +14,7 @@ use rustc_hash::FxHashSet;
 
 use pgls_migrations::{MigrationTool, Preprocessed, Script, Unit};
 
+use crate::diagnostics::FileTooLarge;
 use crate::workspace::ProjectKey;
 
 use super::{
@@ -45,6 +47,11 @@ pub struct Document {
     migration_script: Script,
     /// Where the last change of the content starts.
     edited_at: Option<TextSize>,
+    /// `files.maxSize` of the settings that `migration_tool` is from.
+    max_size: NonZeroU64,
+    /// Whether the content is larger than `max_size`. Then it is neither split nor parsed: the
+    /// document has no statements, and its only diagnostic is [`FileTooLarge`].
+    too_large: bool,
 }
 
 /// A generation that no document had before, see [`Document::generation`].
@@ -61,48 +68,108 @@ impl Document {
             ProjectKey::default(),
             0,
             MigrationTool::Plain,
+            NonZeroU64::MAX,
             content,
             version,
         )
     }
 
     /// A document of the project `project_key`, whose settings at `settings_version` make
-    /// `migration_tool` run the file. When the settings or the project change,
-    /// [`Document::set_migration_tool`] applies them.
+    /// `migration_tool` run the file and limit its size to `max_size`. When the settings or the
+    /// project change, [`Document::set_settings`] applies them.
     pub(crate) fn open(
         project_key: ProjectKey,
         settings_version: u64,
         migration_tool: MigrationTool,
+        max_size: NonZeroU64,
         content: String,
         version: i32,
     ) -> Document {
-        let migration_script = migration_tool.read(&content);
-        let split =
-            pgls_statement_splitter::split(text(&content, migration_script.preprocessed.as_ref()));
-        let diagnostics = split_diagnostics(&split);
-        let suppressions =
-            Suppressions::from(content.as_str()).with_statements(split.ranges.clone());
-
         let generation = next_generation();
-        Document {
-            split,
-            diagnostics,
+        let mut document = Document {
+            split: pgls_statement_splitter::split(""),
+            diagnostics: Vec::new(),
             content,
             generation,
             version,
             cache: Arc::new(DocumentCache::new(generation)),
-            suppressions,
+            suppressions: Suppressions::default(),
             project_key,
             settings_version,
             migration_tool,
-            migration_script,
+            migration_script: Script::default(),
             edited_at: None,
-        }
+            max_size,
+            too_large: false,
+        };
+        document.read();
+        document
+    }
+
+    /// Splits the whole content, unless it is larger than `max_size`. Returns the previous
+    /// migration script and statements.
+    fn read(&mut self) -> (Script, SplitResult) {
+        self.too_large = self.exceeds_max_size(&self.content);
+        let (migration_script, split) = if self.too_large {
+            let size = self.content.len();
+            let limit = usize::try_from(self.max_size.get()).unwrap_or(usize::MAX);
+            self.diagnostics = vec![SDiagnostic::new(FileTooLarge { size, limit })];
+            self.suppressions = Suppressions::default();
+            (Script::default(), pgls_statement_splitter::split(""))
+        } else {
+            let migration_script = self.migration_tool.read(&self.content);
+            let split = pgls_statement_splitter::split(text(
+                &self.content,
+                migration_script.preprocessed.as_ref(),
+            ));
+            self.diagnostics = split_diagnostics(&split);
+            self.suppressions =
+                Suppressions::from(self.content.as_str()).with_statements(split.ranges.clone());
+            (migration_script, split)
+        };
+        (
+            std::mem::replace(&mut self.migration_script, migration_script),
+            std::mem::replace(&mut self.split, split),
+        )
+    }
+
+    fn exceeds_max_size(&self, content: &str) -> bool {
+        u64::try_from(content.len()).unwrap_or(u64::MAX) > self.max_size.get()
+    }
+
+    /// Splits the whole content again after it changed from `old_content` or the settings
+    /// changed, unlike [`Document::update_content`], which splits only around the change.
+    /// Returns what is no longer current in the cache, for the caller to drop.
+    fn reread(&mut self, old_content: &str) -> StaleEntries {
+        let (old_script, old_split) = self.read();
+        self.generation = next_generation();
+        self.edited_at = Some(TextSize::from(0));
+        let stale = self.cache.content_changed(
+            ContentChange {
+                unchanged: TextSize::from(0),
+                first_changed_statement: TextSize::from(0),
+            },
+            self.generation,
+        );
+        let old_text = text(old_content, old_script.preprocessed.as_ref());
+        let removed = statements_not_in(
+            old_split.ranges.iter().map(|range| &old_text[*range]),
+            self.text(),
+            &self.split.ranges,
+        );
+        self.cache.remove_statements(removed);
+        stale
     }
 
     /// Replaces the content of the document. Returns what the change invalidated in its cache,
     /// for the caller to drop, see [`StaleEntries::drop_in_background`].
     pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
+        // A content larger than `max_size` has no statements to split the other version from.
+        if self.too_large || self.exceeds_max_size(&content) {
+            let old_content = std::mem::replace(&mut self.content, content);
+            self.version = version;
+            return self.reread(&old_content);
+        }
         let migration_script = self.migration_tool.read(&content);
         // The text that is split is the content with the placeholders of the migration tool.
         let old_text = self.text();
@@ -194,18 +261,27 @@ impl Document {
         &self.cache
     }
 
-    /// Applies the migration tool of the settings of `project_key` at `settings_version`.
-    /// Returns what the change invalidated in the cache, for the caller to drop, see
-    /// [`StaleEntries::drop_in_background`].
-    pub(crate) fn set_migration_tool(
+    /// Applies the migration tool and the size limit of the settings of `project_key` at
+    /// `settings_version`. Returns what the change invalidated in the cache, for the caller to
+    /// drop, see [`StaleEntries::drop_in_background`].
+    pub(crate) fn set_settings(
         &mut self,
         project_key: ProjectKey,
         settings_version: u64,
         migration_tool: MigrationTool,
+        max_size: NonZeroU64,
     ) -> StaleEntries {
         self.project_key = project_key;
         self.settings_version = settings_version;
         self.migration_tool = migration_tool;
+        let max_size_changed = max_size != self.max_size;
+        self.max_size = max_size;
+        if self.too_large || (max_size_changed && self.exceeds_max_size(&self.content)) {
+            // Settings change rarely, so the copy is cheaper than keeping the statements' texts
+            // apart from the content.
+            let content = self.content.clone();
+            return self.reread(&content);
+        }
         let migration_script = migration_tool.read(&self.content);
         let resplit = migration_script.preprocessed != self.migration_script.preprocessed;
         let old_script = std::mem::replace(&mut self.migration_script, migration_script);
@@ -264,6 +340,11 @@ impl Document {
     /// The migration tool that runs the file, from its settings.
     pub(crate) fn migration_tool(&self) -> MigrationTool {
         self.migration_tool
+    }
+
+    /// `files.maxSize` of the settings of the file.
+    pub(crate) fn max_size(&self) -> NonZeroU64 {
+        self.max_size
     }
 
     /// How the migration tool runs the document.
@@ -1419,14 +1500,28 @@ $$ LANGUAGE plpgsql;";
             (1, "-- +goose ENVSUB ON"),
         ];
         let mut lines = lines.map(str::to_string);
-        let mut d = Document::open(ProjectKey::default(), 0, goose, lines.join("\n"), 0);
+        let mut d = Document::open(
+            ProjectKey::default(),
+            0,
+            goose,
+            NonZeroU64::MAX,
+            lines.join("\n"),
+            0,
+        );
         for (version, (line, text)) in (1..).zip(edits) {
             lines[line] = text.to_string();
             let content = lines.join("\n");
             d.update_content(content.clone(), version)
                 .drop_in_background();
 
-            let whole = Document::open(ProjectKey::default(), 0, goose, content.clone(), 0);
+            let whole = Document::open(
+                ProjectKey::default(),
+                0,
+                goose,
+                NonZeroU64::MAX,
+                content.clone(),
+                0,
+            );
             assert_eq!(d.split, whole.split, "{content}");
             assert_eq!(d.text(), whole.text(), "{content}");
         }

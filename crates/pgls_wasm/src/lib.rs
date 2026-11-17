@@ -378,7 +378,7 @@ impl Workspace {
                 project_key: self.project_key,
                 path: pgls_path,
                 categories: RuleCategories::all(),
-                max_diagnostics: 100,
+                max_diagnostics: u32::MAX,
                 only: vec![],
                 skip: vec![],
                 database_checks: DatabaseChecks::Run,

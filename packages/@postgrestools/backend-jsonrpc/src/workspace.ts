@@ -6,6 +6,9 @@ export interface PullFileDiagnosticsParams {
    * Whether to check the statements against the database. Defaults to [`DatabaseChecks::Run`].
    */
   database_checks?: DatabaseChecks;
+  /**
+   * At most this many diagnostics are returned, the most severe first.
+   */
   max_diagnostics: number;
   only: RuleCode[];
   path: PgLSPath;
@@ -44,6 +47,9 @@ export type FileKind = FileKind2[];
 export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
 export interface PullDiagnosticsResult {
   diagnostics: Diagnostic[];
+  /**
+   * How many diagnostics `max_diagnostics` left out.
+   */
   skipped_diagnostics: number;
 }
 /**
@@ -337,6 +343,9 @@ export interface StatementFormatResult {
 }
 export interface PullDatabaseDiagnosticsParams {
   categories: RuleCategories;
+  /**
+   * At most this many diagnostics are returned, the most severe first.
+   */
   max_diagnostics: number;
   only: RuleCode[];
   project_key: ProjectKey;
@@ -715,7 +724,7 @@ export interface PartialFilesConfiguration {
    */
   include?: StringSet;
   /**
-   * The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+   * The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 10 MiB
    */
   maxSize?: number;
 }

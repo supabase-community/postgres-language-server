@@ -157,7 +157,7 @@ impl WorkspaceServer {
             .map(|snapshot| self.catalog_base(snapshot));
 
         let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
-            .with_linter_rules(only, skip)
+            .with_linter_rules(path.as_path(), only, skip)
             .finish();
 
         let options = LinterOptions {
