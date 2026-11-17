@@ -498,9 +498,7 @@ impl WorkspaceServer {
                                             sql: conversion.sql.as_str(),
                                             ast: &ast,
                                             tree: &cst,
-                                            snapshot: snapshot.as_ref(),
                                             search_path: &statement.search_path,
-                                            identifiers: Vec::new(),
                                             duplicate_assignments_reported: statement
                                                 .has_duplicate_assignments,
                                         })
